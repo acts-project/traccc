@@ -1,0 +1,12 @@
+[submodule "extern/ccl"]
+	path = extern/ccl
+	url = https://github.com/joinHappy/connected-component-labeling-1.git
+[submodule "extern/googletest"]
+	path = extern/googletest
+	url = https://github.com/google/googletest
+[submodule "extern/benchmark"]
+	path = extern/benchmark
+	url = https://github.com/google/benchmark
+[submodule "extern/taskflow"]
+	path = extern/taskflow
+	url = https://github.com/taskflow/taskflow.git
