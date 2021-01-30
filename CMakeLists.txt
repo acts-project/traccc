@@ -25,6 +25,8 @@ set(BENCHMARK_ENABLE_INSTALL OFF)
 set(BENCHMARK_ENABLE_TESTING OFF)
 
 add_subdirectory(extern)
+add_subdirectory(examples)
+
 #add_subdirectory(framework)
 #add_subdirectory(cpu)
 #add_subdirectory(benchmarks)
