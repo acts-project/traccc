@@ -12,6 +12,9 @@
 namespace traccc {
 
     using scalar = float;
+
+    using geometry_id = unsigned int;
+
     using vector2 = std::array<scalar, 2>;
     using point2 = std::array<scalar, 2>;
     using covariance2 = std::array<scalar, 2>;

@@ -7,9 +7,12 @@
 
 #pragma once
 
+#include "definitions/algebra.hpp"
+#include "definitions/primitives.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
+#include "definitions/algebra.hpp"
 
 namespace traccc {
 
@@ -40,10 +43,29 @@ namespace traccc {
         ///
         /// @return a measurement collection - usually same size or sometime slightly smaller than the input
         void operator()(const cluster_collection& clusters, measurement_collection& measurements) const {
+            // Assign the module id
+            measurements.module_id = clusters.module_id;
+            // Run the algorithm
             measurements.items.reserve(clusters.items.size());
-
+            for (const auto& cluster : clusters.items){
+                point2 p = {0.,0.};
+                scalar totalWeight = 0.;
+                for (const auto& cell : cluster.cells){
+                    scalar weight = clusters.signal(cell.activation);
+                    if (weight > clusters.threshold){
+                        totalWeight += cell.activation;
+                        auto cell_position = clusters.position_from_cell(cell.channel0, cell.channel1);
+                        p = weight * p; 
+                    }
+                    if (totalWeight > 0.){
+                        measurement m;
+                        m.local =  1./totalWeight * p;
+                        // @todo add variance estimation
+                        measurements.items.push_back(std::move(m));
+                    }
+                }
+            }
         }
-
     };
     
 }

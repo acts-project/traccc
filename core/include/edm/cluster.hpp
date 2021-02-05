@@ -14,22 +14,33 @@
 
 namespace traccc {
     
-    /// A cell definition: maximum two channel identifiers
-    /// and one activiation value;
+    /// A cluster definition: 
+    ///
+    /// a list of cells that make up the cluster
     struct cluster {
-        cell_collection cells;
+        std::vector<cell> cells;
     };
 
-    
+    using position_estimation = std::function<vector2(channel_id,channel_id)>;
     using signal_modeling = std::function<float(float)>;
-    auto void_modeling = [](float signal_in) -> float {return signal_in; };
 
+    /// A cluster collection which carries the geometry_id, the clusters
+    /// and the additional information to create the cluster position 
+    /// from the channel id;
     struct cluster_collection {
 
+        geometry_id module_id = 0;
+
         std::vector<cluster> items;
-        // Next step information 
+        
+        position_estimation position_from_cell 
+            = [](channel_id ch0,channel_id ch1) -> vector2 
+                { return {static_cast<float>(ch0), static_cast<float>(ch1)}; };
+
         float threshold = 0.;
-        signal_modeling signal = void_modeling;
+        signal_modeling signal 
+            = [](float signal_in) -> float {return signal_in; };
+        
     };
 }
 

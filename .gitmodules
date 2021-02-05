@@ -10,3 +10,6 @@
 [submodule "extern/taskflow"]
 	path = extern/taskflow
 	url = https://github.com/taskflow/taskflow.git
+[submodule "extern/dfelibs"]
+	path = extern/dfelibs
+	url = https://github.com/msmk0/dfelibs.git
