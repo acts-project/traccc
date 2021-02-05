@@ -8,6 +8,7 @@
 #pragma once
 
 #include "definitions/primitives.hpp"
+#include "definitions/algebra.hpp"
 #include <vector>
 
 namespace traccc {
@@ -19,7 +20,11 @@ namespace traccc {
     };
 
     struct measurement_collection {     
+
+        geometry_id module_id = 0;
         std::vector<measurement> items;
-        // transform_index trf_index = 0;
+
+        transform3 placement;
+        
     };
 }

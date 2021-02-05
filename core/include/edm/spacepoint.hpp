@@ -19,7 +19,9 @@ namespace traccc {
     };
 
     struct spacepoint_collection {     
+
+        geometry_id module_id = 0;
+
         std::vector<spacepoint> items;
-        // transform_index trf_index = 0;
     };
 }

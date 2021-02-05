@@ -9,23 +9,13 @@
 
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
+#include "detail/sparse_ccl.hpp"
 
 namespace traccc {
 
+    
     /// Connected component labelling.
-    struct clustering {
-
-        enum class connectivity : unsigned int {
-            e_four = 4,
-            e_eight = 8
-        };
-
-        connectivity _cell_connectivity = connectivity::e_four;
-
-        /// Constructor with connectivity 
-        clustering(connectivity cell_connectivity = connectivity::e_four)
-         : _cell_connectivity(cell_connectivity)
-        {}
+    struct component_connection {
 
         /// Callable operator for the connected component, based on one single module 
         ///
@@ -49,7 +39,17 @@ namespace traccc {
         /// @param opt the call options
         ///
         /// void interface
-        void operator()(const cell_collection& cells, cluster_collection& clusters) const {           
+        void operator()(const cell_collection& cells, cluster_collection& clusters) const {         
+            // Assign the module id
+            clusters.module_id = cells.module_id;
+            // Run the algorithm  
+            auto connected_cells = detail::sparse_ccl(cells.items);
+            std::vector<cluster> cluster_items(std::get<0>(connected_cells),cluster{});
+            unsigned int icell = 0;
+            for (auto cell_label : std::get<1>(connected_cells)){
+                unsigned int cindex = static_cast<unsigned int>(cell_label-1);
+                cluster_items[cindex].cells.push_back(cells.items[icell]);
+            }
         }
 
     };

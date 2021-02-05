@@ -7,7 +7,7 @@
   
 #pragma once
 
-#include "definitions/contprimitivesainers.hpp"
+#include "definitions/primitives.hpp"
 
 #include <any>
 #include <cmath>
@@ -56,6 +56,7 @@ namespace traccc
     {
         return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
     }
+
 
     namespace vector
     {
@@ -171,9 +172,6 @@ namespace traccc
 
     } // namespace getter
 
-    // array definitions
-    namespace array
-    {
         /** Transform wrapper class to ensure standard API within differnt plugins
          **/
         struct transform3
@@ -255,7 +253,7 @@ namespace traccc
              * 
              * @param ma is the full 4x4 matrix 16 array
              **/
-            transform3(const darray<scalar, 16> &ma)
+            transform3(const std::array<scalar, 16> &ma)
             {
                 _data[0][0] = ma[0];
                 _data[0][1] = ma[4];
@@ -425,8 +423,9 @@ namespace traccc
                 return rotate(_data_inv, v);
             }
         };
-        
-    // Vector transfroms
+
+
+         // Vector transfroms
     namespace vector
     {
 
@@ -476,4 +475,5 @@ namespace traccc
 
     } // namespace vector
 
-} // namespace tracc
+} // end of namespace
+
