@@ -16,5 +16,6 @@ git submodule update --init
 
 ```sh
 cmake -S . -B <build_directory>
+cmake --build <build_directory> <options>
 ```
 
