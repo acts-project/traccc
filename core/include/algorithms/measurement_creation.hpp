@@ -14,12 +14,16 @@
 #include "edm/measurement.hpp"
 #include "definitions/algebra.hpp"
 
-namespace traccc {
+#include <iostream>
+
+namespace traccc
+{
 
     /// Connected component labeling.
-    struct measurement_creation {
+    struct measurement_creation
+    {
 
-        /// Callable operator for the connected component, based on one single module 
+        /// Callable operator for the connected component, based on one single module
         ///
         /// @param clusters are the input cells into the connected component, they are
         ///              per module and unordered
@@ -27,14 +31,16 @@ namespace traccc {
         /// C++20 piping interface
         ///
         /// @return a measurement collection - usually same size or sometime slightly smaller than the input
-        measurement_collection operator()(const cluster_collection& clusters) const {
-            
+        measurement_collection operator()(const cluster_collection &clusters) const
+        {
+
             measurement_collection measurements;
+            measurements.placement = clusters.placement;
             this->operator()(clusters, measurements);
             return measurements;
         }
 
-        /// Callable operator for the connected component, based on one single module 
+        /// Callable operator for the connected component, based on one single module
         ///
         /// @param clusters are the input cells into the connected component, they are
         ///              per module and unordered
@@ -42,30 +48,42 @@ namespace traccc {
         /// void interface
         ///
         /// @return a measurement collection - usually same size or sometime slightly smaller than the input
-        void operator()(const cluster_collection& clusters, measurement_collection& measurements) const {
+        void operator()(const cluster_collection &clusters, measurement_collection &measurements) const
+        {
             // Assign the module id
             measurements.module_id = clusters.module_id;
             // Run the algorithm
             measurements.items.reserve(clusters.items.size());
-            for (const auto& cluster : clusters.items){
-                point2 p = {0.,0.};
+            for (const auto &cluster : clusters.items)
+            {
+                point2 p = {0., 0.};
                 scalar totalWeight = 0.;
-                for (const auto& cell : cluster.cells){
+
+                // Should not happen
+                if (cluster.cells.empty()){
+                    continue;
+                } 
+
+                for (const auto &cell : cluster.cells)
+                {
                     scalar weight = clusters.signal(cell.activation);
-                    if (weight > clusters.threshold){
+                    if (weight > clusters.threshold)
+                    {
                         totalWeight += cell.activation;
                         auto cell_position = clusters.position_from_cell(cell.channel0, cell.channel1);
-                        p = weight * p; 
+                        p = weight * p;
                     }
-                    if (totalWeight > 0.){
-                        measurement m;
-                        m.local =  1./totalWeight * p;
-                        // @todo add variance estimation
-                        measurements.items.push_back(std::move(m));
-                    }
+                }
+                if (totalWeight > 0.)
+                {
+                    measurement m;
+                    m.local = 1. / totalWeight * p;
+                    // @todo add variance estimation
+                    measurements.items.push_back(std::move(m));
+
                 }
             }
         }
     };
-    
-}
+
+} // namespace traccc

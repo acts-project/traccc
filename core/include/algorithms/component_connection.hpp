@@ -13,7 +13,6 @@
 
 namespace traccc {
 
-    
     /// Connected component labelling.
     struct component_connection {
 
@@ -27,6 +26,7 @@ namespace traccc {
         /// @return a cluster collection  
         cluster_collection operator()(const cell_collection& cells) const {            
             cluster_collection clusters;
+            clusters.placement = cells.placement;
             this->operator()(cells, clusters);
             return clusters;
         }
@@ -47,9 +47,12 @@ namespace traccc {
             std::vector<cluster> cluster_items(std::get<0>(connected_cells),cluster{});
             unsigned int icell = 0;
             for (auto cell_label : std::get<1>(connected_cells)){
-                unsigned int cindex = static_cast<unsigned int>(cell_label-1);
-                cluster_items[cindex].cells.push_back(cells.items[icell]);
+                auto cindex = static_cast<unsigned int>(cell_label-1);
+                if (cindex < cluster_items.size()){
+                    cluster_items[cindex].cells.push_back(cells.items[icell++]);
+                }
             }
+            clusters.items = cluster_items;
         }
 
     };

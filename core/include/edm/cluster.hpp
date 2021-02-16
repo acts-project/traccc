@@ -30,6 +30,7 @@ namespace traccc {
     struct cluster_collection {
 
         geometry_id module_id = 0;
+        transform3 placement = transform3{};
 
         std::vector<cluster> items;
         

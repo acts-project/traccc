@@ -24,7 +24,7 @@ namespace traccc {
         geometry_id module_id = 0;
         std::vector<measurement> items;
 
-        transform3 placement;
+        transform3 placement = transform3{};
         
     };
 }

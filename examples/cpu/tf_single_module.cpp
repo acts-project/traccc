@@ -58,7 +58,6 @@ int main(){
                                       
   ccl_task.precede(meas_task);  
   meas_task.precede(sp_task);
-
   executor.run(taskflow).wait(); 
 
   return 0;
