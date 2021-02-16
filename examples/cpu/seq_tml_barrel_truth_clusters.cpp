@@ -14,6 +14,8 @@
 #include "algorithms/spacepoint_formation.hpp"
 #include "csv/csv_io.hpp"
 
+#include <iostream>
+
 int main()
 {
 

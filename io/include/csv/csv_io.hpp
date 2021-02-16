@@ -15,7 +15,6 @@
 #include <dfe/dfe_io_dsv.hpp>
 
 #include <fstream>
-#include <iostream>
 #include <climits>
 #include <map>
 
@@ -37,6 +36,19 @@ namespace traccc {
 
   using cell_reader = dfe::NamedTupleCsvReader<csv_cell>;
 
+  struct csv_spacepoint {
+
+    geometry_id geometry_id = 0;
+    scalar x, y, z;
+    scalar var_x, var_y, var_z;
+
+    // geometry_id,hit_id,channel0,channel1,timestamp,value
+    DFE_NAMEDTUPLE(csv_spacepoint, geometry_id, x, y, z, var_x, var_y, var_z);
+
+  };
+
+  using spacepoint_writer = dfe::NamedTupleCsvWriter<csv_spacepoint>;
+
   struct csv_surface {
     
     geometry_id geometry_id = 0;
@@ -51,7 +63,6 @@ namespace traccc {
   };
 
   using surface_reader = dfe::NamedTupleCsvReader<csv_surface>;
-
 
   /// Read the geometry information per module and fill into a map
   ///
@@ -130,7 +141,6 @@ namespace traccc {
     return cell_container;
   }
 
-
   /// Read the collection of cells per module and fill into a collection
   /// of truth clusters.
   /// 
@@ -177,6 +187,7 @@ namespace traccc {
       truth_cells.push_back(cell{iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp});
 
       first_line_read = true;
+      truth_id = iocell.hit_id;
       reference_id = static_cast<uint64_t>(iocell.geometry_id);
 
       if (++read_cells >= max_cells){

@@ -14,8 +14,6 @@
 #include "edm/measurement.hpp"
 #include "definitions/algebra.hpp"
 
-#include <iostream>
-
 namespace traccc
 {
 
@@ -71,7 +69,7 @@ namespace traccc
                     {
                         totalWeight += cell.activation;
                         auto cell_position = clusters.position_from_cell(cell.channel0, cell.channel1);
-                        p = weight * p;
+                        p = p + weight * cell_position;
                     }
                 }
                 if (totalWeight > 0.)
@@ -80,7 +78,6 @@ namespace traccc
                     m.local = 1. / totalWeight * p;
                     // @todo add variance estimation
                     measurements.items.push_back(std::move(m));
-
                 }
             }
         }
