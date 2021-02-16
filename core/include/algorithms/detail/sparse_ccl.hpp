@@ -10,8 +10,6 @@
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 
-#include <iostream>
-
 namespace traccc {
 
     /// Implemementation of SparseCCL, following [DOI: 10.1109/DASIP48288.2019.9049184]
@@ -86,7 +84,7 @@ namespace traccc {
                 L[i] = i;
                 int ai = i;
                 if (i > 0){
-                    for (unsigned int j = start_j; j < i-1; ++j){
+                    for (unsigned int j = start_j; j < i; ++j){
                         if (is_adjacent(cells[i], cells[j])){
                             ai = make_union(L, ai, find_root(L, j));
                         } else if (is_far_enough(cells[i], cells[j])){
@@ -102,7 +100,7 @@ namespace traccc {
                 unsigned int l = 0;
                 if (L[i] == i){
                     ++labels;
-                    l = labels;                    
+                    l = labels; 
                 } else {
                     l = L[L[i]];
                 }

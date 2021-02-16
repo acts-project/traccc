@@ -13,7 +13,7 @@ namespace traccc {
 
     using scalar = float;
 
-    using geometry_id = unsigned int;
+    using geometry_id = uint64_t;
 
     using vector2 = std::array<scalar, 2>;
     using point2 = std::array<scalar, 2>;

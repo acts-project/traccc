@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 #include <vector>
 #include <limits>
@@ -34,6 +35,7 @@ namespace traccc {
     struct cell_collection { 
 
         geometry_id module_id = 0;
+        transform3 placement = transform3{};
 
         std::vector<cell> items;
         std::array<channel_id,2> range0 = {std::numeric_limits<channel_id>::max(), 0};
