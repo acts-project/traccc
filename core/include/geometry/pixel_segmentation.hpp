@@ -9,8 +9,6 @@
 
 #include "definitions/primitives.hpp"
 
-#include <iostream>
-
 namespace traccc {
 
     /// A very basic pixel segmentation with 

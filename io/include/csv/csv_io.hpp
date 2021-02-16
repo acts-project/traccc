@@ -15,7 +15,6 @@
 #include <dfe/dfe_io_dsv.hpp>
 
 #include <fstream>
-#include <iostream>
 #include <climits>
 #include <map>
 
@@ -141,7 +140,7 @@ namespace traccc {
 
     return cell_container;
   }
-  
+
   /// Read the collection of cells per module and fill into a collection
   /// of truth clusters.
   /// 

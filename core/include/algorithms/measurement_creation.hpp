@@ -14,8 +14,6 @@
 #include "edm/measurement.hpp"
 #include "definitions/algebra.hpp"
 
-#include <iostream>
-
 namespace traccc
 {
 

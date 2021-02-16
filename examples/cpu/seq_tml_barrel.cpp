@@ -15,9 +15,10 @@
 #include "algorithms/spacepoint_formation.hpp"
 #include "csv/csv_io.hpp"
 
+#include <iostream>
+
 int main()
 {
-
     auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
     if (env_d_d == nullptr)
     {
