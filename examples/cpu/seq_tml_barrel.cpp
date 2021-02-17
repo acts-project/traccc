@@ -47,8 +47,10 @@ int main()
     uint64_t n_measurements = 0;
     uint64_t n_space_points = 0;
 
-    // Output container
+    // Output containers
+    std::vector<traccc::measurement_collection> measurement_container;
     std::vector<traccc::spacepoint_collection> spacepoint_container;
+    measurement_container.reserve(tml_barrel_cell_container.size());
     spacepoint_container.reserve(tml_barrel_cell_container.size());
 
     for (auto &cells : tml_barrel_cell_container)
@@ -64,6 +66,7 @@ int main()
         n_measurements += measurements.items.size();
         n_space_points += spacepoints.items.size();
 
+        measurement_container.push_back(std::move(measurements));
         spacepoint_container.push_back(std::move(spacepoints));
     }
 
@@ -74,6 +77,15 @@ int main()
     std::cout << "- created " << n_space_points << " space points. " << std::endl;
 
     std::cout << "==> Writing out ... " << std::endl;
+    traccc::measurement_writer mwriter{"seq-tml-barrel-measurements.csv"};
+    for (const auto& measurement_collection : measurement_container){
+        auto module_id = measurement_collection.module_id;
+        for (const auto& measurement : measurement_collection.items){
+            const auto& local = measurement.local;
+            mwriter.append({ module_id, local[0], local[1], 0., 0.});
+        }
+    }
+
     traccc::spacepoint_writer spwriter{"seq-tml-barrel-spacepoints.csv"};
     for (const auto& spacepoint_collection : spacepoint_container){
         auto module_id = spacepoint_collection.module_id;
