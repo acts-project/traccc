@@ -36,6 +36,21 @@ namespace traccc {
 
   using cell_reader = dfe::NamedTupleCsvReader<csv_cell>;
 
+  struct csv_measurement {
+
+    geometry_id geometry_id = 0;
+    scalar local0 = 0.;
+    scalar local1 = 0.;
+    scalar var_local0 = 0.;
+    scalar var_local1 = 0.;
+
+    // geometry_id,hit_id,channel0,channel1,timestamp,value
+    DFE_NAMEDTUPLE(csv_measurement, geometry_id, local0, local1, var_local0, var_local1);
+
+  };
+
+  using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
+
   struct csv_spacepoint {
 
     geometry_id geometry_id = 0;
@@ -76,8 +91,8 @@ namespace traccc {
       geometry_id module_id = iosurface.geometry_id;
       
       vector3 t{iosurface.cx, iosurface.cy, iosurface.cz};
-      vector3 z{iosurface.rot_zu, iosurface.rot_zv, iosurface.rot_zw};
-      vector3 x{iosurface.rot_xu, iosurface.rot_xv, iosurface.rot_xw};
+      vector3 x{iosurface.rot_xu, iosurface.rot_yu, iosurface.rot_zu};
+      vector3 z{iosurface.rot_xw, iosurface.rot_yw, iosurface.rot_zw};
 
       transform_map.insert({module_id,transform3{t,z,x}});
 
