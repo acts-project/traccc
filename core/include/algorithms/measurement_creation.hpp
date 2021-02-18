@@ -49,7 +49,7 @@ namespace traccc
         void operator()(const cluster_collection &clusters, measurement_collection &measurements) const
         {
             // Assign the module id
-            measurements.module_id = clusters.module_id;
+            measurements.module = clusters.module;
             // Run the algorithm
             measurements.items.reserve(clusters.items.size());
             for (const auto &cluster : clusters.items)

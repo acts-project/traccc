@@ -20,7 +20,8 @@ namespace traccc {
 
     struct spacepoint_collection {     
 
-        geometry_id module_id = 0;
+        event_id event = 0;
+        geometry_id module = 0;
 
         std::vector<spacepoint> items;
     };

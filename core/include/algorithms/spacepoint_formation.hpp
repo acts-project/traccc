@@ -40,7 +40,7 @@ namespace traccc {
         /// @return a measurement collection - size of input/output container is identical
         void operator()(const measurement_collection& measurements, spacepoint_collection& spacepoints) const {
             // Assign the module id
-            spacepoints.module_id = measurements.module_id;
+            spacepoints.module = measurements.module;
             // Run the algorithm
             spacepoints.items.reserve(measurements.items.size());
             for (const auto& m : measurements.items){

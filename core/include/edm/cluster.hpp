@@ -29,7 +29,8 @@ namespace traccc {
     /// from the channel id;
     struct cluster_collection {
 
-        geometry_id module_id = 0;
+        event_id event = 0;
+        geometry_id module = 0;
         transform3 placement = transform3{};
 
         std::vector<cluster> items;

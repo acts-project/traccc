@@ -14,14 +14,8 @@
 #include "algorithms/measurement_creation.hpp"
 #include "algorithms/spacepoint_formation.hpp"
 
-
-#include <taskflow/taskflow.hpp>  
-
 int main(){
   
-  tf::Executor executor;
-  tf::Taskflow taskflow;
-
   /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
   std::vector<traccc::cell> cell_items = 
         { {1, 0, 1., 0. }, 
@@ -37,7 +31,7 @@ int main(){
 
   traccc::cell_collection cells;
   cells.items = cell_items;
-  cells.module_id = 0;
+  cells.module = 0;
 
   traccc::cluster_collection clusters;
   clusters.position_from_cell = traccc::pixel_segmentation{0.,0.,1.,1.};
@@ -51,14 +45,10 @@ int main(){
   traccc::measurement_creation mt;
   traccc::spacepoint_formation sp; 
 
-  auto [ ccl_task, meas_task, sp_task ] 
-    = taskflow.emplace( [&](){ cc(cells, clusters); }, 
-                        [&](){ mt(clusters, measurements); }, 
-                        [&](){ sp(measurements, spacepoints);} );
+  // Algorithmic code: start
+  clusters = cc(cells);
+  measurements= mt(clusters); 
+  spacepoints = sp(measurements); 
                                       
-  ccl_task.precede(meas_task);  
-  meas_task.precede(sp_task);
-  executor.run(taskflow).wait(); 
-
   return 0;
 }

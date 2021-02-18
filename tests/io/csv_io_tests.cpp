@@ -21,13 +21,13 @@ TEST(io, csv_read_single_module)
     auto data_directory = std::string(env_d_d);
 
     std::string file = data_directory+std::string("single_module/cells.csv");
-    traccc::cell_reader creader(file, {"module_id", "cannel0","channel1","activation","time"} );
+    traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
 
     auto single_module_cells = traccc::read_cells(creader);
     ASSERT_EQ(single_module_cells.size(), 1u);
     auto module_cells = single_module_cells[0];
 
-    ASSERT_EQ(module_cells.module_id, 0u);
+    ASSERT_EQ(module_cells.module, 0u);
     auto expected_range0 = std::array<traccc::channel_id,2>{123u,174u};
     ASSERT_EQ(module_cells.range0, expected_range0);
     auto expected_range1 = std::array<traccc::channel_id,2>{32u,880u};
@@ -48,14 +48,14 @@ TEST(io, csv_read_two_modules)
     auto data_directory = std::string(env_d_d);
     std::string file = data_directory+std::string("two_modules/cells.csv");
     
-    traccc::cell_reader creader(file, {"module_id", "cannel0","channel1","activation","time"} );
+    traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
     auto two_module_cells = traccc::read_cells(creader);
     ASSERT_EQ(two_module_cells.size(), 2u);
 
     auto first_module_cells = two_module_cells[0];
     ASSERT_EQ(first_module_cells.items.size(), 6u);
 
-    ASSERT_EQ(first_module_cells.module_id, 0u);
+    ASSERT_EQ(first_module_cells.module, 0u);
     auto expected_range0 = std::array<traccc::channel_id,2>{123u,174u};
     ASSERT_EQ(first_module_cells.range0, expected_range0);
     auto expected_range1 = std::array<traccc::channel_id,2>{32u,880u};
@@ -65,7 +65,7 @@ TEST(io, csv_read_two_modules)
 
     ASSERT_EQ(second_module_cells.items.size(), 8u);
 
-    ASSERT_EQ(second_module_cells.module_id, 1u);
+    ASSERT_EQ(second_module_cells.module, 1u);
     expected_range0 = std::array<traccc::channel_id,2>{0u,22u};
     ASSERT_EQ(second_module_cells.range0, expected_range0);
     expected_range1 = std::array<traccc::channel_id,2>{4u,98u};
@@ -103,7 +103,7 @@ TEST(io, csv_read_tml_pixelbarrel){
     auto data_directory = std::string(env_d_d);
     std::string file = data_directory+std::string("tml_pixel_barrel/event000000000-cells.csv");
 
-    traccc::cell_reader creader(file, {"module_id", "cannel0","channel1","activation","time"} );
+    traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
     auto tml_barrel_modules = traccc::read_cells(creader); 
     
     ASSERT_EQ(tml_barrel_modules.size(), 2382u) ;
