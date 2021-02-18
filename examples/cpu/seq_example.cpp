@@ -38,6 +38,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 
     // Output stats
     uint64_t n_cells = 0;
+    uint64_t m_modules = 0;
     uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
     uint64_t n_space_points = 0;
@@ -53,6 +54,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
         std::string io_cells_file = data_directory+cells_dir+std::string("/event")+event_string+std::string("-cells.csv");
         traccc::cell_reader creader(io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
         auto cell_container = traccc::read_cells(creader, surface_transforms);
+        m_modules += cell_container.size();
 
         // Output containers
         std::vector<traccc::measurement_collection> measurement_container;
@@ -99,7 +101,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_cells << " cells from " << n_cells << " modules" << std::endl;
+    std::cout << "- read    " << n_cells << " cells from " << m_modules << " modules" << std::endl;
     std::cout << "- created " << n_clusters << " clusters. " << std::endl;
     std::cout << "- created " << n_measurements << " measurements. " << std::endl;
     std::cout << "- created " << n_space_points << " space points. " << std::endl;
