@@ -21,7 +21,8 @@ namespace traccc {
 
     struct measurement_collection {     
 
-        geometry_id module_id = 0;
+        event_id event = 0;
+        geometry_id module = 0;
         std::vector<measurement> items;
 
         transform3 placement = transform3{};

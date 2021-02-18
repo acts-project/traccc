@@ -29,12 +29,13 @@ namespace traccc {
 
     /// A cell collection: 
     ///
-    /// it remembers the module_identifier and also 
+    /// it remembers the moduleentifier and also 
     /// keeps track of the cell ranges for chosing optimal
     /// algorithm.
     struct cell_collection { 
 
-        geometry_id module_id = 0;
+        event_id event = 0;
+        geometry_id module = 0;
         transform3 placement = transform3{};
 
         std::vector<cell> items;

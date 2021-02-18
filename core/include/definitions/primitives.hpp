@@ -8,12 +8,13 @@
 #pragma once
 
 #include <array>
+#include <stdint.h>
 
 namespace traccc {
 
     using scalar = float;
-
     using geometry_id = uint64_t;
+    using event_id = uint64_t;
 
     using vector2 = std::array<scalar, 2>;
     using point2 = std::array<scalar, 2>;

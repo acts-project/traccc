@@ -41,7 +41,7 @@ namespace traccc {
         /// void interface
         void operator()(const cell_collection& cells, cluster_collection& clusters) const {         
             // Assign the module id
-            clusters.module_id = cells.module_id;
+            clusters.module = cells.module;
             // Run the algorithm  
             auto connected_cells = detail::sparse_ccl(cells.items);
             std::vector<cluster> cluster_items(std::get<0>(connected_cells),cluster{});

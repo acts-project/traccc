@@ -28,7 +28,7 @@ TEST(algorithms, component_connection){
 
     traccc::cell_collection cells;
     cells.items = cell_items;
-    cells.module_id = 0;
+    cells.module = 0;
 
     traccc::component_connection ccl;
     auto clusters = ccl(cells);

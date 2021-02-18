@@ -10,6 +10,7 @@
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "definitions/algebra.hpp"
+#include "definitions/primitives.hpp"
 
 #include <dfe/dfe_namedtuple.hpp>
 #include <dfe/dfe_io_dsv.hpp>
@@ -22,7 +23,7 @@ namespace traccc {
 
   struct csv_cell {
     
-    geometry_id geometry_id = 0;
+    uint64_t geometry_id = 0;
     uint64_t hit_id = 0;
     channel_id channel0 = 0;
     channel_id channel1 = 0;
@@ -38,7 +39,7 @@ namespace traccc {
 
   struct csv_measurement {
 
-    geometry_id geometry_id = 0;
+    uint64_t geometry_id = 0;
     scalar local0 = 0.;
     scalar local1 = 0.;
     scalar var_local0 = 0.;
@@ -50,10 +51,10 @@ namespace traccc {
   };
 
   using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
-
+  
   struct csv_spacepoint {
 
-    geometry_id geometry_id = 0;
+    uint64_t geometry_id = 0;
     scalar x, y, z;
     scalar var_x, var_y, var_z;
 
@@ -66,7 +67,7 @@ namespace traccc {
 
   struct csv_surface {
     
-    geometry_id geometry_id = 0;
+    uint64_t geometry_id = 0;
     scalar cx, cy, cz;
     scalar rot_xu,rot_xv,rot_xw;
     scalar rot_yu,rot_yv,rot_yw;
@@ -88,13 +89,13 @@ namespace traccc {
     csv_surface iosurface;
     while (sreader.read(iosurface)){
 
-      geometry_id module_id = iosurface.geometry_id;
+      geometry_id module = iosurface.geometry_id;
       
       vector3 t{iosurface.cx, iosurface.cy, iosurface.cz};
       vector3 x{iosurface.rot_xu, iosurface.rot_yu, iosurface.rot_zu};
       vector3 z{iosurface.rot_xw, iosurface.rot_yw, iosurface.rot_zw};
 
-      transform_map.insert({module_id,transform3{t,z,x}});
+      transform_map.insert({module,transform3{t,z,x}});
 
     }
     return transform_map;
@@ -136,7 +137,7 @@ namespace traccc {
       first_line_read = true;
       reference_id = static_cast<uint64_t>(iocell.geometry_id);
 
-      cells.module_id = reference_id;
+      cells.module = reference_id;
       cells.range0[0] = std::min(cells.range0[0],iocell.channel0);
       cells.range0[1] = std::max(cells.range0[1],iocell.channel0);
       cells.range1[0] = std::min(cells.range1[0],iocell.channel1);
