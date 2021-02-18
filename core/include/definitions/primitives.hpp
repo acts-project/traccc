@@ -18,9 +18,9 @@ namespace traccc {
 
     using vector2 = std::array<scalar, 2>;
     using point2 = std::array<scalar, 2>;
-    using covariance2 = std::array<scalar, 2>;
+    using variance2 = std::array<scalar, 2>;
     using point3 = std::array<scalar, 3>;
     using vector3 = std::array<scalar, 3>;
-    using covariance3 = std::array<scalar, 3>;
+    using variance3 = std::array<scalar, 3>;
 
 }
