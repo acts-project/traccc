@@ -16,7 +16,7 @@ namespace traccc {
     /// A measurement definition, fix to two-dimensional here
     struct measurement {
         point2 local = {0., 0.};
-        covariance2 covariance = { 0., 0.};
+        variance2 variance = { 0., 0.};
     };
 
     struct measurement_collection {     

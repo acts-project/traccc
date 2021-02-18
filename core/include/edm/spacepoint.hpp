@@ -15,7 +15,7 @@ namespace traccc {
     /// and one activiation value;
     struct spacepoint {
         point3 global = { 0., 0., 0.};
-        covariance3 covariance = { 0., 0., 0.};
+        variance3 variance = { 0., 0., 0.};
     };
 
     struct spacepoint_collection {     
