@@ -28,4 +28,6 @@ namespace traccc {
         transform3 placement = transform3{};
         
     };
+
+    using measurement_container = std::vector<measurement_collection>;
 }

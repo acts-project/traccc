@@ -43,5 +43,7 @@ namespace traccc {
         std::array<channel_id,2> range1 = {std::numeric_limits<channel_id>::max(), 0};         
     };
 
+    using cell_container = std::vector<cell_collection>;
+
 }
 

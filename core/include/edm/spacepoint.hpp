@@ -25,4 +25,6 @@ namespace traccc {
 
         std::vector<spacepoint> items;
     };
+
+    using spacepoint_container = std::vector<spacepoint_collection>;
 }
