@@ -44,6 +44,9 @@ namespace traccc {
             = [](float signal_in) -> float {return signal_in; };
         
     };
+
+    using cluster_container = std::vector<cluster_collection>;
+
 }
 
 

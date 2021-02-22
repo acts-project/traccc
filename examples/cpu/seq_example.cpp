@@ -53,46 +53,46 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 
         std::string io_cells_file = data_directory+cells_dir+std::string("/event")+event_string+std::string("-cells.csv");
         traccc::cell_reader creader(io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
-        auto cell_container = traccc::read_cells(creader, surface_transforms);
-        m_modules += cell_container.size();
+        traccc::cell_container cells_per_event = traccc::read_cells(creader, surface_transforms);
+        m_modules += cells_per_event.size();
 
         // Output containers
-        std::vector<traccc::measurement_collection> measurement_container;
-        std::vector<traccc::spacepoint_collection> spacepoint_container;
-        measurement_container.reserve(cell_container.size());
-        spacepoint_container.reserve(cell_container.size());
+        traccc::measurement_container measurements_per_event;
+        traccc::spacepoint_container spacepoints_per_event;
+        measurements_per_event.reserve(cells_per_event.size());
+        spacepoints_per_event.reserve(cells_per_event.size());
 
-        for (auto &cells : cell_container)
+        for (auto &cells_per_module : cells_per_event)
         {
             // The algorithmic code part: start
-            auto clusters = cc(cells);
-            clusters.position_from_cell = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
-            auto measurements = mt(clusters);
-            auto spacepoints = sp(measurements);
+            traccc::cluster_collection clusters_per_module =  cc(cells_per_module);
+            clusters_per_module.position_from_cell = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
+            traccc::measurement_collection measurements_per_module = mt(clusters_per_module);
+            traccc::spacepoint_collection spacepoints_per_module = sp(measurements_per_module);
             // The algorithmnic code part: end
+            
+            n_cells += cells_per_module.items.size();
+            n_clusters += clusters_per_module.items.size();
+            n_measurements += measurements_per_module.items.size();
+            n_space_points += spacepoints_per_module.items.size();
 
-            n_cells += cells.items.size();
-            n_clusters += clusters.items.size();
-            n_measurements += measurements.items.size();
-            n_space_points += spacepoints.items.size();
-
-            measurement_container.push_back(std::move(measurements));
-            spacepoint_container.push_back(std::move(spacepoints));
+            measurements_per_event.push_back(std::move(measurements_per_module));
+            spacepoints_per_event.push_back(std::move(spacepoints_per_module));
         }
     
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
-        for (const auto& measurement_collection : measurement_container){
-            auto module = measurement_collection.module;
-            for (const auto& measurement : measurement_collection.items){
+        for (const auto& measurements_per_module : measurements_per_event){
+            auto module = measurements_per_module.module;
+            for (const auto& measurement : measurements_per_module.items){
                 const auto& local = measurement.local;
                 mwriter.append({ module, local[0], local[1], 0., 0.});
             }
         }
 
         traccc::spacepoint_writer spwriter{std::string("event")+event_number+"-spacepoints.csv"};
-        for (const auto& spacepoint_collection : spacepoint_container){
-            auto module = spacepoint_collection.module;
-            for (const auto& spacepoint : spacepoint_collection.items){
+        for (const auto& spacepoint_per_module : spacepoints_per_event){
+            auto module = spacepoint_per_module.module;
+            for (const auto& spacepoint : spacepoint_per_module.items){
                 const auto& pos = spacepoint.global;
                 spwriter.append({ module, pos[0], pos[1], pos[2], 0., 0., 0.});
             }
