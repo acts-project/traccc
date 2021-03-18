@@ -18,7 +18,7 @@ TEST(io, csv_read_single_module)
     {
         throw std::ios_base::failure("Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
     }
-    auto data_directory = std::string(env_d_d);
+    auto data_directory = std::string(env_d_d) + std::string("/");
 
     std::string file = data_directory+std::string("single_module/cells.csv");
     traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
