@@ -24,7 +24,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
     {
         throw std::ios_base::failure("Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
     }
-    auto data_directory = std::string(env_d_d);
+    auto data_directory = std::string(env_d_d) + std::string("/");
 
     // Read the surface transforms
     std::string io_detector_file = data_directory + detector_file;
