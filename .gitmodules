@@ -10,3 +10,6 @@
 [submodule "data"]
 	path = data
 	url = ssh://git@gitlab.cern.ch:7999/acts/traccc-data.git
+[submodule "extern/vecmem"]
+	path = extern/vecmem
+	url = https://github.com/acts-project/vecmem.git
