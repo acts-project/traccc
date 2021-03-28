@@ -6,8 +6,13 @@ enable_testing()
 
 option(TRACCC_UNIT_TESTS "Enable unit tests" On)
 option(TRACCC_BENCHMARKS "Enable benchmark tests" On)
+option(TRACCC_BUILD_CUDA "Build CUDA" ON)
 
-set(CMAKE_CXX_STANDARD 17)
+if(TRACCC_BUILD_CUDA)
+  set(CMAKE_CXX_STANDARD 17)
+  enable_language(CUDA)
+  set(CMAKE_CUDA_STANDARD 17 CACHE STRING "CUDA C++ standard to use")
+endif()
 
 set(CMAKE_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/include)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib)
@@ -28,4 +33,4 @@ add_subdirectory(core)
 add_subdirectory(io)
 add_subdirectory(examples)
 add_subdirectory(tests)
-
+add_subdirectory(gpu)
