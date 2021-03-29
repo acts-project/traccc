@@ -106,6 +106,7 @@ namespace traccc {
                 }
                 L[i] = l;
             }
+	    
             return { labels, L };
         }
     }

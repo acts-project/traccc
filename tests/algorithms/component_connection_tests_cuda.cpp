@@ -47,15 +47,23 @@ TEST(algorithms, component_connection_cuda){
     cell_per_module.push_back(aCell);
   }
 
-  // push cell_per_module to cell_per_event
-  cell_per_event.push_back(cell_per_module);
-
-  // generate the jagged vector for cell_per_event
-  vecmem::data::jagged_vector_data< traccc::cuda::cell> cell_data(cell_per_event,&managed_resource);
-
-  // run sparse_ccl
-  traccc::cuda::sparse_ccl(cell_data);
+  vecmem::vector< unsigned int > label_per_module(cell_per_module.size(),0,&managed_resource);
+  vecmem::jagged_vector< unsigned int > label_per_event(&managed_resource);
   
+  // fill jagged_vector
+  cell_per_event.push_back(cell_per_module);
+  label_per_event.push_back(label_per_module);
+
+  vecmem::vector< unsigned int> num_labels(cell_per_event.size(), 0 , &managed_resource);
+  
+  // generate the jagged vector data
+  vecmem::data::jagged_vector_data< traccc::cuda::cell> cell_data(cell_per_event,&managed_resource);
+  vecmem::data::jagged_vector_data< unsigned int > label_data(label_per_event, &managed_resource);
+  
+  // run sparse_ccl
+  traccc::cuda::sparse_ccl(cell_data, label_data, vecmem::get_data( num_labels ));
+
+  std::cout << num_labels[0] << std::endl;
 }
 
 // Google Test can be run manually from the main() function

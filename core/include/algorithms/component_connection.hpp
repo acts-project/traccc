@@ -44,7 +44,14 @@ namespace traccc {
             clusters.module = cells.module;
             // Run the algorithm  
             auto connected_cells = detail::sparse_ccl(cells.items);
-            std::vector<cluster> cluster_items(std::get<0>(connected_cells),cluster{});
+	    /*
+	    printf("%d", std::get<0>(connected_cells));
+	    auto labels = std::get<1>(connected_cells);
+	    for (auto i: labels){
+	      printf("%d ", i);
+	    }
+	    */
+	    std::vector<cluster> cluster_items(std::get<0>(connected_cells),cluster{});
             unsigned int icell = 0;
             for (auto cell_label : std::get<1>(connected_cells)){
                 auto cindex = static_cast<unsigned int>(cell_label-1);
