@@ -6,12 +6,13 @@ enable_testing()
 
 option(TRACCC_UNIT_TESTS "Enable unit tests" On)
 option(TRACCC_BENCHMARKS "Enable benchmark tests" On)
-option(TRACCC_BUILD_CUDA "Build CUDA" ON)
+option(TRACCC_BUILD_CUDA "Build CUDA" Off)
 
 set(CMAKE_CXX_STANDARD 17)
 if(TRACCC_BUILD_CUDA)
   enable_language(CUDA)
   set(CMAKE_CUDA_STANDARD 17 CACHE STRING "CUDA C++ standard to use")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
 endif()
 
 set(CMAKE_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/include)

@@ -8,12 +8,14 @@
 #pragma once
 
 #include "definitions/primitives.hpp"
-#include <cuda.h>
-#include <cuda_runtime.h>
-
 #include <any>
 #include <cmath>
 #include <array>
+
+#ifdef __CUDACC__      
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif      
 
 // This is taken from the acts/detray library
 namespace traccc
