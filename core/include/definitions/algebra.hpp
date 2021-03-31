@@ -19,63 +19,59 @@
 namespace traccc
 {
 
-  #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-  
+#endif      
     std::array<scalar, 2> operator*(const std::array<scalar, 2> &a, scalar s)
     {
         return {a[0] * s, a[1] * s};
     }
 
-  #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-
+#endif    
   std::array<scalar, 2> operator*(scalar s, const std::array<scalar, 2> &a)
     {
         return {s * a[0], s * a[1]};
     }
-  #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-
+#endif    
     std::array<scalar, 2> operator-(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] - b[0], a[1] - b[1]};
     }
-    #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-
+#endif    
     std::array<scalar, 2> operator+(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] + b[0], a[1] + b[1]};
     }
-  #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
+#endif    
     std::array<scalar, 3> operator*(const std::array<scalar, 3> &a, scalar s)
     {
         return {a[0] * s, a[1] * s, a[2] * s};
     }
-  #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
+#endif    
     std::array<scalar, 3> operator*(scalar s, const std::array<scalar, 3> &a)
     {
         return {s * a[0], s * a[1], s * a[2]};
     }
-  #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
+#endif    
     std::array<scalar, 3> operator-(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
     }
-  #ifdef __CUDACC__      
+#ifdef __CUDACC__      
   __device__ __host__
-  #endif    
+#endif    
     std::array<scalar, 3> operator+(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
@@ -137,9 +133,9 @@ __device__ __host__
          * @param v the input vector 
          **/    
         template <typename vector_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
+#ifdef __CUDACC__      
+	__device__ __host__
+#endif	
         auto perp(const vector_type &v) noexcept
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -206,9 +202,9 @@ __device__ __host__
          * @param m the input matrix 
          **/    
         template <unsigned int kROWS, unsigned int kCOLS, typename matrix_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
+#ifdef __CUDACC__      
+	__device__ __host__
+#endif	
         auto block(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
             std::array<std::array<scalar, kROWS>, kCOLS> submatrix;
