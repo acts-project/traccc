@@ -18,64 +18,42 @@
 // This is taken from the acts/detray library
 namespace traccc
 {
-
-  #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-  
     std::array<scalar, 2> operator*(const std::array<scalar, 2> &a, scalar s)
     {
         return {a[0] * s, a[1] * s};
     }
-
-  #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-
-  std::array<scalar, 2> operator*(scalar s, const std::array<scalar, 2> &a)
+    std::array<scalar, 2> operator*(scalar s, const std::array<scalar, 2> &a)
     {
         return {s * a[0], s * a[1]};
     }
-  #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-
     std::array<scalar, 2> operator-(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] - b[0], a[1] - b[1]};
     }
-    #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
-
     std::array<scalar, 2> operator+(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] + b[0], a[1] + b[1]};
     }
-  #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
     std::array<scalar, 3> operator*(const std::array<scalar, 3> &a, scalar s)
     {
         return {a[0] * s, a[1] * s, a[2] * s};
     }
-  #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
     std::array<scalar, 3> operator*(scalar s, const std::array<scalar, 3> &a)
     {
         return {s * a[0], s * a[1], s * a[2]};
     }
-  #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
     std::array<scalar, 3> operator-(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
     }
-  #ifdef __CUDACC__      
   __device__ __host__
-  #endif    
     std::array<scalar, 3> operator+(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
@@ -94,9 +72,7 @@ namespace traccc
          * 
          * @return a vector (expression) representing the cross product
          **/
-#ifdef __CUDACC__      
-__device__ __host__
-#endif
+      __device__ __host__      
         std::array<scalar, 3> cross(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return {a[1] * b[2] - b[1] * a[2], a[2] * b[0] - b[2] * a[0], a[0] * b[1] - b[0] * a[1]};
@@ -110,10 +86,8 @@ __device__ __host__
          * 
          * @param v the input vector 
          **/
+      __device__ __host__      
         template <typename vector_type>
-#ifdef __CUDACC__
-__device__ __host__
-#endif    	
         auto phi(const vector_type &v) noexcept
         {
             return std::atan2(v[1], v[0]);
@@ -122,11 +96,9 @@ __device__ __host__
         /** This method retrieves theta from a vector, vector base with rows >= 3
          * 
          * @param v the input vector 
-         **/  
+         **/
+      __device__ __host__      
         template <typename vector_type>
-#ifdef __CUDACC__      
-	__device__ __host__
-#endif  	
         auto theta(const vector_type &v) noexcept
         {
             return std::atan2(std::sqrt(v[0] * v[0] + v[1] * v[1]), v[2]);
@@ -135,11 +107,9 @@ __device__ __host__
         /** This method retrieves the perpenticular magnitude of a vector with rows >= 2
          * 
          * @param v the input vector 
-         **/    
+         **/
+      __device__ __host__      
         template <typename vector_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
         auto perp(const vector_type &v) noexcept
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -149,9 +119,7 @@ __device__ __host__
          * 
          * @param v the input vector 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif      
+      __device__ __host__      
         auto norm(const std::array<scalar, 2> &v)
         {
             return perp(v);
@@ -161,9 +129,7 @@ __device__ __host__
          * 
          * @param v the input vector 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
+      __device__ __host__      
         auto norm(const std::array<scalar, 3> &v)
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
@@ -173,11 +139,8 @@ __device__ __host__
          * 
          * @param v the input vector 
          **/
-    
+      __device__ __host__      
         template <typename vector_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
         auto eta(const vector_type &v) noexcept
         {
             return std::atanh(v[2] / norm(v));
@@ -186,11 +149,9 @@ __device__ __host__
         /** This method retrieves a column from a matrix
          * 
          * @param m the input matrix 
-         **/    
+         **/
+      __device__ __host__      
         template <unsigned int kROWS, typename matrix_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
         auto vector(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
             std::array<scalar, kROWS> subvector;
@@ -204,11 +165,9 @@ __device__ __host__
         /** This method retrieves a column from a matrix
          * 
          * @param m the input matrix 
-         **/    
+         **/
+      __device__ __host__      
         template <unsigned int kROWS, unsigned int kCOLS, typename matrix_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
         auto block(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
             std::array<std::array<scalar, kROWS>, kCOLS> submatrix;
@@ -226,7 +185,7 @@ __device__ __host__
 
         /** Transform wrapper class to ensure standard API within differnt plugins
          **/
-  
+  __device__ __host__  
         struct transform3
         {
 
@@ -489,9 +448,7 @@ __device__ __host__
          * 
          * @return the scalar dot product value 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
+  __device__ __host__      
         scalar dot(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
         {
             return a[0] * b[0] + a[1] * b[1];
@@ -501,9 +458,7 @@ __device__ __host__
          * 
          * @param v the input vector
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
+      __device__ __host__      
         std::array<scalar, 3> normalize(const std::array<scalar, 2> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
@@ -517,9 +472,7 @@ __device__ __host__
          * 
          * @return the scalar dot product value 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
+      __device__ __host__      
         scalar dot(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -529,9 +482,7 @@ __device__ __host__
          * 
          * @param v the input vector
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
+      __device__ __host__      
         std::array<scalar, 3> normalize(const std::array<scalar, 3> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
