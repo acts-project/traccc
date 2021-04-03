@@ -19,6 +19,10 @@
 #include <climits>
 #include <map>
 
+#include "vecmem/containers/vector.hpp"
+#include "vecmem/containers/jagged_vector.hpp"
+
+
 namespace traccc {
 
   struct csv_cell {
@@ -157,6 +161,67 @@ namespace traccc {
     return cell_container;
   }
 
+  void read_cells_vecmem(vecmem::jagged_vector< cell >& cells_per_event,
+			 vecmem::vector< std::tuple< geometry_id, transform3 > >& geoInfo_per_event,
+			 cell_reader& creader, 
+			 const std::map<geometry_id, transform3>& tfmap ={}, 
+			 unsigned int max_cells = std::numeric_limits<unsigned int>::max()){
+  
+    uint64_t reference_id = 0;
+    transform3 reference_placement;
+    vecmem::vector< cell > cells_per_module;
+    
+    bool first_line_read = false;
+    unsigned int read_cells = 0;
+    csv_cell iocell;
+    cell_collection cells;
+    while (creader.read(iocell)){
+      
+      if (first_line_read and iocell.geometry_id != reference_id){
+	// Complete the information
+	if (not tfmap.empty()){
+	  auto tfentry = tfmap.find(reference_id);
+	  if (tfentry != tfmap.end()){
+	    reference_placement = tfentry->second;
+	  }
+	}
+
+        std::sort(cells_per_module.begin(), cells_per_module.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
+	
+	// Fill the module information
+	cells_per_event.push_back(cells_per_module);
+	geoInfo_per_event.push_back(std::tuple<geometry_id, transform3>({reference_id, reference_placement}));
+	// Clear for next round
+	cells_per_module =vecmem::vector< cell >();
+      }
+      first_line_read = true;
+      reference_id = static_cast<uint64_t>(iocell.geometry_id);
+            
+      cells_per_module.push_back(cell{iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp});      
+      
+      if (++read_cells >= max_cells){
+	break;
+      }
+    }
+
+    // Clean up after loop
+    // Sort in column major order
+    std::sort(cells_per_module.begin(), cells_per_module.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
+    cells_per_event.push_back(cells_per_module);
+
+    reference_placement = transform3();
+    if (not tfmap.empty()){
+      auto tfentry = tfmap.find(iocell.geometry_id);
+      if (tfentry != tfmap.end()){
+	reference_placement = tfentry->second;
+      }
+    }
+    
+    geoInfo_per_event.push_back(std::tuple<geometry_id, transform3>({iocell.geometry_id, reference_placement}));
+    
+    return;  
+  }
+  
   /// Read the collection of cells per module and fill into a collection
   /// of truth clusters.
   /// 

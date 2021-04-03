@@ -12,68 +12,64 @@
 #include <cmath>
 #include <array>
 
+// CUDA macros
 #ifdef __CUDACC__      
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include "definitions/cuda_macros.hpp"
+#define __CUDA_QUALIFIER__ inline __device__ __host__
+#else
+#define __CUDA_QUALIFIER__
 #endif      
 
 // This is taken from the acts/detray library
 namespace traccc
 {
-
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif      
-    std::array<scalar, 2> operator*(const std::array<scalar, 2> &a, scalar s)
-    {
-        return {a[0] * s, a[1] * s};
-    }
-
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif    
+  
+  __CUDA_QUALIFIER__
+  std::array<scalar, 2> operator*(const std::array<scalar, 2> &a, scalar s)
+  {
+    return {a[0] * s, a[1] * s};
+  }
+  
+  __CUDA_QUALIFIER__
   std::array<scalar, 2> operator*(scalar s, const std::array<scalar, 2> &a)
-    {
-        return {s * a[0], s * a[1]};
-    }
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif    
-    std::array<scalar, 2> operator-(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
-    {
-        return {a[0] - b[0], a[1] - b[1]};
-    }
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif    
-    std::array<scalar, 2> operator+(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
-    {
-        return {a[0] + b[0], a[1] + b[1]};
-    }
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif    
-    std::array<scalar, 3> operator*(const std::array<scalar, 3> &a, scalar s)
-    {
-        return {a[0] * s, a[1] * s, a[2] * s};
-    }
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif    
-    std::array<scalar, 3> operator*(scalar s, const std::array<scalar, 3> &a)
-    {
-        return {s * a[0], s * a[1], s * a[2]};
-    }
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif    
+  {
+    return {s * a[0], s * a[1]};
+  }
+
+  __CUDA_QUALIFIER__
+  std::array<scalar, 2> operator-(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
+  {
+    return {a[0] - b[0], a[1] - b[1]};
+  }
+
+  __CUDA_QUALIFIER__
+  std::array<scalar, 2> operator+(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
+  {
+    return {a[0] + b[0], a[1] + b[1]};
+  }
+
+  __CUDA_QUALIFIER__
+  std::array<scalar, 3> operator*(const std::array<scalar, 3> &a, scalar s)
+  {
+    return {a[0] * s, a[1] * s, a[2] * s};
+  }
+
+
+  __CUDA_QUALIFIER__
+  std::array<scalar, 3> operator*(scalar s, const std::array<scalar, 3> &a)
+  {
+    return {s * a[0], s * a[1], s * a[2]};
+  }
+
+  __CUDA_QUALIFIER__
     std::array<scalar, 3> operator-(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
     }
-#ifdef __CUDACC__      
-  __device__ __host__
-#endif    
+
+  __CUDA_QUALIFIER__
     std::array<scalar, 3> operator+(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
@@ -92,9 +88,8 @@ namespace traccc
          * 
          * @return a vector (expression) representing the cross product
          **/
-#ifdef __CUDACC__      
-__device__ __host__
-#endif
+
+      __CUDA_QUALIFIER__
         std::array<scalar, 3> cross(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return {a[1] * b[2] - b[1] * a[2], a[2] * b[0] - b[2] * a[0], a[0] * b[1] - b[0] * a[1]};
@@ -109,9 +104,8 @@ __device__ __host__
          * @param v the input vector 
          **/
         template <typename vector_type>
-#ifdef __CUDACC__
-__device__ __host__
-#endif    	
+
+	__CUDA_QUALIFIER__
         auto phi(const vector_type &v) noexcept
         {
             return std::atan2(v[1], v[0]);
@@ -122,9 +116,8 @@ __device__ __host__
          * @param v the input vector 
          **/  
         template <typename vector_type>
-#ifdef __CUDACC__      
-	__device__ __host__
-#endif  	
+
+	__CUDA_QUALIFIER__
         auto theta(const vector_type &v) noexcept
         {
             return std::atan2(std::sqrt(v[0] * v[0] + v[1] * v[1]), v[2]);
@@ -135,9 +128,7 @@ __device__ __host__
          * @param v the input vector 
          **/    
         template <typename vector_type>
-#ifdef __CUDACC__      
-	__device__ __host__
-#endif	
+	__CUDA_QUALIFIER__
         auto perp(const vector_type &v) noexcept
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -147,9 +138,7 @@ __device__ __host__
          * 
          * @param v the input vector 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif      
+      __CUDA_QUALIFIER__
         auto norm(const std::array<scalar, 2> &v)
         {
             return perp(v);
@@ -159,9 +148,7 @@ __device__ __host__
          * 
          * @param v the input vector 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
+      __CUDA_QUALIFIER__
         auto norm(const std::array<scalar, 3> &v)
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
@@ -173,9 +160,7 @@ __device__ __host__
          **/
     
         template <typename vector_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
+	__CUDA_QUALIFIER__
         auto eta(const vector_type &v) noexcept
         {
             return std::atanh(v[2] / norm(v));
@@ -186,9 +171,7 @@ __device__ __host__
          * @param m the input matrix 
          **/    
         template <unsigned int kROWS, typename matrix_type>
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif	
+	__CUDA_QUALIFIER__
         auto vector(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
             std::array<scalar, kROWS> subvector;
@@ -204,9 +187,7 @@ __device__ __host__
          * @param m the input matrix 
          **/    
         template <unsigned int kROWS, unsigned int kCOLS, typename matrix_type>
-#ifdef __CUDACC__      
-	__device__ __host__
-#endif	
+	__CUDA_QUALIFIER__
         auto block(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
             std::array<std::array<scalar, kROWS>, kCOLS> submatrix;
@@ -224,7 +205,7 @@ __device__ __host__
 
         /** Transform wrapper class to ensure standard API within differnt plugins
          **/
-  
+
         struct transform3
         {
 
@@ -242,6 +223,7 @@ __device__ __host__
              * @note y will be constructed by cross product
              * 
              **/
+	  __CUDA_QUALIFIER__
             transform3(const vector3 &t, const vector3 &z, const vector3 &x)
             {
                 auto y = vector::cross(z, x);
@@ -269,6 +251,7 @@ __device__ __host__
              *
              * @param t is the transform
              **/
+	  __CUDA_QUALIFIER__
             transform3(const vector3 &t)
             {
                 _data[0][0] = 1.;
@@ -295,6 +278,7 @@ __device__ __host__
              * 
              * @param m is the full 4x4 matrix 
              **/
+	  __CUDA_QUALIFIER__
             transform3(const matrix44 &m)
             {
                 _data = m;
@@ -304,6 +288,7 @@ __device__ __host__
              * 
              * @param ma is the full 4x4 matrix 16 array
              **/
+	  __CUDA_QUALIFIER__
             transform3(const std::array<scalar, 16> &ma)
             {
                 _data[0][0] = ma[0];
@@ -329,6 +314,7 @@ __device__ __host__
             /** Constructor with arguments: identity
              *
              **/
+	  __CUDA_QUALIFIER__
             transform3()
             {
                 _data[0][0] = 1.;
@@ -367,6 +353,7 @@ __device__ __host__
              *
              * @return a sacalar determinant - no checking done 
              */
+	  __CUDA_QUALIFIER__
             static scalar determinant(const matrix44 &m)
             {
                 return m[3][0] * m[2][1] * m[1][2] * m[0][3] - m[2][0] * m[3][1] * m[1][2] * m[0][3] - m[3][0] * m[1][1] * m[2][2] * m[0][3] + m[1][0] * m[3][1] * m[2][2] * m[0][3] +
@@ -383,6 +370,7 @@ __device__ __host__
              *
              * @return an inverse matrix 
              */
+	  __CUDA_QUALIFIER__
             static matrix44 invert(const matrix44 &m)
             {
                 matrix44 i;
@@ -418,6 +406,7 @@ __device__ __host__
              * @param m is the rotation matrix
              * @param v is the vector to be rotated
              */
+	  __CUDA_QUALIFIER__
             static vector3 rotate(const matrix44 &m, const vector3 &v)
             {
 
@@ -427,18 +416,21 @@ __device__ __host__
             }
 
             /** This method retrieves the rotation of a transform */
+	  __CUDA_QUALIFIER__
             auto rotation() const
             {
                 return getter::block<3, 3>(_data, 0, 0);
             }
 
             /** This method retrieves the translation of a transform */
+	  __CUDA_QUALIFIER__
             point3 translation() const
             {
                 return point3{_data[3][0], _data[3][1], _data[3][2]};
             }
 
             /** This method retrieves the 4x4 matrix of a transform */
+	  __CUDA_QUALIFIER__
             const matrix44 &matrix() const
             {
                 return _data;
@@ -446,6 +438,7 @@ __device__ __host__
 
             /** This method transform from a point from the local 3D cartesian frame to the global 3D cartesian frame */
             template <typename point_type>
+	    __CUDA_QUALIFIER__
             const point_type point_to_global(const point_type &v) const
             {
                 vector3 rg = rotate(_data, v);
@@ -454,6 +447,7 @@ __device__ __host__
 
             /** This method transform from a vector from the global 3D cartesian frame into the local 3D cartesian frame */
             template <typename point_type>
+	    __CUDA_QUALIFIER__
             const point_type point_to_local(const point_type &v) const
             {
                 vector3 rg = rotate(_data_inv, v);
@@ -462,6 +456,7 @@ __device__ __host__
 
             /** This method transform from a vector from the local 3D cartesian frame to the global 3D cartesian frame */
             template <typename vector_type>
+	    __CUDA_QUALIFIER__
             const vector_type vector_to_global(const vector_type &v) const
             {
                 return rotate(_data, v);
@@ -469,6 +464,7 @@ __device__ __host__
 
             /** This method transform from a vector from the global 3D cartesian frame into the local 3D cartesian frame */
             template <typename vector_type>
+	    __CUDA_QUALIFIER__
             const auto vector_to_local(const vector_type &v) const
             {
                 return rotate(_data_inv, v);
@@ -487,10 +483,9 @@ __device__ __host__
          * 
          * @return the scalar dot product value 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
-        scalar dot(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
+
+      __CUDA_QUALIFIER__
+      scalar dot(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
         {
             return a[0] * b[0] + a[1] * b[1];
         }
@@ -499,10 +494,9 @@ __device__ __host__
          * 
          * @param v the input vector
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
-        std::array<scalar, 3> normalize(const std::array<scalar, 2> &v)
+
+      __CUDA_QUALIFIER__
+      std::array<scalar, 3> normalize(const std::array<scalar, 2> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
             return {v[0] * oon, v[1] * oon};
@@ -515,10 +509,9 @@ __device__ __host__
          * 
          * @return the scalar dot product value 
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
-        scalar dot(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
+
+      __CUDA_QUALIFIER__
+      scalar dot(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         }
@@ -527,10 +520,9 @@ __device__ __host__
          * 
          * @param v the input vector
          **/
-  #ifdef __CUDACC__      
-  __device__ __host__
-  #endif    
-        std::array<scalar, 3> normalize(const std::array<scalar, 3> &v)
+
+      __CUDA_QUALIFIER__
+      std::array<scalar, 3> normalize(const std::array<scalar, 3> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
             return {v[0] * oon, v[1] * oon, v[2] * oon};

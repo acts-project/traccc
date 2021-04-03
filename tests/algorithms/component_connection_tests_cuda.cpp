@@ -11,8 +11,8 @@
 #include "vecmem/memory/cuda/host_memory_resource.hpp"
 #include "vecmem/memory/cuda/managed_memory_resource.hpp"
 #include "vecmem/utils/cuda/copy.hpp"
-
 #include "clusterization/component_connection_kernels.cuh"
+
 #include <gtest/gtest.h>
 
 // This defines the local frame test suite
@@ -30,9 +30,9 @@ TEST(algorithms, component_connection_cuda){
       {4, 14, 9, 0 } };
 
   vecmem::cuda::managed_memory_resource managed_resource;
-  
-  vecmem::vector< traccc::cell > cell_per_module(&managed_resource);
+
   vecmem::jagged_vector< traccc::cell > cell_per_event(&managed_resource);
+  vecmem::vector< traccc::cell > cell_per_module(&managed_resource);
 
   // move cell_items to cell_per_module
   for (auto i=0; i<cell_items.size(); i++){
@@ -56,21 +56,22 @@ TEST(algorithms, component_connection_cuda){
   // run sparse_ccl
   vecmem::data::jagged_vector_data< traccc::cell> cell_data(cell_per_event,&managed_resource);
   vecmem::data::jagged_vector_data< unsigned int > label_data(label_per_event, &managed_resource);
+  
   traccc::sparse_ccl_cuda(cell_data,
 			  label_data,
 			  vecmem::get_data( num_labels ));
 
+  // run spacepoint formation
   vecmem::jagged_vector< traccc::measurement > ms_per_event(&managed_resource);
   vecmem::vector< traccc::measurement > ms_per_module(num_labels[0],&managed_resource);
   ms_per_event.push_back(ms_per_module);
+  vecmem::data::jagged_vector_data< traccc::measurement > ms_data(ms_per_event, &managed_resource);
   
   vecmem::jagged_vector< traccc::spacepoint > sp_per_event(&managed_resource);
   vecmem::vector< traccc::spacepoint > sp_per_module(num_labels[0],&managed_resource);
   sp_per_event.push_back(sp_per_module);
-
-  // run space point formation
-  vecmem::data::jagged_vector_data< traccc::measurement > ms_data(ms_per_event, &managed_resource);
   vecmem::data::jagged_vector_data< traccc::spacepoint > sp_data(sp_per_event, &managed_resource);
+  
   traccc::sp_formation_cuda(cell_data,
 			    label_data,
 			    vecmem::get_data( num_labels ),

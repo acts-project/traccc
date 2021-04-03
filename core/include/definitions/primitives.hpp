@@ -22,5 +22,4 @@ namespace traccc {
     using point3 = std::array<scalar, 3>;
     using vector3 = std::array<scalar, 3>;
     using variance3 = std::array<scalar, 3>;
-
 }
