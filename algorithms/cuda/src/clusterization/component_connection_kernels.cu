@@ -84,43 +84,37 @@ unsigned int sparse_ccl(const vecmem::device_vector< cell > cells,
 
 __global__
 void sparse_ccl_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
-		       vecmem::data::jagged_vector_view< unsigned int > _label_per_event,
-		       vecmem::data::vector_view<unsigned int> _num_labels);
+		     vecmem::data::jagged_vector_view< unsigned int > _label_per_event,
+		     vecmem::data::vector_view<unsigned int> _num_labels);
 
 __global__
 void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
-			 vecmem::data::jagged_vector_view< unsigned int> _label_per_event,
-			 vecmem::data::vector_view<unsigned int> _num_labels,
-			 vecmem::data::jagged_vector_view< measurement > _ms_per_event,
-			 vecmem::data::jagged_vector_view< spacepoint >& _sp_per_event);
+		       vecmem::data::jagged_vector_view< unsigned int> _label_per_event,
+		       vecmem::data::vector_view<unsigned int> _num_labels,
+		       vecmem::data::jagged_vector_view< measurement > _ms_per_event,
+		       vecmem::data::jagged_vector_view< spacepoint > _sp_per_event);
 
   void sparse_ccl_cuda(
 		  const vecmem::data::jagged_vector_view< cell >& cell_per_event,
 		  vecmem::data::jagged_vector_view< unsigned int>& label_per_event,
-		  vecmem::data::vector_view<unsigned int> num_labels){
-
-    unsigned int warp_size=32;
-    unsigned int num_blocks = cell_per_event.m_size/warp_size+1;
-    
-    sparse_ccl_kernel<<< num_blocks, warp_size >>>(cell_per_event,
-						   label_per_event,
-						   num_labels);        
-
+		  vecmem::data::vector_view<unsigned int> num_labels){    
+    sparse_ccl_kernel<<< 1, cell_per_event.m_size >>>(cell_per_event,
+						    label_per_event,
+						    num_labels);        
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   }
 
   void sp_formation_cuda(const vecmem::data::jagged_vector_view< cell >& cell_per_event,
-			 const vecmem::data::jagged_vector_view< unsigned int >& label_per_event,
-			 const vecmem::data::vector_view<unsigned int> num_labels,
-			 vecmem::data::jagged_vector_view< measurement >& ms_per_event,
-			 vecmem::data::jagged_vector_view< spacepoint >& sp_per_event){
-    
+		    const vecmem::data::jagged_vector_view< unsigned int >& label_per_event,
+		    const vecmem::data::vector_view<unsigned int> num_labels,
+		    vecmem::data::jagged_vector_view< measurement >& ms_per_event,
+		    vecmem::data::jagged_vector_view< spacepoint>& sp_per_event){
     sp_formation_kernel<<< 1, cell_per_event.m_size >>>(cell_per_event,
-							label_per_event,
-							num_labels,
-							ms_per_event,
-							sp_per_event);    
+						      label_per_event,
+						      num_labels,
+						      ms_per_event,
+						      sp_per_event);    
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   }  
@@ -130,7 +124,6 @@ void sparse_ccl_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
 		     vecmem::data::jagged_vector_view< unsigned int > _label_per_event,
 		     vecmem::data::vector_view<unsigned int> _num_labels){
   int gid = blockDim.x * blockIdx.x + threadIdx.x;
-
   if (gid>=_cell_per_event.m_size) return;
   
   vecmem::jagged_device_vector< cell > cell_per_event(_cell_per_event);
@@ -143,25 +136,27 @@ void sparse_ccl_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
   // run sparse_ccl
   num_labels[gid] = sparse_ccl(cell_per_module, label_per_module);
 
-  //printf("%d %d \n", num_labels[gid], gid);
+  //printf("%d", num_labels[gid]);
   
   return;
 }
 
+
 __global__
 void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
-			 vecmem::data::jagged_vector_view< unsigned int> _label_per_event,
-			 vecmem::data::vector_view<unsigned int> _num_labels,
-			 vecmem::data::jagged_vector_view< measurement > _ms_per_event,
-			 vecmem::data::jagged_vector_view< spacepoint >& _sp_per_event){
+		       vecmem::data::jagged_vector_view< unsigned int> _label_per_event,
+		       vecmem::data::vector_view<unsigned int> _num_labels,
+		       vecmem::data::jagged_vector_view< measurement > _ms_per_event,
+		       vecmem::data::jagged_vector_view< spacepoint > _sp_per_event){
   int gid = blockDim.x * blockIdx.x + threadIdx.x;
+  if (gid>=_cell_per_event.m_size) return;
   
   vecmem::jagged_device_vector< cell > cell_per_event(_cell_per_event);
   vecmem::jagged_device_vector< unsigned int > label_per_event(_label_per_event);  
   vecmem::device_vector< unsigned int > num_labels(_num_labels);
   vecmem::jagged_device_vector< measurement > ms_per_event(_ms_per_event);
   vecmem::jagged_device_vector< spacepoint > sp_per_event(_sp_per_event);  
-  
+
   // retrieve cell and labels per module
   vecmem::device_vector< cell > cell_per_module = cell_per_event.at(gid);  
   vecmem::device_vector< unsigned int > label_per_module = label_per_event.at(gid);
@@ -176,14 +171,17 @@ void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_even
 					 float(cell_per_module[i].channel1)});
     
     ms_per_module[clabel].total_weight += weight;
-    ms_per_module[clabel].local = ms_per_module[clabel].local + weight * cell_position;    
+    ms_per_module[clabel].local = ms_per_module[clabel].local + weight * cell_position;
+    
     //printf("%d %f \n", clabel, ms_per_module[clabel].total_weight);
   }
-  
+
   for (auto ms: ms_per_module){
     ms.local = 1./ms.total_weight * ms.local;
+
     //printf("%f %f \n", ms.local[0], ms.local[1]);
-  } 
+  }
   
 }
+
 }
