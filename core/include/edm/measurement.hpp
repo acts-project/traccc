@@ -17,7 +17,7 @@ namespace traccc {
     struct measurement {
       point2 local = {0., 0.};
       variance2 variance = { 0., 0.};
-      scalar total_weight = 0;
+      scalar weight_sum = 0;
     };
 
     struct measurement_collection {     

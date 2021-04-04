@@ -54,7 +54,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 
     // Loop over events
     for (unsigned int event = 0; event < events; ++event){
-
+      
         // Read the cells from the relevant event file
         std::string event_string = "000000000";
         std::string event_number = std::to_string(event);
@@ -71,11 +71,17 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
         measurements_per_event.reserve(cells_per_event.size());
         spacepoints_per_event.reserve(cells_per_event.size());
 
+	std::vector< std::vector< unsigned int > > label_per_event; // test
+
+	//------------------
 	// CPU part
+	//------------------
         for (auto &cells_per_module : cells_per_event)
         {
             // The algorithmic code part: start
-            traccc::cluster_collection clusters_per_module =  cc(cells_per_module);
+	  auto test =  traccc::detail::sparse_ccl(cells_per_module.items);
+	  label_per_event.push_back(std::get<1>(test));
+            traccc::cluster_collection clusters_per_module =  cc(cells_per_module);  
             clusters_per_module.position_from_cell = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
             traccc::measurement_collection measurements_per_module = mt(clusters_per_module);
             traccc::spacepoint_collection spacepoints_per_module = sp(measurements_per_module);
@@ -90,14 +96,14 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
             spacepoints_per_event.push_back(std::move(spacepoints_per_module));
         }
 
+	//------------------
 	// CUDA part
-        traccc::cell_reader creader_cuda(io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
-	
+	//------------------
+        traccc::cell_reader creader_cuda(io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});       
 	vecmem::cuda::managed_memory_resource managed_resource;
 	
 	vecmem::jagged_vector< traccc::cell > vm_cells_per_event(&managed_resource);
 	vecmem::vector< std::tuple< traccc::geometry_id, traccc::transform3 > > vm_geoInfo_per_event(&managed_resource);
-
 	
 	traccc::read_cells_vecmem(vm_cells_per_event,
 				  vm_geoInfo_per_event,
@@ -109,7 +115,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	for (auto& cells: vm_cells_per_event){
 	  vm_label_per_event.push_back(vecmem::vector< unsigned int>(cells.size(),0,&managed_resource));
 	}	
-	vecmem::vector< unsigned int> num_labels(vm_cells_per_event.size(), 0 , &managed_resource);
+	vecmem::vector< unsigned int> num_clusters_per_event(vm_cells_per_event.size(), 0 , &managed_resource);
 
 	// run sparse_ccl
 	vecmem::data::jagged_vector_data< traccc::cell> cell_data(vm_cells_per_event,&managed_resource);
@@ -117,15 +123,49 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	
 	traccc::sparse_ccl_cuda(cell_data,
 				label_data,
-				vecmem::get_data( num_labels ));
+				vecmem::get_data( num_clusters_per_event ));
 	
-	/*
+	
+	
+	// run space formation
+	vecmem::jagged_vector< traccc::measurement > ms_per_event(&managed_resource);
+  	vecmem::jagged_vector< traccc::spacepoint > sp_per_event(&managed_resource);
+
+	for(auto& nclusters: num_clusters_per_event){
+	  ms_per_event.push_back(vecmem::vector< traccc::measurement >(nclusters));
+	  sp_per_event.push_back(vecmem::vector< traccc::spacepoint >(nclusters));
+	}
+	
+	vecmem::data::jagged_vector_data< traccc::measurement > ms_data(ms_per_event, &managed_resource);
+	vecmem::data::jagged_vector_data< traccc::spacepoint > sp_data(sp_per_event, &managed_resource);
+	
+	traccc::sp_formation_cuda(cell_data,
+				  label_data,
+				  vecmem::get_data( num_clusters_per_event ),
+				  vecmem::get_data( vm_geoInfo_per_event ),
+				  ms_data,
+				  sp_data);
+	
+	
+	// read test
 	for (int i=0; i<vm_geoInfo_per_event.size(); i++){
 	  if ((std::get<0>(vm_geoInfo_per_event.at(i))!=cells_per_event[i].module)){
 	    std::cout << "there is a problem in reading..." << std::endl;
 	  }
 	}
-	*/
+
+	// label index test
+	for (int i=0; i<vm_label_per_event.size(); i++){
+	  auto obj = vm_label_per_event[i];
+	  for (int j=0; j<obj.size(); j++){
+	    if (obj[j] != label_per_event[i][j] ||
+		obj.size() != label_per_event[i].size() ||
+		vm_label_per_event.size() != label_per_event.size()){
+	      std::cout << "there is a problem in sparse ccl..." << std::endl;
+	    }
+	  }
+	}
+	
 
 	
 	

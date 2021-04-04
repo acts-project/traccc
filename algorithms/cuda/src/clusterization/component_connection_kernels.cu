@@ -89,16 +89,19 @@ void sparse_ccl_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
 
 __global__
 void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
-		       vecmem::data::jagged_vector_view< unsigned int> _label_per_event,
-		       vecmem::data::vector_view<unsigned int> _num_labels,
-		       vecmem::data::jagged_vector_view< measurement > _ms_per_event,
-		       vecmem::data::jagged_vector_view< spacepoint > _sp_per_event);
+			 vecmem::data::jagged_vector_view< unsigned int> _label_per_event,
+			 vecmem::data::vector_view< unsigned int> _num_labels,
+			 vecmem::data::vector_view< std::tuple < traccc::geometry_id, traccc::transform3 > > _geoInfo_per_event,
+			 vecmem::data::jagged_vector_view< measurement > _ms_per_event,
+			 vecmem::data::jagged_vector_view< spacepoint > _sp_per_event);
 
   void sparse_ccl_cuda(
 		  const vecmem::data::jagged_vector_view< cell >& cell_per_event,
-		  vecmem::data::jagged_vector_view< unsigned int>& label_per_event,
-		  vecmem::data::vector_view<unsigned int> num_labels){    
-    sparse_ccl_kernel<<< 1, cell_per_event.m_size >>>(cell_per_event,
+		  vecmem::data::jagged_vector_view< unsigned int> label_per_event,
+		  vecmem::data::vector_view<unsigned int> num_labels){
+    unsigned int num_threads = 32;
+    unsigned int num_blocks = cell_per_event.m_size/num_threads + 1;
+    sparse_ccl_kernel<<< num_blocks, num_threads >>>(cell_per_event,
 						    label_per_event,
 						    num_labels);        
     CUDA_ERROR_CHECK(cudaGetLastError());
@@ -106,23 +109,27 @@ void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_even
   }
 
   void sp_formation_cuda(const vecmem::data::jagged_vector_view< cell >& cell_per_event,
-		    const vecmem::data::jagged_vector_view< unsigned int >& label_per_event,
-		    const vecmem::data::vector_view<unsigned int> num_labels,
-		    vecmem::data::jagged_vector_view< measurement >& ms_per_event,
-		    vecmem::data::jagged_vector_view< spacepoint>& sp_per_event){
-    sp_formation_kernel<<< 1, cell_per_event.m_size >>>(cell_per_event,
-						      label_per_event,
-						      num_labels,
-						      ms_per_event,
-						      sp_per_event);    
+			 const vecmem::data::jagged_vector_view< unsigned int >& label_per_event,
+			 const vecmem::data::vector_view< unsigned int >& num_labels,
+			 const vecmem::data::vector_view< std::tuple < traccc::geometry_id, traccc::transform3 > >& geoInfo_per_event,
+			 vecmem::data::jagged_vector_view< measurement > ms_per_event,
+			 vecmem::data::jagged_vector_view< spacepoint> sp_per_event){
+    unsigned int num_threads = 32;
+    unsigned int num_blocks = cell_per_event.m_size/num_threads + 1;
+    sp_formation_kernel<<< num_blocks, num_threads >>>(cell_per_event,
+						       label_per_event,
+						       num_labels,
+						       geoInfo_per_event,
+						       ms_per_event,
+						       sp_per_event);    
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   }  
 
 __global__
 void sparse_ccl_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
-		     vecmem::data::jagged_vector_view< unsigned int > _label_per_event,
-		     vecmem::data::vector_view<unsigned int> _num_labels){
+		       vecmem::data::jagged_vector_view< unsigned int > _label_per_event,
+		       vecmem::data::vector_view<unsigned int> _num_labels){
   int gid = blockDim.x * blockIdx.x + threadIdx.x;
   if (gid>=_cell_per_event.m_size) return;
   
@@ -144,10 +151,11 @@ void sparse_ccl_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
 
 __global__
 void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_event,
-		       vecmem::data::jagged_vector_view< unsigned int> _label_per_event,
-		       vecmem::data::vector_view<unsigned int> _num_labels,
-		       vecmem::data::jagged_vector_view< measurement > _ms_per_event,
-		       vecmem::data::jagged_vector_view< spacepoint > _sp_per_event){
+			 vecmem::data::jagged_vector_view< unsigned int > _label_per_event,
+			 vecmem::data::vector_view< unsigned int> _num_labels,
+			 vecmem::data::vector_view< std::tuple < traccc::geometry_id, traccc::transform3 > > _geoInfo_per_event,
+			 vecmem::data::jagged_vector_view< measurement > _ms_per_event,
+			 vecmem::data::jagged_vector_view< spacepoint > _sp_per_event){
   int gid = blockDim.x * blockIdx.x + threadIdx.x;
   if (gid>=_cell_per_event.m_size) return;
   
@@ -170,14 +178,13 @@ void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_even
     std::array<scalar, 2> cell_position({float(cell_per_module[i].channel0),
 					 float(cell_per_module[i].channel1)});
     
-    ms_per_module[clabel].total_weight += weight;
-    ms_per_module[clabel].local = ms_per_module[clabel].local + weight * cell_position;
-    
+    ms_per_module[clabel].weight_sum += weight;
+    ms_per_module[clabel].local = ms_per_module[clabel].local + weight * cell_position;    
     //printf("%d %f \n", clabel, ms_per_module[clabel].total_weight);
   }
 
   for (auto ms: ms_per_module){
-    ms.local = 1./ms.total_weight * ms.local;
+    if( ms.weight_sum > 0 ) ms.local = 1./ms.weight_sum * ms.local;
 
     //printf("%f %f \n", ms.local[0], ms.local[1]);
   }

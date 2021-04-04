@@ -38,7 +38,7 @@ namespace traccc {
         /// @param clusters[in,out] are the output clusters 
         /// @param opt the call options
         ///
-        /// void interface
+        /// void interface      
         void operator()(const cell_collection& cells, cluster_collection& clusters) const {         
             // Assign the module id
             clusters.module = cells.module;
@@ -60,8 +60,7 @@ namespace traccc {
                 }
             }
             clusters.items = cluster_items;
-        }
-
+        }            
     };
 
 }

@@ -25,12 +25,13 @@
 
 namespace traccc {
   void sparse_ccl_cuda(const vecmem::data::jagged_vector_view< cell >& cell_per_event,
-		       vecmem::data::jagged_vector_view< unsigned int >& label_per_event,
-		       vecmem::data::vector_view<unsigned int> num_labels);
+		       vecmem::data::jagged_vector_view< unsigned int > label_per_event,
+		       vecmem::data::vector_view<unsigned int> num_clusters_per_event);
   
   void sp_formation_cuda(const vecmem::data::jagged_vector_view< cell >& cell_per_event,
 			 const vecmem::data::jagged_vector_view< unsigned int >& label_per_event,
-			 const vecmem::data::vector_view<unsigned int> num_labels,
-			 vecmem::data::jagged_vector_view< measurement >& ms_per_event,
-			 vecmem::data::jagged_vector_view< spacepoint >& sp_per_event);
+			 const vecmem::data::vector_view< unsigned int >& num_clusters_per_event,
+			 const vecmem::data::vector_view< std::tuple < traccc::geometry_id, traccc::transform3 > >& geoInfo_per_event,
+			 vecmem::data::jagged_vector_view< measurement > ms_per_event,
+			 vecmem::data::jagged_vector_view< spacepoint > sp_per_event);
 }
