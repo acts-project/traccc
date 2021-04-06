@@ -6,7 +6,7 @@
  */
 
 #include "clusterization/component_connection_kernels.cuh"
-#include "../../cuda/src/utils/cuda_error_handling.hpp" 
+#include "../../cuda/src/utils/cuda_error_handling.hpp"
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -104,6 +104,7 @@ void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_even
     sparse_ccl_kernel<<< num_blocks, num_threads >>>(cell_per_event,
 						    label_per_event,
 						    num_labels);        
+    
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   }
@@ -156,12 +157,13 @@ void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_even
 			 vecmem::data::vector_view< std::tuple < traccc::geometry_id, traccc::transform3 > > _geoInfo_per_event,
 			 vecmem::data::jagged_vector_view< measurement > _ms_per_event,
 			 vecmem::data::jagged_vector_view< spacepoint > _sp_per_event){
-  int gid = blockDim.x * blockIdx.x + threadIdx.x;
+  int gid = blockDim.x * blockIdx.x + threadIdx.x; // module index
   if (gid>=_cell_per_event.m_size) return;
   
   vecmem::jagged_device_vector< cell > cell_per_event(_cell_per_event);
   vecmem::jagged_device_vector< unsigned int > label_per_event(_label_per_event);  
   vecmem::device_vector< unsigned int > num_labels(_num_labels);
+  vecmem::device_vector< std::tuple < traccc::geometry_id, traccc::transform3 > > geoInfo_per_event(_geoInfo_per_event);
   vecmem::jagged_device_vector< measurement > ms_per_event(_ms_per_event);
   vecmem::jagged_device_vector< spacepoint > sp_per_event(_sp_per_event);  
 
@@ -169,26 +171,31 @@ void sp_formation_kernel(vecmem::data::jagged_vector_view< cell > _cell_per_even
   vecmem::device_vector< cell > cell_per_module = cell_per_event.at(gid);  
   vecmem::device_vector< unsigned int > label_per_module = label_per_event.at(gid);
   vecmem::device_vector< measurement > ms_per_module = ms_per_event.at(gid);
-  vecmem::device_vector< spacepoint > sp_per_module = sp_per_event.at(gid);  
-  unsigned int labels = num_labels[gid];
+  vecmem::device_vector< spacepoint > sp_per_module = sp_per_event.at(gid);
+  
+  auto geoInfo = geoInfo_per_event[gid];
+  auto labels = num_labels[gid];
+
+  auto pix = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
   
   for(int i=0; i<label_per_module.size(); ++i){
     unsigned int clabel = label_per_module[i]-1;
-    float weight = cell_per_module[i].activation;
-    std::array<scalar, 2> cell_position({float(cell_per_module[i].channel0),
-					 float(cell_per_module[i].channel1)});
-    
-    ms_per_module[clabel].weight_sum += weight;
-    ms_per_module[clabel].local = ms_per_module[clabel].local + weight * cell_position;    
-    //printf("%d %f \n", clabel, ms_per_module[clabel].total_weight);
-  }
+    scalar weight = cell_per_module[i].activation;
 
-  for (auto ms: ms_per_module){
-    if( ms.weight_sum > 0 ) ms.local = 1./ms.weight_sum * ms.local;
-
-    //printf("%f %f \n", ms.local[0], ms.local[1]);
+    auto cell_position = pix(cell_per_module[i].channel0, cell_per_module[i].channel1);
+    auto& ms = ms_per_module[clabel];
+    ms.weight_sum += weight;
+    ms.local = ms.local + weight * cell_position;
   }
   
+  for (int i_m = 0; i_m < ms_per_module.size(); ++i_m){
+    auto& ms = ms_per_module[i_m];
+    if( ms.weight_sum > 0 ) {
+      ms.local = 1./ms.weight_sum * ms.local;
+    }
+    point3 local_3d = {ms.local[0], ms.local[1], 0};
+    auto& sp = sp_per_module[i_m];
+    sp.global = std::get<1>(geoInfo).point_to_global(local_3d);
+  } 
 }
-
 }

@@ -127,7 +127,8 @@ namespace traccc {
       if (first_line_read and iocell.geometry_id != reference_id){
         // Complete the information
         if (not tfmap.empty()){
-          auto tfentry = tfmap.find(iocell.geometry_id);
+          //auto tfentry = tfmap.find(iocell.geometry_id); // ?????
+	  auto tfentry = tfmap.find(reference_id);
           if (tfentry != tfmap.end()){
              cells.placement = tfentry->second;
           }
@@ -156,8 +157,14 @@ namespace traccc {
     // Clean up after loop
     // Sort in column major order
     std::sort(cells.items.begin(), cells.items.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
+    if (not tfmap.empty()){
+      auto tfentry = tfmap.find(reference_id);
+      if (tfentry != tfmap.end()){
+	cells.placement = tfentry->second;
+      }
+    }
     cell_container.push_back(cells);
-
+    
     return cell_container;
   }
 
@@ -196,14 +203,14 @@ namespace traccc {
       }
       first_line_read = true;
       reference_id = static_cast<uint64_t>(iocell.geometry_id);
-            
+      
       cells_per_module.push_back(cell{iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp});      
       
       if (++read_cells >= max_cells){
 	break;
       }
     }
-
+    
     // Clean up after loop
     // Sort in column major order
     std::sort(cells_per_module.begin(), cells_per_module.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
@@ -211,7 +218,7 @@ namespace traccc {
 
     reference_placement = transform3();
     if (not tfmap.empty()){
-      auto tfentry = tfmap.find(iocell.geometry_id);
+      auto tfentry = tfmap.find(reference_id);
       if (tfentry != tfmap.end()){
 	reference_placement = tfentry->second;
       }

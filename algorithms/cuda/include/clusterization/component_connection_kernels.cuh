@@ -18,8 +18,10 @@
 #include "../../cuda/src/utils/cuda_error_handling.hpp"
 
 #include "edm/cell.hpp"
+#include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
+#include "geometry/pixel_segmentation.hpp"
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 

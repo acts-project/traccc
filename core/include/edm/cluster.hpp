@@ -34,7 +34,8 @@ namespace traccc {
         transform3 placement = transform3{};
 
         std::vector<cluster> items;
-        
+
+
         position_estimation position_from_cell 
             = [](channel_id ch0,channel_id ch1) -> vector2 
                 { return {static_cast<float>(ch0), static_cast<float>(ch1)}; };

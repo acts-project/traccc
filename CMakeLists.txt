@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 if(TRACCC_BUILD_CUDA)
   enable_language(CUDA)
   set(CMAKE_CUDA_STANDARD 17 CACHE STRING "CUDA C++ standard to use")
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -fmad=false")
 endif()
 
 set(CMAKE_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/include)
