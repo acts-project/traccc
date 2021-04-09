@@ -40,13 +40,13 @@ namespace traccc {
         /// @return a measurement collection - size of input/output container is identical
         void operator()(const measurement_collection& measurements, spacepoint_collection& spacepoints) const {
             // Assign the module id
-            spacepoints.module = measurements.module;
+            spacepoints.module = measurements.modcfg.module;
             // Run the algorithm
             spacepoints.items.reserve(measurements.items.size());
             for (const auto& m : measurements.items){
                 spacepoint s;
                 point3 local_3d = {m.local[0], m.local[1], 0.};
-                s.global = measurements.placement.point_to_global(local_3d);
+                s.global = measurements.modcfg.placement.point_to_global(local_3d);
                 // @todo add variance estimation
                 spacepoints.items.push_back(std::move(s));
             }

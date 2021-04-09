@@ -7,15 +7,17 @@
 
 #pragma once
 
+#include "edm/spacepoint.hpp"
 #include <vector>
 
 namespace traccc {
-    
-    /// A cell definition: maximum two channel identifiers
-    /// and one activiation value;
-    struct spacepoint {
-        point3 global = { 0., 0., 0.};
-        variance3 variance = { 0., 0., 0.};
-    };
 
+    struct spacepoint_collection {     
+    
+	event_id event = 0;
+	geometry_id module = 0;
+	std::vector<spacepoint> items;
+    };
+    using spacepoint_container = std::vector<spacepoint_collection>;
+    
 }

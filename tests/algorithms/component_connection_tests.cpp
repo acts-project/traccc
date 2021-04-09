@@ -7,7 +7,8 @@
 
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
-#include "algorithms/component_connection.hpp"
+#include "cpu/include/edm/cell_container.hpp"
+#include "cpu/include/algorithms/component_connection.hpp"
 
 #include <gtest/gtest.h>
 
@@ -28,7 +29,7 @@ TEST(algorithms, component_connection){
 
     traccc::cell_collection cells;
     cells.items = cell_items;
-    cells.module = 0;
+    cells.modcfg.module = 0;
 
     traccc::component_connection ccl;
     auto clusters = ccl(cells);

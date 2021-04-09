@@ -19,16 +19,4 @@ namespace traccc {
       variance2 variance = { 0., 0.};
       scalar weight_sum = 0;
     };
-
-    struct measurement_collection {     
-
-        event_id event = 0;
-        geometry_id module = 0;
-        std::vector<measurement> items;
-
-        transform3 placement = transform3{};
-        
-    };
-
-    using measurement_container = std::vector<measurement_collection>;
 }

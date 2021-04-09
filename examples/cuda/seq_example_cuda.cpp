@@ -10,9 +10,9 @@
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
-#include "component_connection.hpp"
-#include "measurement_creation.hpp"
-#include "spacepoint_formation.hpp"
+#include "../../algorithms/cpu/include/component_connection.hpp"
+#include "../../algorithms/cpu/include/measurement_creation.hpp"
+#include "../../algorithms/cpu/include/spacepoint_formation.hpp"
 #include "csv/csv_io.hpp"
 
 
@@ -84,13 +84,13 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
         measurements_per_event.reserve(cells_per_event.size());
         spacepoints_per_event.reserve(cells_per_event.size());
 
-	std::vector< std::vector< unsigned int > > label_per_event; // test
+	//std::vector< std::vector< unsigned int > > label_per_event; // test
        
         for (auto &cells_per_module : cells_per_event)
         {
             // The algorithmic code part: start
-	  auto test =  traccc::detail::sparse_ccl(cells_per_module.items);
-	  label_per_event.push_back(std::get<1>(test));
+	    //auto test =  traccc::detail::sparse_ccl(cells_per_module.items);
+	    //label_per_event.push_back(std::get<1>(test));
             traccc::cluster_collection clusters_per_module =  cc(cells_per_module);  
             clusters_per_module.position_from_cell = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
             traccc::measurement_collection measurements_per_module = mt(clusters_per_module);
@@ -178,7 +178,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	    std::cout << "there is a problem in reading placement..." << std::endl;
 	  }
 	}
-	
+
+	/*
 	// label index test
 	for (int i=0; i<vm_label_per_event.size(); i++){
 	  auto obj = vm_label_per_event[i];
@@ -190,7 +191,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	    }
 	  }
 	}
-
+	*/
 	// ms test
 	for (int i=0; i<vm_ms_per_event.size(); i++){	
 	  auto ms_obj = vm_ms_per_event[i];

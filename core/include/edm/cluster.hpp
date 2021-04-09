@@ -27,6 +27,7 @@ namespace traccc {
     /// A cluster collection which carries the geometry_id, the clusters
     /// and the additional information to create the cluster position 
     /// from the channel id;
+    
     struct cluster_collection {
 
         event_id event = 0;
@@ -45,7 +46,7 @@ namespace traccc {
             = [](float signal_in) -> float {return signal_in; };
         
     };
-
+    
     using cluster_container = std::vector<cluster_collection>;
 
 }

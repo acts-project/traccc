@@ -16,7 +16,6 @@
 #ifdef __CUDACC__      
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include "definitions/cuda_macros.hpp"
 #define __CUDA_QUALIFIER__ inline __device__ __host__
 #else
 #define __CUDA_QUALIFIER__

@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "edm/cell.hpp"
+#include "cpu/include/edm/cell_container.hpp"
+#include "cpu/include/edm/measurement_container.hpp"
+#include "cpu/include/edm/spacepoint_container.hpp"
 #include "edm/cluster.hpp"
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
@@ -18,10 +20,6 @@
 #include <fstream>
 #include <climits>
 #include <map>
-
-#include "vecmem/containers/vector.hpp"
-#include "vecmem/containers/jagged_vector.hpp"
-
 
 namespace traccc {
 
@@ -111,17 +109,19 @@ namespace traccc {
   /// @param creader The cellreader type
   /// @param tfmap the (optional) transform map
   /// @param max_cells the (optional) maximum number of cells to be read in
-  std::vector<cell_collection> read_cells(cell_reader& creader, 
-            const std::map<geometry_id, transform3>& tfmap ={}, 
-                unsigned int max_cells = std::numeric_limits<unsigned int>::max()){
+    cell_container
+    read_cells(cell_reader& creader, 
+	       const std::map<geometry_id, transform3>& tfmap ={}, 
+	       unsigned int max_cells = std::numeric_limits<unsigned int>::max()){
 
     uint64_t reference_id = 0;
-    std::vector<cell_collection> cell_container;
-
+    cell_container cell_per_event;
+    
     bool first_line_read = false;
     unsigned int read_cells = 0;
     csv_cell iocell;
     cell_collection cells;
+    
     while (creader.read(iocell)){
 
       if (first_line_read and iocell.geometry_id != reference_id){
@@ -130,25 +130,26 @@ namespace traccc {
           //auto tfentry = tfmap.find(iocell.geometry_id); // ?????
 	  auto tfentry = tfmap.find(reference_id);
           if (tfentry != tfmap.end()){
-             cells.placement = tfentry->second;
+	      cells.modcfg.placement = tfentry->second;
           }
         }
         // Sort in column major order
         std::sort(cells.items.begin(), cells.items.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
-        cell_container.push_back(cells);
+        cell_per_event.push_back(cells);
         // Clear for next round
-        cells = cell_collection();
+	cells = cell_collection();
       }
       first_line_read = true;
       reference_id = static_cast<uint64_t>(iocell.geometry_id);
 
-      cells.module = reference_id;
-      cells.range0[0] = std::min(cells.range0[0],iocell.channel0);
-      cells.range0[1] = std::max(cells.range0[1],iocell.channel0);
-      cells.range1[0] = std::min(cells.range1[0],iocell.channel1);
-      cells.range1[1] = std::max(cells.range1[1],iocell.channel1);
+      cells.modcfg.module = reference_id;
+      cells.modcfg.range0[0] = std::min(cells.modcfg.range0[0],iocell.channel0);
+      cells.modcfg.range0[1] = std::max(cells.modcfg.range0[1],iocell.channel0);
+      cells.modcfg.range1[0] = std::min(cells.modcfg.range1[0],iocell.channel1);
+      cells.modcfg.range1[1] = std::max(cells.modcfg.range1[1],iocell.channel1);
 
       cells.items.push_back(cell{iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp});
+      
       if (++read_cells >= max_cells){
         break;
       }
@@ -160,75 +161,14 @@ namespace traccc {
     if (not tfmap.empty()){
       auto tfentry = tfmap.find(reference_id);
       if (tfentry != tfmap.end()){
-	cells.placement = tfentry->second;
+	  cells.modcfg.placement = tfentry->second;	  
       }
     }
-    cell_container.push_back(cells);
+    cell_per_event.push_back(cells);
     
-    return cell_container;
+    return cell_per_event;
   }
 
-  void read_cells_vecmem(vecmem::jagged_vector< cell >& cells_per_event,
-			 vecmem::vector< std::tuple< geometry_id, transform3 > >& geoInfo_per_event,
-			 cell_reader& creader, 
-			 const std::map<geometry_id, transform3>& tfmap ={}, 
-			 unsigned int max_cells = std::numeric_limits<unsigned int>::max()){
-  
-    uint64_t reference_id = 0;
-    transform3 reference_placement;
-    vecmem::vector< cell > cells_per_module;
-    
-    bool first_line_read = false;
-    unsigned int read_cells = 0;
-    csv_cell iocell;
-    cell_collection cells;
-    while (creader.read(iocell)){
-      
-      if (first_line_read and iocell.geometry_id != reference_id){
-	// Complete the information
-	if (not tfmap.empty()){
-	  auto tfentry = tfmap.find(reference_id);
-	  if (tfentry != tfmap.end()){
-	    reference_placement = tfentry->second;
-	  }
-	}
-
-        std::sort(cells_per_module.begin(), cells_per_module.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
-	
-	// Fill the module information
-	cells_per_event.push_back(cells_per_module);
-	geoInfo_per_event.push_back(std::tuple<geometry_id, transform3>({reference_id, reference_placement}));
-	// Clear for next round
-	cells_per_module =vecmem::vector< cell >();
-      }
-      first_line_read = true;
-      reference_id = static_cast<uint64_t>(iocell.geometry_id);
-      
-      cells_per_module.push_back(cell{iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp});      
-      
-      if (++read_cells >= max_cells){
-	break;
-      }
-    }
-    
-    // Clean up after loop
-    // Sort in column major order
-    std::sort(cells_per_module.begin(), cells_per_module.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
-    cells_per_event.push_back(cells_per_module);
-
-    reference_placement = transform3();
-    if (not tfmap.empty()){
-      auto tfentry = tfmap.find(reference_id);
-      if (tfentry != tfmap.end()){
-	reference_placement = tfentry->second;
-      }
-    }
-    
-    geoInfo_per_event.push_back(std::tuple<geometry_id, transform3>({iocell.geometry_id, reference_placement}));
-    
-    return;  
-  }
-  
   /// Read the collection of cells per module and fill into a collection
   /// of truth clusters.
   /// 

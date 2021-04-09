@@ -33,5 +33,6 @@ add_subdirectory(extern)
 add_subdirectory(core)
 add_subdirectory(io)
 add_subdirectory(examples)
+add_subdirectory(cpu)
 add_subdirectory(tests)
-add_subdirectory(algorithms)
+

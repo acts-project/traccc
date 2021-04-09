@@ -5,15 +5,16 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "edm/cell.hpp"
 #include "edm/cluster.hpp"
-#include "edm/measurement.hpp"
-#include "edm/spacepoint.hpp"
+#include "cpu/include/edm/cell_container.hpp"
+#include "cpu/include/edm/measurement_container.hpp"
+#include "cpu/include/edm/spacepoint_container.hpp"
 #include "geometry/pixel_segmentation.hpp"
-#include "algorithms/component_connection.hpp"
-#include "algorithms/measurement_creation.hpp"
-#include "algorithms/spacepoint_formation.hpp"
 #include "csv/csv_io.hpp"
+
+#include "cpu/include/algorithms/component_connection.hpp"
+#include "cpu/include/algorithms/measurement_creation.hpp"
+#include "cpu/include/algorithms/spacepoint_formation.hpp"
 
 #include <iostream>
 
@@ -42,7 +43,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
     uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
     uint64_t n_space_points = 0;
-
+    
     // Loop over events
     for (unsigned int event = 0; event < events; ++event){
 
@@ -61,7 +62,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
         traccc::spacepoint_container spacepoints_per_event;
         measurements_per_event.reserve(cells_per_event.size());
         spacepoints_per_event.reserve(cells_per_event.size());
-
+       
         for (auto &cells_per_module : cells_per_event)
         {
             // The algorithmic code part: start
@@ -79,10 +80,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
             measurements_per_event.push_back(std::move(measurements_per_module));
             spacepoints_per_event.push_back(std::move(spacepoints_per_module));
         }
-    
+	
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
         for (const auto& measurements_per_module : measurements_per_event){
-            auto module = measurements_per_module.module;
+            auto module = measurements_per_module.modcfg.module;
             for (const auto& measurement : measurements_per_module.items){
                 const auto& local = measurement.local;
                 mwriter.append({ module, local[0], local[1], 0., 0.});
@@ -97,9 +98,9 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
                 spwriter.append({ module, pos[0], pos[1], pos[2], 0., 0., 0.});
             }
         }
-
+	
     }
-
+    
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_cells << " cells from " << m_modules << " modules" << std::endl;
     std::cout << "- created " << n_clusters << " clusters. " << std::endl;

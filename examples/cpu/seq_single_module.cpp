@@ -10,14 +10,15 @@
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
-#include "algorithms/component_connection.hpp"
-#include "algorithms/measurement_creation.hpp"
-#include "algorithms/spacepoint_formation.hpp"
+#include "../../algorithms/cpu/include/component_connection.hpp"
+#include "../../algorithms/cpu/include/measurement_creation.hpp"
+#include "../../algorithms/cpu/include/spacepoint_formation.hpp"
 
 int main(){
   
   /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
-  std::vector<traccc::cell> cell_items = 
+    //std::vector<traccc::cell> cell_items =
+    vecmem::vector<traccc::cell> cell_items = 
         { {1, 0, 1., 0. }, 
           {8, 4, 2., 0.}, 
           {10, 4, 3., 0.}, 

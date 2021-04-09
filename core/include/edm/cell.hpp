@@ -11,6 +11,9 @@
 #include "definitions/primitives.hpp"
 #include <vector>
 #include <limits>
+#include "vecmem/containers/vector.hpp"
+#include "vecmem/memory/memory_resource.hpp"
+#include "vecmem/containers/jagged_vector.hpp"
 
 namespace traccc {
 
@@ -27,23 +30,12 @@ namespace traccc {
         scalar time = 0.;
     };
 
-    /// A cell collection: 
-    ///
-    /// it remembers the moduleentifier and also 
-    /// keeps track of the cell ranges for chosing optimal
-    /// algorithm.
-    struct cell_collection { 
-
-        event_id event = 0;
-        geometry_id module = 0;
-        transform3 placement = transform3{};
-
-        std::vector<cell> items;
-        std::array<channel_id,2> range0 = {std::numeric_limits<channel_id>::max(), 0};
-        std::array<channel_id,2> range1 = {std::numeric_limits<channel_id>::max(), 0};         
+    /// A module definition
+    struct module_config{
+	geometry_id module = 0;
+	transform3 placement = transform3{};
+	std::array<channel_id,2> range0 = {std::numeric_limits<channel_id>::max(), 0};
+        std::array<channel_id,2> range1 = {std::numeric_limits<channel_id>::max(), 0};
     };
-
-    using cell_container = std::vector<cell_collection>;
-
 }
 

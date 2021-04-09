@@ -33,7 +33,7 @@ namespace traccc
         {
 
             measurement_collection measurements;
-            measurements.placement = clusters.placement;
+            measurements.modcfg.placement = clusters.placement;
             this->operator()(clusters, measurements);
             return measurements;
         }
@@ -49,7 +49,7 @@ namespace traccc
         void operator()(const cluster_collection &clusters, measurement_collection &measurements) const
         {
             // Assign the module id
-            measurements.module = clusters.module;
+            measurements.modcfg.module = clusters.module;
             // Run the algorithm
             measurements.items.reserve(clusters.items.size());
             for (const auto &cluster : clusters.items)

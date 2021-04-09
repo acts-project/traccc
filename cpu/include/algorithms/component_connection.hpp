@@ -26,7 +26,7 @@ namespace traccc {
         /// @return a cluster collection  
         cluster_collection operator()(const cell_collection& cells) const {            
             cluster_collection clusters;
-            clusters.placement = cells.placement;
+            clusters.placement = cells.modcfg.placement;
             this->operator()(cells, clusters);
             return clusters;
         }
@@ -41,16 +41,9 @@ namespace traccc {
         /// void interface      
         void operator()(const cell_collection& cells, cluster_collection& clusters) const {         
             // Assign the module id
-            clusters.module = cells.module;
+            clusters.module = cells.modcfg.module;
             // Run the algorithm  
             auto connected_cells = detail::sparse_ccl(cells.items);
-	    /*
-	    printf("%d", std::get<0>(connected_cells));
-	    auto labels = std::get<1>(connected_cells);
-	    for (auto i: labels){
-	      printf("%d ", i);
-	    }
-	    */
 	    std::vector<cluster> cluster_items(std::get<0>(connected_cells),cluster{});
             unsigned int icell = 0;
             for (auto cell_label : std::get<1>(connected_cells)){
