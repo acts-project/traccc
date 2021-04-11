@@ -8,21 +8,23 @@
 #pragma once
 
 #include "edm/spacepoint.hpp"
-#include "vecmem/memory/cuda/managed_memory_resource.hpp"
-#include "vecmem/containers/vector.hpp"
-#include "vecmem/containers/jagged_vector.hpp"
 
 namespace traccc {    
 
     struct spacepoint_container_cuda {
 	event_id event = 0;
-	geometry_id module = 0;
-	vecmem::cuda::managed_memory_resource m_mem;	
-	vecmem::jagged_vector< measurement > items;
+	vecmem::cuda::managed_memory_resource m_mem;
+	vecmem::vector< geometry_id > module;
+	vecmem::jagged_vector< spacepoint > items;
 
-	cell_event_cuda( void ):
+	spacepoint_container_cuda(const cell_container_cuda& cells, const label_container_cuda& labels):
 	    items(vecmem::jagged_vector<spacepoint>(&m_mem))
 	{
+	    for(int i=0; labels.num_label.size(); ++i){
+		module.push_back(cells.modcfg[i].module);
+		items.push_back(vecmem::vector< traccc::spacepoint >(labels.num_label[i], &m_mem));
+	    }
+
 	}
     }; 
 }

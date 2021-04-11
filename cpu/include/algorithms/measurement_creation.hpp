@@ -9,9 +9,9 @@
 
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
-#include "edm/cell.hpp"
 #include "edm/cluster.hpp"
-#include "edm/measurement.hpp"
+#include "cpu/include/edm/cell_container.hpp"
+#include "cpu/include/edm/measurement_container.hpp"
 #include "definitions/algebra.hpp"
 
 namespace traccc

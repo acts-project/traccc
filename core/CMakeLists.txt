@@ -18,9 +18,6 @@ install(
   DIRECTORY include/edm
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-target_link_libraries(traccc_core INTERFACE vecmem::core)
-
-# include CUDA
 if(TRACCC_BUILD_CUDA)
   find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
   target_include_directories(traccc_core

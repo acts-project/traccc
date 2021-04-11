@@ -1,5 +1,3 @@
 add_executable (seq_example_cuda seq_example_cuda.cpp)
-#add_executable (white_paper white_paper.cpp white_paper_kernels.cu white_paper_kernels.cuh)
-add_executable (white_paper white_paper.cpp white_paper_kernels.cu white_paper_kernels.cuh)
-target_link_libraries (seq_example_cuda LINK_PUBLIC traccc::core traccc::io traccc_algorithms)
-target_link_libraries (white_paper LINK_PUBLIC traccc::core traccc::io traccc_algorithms)
+target_link_libraries (seq_example_cuda LINK_PUBLIC traccc::core traccc::cpu traccc::cuda traccc::io)
+

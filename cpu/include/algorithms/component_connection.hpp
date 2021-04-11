@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "edm/cell.hpp"
 #include "edm/cluster.hpp"
+#include "cpu/include/edm/cell_container.hpp"
 #include "detail/sparse_ccl.hpp"
 
 namespace traccc {
@@ -24,7 +24,7 @@ namespace traccc {
         ///
         /// c++20 piping interface:
         /// @return a cluster collection  
-        cluster_collection operator()(const cell_collection& cells) const {            
+        cluster_collection operator()(const cell_collection& cells) const {       
             cluster_collection clusters;
             clusters.placement = cells.modcfg.placement;
             this->operator()(cells, clusters);

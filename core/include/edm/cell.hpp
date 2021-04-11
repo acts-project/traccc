@@ -11,9 +11,6 @@
 #include "definitions/primitives.hpp"
 #include <vector>
 #include <limits>
-#include "vecmem/containers/vector.hpp"
-#include "vecmem/memory/memory_resource.hpp"
-#include "vecmem/containers/jagged_vector.hpp"
 
 namespace traccc {
 
