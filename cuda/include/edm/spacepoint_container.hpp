@@ -20,7 +20,7 @@ namespace traccc {
 	spacepoint_container_cuda(const cell_container_cuda& cells, const label_container_cuda& labels):
 	    items(vecmem::jagged_vector<spacepoint>(&m_mem))
 	{
-	    for(int i=0; labels.num_label.size(); ++i){
+	    for(int i=0; i<labels.num_label.size(); ++i){
 		module.push_back(cells.modcfg[i].module);
 		items.push_back(vecmem::vector< traccc::spacepoint >(labels.num_label[i], &m_mem));
 	    }

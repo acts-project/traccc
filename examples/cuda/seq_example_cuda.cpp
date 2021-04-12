@@ -45,7 +45,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
     // Time Elapsed
     double cpu_time = 0;
     double cuda_time = 0;
-      
+    double read_time = 0;
+    double copy_time = 0;
     
     // Loop over events
     for (unsigned int event = 0; event < events; ++event){
@@ -62,11 +63,19 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	// CPU part
 	//------------------
 
-	auto start_cpu = std::chrono::system_clock::now();
+
+	auto start_read = std::chrono::system_clock::now();
 	
 	traccc::cell_container cells_per_event = traccc::read_cells(creader, surface_transforms);
+
+	auto end_read = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsec_read = end_read - start_read;
+	read_time += elapsec_read.count();
+	
         m_modules += cells_per_event.size();
 
+	auto start_cpu = std::chrono::system_clock::now();
+	
         // Output containers
         traccc::measurement_container measurements_per_event;
         traccc::spacepoint_container spacepoints_per_event;
@@ -98,17 +107,22 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	// CUDA part
 	//------------------
 
-	auto start_cuda = std::chrono::system_clock::now();
-
+	auto start_copy = std::chrono::system_clock::now();
+	
 	traccc::cell_container_cuda cells_cuda;
 	// Copy cpu cells to vecmem
 	for (auto cell_module: cells_per_event){
-	    vecmem::vector<traccc::cell> cell_copy(cell_module.items.begin(),
-						   cell_module.items.end());	    
+	    vecmem::vector<traccc::cell> cell_copy(cell_module.items.begin(),cell_module.items.end());
 	    cells_cuda.items.push_back(cell_copy);
 	    cells_cuda.modcfg.push_back(cell_module.modcfg);
 	}
 
+	auto end_copy = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsec_copy = end_copy - start_copy;
+	copy_time += elapsec_copy.count();
+	
+	auto start_cuda = std::chrono::system_clock::now();
+	
 	traccc::label_container_cuda labels_cuda(cells_cuda);
 
 	// Run sparseCCL
@@ -117,94 +131,33 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	traccc::measurement_container_cuda measurements_cuda(cells_cuda,labels_cuda);
 	traccc::spacepoint_container_cuda spacepoints_cuda(cells_cuda,labels_cuda);
 	
-	// Run spacepoint formation
-	/*
+	// Run spacepoint formation	
 	traccc::sp_formation_cuda(cells_cuda,
 				  labels_cuda,
 				  measurements_cuda,
 				  spacepoints_cuda);
-	*/
+	
 	auto end_cuda = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsec_cuda = end_cuda - start_cuda;
 	cuda_time += elapsec_cuda.count();
 	
-        //traccc::cell_reader creader_cuda(io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});       
-	//vecmem::cuda::managed_memory_resource managed_resource;
-	
-	//vecmem::jagged_vector< traccc::cell > vm_cells_per_event(&managed_resource);
-	//vecmem::vector< std::tuple< traccc::geometry_id, traccc::transform3 > > vm_geoInfo_per_event(&managed_resource);
-	/*
-	traccc::read_cells_vecmem(vm_cells_per_event,
-				  vm_geoInfo_per_event,
-				  creader_cuda,
-				  surface_transforms);
-
-	// prepare label data
-	vecmem::jagged_vector< unsigned int > vm_label_per_event(&managed_resource);
-	for (auto& cells: vm_cells_per_event){
-	  vm_label_per_event.push_back(vecmem::vector< unsigned int>(cells.size(),0,&managed_resource));
-	}	
-	vecmem::vector< unsigned int> num_clusters_per_event(vm_cells_per_event.size(), 0 , &managed_resource);
-
-	// run sparse_ccl
-	vecmem::data::jagged_vector_data< traccc::cell> cell_data(vm_cells_per_event,&managed_resource);
-	vecmem::data::jagged_vector_data< unsigned int > label_data(vm_label_per_event, &managed_resource);
-	
-	traccc::sparse_ccl_cuda(cell_data,
-				label_data,
-				vecmem::get_data( num_clusters_per_event ));
-	
-	
-	
-	// run space formation
-	vecmem::jagged_vector< traccc::measurement > vm_ms_per_event(&managed_resource);
-  	vecmem::jagged_vector< traccc::spacepoint > vm_sp_per_event(&managed_resource);
-
-	for(auto& nclusters: num_clusters_per_event){
-	  vm_ms_per_event.push_back(vecmem::vector< traccc::measurement >(nclusters));
-	  vm_sp_per_event.push_back(vecmem::vector< traccc::spacepoint >(nclusters));
-	}
-	
-	vecmem::data::jagged_vector_data< traccc::measurement > ms_data(vm_ms_per_event, &managed_resource);
-	vecmem::data::jagged_vector_data< traccc::spacepoint > sp_data(vm_sp_per_event, &managed_resource);
-	
-	traccc::sp_formation_cuda(cell_data,
-				  label_data,
-				  vecmem::get_data( num_clusters_per_event ),
-				  vecmem::get_data( vm_geoInfo_per_event ),
-				  ms_data,
-				  sp_data);	
-	  
-	// read test
-	for (int i=0; i<vm_geoInfo_per_event.size(); i++){
-	  if ((std::get<0>(vm_geoInfo_per_event.at(i))!=cells_per_event[i].module)){
-	    std::cout << "there is a problem in reading module ID..." << std::endl;
-	  }
-	  auto vm_placement = std::get<1>(vm_geoInfo_per_event.at(i));
-	  auto cpu_placement = cells_per_event[i].placement;
-	  if (vm_placement._data != cpu_placement._data){
-	    std::cout << "there is a problem in reading placement..." << std::endl;
-	  }
-	}
-
-
-	// ms test
-	for (int i=0; i<vm_ms_per_event.size(); i++){	
-	  auto ms_obj = vm_ms_per_event[i];
-	  for (int j=0; j<ms_obj.size(); j++){
-	    auto ms_cpu = (measurements_per_event[i].items)[j];
-
-	    if ( (ms_obj[j].local[0] != ms_cpu.local[0]) ||
-		 (ms_obj[j].local[1] != ms_cpu.local[1]) ||
-		 (ms_obj[j].local[2] != ms_cpu.local[2]) ){
-	      std::cout << "there is a problem in measurement creation" << std::endl;
+	// measurement validation
+	for (int i=0; i<measurements_cuda.items.size(); i++){	
+	    auto ms_obj = measurements_cuda.items[i];
+	    for (int j=0; j<ms_obj.size(); j++){
+		auto ms_cpu = (measurements_per_event[i].items)[j];
+		
+		if ( (ms_obj[j].local[0] != ms_cpu.local[0]) ||
+		     (ms_obj[j].local[1] != ms_cpu.local[1]) ||
+		     (ms_obj[j].local[2] != ms_cpu.local[2]) ){
+		    std::cout << "there is a problem in measurement creation" << std::endl;
 	    }
 	  }
 	}
-	// sp test
 	
-	for (int i=0; i<vm_sp_per_event.size(); i++){
-	  auto sp_obj = vm_sp_per_event[i];
+	// spacepoint validation
+	for (int i=0; i<spacepoints_cuda.items.size(); i++){
+	  auto sp_obj = spacepoints_cuda.items[i];
 	  for (int j=0; j<sp_obj.size(); j++){
 	    auto sp_cpu = (spacepoints_per_event[i].items)[j];
 	    if ( (sp_obj[j].global[0] != sp_cpu.global[0]) ||
@@ -212,14 +165,9 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 		 (sp_obj[j].global[2] != sp_cpu.global[2]) ){
 	      std::cout << "there is a problem in space formation..." << std::endl;
 	    }
-
-	    //printf("%f %f %f %f %f %f \n",
-	    //sp_obj[j].global[0], sp_obj[j].global[1], sp_obj[j].global[2],
-	//	   sp_cpu.global[0], sp_cpu.global[1], sp_cpu.global[2]);      
-
 	  }
 	}
-	*/
+	
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
         for (const auto& measurements_per_module : measurements_per_event){
             auto module = measurements_per_module.modcfg.module;
@@ -237,7 +185,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
                 spwriter.append({ module, pos[0], pos[1], pos[2], 0., 0., 0.});
             }
         }
-
+	
     }
 
     std::cout << "==> Statistics ... " << std::endl;
@@ -246,7 +194,11 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
     std::cout << "- created " << n_measurements << " measurements. " << std::endl;
     std::cout << "- created " << n_space_points << " space points. " << std::endl;
 
-    std::cout << "CPU Time: " << cpu_time << "  CUDA Time: " << cuda_time << std::endl;
+    std::cout << "==> Elapsed time ... " << std::endl;
+    std::cout << "- cpu data reading time: " << read_time << std::endl;
+    std::cout << "- cpu-to-gpu cell-data copying time: " << copy_time << std::endl;   
+    std::cout << "- cpu time: " << cpu_time << std::endl;
+    std::cout << "- cuda time: " << cuda_time << std::endl;
     
     return 0;
 }

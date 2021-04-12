@@ -21,8 +21,8 @@ namespace traccc {
 	    modcfg(vecmem::vector<module_config>(&m_mem)),
 	    items(vecmem::jagged_vector<measurement>(&m_mem))
 	{
-	    for(int i=0; labels.num_label.size(); ++i){
-		modcfg = cells.modcfg;
+	    modcfg = cells.modcfg;
+	    for(int i=0; i<labels.num_label.size(); ++i){
 		items.push_back(vecmem::vector< traccc::measurement >(labels.num_label[i], &m_mem));
 	    }
 	}

@@ -19,7 +19,6 @@
 #include "edm/cell.hpp"
 #include "cuda/include/edm/cell_container.hpp"
 #include "cuda/include/edm/label_container.hpp"
-#include "cuda/include/utils/cuda_error_check.hpp"
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 

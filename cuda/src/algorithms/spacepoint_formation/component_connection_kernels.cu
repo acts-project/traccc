@@ -6,6 +6,7 @@
  */
 
 #include "cuda/include/algorithms/spacepoint_formation/component_connection_kernels.cuh"
+#include "cuda/include/utils/cuda_error_check.hpp"
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -88,7 +89,7 @@ namespace traccc {
     void sparse_ccl_cuda(traccc::cell_container_cuda& cells_per_event,
 			 traccc::label_container_cuda& labels_per_event){
 	
-	vecmem::data::jagged_vector_data<traccc::cell> cell_data(cells_per_event.items,&cells_per_event.m_mem);
+	vecmem::data::jagged_vector_data< cell > cell_data(cells_per_event.items,&cells_per_event.m_mem);
 	vecmem::data::jagged_vector_data<unsigned int> label_data(labels_per_event.label,&labels_per_event.m_mem);
 	auto num_labels = vecmem::get_data(labels_per_event.num_label);
 	
