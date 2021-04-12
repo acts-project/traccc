@@ -1,11 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
- * 
+ *
  * (c) 2021 CERN for the benefit of the ACTS project
- * 
+ *
  * Mozilla Public License Version 2.0
  */
 
 #include "csv/csv_io.hpp"
+
+#include <vecmem/memory/host_memory_resource.hpp>
 
 #include <gtest/gtest.h>
 
@@ -23,16 +25,19 @@ TEST(io, csv_read_single_module)
     std::string file = data_directory+std::string("single_module/cells.csv");
     traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
 
-    auto single_module_cells = traccc::read_cells(creader);
-    ASSERT_EQ(single_module_cells.size(), 1u);
-    auto module_cells = single_module_cells[0];
+    vecmem::host_memory_resource resource;
+    auto single_module_cells = traccc::read_cells(creader, resource);
+    ASSERT_EQ(single_module_cells.cells.size(), 1u);
+    ASSERT_EQ(single_module_cells.cells.size(), single_module_cells.modules.size());
+    auto module_cells = single_module_cells.cells[0];
+    auto module = single_module_cells.modules[0];
 
-    ASSERT_EQ(module_cells.module, 0u);
-    auto expected_range0 = std::array<traccc::channel_id,2>{123u,174u};
-    ASSERT_EQ(module_cells.range0, expected_range0);
-    auto expected_range1 = std::array<traccc::channel_id,2>{32u,880u};
-    ASSERT_EQ(module_cells.range1, expected_range1);
-    ASSERT_EQ(module_cells.items.size(), 6u);
+    ASSERT_EQ(module.module, 0u);
+    ASSERT_EQ(module.range0[0], 123u);
+    ASSERT_EQ(module.range0[1], 174u);
+    ASSERT_EQ(module.range1[0], 32u);
+    ASSERT_EQ(module.range1[1], 880u);
+    ASSERT_EQ(module_cells.size(), 6u);
 
 }
 
@@ -47,29 +52,34 @@ TEST(io, csv_read_two_modules)
     }
     auto data_directory = std::string(env_d_d);
     std::string file = data_directory+std::string("two_modules/cells.csv");
-    
+
     traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
-    auto two_module_cells = traccc::read_cells(creader);
-    ASSERT_EQ(two_module_cells.size(), 2u);
+    vecmem::host_memory_resource resource;
+    auto two_module_cells = traccc::read_cells(creader, resource);
+    ASSERT_EQ(two_module_cells.cells.size(), 2u);
+    ASSERT_EQ(two_module_cells.cells.size(), two_module_cells.modules.size());
 
-    auto first_module_cells = two_module_cells[0];
-    ASSERT_EQ(first_module_cells.items.size(), 6u);
+    auto first_module_cells = two_module_cells.cells[0];
+    auto first_module = two_module_cells.modules[0];
 
-    ASSERT_EQ(first_module_cells.module, 0u);
-    auto expected_range0 = std::array<traccc::channel_id,2>{123u,174u};
-    ASSERT_EQ(first_module_cells.range0, expected_range0);
-    auto expected_range1 = std::array<traccc::channel_id,2>{32u,880u};
-    ASSERT_EQ(first_module_cells.range1, expected_range1);
+    ASSERT_EQ(first_module_cells.size(), 6u);
 
-    auto second_module_cells = two_module_cells[1];
+    ASSERT_EQ(first_module.module, 0u);
+    ASSERT_EQ(first_module.range0[0], 123u);
+    ASSERT_EQ(first_module.range0[1], 174u);
+    ASSERT_EQ(first_module.range1[0], 32u);
+    ASSERT_EQ(first_module.range1[1], 880u);
 
-    ASSERT_EQ(second_module_cells.items.size(), 8u);
+    auto second_module_cells = two_module_cells.cells[1];
+    auto second_module = two_module_cells.modules[1];
 
-    ASSERT_EQ(second_module_cells.module, 1u);
-    expected_range0 = std::array<traccc::channel_id,2>{0u,22u};
-    ASSERT_EQ(second_module_cells.range0, expected_range0);
-    expected_range1 = std::array<traccc::channel_id,2>{4u,98u};
-    ASSERT_EQ(second_module_cells.range1, expected_range1);
+    ASSERT_EQ(second_module_cells.size(), 8u);
+
+    ASSERT_EQ(second_module.module, 1u);
+    EXPECT_EQ(second_module.range0[0], 0u);
+    EXPECT_EQ(second_module.range0[1], 22u);
+    EXPECT_EQ(second_module.range1[0], 4u);
+    EXPECT_EQ(second_module.range1[1], 98u);
 
 }
 
@@ -86,8 +96,8 @@ TEST(io, csv_read_tml_transforms){
     std::string file = data_directory+std::string("tml_detector/trackml-detector.csv");
 
     traccc::surface_reader sreader(file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw", "rot_zu", "rot_zv", "rot_zw"} );
-    auto tml_barrel_transforms = traccc::read_surfaces(sreader); 
-    
+    auto tml_barrel_transforms = traccc::read_surfaces(sreader);
+
     ASSERT_EQ(tml_barrel_transforms.size(), 18751u) ;
 
 }
@@ -104,9 +114,10 @@ TEST(io, csv_read_tml_pixelbarrel){
     std::string file = data_directory+std::string("tml_pixel_barrel/event000000000-cells.csv");
 
     traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
-    auto tml_barrel_modules = traccc::read_cells(creader); 
-    
-    ASSERT_EQ(tml_barrel_modules.size(), 2382u) ;
+    vecmem::host_memory_resource resource;
+    auto tml_barrel_modules = traccc::read_cells(creader, resource);
+
+    ASSERT_EQ(tml_barrel_modules.cells.size(), 2382u) ;
 
 }
 
