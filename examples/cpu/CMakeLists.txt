@@ -3,3 +3,6 @@ target_link_libraries (seq_single_module LINK_PUBLIC traccc::core)
 
 add_executable (seq_example seq_example.cpp)
 target_link_libraries (seq_example LINK_PUBLIC traccc::core traccc::io)
+
+add_executable (ccl_example ccl_example.cpp)
+target_link_libraries (ccl_example LINK_PUBLIC traccc::core traccc::io)
