@@ -100,21 +100,37 @@ int main(
 
     print_statistics(modules);
 
-    auto time_process_start = std::chrono::high_resolution_clock::now();
+    auto time_process_p1 = std::chrono::high_resolution_clock::now();
 
     for (const traccc::cell_collection & module : modules) {
         traccc::cluster_collection clusters_per_module = cc(module);
     }
 
-    auto time_process_end = std::chrono::high_resolution_clock::now();
+    auto time_process_p2 = std::chrono::high_resolution_clock::now();
+
+    for (std::size_t i = 0; i < 10; ++i) {
+        for (const traccc::cell_collection & module : modules) {
+            traccc::cluster_collection clusters_per_module = cc(module);
+        }
+    }
+
+    auto time_process_p3 = std::chrono::high_resolution_clock::now();
+
+    for (const traccc::cell_collection & module : modules) {
+        traccc::cluster_collection clusters_per_module = cc(module);
+    }
+
+    auto time_process_p4 = std::chrono::high_resolution_clock::now();
 
     std::cout << "\nCPU budget allocation" << std::endl;
     std::cout << std::fixed;
     std::cout << std::setw(13) << "Component" << " | " << std::setw(13) << "Runtime" << std::endl;
     std::cout << std::setw(13) << "Data loading" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_read_start, time_read_end) << " ms" << std::endl;
-    std::cout << std::setw(13) << "Statistics" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_read_end, time_process_start) << " ms" << std::endl;
-    std::cout << std::setw(13) << "Clustering" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_process_start, time_process_end) << " ms" << std::endl;
-    std::cout << std::setw(13) << "Total" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_read_start, time_process_end) << " ms" << std::endl;
+    std::cout << std::setw(13) << "Statistics" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_read_end, time_process_p1) << " ms" << std::endl;
+    std::cout << std::setw(13) << "Cold run" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_process_p1, time_process_p2) << " ms" << std::endl;
+    std::cout << std::setw(13) << "Heating" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_process_p2, time_process_p3) << " ms" << std::endl;
+    std::cout << std::setw(13) << "Hot run" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_process_p3, time_process_p4) << " ms" << std::endl;
+    std::cout << std::setw(13) << "Total" << " | " << std::setw(10) << std::setprecision(3) << delta_ms(time_read_start, time_process_p4) << " ms" << std::endl;
 
     return 0;
 }
