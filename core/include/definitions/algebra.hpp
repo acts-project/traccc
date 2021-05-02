@@ -8,7 +8,7 @@
 #pragma once
 
 #include "definitions/primitives.hpp"
-#include "definitions/arch_qualifiers.hpp"
+
 #include <any>
 #include <cmath>
 #include <array>
@@ -17,49 +17,41 @@
 namespace traccc
 {
 
-    __CUDA_DEVICE_HOST__
     std::array<scalar, 2> operator*(const std::array<scalar, 2> &a, scalar s)
     {
         return {a[0] * s, a[1] * s};
     }
-    
-    __CUDA_DEVICE_HOST__
+
     std::array<scalar, 2> operator*(scalar s, const std::array<scalar, 2> &a)
     {
         return {s * a[0], s * a[1]};
     }
 
-    __CUDA_DEVICE_HOST__
     std::array<scalar, 2> operator-(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] - b[0], a[1] - b[1]};
     }
 
-    __CUDA_DEVICE_HOST__
     std::array<scalar, 2> operator+(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] + b[0], a[1] + b[1]};
     }
 
-    __CUDA_DEVICE_HOST__
     std::array<scalar, 3> operator*(const std::array<scalar, 3> &a, scalar s)
     {
         return {a[0] * s, a[1] * s, a[2] * s};
     }
 
-    __CUDA_DEVICE_HOST__
     std::array<scalar, 3> operator*(scalar s, const std::array<scalar, 3> &a)
     {
         return {s * a[0], s * a[1], s * a[2]};
     }
 
-    __CUDA_DEVICE_HOST__
     std::array<scalar, 3> operator-(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
     }
 
-    __CUDA_DEVICE_HOST__
     std::array<scalar, 3> operator+(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
@@ -78,7 +70,6 @@ namespace traccc
          * 
          * @return a vector (expression) representing the cross product
          **/
-	__CUDA_DEVICE_HOST__
         std::array<scalar, 3> cross(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return {a[1] * b[2] - b[1] * a[2], a[2] * b[0] - b[2] * a[0], a[0] * b[1] - b[0] * a[1]};
@@ -93,7 +84,6 @@ namespace traccc
          * @param v the input vector 
          **/
         template <typename vector_type>
-	__CUDA_DEVICE_HOST__
         auto phi(const vector_type &v) noexcept
         {
             return std::atan2(v[1], v[0]);
@@ -104,7 +94,6 @@ namespace traccc
          * @param v the input vector 
          **/
         template <typename vector_type>
-	__CUDA_DEVICE_HOST__	
         auto theta(const vector_type &v) noexcept
         {
             return std::atan2(std::sqrt(v[0] * v[0] + v[1] * v[1]), v[2]);
@@ -115,7 +104,6 @@ namespace traccc
          * @param v the input vector 
          **/
         template <typename vector_type>
-	__CUDA_DEVICE_HOST__	
         auto perp(const vector_type &v) noexcept
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -125,7 +113,6 @@ namespace traccc
          * 
          * @param v the input vector 
          **/
-	__CUDA_DEVICE_HOST__
         auto norm(const std::array<scalar, 2> &v)
         {
             return perp(v);
@@ -135,7 +122,6 @@ namespace traccc
          * 
          * @param v the input vector 
          **/
-	__CUDA_DEVICE_HOST__
         auto norm(const std::array<scalar, 3> &v)
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
@@ -146,7 +132,6 @@ namespace traccc
          * @param v the input vector 
          **/
         template <typename vector_type>
-	__CUDA_DEVICE_HOST__	
         auto eta(const vector_type &v) noexcept
         {
             return std::atanh(v[2] / norm(v));
@@ -157,7 +142,6 @@ namespace traccc
          * @param m the input matrix 
          **/
         template <unsigned int kROWS, typename matrix_type>
-	__CUDA_DEVICE_HOST__	
         auto vector(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
             std::array<scalar, kROWS> subvector;
@@ -173,7 +157,6 @@ namespace traccc
          * @param m the input matrix 
          **/
         template <unsigned int kROWS, unsigned int kCOLS, typename matrix_type>
-	__CUDA_DEVICE_HOST__	
         auto block(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
             std::array<std::array<scalar, kROWS>, kCOLS> submatrix;
@@ -333,7 +316,6 @@ namespace traccc
              *
              * @return a sacalar determinant - no checking done 
              */
-	    __CUDA_DEVICE_HOST__	    
             static scalar determinant(const matrix44 &m)
             {
                 return m[3][0] * m[2][1] * m[1][2] * m[0][3] - m[2][0] * m[3][1] * m[1][2] * m[0][3] - m[3][0] * m[1][1] * m[2][2] * m[0][3] + m[1][0] * m[3][1] * m[2][2] * m[0][3] +
@@ -350,7 +332,6 @@ namespace traccc
              *
              * @return an inverse matrix 
              */
-	    __CUDA_DEVICE_HOST__	    
             static matrix44 invert(const matrix44 &m)
             {
                 matrix44 i;
@@ -386,7 +367,6 @@ namespace traccc
              * @param m is the rotation matrix
              * @param v is the vector to be rotated
              */
-	    __CUDA_DEVICE_HOST__	    
             static vector3 rotate(const matrix44 &m, const vector3 &v)
             {
 
@@ -396,21 +376,18 @@ namespace traccc
             }
 
             /** This method retrieves the rotation of a transform */
-	    __CUDA_DEVICE_HOST__	    
             auto rotation() const
             {
                 return getter::block<3, 3>(_data, 0, 0);
             }
 
             /** This method retrieves the translation of a transform */
-	    __CUDA_DEVICE_HOST__	    
             point3 translation() const
             {
                 return point3{_data[3][0], _data[3][1], _data[3][2]};
             }
 
             /** This method retrieves the 4x4 matrix of a transform */
-	    __CUDA_DEVICE_HOST__	    
             const matrix44 &matrix() const
             {
                 return _data;
@@ -418,7 +395,6 @@ namespace traccc
 
             /** This method transform from a point from the local 3D cartesian frame to the global 3D cartesian frame */
             template <typename point_type>
-	    __CUDA_DEVICE_HOST__	    
             const point_type point_to_global(const point_type &v) const
             {
                 vector3 rg = rotate(_data, v);
@@ -427,7 +403,6 @@ namespace traccc
 
             /** This method transform from a vector from the global 3D cartesian frame into the local 3D cartesian frame */
             template <typename point_type>
-	    __CUDA_DEVICE_HOST__	    	    
             const point_type point_to_local(const point_type &v) const
             {
                 vector3 rg = rotate(_data_inv, v);
@@ -436,7 +411,6 @@ namespace traccc
 
             /** This method transform from a vector from the local 3D cartesian frame to the global 3D cartesian frame */
             template <typename vector_type>
-	    __CUDA_DEVICE_HOST__	    	    
             const vector_type vector_to_global(const vector_type &v) const
             {
                 return rotate(_data, v);
@@ -444,7 +418,6 @@ namespace traccc
 
             /** This method transform from a vector from the global 3D cartesian frame into the local 3D cartesian frame */
             template <typename vector_type>
-	    __CUDA_DEVICE_HOST__	    	    
             const auto vector_to_local(const vector_type &v) const
             {
                 return rotate(_data_inv, v);
@@ -463,7 +436,6 @@ namespace traccc
          * 
          * @return the scalar dot product value 
          **/
-	__CUDA_DEVICE_HOST__	
         scalar dot(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
         {
             return a[0] * b[0] + a[1] * b[1];
@@ -473,7 +445,6 @@ namespace traccc
          * 
          * @param v the input vector
          **/
-	__CUDA_DEVICE_HOST__
         std::array<scalar, 3> normalize(const std::array<scalar, 2> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
@@ -487,7 +458,6 @@ namespace traccc
          * 
          * @return the scalar dot product value 
          **/
-	__CUDA_DEVICE_HOST__	
         scalar dot(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -497,7 +467,6 @@ namespace traccc
          * 
          * @param v the input vector
          **/
-	__CUDA_DEVICE_HOST__
         std::array<scalar, 3> normalize(const std::array<scalar, 3> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));

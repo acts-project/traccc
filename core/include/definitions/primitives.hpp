@@ -15,8 +15,8 @@ namespace traccc {
     using scalar = float;
     using geometry_id = uint64_t;
     using event_id = uint64_t;
-
-    using channel_id = unsigned int;    
+    using channel_id = unsigned int;
+    
     using vector2 = std::array<scalar, 2>;
     using point2 = std::array<scalar, 2>;
     using variance2 = std::array<scalar, 2>;
