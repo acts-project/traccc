@@ -59,45 +59,57 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
         std::string io_cells_file = data_directory+cells_dir+std::string("/event")+event_string+std::string("-cells.csv");
         traccc::cell_reader creader(io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
         traccc::host_cell_container cells_per_event = traccc::read_cells(creader, resource, surface_transforms);
-        m_modules += cells_per_event.modules.size();
+        m_modules += cells_per_event.headers.size();
 
         // Output containers
-        traccc::measurement_container measurements_per_event;
-        traccc::spacepoint_container spacepoints_per_event;
-        measurements_per_event.reserve(cells_per_event.modules.size());
-        spacepoints_per_event.reserve(cells_per_event.modules.size());
+        traccc::host_measurement_container measurements_per_event;
+        traccc::host_spacepoint_container spacepoints_per_event;
+        measurements_per_event.headers.reserve(cells_per_event.headers.size());
+	measurements_per_event.items.reserve(cells_per_event.headers.size());
+        spacepoints_per_event.headers.reserve(cells_per_event.headers.size());
+	spacepoints_per_event.items.reserve(cells_per_event.headers.size()); 
 
-        for (std::size_t i = 0; i < cells_per_event.cells.size(); ++i )
+        for (std::size_t i = 0; i < cells_per_event.items.size(); ++i )
         {
+	    auto& module = cells_per_event.headers[i];
+	    module.pixel = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
+
             // The algorithmic code part: start
-            traccc::cluster_collection clusters_per_module = cc(cells_per_event.cells[i], cells_per_event.modules[i]);
-            clusters_per_module.position_from_cell = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
-            traccc::measurement_collection measurements_per_module = mt(clusters_per_module);
-            traccc::spacepoint_collection spacepoints_per_module = sp(measurements_per_module);
+            traccc::cluster_collection clusters_per_module = cc(cells_per_event.items[i], cells_per_event.headers[i]);
+            clusters_per_module.position_from_cell = module.pixel;
+
+            traccc::host_measurement_collection measurements_per_module = mt(clusters_per_module, module);
+            traccc::host_spacepoint_collection spacepoints_per_module = sp(module, measurements_per_module);
             // The algorithmnic code part: end
 
-            n_cells += cells_per_event.cells[i].size();
+            n_cells += cells_per_event.items[i].size();
             n_clusters += clusters_per_module.items.size();
-            n_measurements += measurements_per_module.items.size();
-            n_space_points += spacepoints_per_module.items.size();
+            n_measurements += measurements_per_module.size();
+            n_space_points += spacepoints_per_module.size();
 
-            measurements_per_event.push_back(std::move(measurements_per_module));
-            spacepoints_per_event.push_back(std::move(spacepoints_per_module));
+            measurements_per_event.items.push_back(std::move(measurements_per_module));
+	    measurements_per_event.headers.push_back(module);
+	    
+            spacepoints_per_event.items.push_back(std::move(spacepoints_per_module));
+	    spacepoints_per_event.headers.push_back(module.module);
         }
 
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
-        for (const auto& measurements_per_module : measurements_per_event){
-            auto module = measurements_per_module.module;
-            for (const auto& measurement : measurements_per_module.items){
+	for (int i=0; i<measurements_per_event.items.size(); ++i){
+	    auto measurements_per_module = measurements_per_event.items[i];
+            auto module = measurements_per_event.headers[i];
+            for (const auto& measurement : measurements_per_module){
                 const auto& local = measurement.local;
-                mwriter.append({ module, local[0], local[1], 0., 0.});
+                mwriter.append({ module.module, local[0], local[1], 0., 0.});
             }
         }
 
         traccc::spacepoint_writer spwriter{std::string("event")+event_number+"-spacepoints.csv"};
-        for (const auto& spacepoint_per_module : spacepoints_per_event){
-            auto module = spacepoint_per_module.module;
-            for (const auto& spacepoint : spacepoint_per_module.items){
+	for (int i=0; i<spacepoints_per_event.items.size(); ++i){
+	    auto spacepoints_per_module = spacepoints_per_event.items[i];
+            auto module = spacepoints_per_event.headers[i];
+	    
+            for (const auto& spacepoint : spacepoints_per_module){
                 const auto& pos = spacepoint.global;
                 spwriter.append({ module, pos[0], pos[1], pos[2], 0., 0., 0.});
             }

@@ -29,12 +29,10 @@ namespace traccc
         /// C++20 piping interface
         ///
         /// @return a measurement collection - usually same size or sometime slightly smaller than the input
-        measurement_collection operator()(const cluster_collection &clusters) const
+        host_measurement_collection operator()(const cluster_collection &clusters, const cell_module& module) const
         {
-
-            measurement_collection measurements;
-            measurements.placement = clusters.placement;
-            this->operator()(clusters, measurements);
+            host_measurement_collection measurements;
+            this->operator()(clusters, module, measurements);
             return measurements;
         }
 
@@ -46,15 +44,16 @@ namespace traccc
         /// void interface
         ///
         /// @return a measurement collection - usually same size or sometime slightly smaller than the input
-        void operator()(const cluster_collection &clusters, measurement_collection &measurements) const
+        void operator()(const cluster_collection &clusters, const cell_module& module, host_measurement_collection &measurements) const
         {
-            // Assign the module id
-            measurements.module = clusters.module;
             // Run the algorithm
-            measurements.items.reserve(clusters.items.size());
+	    auto pitch = module.pixel.get_pitch();
+	    
+            measurements.reserve(clusters.items.size());
             for (const auto &cluster : clusters.items)
             {
                 point2 p = {0., 0.};
+		variance2 v = {0., 0.};
                 scalar totalWeight = 0.;
 
                 // Should not happen
@@ -70,14 +69,26 @@ namespace traccc
                         totalWeight += cell.activation;
                         auto cell_position = clusters.position_from_cell(cell.channel0, cell.channel1);
                         p = p + weight * cell_position;
+			point2 square_pos = {cell_position[0] * cell_position[0],
+					     cell_position[1] * cell_position[1]};
+			v = v + weight * square_pos;
                     }
                 }
                 if (totalWeight > 0.)
                 {
                     measurement m;
+		    // normalize the cell position
                     m.local = 1. / totalWeight * p;
+		    // normalize the variance
+		    m.variance = 1. / totalWeight * v;
+		    // plus pitch^2 / 12
+		    m.variance = m.variance + point2{ pitch[0]*pitch[0]/12,
+						      pitch[1]*pitch[1]/12 };
+		    // minus <x>^2
+		    m.variance = m.variance - point2{m.local[0] * m.local[0],
+						     m.local[1] * m.local[1]};
                     // @todo add variance estimation
-                    measurements.items.push_back(std::move(m));
+                    measurements.push_back(std::move(m));
                 }
             }
         }

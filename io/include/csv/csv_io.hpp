@@ -111,15 +111,16 @@ namespace traccc {
   /// @param resource The memory resource to use for the return value
   /// @param tfmap the (optional) transform map
   /// @param max_cells the (optional) maximum number of cells to be read in
-  host_cell_container read_cells(cell_reader& creader,
-            vecmem::memory_resource& resource,
+  host_cell_container read_cells(
+	    cell_reader& creader,
+	    vecmem::memory_resource& resource,
             const std::map<geometry_id, transform3>& tfmap ={},
-            unsigned int max_cells = std::numeric_limits<unsigned int>::max()){
+	    unsigned int max_cells = std::numeric_limits<unsigned int>::max()){
 
     uint64_t reference_id = 0;
     host_cell_container result = {
-      host_cell_container::cell_module_vector( &resource ),
-      host_cell_container::cell_vector( &resource ) };
+      host_cell_container::header_vector( &resource ),
+      host_cell_container::item_vector( &resource ) };
 
     bool first_line_read = false;
     unsigned int read_cells = 0;
@@ -138,8 +139,8 @@ namespace traccc {
         }
         // Sort in column major order
         std::sort(cells.begin(), cells.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
-        result.modules.push_back(module);
-        result.cells.push_back(cells);
+        result.headers.push_back(module);
+        result.items.push_back(cells);
         // Clear for next round
         cells = host_cell_collection( &resource );
         module = cell_module();
@@ -162,9 +163,11 @@ namespace traccc {
     // Clean up after loop
     // Sort in column major order
     std::sort(cells.begin(), cells.end(), [](const auto& a, const auto& b){ return a.channel1 < b.channel1; } );
-    result.modules.push_back(module);
-    result.cells.push_back(cells);
-    assert( result.cells.size() == result.modules.size() );
+
+    result.headers.push_back(module);
+    result.items.push_back(cells);
+    
+    assert( result.items.size() == result.headers.size() );
 
     return result;
   }
