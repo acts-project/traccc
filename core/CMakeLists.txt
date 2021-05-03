@@ -5,6 +5,8 @@ target_include_directories(traccc_core
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+target_link_libraries(traccc_core
+  INTERFACE vecmem::core)
 
 install(TARGETS traccc_core
         PUBLIC_HEADER

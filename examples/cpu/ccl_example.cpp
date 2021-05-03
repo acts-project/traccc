@@ -10,6 +10,8 @@
 #include "algorithms/component_connection.hpp"
 #include "csv/csv_io.hpp"
 
+#include "vecmem/memory/host_memory_resource.hpp"
+
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
@@ -25,7 +27,7 @@ namespace {
 }
 
 void print_statistics(
-    const traccc::cell_container & modules
+    const traccc::host_cell_container & data
 ) {
     static std::vector<std::size_t> bins_edges = {
         0, 1, 2, 3, 4, 6, 8, 11, 16, 23, 32, 45, 64, 91, 128, 181, 256, 362,
@@ -36,8 +38,8 @@ void print_statistics(
 
     std::vector<std::size_t> bins(bins_edges.size());
 
-    for (const traccc::cell_collection & module : modules) {
-        std::size_t count = module.items.size();
+    for (const traccc::host_cell_collection & module : data.cells) {
+        std::size_t count = module.size();
 
         for (std::size_t i = 0; i < bins_edges.size(); ++i) {
             if (
@@ -93,31 +95,33 @@ int main(
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
+    vecmem::host_memory_resource mem;
+
     traccc::cell_reader creader(event_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
-    traccc::cell_container modules = traccc::read_cells(creader);
+    traccc::host_cell_container data = traccc::read_cells(creader, mem);
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 
-    print_statistics(modules);
+    print_statistics(data);
 
     auto time_process_p1 = std::chrono::high_resolution_clock::now();
 
-    for (const traccc::cell_collection & module : modules) {
-        traccc::cluster_collection clusters_per_module = cc(module);
+    for (std::size_t i = 0; i < data.modules.size(); ++i) {
+        traccc::cluster_collection clusters_per_module = cc(data.cells.at(i), data.modules.at(i));
     }
 
     auto time_process_p2 = std::chrono::high_resolution_clock::now();
 
     for (std::size_t i = 0; i < 10; ++i) {
-        for (const traccc::cell_collection & module : modules) {
-            traccc::cluster_collection clusters_per_module = cc(module);
+        for (std::size_t i = 0; i < data.modules.size(); ++i) {
+            traccc::cluster_collection clusters_per_module = cc(data.cells.at(i), data.modules.at(i));
         }
     }
 
     auto time_process_p3 = std::chrono::high_resolution_clock::now();
 
-    for (const traccc::cell_collection & module : modules) {
-        traccc::cluster_collection clusters_per_module = cc(module);
+    for (std::size_t i = 0; i < data.modules.size(); ++i) {
+        traccc::cluster_collection clusters_per_module = cc(data.cells.at(i), data.modules.at(i));
     }
 
     auto time_process_p4 = std::chrono::high_resolution_clock::now();

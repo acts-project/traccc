@@ -1,7 +1,7 @@
 /** TRACCC library, part of the ACTS project (R&D line)
- * 
+ *
  * (c) 2021 CERN for the benefit of the ACTS project
- * 
+ *
  * Mozilla Public License Version 2.0
  */
 
@@ -21,20 +21,20 @@ namespace traccc {
         ///
         /// @param L an equivalance table
         ///
-        /// @return the root of @param e 
+        /// @return the root of @param e
         unsigned int find_root(const std::vector<unsigned int>& L, unsigned int e) {
             unsigned int r = e;
             while (L[r] != r) {
                 r = L[r];
             }
             return r;
-        } 
+        }
 
         /// Create a union of two entries @param e1 and @param e2
         ///
         /// @param L an equivalance table
         ///
-        /// @return the rleast common ancestor of the entries 
+        /// @return the rleast common ancestor of the entries
         unsigned int make_union(std::vector<unsigned int>& L, unsigned int e1, unsigned int e2){
             int e;
             if (e1 < e2){
@@ -54,11 +54,11 @@ namespace traccc {
         ///
         /// @return boolan to indicate 8-cell connectivity
         bool is_adjacent(cell a, cell b) {
-            return (a.channel0 - b.channel0)*(a.channel0 - b.channel0) <= 1 
-                and (a.channel1 - b.channel1)*(a.channel1 - b.channel1) <= 1; 
+            return (a.channel0 - b.channel0)*(a.channel0 - b.channel0) <= 1
+                and (a.channel1 - b.channel1)*(a.channel1 - b.channel1) <= 1;
         }
 
-        /// Helper method to find define distance, 
+        /// Helper method to find define distance,
         /// does not need abs, as channels are sorted in
         /// column major
         ///
@@ -67,13 +67,14 @@ namespace traccc {
         ///
         /// @return boolan to indicate !8-cell connectivity
         bool is_far_enough(cell a, cell b){
-            return (a.channel1 - b.channel1) > 1; 
+            return (a.channel1 - b.channel1) > 1;
         }
 
         /// Sparce CCL algorithm
         ///
+        template< template< typename > class vector_type >
         std::tuple<unsigned int, std::vector<unsigned int>>
-        sparse_ccl(const std::vector<cell>& cells){
+        sparse_ccl(const cell_collection< vector_type >& cells){
 
             // Internal list linking
             std::vector<unsigned int> L(cells.size(),0);
@@ -100,7 +101,7 @@ namespace traccc {
                 unsigned int l = 0;
                 if (L[i] == i){
                     ++labels;
-                    l = labels; 
+                    l = labels;
                 } else {
                     l = L[L[i]];
                 }
