@@ -14,6 +14,6 @@ approval_rules:
     invalidate_on_push: true
     ignore_update_merges: true
 
-  methods:
-    comments: []
-    github_review: true
+    methods:
+      comments: []
+      github_review: true
