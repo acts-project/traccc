@@ -77,6 +77,18 @@ void print_statistics(
     }
 }
 
+void run_on_event(
+    traccc::component_connection & cc,
+    const traccc::host_cell_container & data
+) {
+    for (std::size_t i = 0; i < data.headers.size(); ++i) {
+        traccc::cluster_collection clusters_per_module = cc(
+            data.items.at(i),
+            data.headers.at(i)
+        );
+    }
+}
+
 int main(
     int argc,
     char * argv[]
@@ -106,23 +118,17 @@ int main(
 
     auto time_process_p1 = std::chrono::high_resolution_clock::now();
 
-    for (std::size_t i = 0; i < data.headers.size(); ++i) {
-        traccc::cluster_collection clusters_per_module = cc(data.items.at(i), data.headers.at(i));
-    }
+    run_on_event(cc, data);
 
     auto time_process_p2 = std::chrono::high_resolution_clock::now();
 
     for (std::size_t i = 0; i < 10; ++i) {
-        for (std::size_t i = 0; i < data.headers.size(); ++i) {
-            traccc::cluster_collection clusters_per_module = cc(data.items.at(i), data.headers.at(i));
-        }
+        run_on_event(cc, data);
     }
 
     auto time_process_p3 = std::chrono::high_resolution_clock::now();
 
-    for (std::size_t i = 0; i < data.headers.size(); ++i) {
-        traccc::cluster_collection clusters_per_module = cc(data.items.at(i), data.headers.at(i));
-    }
+    run_on_event(cc, data);
 
     auto time_process_p4 = std::chrono::high_resolution_clock::now();
 
