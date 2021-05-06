@@ -16,6 +16,36 @@
 #include <vecmem/containers/vector.hpp>
 
 namespace traccc {
+/**
+ * @brief View class for an element in a header-vector container.
+ *
+ * In order to enforce certain invariants on the @c container header-vector
+ * type, we access elements (which, of course, are product types of a header
+ * and a vector) through this wrapper class. This class provides
+ * low-overhead access to the struct-of-arrays container class to emulate an
+ * array-of-structs architecture.
+ *
+ * @tparam header_t The type of the header object.
+ * @tparam vector_t The fully qualified vector type.
+ */
+template <typename header_t, typename vector_t>
+class container_element {
+    public:
+    /**
+     * @brief Construct a new container element view.
+     *
+     * This constructor is extremely trivial, as it simply takes a reference
+     * to a header, a reference to a vector, and saves them in this object's
+     * internal state.
+     *
+     * @param[in] h The header object reference.
+     * @param[in] v The vector object reference.
+     */
+    container_element(header_t& h, vector_t& v) : header(h), items(v) {}
+
+    header_t& header;
+    vector_t& items;
+};
 
 /// Container describing objects in a given event
 ///
@@ -50,6 +80,135 @@ class container {
     using item_vector = jagged_vector_type<item_t>;
 
     /// @}
+
+    /**
+     * @brief The type name of the element view which is returned by various
+     * methods in this class.
+     */
+    using element_view =
+        container_element<header_t, typename item_vector::value_type>;
+
+    /**
+     * @brief The type name of the constant element view which is returned
+     * by various methods in this class.
+     */
+    using const_element_view =
+        container_element<const header_t,
+                          const typename item_vector::value_type>;
+
+    /**
+     * @brief The size type of this container, which is the type by which
+     * its elements are indexed.
+     */
+    using size_type = typename header_vector::size_type;
+
+    /**
+     * We need to assert that the header vector and the outer layer of the
+     * jagged vector have the same size type, so they can be indexed using
+     * the same type.
+     */
+    static_assert(
+        std::is_same_v<typename header_vector::size_type,
+                       typename item_vector::size_type>,
+        "Size type for container header and item vectors must be the same.");
+
+    /**
+     * @brief Standard two-argument constructor.
+     *
+     * To enforce the invariant that both vectors must be the same size, we
+     * check this in the constructor. This is also checked in release
+     * builds.
+     */
+    container(header_vector&& hv, item_vector&& iv) : headers(hv), items(iv) {
+        if (headers.size() != items.size()) {
+            throw std::logic_error("Header and item length not equal.");
+        }
+    }
+
+    /**
+     * @brief Argument-forwarding constructor.
+     *
+     * This constructor forwards its arguments to both internal vectors.
+     * Obviously, this requires the arguments to be quite general, but this
+     * constructor can be useful when initializing a container for a
+     * specific vecmem memory resource.
+     */
+    template <class... args>
+    container(args&&... a) : headers(a...), items(a...) {}
+
+    /**
+     * @brief Bounds-checking mutable element accessor.
+     */
+    element_view at(const size_type& i) {
+        if (i >= size()) {
+            throw std::out_of_range("Index out of range.");
+        }
+
+        return operator[](i);
+    }
+
+    /**
+     * @brief Bounds-checking immutable element accessor.
+     */
+    const_element_view at(const size_type& i) const {
+        if (i >= size()) {
+            throw std::out_of_range("Index out of range.");
+        }
+
+        return operator[](i);
+    }
+
+    /**
+     * @brief Mutable element accessor.
+     */
+    element_view operator[](const size_type& i) {
+        return {headers.at(i), items.at(i)};
+    }
+
+    /**
+     * @brief Immutable element accessor.
+     */
+    const_element_view operator[](const size_type& i) const {
+        return {headers.at(i), items.at(i)};
+    }
+
+    /**
+     * @brief Return the size of the container.
+     *
+     * In principle, the size of the two internal vectors should always be
+     * equal, but we can assert this at runtime for debug builds.
+     */
+    size_type size(void) const {
+#ifndef NDEBUG
+        if (headers.size() != items.size()) {
+            throw std::logic_error("Header and item length not equal.");
+        }
+#endif
+
+        return headers.size();
+    }
+
+    /**
+     * @brief Reserve space in both vectors.
+     */
+    void reserve(const size_type& s) {
+        headers.reserve(s);
+        items.reserve(s);
+    }
+
+    /**
+     * @brief Push a header and a vector into the container.
+     */
+    template <typename h_prime, typename v_prime>
+    void push_back(h_prime&& new_header, v_prime&& new_items) {
+        headers.push_back(std::forward<header_t>(new_header));
+        items.push_back(
+            std::forward<typename item_vector::value_type>(new_items));
+    }
+
+    const header_vector& get_headers() { return headers; }
+
+    const item_vector& get_items() { return items; }
 
     /// Headers information related to the objects in the event
     header_vector headers;
