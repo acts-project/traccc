@@ -38,7 +38,7 @@ void print_statistics(
 
     std::vector<std::size_t> bins(bins_edges.size());
 
-    for (const traccc::host_cell_collection & module : data.cells) {
+    for (const traccc::host_cell_collection & module : data.items) {
         std::size_t count = module.size();
 
         for (std::size_t i = 0; i < bins_edges.size(); ++i) {
@@ -106,22 +106,22 @@ int main(
 
     auto time_process_p1 = std::chrono::high_resolution_clock::now();
 
-    for (std::size_t i = 0; i < data.modules.size(); ++i) {
-        traccc::cluster_collection clusters_per_module = cc(data.cells.at(i), data.modules.at(i));
+    for (std::size_t i = 0; i < data.headers.size(); ++i) {
+        traccc::cluster_collection clusters_per_module = cc(data.items.at(i), data.headers.at(i));
     }
 
     auto time_process_p2 = std::chrono::high_resolution_clock::now();
 
     for (std::size_t i = 0; i < 10; ++i) {
-        for (std::size_t i = 0; i < data.modules.size(); ++i) {
-            traccc::cluster_collection clusters_per_module = cc(data.cells.at(i), data.modules.at(i));
+        for (std::size_t i = 0; i < data.headers.size(); ++i) {
+            traccc::cluster_collection clusters_per_module = cc(data.items.at(i), data.headers.at(i));
         }
     }
 
     auto time_process_p3 = std::chrono::high_resolution_clock::now();
 
-    for (std::size_t i = 0; i < data.modules.size(); ++i) {
-        traccc::cluster_collection clusters_per_module = cc(data.cells.at(i), data.modules.at(i));
+    for (std::size_t i = 0; i < data.headers.size(); ++i) {
+        traccc::cluster_collection clusters_per_module = cc(data.items.at(i), data.headers.at(i));
     }
 
     auto time_process_p4 = std::chrono::high_resolution_clock::now();

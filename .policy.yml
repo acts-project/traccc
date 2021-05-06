@@ -13,3 +13,7 @@ approval_rules:
     allow_contributor: true # Update button 'contributions' should be ignored
     invalidate_on_push: true
     ignore_update_merges: true
+
+    methods:
+      comments: []
+      github_review: true
