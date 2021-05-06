@@ -139,7 +139,7 @@ class container {
     /**
      * @brief Bounds-checking mutable element accessor.
      */
-    element_view at(const size_type& i) {
+    element_view at(size_type i) {
         if (i >= size()) {
             throw std::out_of_range("Index out of range.");
         }
@@ -150,7 +150,7 @@ class container {
     /**
      * @brief Bounds-checking immutable element accessor.
      */
-    const_element_view at(const size_type& i) const {
+    const_element_view at(size_type i) const {
         if (i >= size()) {
             throw std::out_of_range("Index out of range.");
         }
@@ -161,14 +161,14 @@ class container {
     /**
      * @brief Mutable element accessor.
      */
-    element_view operator[](const size_type& i) {
+    element_view operator[](size_type i) {
         return {headers.at(i), items.at(i)};
     }
 
     /**
      * @brief Immutable element accessor.
      */
-    const_element_view operator[](const size_type& i) const {
+    const_element_view operator[](size_type i) const {
         return {headers.at(i), items.at(i)};
     }
 
@@ -191,7 +191,7 @@ class container {
     /**
      * @brief Reserve space in both vectors.
      */
-    void reserve(const size_type& s) {
+    void reserve(size_type s) {
         headers.reserve(s);
         items.reserve(s);
     }
