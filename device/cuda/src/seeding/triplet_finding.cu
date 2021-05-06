@@ -62,7 +62,8 @@ void triplet_finding(const seedfinder_config& config,
     // num_compatible_mid_bot_doublets_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
-        num_blocks += triplet_counter_container.headers[i] / num_threads + 1;
+        num_blocks +=
+            triplet_counter_container.get_headers()[i] / num_threads + 1;
     }
 
     // shared memory assignment for the number of triplets per thread
@@ -110,34 +111,40 @@ __global__ void triplet_finding_kernel(
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    auto internal_sp_per_bin = internal_sp_device.items.at(bin_idx);
-    auto& num_compat_spM_per_bin = doublet_counter_device.headers.at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+    auto& num_compat_spM_per_bin =
+        doublet_counter_device.get_headers().at(bin_idx);
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    auto doublet_counter_per_bin = doublet_counter_device.items.at(bin_idx);
+    auto doublet_counter_per_bin =
+        doublet_counter_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_bot doublets per bin
     // Item of doublet: doublet objects per bin
     const auto& num_mid_bot_doublets_per_bin =
-        mid_bot_doublet_device.headers.at(bin_idx);
-    auto mid_bot_doublets_per_bin = mid_bot_doublet_device.items.at(bin_idx);
+        mid_bot_doublet_device.get_headers().at(bin_idx);
+    auto mid_bot_doublets_per_bin =
+        mid_bot_doublet_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
     const auto& num_mid_top_doublets_per_bin =
-        mid_top_doublet_device.headers.at(bin_idx);
-    auto mid_top_doublets_per_bin = mid_top_doublet_device.items.at(bin_idx);
+        mid_top_doublet_device.get_headers().at(bin_idx);
+    auto mid_top_doublets_per_bin =
+        mid_top_doublet_device.get_items().at(bin_idx);
 
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
-    auto& num_compat_mb_per_bin = triplet_counter_device.headers.at(bin_idx);
-    auto triplet_counter_per_bin = triplet_counter_device.items.at(bin_idx);
+    auto& num_compat_mb_per_bin =
+        triplet_counter_device.get_headers().at(bin_idx);
+    auto triplet_counter_per_bin =
+        triplet_counter_device.get_items().at(bin_idx);
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
-    auto& num_triplets_per_bin = triplet_device.headers.at(bin_idx);
-    auto triplets_per_bin = triplet_device.items.at(bin_idx);
+    auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
+    auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
     // zero initialization for the number of triplets per threads
     extern __shared__ int num_triplets_per_thread[];
@@ -162,7 +169,7 @@ __global__ void triplet_finding_kernel(
     // bottom spacepoint index
     const auto& spB_idx = mid_bot_doublet.sp2.sp_idx;
     // bottom spacepoint
-    const auto& spB = internal_sp_device.items.at(spB_bin)[spB_idx];
+    const auto& spB = internal_sp_device.get_items().at(spB_bin)[spB_idx];
 
     // Apply the conformal transformation to middle-bot doublet
     auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
@@ -229,7 +236,7 @@ __global__ void triplet_finding_kernel(
 
         const auto& spT_bin = mid_top_doublet.sp2.bin_idx;
         const auto& spT_idx = mid_top_doublet.sp2.sp_idx;
-        const auto& spT = internal_sp_device.items.at(spT_bin)[spT_idx];
+        const auto& spT = internal_sp_device.get_items().at(spT_bin)[spT_idx];
         // Apply the conformal transformation to middle-top doublet
         auto lt =
             doublet_finding_helper::transform_coordinates(spM, spT, false);

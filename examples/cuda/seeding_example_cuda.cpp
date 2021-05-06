@@ -143,8 +143,9 @@ int seq_run(const std::string&, const std::string& hits_dir,
         traccc::host_spacepoint_container spacepoints_per_event =
             traccc::read_hits(hreader, resource);
 
-        for (size_t i = 0; i < spacepoints_per_event.headers.size(); i++) {
-            auto& spacepoints_per_module = spacepoints_per_event.items[i];
+        for (size_t i = 0; i < spacepoints_per_event.get_headers().size();
+             i++) {
+            auto& spacepoints_per_module = spacepoints_per_event.get_items()[i];
 
             n_spacepoints += spacepoints_per_module.size();
             n_modules++;
@@ -187,15 +188,17 @@ int seq_run(const std::string&, const std::string& hits_dir,
         if (skip_cpu == false) {
             seeds = sf(internal_sp_per_event);
             // n_seeds += seeds.size();
-            n_seeds += seeds.headers[0];
+            n_seeds += seeds.get_headers()[0];
 
             /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
             /*time*/ std::chrono::duration<double> time_seeding_cpu =
                 end_seeding_cpu - start_seeding_cpu;
             /*time*/ seeding_cpu += time_seeding_cpu.count();
 
-            for (size_t i = 0; i < internal_sp_per_event.headers.size(); ++i) {
-                n_internal_spacepoints += internal_sp_per_event.items[i].size();
+            for (size_t i = 0; i < internal_sp_per_event.get_headers().size();
+                 ++i) {
+                n_internal_spacepoints +=
+                    internal_sp_per_event.get_items()[i].size();
             }
         }
 
@@ -205,7 +208,7 @@ int seq_run(const std::string&, const std::string& hits_dir,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
         auto seeds_cuda = sf_cuda(internal_sp_per_event);
-        n_seeds_cuda += seeds_cuda.headers[0];
+        n_seeds_cuda += seeds_cuda.get_headers()[0];
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -220,16 +223,16 @@ int seq_run(const std::string&, const std::string& hits_dir,
 
         if (!skip_cpu) {
             int n_match = 0;
-            for (auto seed : seeds.items[0]) {
-                if (std::find(
-                        seeds_cuda.items[0].begin(),
-                        seeds_cuda.items[0].begin() + seeds_cuda.headers[0],
-                        seed) !=
-                    seeds_cuda.items[0].begin() + seeds_cuda.headers[0]) {
+            for (auto seed : seeds.get_items()[0]) {
+                if (std::find(seeds_cuda.get_items()[0].begin(),
+                              seeds_cuda.get_items()[0].begin() +
+                                  seeds_cuda.get_headers()[0],
+                              seed) != seeds_cuda.get_items()[0].begin() +
+                                           seeds_cuda.get_headers()[0]) {
                     n_match++;
                 }
             }
-            float matching_rate = float(n_match) / seeds.headers[0];
+            float matching_rate = float(n_match) / seeds.get_headers()[0];
             std::cout << "event " << std::to_string(skip_events + event)
                       << " seed matching rate: " << matching_rate << std::endl;
         }
@@ -246,9 +249,11 @@ int seq_run(const std::string&, const std::string& hits_dir,
         if (!skip_write) {
             traccc::spacepoint_writer spwriter{"event" + event_string +
                                                "-spacepoints.csv"};
-            for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
-                auto spacepoints_per_module = spacepoints_per_event.items[i];
-                auto module = spacepoints_per_event.headers[i];
+            for (size_t i = 0; i < spacepoints_per_event.get_items().size();
+                 ++i) {
+                auto spacepoints_per_module =
+                    spacepoints_per_event.get_items()[i];
+                auto module = spacepoints_per_event.get_headers()[i];
 
                 for (const auto& spacepoint : spacepoints_per_module) {
                     const auto& pos = spacepoint.global;
@@ -259,9 +264,10 @@ int seq_run(const std::string&, const std::string& hits_dir,
 
             traccc::internal_spacepoint_writer internal_spwriter{
                 "event" + event_string + "-internal_spacepoints.csv"};
-            for (size_t i = 0; i < internal_sp_per_event.items.size(); ++i) {
-                auto internal_sp_per_bin = internal_sp_per_event.items[i];
-                auto bin = internal_sp_per_event.headers[i].global_index;
+            for (size_t i = 0; i < internal_sp_per_event.get_items().size();
+                 ++i) {
+                auto internal_sp_per_bin = internal_sp_per_event.get_items()[i];
+                auto bin = internal_sp_per_event.get_headers()[i].global_index;
 
                 for (const auto& internal_sp : internal_sp_per_bin) {
                     const auto& x = internal_sp.m_x;
@@ -276,7 +282,7 @@ int seq_run(const std::string&, const std::string& hits_dir,
             traccc::seed_writer sd_writer{"event" + event_string +
                                           "-seeds.csv"};
             // for (size_t i = 0; i < seeds.size(); ++i) {
-            for (auto seed : seeds.items[0]) {
+            for (auto seed : seeds.get_items()[0]) {
                 auto weight = seed.weight;
                 auto z_vertex = seed.z_vertex;
                 auto spB = seed.spB;

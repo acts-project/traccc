@@ -165,6 +165,7 @@ inline size_t find_vector_id_from_global_id(
     return std::distance(headers.begin(), iterator);
 }
 
+#ifndef __CUDACC__
 inline void fill_vector_id(neighbor_idx& neighbor,
                            vecmem::vector<bin_information>& headers) {
     for (size_t i = 0; i < neighbor.counts; ++i) {
@@ -186,5 +187,6 @@ inline void fill_vector_id(host_internal_spacepoint_container& isp_container) {
         fill_vector_id(top_neighbors, isp_container.get_headers());
     }
 }
+#endif
 
 }  // namespace traccc

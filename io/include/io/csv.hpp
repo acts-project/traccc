@@ -202,8 +202,7 @@ inline host_cell_container read_cells(
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
     uint64_t reference_id = 0;
-    host_cell_container result = {host_cell_container::header_vector(&resource),
-                                  host_cell_container::item_vector(&resource)};
+    host_cell_container result(&resource);
 
     bool first_line_read = false;
     unsigned int read_cells = 0;
@@ -224,8 +223,7 @@ inline host_cell_container read_cells(
                       [](const auto& a, const auto& b) {
                           return a.channel1 < b.channel1;
                       });
-            result.headers.push_back(module);
-            result.items.push_back(cells);
+            result.push_back(std::move(module), std::move(cells));
             // Clear for next round
             cells = host_cell_collection(&resource);
             module = cell_module();
@@ -252,10 +250,7 @@ inline host_cell_container read_cells(
         return a.channel1 < b.channel1;
     });
 
-    result.headers.push_back(module);
-    result.items.push_back(cells);
-
-    assert(result.items.size() == result.headers.size());
+    result.push_back(std::move(module), std::move(cells));
 
     return result;
 }
@@ -347,8 +342,8 @@ host_measurement_container read_measurements(
                 }
             }
 
-            result.headers.push_back(module);
-            result.items.push_back(measurements);
+            result.push_back(std::move(module), std::move(measurements));
+
             // Clear for next round
             measurements = host_measurement_collection(&resource);
             module = cell_module();
@@ -366,10 +361,7 @@ host_measurement_container read_measurements(
         }
     }
 
-    result.headers.push_back(module);
-    result.items.push_back(measurements);
-
-    assert(result.items.size() == result.headers.size());
+    result.push_back(std::move(module), std::move(measurements));
 
     return result;
 }
@@ -396,23 +388,22 @@ inline host_spacepoint_container read_hits(
         variance3 variance({0, 0, 0});
         spacepoint sp({position, variance});
 
-        auto it =
-            std::find(result.headers.begin(), result.headers.end(), geom_id);
+        const host_spacepoint_container::header_vector& headers =
+            result.get_headers();
 
-        if (it == result.headers.end()) {
-            result.headers.push_back(geom_id);
-            result.items.push_back(vecmem::vector<spacepoint>({sp}));
+        auto it = std::find(headers.begin(), headers.end(), geom_id);
+
+        if (it == headers.end()) {
+            result.push_back(geom_id, vecmem::vector<spacepoint>({sp}));
         } else {
-            auto idx = it - result.headers.begin();
-            result.items.at(idx).push_back(sp);
+            auto idx = it - headers.begin();
+            result.at(idx).items.push_back(sp);
         }
 
         if (++read_hits >= max_hits) {
             break;
         }
     }
-
-    assert(result.items.size() == result.headers.size());
 
     return result;
 }
