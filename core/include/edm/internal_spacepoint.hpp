@@ -178,12 +178,12 @@ inline void fill_vector_id(neighbor_idx& neighbor,
 /// Fill vector_indices of header of internal_spacepoint_container
 ///
 inline void fill_vector_id(host_internal_spacepoint_container& isp_container) {
-    for (size_t i = 0; i < isp_container.headers.size(); ++i) {
-        auto& bot_neighbors = isp_container.headers[i].bottom_idx;
-        auto& top_neighbors = isp_container.headers[i].top_idx;
+    for (size_t i = 0; i < isp_container.size(); ++i) {
+        auto& bot_neighbors = isp_container.at(i).header.bottom_idx;
+        auto& top_neighbors = isp_container.at(i).header.top_idx;
 
-        fill_vector_id(bot_neighbors, isp_container.headers);
-        fill_vector_id(top_neighbors, isp_container.headers);
+        fill_vector_id(bot_neighbors, isp_container.get_headers());
+        fill_vector_id(top_neighbors, isp_container.get_headers());
     }
 }
 
