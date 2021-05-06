@@ -210,6 +210,7 @@ class container {
 
     const item_vector& get_items() { return items; }
 
+    private:
     /// Headers information related to the objects in the event
     header_vector headers;
 
