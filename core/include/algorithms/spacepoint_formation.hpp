@@ -23,10 +23,10 @@ namespace traccc {
         /// C++20 piping interface
         ///
         /// @return a measurement collection - size of input/output container is identical
-        spacepoint_collection operator()(const measurement_collection& measurements) const {
+        host_spacepoint_collection operator()(const cell_module& module, const host_measurement_collection& measurements) const {
             
-            spacepoint_collection spacepoints;
-            this->operator()(measurements, spacepoints);
+            host_spacepoint_collection spacepoints;
+            this->operator()(module, measurements, spacepoints);
             return spacepoints;
         }
 
@@ -38,17 +38,15 @@ namespace traccc {
         /// void interface
         ///
         /// @return a measurement collection - size of input/output container is identical
-        void operator()(const measurement_collection& measurements, spacepoint_collection& spacepoints) const {
-            // Assign the module id
-            spacepoints.module = measurements.module;
+        void operator()(const cell_module& module, const host_measurement_collection& measurements, host_spacepoint_collection& spacepoints) const {
             // Run the algorithm
-            spacepoints.items.reserve(measurements.items.size());
-            for (const auto& m : measurements.items){
+            spacepoints.reserve(measurements.size());
+            for (const auto& m : measurements){
                 spacepoint s;
                 point3 local_3d = {m.local[0], m.local[1], 0.};
-                s.global = measurements.placement.point_to_global(local_3d);
+                s.global = module.placement.point_to_global(local_3d);
                 // @todo add variance estimation
-                spacepoints.items.push_back(std::move(s));
+                spacepoints.push_back(std::move(s));
             }
         }
 

@@ -27,10 +27,10 @@ TEST(io, csv_read_single_module)
 
     vecmem::host_memory_resource resource;
     auto single_module_cells = traccc::read_cells(creader, resource);
-    ASSERT_EQ(single_module_cells.cells.size(), 1u);
-    ASSERT_EQ(single_module_cells.cells.size(), single_module_cells.modules.size());
-    auto module_cells = single_module_cells.cells[0];
-    auto module = single_module_cells.modules[0];
+    ASSERT_EQ(single_module_cells.items.size(), 1u);
+    ASSERT_EQ(single_module_cells.items.size(), single_module_cells.headers.size());
+    auto module_cells = single_module_cells.items[0];
+    auto module = single_module_cells.headers[0];
 
     ASSERT_EQ(module.module, 0u);
     ASSERT_EQ(module.range0[0], 123u);
@@ -56,11 +56,11 @@ TEST(io, csv_read_two_modules)
     traccc::cell_reader creader(file, {"module", "cannel0","channel1","activation","time"} );
     vecmem::host_memory_resource resource;
     auto two_module_cells = traccc::read_cells(creader, resource);
-    ASSERT_EQ(two_module_cells.cells.size(), 2u);
-    ASSERT_EQ(two_module_cells.cells.size(), two_module_cells.modules.size());
+    ASSERT_EQ(two_module_cells.items.size(), 2u);
+    ASSERT_EQ(two_module_cells.items.size(), two_module_cells.headers.size());
 
-    auto first_module_cells = two_module_cells.cells[0];
-    auto first_module = two_module_cells.modules[0];
+    auto first_module_cells = two_module_cells.items[0];
+    auto first_module = two_module_cells.headers[0];
 
     ASSERT_EQ(first_module_cells.size(), 6u);
 
@@ -70,8 +70,8 @@ TEST(io, csv_read_two_modules)
     ASSERT_EQ(first_module.range1[0], 32u);
     ASSERT_EQ(first_module.range1[1], 880u);
 
-    auto second_module_cells = two_module_cells.cells[1];
-    auto second_module = two_module_cells.modules[1];
+    auto second_module_cells = two_module_cells.items[1];
+    auto second_module = two_module_cells.headers[1];
 
     ASSERT_EQ(second_module_cells.size(), 8u);
 
@@ -117,7 +117,7 @@ TEST(io, csv_read_tml_pixelbarrel){
     vecmem::host_memory_resource resource;
     auto tml_barrel_modules = traccc::read_cells(creader, resource);
 
-    ASSERT_EQ(tml_barrel_modules.cells.size(), 2382u) ;
+    ASSERT_EQ(tml_barrel_modules.items.size(), 2382u) ;
 
 }
 

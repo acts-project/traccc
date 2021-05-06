@@ -10,27 +10,10 @@ target_link_libraries(traccc_core
 
 install(TARGETS traccc_core
         PUBLIC_HEADER
-          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/core
-)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/core)
 
 install(
-  DIRECTORY include/algorithms
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-install(
-  DIRECTORY include/definitions
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-install(
-  DIRECTORY include/edm
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-install(
-  DIRECTORY include/geometry
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-install(
-  DIRECTORY include/utils
+  DIRECTORY include/
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 add_library(traccc::core ALIAS traccc_core)
