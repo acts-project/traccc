@@ -120,7 +120,7 @@ namespace traccc {
 
     /// Helper function for making a "simple" object out of the container
     template< typename header_t, typename item_t >
-    inline
+    __inline__
     container_data<header_t, item_t> get_data( host_container< header_t, item_t >& cc, vecmem::memory_resource* resource = nullptr ) {
         return { { vecmem::get_data( cc.headers ) },
                  { vecmem::get_data( cc.items, resource ) } };

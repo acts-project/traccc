@@ -9,11 +9,20 @@
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
+#include "edm/binned_spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
+
+// clusterization
 #include "algorithms/component_connection.hpp"
 #include "algorithms/measurement_creation.hpp"
 #include "algorithms/spacepoint_formation.hpp"
+
+// seeding
+#include "algorithms/seeding/spacepoint_grid.hpp"
+#include "algorithms/seeding/seedfinder_config.hpp"
+#include "algorithms/seeding/binned_spgroup.hpp"
 #include "csv/csv_io.hpp"
+
 
 #include <vecmem/memory/host_memory_resource.hpp>
 
@@ -94,8 +103,53 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	    spacepoints_per_event.headers.push_back(module.module);
         }
 
+	/*-------------------
+	     Seed finding
+	  -------------------*/
+	
+	// Seed finder config
+	traccc::seedfinder_config config;
+	// silicon detector max
+	config.rMax = 160.;
+	config.deltaRMin = 5.;
+	config.deltaRMax = 160.;
+	config.collisionRegionMin = -250.;
+	config.collisionRegionMax = 250.;
+	config.zMin = -2800.;
+	config.zMax = 2800.;
+	config.maxSeedsPerSpM = 5;
+	// 2.7 eta
+	config.cotThetaMax = 7.40627;
+	config.sigmaScattering = 1.00000;
+	
+	config.minPt = 500.;
+	config.bFieldInZ = 0.00199724;
+	
+	config.beamPos = {-.5, -.5};
+	config.impactMax = 10.;
+
+	// setup spacepoint grid config
+	traccc::spacepoint_grid_config grid_config;
+	grid_config.bFieldInZ = config.bFieldInZ;
+	grid_config.minPt = config.minPt;
+	grid_config.rMax = config.rMax;
+	grid_config.zMax = config.zMax;
+	grid_config.zMin = config.zMin;
+	grid_config.deltaRMax = config.deltaRMax;
+	grid_config.cotThetaMax = config.cotThetaMax;
+
+	// create spacepoint grid
+	auto grid = traccc::spacepoint_grid_creator::create_grid(grid_config);
+
+	// algorithm: binning spacepoints
+	traccc::host_binnedsp_container a;
+	auto spgroup = traccc::binned_spgroup(spacepoints_per_event, grid, config, a);
+	
+	//auto spgroup = traccc::cuda::binned_spgroup(spacepoints_per_event, grid, config);
+	
+	
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
-	for (size_t i=0; i<measurements_per_event.items.size(); ++i){
+	for (int i=0; i<measurements_per_event.items.size(); ++i){
 	    auto measurements_per_module = measurements_per_event.items[i];
             auto module = measurements_per_event.headers[i];
             for (const auto& measurement : measurements_per_module){
@@ -105,7 +159,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
         }
 
         traccc::spacepoint_writer spwriter{std::string("event")+event_number+"-spacepoints.csv"};
-	for (size_t i=0; i<spacepoints_per_event.items.size(); ++i){
+	for (int i=0; i<spacepoints_per_event.items.size(); ++i){
 	    auto spacepoints_per_module = spacepoints_per_event.items[i];
             auto module = spacepoints_per_event.headers[i];
 	    
