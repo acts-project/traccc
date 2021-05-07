@@ -9,7 +9,6 @@
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
-#include "edm/binned_spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
 
 // clusterization
@@ -142,12 +141,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	auto grid = traccc::spacepoint_grid_creator::create_grid(grid_config);
 
 	// algorithm: binning spacepoints
-	traccc::host_binnedsp_container a;
-	auto spgroup = traccc::binned_spgroup(spacepoints_per_event, grid, config, a);
-	
-	//auto spgroup = traccc::cuda::binned_spgroup(spacepoints_per_event, grid, config);
-	
-	
+	auto spgroup = traccc::binned_spgroup(spacepoints_per_event, grid, config); 
+		
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
 	for (int i=0; i<measurements_per_event.items.size(); ++i){
 	    auto measurements_per_module = measurements_per_event.items[i];

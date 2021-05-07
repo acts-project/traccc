@@ -11,6 +11,7 @@
 #include "definitions/primitives.hpp"
 #include "utils/axis.hpp"
 #include "utils/grid.hpp"
+#include "algorithms/seeding/internal_spacepoint.hpp"
 #include <memory>
 
 namespace traccc{
@@ -37,7 +38,9 @@ struct spacepoint_grid_config {
     float cotThetaMax;
 };
 
-using spacepoint_grid = grid<traccc::axis, traccc::axis >;
+using spacepoint_grid = grid<std::vector<std::unique_ptr<
+			     const internal_spacepoint<spacepoint>>>,
+			     traccc::axis, traccc::axis >;
 
 class spacepoint_grid_creator{
 public:
