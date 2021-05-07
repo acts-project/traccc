@@ -445,7 +445,7 @@ namespace traccc
          * 
          * @param v the input vector
          **/
-        inline std::array<scalar, 3> normalize(const std::array<scalar, 2> &v)
+        inline std::array<scalar, 2> normalize(const std::array<scalar, 2> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
             return {v[0] * oon, v[1] * oon};
@@ -476,4 +476,3 @@ namespace traccc
     } // namespace vector
 
 } // end of namespace
-
