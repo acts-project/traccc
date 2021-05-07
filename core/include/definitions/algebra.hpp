@@ -144,7 +144,7 @@ namespace traccc
         template <unsigned int kROWS, typename matrix_type>
         auto vector(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
-            std::array<scalar, kROWS> subvector;
+            array<scalar, kROWS> subvector;
             for (unsigned int irow = row; irow < row + kROWS; ++irow)
             {
                 subvector[irow - row] = m[col][irow];
@@ -159,7 +159,7 @@ namespace traccc
         template <unsigned int kROWS, unsigned int kCOLS, typename matrix_type>
         auto block(const matrix_type &m, unsigned int row, unsigned int col) noexcept
         {
-            std::array<std::array<scalar, kROWS>, kCOLS> submatrix;
+            array<array<scalar, kROWS>, kCOLS> submatrix;
             for (unsigned int icol = col; icol < col + kCOLS; ++icol)
             {
                 for (unsigned int irow = row; irow < row + kROWS; ++irow)
@@ -177,7 +177,7 @@ namespace traccc
         struct transform3
         {
 
-            using matrix44 = std::array<std::array<scalar, 4>, 4>;
+            using matrix44 = array<array<scalar, 4>, 4>;
 
             matrix44 _data;
             matrix44 _data_inv;
@@ -253,7 +253,7 @@ namespace traccc
              * 
              * @param ma is the full 4x4 matrix 16 array
              **/
-            transform3(const std::array<scalar, 16> &ma)
+            transform3(const array<scalar, 16> &ma)
             {
                 _data[0][0] = ma[0];
                 _data[0][1] = ma[4];
