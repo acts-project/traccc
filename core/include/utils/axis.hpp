@@ -76,7 +76,10 @@ private:
     
 };
 
+enum class AxisBoundaryType { Open, Bound, Closed };
+    
 // Defined only for bounded axis
+template <AxisBoundaryType bdt>
 class axis {
 public:    
     axis(scalar xmin, scalar xmax, size_t n_Bins):
@@ -85,6 +88,31 @@ public:
 	m_width((xmax-xmin)/n_Bins),
 	m_bins(n_Bins){}
 
+    template <AxisBoundaryType T = bdt,
+	      std::enable_if_t<T == AxisBoundaryType::Bound, int> = 0>
+    size_t wrapBin(int bin) const {
+	return std::max(std::min(bin, static_cast<int>(getNBins())), 1);
+    }
+
+    template <AxisBoundaryType T = bdt,
+	      std::enable_if_t<T == AxisBoundaryType::Closed, int> = 0>
+    size_t wrapBin(int bin) const {
+	const int w = getNBins();
+	return 1 + (w + ((bin - 1) % w)) % w;
+	// return int(bin<1)*w - int(bin>w)*w + bin;
+    }    
+    
+    scalar getMin() const { return m_min; }
+
+    scalar getBinWidth(size_t /*bin*/ = 0) const { return m_width; }
+    
+    size_t getBin(scalar x) const {
+	return wrapBin(std::floor((x - getMin()) / getBinWidth()) + 1);
+    }
+    
+    size_t getNBins() const { return m_bins; }
+
+    
 private:
     scalar m_min;
     scalar m_max;

@@ -40,7 +40,7 @@ struct spacepoint_grid_config {
 
 using spacepoint_grid = grid<std::vector<std::unique_ptr<
 			     const internal_spacepoint<spacepoint>>>,
-			     traccc::axis, traccc::axis >;
+			     traccc::axis<AxisBoundaryType::Closed>, traccc::axis<AxisBoundaryType::Bound> >;
 
 class spacepoint_grid_creator{
 public:
@@ -66,7 +66,7 @@ public:
 	// divide 2pi by angle delta to get number of phi-bins
 	// size is always 2pi even for regions of interest
 	int phiBins = std::floor(2 * M_PI / (outerAngle - innerAngle));
-	axis phiAxis(-M_PI, M_PI, phiBins);
+	axis<AxisBoundaryType::Closed> phiAxis(-M_PI, M_PI, phiBins);
 	
 	// TODO: can probably be optimized using smaller z bins
 	// and returning (multiple) neighbors only in one z-direction for forward
@@ -75,7 +75,7 @@ public:
 	
 	float zBinSize = config.cotThetaMax * config.deltaRMax;
 	int zBins = std::floor((config.zMax - config.zMin) / zBinSize);
-	axis zAxis(config.zMin, config.zMax, zBins);
+	axis<AxisBoundaryType::Bound> zAxis(config.zMin, config.zMax, zBins);
 
 	return spacepoint_grid(std::make_tuple(phiAxis, zAxis));
     }

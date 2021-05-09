@@ -34,51 +34,76 @@ struct grid_helper_impl{
 	indices.at(N) = thisAxis.getBin(point[N]);
 	grid_helper_impl<N - 1>::getLocalBinIndices(point, axes, indices);
     }
+
+    template <class... Axes>
+    static void getNBins(const std::tuple<Axes...>& axes,
+			 std::array<size_t, sizeof...(Axes)>& nBinsArray) {
+	// by convention getNBins does not include under-/overflow bins
+	nBinsArray[N] = std::get<N>(axes).getNBins();
+	grid_helper_impl<N - 1>::getNBins(axes, nBinsArray);
+    }
+    
 };
     
 template <>
 struct grid_helper_impl<0u> {
 
-  template <class... Axes>
-  static void getGlobalBin(const std::array<size_t, sizeof...(Axes)>& localBins,
-                           const std::tuple<Axes...>& /*axes*/, size_t& bin,
-                           size_t& area) {
-    bin += area * localBins.at(0u);
-  }
+    template <class... Axes>
+    static void getGlobalBin(const std::array<size_t, sizeof...(Axes)>& localBins,
+			     const std::tuple<Axes...>& /*axes*/, size_t& bin,
+			     size_t& area) {
+	bin += area * localBins.at(0u);
+    }
+    
+    template <class Point, class... Axes>
+    static void getLocalBinIndices(const Point& point,
+				   const std::tuple<Axes...>& axes,
+				   std::array<size_t, sizeof...(Axes)>& indices) {
+	const auto& thisAxis = std::get<0u>(axes);
+	indices.at(0u) = thisAxis.getBin(point[0u]);
+    }
 
-  template <class Point, class... Axes>
-  static void getLocalBinIndices(const Point& point,
-                                 const std::tuple<Axes...>& axes,
-                                 std::array<size_t, sizeof...(Axes)>& indices) {
-    const auto& thisAxis = std::get<0u>(axes);
-    indices.at(0u) = thisAxis.getBin(point[0u]);
-  }
+    template <class... Axes>
+    static void getNBins(const std::tuple<Axes...>& axes,
+			 std::array<size_t, sizeof...(Axes)>& nBinsArray) {
+	// by convention getNBins does not include under-/overflow bins
+	nBinsArray[0u] = std::get<0u>(axes).getNBins();
+    }
     
 };
     
 
 struct grid_helper {
-  template <class... Axes>
-  static size_t getGlobalBin(
-      const std::array<size_t, sizeof...(Axes)>& localBins,
-      const std::tuple<Axes...>& axes) {
-    constexpr size_t MAX = sizeof...(Axes) - 1;
-    size_t area = 1;
-    size_t bin = 0;
-
-    grid_helper_impl<MAX>::getGlobalBin(localBins, axes, bin, area);
-
-    return bin;
-  }
+    template <class... Axes>
+    static size_t getGlobalBin(
+	     const std::array<size_t, sizeof...(Axes)>& localBins,
+	     const std::tuple<Axes...>& axes) {
+	constexpr size_t MAX = sizeof...(Axes) - 1;
+	size_t area = 1;
+	size_t bin = 0;
+	
+	grid_helper_impl<MAX>::getGlobalBin(localBins, axes, bin, area);
+	
+	return bin;
+    }
     
-  template <class Point, class... Axes>
-  static std::array<size_t, sizeof...(Axes)> getLocalBinIndices(
-      const Point& point, const std::tuple<Axes...>& axes) {
-    constexpr size_t MAX = sizeof...(Axes) - 1;
-    std::array<size_t, sizeof...(Axes)> indices;
+    template <class Point, class... Axes>
+    static std::array<size_t, sizeof...(Axes)> getLocalBinIndices(
+	     const Point& point,
+	     const std::tuple<Axes...>& axes) {
+	constexpr size_t MAX = sizeof...(Axes) - 1;
+	std::array<size_t, sizeof...(Axes)> indices;
+	
+	grid_helper_impl<MAX>::getLocalBinIndices(point, axes, indices);
+	
+	return indices;    
+    }
 
-    grid_helper_impl<MAX>::getLocalBinIndices(point, axes, indices);
-
-    return indices;
-  }    
+    template <class... Axes>
+    static std::array<size_t, sizeof...(Axes)> getNBins(
+	     const std::tuple<Axes...>& axes) {
+	std::array<size_t, sizeof...(Axes)> nBinsArray;
+	grid_helper_impl<sizeof...(Axes) - 1>::getNBins(axes, nBinsArray);
+	return nBinsArray;
+    }
 };

@@ -23,6 +23,23 @@ public:
     using reference = value_type&;
     /// index type using local bin indices along each axis
     using index_t = std::array<size_t, DIM>;
+
+    /// @brief default constructor
+    ///
+    /// @param [in] axes actual axis objects spanning the grid
+    grid(std::tuple<Axes...> axes) : m_axes(std::move(axes)) {
+	m_values.resize(size());
+    }
+
+    size_t size() const {
+	index_t nBinsArray = numLocalBins();
+	// add under-and overflow bins for each axis and multiply all bins
+	return std::accumulate(
+			       nBinsArray.begin(), nBinsArray.end(), 1,
+			       [](const size_t& a, const size_t& b) { return a * (b + 2); });
+    }
+
+    index_t numLocalBins() const { return grid_helper::getNBins(m_axes); }
     
     template <class Point>
     reference at_position(const Point& point) {
@@ -41,12 +58,7 @@ public:
     template <class Point>
     index_t localBinsFromPosition(const Point& point) const {
 	return grid_helper::getLocalBinIndices(point, m_axes);
-    }
-    
-    /// @brief default constructor
-    ///
-    /// @param [in] axes actual axis objects spanning the grid
-    grid(std::tuple<Axes...> axes) : m_axes(std::move(axes)) {}
+    }   
 
 private:
     std::tuple< Axes... > m_axes;

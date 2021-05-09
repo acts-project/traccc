@@ -24,7 +24,7 @@ class binned_spgroup{
 public:
         
 binned_spgroup(const host_spacepoint_container& sp_container,
-	       const spacepoint_grid& sp_grid,
+	       spacepoint_grid& sp_grid,
 	       const seedfinder_config& config){
     // get region of interest (or full detector if configured accordingly)
     float phiMin = config.phiMin;
@@ -80,12 +80,12 @@ binned_spgroup(const host_spacepoint_container& sp_container,
     for (auto& rbin : rBins) {
 	for (auto& isp : rbin) {
 	    vector2 spLocation({isp->phi(), isp->z()});
-	    /*
+	    
 	    std::vector<
 		std::unique_ptr<const internal_spacepoint< spacepoint >>>&
-		bin = grid->atPosition(spLocation);
+		bin = sp_grid.at_position(spLocation);
 	    bin.push_back(std::move(isp));
-	    */
+	    
 	}
     }    
     //m_binned_sp = 
