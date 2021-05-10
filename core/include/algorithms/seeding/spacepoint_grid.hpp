@@ -38,13 +38,12 @@ struct spacepoint_grid_config {
     float cotThetaMax;
 };
 
-using spacepoint_grid = grid<std::vector<std::unique_ptr<
-			     const internal_spacepoint<spacepoint>>>,
+using spacepoint_grid = grid< internal_spacepoint< spacepoint > ,
 			     traccc::axis<AxisBoundaryType::Closed>, traccc::axis<AxisBoundaryType::Bound> >;
 
 class spacepoint_grid_creator{
 public:
-    static spacepoint_grid create_grid(const spacepoint_grid_config& config){
+    static spacepoint_grid create_grid(const spacepoint_grid_config& config, vecmem::memory_resource* resource=nullptr){
 	// calculate circle intersections of helix and max detector radius
 	float minHelixRadius = config.minPt / (300. * config.bFieldInZ);  // in mm
 	float maxR2 = config.rMax * config.rMax;
@@ -77,7 +76,7 @@ public:
 	int zBins = std::floor((config.zMax - config.zMin) / zBinSize);
 	axis<AxisBoundaryType::Bound> zAxis(config.zMin, config.zMax, zBins);
 
-	return spacepoint_grid(std::make_tuple(phiAxis, zAxis));
+	return spacepoint_grid(std::make_tuple(phiAxis, zAxis), resource);
     }
 };
     

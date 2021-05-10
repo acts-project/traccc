@@ -101,6 +101,58 @@ public:
 	return 1 + (w + ((bin - 1) % w)) % w;
 	// return int(bin<1)*w - int(bin>w)*w + bin;
     }    
+
+    template <AxisBoundaryType T = bdt,
+	      std::enable_if_t<T == AxisBoundaryType::Bound, int> = 0>
+    neighborhood_indices get_neighborhood_indices(size_t idx,
+						  std::pair<size_t, size_t> sizes = {
+                                              1, 1}) const {
+	if (idx <= 0 || idx >= (getNBins() + 1)) {
+	    return neighborhood_indices();
+	}
+	constexpr int min = 1;
+	const int max = getNBins();
+	const int itmin = std::max(min, int(idx - sizes.first));
+	const int itmax = std::min(max, int(idx + sizes.second));
+	return neighborhood_indices(itmin, itmax + 1);
+    }
+    
+    template <AxisBoundaryType T = bdt,
+	      std::enable_if_t<T == AxisBoundaryType::Closed, int> = 0>
+    neighborhood_indices get_neighborhood_indices(size_t idx,
+						  std::pair<size_t, size_t> sizes = {
+                                              1, 1}) const {
+	// Handle invalid indices
+	if (idx <= 0 || idx >= (getNBins() + 1)) {
+	    return neighborhood_indices();
+	}
+	
+	// Handle corner case where user requests more neighbours than the number
+	// of bins on the axis. We do not want to ActsScalar-count bins in that
+	// case.
+	sizes.first %= getNBins();
+	sizes.second %= getNBins();
+	if (sizes.first + sizes.second + 1 > getNBins()) {
+	    sizes.second -= (sizes.first + sizes.second + 1) - getNBins();
+	}
+	
+	// If the entire index range is not covered, we must wrap the range of
+	// targeted neighbor indices into the range of valid bin indices. This may
+	// split the range of neighbor indices in two parts:
+	//
+	// Before wraparound - [        XXXXX]XXX
+	// After wraparound  - [ XXXX   XXXX ]
+	//
+	const int itmin = idx - sizes.first;
+	const int itmax = idx + sizes.second;
+	const size_t itfirst = wrapBin(itmin);
+	const size_t itlast = wrapBin(itmax);
+	if (itfirst <= itlast) {
+	    return neighborhood_indices(itfirst, itlast + 1);
+	} else {
+	    return neighborhood_indices(itfirst, getNBins() + 1, 1, itlast + 1);
+	}
+    }    
     
     scalar getMin() const { return m_min; }
 

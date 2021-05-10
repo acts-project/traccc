@@ -10,6 +10,7 @@
 #include "edm/spacepoint.hpp"
 #include "definitions/algebra.hpp"
 #include "algorithms/seeding/spacepoint_grid.hpp"
+#include "algorithms/seeding/bin_finder.hpp"
 #include "algorithms/seeding/seedfinder_config.hpp"
 #include "algorithms/seeding/internal_spacepoint.hpp"
 
@@ -25,7 +26,8 @@ public:
         
 binned_spgroup(const host_spacepoint_container& sp_container,
 	       spacepoint_grid& sp_grid,
-	       const seedfinder_config& config){
+	       const seedfinder_config& config):
+    m_binned_sp(std::move(sp_grid)){    
     // get region of interest (or full detector if configured accordingly)
     float phiMin = config.phiMin;
     float phiMax = config.phiMax;
@@ -38,7 +40,7 @@ binned_spgroup(const host_spacepoint_container& sp_container,
     // (worst case minR: configured minR + 1mm)
     
     size_t numRBins = (config.rMax + getter::norm(config.beamPos));
-    std::vector<std::vector< std::unique_ptr< const internal_spacepoint< spacepoint > > > > rBins(numRBins);
+    std::vector<std::vector< internal_spacepoint< spacepoint > > > rBins(numRBins);
     
     for (auto& sp_vec: sp_container.items){
 	for(auto& sp: sp_vec){
@@ -61,12 +63,11 @@ binned_spgroup(const host_spacepoint_container& sp_container,
 	    // vector2 variance = covTool(sp, config.zAlign, config.rAlign, config.sigmaError);
 	    vector2 variance({varR, varZ});
 	    vector3 spPosition({spX, spY, spZ});
-	    auto isp =
-		std::make_unique<const internal_spacepoint<spacepoint>>(
-									sp, spPosition, config.beamPos, variance);
+
+	    auto isp = internal_spacepoint<spacepoint> (sp, spPosition, config.beamPos, variance);
 	    // calculate r-Bin index and protect against overflow (underflow not
 	    // possible)
-	    size_t rIndex = isp->radius();
+	    size_t rIndex = isp.radius();
 	    // if index out of bounds, the SP is outside the region of interest
 	    if (rIndex >= numRBins) {
 		continue;
@@ -79,20 +80,21 @@ binned_spgroup(const host_spacepoint_container& sp_container,
     // space points with delta r < rbin size can be out of order
     for (auto& rbin : rBins) {
 	for (auto& isp : rbin) {
-	    vector2 spLocation({isp->phi(), isp->z()});
-	    
-	    std::vector<
-		std::unique_ptr<const internal_spacepoint< spacepoint >>>&
-		bin = sp_grid.at_position(spLocation);
-	    bin.push_back(std::move(isp));
-	    
+	    vector2 spLocation({isp.phi(), isp.z()});
+	    vecmem::vector< internal_spacepoint< spacepoint > > bin = m_binned_sp.at_position(spLocation);
+	    bin.push_back(std::move(isp));	    
 	}
-    }    
-    //m_binned_sp = 
+    }
+    
 }
 
 private:
-    vecmem::jagged_vector<spacepoint> m_binned_sp;
+    spacepoint_grid m_binned_sp;
+    // BinFinder must return std::vector<Acts::Seeding::Bin> with content of
+    // each bin sorted in r (ascending)
+    std::shared_ptr<bin_finder > m_topBinFinder;
+    std::shared_ptr<bin_finder > m_bottomBinFinder;
+    
 };
 
 } // namespace traccc

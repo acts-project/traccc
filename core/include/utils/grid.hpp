@@ -10,6 +10,7 @@
 #include "utils/axis.hpp"
 #include "utils/grid_helper.hpp"
 
+namespace traccc{
 
 template < typename T, class... Axes >
 class grid{
@@ -20,14 +21,16 @@ public:
     /// type of values stored
     using value_type = T;
     /// reference type to values stored
-    using reference = value_type&;
+    using reference = vecmem::vector<value_type>&;
     /// index type using local bin indices along each axis
     using index_t = std::array<size_t, DIM>;
 
     /// @brief default constructor
     ///
     /// @param [in] axes actual axis objects spanning the grid
-    grid(std::tuple<Axes...> axes) : m_axes(std::move(axes)) {
+    grid(std::tuple<Axes...> axes, vecmem::memory_resource* resource= nullptr):
+	m_axes(std::move(axes)),
+    	m_values(resource) {
 	m_values.resize(size());
     }
 
@@ -39,6 +42,11 @@ public:
 			       [](const size_t& a, const size_t& b) { return a * (b + 2); });
     }
 
+    global_neighborhood_indices<DIM> neighborhood_indices(
+	       const index_t& localBins, size_t size = 1u) const {
+	return grid_helper::get_neighborhood_indices(localBins, size, m_axes);
+    }
+    
     index_t numLocalBins() const { return grid_helper::getNBins(m_axes); }
     
     template <class Point>
@@ -62,6 +70,7 @@ public:
 
 private:
     std::tuple< Axes... > m_axes;
-    std::vector<T> m_values;
+    vecmem::jagged_vector<T> m_values;
 };
 
+} //namespace traccc
