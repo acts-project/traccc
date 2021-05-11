@@ -83,13 +83,13 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
             // The algorithmic code part: start
             traccc::cluster_collection clusters_per_module =
-                cc(cells_per_event.items[i], cells_per_event.headers[i]);
+                cc({cells_per_event.items[i], cells_per_event.headers[i]});
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
-                mt(clusters_per_module, module);
+                mt({clusters_per_module, module});
             traccc::host_spacepoint_collection spacepoints_per_module =
-                sp(module, measurements_per_module);
+                sp({module, measurements_per_module});
             // The algorithmnic code part: end
 
             n_cells += cells_per_event.items[i].size();
