@@ -3,6 +3,7 @@ enable_language(CUDA)
 add_library(
     traccc_cuda
     SHARED
+    src/details/sparse_ccl.cu
     src/component_connection.cpp
 )
 
