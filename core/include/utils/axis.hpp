@@ -9,6 +9,16 @@
 
 namespace traccc{
 
+// This object can be iterated to produce up to two sequences of integer
+// indices, corresponding to the half-open integer ranges [begin1, end1[ and
+// [begin2, end2[.
+//
+// The goal is to emulate the effect of enumerating a range of neighbor
+// indices on an axis (which may go out of bounds and wrap around since we
+// have AxisBoundaryType::Closed), inserting them into an std::vector, and
+// discarding duplicates, without paying the price of duplicate removal
+// and dynamic memory allocation in hot magnetic field interpolation code.
+//
 class neighborhood_indices{
 public:
     neighborhood_indices() = default;
@@ -78,7 +88,6 @@ private:
 
 enum class AxisBoundaryType { Open, Bound, Closed };
     
-// Defined only for bounded axis
 template <AxisBoundaryType bdt>
 class axis {
 public:    
@@ -88,12 +97,24 @@ public:
 	m_width((xmax-xmin)/n_Bins),
 	m_bins(n_Bins){}
 
+    /// @brief Converts bin index into a valid one for this axis.
+    ///
+    /// @note Bound: bin index is clamped to [1, nBins]
+    ///
+    /// @param [in] bin The bin to wrap
+    /// @return valid bin index
     template <AxisBoundaryType T = bdt,
 	      std::enable_if_t<T == AxisBoundaryType::Bound, int> = 0>
     size_t wrapBin(int bin) const {
 	return std::max(std::min(bin, static_cast<int>(getNBins())), 1);
     }
 
+    /// @brief Converts bin index into a valid one for this axis.
+    ///
+    /// @note Closed: bin index wraps around to other side
+    ///
+    /// @param [in] bin The bin to wrap
+    /// @return valid bin index    
     template <AxisBoundaryType T = bdt,
 	      std::enable_if_t<T == AxisBoundaryType::Closed, int> = 0>
     size_t wrapBin(int bin) const {
@@ -102,6 +123,15 @@ public:
 	// return int(bin<1)*w - int(bin>w)*w + bin;
     }    
 
+    /// @brief Get #size bins which neighbor the one given
+    ///
+    /// This is the version for Bound
+    ///
+    /// @param [in] idx requested bin index
+    /// @param [in] sizes how many neighboring bins (up/down)
+    /// @return Set of neighboring bin indices (global)
+    /// @note Bound varies given bin and allows 1 and NBins (regular bins)
+    ///       as neighbors    
     template <AxisBoundaryType T = bdt,
 	      std::enable_if_t<T == AxisBoundaryType::Bound, int> = 0>
     neighborhood_indices get_neighborhood_indices(size_t idx,
@@ -116,7 +146,16 @@ public:
 	const int itmax = std::min(max, int(idx + sizes.second));
 	return neighborhood_indices(itmin, itmax + 1);
     }
-    
+
+    /// @brief Get #size bins which neighbor the one given
+    ///
+    /// This is the version for Closed
+    ///
+    /// @param [in] idx requested bin index
+    /// @param [in] sizes how many neighboring bins (up/down)
+    /// @return Set of neighboring bin indices (global)
+    /// @note Closed varies given bin and allows bins on the opposite
+    ///       side of the axis as neighbors. (excludes underflow / overflow)    
     template <AxisBoundaryType T = bdt,
 	      std::enable_if_t<T == AxisBoundaryType::Closed, int> = 0>
     neighborhood_indices get_neighborhood_indices(size_t idx,
@@ -153,15 +192,38 @@ public:
 	    return neighborhood_indices(itfirst, getNBins() + 1, 1, itlast + 1);
 	}
     }    
-    
+
+    /// @brief get minimum of binning range
+    ///
+    /// @return minimum of binning range
     scalar getMin() const { return m_min; }
 
+    /// @brief get bin width
+    ///
+    /// @param  [in] bin index of bin
+    /// @return width of given bin
+    ///
+    /// @pre @c bin must be a valid bin index (excluding under-/overflow bins),
+    ///      i.e. \f$1 \le \text{bin} \le \text{nBins}\f$
     scalar getBinWidth(size_t /*bin*/ = 0) const { return m_width; }
-    
+
+    /// @brief get corresponding bin index for given coordinate
+    ///
+    /// @param  [in] x input coordinate
+    /// @return index of bin containing the given value
+    ///
+    /// @note Bin intervals are defined with closed lower bounds and open upper
+    ///       bounds, that is \f$l <= x < u\f$ if the value @c x lies within a
+    ///       bin with lower bound @c l and upper bound @c u.
+    /// @note Bin indices start at @c 1. The underflow bin has the index @c 0
+    ///       while the index <tt>nBins + 1</tt> indicates the overflow bin .
     size_t getBin(scalar x) const {
 	return wrapBin(std::floor((x - getMin()) / getBinWidth()) + 1);
     }
-    
+
+    /// @brief get total number of bins
+    ///
+    /// @return total number of bins (excluding under-/overflow bins)
     size_t getNBins() const { return m_bins; }
 
     

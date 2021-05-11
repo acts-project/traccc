@@ -149,8 +149,8 @@ public:
 	if (phiIndex <= phiZbins[0] && zIndex <= phiZbins[1]) {
 	    currentBin =
 		std::vector<size_t>{grid->globalBinFromLocalBins({phiIndex, zIndex})};
-	    bottomBinIndices = m_bottomBinFinder->findBins(phiIndex, zIndex, grid);
-	    topBinIndices = m_topBinFinder->findBins(phiIndex, zIndex, grid);
+	    bottomBinIndices = m_bottomBinFinder->find_bins(phiIndex, zIndex, grid);
+	    topBinIndices = m_topBinFinder->find_bins(phiIndex, zIndex, grid);
 	    outputIndex++;
 	    return *this;
 	}
@@ -190,8 +190,8 @@ public:
 	phiIndex = 1;
 	zIndex = 1;
 	outputIndex = 0;
-	bottomBinIndices = m_bottomBinFinder->findBins(phiIndex, zIndex, grid);
-	topBinIndices = m_topBinFinder->findBins(phiIndex, zIndex, grid);
+	bottomBinIndices = m_bottomBinFinder->find_bins(phiIndex, zIndex, grid);
+	topBinIndices = m_topBinFinder->find_bins(phiIndex, zIndex, grid);
     }
     
     binned_spgroup_iterator(const spacepoint_grid* spgrid,
@@ -207,8 +207,8 @@ public:
 	phiZbins = grid->numLocalBins();
 	outputIndex = (phiInd - 1) * phiZbins[1] + zInd - 1;
 	if (phiIndex <= phiZbins[0] && zIndex <= phiZbins[1]) {
-	    bottomBinIndices = m_bottomBinFinder->findBins(phiIndex, zIndex, grid);
-	    topBinIndices = m_topBinFinder->findBins(phiIndex, zIndex, grid);
+	    bottomBinIndices = m_bottomBinFinder->find_bins(phiIndex, zIndex, grid);
+	    topBinIndices = m_topBinFinder->find_bins(phiIndex, zIndex, grid);
 	}
     }
     

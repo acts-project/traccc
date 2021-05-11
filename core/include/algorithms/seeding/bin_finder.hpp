@@ -11,8 +11,8 @@
 
 namespace traccc{
 
-/// @class BinFinder
-/// The BinFinder is used by the ISPGroupSelector. It can be
+/// @class bin_finder
+/// The bin_finder is used by the binned_spgroup. It can be
 /// used to find both bins that could be bottom bins as well as bins that could
 /// be top bins, which are assumed to be the same bins. Does not take
 /// interaction region into account to limit z-bins.
@@ -26,10 +26,10 @@ class bin_finder {
   /// @param phiBin phi index of bin with middle space points
   /// @param zBin z index of bin with middle space points
   /// @param binnedSP phi-z grid containing all bins
-  std::vector<size_t> findBins(
-      size_t phiBin, size_t zBin,
-      const spacepoint_grid* binnedSP){
-      return binnedSP->neighborhood_indices({phiBin, zBin}).collect();
+  std::vector<size_t> find_bins(
+      size_t phi_bin, size_t z_bin,
+      const spacepoint_grid* binned_sp){
+      return binned_sp->neighborhood_indices({phi_bin, z_bin}).collect();
   }
 };
    
