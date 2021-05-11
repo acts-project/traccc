@@ -7,7 +7,9 @@
  */
 
 #include "edm/cell.hpp"
+#include "edm/measurement.hpp"
 #include "algorithms/component_connection.hpp"
+#include "cuda/algorithms/component_connection.hpp"
 #include "csv/csv_io.hpp"
 
 #include "vecmem/memory/host_memory_resource.hpp"
@@ -78,15 +80,10 @@ void print_statistics(
 }
 
 void run_on_event(
-    traccc::component_connection & cc,
+    traccc::cuda::component_connection & cc,
     const traccc::host_cell_container & data
 ) {
-    for (std::size_t i = 0; i < data.headers.size(); ++i) {
-        traccc::cluster_collection clusters_per_module = cc(
-            data.items.at(i),
-            data.headers.at(i)
-        );
-    }
+    cc(data);
 }
 
 int main(
@@ -103,7 +100,7 @@ int main(
 
     std::cout << "Running " << argv[0] << " on " << event_file << std::endl;
 
-    traccc::component_connection cc;
+    traccc::cuda::component_connection cc;
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
