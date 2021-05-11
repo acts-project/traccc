@@ -17,42 +17,42 @@
 namespace traccc
 {
 
-    std::array<scalar, 2> operator*(const std::array<scalar, 2> &a, scalar s)
+    inline std::array<scalar, 2> operator*(const std::array<scalar, 2> &a, scalar s)
     {
         return {a[0] * s, a[1] * s};
     }
 
-    std::array<scalar, 2> operator*(scalar s, const std::array<scalar, 2> &a)
+    inline std::array<scalar, 2> operator*(scalar s, const std::array<scalar, 2> &a)
     {
         return {s * a[0], s * a[1]};
     }
 
-    std::array<scalar, 2> operator-(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
+    inline std::array<scalar, 2> operator-(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] - b[0], a[1] - b[1]};
     }
 
-    std::array<scalar, 2> operator+(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
+    inline std::array<scalar, 2> operator+(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
     {
         return {a[0] + b[0], a[1] + b[1]};
     }
 
-    std::array<scalar, 3> operator*(const std::array<scalar, 3> &a, scalar s)
+    inline std::array<scalar, 3> operator*(const std::array<scalar, 3> &a, scalar s)
     {
         return {a[0] * s, a[1] * s, a[2] * s};
     }
 
-    std::array<scalar, 3> operator*(scalar s, const std::array<scalar, 3> &a)
+    inline std::array<scalar, 3> operator*(scalar s, const std::array<scalar, 3> &a)
     {
         return {s * a[0], s * a[1], s * a[2]};
     }
 
-    std::array<scalar, 3> operator-(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
+    inline std::array<scalar, 3> operator-(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
     }
 
-    std::array<scalar, 3> operator+(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
+    inline std::array<scalar, 3> operator+(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
     {
         return {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
     }
@@ -70,7 +70,7 @@ namespace traccc
          * 
          * @return a vector (expression) representing the cross product
          **/
-        std::array<scalar, 3> cross(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
+        inline std::array<scalar, 3> cross(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return {a[1] * b[2] - b[1] * a[2], a[2] * b[0] - b[2] * a[0], a[0] * b[1] - b[0] * a[1]};
         }
@@ -113,7 +113,7 @@ namespace traccc
          * 
          * @param v the input vector 
          **/
-        auto norm(const std::array<scalar, 2> &v)
+        inline auto norm(const std::array<scalar, 2> &v)
         {
             return perp(v);
         }
@@ -122,7 +122,7 @@ namespace traccc
          * 
          * @param v the input vector 
          **/
-        auto norm(const std::array<scalar, 3> &v)
+        inline auto norm(const std::array<scalar, 3> &v)
         {
             return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
         }
@@ -436,7 +436,7 @@ namespace traccc
          * 
          * @return the scalar dot product value 
          **/
-        scalar dot(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
+        inline scalar dot(const std::array<scalar, 2> &a, const std::array<scalar, 2> &b)
         {
             return a[0] * b[0] + a[1] * b[1];
         }
@@ -445,7 +445,7 @@ namespace traccc
          * 
          * @param v the input vector
          **/
-        std::array<scalar, 3> normalize(const std::array<scalar, 2> &v)
+        inline std::array<scalar, 3> normalize(const std::array<scalar, 2> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
             return {v[0] * oon, v[1] * oon};
@@ -458,7 +458,7 @@ namespace traccc
          * 
          * @return the scalar dot product value 
          **/
-        scalar dot(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
+        inline scalar dot(const std::array<scalar, 3> &a, const std::array<scalar, 3> &b)
         {
             return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         }
@@ -467,7 +467,7 @@ namespace traccc
          * 
          * @param v the input vector
          **/
-        std::array<scalar, 3> normalize(const std::array<scalar, 3> &v)
+        inline std::array<scalar, 3> normalize(const std::array<scalar, 3> &v)
         {
             scalar oon = 1. / std::sqrt(dot(v, v));
             return {v[0] * oon, v[1] * oon, v[2] * oon};
