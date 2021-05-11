@@ -476,4 +476,3 @@ namespace traccc
     } // namespace vector
 
 } // end of namespace
-
