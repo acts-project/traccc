@@ -22,9 +22,12 @@ public:
     using value_type = T;
     /// reference type to values stored
     using reference = vecmem::vector<value_type>&;
+    /// constant reference type to values stored
+    using const_reference = const vecmem::vector<value_type>&;
     /// index type using local bin indices along each axis
     using index_t = std::array<size_t, DIM>;
 
+    
     /// @brief default constructor
     ///
     /// @param [in] axes actual axis objects spanning the grid
@@ -33,7 +36,10 @@ public:
     	m_values(resource) {
 	m_values.resize(size());
     }
-
+    
+    reference at(size_t bin) { return m_values.at(bin); }
+    const_reference at(size_t bin) const { return m_values.at(bin); }
+    
     size_t size() const {
 	index_t nBinsArray = numLocalBins();
 	// add under-and overflow bins for each axis and multiply all bins

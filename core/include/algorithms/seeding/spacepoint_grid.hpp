@@ -44,6 +44,7 @@ using spacepoint_grid = grid< internal_spacepoint< spacepoint > ,
 class spacepoint_grid_creator{
 public:
     static spacepoint_grid create_grid(const spacepoint_grid_config& config, vecmem::memory_resource* resource=nullptr){
+	
 	// calculate circle intersections of helix and max detector radius
 	float minHelixRadius = config.minPt / (300. * config.bFieldInZ);  // in mm
 	float maxR2 = config.rMax * config.rMax;
@@ -60,7 +61,7 @@ public:
 	    float yInner = std::sqrt(innerCircleR2 - xInner * xInner);
 	    innerAngle = std::atan(xInner / yInner);
 	}
-
+	
 	// FIXME: phibin size must include max impact parameters
 	// divide 2pi by angle delta to get number of phi-bins
 	// size is always 2pi even for regions of interest
@@ -76,7 +77,8 @@ public:
 	int zBins = std::floor((config.zMax - config.zMin) / zBinSize);
 	axis<AxisBoundaryType::Bound> zAxis(config.zMin, config.zMax, zBins);
 
-	return spacepoint_grid(std::make_tuple(phiAxis, zAxis), resource);
+	return spacepoint_grid(std::make_tuple(phiAxis, zAxis), resource);	
+	
     }
 };
     

@@ -28,8 +28,8 @@ class bin_finder {
   /// @param binnedSP phi-z grid containing all bins
   std::vector<size_t> findBins(
       size_t phiBin, size_t zBin,
-      const spacepoint_grid& binnedSP){
-      return binnedSP.neighborhood_indices({phiBin, zBin}).collect();
+      const spacepoint_grid* binnedSP){
+      return binnedSP->neighborhood_indices({phiBin, zBin}).collect();
   }
 };
    

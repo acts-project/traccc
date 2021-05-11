@@ -138,18 +138,17 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	grid_config.cotThetaMax = config.cotThetaMax;
 
 	// create spacepoint grid
-
-	auto grid = traccc::spacepoint_grid_creator::create_grid(grid_config);
-
+	
+	auto grid = traccc::spacepoint_grid_creator::create_grid(grid_config, &resource);
+	
 	// algorithm: binning spacepoints
 	auto spgroup = traccc::binned_spgroup(spacepoints_per_event, grid, config);
-	/*
-	for (auto gr: spgroup.get_sp()){
-	    for (auto sp: gr){
-		std::cout << sp.x() << std::endl;
-	    }
+	
+	auto group_it = spgroup.begin();	
+	auto end_of_groups = spgroup.end();
+	for (; !(group_it == end_of_groups); ++group_it) {
+
 	}
-	*/
 		
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
 	for (int i=0; i<measurements_per_event.items.size(); ++i){
@@ -171,7 +170,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
                 spwriter.append({ module, pos[0], pos[1], pos[2], 0., 0., 0.});
             }
         }
-
     }
 
     std::cout << "==> Statistics ... " << std::endl;
