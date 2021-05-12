@@ -139,8 +139,7 @@ class binned_spgroup_iterator {
 public:
     binned_spgroup_iterator& operator++() {
 	if (zIndex < phiZbins[1]) {
-	    zIndex++;
-	    
+	    zIndex++;	    
 	} else {
 	    zIndex = 1;
 	    phiIndex++;

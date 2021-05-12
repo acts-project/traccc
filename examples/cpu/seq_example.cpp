@@ -9,6 +9,8 @@
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
+#include "edm/neighborhood_index.hpp"
+//#include "edm/internal_spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
 
 // clusterization
@@ -17,9 +19,12 @@
 #include "algorithms/spacepoint_formation.hpp"
 
 // seeding
-#include "algorithms/seeding/spacepoint_grid.hpp"
+#include "algorithms/seeding/neighborhood_finding.hpp"
+#include "algorithms/seeding/spacepoint_grouping.hpp"
+#include "utils/grid.hpp"
 #include "algorithms/seeding/seedfinder_config.hpp"
-#include "algorithms/seeding/binned_spgroup.hpp"
+//#include "algorithms/seeding/spacepoint_grid.hpp"
+//#include "algorithms/seeding/binned_spgroup.hpp"
 #include "csv/csv_io.hpp"
 
 
@@ -137,18 +142,13 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	grid_config.deltaRMax = config.deltaRMax;
 	grid_config.cotThetaMax = config.cotThetaMax;
 
-	// create spacepoint grid	
-	auto grid = traccc::spacepoint_grid_creator::create_grid(grid_config, &resource);
+	traccc::neighborhood_finding nf(grid_config);
+	auto indices = nf();
 	
-	// algorithm: binning spacepoints
-	auto spgroup = traccc::binned_spgroup(spacepoints_per_event, grid, config);
+	traccc::spacepoint_grouping sg(nf.get_grid(), config);
+	auto internal_sp_per_event = sg(spacepoints_per_event);
 	
-	auto group_it = spgroup.begin();	
-	auto end_of_groups = spgroup.end();
-	for (; !(group_it == end_of_groups); ++group_it) {
-	    // Run seedfinding algorithm here :))))))))
-	}
-		
+       	
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
 	for (int i=0; i<measurements_per_event.items.size(); ++i){
 	    auto measurements_per_module = measurements_per_event.items[i];

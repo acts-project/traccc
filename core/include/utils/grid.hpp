@@ -22,58 +22,42 @@ namespace traccc{
 /// either by global bin index, local bin indices or position.
 ///
 /// @note @c T must be default-constructible.    
-template < typename T, class... Axes >
+template < class... Axes >
 class grid{
 public:
     /// number of dimensions of the grid
     static constexpr size_t DIM = sizeof...(Axes);
 
-    /// type of values stored
-    using value_type = T;
-    /// reference type to values stored
-    using reference = vecmem::vector<value_type>&;
-    /// constant reference type to values stored
-    using const_reference = const vecmem::vector<value_type>&;
     /// index type using local bin indices along each axis
     using index_t = std::array<size_t, DIM>;
-
     
     /// @brief default constructor
     ///
     /// @param [in] axes actual axis objects spanning the grid
-    grid(std::tuple<Axes...> axes, vecmem::memory_resource* resource= nullptr):
-	m_axes(std::move(axes)),
-    	m_values(resource) {
-	m_values.resize(size());
-    }
-
-    /// @brief access value stored in bin with given global bin number
-    ///
-    /// @param  [in] bin global bin number
-    /// @return reference to value stored in bin containing the given
-    ///         point
-    reference at(size_t bin) { return m_values.at(bin); }
-
-    /// @brief access value stored in bin with given global bin number
-    ///
-    /// @param  [in] bin global bin number
-    /// @return const-reference to value stored in bin containing the given
-    ///         point
-    const_reference at(size_t bin) const { return m_values.at(bin); }
+    grid(std::tuple<Axes...> axes):
+	m_axes(std::move(axes)){}
 
     /// @brief total number of bins
     ///
     /// @return total number of bins in the grid
     ///
     /// @note This number contains under-and overflow bins along all axes.    
-    size_t size() const {
+    size_t size(bool full_counter= true) const {
 	index_t nBinsArray = numLocalBins();
 	// add under-and overflow bins for each axis and multiply all bins
-	return std::accumulate(
-			       nBinsArray.begin(), nBinsArray.end(), 1,
-			       [](const size_t& a, const size_t& b) { return a * (b + 2); });
+	if (full_counter){
+	    return std::accumulate(
+				   nBinsArray.begin(), nBinsArray.end(), 1,
+				   [](const size_t& a, const size_t& b) { return a * (b + 2); });
+	}
+	// ignore under-and overflow bins
+	else{
+	    return std::accumulate(
+				   nBinsArray.begin(), nBinsArray.end(), 1,
+				   [](const size_t& a, const size_t& b) { return a * (b ); });
+	}
     }
-
+    
     /// @brief get global bin indices for neighborhood
     ///
     /// @param [in] localBins center bin defined by local bin indices along each
@@ -100,26 +84,7 @@ public:
     ///
     /// @note Not including under- and overflow bins
     index_t numLocalBins() const { return grid_helper::getNBins(m_axes); }
-
-    /// @brief access value stored in bin for a given point
-    ///
-    /// @tparam Point any type with point semantics supporting component access
-    ///               through @c operator[]
-    /// @param [in] point point used to look up the corresponding bin in the
-    ///                   grid
-    /// @return reference to value stored in bin containing the given point
-    ///
-    /// @pre The given @c Point type must represent a point in d (or higher)
-    ///      dimensions where d is dimensionality of the grid.
-    ///
-    /// @note The look-up considers under-/overflow bins along each axis.
-    ///       Therefore, the look-up will never fail.
-    //
-    template <class Point>
-    reference at_position(const Point& point) {
-	return m_values.at(globalBinFromPosition(point));
-    }
-
+    
     /// @brief determine global index for bin containing the given point
     ///
     /// @tparam Point any type with point semantics supporting component access
@@ -166,7 +131,6 @@ public:
 
 private:
     std::tuple< Axes... > m_axes;
-    vecmem::jagged_vector<T> m_values;
 };
 
 } //namespace traccc

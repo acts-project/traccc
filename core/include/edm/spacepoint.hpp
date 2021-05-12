@@ -24,6 +24,7 @@ namespace traccc {
 
     /// Convenience declaration for the spacepoint collection type to use in host code
     using host_spacepoint_collection = spacepoint_collection< vecmem::vector >;
+
     /// Convenience declaration for the spacepoint collection type to use in device code
     using device_spacepoint_collection = spacepoint_collection< vecmem::device_vector >;
 

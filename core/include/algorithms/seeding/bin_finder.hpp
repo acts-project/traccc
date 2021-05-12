@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "algorithms/seeding/spacepoint_grid.hpp"
+//#include "algorithms/seeding/spacepoint_grid.hpp"
 
 namespace traccc{
-
+    /*
 /// @class bin_finder
 /// The bin_finder is used by the binned_spgroup. It can be
 /// used to find both bins that could be bottom bins as well as bins that could
@@ -32,5 +32,5 @@ class bin_finder {
       return binned_sp->neighborhood_indices({phi_bin, z_bin}).collect();
   }
 };
-   
+    */
 } // namespace traccc
