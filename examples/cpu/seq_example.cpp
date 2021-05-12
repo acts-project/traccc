@@ -147,7 +147,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	
        	
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
-	for (int i=0; i<measurements_per_event.items.size(); ++i){
+	for (size_t i=0; i<measurements_per_event.items.size(); ++i){
 	    auto measurements_per_module = measurements_per_event.items[i];
             auto module = measurements_per_event.headers[i];
             for (const auto& measurement : measurements_per_module){
@@ -157,7 +157,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
         }
 
         traccc::spacepoint_writer spwriter{std::string("event")+event_number+"-spacepoints.csv"};
-	for (int i=0; i<spacepoints_per_event.items.size(); ++i){
+	for (size_t i=0; i<spacepoints_per_event.items.size(); ++i){
 	    auto spacepoints_per_module = spacepoints_per_event.items[i];
             auto module = spacepoints_per_event.headers[i];
 	    
