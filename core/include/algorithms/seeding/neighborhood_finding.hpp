@@ -8,11 +8,7 @@
 #pragma once
 
 #include <edm/neighborhood_index.hpp>
-#include <utils/grid.hpp>
-#include <utils/axis.hpp>
-#include <algorithms/seeding/bin_finder.hpp>
-#include <algorithms/seeding/spacepoint_grid_config.hpp>
-#include <algorithms/seeding/spacepoint_grid.hpp>
+#include <algorithms/seeding/seeding_config.hpp>
 
 namespace traccc{
     

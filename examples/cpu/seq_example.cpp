@@ -10,7 +10,7 @@
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 #include "edm/neighborhood_index.hpp"
-//#include "edm/internal_spacepoint.hpp"
+#include "edm/internal_spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
 
 // clusterization
@@ -21,10 +21,7 @@
 // seeding
 #include "algorithms/seeding/neighborhood_finding.hpp"
 #include "algorithms/seeding/spacepoint_grouping.hpp"
-#include "utils/grid.hpp"
-#include "algorithms/seeding/seedfinder_config.hpp"
-//#include "algorithms/seeding/spacepoint_grid.hpp"
-//#include "algorithms/seeding/binned_spgroup.hpp"
+#include "algorithms/seeding/seeding_config.hpp"
 #include "csv/csv_io.hpp"
 
 

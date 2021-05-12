@@ -10,10 +10,7 @@
 #include <edm/neighborhood_index.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <edm/spacepoint.hpp>
-#include <utils/grid.hpp>
-#include <utils/axis.hpp>
-#include <algorithms/seeding/bin_finder.hpp>
-#include <algorithms/seeding/seedfinder_config.hpp>
+#include <algorithms/seeding/seeding_config.hpp>
 #include <algorithm>
 
 namespace traccc{
