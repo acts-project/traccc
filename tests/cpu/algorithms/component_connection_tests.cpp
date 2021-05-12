@@ -7,7 +7,7 @@
 
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
-#include "algorithms/component_connection.hpp"
+#include "algorithms/clusterization/component_connection.hpp"
 
 #include <vecmem/memory/host_memory_resource.hpp>
 

@@ -14,9 +14,9 @@
 #include "geometry/pixel_segmentation.hpp"
 
 // clusterization
-#include "algorithms/component_connection.hpp"
-#include "algorithms/measurement_creation.hpp"
-#include "algorithms/spacepoint_formation.hpp"
+#include "algorithms/clusterization/component_connection.hpp"
+#include "algorithms/clusterization/measurement_creation.hpp"
+#include "algorithms/clusterization/spacepoint_formation.hpp"
 
 // seeding
 #include "algorithms/seeding/neighborhood_finding.hpp"
