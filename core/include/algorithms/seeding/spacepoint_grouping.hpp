@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <edm/neighborhood_index.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <edm/spacepoint.hpp>
 #include <algorithms/seeding/seeding_config.hpp>
+#include <algorithms/seeding/bin_finder.hpp>
 #include <algorithm>
 
 namespace traccc{
@@ -19,9 +19,7 @@ namespace traccc{
     struct spacepoint_grouping{
 
 	// constructor declaration
-	spacepoint_grouping(std::shared_ptr<spacepoint_grid> spgrid, const seedfinder_config& config)
-	    : m_spgrid(spgrid),
-	      m_config(config) {};
+	spacepoint_grouping(const seedfinder_config& config, const spacepoint_grid_config& grid_config);
 
 	host_internal_spacepoint_container operator()(const host_spacepoint_container& sp_container){
 	    host_internal_spacepoint_container internal_sp_container;
@@ -83,28 +81,94 @@ namespace traccc{
 	    
 	    // fill rbins into grid such that each grid bin is sorted in r
 	    // space points with delta r < rbin size can be out of order
-	    vecmem::vector<size_t> unique_idx;
 	    auto& headers = internal_sp_container.headers;
 	    auto& items = internal_sp_container.items;
-	    
+
+
 	    for (auto& rbin : rBins) {
 		for (auto& isp : rbin) {
 		    vector2 spLocation({isp.phi(), isp.z()});
-		    auto global_bin = m_spgrid->globalBinFromPosition(spLocation);
+		    auto local_bin = m_spgrid->localBinsFromPosition(spLocation);
+		    auto global_bin = m_spgrid->globalBinFromLocalBins(local_bin);
 
-		    if (std::find(headers.begin(), headers.end(), global_bin) == headers.end()){
-			headers.push_back(global_bin);
+		    // check if the global bin has not been recorded		    
+		    auto it = std::find_if(headers.begin(), headers.end(),
+					   [&global_bin](const bin_info& binfo)
+					   {return binfo.global_index==global_bin;});
+		    
+		    if (it == std::end(headers) ){
+			auto bottom_indices = m_bottom_bin_finder->find_bins(local_bin[0], local_bin[1], m_spgrid.get());
+			auto top_indices = m_top_bin_finder->find_bins(local_bin[0], local_bin[1], m_spgrid.get());
+			
+			bin_info binfo;			
+			binfo.global_index = global_bin;			
+			binfo.num_bottom_bin_indices = bottom_indices.size();
+			binfo.num_top_bin_indices = top_indices.size();
+
+			std::copy(bottom_indices.begin(), bottom_indices.end(), &binfo.bottom_bin_indices[0]);
+			std::copy(top_indices.begin(), top_indices.end(), &binfo.top_bin_indices[0]);			
+			
+			headers.push_back(binfo);
 			items.push_back(vecmem::vector<internal_spacepoint<spacepoint>>());
 		    }
-		    auto container_location = std::find(headers.begin(), headers.end(), global_bin) - headers.begin();
-		    items.at(container_location).push_back(std::move(isp));
+
+		    auto container_location
+			= std::find_if(headers.begin(), headers.end(),
+				       [&global_bin](const bin_info& binfo)
+				       {return binfo.global_index==global_bin;})
+			- headers.begin();
+
+		    items.at(container_location).push_back(std::move(isp));    
+
 		}
 	    }
 	}
 		       	
     private:
 	seedfinder_config m_config;
+	spacepoint_grid_config m_grid_config;
 	std::shared_ptr< spacepoint_grid > m_spgrid;
+	std::unique_ptr< bin_finder > m_bottom_bin_finder;
+	std::unique_ptr< bin_finder > m_top_bin_finder;	
     };
+
+    spacepoint_grouping::spacepoint_grouping(const seedfinder_config& config, const spacepoint_grid_config& grid_config)
+	: m_config(config),
+	  m_grid_config(grid_config){
 	
+	// calculate circle intersections of helix and max detector radius
+	float minHelixRadius = grid_config.minPt / (300. * grid_config.bFieldInZ);  // in mm
+	float maxR2 = grid_config.rMax * grid_config.rMax;
+	float xOuter = maxR2 / (2 * minHelixRadius);
+	float yOuter = std::sqrt(maxR2 - xOuter * xOuter);
+	float outerAngle = std::atan(xOuter / yOuter);
+	// intersection of helix and max detector radius minus maximum R distance from
+	// middle SP to top SP
+	float innerAngle = 0;
+	if (grid_config.rMax > grid_config.deltaRMax) {
+	    float innerCircleR2 =
+		(grid_config.rMax - grid_config.deltaRMax) * (grid_config.rMax - grid_config.deltaRMax);
+	    float xInner = innerCircleR2 / (2 * minHelixRadius);
+	    float yInner = std::sqrt(innerCircleR2 - xInner * xInner);
+	    innerAngle = std::atan(xInner / yInner);
+	}
+	
+	// FIXME: phibin size must include max impact parameters
+	// divide 2pi by angle delta to get number of phi-bins
+	// size is always 2pi even for regions of interest
+	int phiBins = std::floor(2 * M_PI / (outerAngle - innerAngle));
+	axis<AxisBoundaryType::Closed> phiAxis(-M_PI, M_PI, phiBins);
+	
+	// TODO: can probably be optimized using smaller z bins
+	// and returning (multiple) neighbors only in one z-direction for forward
+	// seeds
+	// FIXME: zBinSize must include scattering
+	
+	float zBinSize = grid_config.cotThetaMax * grid_config.deltaRMax;
+	int zBins = std::floor((grid_config.zMax - grid_config.zMin) / zBinSize);
+	axis<AxisBoundaryType::Bound> zAxis(grid_config.zMin, grid_config.zMax, zBins);
+
+	m_spgrid = std::make_shared<spacepoint_grid>(spacepoint_grid(std::make_tuple(phiAxis, zAxis)));	
+
+    }    
 }// namespace traccc

@@ -112,7 +112,7 @@ class global_neighborhood_indices {
     return result;
   }
 
-  // Collect the sequence of indices into an std::vector
+  // Collect the sequence of indices into an vecmem::vector
   vecmem::vector<size_t> collect() const {
     vecmem::vector<size_t> result;
     result.reserve(this->size());

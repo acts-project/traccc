@@ -18,9 +18,23 @@
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 
+
 namespace traccc {
+
+    /// Header: bin information (global bin index, neighborhood bin indices)
+    struct bin_info{
+	size_t global_index;
+	size_t num_bottom_bin_indices;
+	size_t num_top_bin_indices;
+	std::array< size_t, size_t(9u) > bottom_bin_indices;
+	std::array< size_t, size_t(9u) > top_bin_indices;
+    };
+    bool operator==(const bin_info& lhs, const bin_info& rhs){
+	return (lhs.global_index == rhs.global_index);
+    }
     
-    /// A internal spacepoint definition: global position and errors
+    
+    /// Item: A internal spacepoint definition
     template< typename spacepoint >
     struct internal_spacepoint{
 	scalar m_x;
@@ -60,7 +74,7 @@ namespace traccc {
 	const float& varianceZ() const { return m_varianceZ; }
 	const spacepoint& sp() const { return m_sp; }
     };
-
+    
     /// Container of internal_spacepoint belonging to one detector module
     template< template< typename > class vector_t >
     using internal_spacepoint_collection = vector_t< internal_spacepoint<spacepoint> >;
@@ -72,26 +86,28 @@ namespace traccc {
     /// Convenience declaration for the internal_spacepoint collection type to use in device code
     using device_internal_spacepoint_collection
     = internal_spacepoint_collection< vecmem::device_vector >;
-
+    
     /// Convenience declaration for the internal_spacepoint container type to use in host code
+    /// header: global bin index / neighborhood index
+    /// item  : internal spacepoint
     using host_internal_spacepoint_container
-    = host_container< size_t, internal_spacepoint<spacepoint> >;
+    = host_container< bin_info, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container type to use in device code
     using device_internal_spacepoint_container
-    = device_container< size_t, internal_spacepoint<spacepoint> >;
+    = device_container< bin_info, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container data type to use in host code
     using internal_spacepoint_container_data
-    = container_data< size_t, internal_spacepoint<spacepoint> >;
+    = container_data< bin_info, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container buffer type to use in host code
     using internal_spacepoint_container_buffer
-    = container_buffer< size_t, internal_spacepoint<spacepoint> >;
+    = container_buffer< bin_info, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container view type to use in host code
     using internal_spacepoint_container_view
-    = container_view< size_t, internal_spacepoint<spacepoint> >;
+    = container_view< bin_info, internal_spacepoint<spacepoint> >;
 
     
 } // namespace traccc
