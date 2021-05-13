@@ -26,7 +26,7 @@ namespace traccc{
 	/// @param phiBin phi index of bin with middle space points
 	/// @param zBin z index of bin with middle space points
 	/// @param binnedSP phi-z grid containing all bins
-	vecmem::vector<size_t> find_bins(size_t phi_bin, size_t z_bin,
+	std::vector<size_t> find_bins(size_t phi_bin, size_t z_bin,
 				      const spacepoint_grid* binned_sp){
 	    return binned_sp->neighborhood_indices({phi_bin, z_bin}).collect();
 	}

@@ -126,9 +126,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	config.impactMax = 10.;
 
 	// setup spacepoint grid config
-
-	//const size_t axis_dim = 2u; // phi and z
-	//const size_t neighbor_size = 1u; // number of neighbors per direction per axis	
 	traccc::spacepoint_grid_config grid_config;
 	grid_config.bFieldInZ = config.bFieldInZ;
 	grid_config.minPt = config.minPt;
@@ -138,9 +135,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
 	grid_config.deltaRMax = config.deltaRMax;
 	grid_config.cotThetaMax = config.cotThetaMax;
 
+	// create internal spacepoints grouped in bins
 	traccc::spacepoint_grouping sg(config, grid_config);
 	auto internal_sp_per_event = sg(spacepoints_per_event);
-        
+	
         traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
 	for (size_t i=0; i<measurements_per_event.items.size(); ++i){
 	    auto measurements_per_module = measurements_per_event.items[i];
