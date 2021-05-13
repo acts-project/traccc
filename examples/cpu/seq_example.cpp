@@ -9,7 +9,6 @@
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
-#include "edm/neighborhood_index.hpp"
 #include "edm/internal_spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
 
