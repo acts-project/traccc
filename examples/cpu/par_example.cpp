@@ -21,18 +21,18 @@
 #include <chrono>
 #include "omp.h"
 
-int par_run(const std::string& detector_file, const std::string& cells_dir, unsigned int events)
-{
+int par_run(const std::string &detector_file, const std::string &cells_dir, unsigned int events) {
     auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr)
-    {
+    if (env_d_d == nullptr) {
         throw std::ios_base::failure("Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
     }
     auto data_directory = std::string(env_d_d) + std::string("/");
 
     // Read the surface transforms
     std::string io_detector_file = data_directory + detector_file;
-    traccc::surface_reader sreader(io_detector_file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw", "rot_zu", "rot_zv", "rot_zw"});
+    traccc::surface_reader sreader(io_detector_file,
+                                   {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw", "rot_zu", "rot_zv",
+                                    "rot_zw"});
     auto surface_transforms = traccc::read_surfaces(sreader);
 
     // Algorithms
@@ -52,15 +52,17 @@ int par_run(const std::string& detector_file, const std::string& cells_dir, unsi
 
 #pragma omp parallel for reduction (+:n_cells, n_clusters, n_measurements, n_space_points, m_modules)
     // Loop over events
-    for (unsigned int event = 0; event < events; ++event){
+    for (unsigned int event = 0; event < events; ++event) {
 
         // Read the cells from the relevant event file
         std::string event_string = "000000000";
         std::string event_number = std::to_string(event);
-        event_string.replace(event_string.size()-event_number.size(), event_number.size(), event_number);
+        event_string.replace(event_string.size() - event_number.size(), event_number.size(), event_number);
 
-        std::string io_cells_file = data_directory+cells_dir+std::string("/event")+event_string+std::string("-cells.csv");
-        traccc::cell_reader creader(io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
+        std::string io_cells_file =
+                data_directory + cells_dir + std::string("/event") + event_string + std::string("-cells.csv");
+        traccc::cell_reader creader(io_cells_file,
+                                    {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
         traccc::host_cell_container cells_per_event = traccc::read_cells(creader, resource, surface_transforms);
         m_modules += cells_per_event.headers.size();
 
@@ -68,15 +70,14 @@ int par_run(const std::string& detector_file, const std::string& cells_dir, unsi
         traccc::host_measurement_container measurements_per_event;
         traccc::host_spacepoint_container spacepoints_per_event;
         measurements_per_event.headers.reserve(cells_per_event.headers.size());
-	    measurements_per_event.items.reserve(cells_per_event.headers.size());
+        measurements_per_event.items.reserve(cells_per_event.headers.size());
         spacepoints_per_event.headers.reserve(cells_per_event.headers.size());
-	    spacepoints_per_event.items.reserve(cells_per_event.headers.size());
+        spacepoints_per_event.items.reserve(cells_per_event.headers.size());
 
 #pragma omp parallel for
-        for (std::size_t i = 0; i < cells_per_event.items.size(); ++i )
-        {
-	    auto& module = cells_per_event.headers[i];
-	      module.pixel = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
+        for (std::size_t i = 0; i < cells_per_event.items.size(); ++i) {
+            auto &module = cells_per_event.headers[i];
+            module.pixel = traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
 
             // The algorithmic code part: start
             traccc::cluster_collection clusters_per_module = cc(cells_per_event.items[i], cells_per_event.headers[i]);
@@ -101,24 +102,24 @@ int par_run(const std::string& detector_file, const std::string& cells_dir, unsi
             }
         }
 
-        traccc::measurement_writer mwriter{std::string("event")+event_number+"-measurements.csv"};
-	for (size_t i=0; i<measurements_per_event.items.size(); ++i){
-	    auto measurements_per_module = measurements_per_event.items[i];
+        traccc::measurement_writer mwriter{std::string("event") + event_number + "-measurements.csv"};
+        for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
+            auto measurements_per_module = measurements_per_event.items[i];
             auto module = measurements_per_event.headers[i];
-            for (const auto& measurement : measurements_per_module){
-                const auto& local = measurement.local;
-                mwriter.append({ module.module, local[0], local[1], 0., 0.});
+            for (const auto &measurement : measurements_per_module) {
+                const auto &local = measurement.local;
+                mwriter.append({module.module, local[0], local[1], 0., 0.});
             }
         }
 
-        traccc::spacepoint_writer spwriter{std::string("event")+event_number+"-spacepoints.csv"};
-	for (size_t i=0; i<spacepoints_per_event.items.size(); ++i){
-	    auto spacepoints_per_module = spacepoints_per_event.items[i];
+        traccc::spacepoint_writer spwriter{std::string("event") + event_number + "-spacepoints.csv"};
+        for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
+            auto spacepoints_per_module = spacepoints_per_event.items[i];
             auto module = spacepoints_per_event.headers[i];
 
-            for (const auto& spacepoint : spacepoints_per_module){
-                const auto& pos = spacepoint.global;
-                spwriter.append({ module, pos[0], pos[1], pos[2], 0., 0., 0.});
+            for (const auto &spacepoint : spacepoints_per_module) {
+                const auto &pos = spacepoint.global;
+                spwriter.append({module, pos[0], pos[1], pos[2], 0., 0., 0.});
             }
         }
 
@@ -135,9 +136,8 @@ int par_run(const std::string& detector_file, const std::string& cells_dir, unsi
 
 // The main routine
 //
-int main(int argc, char *argv[])
-{
-    if (argc < 4){
+int main(int argc, char *argv[]) {
+    if (argc < 4) {
         std::cout << "Not enough arguments, minimum requirement: " << std::endl;
         std::cout << "./par_example <detector_file> <cell_directory> <events>" << std::endl;
         return -1;
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     auto result = par_run(detector_file, cell_directory, events);
     auto end = std::chrono::system_clock::now();
 
-    std::chrono::duration<double> diff = end-start;
+    std::chrono::duration<double> diff = end - start;
     std::cout << "Execution time: " << diff.count() << " sec." << std::endl;
     return result;
 }
