@@ -55,6 +55,19 @@ namespace traccc {
 
   using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
 
+  struct csv_internal_spacepoint {
+
+      size_t global_bin;
+      scalar x, y, z;
+      scalar var_R = 0;
+      scalar var_Z = 0;
+
+      // geometry_id,hit_id,channel0,channel1,timestamp,value
+      DFE_NAMEDTUPLE(csv_internal_spacepoint, global_bin, x, y, z, var_R, var_Z);
+  };
+
+  using internal_spacepoint_writer = dfe::NamedTupleCsvWriter<csv_internal_spacepoint>;
+    
   struct csv_spacepoint {
 
     uint64_t geometry_id = 0;

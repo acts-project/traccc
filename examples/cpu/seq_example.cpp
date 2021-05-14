@@ -159,6 +159,21 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir, unsi
                 spwriter.append({ module, pos[0], pos[1], pos[2], 0., 0., 0.});
             }
         }
+
+	traccc::internal_spacepoint_writer internal_spwriter{std::string("event")+event_number+"-internal_spacepoints.csv"};
+	for (size_t i=0; i<internal_sp_per_event.items.size(); ++i){
+	    auto internal_sp_per_bin = internal_sp_per_event.items[i];
+	    auto bin = internal_sp_per_event.headers[i].global_index;
+	    
+            for (const auto& internal_sp : internal_sp_per_bin){
+                const auto& x = internal_sp.m_x;
+                const auto& y = internal_sp.m_y;
+                const auto& z = internal_sp.m_z;
+		const auto& varR = internal_sp.m_varianceR;
+		const auto& varZ = internal_sp.m_varianceZ;		
+                internal_spwriter.append({ bin, x, y, z, varR, varZ });
+            }
+        }
     }
 
     std::cout << "==> Statistics ... " << std::endl;
