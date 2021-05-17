@@ -9,8 +9,9 @@
 
 #include <edm/internal_spacepoint.hpp>
 #include <edm/spacepoint.hpp>
-#include <algorithms/seeding/seeding_config.hpp>
-#include <algorithms/seeding/bin_finder.hpp>
+#include <algorithms/seeding/detail/seeding_config.hpp>
+#include <algorithms/seeding/detail/bin_finder.hpp>
+
 #include <algorithm>
 
 namespace traccc{
