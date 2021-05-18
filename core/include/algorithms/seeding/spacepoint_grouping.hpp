@@ -92,37 +92,30 @@ namespace traccc{
 		    auto local_bin = m_spgrid->localBinsFromPosition(spLocation);
 		    auto global_bin = m_spgrid->globalBinFromLocalBins(local_bin);
 
-		    // check if the global bin has not been recorded		    
-		    auto it = std::find_if(headers.begin(), headers.end(),
-					   [&global_bin](const bin_info& binfo)
-					   {return binfo.global_index==global_bin;});
+		    if (find_vector_id_from_global_id(global_bin, headers) == headers.size()){
 		    
-		    if (it == std::end(headers) ){
 			auto bottom_indices = m_bottom_bin_finder->find_bins(local_bin[0], local_bin[1], m_spgrid.get());
 			auto top_indices = m_top_bin_finder->find_bins(local_bin[0], local_bin[1], m_spgrid.get());
 			
-			bin_info binfo;			
-			binfo.global_index = global_bin;			
-			binfo.num_bottom_bin_indices = bottom_indices.size();
-			binfo.num_top_bin_indices = top_indices.size();
-
-			std::copy(bottom_indices.begin(), bottom_indices.end(), &binfo.bottom_bin_indices[0]);
-			std::copy(top_indices.begin(), top_indices.end(), &binfo.top_bin_indices[0]);			
+			bin_information bin_info;
+			bin_info.global_index = global_bin;
+			bin_info.bottom_idx.counts = bottom_indices.size();
+			bin_info.top_idx.counts = top_indices.size();
+						
+			std::copy(bottom_indices.begin(), bottom_indices.end(), &bin_info.bottom_idx.global_indices[0]);
+			std::copy(top_indices.begin(), top_indices.end(), &bin_info.top_idx.global_indices[0]);			
 			
-			headers.push_back(binfo);
+			headers.push_back(bin_info);
 			items.push_back(vecmem::vector<internal_spacepoint<spacepoint>>());
 		    }
 
-		    auto container_location
-			= std::find_if(headers.begin(), headers.end(),
-				       [&global_bin](const bin_info& binfo)
-				       {return binfo.global_index==global_bin;})
-			- headers.begin();
-
-		    items.at(container_location).push_back(std::move(isp));    
+		    auto location = find_vector_id_from_global_id(global_bin, headers);
+		    items.at(location).push_back(std::move(isp));    
 
 		}
 	    }
+
+	    fill_vector_id(internal_sp_container);
 	}
 		       	
     private:

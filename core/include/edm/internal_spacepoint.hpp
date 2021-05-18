@@ -21,18 +21,22 @@
 
 namespace traccc {
 
-    /// Header: bin information (global bin index, neighborhood bin indices)
-    struct bin_info{
-	size_t global_index;
-	size_t num_bottom_bin_indices;
-	size_t num_top_bin_indices;
-	std::array< size_t, size_t(9u) > bottom_bin_indices;
-	std::array< size_t, size_t(9u) > top_bin_indices;
+    struct neighbor_idx{
+	size_t counts;
+	std::array< size_t, 9u > global_indices;
+	std::array< size_t, 9u > vector_indices;
     };
-    bool operator==(const bin_info& lhs, const bin_info& rhs){
-	return (lhs.global_index == rhs.global_index);
-    }
+
+    /// Header: bin information (global bin index, neighborhood bin indices)    
+    struct bin_information{
+	size_t global_index;
+	neighbor_idx bottom_idx;
+	neighbor_idx top_idx;
+    };
     
+    bool operator==(const bin_information& lhs, const bin_information& rhs){
+	return (lhs.global_index == rhs.global_index);
+    }    
     
     /// Item: A internal spacepoint definition
     template< typename spacepoint >
@@ -91,23 +95,51 @@ namespace traccc {
     /// header: global bin index / neighborhood index
     /// item  : internal spacepoint
     using host_internal_spacepoint_container
-    = host_container< bin_info, internal_spacepoint<spacepoint> >;
+    = host_container< bin_information, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container type to use in device code
     using device_internal_spacepoint_container
-    = device_container< bin_info, internal_spacepoint<spacepoint> >;
+    = device_container< bin_information, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container data type to use in host code
     using internal_spacepoint_container_data
-    = container_data< bin_info, internal_spacepoint<spacepoint> >;
+    = container_data< bin_information, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container buffer type to use in host code
     using internal_spacepoint_container_buffer
-    = container_buffer< bin_info, internal_spacepoint<spacepoint> >;
+    = container_buffer< bin_information, internal_spacepoint<spacepoint> >;
 
     /// Convenience declaration for the internal_spacepoint container view type to use in host code
     using internal_spacepoint_container_view
-    = container_view< bin_info, internal_spacepoint<spacepoint> >;
+    = container_view< bin_information, internal_spacepoint<spacepoint> >;
 
+    size_t find_vector_id_from_global_id(size_t global_bin, vecmem::vector<bin_information>& headers){
+	auto location
+	    = std::find_if(headers.begin(), headers.end(),
+			   [&global_bin](const bin_information& bin_info)
+			   {return bin_info.global_index==global_bin;})
+	    - headers.begin();
+	return location;	
+    }
     
+    void fill_vector_id(neighbor_idx& neighbor, vecmem::vector<bin_information>& headers){
+	for (size_t i=0; i<neighbor.counts; ++i){
+	    auto global_id = neighbor.global_indices[i];
+	    auto vector_id = find_vector_id_from_global_id(global_id, headers);
+	    neighbor.vector_indices[i] = vector_id;
+	}	
+    }
+    
+    void fill_vector_id(host_internal_spacepoint_container& isp_container){
+
+	for (size_t i=0; i<isp_container.headers.size(); ++i){
+
+	    auto& bot_neighbors = isp_container.headers[i].bottom_idx;
+	    auto& top_neighbors = isp_container.headers[i].top_idx;
+
+	    fill_vector_id(bot_neighbors, isp_container.headers);
+	    fill_vector_id(top_neighbors, isp_container.headers);	    
+	}	
+    }
+        
 } // namespace traccc
