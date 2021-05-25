@@ -45,17 +45,9 @@ public:
     size_t size(bool full_counter= true) const {
 	index_t nBinsArray = numLocalBins();
 	// add under-and overflow bins for each axis and multiply all bins
-	if (full_counter){
-	    return std::accumulate(
-				   nBinsArray.begin(), nBinsArray.end(), 1,
-				   [](const size_t& a, const size_t& b) { return a * (b + 2); });
-	}
-	// ignore under-and overflow bins
-	else{
-	    return std::accumulate(
-				   nBinsArray.begin(), nBinsArray.end(), 1,
-				   [](const size_t& a, const size_t& b) { return a * (b ); });
-	}
+	return std::accumulate(
+			       nBinsArray.begin(), nBinsArray.end(), 1,
+			       [](const size_t& a, const size_t& b) { return a * (b + 2); });
     }
     
     /// @brief get global bin indices for neighborhood

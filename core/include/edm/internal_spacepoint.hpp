@@ -126,8 +126,9 @@ namespace traccc {
 	for (size_t i=0; i<neighbor.counts; ++i){
 	    auto global_id = neighbor.global_indices[i];
 	    auto vector_id = find_vector_id_from_global_id(global_id, headers);
+	    assert (vector_id != headers.size());
 	    neighbor.vector_indices[i] = vector_id;
-	}	
+	}
     }
     
     void fill_vector_id(host_internal_spacepoint_container& isp_container){
