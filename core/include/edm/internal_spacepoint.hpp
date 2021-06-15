@@ -121,13 +121,13 @@ using internal_spacepoint_container_view =
 
 size_t find_vector_id_from_global_id(size_t global_bin,
                                      vecmem::vector<bin_information>& headers) {
-    auto location =
+    auto iterator =
         std::find_if(headers.begin(), headers.end(),
                      [&global_bin](const bin_information& bin_info) {
                          return bin_info.global_index == global_bin;
-                     }) -
-        headers.begin();
-    return location;
+                     });
+
+    return std::distance(headers.begin(), iterator);
 }
 
 void fill_vector_id(neighbor_idx& neighbor,
