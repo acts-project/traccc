@@ -19,8 +19,11 @@
 #include "definitions/primitives.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
+#include "edm/spacepoint.hpp"
 
 namespace traccc {
+
+/// reader
 
 struct csv_cell {
     uint64_t geometry_id = 0;
@@ -37,6 +40,31 @@ struct csv_cell {
 
 using cell_reader = dfe::NamedTupleCsvReader<csv_cell>;
 
+struct csv_fatras_hit {
+    uint64_t particle_id = 0;
+    uint64_t geometry_id = 0;
+    scalar tx = 0;
+    scalar ty = 0;
+    scalar tz = 0;
+    scalar tt = 0;
+    scalar tpx = 0;
+    scalar tpy = 0;
+    scalar tpz = 0;
+    scalar te = 0;
+    scalar deltapx = 0;
+    scalar deltapy = 0;
+    scalar deltapz = 0;
+    scalar deltae = 0;
+    uint64_t index = 0;
+
+    DFE_NAMEDTUPLE(csv_fatras_hit, particle_id, geometry_id, tx, ty, tz, tt,
+                   tpx, tpy, tpz, te, deltapx, deltapy, deltapz, deltae, index);
+};
+
+using fatras_hit_reader = dfe::NamedTupleCsvReader<csv_fatras_hit>;
+
+/// writer
+
 struct csv_measurement {
     uint64_t geometry_id = 0;
     scalar local0 = 0.;
@@ -50,6 +78,19 @@ struct csv_measurement {
 };
 
 using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
+
+struct csv_internal_spacepoint {
+    size_t global_bin;
+    scalar x, y, z;
+    scalar var_R = 0;
+    scalar var_Z = 0;
+
+    // geometry_id,hit_id,channel0,channel1,timestamp,value
+    DFE_NAMEDTUPLE(csv_internal_spacepoint, global_bin, x, y, z, var_R, var_Z);
+};
+
+using internal_spacepoint_writer =
+    dfe::NamedTupleCsvWriter<csv_internal_spacepoint>;
 
 struct csv_spacepoint {
     uint64_t geometry_id = 0;
@@ -217,6 +258,51 @@ std::vector<cluster_collection> read_truth_clusters(
     }
 
     return cluster_container;
+}
+
+/// Read the collection of hits per module and fill into a collection
+///
+/// @param hreader The hit reader type
+/// @param resource The memory resource to use for the return value
+host_spacepoint_container read_hits(
+    fatras_hit_reader& hreader, vecmem::memory_resource& resource,
+    unsigned int max_hits = std::numeric_limits<unsigned int>::max()) {
+    uint64_t reference_id = 0;
+    host_spacepoint_container result = {
+        host_spacepoint_container::header_vector(&resource),
+        host_spacepoint_container::item_vector(&resource)};
+
+    bool first_line_read = false;
+    unsigned int read_hits = 0;
+    csv_fatras_hit iohit;
+
+    host_spacepoint_collection spacepoints(&resource);
+
+    while (hreader.read(iohit)) {
+        geometry_id geom_id = iohit.geometry_id;
+        point3 position({iohit.tx, iohit.ty, iohit.tz});
+        variance3 variance({0, 0, 0});
+        spacepoint sp({position, variance});
+
+        auto it =
+            std::find(result.headers.begin(), result.headers.end(), geom_id);
+
+        if (it == result.headers.end()) {
+            result.headers.push_back(geom_id);
+            result.items.push_back(vecmem::vector<spacepoint>({sp}));
+        } else {
+            auto idx = it - result.headers.begin();
+            result.items.at(idx).push_back(sp);
+        }
+
+        if (++read_hits >= max_hits) {
+            break;
+        }
+    }
+
+    assert(result.items.size() == result.headers.size());
+
+    return result;
 }
 
 }  // namespace traccc
