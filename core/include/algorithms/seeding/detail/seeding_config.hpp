@@ -1,7 +1,7 @@
 /** TRACCC library, part of the ACTS project (R&D line)
- * 
+ *
  * (c) 2021 CERN for the benefit of the ACTS project
- * 
+ *
  * Mozilla Public License Version 2.0
  */
 
@@ -10,14 +10,13 @@
 #include "utils/axis.hpp"
 #include "utils/grid.hpp"
 
-namespace traccc{
+namespace traccc {
 
 // define spacepoint_grid
 using spacepoint_grid = grid<traccc::axis<AxisBoundaryType::Closed>,
-			     traccc::axis<AxisBoundaryType::Bound> >;
-    
-struct seedfinder_config{
+                             traccc::axis<AxisBoundaryType::Bound> >;
 
+struct seedfinder_config {
     // Seed Cuts
     // lower cutoff for seeds in MeV
     // FIXME: Acts units
@@ -29,27 +28,28 @@ struct seedfinder_config{
     float deltaRMin = 5;
     // maximum distance in mm in r between two measurements within one seed
     float deltaRMax = 270;
-    
+
     // FIXME: this is not used yet
     //        float upperPtResolutionPerSeed = 20* Acts::GeV;
-    
+
     // the delta for inverse helix radius up to which compared seeds
     // are considered to have a compatible radius. delta of inverse radius
     // leads to this value being the cutoff. unit is 1/mm. default value
-    // of 0.00003 leads to all helices with radius>33m to be considered compatible
-    
+    // of 0.00003 leads to all helices with radius>33m to be considered
+    // compatible
+
     // impact parameter in mm
     // FIXME: Acts units
     float impactMax = 20.;
-    
+
     // how many sigmas of scattering angle should be considered?
     float sigmaScattering = 5;
     // Upper pt limit for scattering calculation
     float maxPtScattering = 10000;
-    
+
     // for how many seeds can one SpacePoint be the middle SpacePoint?
     int maxSeedsPerSpM = 5;
-    
+
     // Geometry Settings
     // Detector ROI
     // limiting location of collision region in z
@@ -64,14 +64,14 @@ struct seedfinder_config{
     // WARNING: if rMin is smaller than impactMax, the bin size will be 2*pi,
     // which will make seeding very slow!
     float rMin = 33;
-    
+
     // Unit in kiloTesla
     // FIXME: Acts units
     float bFieldInZ = 0.00208;
     // location of beam in x,y plane.
     // used as offset for Space Points
     vector2 beamPos{0, 0};
-    
+
     // average radiation lengths of material on the length of a seed. used for
     // scattering.
     // default is 5%
@@ -88,13 +88,13 @@ struct seedfinder_config{
     // used for measurement (+alignment) uncertainties.
     // find seeds within 5sigma error ellipse
     float sigmaError = 5;
-    
+
     // derived values, set on Seedfinder construction
     float highland = 0;
     float maxScatteringAngle2 = 0;
     float pTPerHelixRadius = 0;
     float minHelixDiameter2 = 0;
-    float pT2perRadius = 0;    
+    float pT2perRadius = 0;
 };
 
 // spacepoint grid configuration
@@ -118,5 +118,5 @@ struct spacepoint_grid_config {
     // maximum forward direction expressed as cot(theta)
     float cotThetaMax;
 };
-    
-} // namespace traccc
+
+}  // namespace traccc

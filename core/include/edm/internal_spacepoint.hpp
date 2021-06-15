@@ -11,136 +11,143 @@
 #include "edm/spacepoint.hpp"
 
 // VecMem include(s).
-#include <vecmem/containers/jagged_vector.hpp>
-#include <vecmem/containers/jagged_device_vector.hpp>
-#include <vecmem/containers/vector.hpp>
-#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
-
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/jagged_device_vector.hpp>
+#include <vecmem/containers/jagged_vector.hpp>
+#include <vecmem/containers/vector.hpp>
 
 namespace traccc {
 
-    struct neighbor_idx{
-	size_t counts;
-	std::array< size_t, 9u > global_indices;
-	std::array< size_t, 9u > vector_indices;
-    };
+struct neighbor_idx {
+    size_t counts;
+    std::array<size_t, 9u> global_indices;
+    std::array<size_t, 9u> vector_indices;
+};
 
-    /// Header: bin information (global bin index, neighborhood bin indices)    
-    struct bin_information{
-	size_t global_index;
-	neighbor_idx bottom_idx;
-	neighbor_idx top_idx;
-    };
-    
-    bool operator==(const bin_information& lhs, const bin_information& rhs){
-	return (lhs.global_index == rhs.global_index);
-    }    
-    
-    /// Item: A internal spacepoint definition
-    template< typename spacepoint >
-    struct internal_spacepoint{
-	scalar m_x;
-	scalar m_y;
-	scalar m_z;
-	scalar m_r;
-	scalar m_varianceR;
-	scalar m_varianceZ;
-	const spacepoint& m_sp;
+/// Header: bin information (global bin index, neighborhood bin indices)
+struct bin_information {
+    size_t global_index;
+    neighbor_idx bottom_idx;
+    neighbor_idx top_idx;
+};
 
-	internal_spacepoint(const spacepoint& sp, const vector3& globalPos,
-			    const vector2& offsetXY,
-			    const vector2& variance): m_sp(sp) {	  
-	    m_x = globalPos[0] - offsetXY[0];
-	    m_y = globalPos[1] - offsetXY[1];
-	    m_z = globalPos[2];
-	    m_r = std::sqrt(m_x * m_x + m_y * m_y);
-	    m_varianceR = variance[0];
-	    m_varianceZ = variance[1];	    
-	}
-	internal_spacepoint(const internal_spacepoint<spacepoint>& sp)
-	    : m_sp(sp.sp()){
-	    m_x = sp.m_x;
-	    m_y = sp.m_y;
-	    m_z = sp.m_z;
-	    m_r = sp.m_r;
-	    m_varianceR = sp.m_varianceR;
-	    m_varianceZ = sp.m_varianceZ;
-	}
+bool operator==(const bin_information& lhs, const bin_information& rhs) {
+    return (lhs.global_index == rhs.global_index);
+}
 
-	const float& x() const { return m_x; }
-	const float& y() const { return m_y; }
-	const float& z() const { return m_z; }
-	const float& radius() const { return m_r; }
-	float phi() const { return atan2f(m_y, m_x); }
-	const float& varianceR() const { return m_varianceR; }
-	const float& varianceZ() const { return m_varianceZ; }
-	const spacepoint& sp() const { return m_sp; }
-    };
-    
-    /// Container of internal_spacepoint belonging to one detector module
-    template< template< typename > class vector_t >
-    using internal_spacepoint_collection = vector_t< internal_spacepoint<spacepoint> >;
+/// Item: A internal spacepoint definition
+template <typename spacepoint>
+struct internal_spacepoint {
+    scalar m_x;
+    scalar m_y;
+    scalar m_z;
+    scalar m_r;
+    scalar m_varianceR;
+    scalar m_varianceZ;
+    const spacepoint& m_sp;
 
-    /// Convenience declaration for the internal_spacepoint collection type to use in host code
-    using host_internal_spacepoint_collection
-    = internal_spacepoint_collection< vecmem::vector >;
-
-    /// Convenience declaration for the internal_spacepoint collection type to use in device code
-    using device_internal_spacepoint_collection
-    = internal_spacepoint_collection< vecmem::device_vector >;
-    
-    /// Convenience declaration for the internal_spacepoint container type to use in host code
-    /// header: global bin index / neighborhood index
-    /// item  : internal spacepoint
-    using host_internal_spacepoint_container
-    = host_container< bin_information, internal_spacepoint<spacepoint> >;
-
-    /// Convenience declaration for the internal_spacepoint container type to use in device code
-    using device_internal_spacepoint_container
-    = device_container< bin_information, internal_spacepoint<spacepoint> >;
-
-    /// Convenience declaration for the internal_spacepoint container data type to use in host code
-    using internal_spacepoint_container_data
-    = container_data< bin_information, internal_spacepoint<spacepoint> >;
-
-    /// Convenience declaration for the internal_spacepoint container buffer type to use in host code
-    using internal_spacepoint_container_buffer
-    = container_buffer< bin_information, internal_spacepoint<spacepoint> >;
-
-    /// Convenience declaration for the internal_spacepoint container view type to use in host code
-    using internal_spacepoint_container_view
-    = container_view< bin_information, internal_spacepoint<spacepoint> >;
-
-    size_t find_vector_id_from_global_id(size_t global_bin, vecmem::vector<bin_information>& headers){
-	auto location
-	    = std::find_if(headers.begin(), headers.end(),
-			   [&global_bin](const bin_information& bin_info)
-			   {return bin_info.global_index==global_bin;})
-	    - headers.begin();
-	return location;	
+    internal_spacepoint(const spacepoint& sp, const vector3& globalPos,
+                        const vector2& offsetXY, const vector2& variance)
+        : m_sp(sp) {
+        m_x = globalPos[0] - offsetXY[0];
+        m_y = globalPos[1] - offsetXY[1];
+        m_z = globalPos[2];
+        m_r = std::sqrt(m_x * m_x + m_y * m_y);
+        m_varianceR = variance[0];
+        m_varianceZ = variance[1];
     }
-    
-    void fill_vector_id(neighbor_idx& neighbor, vecmem::vector<bin_information>& headers){
-	for (size_t i=0; i<neighbor.counts; ++i){
-	    auto global_id = neighbor.global_indices[i];
-	    auto vector_id = find_vector_id_from_global_id(global_id, headers);
-	    assert (vector_id != headers.size());
-	    neighbor.vector_indices[i] = vector_id;
-	}
+    internal_spacepoint(const internal_spacepoint<spacepoint>& sp)
+        : m_sp(sp.sp()) {
+        m_x = sp.m_x;
+        m_y = sp.m_y;
+        m_z = sp.m_z;
+        m_r = sp.m_r;
+        m_varianceR = sp.m_varianceR;
+        m_varianceZ = sp.m_varianceZ;
     }
-    
-    void fill_vector_id(host_internal_spacepoint_container& isp_container){
 
-	for (size_t i=0; i<isp_container.headers.size(); ++i){
+    const float& x() const { return m_x; }
+    const float& y() const { return m_y; }
+    const float& z() const { return m_z; }
+    const float& radius() const { return m_r; }
+    float phi() const { return atan2f(m_y, m_x); }
+    const float& varianceR() const { return m_varianceR; }
+    const float& varianceZ() const { return m_varianceZ; }
+    const spacepoint& sp() const { return m_sp; }
+};
 
-	    auto& bot_neighbors = isp_container.headers[i].bottom_idx;
-	    auto& top_neighbors = isp_container.headers[i].top_idx;
+/// Container of internal_spacepoint belonging to one detector module
+template <template <typename> class vector_t>
+using internal_spacepoint_collection =
+    vector_t<internal_spacepoint<spacepoint> >;
 
-	    fill_vector_id(bot_neighbors, isp_container.headers);
-	    fill_vector_id(top_neighbors, isp_container.headers);	    
-	}	
+/// Convenience declaration for the internal_spacepoint collection type to use
+/// in host code
+using host_internal_spacepoint_collection =
+    internal_spacepoint_collection<vecmem::vector>;
+
+/// Convenience declaration for the internal_spacepoint collection type to use
+/// in device code
+using device_internal_spacepoint_collection =
+    internal_spacepoint_collection<vecmem::device_vector>;
+
+/// Convenience declaration for the internal_spacepoint container type to use in
+/// host code header: global bin index / neighborhood index item  : internal
+/// spacepoint
+using host_internal_spacepoint_container =
+    host_container<bin_information, internal_spacepoint<spacepoint> >;
+
+/// Convenience declaration for the internal_spacepoint container type to use in
+/// device code
+using device_internal_spacepoint_container =
+    device_container<bin_information, internal_spacepoint<spacepoint> >;
+
+/// Convenience declaration for the internal_spacepoint container data type to
+/// use in host code
+using internal_spacepoint_container_data =
+    container_data<bin_information, internal_spacepoint<spacepoint> >;
+
+/// Convenience declaration for the internal_spacepoint container buffer type to
+/// use in host code
+using internal_spacepoint_container_buffer =
+    container_buffer<bin_information, internal_spacepoint<spacepoint> >;
+
+/// Convenience declaration for the internal_spacepoint container view type to
+/// use in host code
+using internal_spacepoint_container_view =
+    container_view<bin_information, internal_spacepoint<spacepoint> >;
+
+size_t find_vector_id_from_global_id(size_t global_bin,
+                                     vecmem::vector<bin_information>& headers) {
+    auto location =
+        std::find_if(headers.begin(), headers.end(),
+                     [&global_bin](const bin_information& bin_info) {
+                         return bin_info.global_index == global_bin;
+                     }) -
+        headers.begin();
+    return location;
+}
+
+void fill_vector_id(neighbor_idx& neighbor,
+                    vecmem::vector<bin_information>& headers) {
+    for (size_t i = 0; i < neighbor.counts; ++i) {
+        auto global_id = neighbor.global_indices[i];
+        auto vector_id = find_vector_id_from_global_id(global_id, headers);
+        assert(vector_id != headers.size());
+        neighbor.vector_indices[i] = vector_id;
     }
-        
-} // namespace traccc
+}
+
+void fill_vector_id(host_internal_spacepoint_container& isp_container) {
+    for (size_t i = 0; i < isp_container.headers.size(); ++i) {
+        auto& bot_neighbors = isp_container.headers[i].bottom_idx;
+        auto& top_neighbors = isp_container.headers[i].top_idx;
+
+        fill_vector_id(bot_neighbors, isp_container.headers);
+        fill_vector_id(top_neighbors, isp_container.headers);
+    }
+}
+
+}  // namespace traccc

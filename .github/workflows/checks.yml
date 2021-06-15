@@ -1,0 +1,21 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    container: ghcr.io/acts-project/format10:v11
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check
+        run: .github/check_format.sh .
+      - uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: changed
+          path: changed
