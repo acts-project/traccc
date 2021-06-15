@@ -77,6 +77,7 @@ bool is_far_enough(cell a, cell b) {
 template <template <typename> class vector_type>
 std::tuple<unsigned int, std::vector<unsigned int>> sparse_ccl(
     const cell_collection<vector_type>& cells) {
+
     // Internal list linking
     std::vector<unsigned int> L(cells.size(), 0);
 

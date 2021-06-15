@@ -51,6 +51,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
     // Loop over events
     for (unsigned int event = 0; event < events; ++event) {
+
         // Read the cells from the relevant event file
         std::string event_string = "000000000";
         std::string event_number = std::to_string(event);

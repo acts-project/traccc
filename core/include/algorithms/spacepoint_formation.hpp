@@ -14,6 +14,7 @@ namespace traccc {
 
 /// Connected component labeling.
 struct spacepoint_formation {
+
     /// Callable operator for the space point formation, based on one single
     /// module
     ///
@@ -28,6 +29,7 @@ struct spacepoint_formation {
     host_spacepoint_collection operator()(
         const cell_module& module,
         const host_measurement_collection& measurements) const {
+
         host_spacepoint_collection spacepoints;
         this->operator()(module, measurements, spacepoints);
         return spacepoints;

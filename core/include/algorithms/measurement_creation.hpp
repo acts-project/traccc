@@ -17,6 +17,7 @@ namespace traccc {
 
 /// Connected component labeling.
 struct measurement_creation {
+
     /// Callable operator for the connected component, based on one single
     /// module
     ///
