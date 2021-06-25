@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vecmem/memory/host_memory_resource.hpp>
 
+#include "csv/csv_io.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "edm/internal_spacepoint.hpp"
@@ -16,16 +17,13 @@
 #include "geometry/pixel_segmentation.hpp"
 
 // clusterization
-#include "algorithms/clusterization/component_connection.hpp"
-#include "algorithms/clusterization/measurement_creation.hpp"
-#include "algorithms/clusterization/spacepoint_formation.hpp"
+#include "clusterization/component_connection.hpp"
+#include "clusterization/measurement_creation.hpp"
+#include "clusterization/spacepoint_formation.hpp"
 
 // seeding
-#include <iostream>
-#include <vecmem/memory/host_memory_resource.hpp>
-
-#include "algorithms/seeding/spacepoint_grouping.hpp"
-#include "csv/csv_io.hpp"
+#include "seeding/spacepoint_grouping.hpp"
+//#include "seeding/seed_finding.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
@@ -118,40 +116,59 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Seed finding
           -------------------*/
 
-        // Seed finder config
-        traccc::seedfinder_config config;
-        // silicon detector max
-        config.rMax = 160.;
-        config.deltaRMin = 5.;
-        config.deltaRMax = 160.;
-        config.collisionRegionMin = -250.;
-        config.collisionRegionMax = 250.;
-        config.zMin = -2800.;
-        config.zMax = 2800.;
-        config.maxSeedsPerSpM = 5;
-        // 2.7 eta
-        config.cotThetaMax = 7.40627;
-        config.sigmaScattering = 1.00000;
+	// Seed finder config
+	traccc::seedfinder_config config;
+	// silicon detector max
+	config.rMax = 160.;
+	config.deltaRMin = 5.;
+	config.deltaRMax = 160.;
+	config.collisionRegionMin = -250.;
+	config.collisionRegionMax = 250.;
+	// config.zMin = -2800.; // this value introduces redundant bins without any
+	// spacepoints config.zMax = 2800.;
+	config.zMin = -1186.;
+	config.zMax = 1186.;
+	config.maxSeedsPerSpM = 5;
+	// 2.7 eta
+	config.cotThetaMax = 7.40627;
+	config.sigmaScattering = 1.00000;
+	
+	config.minPt = 500.;
+	config.bFieldInZ = 0.00199724;
+	
+	config.beamPos = {-.5, -.5};
+	config.impactMax = 10.;
+	
+	config.highland = 13.6 * std::sqrt(config.radLengthPerSeed) *
+	    (1 + 0.038 * std::log(config.radLengthPerSeed));
+	float maxScatteringAngle = config.highland / config.minPt;
+	config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
+	// helix radius in homogeneous magnetic field. Units are Kilotesla, MeV and
+	// millimeter
+	// TODO: change using ACTS units
+	config.pTPerHelixRadius = 300. * config.bFieldInZ;
+	config.minHelixDiameter2 =
+	    std::pow(config.minPt * 2 / config.pTPerHelixRadius, 2);
+	config.pT2perRadius =
+	    std::pow(config.highland / config.pTPerHelixRadius, 2);
+	
+	// setup spacepoint grid config
+	traccc::spacepoint_grid_config grid_config;
+	grid_config.bFieldInZ = config.bFieldInZ;
+	grid_config.minPt = config.minPt;
+	grid_config.rMax = config.rMax;
+	grid_config.zMax = config.zMax;
+	grid_config.zMin = config.zMin;
+	grid_config.deltaRMax = config.deltaRMax;
+	grid_config.cotThetaMax = config.cotThetaMax;
+	
+	traccc::spacepoint_grouping sg(config, grid_config);
 
-        config.minPt = 500.;
-        config.bFieldInZ = 0.00199724;
-
-        config.beamPos = {-.5, -.5};
-        config.impactMax = 10.;
-
-        // setup spacepoint grid config
-        traccc::spacepoint_grid_config grid_config;
-        grid_config.bFieldInZ = config.bFieldInZ;
-        grid_config.minPt = config.minPt;
-        grid_config.rMax = config.rMax;
-        grid_config.zMax = config.zMax;
-        grid_config.zMin = config.zMin;
-        grid_config.deltaRMax = config.deltaRMax;
-        grid_config.cotThetaMax = config.cotThetaMax;
-
-        // create internal spacepoints grouped in bins
-        traccc::spacepoint_grouping sg(config, grid_config);
-        auto internal_sp_per_event = sg(spacepoints_per_event);
+	auto internal_sp_per_event = sg(spacepoints_per_event, &resource);
+	
+        /*------------
+             Writer
+          ------------*/
 
         traccc::measurement_writer mwriter{std::string("event") + event_number +
                                            "-measurements.csv"};

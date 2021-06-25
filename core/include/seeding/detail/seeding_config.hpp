@@ -7,14 +7,9 @@
 
 #pragma once
 
-#include "utils/axis.hpp"
-#include "utils/grid.hpp"
+#include <definitions/primitives.hpp>
 
 namespace traccc {
-
-// define spacepoint_grid
-using spacepoint_grid = grid<traccc::axis<AxisBoundaryType::Closed>,
-                             traccc::axis<AxisBoundaryType::Bound> >;
 
 struct seedfinder_config {
     // Seed Cuts
@@ -117,6 +112,42 @@ struct spacepoint_grid_config {
     float deltaRMax;
     // maximum forward direction expressed as cot(theta)
     float cotThetaMax;
+};
+
+struct seedfilter_config {
+    // the allowed delta between two inverted seed radii for them to be
+    // considered compatible.
+    float deltaInvHelixDiameter = 0.00003;
+    // the impact parameters (d0) is multiplied by this factor and subtracted
+    // from weight
+    float impactWeightFactor = 1.;
+    // seed weight increased by this value if a compatible seed has been found.
+    float compatSeedWeight = 200.;
+    // minimum distance between compatible seeds to be considered for weight
+    // boost
+    float deltaRMin = 5.;
+    // in dense environments many seeds may be found per middle space point.
+    // only seeds with the highest weight will be kept if this limit is reached.
+    unsigned int maxSeedsPerSpM = 10;
+    // how often do you want to increase the weight of a seed for finding a
+    // compatible seed?
+    size_t compatSeedLimit = 2;
+    // Tool to apply experiment specific cuts on collected middle space points
+
+    size_t max_triplets_per_spM = 5;
+
+    // seed weight increase
+    float_t good_spB_min_radius = 150.;
+    float_t good_spB_weight_increase = 400.;
+    float_t good_spT_max_radius = 150.;
+    float_t good_spT_weight_increase = 200.;
+
+    // bottom sp cut
+    float_t good_spB_min_weight = 380;
+
+    // seed cut
+    float_t seed_min_weight = 200;
+    float_t spB_min_radius = 43.;
 };
 
 }  // namespace traccc

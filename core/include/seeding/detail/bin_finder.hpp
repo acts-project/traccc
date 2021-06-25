@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <algorithms/seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 #include <utils/grid.hpp>
 
 namespace traccc {

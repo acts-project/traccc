@@ -11,7 +11,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include "algorithms/clusterization/component_connection.hpp"
+#include "clusterization/component_connection.hpp"
 #include "csv/csv_io.hpp"
 #include "edm/cell.hpp"
 #include "vecmem/memory/host_memory_resource.hpp"

@@ -8,8 +8,9 @@
 #pragma once
 
 #include <algorithm>
-#include <algorithms/seeding/detail/bin_finder.hpp>
-#include <algorithms/seeding/detail/seeding_config.hpp>
+#include <seeding/detail/bin_finder.hpp>
+#include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <edm/spacepoint.hpp>
 #include <iostream>
@@ -23,13 +24,18 @@ struct spacepoint_grouping {
                         const spacepoint_grid_config& grid_config);
 
     host_internal_spacepoint_container operator()(
-        const host_spacepoint_container& sp_container) {
-        host_internal_spacepoint_container internal_sp_container;
+        const host_spacepoint_container& sp_container,
+        vecmem::memory_resource* mr = nullptr) {
+        host_internal_spacepoint_container internal_sp_container = {
+            host_internal_spacepoint_container::header_vector(mr),
+            host_internal_spacepoint_container::item_vector(mr)};
 
         this->operator()(sp_container, internal_sp_container);
 
         return internal_sp_container;
     }
+
+    std::shared_ptr<spacepoint_grid> get_spgrid() { return m_spgrid; }
 
     void operator()(const host_spacepoint_container& sp_container,
                     host_internal_spacepoint_container& internal_sp_container) {
