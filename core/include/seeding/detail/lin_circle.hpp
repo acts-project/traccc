@@ -12,7 +12,7 @@ namespace traccc {
 
 /// Header: unsigned int for the number of lin_circles per spacepoint bin
 
-/// Item: transformed coordinate of doublet of middle-bottom or middle-top    
+/// Item: transformed coordinate of doublet of middle-bottom or middle-top
 struct lin_circle {
     // z origin
     float m_Zo;

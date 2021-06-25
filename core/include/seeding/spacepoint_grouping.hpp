@@ -8,12 +8,12 @@
 #pragma once
 
 #include <algorithm>
-#include <seeding/detail/bin_finder.hpp>
-#include <seeding/detail/seeding_config.hpp>
-#include <seeding/detail/spacepoint_grid.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <edm/spacepoint.hpp>
 #include <iostream>
+#include <seeding/detail/bin_finder.hpp>
+#include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 
 namespace traccc {
 

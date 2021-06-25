@@ -9,7 +9,8 @@
 
 namespace traccc {
 
-/// the number of doublets and trilets as a function of the number of middles spacepoint in a bin
+/// the number of doublets and trilets as a function of the number of middles
+/// spacepoint in a bin
 struct multiplet_statistics {
     size_t n_spM;
     size_t n_mid_bot_doublets;
@@ -17,7 +18,8 @@ struct multiplet_statistics {
     size_t n_triplets;
 };
 
-/// the number of seeds as a function of the total number of internal spacepoints in an event
+/// the number of seeds as a function of the total number of internal
+/// spacepoints in an event
 struct seed_statistics {
     size_t n_internal_sp;
     size_t n_seeds;

@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "utils/arch_qualifiers.hpp"
 #include "edm/container.hpp"
+#include "utils/arch_qualifiers.hpp"
 
 namespace traccc {
 
