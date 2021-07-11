@@ -14,8 +14,11 @@
 namespace traccc {
 
 // define spacepoint_grid
-using spacepoint_grid = Acts::detail::Grid<int,
-					   Acts::detail::Axis<Acts::detail::AxisType::Equidistant, Acts::detail::AxisBoundaryType::Closed>,
-					   Acts::detail::Axis<Acts::detail::AxisType::Equidistant, Acts::detail::AxisBoundaryType::Bound> >;
-    
+using spacepoint_grid = Acts::detail::Grid<
+    int,
+    Acts::detail::Axis<Acts::detail::AxisType::Equidistant,
+                       Acts::detail::AxisBoundaryType::Closed>,
+    Acts::detail::Axis<Acts::detail::AxisType::Equidistant,
+                       Acts::detail::AxisBoundaryType::Bound> >;
+
 }  // namespace traccc
