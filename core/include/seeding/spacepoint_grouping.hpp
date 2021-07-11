@@ -172,7 +172,7 @@ spacepoint_grouping::spacepoint_grouping(
     // divide 2pi by angle delta to get number of phi-bins
     // size is always 2pi even for regions of interest
     int phiBins = std::floor(2 * M_PI / (outerAngle - innerAngle));
-    axis<AxisBoundaryType::Closed> phiAxis(-M_PI, M_PI, phiBins);
+    Acts::detail::Axis<Acts::detail::AxisType::Equidistant, Acts::detail::AxisBoundaryType::Closed> phiAxis(-M_PI, M_PI, phiBins);
 
     // TODO: can probably be optimized using smaller z bins
     // and returning (multiple) neighbors only in one z-direction for forward
@@ -181,8 +181,8 @@ spacepoint_grouping::spacepoint_grouping(
 
     float zBinSize = grid_config.cotThetaMax * grid_config.deltaRMax;
     int zBins = std::floor((grid_config.zMax - grid_config.zMin) / zBinSize);
-    axis<AxisBoundaryType::Bound> zAxis(grid_config.zMin, grid_config.zMax,
-                                        zBins);
+    Acts::detail::Axis<Acts::detail::AxisType::Equidistant, Acts::detail::AxisBoundaryType::Bound> zAxis(grid_config.zMin, grid_config.zMax,
+													 zBins);
 
     m_spgrid = std::make_shared<spacepoint_grid>(
         spacepoint_grid(std::make_tuple(phiAxis, zAxis)));

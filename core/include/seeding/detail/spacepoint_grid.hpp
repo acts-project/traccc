@@ -7,13 +7,15 @@
 
 #pragma once
 
-#include "utils/axis.hpp"
-#include "utils/grid.hpp"
+// ActsCore
+#include "Acts/Utilities/detail/Axis.hpp"
+#include "Acts/Utilities/detail/Grid.hpp"
 
 namespace traccc {
 
 // define spacepoint_grid
-using spacepoint_grid = grid<traccc::axis<AxisBoundaryType::Closed>,
-                             traccc::axis<AxisBoundaryType::Bound> >;
-
+using spacepoint_grid = Acts::detail::Grid<int,
+					   Acts::detail::Axis<Acts::detail::AxisType::Equidistant, Acts::detail::AxisBoundaryType::Closed>,
+					   Acts::detail::Axis<Acts::detail::AxisType::Equidistant, Acts::detail::AxisBoundaryType::Bound> >;
+    
 }  // namespace traccc
