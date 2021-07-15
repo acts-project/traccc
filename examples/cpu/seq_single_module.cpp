@@ -17,6 +17,7 @@
 #include "geometry/pixel_segmentation.hpp"
 
 int main() {
+
     // Memory resource used in the test.
     vecmem::host_memory_resource resource;
 

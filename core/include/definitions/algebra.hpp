@@ -153,6 +153,7 @@ auto block(const matrix_type &m, unsigned int row, unsigned int col) noexcept {
 /** Transform wrapper class to ensure standard API within differnt plugins
  **/
 struct transform3 {
+
     using matrix44 = array<array<scalar, 4>, 4>;
 
     matrix44 _data;
@@ -382,6 +383,7 @@ struct transform3 {
      * @param v is the vector to be rotated
      */
     static vector3 rotate(const matrix44 &m, const vector3 &v) {
+
         return vector3{m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
                        m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2],
                        m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2]};

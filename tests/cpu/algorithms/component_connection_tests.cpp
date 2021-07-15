@@ -15,6 +15,7 @@
 
 // This defines the local frame test suite
 TEST(algorithms, component_connection) {
+
     // Memory resource used in the test.
     vecmem::host_memory_resource resource;
 

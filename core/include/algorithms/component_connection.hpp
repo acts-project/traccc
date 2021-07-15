@@ -24,7 +24,8 @@ namespace traccc {
 /// implementation internally.
 ///
 class component_connection {
-   public:
+
+    public:
     /// @name Operators to use in host code
     /// @{
 
@@ -40,6 +41,7 @@ class component_connection {
     ///
     cluster_collection operator()(const host_cell_collection& cells,
                                   const cell_module& module) const {
+
         return this->operator()<vecmem::vector>(cells, module);
     }
 
@@ -56,6 +58,7 @@ class component_connection {
     void operator()(const host_cell_collection& cells,
                     const cell_module& module,
                     cluster_collection& clusters) const {
+
         this->operator()<vecmem::vector>(cells, module, clusters);
     }
 
@@ -78,6 +81,7 @@ class component_connection {
     ///
     cluster_collection operator()(const device_cell_collection& cells,
                                   const cell_module& module) const {
+
         return this->operator()<vecmem::device_vector>(cells, module);
     }
 
@@ -94,10 +98,11 @@ class component_connection {
     void operator()(const device_cell_collection& cells,
                     const cell_module& module,
                     cluster_collection& clusters) const {
+
         this->operator()<vecmem::device_vector>(cells, module, clusters);
     }
 
-   private:
+    private:
     /// Implementation for the public cell collection creation operators
     template <template <typename> class vector_type>
     cluster_collection operator()(const cell_collection<vector_type>& cells,

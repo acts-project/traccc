@@ -28,6 +28,7 @@ using signal_modeling = std::function<float(float)>;
 /// and the additional information to create the cluster position
 /// from the channel id;
 struct cluster_collection {
+
     event_id event = 0;
     geometry_id module = 0;
     transform3 placement = transform3{};

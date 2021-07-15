@@ -31,7 +31,7 @@ template <typename header_t, typename item_t,
           template <typename> class vector_t,
           template <typename> class jagged_vector_t>
 class container {
-   public:
+    public:
     /// @name Type definitions
     /// @{
 
@@ -99,6 +99,7 @@ struct container_buffer {
 ///
 template <typename header_t, typename item_t>
 struct container_view {
+
     /// Constructor from a @c container_data object
     container_view(const container_data<header_t, item_t>& data)
         : headers(data.headers), items(data.items) {}

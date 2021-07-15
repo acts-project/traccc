@@ -56,6 +56,7 @@ using device_cell_collection = cell_collection<vecmem::device_vector>;
 /// that is more friendly towards accelerators.
 ///
 struct cell_module {
+
     event_id event = 0;
     geometry_id module = 0;
     transform3 placement = transform3{};
