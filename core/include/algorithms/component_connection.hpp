@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "algorithms/algorithm.hpp"
 #include "detail/sparse_ccl.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
@@ -23,7 +24,13 @@ namespace traccc {
 /// the host- and device versions of the EDM, making use of a single
 /// implementation internally.
 ///
-class component_connection {
+class component_connection
+    : public algorithm<
+          std::pair<const host_cell_collection&, const cell_module&>,
+          cluster_collection>,
+      public algorithm<
+          std::pair<const device_cell_collection&, const cell_module&>,
+          cluster_collection> {
 
     public:
     /// @name Operators to use in host code
@@ -39,9 +46,11 @@ class component_connection {
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    cluster_collection operator()(const host_cell_collection& cells,
-                                  const cell_module& module) const {
-
+    cluster_collection operator()(
+        const std::pair<const host_cell_collection&, const cell_module&>& i)
+        const override {
+        const host_cell_collection& cells = i.first;
+        const cell_module& module = i.second;
         return this->operator()<vecmem::vector>(cells, module);
     }
 
@@ -55,10 +64,11 @@ class component_connection {
     ///
     /// void interface
     ///
-    void operator()(const host_cell_collection& cells,
-                    const cell_module& module,
-                    cluster_collection& clusters) const {
-
+    void operator()(
+        const std::pair<const host_cell_collection&, const cell_module&>& i,
+        cluster_collection& clusters) const override {
+        const host_cell_collection& cells = i.first;
+        const cell_module& module = i.second;
         this->operator()<vecmem::vector>(cells, module, clusters);
     }
 
@@ -79,9 +89,11 @@ class component_connection {
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    cluster_collection operator()(const device_cell_collection& cells,
-                                  const cell_module& module) const {
-
+    cluster_collection operator()(
+        const std::pair<const device_cell_collection&, const cell_module&>& i)
+        const override {
+        const device_cell_collection& cells = i.first;
+        const cell_module& module = i.second;
         return this->operator()<vecmem::device_vector>(cells, module);
     }
 
@@ -95,10 +107,11 @@ class component_connection {
     ///
     /// void interface
     ///
-    void operator()(const device_cell_collection& cells,
-                    const cell_module& module,
-                    cluster_collection& clusters) const {
-
+    void operator()(
+        const std::pair<const device_cell_collection&, const cell_module&>& i,
+        cluster_collection& clusters) const override {
+        const device_cell_collection& cells = i.first;
+        const cell_module& module = i.second;
         this->operator()<vecmem::device_vector>(cells, module, clusters);
     }
 

@@ -7,13 +7,17 @@
 
 #pragma once
 
+#include "algorithms/algorithm.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 
 namespace traccc {
 
 /// Connected component labeling.
-struct spacepoint_formation {
+struct spacepoint_formation
+    : public algorithm<
+          std::pair<const cell_module&, const host_measurement_collection&>,
+          host_spacepoint_collection> {
 
     /// Callable operator for the space point formation, based on one single
     /// module
@@ -26,12 +30,10 @@ struct spacepoint_formation {
     ///
     /// @return a measurement collection - size of input/output container is
     /// identical
-    host_spacepoint_collection operator()(
-        const cell_module& module,
-        const host_measurement_collection& measurements) const {
+    output_type operator()(const input_type& i) const override {
 
-        host_spacepoint_collection spacepoints;
-        this->operator()(module, measurements, spacepoints);
+        output_type spacepoints;
+        this->operator()(i, spacepoints);
         return spacepoints;
     }
 
@@ -46,9 +48,9 @@ struct spacepoint_formation {
     ///
     /// @return a measurement collection - size of input/output container is
     /// identical
-    void operator()(const cell_module& module,
-                    const host_measurement_collection& measurements,
-                    host_spacepoint_collection& spacepoints) const {
+    void operator()(const input_type& i, output_type& spacepoints) const {
+        const cell_module& module = i.first;
+        const host_measurement_collection& measurements = i.second;
         // Run the algorithm
         spacepoints.reserve(measurements.size());
         for (const auto& m : measurements) {
