@@ -9,4 +9,4 @@
 	url = https://github.com/msmk0/dfelibs.git
 [submodule "data"]
 	path = data
-	url = ssh://git@gitlab.cern.ch:7999/acts/traccc-data.git
+	url = https://gitlab.cern.ch/acts/traccc-data.git

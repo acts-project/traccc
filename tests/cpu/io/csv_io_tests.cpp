@@ -13,6 +13,7 @@
 
 // This defines the local frame test suite
 TEST(io, csv_read_single_module) {
+
     auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
     if (env_d_d == nullptr) {
         throw std::ios_base::failure(
@@ -82,6 +83,7 @@ TEST(io, csv_read_two_modules) {
 
 // This reads in the tml pixel barrel first event
 TEST(io, csv_read_tml_transforms) {
+
     auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
     if (env_d_d == nullptr) {
         throw std::ios_base::failure(
@@ -101,6 +103,7 @@ TEST(io, csv_read_tml_transforms) {
 
 // This reads in the tml pixel barrel first event
 TEST(io, csv_read_tml_pixelbarrel) {
+
     auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
     if (env_d_d == nullptr) {
         throw std::ios_base::failure(

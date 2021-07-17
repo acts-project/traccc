@@ -26,6 +26,7 @@ namespace traccc {
 /// reader
 
 struct csv_cell {
+
     uint64_t geometry_id = 0;
     uint64_t hit_id = 0;
     channel_id channel0 = 0;
@@ -66,6 +67,7 @@ using fatras_hit_reader = dfe::NamedTupleCsvReader<csv_fatras_hit>;
 /// writer
 
 struct csv_measurement {
+
     uint64_t geometry_id = 0;
     scalar local0 = 0.;
     scalar local1 = 0.;
@@ -93,6 +95,7 @@ using internal_spacepoint_writer =
     dfe::NamedTupleCsvWriter<csv_internal_spacepoint>;
 
 struct csv_spacepoint {
+
     uint64_t geometry_id = 0;
     scalar x, y, z;
     scalar var_x, var_y, var_z;
@@ -104,6 +107,7 @@ struct csv_spacepoint {
 using spacepoint_writer = dfe::NamedTupleCsvWriter<csv_spacepoint>;
 
 struct csv_surface {
+
     uint64_t geometry_id = 0;
     scalar cx, cy, cz;
     scalar rot_xu, rot_xv, rot_xw;
@@ -121,9 +125,11 @@ using surface_reader = dfe::NamedTupleCsvReader<csv_surface>;
 ///
 /// @param sreader The surface reader type
 std::map<geometry_id, transform3> read_surfaces(surface_reader& sreader) {
+
     std::map<geometry_id, transform3> transform_map;
     csv_surface iosurface;
     while (sreader.read(iosurface)) {
+
         geometry_id module = iosurface.geometry_id;
 
         vector3 t{iosurface.cx, iosurface.cy, iosurface.cz};
@@ -145,6 +151,7 @@ host_cell_container read_cells(
     cell_reader& creader, vecmem::memory_resource& resource,
     const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
+
     uint64_t reference_id = 0;
     host_cell_container result = {host_cell_container::header_vector(&resource),
                                   host_cell_container::item_vector(&resource)};
@@ -155,6 +162,7 @@ host_cell_container read_cells(
     host_cell_collection cells(&resource);
     cell_module module;
     while (creader.read(iocell)) {
+
         if (first_line_read and iocell.geometry_id != reference_id) {
             // Complete the information
             if (not tfmap.empty()) {
@@ -213,6 +221,7 @@ host_cell_container read_cells(
 std::vector<cluster_collection> read_truth_clusters(
     cell_reader& creader, const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
+
     // Reference for switching the container
     uint64_t reference_id = 0;
     std::vector<cluster_collection> cluster_container;
@@ -226,6 +235,7 @@ std::vector<cluster_collection> read_truth_clusters(
     std::vector<cell> truth_cells;
 
     while (creader.read(iocell)) {
+
         if (first_line_read and iocell.geometry_id != reference_id) {
             // Complete the information
             if (not tfmap.empty()) {

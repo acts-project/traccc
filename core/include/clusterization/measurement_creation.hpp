@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "utils/algorithm.hpp"
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 #include "edm/cell.hpp"
@@ -16,7 +17,11 @@
 namespace traccc {
 
 /// Connected component labeling.
-struct measurement_creation {
+struct measurement_creation
+    : public algorithm<
+          std::pair<const cluster_collection &, const cell_module &>,
+          host_measurement_collection> {
+
     /// Callable operator for the connected component, based on one single
     /// module
     ///
@@ -28,10 +33,9 @@ struct measurement_creation {
     ///
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
-    host_measurement_collection operator()(const cluster_collection &clusters,
-                                           const cell_module &module) const {
-        host_measurement_collection measurements;
-        this->operator()(clusters, module, measurements);
+    host_measurement_collection operator()(const input_type &i) const override {
+        output_type measurements;
+        this->operator()(i, measurements);
         return measurements;
     }
 
@@ -46,9 +50,11 @@ struct measurement_creation {
     ///
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
-    void operator()(const cluster_collection &clusters,
-                    const cell_module &module,
-                    host_measurement_collection &measurements) const {
+    void operator()(const input_type &i,
+                    output_type &measurements) const override {
+        const cluster_collection &clusters = i.first;
+        const cell_module &module = i.second;
+
         // Run the algorithm
         auto pitch = module.pixel.get_pitch();
 
