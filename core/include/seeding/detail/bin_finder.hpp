@@ -17,7 +17,7 @@ namespace traccc {
 /// be top bins, which are assumed to be the same bins. Does not take
 /// interaction region into account to limit z-bins.
 class bin_finder {
-   public:
+    public:
     /// destructor
     ~bin_finder() = default;
 

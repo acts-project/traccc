@@ -139,7 +139,7 @@ struct spacepoint_grouping {
         fill_vector_id(internal_sp_container);
     }
 
-   private:
+    private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     std::shared_ptr<spacepoint_grid> m_spgrid;
