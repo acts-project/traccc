@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "algorithms/algorithm.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
+#include "utils/algorithm.hpp"
 
 namespace traccc {
 

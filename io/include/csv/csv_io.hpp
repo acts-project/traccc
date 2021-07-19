@@ -12,15 +12,18 @@
 #include <dfe/dfe_io_dsv.hpp>
 #include <dfe/dfe_namedtuple.hpp>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <vecmem/memory/memory_resource.hpp>
 
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 #include "edm/cell.hpp"
+#include "edm/measurement.hpp"
 #include "edm/cluster.hpp"
 #include "edm/spacepoint.hpp"
 
+/// reader
 namespace traccc {
 
 /// reader
@@ -69,16 +72,22 @@ using fatras_hit_reader = dfe::NamedTupleCsvReader<csv_fatras_hit>;
 struct csv_measurement {
 
     uint64_t geometry_id = 0;
+    std::string local_key = "";
     scalar local0 = 0.;
     scalar local1 = 0.;
+    scalar phi = 0.;
+    scalar theta = 0.;
+    scalar time = 0.;
     scalar var_local0 = 0.;
     scalar var_local1 = 0.;
+    scalar var_phi = 0.;
+    scalar var_theta = 0.;
+    scalar var_time = 0.;
 
-    // geometry_id,hit_id,channel0,channel1,timestamp,value
-    DFE_NAMEDTUPLE(csv_measurement, geometry_id, local0, local1, var_local0,
-                   var_local1);
+    DFE_NAMEDTUPLE(csv_measurement, geometry_id, local0, local1, phi, theta, time, var_local0, var_local1, var_phi, var_theta, var_time);
 };
 
+using measurement_reader = dfe::NamedTupleCsvReader<csv_measurement>;    
 using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
 
 struct csv_internal_spacepoint {
@@ -100,11 +109,49 @@ struct csv_spacepoint {
     scalar x, y, z;
     scalar var_x, var_y, var_z;
 
-    // geometry_id,hit_id,channel0,channel1,timestamp,value
     DFE_NAMEDTUPLE(csv_spacepoint, geometry_id, x, y, z, var_x, var_y, var_z);
 };
 
 using spacepoint_writer = dfe::NamedTupleCsvWriter<csv_spacepoint>;
+
+struct csv_seed {
+    scalar weight;
+    scalar z_vertex;
+    scalar x_b, y_b, z_b;
+    scalar varR_b, varZ_b;
+    scalar x_m, y_m, z_m;
+    scalar varR_m, varZ_m;
+    scalar x_t, y_t, z_t;
+    scalar varR_t, varZ_t;
+
+    DFE_NAMEDTUPLE(csv_seed, weight, z_vertex, x_b, y_b, z_b, varR_b, varZ_b,
+                   x_m, y_m, z_m, varR_m, varZ_m, x_t, y_t, z_t, varR_t,
+                   varZ_t);
+};
+
+using seed_writer = dfe::NamedTupleCsvWriter<csv_seed>;
+
+struct csv_multiplet_statistics {
+    size_t n_spM;
+    size_t n_mid_bot_doublets;
+    size_t n_mid_top_doublets;
+    size_t n_triplets;
+
+    DFE_NAMEDTUPLE(csv_multiplet_statistics, n_spM, n_mid_bot_doublets,
+                   n_mid_top_doublets, n_triplets);
+};
+
+using multiplet_statistics_writer =
+    dfe::NamedTupleCsvWriter<csv_multiplet_statistics>;
+
+struct csv_seed_statistics {
+    size_t n_internal_sp;
+    size_t n_seeds;
+
+    DFE_NAMEDTUPLE(csv_seed_statistics, n_internal_sp, n_seeds);
+};
+
+using seed_statistics_writer = dfe::NamedTupleCsvWriter<csv_seed_statistics>;
 
 struct csv_surface {
 
@@ -270,6 +317,63 @@ std::vector<cluster_collection> read_truth_clusters(
     return cluster_container;
 }
 
+/// Read the collection of measurements per module and fill into a collection
+///
+/// @param hreader The measurement reader type
+/// @param resource The memory resource to use for the return value
+host_measurement_container read_measurements(
+    measurement_reader& mreader, vecmem::memory_resource& resource,
+    const std::map<geometry_id, transform3>& tfmap = {},
+    unsigned int max_measurements = std::numeric_limits<unsigned int>::max()){
+   
+    uint64_t reference_id = 0;
+    host_measurement_container result = {host_measurement_container::header_vector(&resource),
+					 host_measurement_container::item_vector(&resource)};
+    
+    bool first_line_read = false;
+    unsigned int read_measurements = 0;
+    csv_measurement iomeasurement;
+    host_measurement_collection measurements(&resource);
+    cell_module module;
+    while (mreader.read(iomeasurement)) {
+        if (first_line_read and iomeasurement.geometry_id != reference_id) {
+            // Complete the information
+            if (not tfmap.empty()) {
+                auto tfentry = tfmap.find(iomeasurement.geometry_id);
+                if (tfentry != tfmap.end()) {
+                    module.placement = tfentry->second;
+                }
+            }
+	    
+            result.headers.push_back(module);
+            result.items.push_back(measurements);
+            // Clear for next round
+            measurements = host_measurement_collection(&resource);
+            module = cell_module();
+        }
+        first_line_read = true;
+        reference_id = static_cast<uint64_t>(iomeasurement.geometry_id);
+
+        module.module = reference_id;
+
+        measurements.push_back(measurement{{iomeasurement.local0,
+					    iomeasurement.local1},
+					   {iomeasurement.var_local0,
+					    iomeasurement.var_local1}});
+        if (++read_measurements >= max_measurements) {
+            break;
+        }
+    }
+
+    result.headers.push_back(module);
+    result.items.push_back(measurements);
+
+    assert(result.items.size() == result.headers.size());
+    
+    return result;    
+
+}
+    
 /// Read the collection of hits per module and fill into a collection
 ///
 /// @param hreader The hit reader type

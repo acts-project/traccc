@@ -9,7 +9,7 @@
 
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "algorithms/component_connection.hpp"
+#include "clusterization/component_connection.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 

@@ -5,10 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <iostream>
-#include <vecmem/memory/host_memory_resource.hpp>
-
-#include "csv/csv_io.hpp"
+// edm
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "edm/internal_spacepoint.hpp"
@@ -16,101 +13,66 @@
 #include "edm/spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
 
-// clusterization
-#include "clusterization/component_connection.hpp"
-#include "clusterization/measurement_creation.hpp"
-#include "clusterization/spacepoint_formation.hpp"
-
 // seeding
 #include "seeding/seed_finding.hpp"
 #include "seeding/spacepoint_grouping.hpp"
 
-int seq_run(const std::string& detector_file, const std::string& cells_dir,
-            unsigned int events) {
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    auto data_directory = std::string(env_d_d) + std::string("/");
+// io
+#include "csv/csv_io.hpp"
 
+// vecmem
+#include <vecmem/memory/host_memory_resource.hpp>
+
+// std
+#include <chrono>
+#include <iomanip>
+
+int seq_run(const std::string& detector_file, const std::string& hits_dir,
+            unsigned int events) {
     // Read the surface transforms
-    std::string io_detector_file = data_directory + detector_file;
+    std::string io_detector_file = detector_file;
     traccc::surface_reader sreader(
         io_detector_file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv",
                            "rot_xw", "rot_zu", "rot_zv", "rot_zw"});
     auto surface_transforms = traccc::read_surfaces(sreader);
 
-    // Algorithms
-    traccc::component_connection cc;
-    traccc::measurement_creation mt;
-    traccc::spacepoint_formation sp;
-
     // Output stats
-    uint64_t n_cells = 0;
-    uint64_t m_modules = 0;
-    uint64_t n_clusters = 0;
-    uint64_t n_measurements = 0;
-    uint64_t n_space_points = 0;
+    uint64_t n_modules = 0;
+    uint64_t n_spacepoints = 0;
+    uint64_t n_internal_spacepoints = 0;
+    uint64_t n_doublets = 0;
+    uint64_t n_seeds = 0;
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource resource;
 
+    // Elapsed time
+    float binning_cpu(0);
+    float seeding_cpu(0);
+
     // Loop over events
     for (unsigned int event = 0; event < events; ++event) {
-
         // Read the cells from the relevant event file
         std::string event_string = "000000000";
         std::string event_number = std::to_string(event);
         event_string.replace(event_string.size() - event_number.size(),
                              event_number.size(), event_number);
 
-        std::string io_cells_file = data_directory + cells_dir +
-                                    std::string("/event") + event_string +
-                                    std::string("-cells.csv");
-        traccc::cell_reader creader(
-            io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1",
-                            "activation", "time"});
-        traccc::host_cell_container cells_per_event =
-            traccc::read_cells(creader, resource, surface_transforms);
-        m_modules += cells_per_event.headers.size();
+        std::string io_hits_file = hits_dir + std::string("/event") +
+                                   event_string + std::string("-hits.csv");
 
-        // Output containers
-        traccc::host_measurement_container measurements_per_event;
-        traccc::host_spacepoint_container spacepoints_per_event;
-        measurements_per_event.headers.reserve(cells_per_event.headers.size());
-        measurements_per_event.items.reserve(cells_per_event.headers.size());
-        spacepoints_per_event.headers.reserve(cells_per_event.headers.size());
-        spacepoints_per_event.items.reserve(cells_per_event.headers.size());
+        traccc::fatras_hit_reader hreader(
+            io_hits_file,
+            {"particle_id", "geometry_id", "tx", "ty", "tz", "tt", "tpx", "tpy",
+             "tpz", "te", "deltapx", "deltapy", "deltapz", "deltae", "index"});
+        traccc::host_spacepoint_container spacepoints_per_event =
+            traccc::read_hits(hreader, resource);
 
-        for (std::size_t i = 0; i < cells_per_event.items.size(); ++i) {
-            auto& module = cells_per_event.headers[i];
-            module.pixel =
-                traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
+        for (size_t i = 0; i < spacepoints_per_event.headers.size(); i++) {
+            auto& spacepoints_per_module = spacepoints_per_event.items[i];
 
-            // The algorithmic code part: start
-            traccc::cluster_collection clusters_per_module =
-                cc({cells_per_event.items[i], cells_per_event.headers[i]});
-            clusters_per_module.position_from_cell = module.pixel;
-
-            traccc::host_measurement_collection measurements_per_module =
-                mt({clusters_per_module, module});
-            traccc::host_spacepoint_collection spacepoints_per_module =
-                sp({module, measurements_per_module});
-            // The algorithmnic code part: end
-
-            n_cells += cells_per_event.items[i].size();
-            n_clusters += clusters_per_module.items.size();
-            n_measurements += measurements_per_module.size();
-            n_space_points += spacepoints_per_module.size();
-
-            measurements_per_event.items.push_back(
-                std::move(measurements_per_module));
-            measurements_per_event.headers.push_back(module);
-
-            spacepoints_per_event.items.push_back(
-                std::move(spacepoints_per_module));
-            spacepoints_per_event.headers.push_back(module.module);
+            n_spacepoints += spacepoints_per_module.size();
+            n_modules++;
         }
 
         /*-------------------
@@ -163,28 +125,41 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         grid_config.deltaRMax = config.deltaRMax;
         grid_config.cotThetaMax = config.cotThetaMax;
 
+        // create internal spacepoints grouped in bins
+        /*time*/ auto start_binning_cpu = std::chrono::system_clock::now();
+
         traccc::spacepoint_grouping sg(config, grid_config);
         auto internal_sp_per_event = sg(spacepoints_per_event, &resource);
 
-        // seed finding
+        /*time*/ auto end_binning_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_binning_cpu =
+            end_binning_cpu - start_binning_cpu;
+
+        /*time*/ binning_cpu += time_binning_cpu.count();
+
+        /*-----------------------
+          seed finding -- cpu
+          -----------------------*/
+        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
+
         traccc::seed_finding sf(config);
         auto seeds = sf(internal_sp_per_event);
-	
-        /*------------
-             Writer
-          ------------*/
 
-        traccc::measurement_writer mwriter{std::string("event") + event_number +
-                                           "-measurements.csv"};
-        for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
-            auto measurements_per_module = measurements_per_event.items[i];
-            auto module = measurements_per_event.headers[i];
-            for (const auto& measurement : measurements_per_module) {
-                const auto& local = measurement.local;
-                mwriter.append({module.module,"", local[0], local[1],
-				0., 0., 0., 0., 0., 0., 0., 0.});
-            }
+        /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+        //n_seeds += seeds.size();
+	n_seeds += seeds.items[0].size();
+
+        /*time*/ std::chrono::duration<double> time_seeding_cpu =
+            end_seeding_cpu - start_seeding_cpu;
+        /*time*/ seeding_cpu += time_seeding_cpu.count();
+
+        for (size_t i = 0; i < internal_sp_per_event.headers.size(); ++i) {
+            n_internal_spacepoints += internal_sp_per_event.items[i].size();
         }
+
+        /*------------
+          Writer
+          ------------*/
 
         traccc::spacepoint_writer spwriter{std::string("event") + event_number +
                                            "-spacepoints.csv"};
@@ -213,16 +188,51 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
                 internal_spwriter.append({bin, x, y, z, varR, varZ});
             }
         }
+
+        traccc::seed_writer sd_writer{std::string("event") + event_number +
+                                      "-seeds.csv"};
+        //for (size_t i = 0; i < seeds.size(); ++i) {
+	for (auto seed: seeds.items[0]) {
+                auto weight = seed.weight;
+                auto z_vertex = seed.z_vertex;
+                auto spB = seed.spB;
+                auto spM = seed.spM;
+                auto spT = seed.spT;
+
+            sd_writer.append({weight, z_vertex, spB.x(), spB.y(), spB.z(), 0, 0,
+                              spM.x(), spM.y(), spM.z(), 0, 0, spT.x(), spT.y(),
+                              spT.z(), 0, 0});
+        }
+
+        traccc::multiplet_statistics_writer multiplet_stat_writer{
+            std::string("event") + event_number + "-multiplet_statistics.csv"};
+
+        auto stats = sf.get_multiplet_stats();
+        for (size_t i = 0; i < stats.size(); ++i) {
+            auto stat = stats[i];
+            multiplet_stat_writer.append({stat.n_spM, stat.n_mid_bot_doublets,
+                                          stat.n_mid_top_doublets,
+                                          stat.n_triplets});
+        }
+
+        traccc::seed_statistics_writer seed_stat_writer{
+            std::string("event") + event_number + "-seed_statistics.csv"};
+
+        auto seed_stats = sf.get_seed_stats();
+        seed_stat_writer.append({seed_stats.n_internal_sp, seed_stats.n_seeds});
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_cells << " cells from " << m_modules
-              << " modules" << std::endl;
-    std::cout << "- created " << n_clusters << " clusters. " << std::endl;
-    std::cout << "- created " << n_measurements << " measurements. "
-              << std::endl;
-    std::cout << "- created " << n_space_points << " space points. "
-              << std::endl;
+    std::cout << "- read    " << n_spacepoints << " spacepoints from "
+              << n_modules << " modules" << std::endl;
+    std::cout << "- created " << n_internal_spacepoints
+              << " internal spacepoints" << std::endl;
+    std::cout << "- created " << n_seeds << " seeds" << std::endl;
+    std::cout << "==> Elpased time ... " << std::endl;
+    std::cout << "binning_time       " << std::setw(10) << std::left
+              << binning_cpu << std::endl;
+    std::cout << "seeding_time       " << std::setw(10) << std::left
+              << seeding_cpu << std::endl;
 
     return 0;
 }
@@ -232,16 +242,16 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 int main(int argc, char* argv[]) {
     if (argc < 4) {
         std::cout << "Not enough arguments, minimum requirement: " << std::endl;
-        std::cout << "./seq_example <detector_file> <cell_directory> <events>"
+        std::cout << "./seq_example <detector_file> <hit_directory> <events>"
                   << std::endl;
         return -1;
     }
 
     auto detector_file = std::string(argv[1]);
-    auto cell_directory = std::string(argv[2]);
+    auto hit_directory = std::string(argv[2]);
     auto events = std::atoi(argv[3]);
 
-    std::cout << "Running ./seq_exammple " << detector_file << " "
-              << cell_directory << " " << events << std::endl;
-    return seq_run(detector_file, cell_directory, events);
+    std::cout << "Running ./seeding_example " << detector_file << " "
+              << hit_directory << " " << events << std::endl;
+    return seq_run(detector_file, hit_directory, events);
 }
