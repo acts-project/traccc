@@ -16,6 +16,7 @@ namespace traccc {
 ///
 /// No checking on out of bounds done
 struct pixel_segmentation {
+
     scalar min_center_x;
     scalar min_center_y;
     scalar pitch_x;
