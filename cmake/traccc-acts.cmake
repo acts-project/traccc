@@ -7,7 +7,7 @@
 # Guard against multiple includes.
 include_guard(GLOBAL)
 
-# Try to find ACTS installed on the system.
+# Try to find Acts installed on the system.
 find_package(Acts QUIET)
 
 # If it was found, then we're finished.
@@ -18,14 +18,15 @@ if(Acts_FOUND)
 endif()
 
 # Tell the user what's happening.
-message(STATUS "Building ACTS as part of the traccc project")
+message(STATUS "Building Acts as a dependency of traccc")
 
-# Declare where to get ACTS from.
+# Declare where to get Acts from.
 FetchContent_Declare(
    Acts
    GIT_REPOSITORY "https://github.com/acts-project/acts.git"
    GIT_TAG "v9.2.0"
 )
 
-# Make the ACTS source available to the rest of the build system.
-FetchContent_MakeAvailable(Acts)
+# Make the Acts source available to the rest of the build system.
+FetchContent_Populate(Acts)
+add_subdirectory("${acts_SOURCE_DIR}" "${acts_BINARY_DIR}" EXCLUDE_FROM_ALL)
