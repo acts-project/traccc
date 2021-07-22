@@ -10,18 +10,13 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 #include "csv/csv_io.hpp"
+#include "tests/data_test.hpp"
+
+class io : public traccc::tests::data_test {};
 
 // This defines the local frame test suite
-TEST(io, csv_read_single_module) {
-
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    auto data_directory = std::string(env_d_d) + std::string("/");
-
-    std::string file = data_directory + std::string("single_module/cells.csv");
+TEST_F(io, csv_read_single_module) {
+    std::string file = get_datafile("single_module/cells.csv");
     traccc::cell_reader creader(
         file, {"module", "cannel0", "channel1", "activation", "time"});
 
@@ -42,14 +37,8 @@ TEST(io, csv_read_single_module) {
 }
 
 // This defines the local frame test suite
-TEST(io, csv_read_two_modules) {
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    auto data_directory = std::string(env_d_d);
-    std::string file = data_directory + std::string("two_modules/cells.csv");
+TEST_F(io, csv_read_two_modules) {
+    std::string file = get_datafile("two_modules/cells.csv");
 
     traccc::cell_reader creader(
         file, {"module", "cannel0", "channel1", "activation", "time"});
@@ -82,16 +71,8 @@ TEST(io, csv_read_two_modules) {
 }
 
 // This reads in the tml pixel barrel first event
-TEST(io, csv_read_tml_transforms) {
-
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    auto data_directory = std::string(env_d_d);
-    std::string file =
-        data_directory + std::string("tml_detector/trackml-detector.csv");
+TEST_F(io, csv_read_tml_transforms) {
+    std::string file = get_datafile("tml_detector/trackml-detector.csv");
 
     traccc::surface_reader sreader(
         file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw",
@@ -102,16 +83,9 @@ TEST(io, csv_read_tml_transforms) {
 }
 
 // This reads in the tml pixel barrel first event
-TEST(io, csv_read_tml_pixelbarrel) {
-
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    auto data_directory = std::string(env_d_d);
-    std::string file = data_directory +
-                       std::string("tml_pixel_barrel/event000000000-cells.csv");
+TEST_F(io, csv_read_tml_pixelbarrel) {
+    std::string file =
+        get_datafile("tml_pixel_barrel/event000000000-cells.csv");
 
     traccc::cell_reader creader(
         file, {"module", "cannel0", "channel1", "activation", "time"});
