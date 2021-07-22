@@ -7,7 +7,7 @@
 
 set -e # abort on error
 
-INCLUDE_DIRS=(core examples io tests)
+INCLUDE_DIRS=("core examples io tests")
 
 if [ $# -ne 1 ]; then
     echo "wrong number of arguments"

@@ -20,8 +20,7 @@
 #include "geometry/pixel_segmentation.hpp"
 #include "omp.h"
 
-int par_run(const std::string &detector_file, const std::string &cells_dir,
-            unsigned int events) {
+    int par_run(const std::string &detector_file, const std::string &cells_dir, unsigned int events) {
     auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
     if (env_d_d == nullptr) {
         throw std::ios_base::failure(
