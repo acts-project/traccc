@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "algorithms/algorithm.hpp"
+#include "utils/algorithm.hpp"
 #include "detail/sparse_ccl.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"

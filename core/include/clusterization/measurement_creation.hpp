@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "algorithms/algorithm.hpp"
+#include "utils/algorithm.hpp"
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 #include "edm/cell.hpp"
