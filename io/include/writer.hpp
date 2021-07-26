@@ -45,4 +45,4 @@ namespace traccc {
         }
     }
 
-} // end namespace
+    }  // namespace traccc

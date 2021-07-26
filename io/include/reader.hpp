@@ -71,7 +71,6 @@ namespace traccc {
             }
 
         }
-
         return input_data;
     }
 

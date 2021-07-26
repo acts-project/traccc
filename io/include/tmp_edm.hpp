@@ -7,7 +7,6 @@
 #include <map>
 
 namespace traccc {
-
     struct result {
         traccc::host_measurement_container measurements;
         traccc::host_spacepoint_container spacepoints;
