@@ -108,7 +108,8 @@ int main(int argc, char *argv[]) {
     set_default_resource(&resource);
 
     traccc::write(
-            run(traccc::read(events, detector_file, cell_directory, resource), resource));
+        run(traccc::read(events, detector_file, cell_directory, resource),
+            resource));
 
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = end - start;
