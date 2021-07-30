@@ -7,9 +7,9 @@
 
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "algorithms/component_connection.hpp"
-#include "algorithms/measurement_creation.hpp"
-#include "algorithms/spacepoint_formation.hpp"
+#include "clusterization/component_connection.hpp"
+#include "clusterization/measurement_creation.hpp"
+#include "clusterization/spacepoint_formation.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
