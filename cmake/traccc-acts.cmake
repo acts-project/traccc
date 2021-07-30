@@ -24,7 +24,7 @@ message(STATUS "Building Acts as a dependency of traccc")
 FetchContent_Declare(
    Acts
    GIT_REPOSITORY "https://github.com/acts-project/acts.git"
-   GIT_TAG "v9.2.0"
+   GIT_TAG "v10.0.0"
 )
 
 # Make the Acts source available to the rest of the build system.
