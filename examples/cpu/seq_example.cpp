@@ -8,15 +8,22 @@
 #include <iostream>
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "clusterization/component_connection.hpp"
-#include "clusterization/measurement_creation.hpp"
-#include "clusterization/spacepoint_formation.hpp"
 #include "csv/csv_io.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
+#include "edm/internal_spacepoint.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
+
+// clusterization
+#include "clusterization/component_connection.hpp"
+#include "clusterization/measurement_creation.hpp"
+#include "clusterization/spacepoint_formation.hpp"
+
+// seeding
+#include "seeding/spacepoint_grouping.hpp"
+//#include "seeding/seed_finding.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
@@ -106,6 +113,64 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             spacepoints_per_event.headers.push_back(module.module);
         }
 
+        /*-------------------
+             Seed finding
+          -------------------*/
+
+        // Seed finder config
+        traccc::seedfinder_config config;
+        // silicon detector max
+        config.rMax = 160.;
+        config.deltaRMin = 5.;
+        config.deltaRMax = 160.;
+        config.collisionRegionMin = -250.;
+        config.collisionRegionMax = 250.;
+        // config.zMin = -2800.; // this value introduces redundant bins without
+        // any spacepoints config.zMax = 2800.;
+        config.zMin = -1186.;
+        config.zMax = 1186.;
+        config.maxSeedsPerSpM = 5;
+        // 2.7 eta
+        config.cotThetaMax = 7.40627;
+        config.sigmaScattering = 1.00000;
+
+        config.minPt = 500.;
+        config.bFieldInZ = 0.00199724;
+
+        config.beamPos = {-.5, -.5};
+        config.impactMax = 10.;
+
+        config.highland = 13.6 * std::sqrt(config.radLengthPerSeed) *
+                          (1 + 0.038 * std::log(config.radLengthPerSeed));
+        float maxScatteringAngle = config.highland / config.minPt;
+        config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
+        // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
+        // and millimeter
+        // TODO: change using ACTS units
+        config.pTPerHelixRadius = 300. * config.bFieldInZ;
+        config.minHelixDiameter2 =
+            std::pow(config.minPt * 2 / config.pTPerHelixRadius, 2);
+        config.pT2perRadius =
+            std::pow(config.highland / config.pTPerHelixRadius, 2);
+
+        // setup spacepoint grid config
+        traccc::spacepoint_grid_config grid_config;
+        grid_config.bFieldInZ = config.bFieldInZ;
+        grid_config.minPt = config.minPt;
+        grid_config.rMax = config.rMax;
+        grid_config.zMax = config.zMax;
+        grid_config.zMin = config.zMin;
+        grid_config.deltaRMax = config.deltaRMax;
+        grid_config.cotThetaMax = config.cotThetaMax;
+
+        traccc::spacepoint_grouping sg(config, grid_config);
+
+        auto internal_sp_per_event = sg(spacepoints_per_event, &resource);
+
+        /*------------
+             Writer
+          ------------*/
+
         traccc::measurement_writer mwriter{std::string("event") + event_number +
                                            "-measurements.csv"};
         for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
@@ -126,6 +191,22 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             for (const auto& spacepoint : spacepoints_per_module) {
                 const auto& pos = spacepoint.global;
                 spwriter.append({module, pos[0], pos[1], pos[2], 0., 0., 0.});
+            }
+        }
+
+        traccc::internal_spacepoint_writer internal_spwriter{
+            std::string("event") + event_number + "-internal_spacepoints.csv"};
+        for (size_t i = 0; i < internal_sp_per_event.items.size(); ++i) {
+            auto internal_sp_per_bin = internal_sp_per_event.items[i];
+            auto bin = internal_sp_per_event.headers[i].global_index;
+
+            for (const auto& internal_sp : internal_sp_per_bin) {
+                const auto& x = internal_sp.m_x;
+                const auto& y = internal_sp.m_y;
+                const auto& z = internal_sp.m_z;
+                const auto& varR = internal_sp.m_varianceR;
+                const auto& varZ = internal_sp.m_varianceZ;
+                internal_spwriter.append({bin, x, y, z, varR, varZ});
             }
         }
     }
