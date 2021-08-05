@@ -277,12 +277,10 @@ std::vector<cluster_collection> read_truth_clusters(
 host_spacepoint_container read_hits(
     fatras_hit_reader& hreader, vecmem::memory_resource& resource,
     unsigned int max_hits = std::numeric_limits<unsigned int>::max()) {
-    uint64_t reference_id = 0;
     host_spacepoint_container result = {
         host_spacepoint_container::header_vector(&resource),
         host_spacepoint_container::item_vector(&resource)};
 
-    bool first_line_read = false;
     unsigned int read_hits = 0;
     csv_fatras_hit iohit;
 
