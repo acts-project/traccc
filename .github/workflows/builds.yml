@@ -31,8 +31,9 @@ jobs:
       - name: Configure
         run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -B build -S .
       - name: Build
-        run: >
-          cmake --build build --
-          && cmake --build build -- test
-          && ./run_examples.sh build
+        run: cmake --build build --
+      - name: Run tests
+        run: cmake --build build -- test
+      - name: Run examples
+        run: ./run_examples.sh build
           
