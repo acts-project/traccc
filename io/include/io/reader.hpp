@@ -7,6 +7,7 @@
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
+#include "geometry/geometry.hpp"
 #include "io/csv.hpp"
 #include "io/demonstrator_edm.hpp"
 
@@ -52,7 +53,7 @@ traccc::host_cell_container read_cells_from_event(
     traccc::cell_reader creader(
         io_cells_file,
         {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
-    return traccc::read_cells(creader, resource, surface_transforms);
+    return traccc::read_cells(creader, resource, &surface_transforms);
 }
 
 traccc::demonstrator_input read(size_t events, const std::string &detector_file,
