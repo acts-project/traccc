@@ -9,7 +9,7 @@
 
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "csv/csv_io.hpp"
+#include "io/csv.hpp"
 #include "tests/data_test.hpp"
 
 class io : public traccc::tests::data_test {};

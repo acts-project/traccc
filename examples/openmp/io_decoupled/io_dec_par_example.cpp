@@ -6,9 +6,9 @@
 #include "clusterization/spacepoint_formation.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
-#include "reader.hpp"
-#include "tmp_edm.hpp"
-#include "writer.hpp"
+#include "io/demonstrator_edm.hpp"
+#include "io/reader.hpp"
+#include "io/writer.hpp"
 
 traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                                 vecmem::host_memory_resource resource) {

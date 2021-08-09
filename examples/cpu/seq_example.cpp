@@ -8,13 +8,14 @@
 #include <iostream>
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "csv/csv_io.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "edm/internal_spacepoint.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
+#include "io/csv.hpp"
+#include "io/reader.hpp"
 
 // clusterization
 #include "clusterization/component_connection.hpp"
