@@ -16,6 +16,7 @@
 #include "geometry/pixel_segmentation.hpp"
 #include "io/csv.hpp"
 #include "io/reader.hpp"
+#include "io/utils.hpp"
 
 // clusterization
 #include "clusterization/component_connection.hpp"

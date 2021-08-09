@@ -19,6 +19,7 @@
 #include "geometry/pixel_segmentation.hpp"
 #include "io/csv.hpp"
 #include "io/reader.hpp"
+#include "io/utils.hpp"
 #include "omp.h"
 
 int par_run(const std::string &detector_file, const std::string &cells_dir,

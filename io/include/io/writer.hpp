@@ -6,6 +6,7 @@
 #include "edm/spacepoint.hpp"
 #include "io/csv.hpp"
 #include "io/demonstrator_edm.hpp"
+#include "io/utils.hpp"
 
 namespace traccc {
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <iomanip>
 #include <vecmem/memory/host_memory_resource.hpp>
 
 #include "edm/cell.hpp"
@@ -11,33 +10,11 @@
 #include "geometry/geometry.hpp"
 #include "io/csv.hpp"
 #include "io/demonstrator_edm.hpp"
+#include "io/utils.hpp"
 
 namespace traccc {
 
-const std::string &data_directory() {
-    static const std::string data_dir = [] {
-        auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-        if (env_d_d == nullptr) {
-            throw std::ios_base::failure(
-                "Test data directory not found. Please set "
-                "TRACCC_TEST_DATA_DIR.");
-        }
-        std::string data_dir = std::string(env_d_d);
-        return data_dir.append("/");
-    }();
-
-    return data_dir;
-}
-
-std::string get_event_filename(size_t event, const std::string &suffix) {
-    std::stringstream stream;
-    stream << "event";
-    stream << std::setfill('0') << std::setw(9) << event;
-    stream << suffix;
-    return stream.str();
-}
-
-inline traccc::geometry read_geometry(const std::string &detector_file) {
+traccc::geometry read_geometry(const std::string &detector_file) {
     // Read the surface transforms
     std::string io_detector_file = data_directory() + detector_file;
     traccc::surface_reader sreader(
