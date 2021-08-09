@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+  
 jobs:
   builds:
     name: ${{ matrix.platform.name }}-${{ matrix.build }}
