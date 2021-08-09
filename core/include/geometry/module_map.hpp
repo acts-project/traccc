@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-#include "definitions/primitives.hpp"
+#include "definitions/algebra.hpp"
 
 namespace traccc {
 /**
