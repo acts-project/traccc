@@ -1,5 +1,7 @@
 #pragma once
 
+#include "geometry/module_map.hpp"
+
 namespace traccc {
-using geometry = std::map<traccc::geometry_id, traccc::transform3>;
+using geometry = traccc::module_map<>;
 }

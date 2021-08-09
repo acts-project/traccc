@@ -65,7 +65,7 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
             io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1",
                             "activation", "time"});
         traccc::host_cell_container cells_per_event =
-            traccc::read_cells(creader, resource, surface_transforms);
+            traccc::read_cells(creader, resource, &surface_transforms);
         m_modules += cells_per_event.headers.size();
 
         // Output containers

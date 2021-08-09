@@ -150,7 +150,7 @@ std::map<geometry_id, transform3> read_surfaces(surface_reader& sreader) {
 /// @param max_cells the (optional) maximum number of cells to be read in
 host_cell_container read_cells(
     cell_reader& creader, vecmem::memory_resource& resource,
-    const std::map<geometry_id, transform3>& tfmap = {},
+    const traccc::geometry* tfmap = nullptr,
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
     uint64_t reference_id = 0;
@@ -166,10 +166,9 @@ host_cell_container read_cells(
 
         if (first_line_read and iocell.geometry_id != reference_id) {
             // Complete the information
-            if (not tfmap.empty()) {
-                auto tfentry = tfmap.find(iocell.geometry_id);
-                if (tfentry != tfmap.end()) {
-                    module.placement = tfentry->second;
+            if (tfmap != nullptr) {
+                if (tfmap->contains(iocell.geometry_id)) {
+                    module.placement = (*tfmap)[iocell.geometry_id];
                 }
             }
             // Sort in column major order
