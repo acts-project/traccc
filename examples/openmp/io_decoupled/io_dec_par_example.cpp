@@ -1,9 +1,9 @@
 #include <chrono>
 #include <iostream>
 
-#include "algorithms/component_connection.hpp"
-#include "algorithms/measurement_creation.hpp"
-#include "algorithms/spacepoint_formation.hpp"
+#include "clusterization/component_connection.hpp"
+#include "clusterization/measurement_creation.hpp"
+#include "clusterization/spacepoint_formation.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 #include "reader.hpp"
