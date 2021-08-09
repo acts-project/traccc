@@ -9,7 +9,7 @@
 
 namespace traccc {
 
-void write_measurements(
+inline void write_measurements(
     size_t event,
     const traccc::host_measurement_container &measurements_per_event) {
     traccc::measurement_writer mwriter{
@@ -24,7 +24,7 @@ void write_measurements(
     }
 }
 
-void write_spacepoints(
+inline void write_spacepoints(
     size_t event,
     const traccc::host_spacepoint_container &spacepoints_per_event) {
     traccc::spacepoint_writer spwriter{
@@ -39,7 +39,7 @@ void write_spacepoints(
     }
 }
 
-void write(traccc::demonstrator_result aggregated_results) {
+inline void write(traccc::demonstrator_result aggregated_results) {
 
 #if defined(_OPENMP)
 #pragma omp parallel for
