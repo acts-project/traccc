@@ -31,11 +31,7 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
     auto data_directory = std::string(env_d_d) + std::string("/");
 
     // Read the surface transforms
-    std::string io_detector_file = data_directory + detector_file;
-    traccc::surface_reader sreader(
-        io_detector_file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv",
-                           "rot_xw", "rot_zu", "rot_zv", "rot_zw"});
-    auto surface_transforms = traccc::read_surfaces(sreader);
+    auto surface_transforms = traccc::read_geometry(detector_file);
 
     // Algorithms
     traccc::component_connection cc;

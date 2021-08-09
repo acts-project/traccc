@@ -7,6 +7,7 @@
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
+#include "geometry/geometry.hpp"
 #include "io/csv.hpp"
 #include "io/demonstrator_edm.hpp"
 

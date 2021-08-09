@@ -20,6 +20,7 @@
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "edm/spacepoint.hpp"
+#include "geometry/geometry.hpp"
 
 namespace traccc {
 

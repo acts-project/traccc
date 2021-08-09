@@ -12,7 +12,6 @@ struct result {
     traccc::host_spacepoint_container spacepoints;
 };
 
-using geometry = std::map<traccc::geometry_id, traccc::transform3>;
 using demonstrator_input = vecmem::vector<traccc::host_cell_container>;
 using demonstrator_result = vecmem::vector<traccc::result>;
 }  // namespace traccc
