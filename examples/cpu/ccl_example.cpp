@@ -12,8 +12,8 @@
 #include <iostream>
 
 #include "clusterization/component_connection.hpp"
-#include "csv/csv_io.hpp"
 #include "edm/cell.hpp"
+#include "io/csv.hpp"
 #include "vecmem/memory/host_memory_resource.hpp"
 
 namespace {

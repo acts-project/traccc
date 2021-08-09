@@ -12,12 +12,13 @@
 #include "clusterization/component_connection.hpp"
 #include "clusterization/measurement_creation.hpp"
 #include "clusterization/spacepoint_formation.hpp"
-#include "csv/csv_io.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
 #include "geometry/pixel_segmentation.hpp"
+#include "io/csv.hpp"
+#include "io/reader.hpp"
 #include "omp.h"
 
 int par_run(const std::string &detector_file, const std::string &cells_dir,

@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include "csv/csv_io.hpp"
 #include "definitions/primitives.hpp"
 #include "geometry/module_map.hpp"
+#include "io/csv.hpp"
 
 /*
  * Simple test of this map using integers and strings.
