@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <iomanip>
 #include <vecmem/memory/host_memory_resource.hpp>
 
 #include "edm/cell.hpp"
@@ -23,12 +24,12 @@ inline const std::string data_directory() {
     return data_dir.append("/");
 }
 
-inline std::string get_event_filename(size_t event) {
-    std::string event_string{"000000000"};
-    std::string event_number = std::to_string(event);
-    event_string.replace(event_string.size() - event_number.size(),
-                         event_number.size(), event_number);
-    return event_string;
+std::string get_event_filename(size_t event, const std::string &suffix) {
+    std::stringstream stream;
+    stream << "event";
+    stream << std::setfill('0') << std::setw(9) << event;
+    stream << suffix;
+    return stream.str();
 }
 
 inline traccc::geometry read_geometry(const std::string &detector_file) {
@@ -46,8 +47,7 @@ inline traccc::host_cell_container read_cells_from_event(
     vecmem::host_memory_resource &resource) {
     // Read the cells from the relevant event file
     std::string io_cells_file =
-        data_directory() + cells_dir + std::string("/event") +
-        get_event_filename(event) + std::string("-cells.csv");
+        data_directory() + cells_dir + get_event_filename(event, "-cells.csv");
     traccc::cell_reader creader(
         io_cells_file,
         {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});
