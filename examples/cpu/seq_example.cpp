@@ -29,13 +29,6 @@
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
 
-    const char* env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    std::string data_directory = env_d_d + std::string("/");
-
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
 

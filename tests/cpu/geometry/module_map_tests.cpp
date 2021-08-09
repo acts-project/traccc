@@ -11,6 +11,7 @@
 #include "definitions/primitives.hpp"
 #include "geometry/module_map.hpp"
 #include "io/csv.hpp"
+#include "io/reader.hpp"
 
 /*
  * Simple test of this map using integers and strings.
@@ -127,20 +128,9 @@ TEST(geometry, module_map_failure) {
  * existing map which is based on std::map.
  */
 TEST(geometry, module_map_read_trackml) {
-    /*
-     * First, some boilerplate code where we get the data directory.
-     */
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
 
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-
-    auto data_directory = std::string(env_d_d) + std::string("/");
-
-    std::string file =
-        data_directory + std::string("tml_detector/trackml-detector.csv");
+    std::string file = traccc::data_directory() +
+                       std::string("tml_detector/trackml-detector.csv");
 
     /*
      * Next, we read the surfaces from the TrackML data file, and we get back a
