@@ -63,6 +63,48 @@ TEST(geometry, module_map_operator_eq) {
 }
 
 /*
+ * Sanity check for the empty method.
+ */
+TEST(geometry, module_map_empty) {
+    std::map<std::size_t, std::string> inp{{0, "zero"},    {1, "one"},
+                                           {2, "two"},     {5, "five"},
+                                           {11, "eleven"}, {21, "twenty-one"}};
+
+    /*
+     * Convert the old-style map to a module map.
+     */
+    traccc::module_map<std::size_t, std::string> map(inp);
+
+    ASSERT_FALSE(map.empty());
+}
+
+/*
+ * Check whether the contains method works.
+ */
+TEST(geometry, module_map_contains) {
+    std::map<std::size_t, std::string> inp{{0, "zero"},    {1, "one"},
+                                           {2, "two"},     {5, "five"},
+                                           {11, "eleven"}, {21, "twenty-one"}};
+
+    /*
+     * Convert the old-style map to a module map.
+     */
+    traccc::module_map<std::size_t, std::string> map(inp);
+
+    ASSERT_TRUE(map.contains(0));
+    ASSERT_TRUE(map.contains(1));
+    ASSERT_TRUE(map.contains(2));
+    ASSERT_TRUE(map.contains(5));
+    ASSERT_TRUE(map.contains(11));
+    ASSERT_TRUE(map.contains(21));
+    ASSERT_FALSE(map.contains(3));
+    ASSERT_FALSE(map.contains(4));
+    ASSERT_FALSE(map.contains(6));
+    ASSERT_FALSE(map.contains(15));
+    ASSERT_FALSE(map.contains(510482));
+}
+
+/*
  * Check if the map fails correctly.
  */
 TEST(geometry, module_map_failure) {
