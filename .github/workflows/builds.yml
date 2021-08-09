@@ -28,12 +28,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
+          lfs: true
       - name: Configure
         run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -B build -S .
       - name: Build
-        run: cmake --build build --
-      - name: Run tests
-        run: cmake --build build -- test
-      - name: Run examples
-        run: ./run_examples.sh build
+        run: cmake --build build -- -j$(nproc)
+      - name: Run tests & examples
+        run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
           
