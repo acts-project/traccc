@@ -118,6 +118,10 @@ class module_map {
         return c;
     }
 
+    bool contains(const K& i) const { return at_helper(i, 0) != nullptr; }
+
+    bool empty(void) const { return m_nodes.empty(); }
+
     private:
     /**
      * @brief The internal representation of nodes in our binary search tree.
