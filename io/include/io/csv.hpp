@@ -147,7 +147,7 @@ std::map<geometry_id, transform3> read_surfaces(surface_reader& sreader) {
 /// @param resource The memory resource to use for the return value
 /// @param tfmap the (optional) transform map
 /// @param max_cells the (optional) maximum number of cells to be read in
-host_cell_container read_cells(
+inline host_cell_container read_cells(
     cell_reader& creader, vecmem::memory_resource& resource,
     const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
@@ -218,7 +218,7 @@ host_cell_container read_cells(
 /// @param creader The cellreader type
 /// @param tfmap the (optional) transform map
 /// @param max_clusters the (optional) maximum number of cells to be read in
-std::vector<cluster_collection> read_truth_clusters(
+inline std::vector<cluster_collection> read_truth_clusters(
     cell_reader& creader, const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
@@ -274,7 +274,7 @@ std::vector<cluster_collection> read_truth_clusters(
 ///
 /// @param hreader The hit reader type
 /// @param resource The memory resource to use for the return value
-host_spacepoint_container read_hits(
+inline host_spacepoint_container read_hits(
     fatras_hit_reader& hreader, vecmem::memory_resource& resource,
     unsigned int max_hits = std::numeric_limits<unsigned int>::max()) {
     host_spacepoint_container result = {

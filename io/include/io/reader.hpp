@@ -10,11 +10,9 @@
 #include "io/csv.hpp"
 #include "io/demonstrator_edm.hpp"
 
-using namespace std::placeholders;
-
 namespace traccc {
 
-const std::string data_directory() {
+inline const std::string data_directory() {
     auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
     if (env_d_d == nullptr) {
         throw std::ios_base::failure(
@@ -24,7 +22,7 @@ const std::string data_directory() {
     return data_dir.append("/");
 }
 
-std::string get_event_filename(size_t event) {
+inline std::string get_event_filename(size_t event) {
     std::string event_string{"000000000"};
     std::string event_number = std::to_string(event);
     event_string.replace(event_string.size() - event_number.size(),
@@ -32,7 +30,7 @@ std::string get_event_filename(size_t event) {
     return event_string;
 }
 
-traccc::geometry read_geometry(const std::string &detector_file) {
+inline traccc::geometry read_geometry(const std::string &detector_file) {
     // Read the surface transforms
     std::string io_detector_file = data_directory() + detector_file;
     traccc::surface_reader sreader(
@@ -41,7 +39,7 @@ traccc::geometry read_geometry(const std::string &detector_file) {
     return traccc::read_surfaces(sreader);
 }
 
-traccc::host_cell_container read_cells_from_event(
+inline traccc::host_cell_container read_cells_from_event(
     size_t event, const std::string &cells_dir,
     traccc::geometry surface_transforms,
     vecmem::host_memory_resource &resource) {
@@ -55,13 +53,14 @@ traccc::host_cell_container read_cells_from_event(
     return traccc::read_cells(creader, resource, surface_transforms);
 }
 
-traccc::demonstrator_input read(size_t events, const std::string &detector_file,
-                                const std::string &cell_directory,
-                                vecmem::host_memory_resource &resource) {
+inline traccc::demonstrator_input read(size_t events,
+                                       const std::string &detector_file,
+                                       const std::string &cell_directory,
+                                       vecmem::host_memory_resource &resource) {
+    using namespace std::placeholders;
     auto geometry = read_geometry(detector_file);
     auto readFn = std::bind(read_cells_from_event, _1, cell_directory, geometry,
                             resource);
-
     traccc::demonstrator_input input_data(events, &resource);
 
 #if defined(_OPENMP)
