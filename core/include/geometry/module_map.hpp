@@ -82,7 +82,7 @@ class module_map {
      * @warning This method does no bounds checking, and will result in
      * undefined behaviour if the key does not exist in the map.
      */
-    V& operator[](const K& i) { return *at_helper(i, 0); }
+    const V& operator[](const K& i) const { return *at_helper(i, 0); }
 
     /**
      * @brief Find a given key in the map, with bounds checking.
@@ -91,8 +91,8 @@ class module_map {
      *
      * @return The value associated with the given key.
      */
-    V& at(const K& i) {
-        V* r = at_helper(i, 0);
+    const V& at(const K& i) const {
+        const V* r = at_helper(i, 0);
 
         if (r == nullptr) {
             throw std::out_of_range("Index not found in module map!");
@@ -108,7 +108,7 @@ class module_map {
      *
      * @return The total number of modules in this module map.
      */
-    std::size_t size(void) {
+    std::size_t size(void) const {
         std::size_t c = 0;
 
         for (const module_map_node& n : m_nodes) {
@@ -322,7 +322,7 @@ class module_map {
      * @param[in] i The value to look for.
      * @param[in] n The index of the subtree's root node.
      */
-    V* at_helper(const K& i, std::size_t n) {
+    const V* at_helper(const K& i, std::size_t n) const {
         /*
          * For memory safety, if we are out of bounds we will exit.
          */
@@ -333,7 +333,7 @@ class module_map {
         /*
          * Retrieve the current root node.
          */
-        module_map_node& node = m_nodes[n];
+        const module_map_node& node = m_nodes[n];
 
         /*
          * If the size is zero, it is essentially an invalid node (i.e. the
