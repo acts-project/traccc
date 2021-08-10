@@ -6,7 +6,9 @@
  */
 
 #pragma once
-#include <seeding/detail/singlet.hpp>
+
+#include "definitions/qualifiers.hpp"
+#include "edm/container.hpp"
 
 namespace traccc {
 
@@ -27,22 +29,22 @@ struct lin_circle {
     // v component in transformed coordinate
     float m_V;
 
-    __CUDA_HOST_DEVICE__
+    TRACCC_HOST_DEVICE
     const float& Zo() const { return m_Zo; }
 
-    __CUDA_HOST_DEVICE__
+    TRACCC_HOST_DEVICE
     const float& cotTheta() const { return m_cotTheta; }
 
-    __CUDA_HOST_DEVICE__
+    TRACCC_HOST_DEVICE
     const float& iDeltaR() const { return m_iDeltaR; }
 
-    __CUDA_HOST_DEVICE__
+    TRACCC_HOST_DEVICE
     const float& Er() const { return m_Er; }
 
-    __CUDA_HOST_DEVICE__
+    TRACCC_HOST_DEVICE
     const float& U() const { return m_U; }
 
-    __CUDA_HOST_DEVICE__
+    TRACCC_HOST_DEVICE
     const float& V() const { return m_V; }
 };
 

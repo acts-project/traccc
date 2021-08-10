@@ -18,12 +18,20 @@
 #include <vecmem/containers/jagged_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
+// std
+#include <algorithm>
+
 namespace traccc {
 
 struct neighbor_idx {
     size_t counts;
-    std::array<size_t, 9u> global_indices;
-    std::array<size_t, 9u> vector_indices;
+    /// global_indices: the global indices of neighbor bins provided by axis
+    /// class size of 9 is from (3 neighbors on z-axis) x (3 neighbors on
+    /// phi-axis)
+    size_t global_indices[9];
+    /// vector_indices: the actual indices of neighbor bins, which are used for
+    /// navigating internal_spacepoint_container
+    size_t vector_indices[9];
 };
 
 /// Header: bin information (global bin index, neighborhood bin indices)
@@ -33,7 +41,7 @@ struct bin_information {
     neighbor_idx top_idx;
 };
 
-bool operator==(const bin_information& lhs, const bin_information& rhs) {
+inline bool operator==(const bin_information& lhs, const bin_information& rhs) {
     return (lhs.global_index == rhs.global_index);
 }
 
@@ -46,8 +54,9 @@ struct internal_spacepoint {
     scalar m_r;
     scalar m_varianceR;
     scalar m_varianceZ;
-    const spacepoint& m_sp;
+    spacepoint m_sp;
 
+    TRACCC_HOST_DEVICE
     internal_spacepoint(const spacepoint& sp, const vector3& globalPos,
                         const vector2& offsetXY, const vector2& variance)
         : m_sp(sp) {
@@ -58,6 +67,7 @@ struct internal_spacepoint {
         m_varianceR = variance[0];
         m_varianceZ = variance[1];
     }
+    TRACCC_HOST_DEVICE
     internal_spacepoint(const internal_spacepoint<spacepoint>& sp)
         : m_sp(sp.sp()) {
         m_x = sp.m_x;
@@ -68,17 +78,43 @@ struct internal_spacepoint {
         m_varianceZ = sp.m_varianceZ;
     }
 
+    TRACCC_HOST_DEVICE
+    internal_spacepoint& operator=(const internal_spacepoint<spacepoint>& sp) {
+        m_x = sp.m_x;
+        m_y = sp.m_y;
+        m_z = sp.m_z;
+        m_r = sp.m_r;
+        m_varianceR = sp.m_varianceR;
+        m_varianceZ = sp.m_varianceZ;
+        return *this;
+    }
+
+    TRACCC_HOST_DEVICE
     const float& x() const { return m_x; }
+
+    TRACCC_HOST_DEVICE
     const float& y() const { return m_y; }
+
+    TRACCC_HOST_DEVICE
     const float& z() const { return m_z; }
+
+    TRACCC_HOST_DEVICE
     const float& radius() const { return m_r; }
+
+    TRACCC_HOST_DEVICE
     float phi() const { return atan2f(m_y, m_x); }
+
+    TRACCC_HOST_DEVICE
     const float& varianceR() const { return m_varianceR; }
+
+    TRACCC_HOST_DEVICE
     const float& varianceZ() const { return m_varianceZ; }
+
+    TRACCC_HOST_DEVICE
     const spacepoint& sp() const { return m_sp; }
 };
 
-/// Container of internal_spacepoint belonging to one detector module
+/// Container of internal_spacepoint belonging to one spacepoint bin
 template <template <typename> class vector_t>
 using internal_spacepoint_collection =
     vector_t<internal_spacepoint<spacepoint> >;
@@ -94,8 +130,7 @@ using device_internal_spacepoint_collection =
     internal_spacepoint_collection<vecmem::device_vector>;
 
 /// Convenience declaration for the internal_spacepoint container type to use in
-/// host code header: global bin index / neighborhood index item  : internal
-/// spacepoint
+/// host code
 using host_internal_spacepoint_container =
     host_container<bin_information, internal_spacepoint<spacepoint> >;
 
@@ -119,8 +154,8 @@ using internal_spacepoint_container_buffer =
 using internal_spacepoint_container_view =
     container_view<bin_information, internal_spacepoint<spacepoint> >;
 
-size_t find_vector_id_from_global_id(size_t global_bin,
-                                     vecmem::vector<bin_information>& headers) {
+inline size_t find_vector_id_from_global_id(
+    size_t global_bin, vecmem::vector<bin_information>& headers) {
     auto iterator =
         std::find_if(headers.begin(), headers.end(),
                      [&global_bin](const bin_information& bin_info) {
@@ -130,8 +165,8 @@ size_t find_vector_id_from_global_id(size_t global_bin,
     return std::distance(headers.begin(), iterator);
 }
 
-void fill_vector_id(neighbor_idx& neighbor,
-                    vecmem::vector<bin_information>& headers) {
+inline void fill_vector_id(neighbor_idx& neighbor,
+                           vecmem::vector<bin_information>& headers) {
     for (size_t i = 0; i < neighbor.counts; ++i) {
         auto global_id = neighbor.global_indices[i];
         auto vector_id = find_vector_id_from_global_id(global_id, headers);
@@ -140,7 +175,9 @@ void fill_vector_id(neighbor_idx& neighbor,
     }
 }
 
-void fill_vector_id(host_internal_spacepoint_container& isp_container) {
+/// Fill vector_indices of header of internal_spacepoint_container
+///
+inline void fill_vector_id(host_internal_spacepoint_container& isp_container) {
     for (size_t i = 0; i < isp_container.headers.size(); ++i) {
         auto& bot_neighbors = isp_container.headers[i].bottom_idx;
         auto& top_neighbors = isp_container.headers[i].top_idx;
