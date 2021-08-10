@@ -1,4 +1,3 @@
-enable_testing()
 
 macro(add_traccc_test TESTNAME FILES PLUGIN_LIBRARY)
     add_executable(${TESTNAME} ${FILES})
