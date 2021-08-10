@@ -29,12 +29,14 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-compiler-options )
 
-# Build the necessary externals.
-add_subdirectory(extern)
-include(traccc-dependencies)
-
 # Build the traccc code.
 add_subdirectory(core)
 add_subdirectory(io)
 add_subdirectory(examples)
-add_subdirectory(tests)
+if(BUILD_TESTING)
+   add_subdirectory(tests)
+endif()
+
+# Build the necessary externals.
+add_subdirectory(extern)
+include(traccc-dependencies)
