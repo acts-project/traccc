@@ -1,4 +1,3 @@
-enable_testing()
 
 macro(add_traccc_test TESTNAME FILES PLUGIN_LIBRARY)
     add_executable(${TESTNAME} ${FILES})
@@ -7,7 +6,7 @@ macro(add_traccc_test TESTNAME FILES PLUGIN_LIBRARY)
     target_link_libraries(${TESTNAME} traccc::tests::common)
     target_link_libraries(${TESTNAME} ${PLUGIN_LIBRARY})
     set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
-    add_test(unit_test_${TESTNAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME})
+    add_test(NAME unit_test_${TESTNAME} COMMAND ${TESTNAME})
     set_tests_properties(unit_test_${TESTNAME} PROPERTIES
     ENVIRONMENT TRACCC_TEST_DATA_DIR=${PROJECT_SOURCE_DIR}/data/)
 endmacro()
