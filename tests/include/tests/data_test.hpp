@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "io/reader.hpp"
+
 namespace traccc::tests {
 /**
  * @brief Test fixture base class for accessing the data directory.
@@ -25,17 +27,7 @@ class data_test : public ::testing::Test {
     protected:
     std::string data_directory;
 
-    virtual void SetUp() override {
-        char* env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-
-        if (env_d_d == nullptr) {
-            throw std::ios_base::failure(
-                "Test data directory not found. Please set "
-                "TRACCC_TEST_DATA_DIR.");
-        }
-
-        data_directory = std::string(env_d_d) + std::string("/");
-    }
+    virtual void SetUp() override { data_directory = traccc::data_directory(); }
 
     std::string get_datafile(std::string name) { return data_directory + name; }
 };

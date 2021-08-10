@@ -10,28 +10,11 @@
 #include "geometry/geometry.hpp"
 #include "io/csv.hpp"
 #include "io/demonstrator_edm.hpp"
+#include "io/utils.hpp"
 
 namespace traccc {
 
-inline const std::string data_directory() {
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    std::string data_dir = std::string(env_d_d);
-    return data_dir.append("/");
-}
-
-inline std::string get_event_filename(size_t event) {
-    std::string event_string{"000000000"};
-    std::string event_number = std::to_string(event);
-    event_string.replace(event_string.size() - event_number.size(),
-                         event_number.size(), event_number);
-    return event_string;
-}
-
-inline traccc::geometry read_geometry(const std::string &detector_file) {
+traccc::geometry read_geometry(const std::string &detector_file) {
     // Read the surface transforms
     std::string io_detector_file = data_directory() + detector_file;
     traccc::surface_reader sreader(
@@ -46,8 +29,7 @@ inline traccc::host_cell_container read_cells_from_event(
     vecmem::host_memory_resource &resource) {
     // Read the cells from the relevant event file
     std::string io_cells_file =
-        data_directory() + cells_dir + std::string("/event") +
-        get_event_filename(event) + std::string("-cells.csv");
+        data_directory() + cells_dir + get_event_filename(event, "-cells.csv");
     traccc::cell_reader creader(
         io_cells_file,
         {"geometry_id", "hit_id", "cannel0", "channel1", "activation", "time"});

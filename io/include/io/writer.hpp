@@ -6,6 +6,7 @@
 #include "edm/spacepoint.hpp"
 #include "io/csv.hpp"
 #include "io/demonstrator_edm.hpp"
+#include "io/utils.hpp"
 
 namespace traccc {
 
@@ -13,7 +14,7 @@ inline void write_measurements(
     size_t event,
     const traccc::host_measurement_container &measurements_per_event) {
     traccc::measurement_writer mwriter{
-        std::string("event") + std::to_string(event) + "-measurements.csv"};
+        get_event_filename(event, "-measurements.csv")};
     for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
         auto measurements_per_module = measurements_per_event.items[i];
         auto module = measurements_per_event.headers[i];
@@ -28,7 +29,7 @@ inline void write_spacepoints(
     size_t event,
     const traccc::host_spacepoint_container &spacepoints_per_event) {
     traccc::spacepoint_writer spwriter{
-        std::string("event") + std::to_string(event) + "-spacepoints.csv"};
+        get_event_filename(event, "-spacepoints.csv")};
     for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
         auto spacepoints_per_module = spacepoints_per_event.items[i];
         auto module = spacepoints_per_event.headers[i];

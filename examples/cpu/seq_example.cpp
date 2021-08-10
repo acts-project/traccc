@@ -16,6 +16,7 @@
 #include "geometry/pixel_segmentation.hpp"
 #include "io/csv.hpp"
 #include "io/reader.hpp"
+#include "io/utils.hpp"
 
 // clusterization
 #include "clusterization/component_connection.hpp"
@@ -28,12 +29,6 @@
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
-    auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
-    if (env_d_d == nullptr) {
-        throw std::ios_base::failure(
-            "Test data directory not found. Please set TRACCC_TEST_DATA_DIR.");
-    }
-    auto data_directory = std::string(env_d_d) + std::string("/");
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
@@ -57,14 +52,9 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     for (unsigned int event = 0; event < events; ++event) {
 
         // Read the cells from the relevant event file
-        std::string event_string = "000000000";
-        std::string event_number = std::to_string(event);
-        event_string.replace(event_string.size() - event_number.size(),
-                             event_number.size(), event_number);
-
-        std::string io_cells_file = data_directory + cells_dir +
-                                    std::string("/event") + event_string +
-                                    std::string("-cells.csv");
+        std::string io_cells_file =
+            traccc::data_directory() + cells_dir + "/" +
+            traccc::get_event_filename(event, "-cells.csv");
         traccc::cell_reader creader(
             io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1",
                             "activation", "time"});
@@ -168,8 +158,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Writer
           ------------*/
 
-        traccc::measurement_writer mwriter{std::string("event") + event_number +
-                                           "-measurements.csv"};
+        traccc::measurement_writer mwriter{
+            traccc::get_event_filename(event, "-measurements.csv")};
         for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
             auto measurements_per_module = measurements_per_event.items[i];
             auto module = measurements_per_event.headers[i];
@@ -179,8 +169,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             }
         }
 
-        traccc::spacepoint_writer spwriter{std::string("event") + event_number +
-                                           "-spacepoints.csv"};
+        traccc::spacepoint_writer spwriter{
+            traccc::get_event_filename(event, "-spacepoints.csv")};
         for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
             auto spacepoints_per_module = spacepoints_per_event.items[i];
             auto module = spacepoints_per_event.headers[i];
@@ -192,7 +182,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         }
 
         traccc::internal_spacepoint_writer internal_spwriter{
-            std::string("event") + event_number + "-internal_spacepoints.csv"};
+            traccc::get_event_filename(event, "-internal_spacepoints.csv")};
         for (size_t i = 0; i < internal_sp_per_event.items.size(); ++i) {
             auto internal_sp_per_bin = internal_sp_per_event.items[i];
             auto bin = internal_sp_per_event.headers[i].global_index;
