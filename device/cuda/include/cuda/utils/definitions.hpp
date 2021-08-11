@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/// Number of threads per Warp
 #define WARP_SIZE 32
 
 /// Helper macro used for checking @c cudaError_t type return values.

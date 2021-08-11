@@ -24,7 +24,7 @@ struct doublet_finding_helper {
     /// @param bottom is whether it is for middle-bottom or middle-top doublet
     ///
     /// @return boolean value for compatibility
-    static inline  TRACCC_HOST_DEVICE bool isCompatible(
+    static inline TRACCC_HOST_DEVICE bool isCompatible(
         const internal_spacepoint<spacepoint>& sp1,
         const internal_spacepoint<spacepoint>& sp2,
         const seedfinder_config& config, bool bottom);

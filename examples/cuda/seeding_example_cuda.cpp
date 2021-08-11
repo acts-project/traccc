@@ -213,6 +213,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
 
+        // std::cout << time_seeding_cuda.count() << std::endl;
+
         /*----------------------------------
           compare seeds from cpu and cuda
           ----------------------------------*/

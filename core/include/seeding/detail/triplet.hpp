@@ -29,8 +29,8 @@ struct triplet {
     scalar z_vertex;
 };
 
-inline TRACCC_HOST_DEVICE
-bool operator==(const triplet& lhs, const triplet& rhs) {
+inline TRACCC_HOST_DEVICE bool operator==(const triplet& lhs,
+                                          const triplet& rhs) {
     return (lhs.sp1.bin_idx == rhs.sp1.bin_idx &&
             lhs.sp1.sp_idx == rhs.sp1.sp_idx &&
             lhs.sp2.bin_idx == rhs.sp2.bin_idx &&
@@ -39,8 +39,8 @@ bool operator==(const triplet& lhs, const triplet& rhs) {
             lhs.sp3.sp_idx == rhs.sp3.sp_idx);
 }
 
-inline TRACCC_HOST_DEVICE
-bool operator<(const triplet& lhs, const triplet& rhs) {
+inline TRACCC_HOST_DEVICE bool operator<(const triplet& lhs,
+                                         const triplet& rhs) {
     return lhs.weight < rhs.weight;
 }
 

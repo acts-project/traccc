@@ -7,11 +7,15 @@
 
 #pragma once
 
+#include <definitions/common.hpp>
 #include <definitions/primitives.hpp>
 #include <definitions/qualifiers.hpp>
 #include <vector>
 
 #include "container.hpp"
+
+/// epsilon for float varaibles comparison
+#define FLOAT_EPSILON 1e-6
 
 namespace traccc {
 
@@ -33,9 +37,9 @@ struct spacepoint {
 };
 
 inline bool operator==(const spacepoint& lhs, const spacepoint& rhs) {
-    if (std::abs(lhs.global[0] - rhs.global[0]) < 1e-6 &&
-        std::abs(lhs.global[1] - rhs.global[1]) < 1e-6 &&
-        std::abs(lhs.global[2] - rhs.global[2]) < 1e-6) {
+    if (std::abs(lhs.global[0] - rhs.global[0]) < flt_epsilon &&
+        std::abs(lhs.global[1] - rhs.global[1]) < flt_epsilon &&
+        std::abs(lhs.global[2] - rhs.global[2]) < flt_epsilon) {
         return true;
     }
     return false;

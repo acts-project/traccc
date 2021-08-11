@@ -20,8 +20,8 @@ struct sp_location {
     unsigned int sp_idx;
 };
 
-inline TRACCC_HOST_DEVICE
-bool operator==(const sp_location& lhs, const sp_location& rhs) {
+inline TRACCC_HOST_DEVICE bool operator==(const sp_location& lhs,
+                                          const sp_location& rhs) {
     return (lhs.bin_idx == rhs.bin_idx && lhs.sp_idx == rhs.sp_idx);
 }
 
