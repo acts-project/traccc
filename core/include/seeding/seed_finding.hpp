@@ -16,10 +16,14 @@
 #include <seeding/seed_filtering.hpp>
 #include <seeding/triplet_finding.hpp>
 
+#include "utils/algorithm.hpp"
+
 namespace traccc {
 
 /// Seed finding
-struct seed_finding {
+struct seed_finding
+    : public algorithm<const host_internal_spacepoint_container&,
+                       host_seed_container> {
     /// Constructor for the seed finding
     ///
     /// @param config is seed finder configuration parameters
@@ -30,14 +34,10 @@ struct seed_finding {
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    host_seed_container operator()(
-        const host_internal_spacepoint_container& isp_container) {
-        host_seed_container seed_container(
-            {host_seed_container::header_vector(1, 0),
-             host_seed_container::item_vector(1)});
-        this->operator()(isp_container, seed_container);
-
-        return seed_container;
+    output_type operator()(const input_type& i) const override {
+        output_type result;
+        this->operator()(i, result);
+        return result;
     }
 
     /// Callable operator for the seed finding
@@ -45,31 +45,44 @@ struct seed_finding {
     /// void interface
     ///
     /// @return seed_collection is the vector of seeds per event
-    void operator()(const host_internal_spacepoint_container& isp_container,
-                    host_seed_container& seeds) {
+    void operator()(const input_type& i, output_type& o) const {
+        // input
+        const auto& isp_container = i;
+        // output
+        auto& seeds = o;
+
+        // Run the algorithm
+        seeds.headers = host_seed_container::header_vector(1, 0);
+        seeds.items = host_seed_container::item_vector(1);
+
+        const bool bottom = true;
+        const bool top = false;
+
         // iterate over grid bins
         for (size_t i = 0; i < isp_container.headers.size(); ++i) {
             auto& bin_information = isp_container.headers[i];
             auto& spM_collection = isp_container.items[i];
 
             // multiplet statistics for GPU vector size estimation
+            /*
             multiplet_statistics stats({0, 0, 0, 0});
             stats.n_spM = spM_collection.size();
+            */
 
             /// iterate over middle spacepoints
             for (size_t j = 0; j < spM_collection.size(); ++j) {
                 sp_location spM_location({i, j});
 
                 // middule-bottom doublet search
-                auto mid_bot = m_doublet_finding(isp_container, bin_information,
-                                                 spM_location, true);
+                auto mid_bot = m_doublet_finding(
+                    {isp_container, bin_information, spM_location, bottom});
 
                 if (mid_bot.first.empty())
                     continue;
 
                 // middule-top doublet search
-                auto mid_top = m_doublet_finding(isp_container, bin_information,
-                                                 spM_location, false);
+                auto mid_top = m_doublet_finding(
+                    {isp_container, bin_information, spM_location, top});
 
                 if (mid_top.first.empty())
                     continue;
@@ -83,30 +96,38 @@ struct seed_finding {
                     auto& lb = mid_bot.second[k];
 
                     host_triplet_collection triplets =
-                        m_triplet_finding(isp_container, doublet_mb, lb,
-                                          mid_top.first, mid_top.second);
+                        m_triplet_finding({isp_container, doublet_mb, lb,
+                                           mid_top.first, mid_top.second});
 
                     triplets_per_spM.insert(std::end(triplets_per_spM),
                                             triplets.begin(), triplets.end());
                 }
 
                 // seed filtering
-                m_seed_filtering(isp_container, triplets_per_spM, seeds);
+                std::pair<host_triplet_collection&, host_seed_container&>
+                    filter_output(triplets_per_spM, seeds);
+                m_seed_filtering(isp_container, filter_output);
 
+                /*
                 stats.n_mid_bot_doublets += mid_bot.first.size();
                 stats.n_mid_top_doublets += mid_top.first.size();
                 stats.n_triplets += triplets_per_spM.size();
+                */
             }
 
+            /*
             m_multiplet_stats.push_back(stats);
+            */
         }
 
+        /*
         m_seed_stats = seed_statistics({0, 0});
         for (size_t i = 0; i < isp_container.headers.size(); ++i) {
             m_seed_stats.n_internal_sp += isp_container.items[i].size();
         }
-        // m_seed_stats.n_seeds = seeds.size();
+
         m_seed_stats.n_seeds = seeds.items[0].size();
+        */
     }
 
     std::vector<multiplet_statistics> get_multiplet_stats() {
@@ -119,6 +140,8 @@ struct seed_finding {
     doublet_finding m_doublet_finding;
     triplet_finding m_triplet_finding;
     seed_filtering m_seed_filtering;
+
+    // for statistics pre-estimation
     seed_statistics m_seed_stats;
     std::vector<multiplet_statistics> m_multiplet_stats;
 };

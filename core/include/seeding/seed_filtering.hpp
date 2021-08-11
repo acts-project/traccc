@@ -5,17 +5,26 @@
  * Mozilla Public License Version 2.0
  */
 
+#pragma once
+
 #include <edm/seed.hpp>
 #include <seeding/detail/triplet.hpp>
 #include <seeding/seed_selecting_helper.hpp>
 
-#pragma once
+#include "utils/algorithm.hpp"
 
 namespace traccc {
 
 /// Seed filtering to filter out the bad triplets
-struct seed_filtering {
+struct seed_filtering
+    : public algorithm<
+          const host_internal_spacepoint_container&,
+          std::pair<host_triplet_collection&, host_seed_container&> > {
     seed_filtering() {}
+
+    output_type operator()(const input_type& i) const override {
+        // not used
+    }
 
     /// Callable operator for the seed filtering
     ///
@@ -26,9 +35,11 @@ struct seed_filtering {
     ///
     /// @return seeds are the vector of seeds where the new compatible seeds are
     /// added
-    void operator()(const host_internal_spacepoint_container& isp_container,
-                    host_triplet_collection& triplets,
-                    host_seed_container& seeds) {
+    void operator()(const input_type& i, output_type& o) const {
+        const auto& isp_container = i;
+        auto& triplets = o.first;
+        auto& seeds = o.second;
+
         host_seed_collection seeds_per_spM;
 
         for (auto& triplet : triplets) {

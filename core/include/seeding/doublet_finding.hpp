@@ -12,10 +12,17 @@
 #include <seeding/detail/singlet.hpp>
 #include <seeding/doublet_finding_helper.hpp>
 
+#include "utils/algorithm.hpp"
+
 namespace traccc {
 
 /// Doublet finding to search the combinations of two compatible spacepoints
-struct doublet_finding {
+struct doublet_finding
+    : public algorithm<
+          std::tuple<const host_internal_spacepoint_container&,
+                     const bin_information&, const sp_location&, const bool>,
+          std::pair<host_doublet_collection, host_lin_circle_collection> > {
+
     /// Constructor for the doublet finding
     ///
     /// @param seedfinder_config is the configuration parameters
@@ -30,16 +37,10 @@ struct doublet_finding {
     /// @param bottom is whether it is for bottom or top spacepoints
     ///
     /// @return a pair of vectors of doublets and transformed coordinates
-    std::pair<host_doublet_collection, host_lin_circle_collection> operator()(
-        const host_internal_spacepoint_container& isp_container,
-        const bin_information& bin_information, const sp_location& spM_location,
-        bool bottom) {
-        host_doublet_collection doublets;
-        host_lin_circle_collection lin_circles;
-
-        this->operator()(isp_container, bin_information, spM_location, doublets,
-                         lin_circles, bottom);
-        return std::make_pair(doublets, lin_circles);
+    output_type operator()(const input_type& i) const override {
+        output_type result;
+        this->operator()(i, result);
+        return result;
     }
 
     /// Callable operator for doublet finding of a middle spacepoint
@@ -51,11 +52,19 @@ struct doublet_finding {
     /// void interface
     ///
     /// @return a pair of vectors of doublets and transformed coordinates
-    void operator()(const host_internal_spacepoint_container& isp_container,
-                    const bin_information& bin_information,
-                    const sp_location& spM_location,
-                    host_doublet_collection& doublets,
-                    host_lin_circle_collection& lin_circles, bool bottom) {
+    void operator()(const input_type& i, output_type& o) const {
+
+        // input
+        const auto& isp_container = std::get<0>(i);
+        const auto& bin_information = std::get<1>(i);
+        const auto& spM_location = std::get<2>(i);
+        const auto& bottom = std::get<3>(i);
+
+        // output
+        auto& doublets = o.first;
+        auto& lin_circles = o.second;
+
+        // Run the algorithm
         const auto& spM =
             isp_container.items[spM_location.bin_idx][spM_location.sp_idx];
         const auto& rM = spM.radius();
