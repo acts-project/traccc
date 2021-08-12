@@ -14,7 +14,35 @@ include( GNUInstallDirs )
 
 # options
 option(TRACCC_ARRAY_PLUGIN "Build std::array math plugin" On)
-option(TRACCC_EIGEN_PLUGIN "Build Eigen math plugin" On)
+option(TRACCC_EIGEN_PLUGIN "Build Eigen math plugin" Off)
+option(TRACCC_SMATRIX_PLUGIN "Build ROOT/SMatrix math plugin" Off)
+option(TRACCC_VC_ALGEBRA_PLUGIN "Build vc based simd algebra math plugin" Off)
+
+if(TRACCC_CUSTOM_SCALARTYPE)
+    message(STATUS "Building with custom scalar type: " ${TRACCC_CUSTOM_SCALARTYPE})
+    set(ALGEBRA_PLUGIN_CUSTOM_SCALARTYPE ${TRACCC_CUSTOM_SCALARTYPE})
+endif()
+
+if (TRACCC_ARRAY_PLUGIN)
+    set(ALGEBRA_PLUGIN_INCLUDE_ARRAY ON)
+endif()
+
+if (TRACCC_EIGEN_PLUGIN)
+    set(ALGEBRA_PLUGIN_INCLUDE_EIGEN ON)
+    find_package(Eigen3 REQUIRED)
+    include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+endif()
+
+if (TRACCC_SMATRIX_PLUGIN)
+    set(ALGEBRA_PLUGIN_INCLUDE_SMATRIX ON)
+    find_package(ROOT REQUIRED COMPONENTS MathCore)
+    include_directories(SYSTEM ${ROOT_INCLUDE_DIRS})
+endif()
+
+if (TRACCC_VC_ALGEBRA_PLUGIN)
+    set(ALGEBRA_PLUGIN_INCLUDE_VC ON)
+endif()
+
 
 # Explicitly set the output directory for the binaries. Such that if this
 # project is included by another project, the main project's configuration would
@@ -39,7 +67,7 @@ add_subdirectory(io)
 add_subdirectory(plugins)
 add_subdirectory(examples)
 if(BUILD_TESTING)
-  #add_subdirectory(tests)
+  add_subdirectory(tests)
 endif()
 
 # Build the necessary externals.
