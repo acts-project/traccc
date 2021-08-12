@@ -14,3 +14,4 @@ option(INSTALL_GTEST "Flag controlling the installation of GTest" OFF)
 # Add the external submodules.
 add_subdirectory(dfelibs)
 add_subdirectory(googletest)
+add_subdirectory(algebra-plugins)

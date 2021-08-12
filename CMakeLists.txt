@@ -12,6 +12,10 @@ project(traccc VERSION 0.0 LANGUAGES CXX)
 include( CTest )
 include( GNUInstallDirs )
 
+# options
+option(TRACCC_ARRAY_PLUGIN "Build std::array math plugin" On)
+option(TRACCC_EIGEN_PLUGIN "Build Eigen math plugin" On)
+
 # Explicitly set the output directory for the binaries. Such that if this
 # project is included by another project, the main project's configuration would
 # win out.
@@ -32,9 +36,10 @@ include( traccc-compiler-options )
 # Build the traccc code.
 add_subdirectory(core)
 add_subdirectory(io)
+add_subdirectory(plugins)
 add_subdirectory(examples)
 if(BUILD_TESTING)
-   add_subdirectory(tests)
+  #add_subdirectory(tests)
 endif()
 
 # Build the necessary externals.
