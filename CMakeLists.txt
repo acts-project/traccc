@@ -12,7 +12,7 @@ project(traccc VERSION 0.0 LANGUAGES CXX)
 include( CTest )
 include( GNUInstallDirs )
 
-# options
+# option for algebra plugins
 set(TRACCC_ALGEBRA_PLUGIN array CACHE STRING "") # eigen / smatrix / vc
 add_definitions( -DALGEBRA_${TRACCC_ALGEBRA_PLUGIN} )
 

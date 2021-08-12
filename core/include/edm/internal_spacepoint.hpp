@@ -68,13 +68,13 @@ struct internal_spacepoint {
         m_varianceZ = sp.m_varianceZ;
     }
 
-    const float& x() const { return m_x; }
-    const float& y() const { return m_y; }
-    const float& z() const { return m_z; }
-    const float& radius() const { return m_r; }
-    float phi() const { return atan2f(m_y, m_x); }
-    const float& varianceR() const { return m_varianceR; }
-    const float& varianceZ() const { return m_varianceZ; }
+    const scalar& x() const { return m_x; }
+    const scalar& y() const { return m_y; }
+    const scalar& z() const { return m_z; }
+    const scalar& radius() const { return m_r; }
+    scalar phi() const { return atan2f(m_y, m_x); }
+    const scalar& varianceR() const { return m_varianceR; }
+    const scalar& varianceZ() const { return m_varianceZ; }
     const spacepoint& sp() const { return m_sp; }
 };
 
