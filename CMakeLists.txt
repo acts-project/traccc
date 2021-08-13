@@ -12,15 +12,6 @@ project(traccc VERSION 0.0 LANGUAGES CXX)
 include( CTest )
 include( GNUInstallDirs )
 
-# option for algebra plugins
-set(TRACCC_ALGEBRA_PLUGIN array CACHE STRING "") # eigen / smatrix / vc
-add_definitions( -DALGEBRA_${TRACCC_ALGEBRA_PLUGIN} )
-
-if(TRACCC_CUSTOM_SCALARTYPE)
-    message(STATUS "Building with custom scalar type: " ${TRACCC_CUSTOM_SCALARTYPE})
-    set(ALGEBRA_PLUGIN_CUSTOM_SCALARTYPE ${TRACCC_CUSTOM_SCALARTYPE})
-endif()
-
 # Explicitly set the output directory for the binaries. Such that if this
 # project is included by another project, the main project's configuration would
 # win out.
@@ -37,6 +28,16 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 # Include the traccc CMake code.
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-compiler-options )
+
+# option for algebra plugins ( array[default] / eigen / smatrix / vc )
+set(TRACCC_ALGEBRA_PLUGIN array CACHE STRING "") 
+add_definitions( -DALGEBRA_${TRACCC_ALGEBRA_PLUGIN} )
+
+# option for algebra scalar type ( double[default] / float )
+if(TRACCC_CUSTOM_SCALARTYPE)
+    message(STATUS "Building with custom scalar type: " ${TRACCC_CUSTOM_SCALARTYPE})
+    set(ALGEBRA_PLUGIN_CUSTOM_SCALARTYPE ${TRACCC_CUSTOM_SCALARTYPE})
+endif()
 
 # Build the traccc code.
 add_subdirectory(core)
