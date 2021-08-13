@@ -76,8 +76,8 @@ struct seed_filtering
                           return std::abs(seed1.z_vertex) <
                                  std::abs(seed2.z_vertex);
                           /*
-                          float seed1_sum = 0;
-                          float seed2_sum = 0;
+                          scalar seed1_sum = 0;
+                          scalar seed2_sum = 0;
                           seed1_sum += pow(seed1.spB.y(),2) +
                           pow(seed1.spB.z(),2); seed1_sum +=
                           pow(seed1.spM.y(),2) + pow(seed1.spM.z(),2); seed1_sum

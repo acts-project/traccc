@@ -7,9 +7,11 @@
 
 #pragma once
 
+#include <definitions/primitives.hpp>
+
 namespace traccc {
 
 // epsilon for float variables
-static constexpr float flt_epsilon = 1e-6;
+static constexpr scalar float_epsilon = 1e-6;
 
 }  // namespace traccc

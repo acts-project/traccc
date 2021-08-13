@@ -18,8 +18,8 @@ struct seed {
     spacepoint spB;
     spacepoint spM;
     spacepoint spT;
-    float weight;
-    float z_vertex;
+    scalar weight;
+    scalar z_vertex;
 
     TRACCC_HOST_DEVICE
     seed& operator=(const seed& aSeed) {

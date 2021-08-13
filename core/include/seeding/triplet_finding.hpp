@@ -110,11 +110,11 @@ struct triplet_finding
             // if two compatible seeds with high distance in r are found,
             // compatible seeds span 5 layers
             // -> very good seed
-            std::vector<float> compatibleSeedR;
-            float lowerLimitCurv = current_triplet.curvature -
-                                   m_filter_config.deltaInvHelixDiameter;
-            float upperLimitCurv = current_triplet.curvature +
-                                   m_filter_config.deltaInvHelixDiameter;
+            std::vector<scalar> compatibleSeedR;
+            scalar lowerLimitCurv = current_triplet.curvature -
+                                    m_filter_config.deltaInvHelixDiameter;
+            scalar upperLimitCurv = current_triplet.curvature +
+                                    m_filter_config.deltaInvHelixDiameter;
 
             for (size_t j = 0; j < triplets.size(); ++j) {
                 if (i == j) {
@@ -129,7 +129,7 @@ struct triplet_finding
 
                 // compared top SP should have at least deltaRMin distance
                 const auto& otherTop_r = other_spT.radius();
-                float deltaR = currentTop_r - otherTop_r;
+                scalar deltaR = currentTop_r - otherTop_r;
                 if (std::abs(deltaR) < m_filter_config.deltaRMin) {
                     continue;
                 }
@@ -146,7 +146,7 @@ struct triplet_finding
                 }
 
                 bool newCompSeed = true;
-                for (float previousDiameter : compatibleSeedR) {
+                for (scalar previousDiameter : compatibleSeedR) {
                     // original ATLAS code uses higher min distance for 2nd
                     // found compatible seed (20mm instead of 5mm) add new
                     // compatible seed only if distance larger than rmin to all

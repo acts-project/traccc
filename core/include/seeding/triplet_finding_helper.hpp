@@ -43,16 +43,16 @@ bool triplet_finding_helper::isCompatible(
     scalar& curvature, scalar& impact_parameter) {
     // add errors of spB-spM and spM-spT pairs and add the correlation term
     // for errors on spM
-    float error2 = lt.Er() + lb.Er() +
-                   2 *
-                       (lb.cotTheta() * lt.cotTheta() * spM.varianceR() +
-                        spM.varianceZ()) *
-                       lb.iDeltaR() * lt.iDeltaR();
+    scalar error2 = lt.Er() + lb.Er() +
+                    2 *
+                        (lb.cotTheta() * lt.cotTheta() * spM.varianceR() +
+                         spM.varianceZ()) *
+                        lb.iDeltaR() * lt.iDeltaR();
 
-    float deltaCotTheta = lb.cotTheta() - lt.cotTheta();
-    float deltaCotTheta2 = deltaCotTheta * deltaCotTheta;
-    float error;
-    float dCotThetaMinusError2;
+    scalar deltaCotTheta = lb.cotTheta() - lt.cotTheta();
+    scalar deltaCotTheta2 = deltaCotTheta * deltaCotTheta;
+    scalar error;
+    scalar dCotThetaMinusError2;
 
     // if the error is larger than the difference in theta, no need to
     // compare with scattering
@@ -72,17 +72,17 @@ bool triplet_finding_helper::isCompatible(
     }
 
     // protects against division by 0
-    float dU = lt.U() - lb.U();
+    scalar dU = lt.U() - lb.U();
     if (dU == 0.) {
         return false;
     }
 
     // A and B are evaluated as a function of the circumference parameters
     // x_0 and y_0
-    float A = (lt.V() - lb.V()) / dU;
-    float S2 = 1. + A * A;
-    float B = lb.V() - A * lb.U();
-    float B2 = B * B;
+    scalar A = (lt.V() - lb.V()) / dU;
+    scalar S2 = 1. + A * A;
+    scalar B = lb.V() - A * lb.U();
+    scalar B2 = B * B;
     // sqrt(S2)/B = 2 * helixradius
     // calculated radius must not be smaller than minimum radius
     if (S2 < B2 * config.minHelixDiameter2) {
@@ -90,19 +90,19 @@ bool triplet_finding_helper::isCompatible(
     }
 
     // 1/helixradius: (B/sqrt(S2))*2 (we leave everything squared)
-    float iHelixDiameter2 = B2 / S2;
+    scalar iHelixDiameter2 = B2 / S2;
     // calculate scattering for p(T) calculated from seed curvature
-    float pT2scatter = 4 * iHelixDiameter2 * config.pT2perRadius;
+    scalar pT2scatter = 4 * iHelixDiameter2 * config.pT2perRadius;
     // if pT > maxPtScattering, calculate allowed scattering angle using
     // maxPtScattering instead of pt.
-    float pT = config.pTPerHelixRadius * std::sqrt(S2 / B2) / 2.;
+    scalar pT = config.pTPerHelixRadius * std::sqrt(S2 / B2) / 2.;
     if (pT > config.maxPtScattering) {
-        float pTscatter = config.highland / config.maxPtScattering;
+        scalar pTscatter = config.highland / config.maxPtScattering;
         pT2scatter = pTscatter * pTscatter;
     }
     // convert p(T) to p scaling by sin^2(theta) AND scale by 1/sin^4(theta)
     // from rad to deltaCotTheta
-    float p2scatter = pT2scatter * iSinTheta2;
+    scalar p2scatter = pT2scatter * iSinTheta2;
     // if deltaTheta larger than allowed scattering for calculated pT, skip
     if ((deltaCotTheta2 - error2 > 0) &&
         (dCotThetaMinusError2 >

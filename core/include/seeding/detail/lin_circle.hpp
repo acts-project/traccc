@@ -17,35 +17,35 @@ namespace traccc {
 /// Item: transformed coordinate of doublet of middle-bottom or middle-top
 struct lin_circle {
     // z origin
-    float m_Zo;
+    scalar m_Zo;
     // cotangent of pitch angle
-    float m_cotTheta;
+    scalar m_cotTheta;
     // reciprocal of square of distance between two spacepoints
-    float m_iDeltaR;
+    scalar m_iDeltaR;
     // error term for sp-pair without correlation of middle space point
-    float m_Er;
+    scalar m_Er;
     // u component in transformed coordinate
-    float m_U;
+    scalar m_U;
     // v component in transformed coordinate
-    float m_V;
+    scalar m_V;
 
     TRACCC_HOST_DEVICE
-    const float& Zo() const { return m_Zo; }
+    const scalar& Zo() const { return m_Zo; }
 
     TRACCC_HOST_DEVICE
-    const float& cotTheta() const { return m_cotTheta; }
+    const scalar& cotTheta() const { return m_cotTheta; }
 
     TRACCC_HOST_DEVICE
-    const float& iDeltaR() const { return m_iDeltaR; }
+    const scalar& iDeltaR() const { return m_iDeltaR; }
 
     TRACCC_HOST_DEVICE
-    const float& Er() const { return m_Er; }
+    const scalar& Er() const { return m_Er; }
 
     TRACCC_HOST_DEVICE
-    const float& U() const { return m_U; }
+    const scalar& U() const { return m_U; }
 
     TRACCC_HOST_DEVICE
-    const float& V() const { return m_V; }
+    const scalar& V() const { return m_V; }
 };
 
 /// Container of lin_circle belonging to one detector module

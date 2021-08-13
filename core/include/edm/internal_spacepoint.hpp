@@ -90,25 +90,25 @@ struct internal_spacepoint {
     }
 
     TRACCC_HOST_DEVICE
-    const float& x() const { return m_x; }
+    const scalar& x() const { return m_x; }
 
     TRACCC_HOST_DEVICE
-    const float& y() const { return m_y; }
+    const scalar& y() const { return m_y; }
 
     TRACCC_HOST_DEVICE
-    const float& z() const { return m_z; }
+    const scalar& z() const { return m_z; }
 
     TRACCC_HOST_DEVICE
-    const float& radius() const { return m_r; }
+    const scalar& radius() const { return m_r; }
 
     TRACCC_HOST_DEVICE
-    float phi() const { return atan2f(m_y, m_x); }
+    scalar phi() const { return atan2f(m_y, m_x); }
 
     TRACCC_HOST_DEVICE
-    const float& varianceR() const { return m_varianceR; }
+    const scalar& varianceR() const { return m_varianceR; }
 
     TRACCC_HOST_DEVICE
-    const float& varianceZ() const { return m_varianceZ; }
+    const scalar& varianceZ() const { return m_varianceZ; }
 
     TRACCC_HOST_DEVICE
     const spacepoint& sp() const { return m_sp; }

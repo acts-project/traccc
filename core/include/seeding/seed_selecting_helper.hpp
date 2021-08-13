@@ -26,7 +26,7 @@ struct seed_selecting_helper {
         const internal_spacepoint<spacepoint>& spM,
         const internal_spacepoint<spacepoint>& spB,
         const internal_spacepoint<spacepoint>& spT, scalar& triplet_weight) {
-        float weight = 0;
+        scalar weight = 0;
 
         if (spB.radius() > filter_config.good_spB_min_radius) {
             weight = filter_config.good_spB_weight_increase;
