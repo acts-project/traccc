@@ -1,15 +1,13 @@
 add_library(traccc_algebra_plugins INTERFACE)
 
 # array
-if (${ALGEBRA_PLUGIN_INCLUDE_ARRAY})
-  target_compile_definitions(traccc_algebra_plugins INTERFACE -DALGEBRA_ARRAY)
+if (${ALGEBRA_PLUGIN_INCLUDE_ARRAY})  
   target_link_libraries(traccc_algebra_plugins INTERFACE traccc::array)  
   add_subdirectory(array)
 endif()
   
 # eigen  
 if (${ALGEBRA_PLUGIN_INCLUDE_EIGEN})
-  target_compile_definitions(traccc_algebra_plugins INTERFACE -DALGEBRA_EIGEN)
   target_link_libraries(traccc_algebra_plugins INTERFACE traccc::eigen)  
   add_subdirectory(eigen)
 endif()

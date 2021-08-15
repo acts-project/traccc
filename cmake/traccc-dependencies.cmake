@@ -13,4 +13,3 @@ include(FetchContent)
 # Include the CMake scripts for vecmem and the ACTS core.
 include(traccc-vecmem)
 include(traccc-acts)
-include(traccc-algebra-plugins)
