@@ -201,7 +201,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             // The algorithmic code part: start
             traccc::host_cell_collection cells_per_module(
                 cells_per_event.items[i]);
-	    
+
             traccc::cluster_collection clusters_per_module =
                 cc({cells_per_module, module});
             clusters_per_module.position_from_cell = module.pixel;
