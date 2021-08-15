@@ -27,9 +27,6 @@ namespace traccc {
 class component_connection
     : public algorithm<
           std::pair<const host_cell_collection&, const cell_module&>,
-          cluster_collection>,
-      public algorithm<
-          std::pair<const device_cell_collection&, const cell_module&>,
           cluster_collection> {
 
     public:
@@ -51,7 +48,7 @@ class component_connection
         const override {
         const host_cell_collection& cells = i.first;
         const cell_module& module = i.second;
-        return this->operator()<vecmem::vector>(cells, module);
+        return this->operator()(cells, module);
     }
 
     /// Callable operator for the connected component, based on one single
@@ -69,72 +66,28 @@ class component_connection
         cluster_collection& clusters) const override {
         const host_cell_collection& cells = i.first;
         const cell_module& module = i.second;
-        this->operator()<vecmem::vector>(cells, module, clusters);
-    }
-
-    /// @}
-
-    /// @name Operators to use in device code
-    /// @{
-
-    /// Callable operator for the connected component, based on one single
-    /// module
-    ///
-    /// This version of the function is meant to be used in device code.
-    ///
-    /// @param cells are the input cells into the connected component, they are
-    ///              per module and unordered
-    /// @param module The description of the module that the cells belong to
-    ///
-    /// c++20 piping interface:
-    /// @return a cluster collection
-    ///
-    cluster_collection operator()(
-        const std::pair<const device_cell_collection&, const cell_module&>& i)
-        const override {
-        const device_cell_collection& cells = i.first;
-        const cell_module& module = i.second;
-        return this->operator()<vecmem::device_vector>(cells, module);
-    }
-
-    /// Callable operator for the connected component, based on one single
-    /// module
-    ///
-    /// @param cells are the input cells into the connected component, they are
-    ///              per module and unordered
-    /// @param module The description of the module that the cells belong to
-    /// @param clusters[in,out] are the output clusters
-    ///
-    /// void interface
-    ///
-    void operator()(
-        const std::pair<const device_cell_collection&, const cell_module&>& i,
-        cluster_collection& clusters) const override {
-        const device_cell_collection& cells = i.first;
-        const cell_module& module = i.second;
-        this->operator()<vecmem::device_vector>(cells, module, clusters);
+        this->operator()(cells, module, clusters);
     }
 
     private:
     /// Implementation for the public cell collection creation operators
-    template <template <typename> class vector_type>
-    cluster_collection operator()(const cell_collection<vector_type>& cells,
+    template <typename cell_collection>
+    cluster_collection operator()(const cell_collection& cells,
                                   const cell_module& module) const {
         cluster_collection clusters;
         clusters.placement = module.placement;
-        this->operator()<vector_type>(cells, module, clusters);
+        this->operator()(cells, module, clusters);
         return clusters;
     }
 
     /// Implementation for the public cell collection creation operators
-    template <template <typename> class vector_type>
-    void operator()(const cell_collection<vector_type>& cells,
-                    const cell_module& module,
+    template <typename cell_collection>
+    void operator()(const cell_collection& cells, const cell_module& module,
                     cluster_collection& clusters) const {
         // Assign the module id
         clusters.module = module.module;
         // Run the algorithm
-        auto connected_cells = detail::sparse_ccl<vector_type>(cells);
+        auto connected_cells = detail::sparse_ccl(cells);
         std::vector<cluster> cluster_items(std::get<0>(connected_cells),
                                            cluster{});
         unsigned int icell = 0;

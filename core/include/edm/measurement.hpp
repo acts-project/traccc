@@ -22,17 +22,13 @@ struct measurement {
     variance2 variance = {0., 0.};
 };
 
-/// Container of measurements belonging to one detector module
-template <template <typename> class vector_t>
-using measurement_collection = vector_t<measurement>;
-
 /// Convenience declaration for the measurement collection type to use in host
 /// code
-using host_measurement_collection = measurement_collection<vecmem::vector>;
+using host_measurement_collection = host_collection<measurement>;
+
 /// Convenience declaration for the measurement collection type to use in device
 /// code
-using device_measurement_collection =
-    measurement_collection<vecmem::device_vector>;
+using device_measurement_collection = device_collection<measurement>;
 
 /// Convenience declaration for the measurement container type to use in host
 /// code

@@ -19,17 +19,13 @@ struct spacepoint {
     variance3 variance = {0., 0., 0.};
 };
 
-/// Container of spacepoints belonging to one detector module
-template <template <typename> class vector_t>
-using spacepoint_collection = vector_t<spacepoint>;
-
 /// Convenience declaration for the spacepoint collection type to use in host
 /// code
-using host_spacepoint_collection = spacepoint_collection<vecmem::vector>;
+using host_spacepoint_collection = host_collection<spacepoint>;
+
 /// Convenience declaration for the spacepoint collection type to use in device
 /// code
-using device_spacepoint_collection =
-    spacepoint_collection<vecmem::device_vector>;
+using device_spacepoint_collection = device_collection<spacepoint>;
 
 /// Convenience declaration for the spacepoint container type to use in host
 /// code

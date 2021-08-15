@@ -10,6 +10,7 @@
 // traccc include(s).
 #include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
+#include "edm/collection.hpp"
 #include "edm/container.hpp"
 #include "geometry/pixel_segmentation.hpp"
 
@@ -40,14 +41,11 @@ struct cell {
     scalar time = 0.;
 };
 
-/// Container of cells belonging to one detector module
-template <template <typename> class vector_t>
-using cell_collection = vector_t<cell>;
-
 /// Convenience declaration for the cell collection type to use in host code
-using host_cell_collection = cell_collection<vecmem::vector>;
+using host_cell_collection = host_collection<cell>;
+
 /// Convenience declaration for the cell collection type to use in device code
-using device_cell_collection = cell_collection<vecmem::device_vector>;
+using device_cell_collection = device_collection<cell>;
 
 /// Header information for all of the cells in a specific detector module
 ///

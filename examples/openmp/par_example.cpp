@@ -92,11 +92,11 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
 #pragma omp critical
             {
                 measurements_per_event.items.push_back(
-                    std::move(measurements_per_module));
+                    std::move(measurements_per_module.items));
                 measurements_per_event.headers.push_back(module);
 
                 spacepoints_per_event.items.push_back(
-                    std::move(spacepoints_per_module));
+                    std::move(spacepoints_per_module.items));
                 spacepoints_per_event.headers.push_back(module.module);
             }
         }

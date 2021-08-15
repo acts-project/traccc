@@ -53,7 +53,7 @@ struct spacepoint_formation
         const host_measurement_collection& measurements = i.second;
         // Run the algorithm
         spacepoints.reserve(measurements.size());
-        for (const auto& m : measurements) {
+        for (const auto& m : measurements.items) {
             spacepoint s;
             point3 local_3d = {m.local[0], m.local[1], 0.};
             s.global = module.placement.point_to_global(local_3d);

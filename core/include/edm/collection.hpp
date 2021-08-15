@@ -12,6 +12,8 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
+#include "definitions/qualifiers.hpp"
+
 namespace traccc {
 
 /// Collection describing objects in a given event
@@ -38,6 +40,68 @@ class collection {
     using item_vector = vector_type<item_t>;
 
     /// @}
+
+    /**
+     * @brief The size type of this container, which is the type by which
+     * its elements are indexed.
+     */
+    using size_type = typename item_vector::size_type;
+
+    /**
+     * @brief Standard constructor.
+     *
+     */
+    TRACCC_HOST
+    collection(item_vector&& iv) : items(iv) {}
+
+    /**
+     * @brief Argument-forwarding constructor.
+     *
+     * This constructor forwards its arguments to item vector.
+     * Obviously, this requires the arguments to be quite general, but this
+     * constructor can be useful when initializing a collection for a
+     * specific vecmem memory resource.
+     */
+    template <class... args>
+    TRACCC_HOST collection(args&&... a) : items(a...) {}
+
+    /**
+     * @brief Mutable element accessor.
+     */
+    TRACCC_HOST_DEVICE
+    item_t& operator[](size_type i) { return items.at(i); }
+
+    /**
+     * @brief Immutable element accessor.
+     */
+    TRACCC_HOST_DEVICE
+    const item_t& operator[](size_type i) const { return items.at(i); }
+
+    /**
+     * @brief Return the size of the collection.
+     */
+    TRACCC_HOST_DEVICE
+    size_type size(void) const { return items.size(); }
+
+    /**
+     * @brief Reserve space in both vectors.
+     */
+    TRACCC_HOST
+    void reserve(size_type s) { items.reserve(s); }
+
+    /**
+     * @brief Push an element into the collection.
+     */
+    template <typename v_prime>
+    TRACCC_HOST void push_back(v_prime&& new_item) {
+        items.push_back(std::forward<item_t>(new_item));
+    }
+
+    TRACCC_HOST_DEVICE
+    auto begin() { return items.begin(); }
+
+    TRACCC_HOST_DEVICE
+    auto end() { return items.end(); }
 
     /// All objects in the event
     item_vector items;

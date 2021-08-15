@@ -177,7 +177,7 @@ inline host_cell_container read_cells(
                           return a.channel1 < b.channel1;
                       });
             result.headers.push_back(module);
-            result.items.push_back(cells);
+            result.items.push_back(cells.items);
             // Clear for next round
             cells = host_cell_collection(&resource);
             module = cell_module();
@@ -205,7 +205,7 @@ inline host_cell_container read_cells(
     });
 
     result.headers.push_back(module);
-    result.items.push_back(cells);
+    result.items.push_back(cells.items);
 
     assert(result.items.size() == result.headers.size());
 
