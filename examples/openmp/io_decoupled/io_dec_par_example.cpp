@@ -44,13 +44,16 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 
 #pragma omp parallel for
         for (size_t i = 0; i < cells_per_event.items.size(); ++i) {
-            auto &module = cells_per_event.headers[i];
+            auto& module = cells_per_event.headers[i];
             module.pixel =
                 traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
 
             // The algorithmic code part: start
+            traccc::host_cell_collection cells_per_module(
+                cells_per_event.items[i]);
+
             traccc::cluster_collection clusters_per_module =
-                cc({cells_per_event.items[i], cells_per_event.headers[i]});
+                cc({cells_per_module, module});
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
@@ -98,7 +101,7 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 }
 
 // The main routine
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 
     if (argc < 4) {
         std::cout << "Not enough arguments, minimum requirement: " << std::endl;

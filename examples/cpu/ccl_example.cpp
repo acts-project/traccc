@@ -76,8 +76,10 @@ void print_statistics(const traccc::host_cell_container& data) {
 void run_on_event(traccc::component_connection& cc,
                   const traccc::host_cell_container& data) {
     for (std::size_t i = 0; i < data.headers.size(); ++i) {
+        traccc::host_cell_collection cells_per_module(data.items[i]);
+
         traccc::cluster_collection clusters_per_module =
-            cc({data.items.at(i), data.headers.at(i)});
+            cc({cells_per_module, data.headers.at(i)});
     }
 }
 
