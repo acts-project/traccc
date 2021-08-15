@@ -10,3 +10,6 @@
 [submodule "data"]
 	path = data
 	url = https://gitlab.cern.ch/acts/traccc-data.git
+[submodule "extern/algebra-plugins"]
+	path = extern/algebra-plugins
+	url = https://github.com/acts-project/algebra-plugins.git

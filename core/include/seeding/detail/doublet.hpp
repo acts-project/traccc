@@ -6,7 +6,8 @@
  */
 
 #pragma once
-#include <seeding/detail/lin_circle.hpp>
+
+//#include <seeding/detail/lin_circle.hpp>
 #include <seeding/detail/singlet.hpp>
 
 namespace traccc {
@@ -21,8 +22,8 @@ struct doublet {
     sp_location sp2;
 };
 
-__CUDA_HOST_DEVICE__
-bool operator==(const doublet& lhs, const doublet& rhs) {
+inline TRACCC_HOST_DEVICE bool operator==(const doublet& lhs,
+                                          const doublet& rhs) {
     return (lhs.sp1.bin_idx == rhs.sp1.bin_idx &&
             lhs.sp1.sp_idx == rhs.sp1.sp_idx &&
             lhs.sp2.bin_idx == rhs.sp2.bin_idx &&
