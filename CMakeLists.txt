@@ -29,6 +29,12 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-compiler-options )
 
+# Algebra plugins
+set(ALGEBRA_PLUGIN_INCLUDE_ARRAY ON CACHE INTERNAL "")
+set(ALGEBRA_PLUGIN_INCLUDE_EIGEN ON CACHE INTERNAL "")
+set(ALGEBRA_PLUGIN_INCLUDE_SMATRIX OFF CACHE INTERNAL "")
+set(ALGEBRA_PLUGIN_INCLUDE_VC OFF CACHE INTERNAL "")
+
 # option for algebra scalar type ( double[default] / float )
 if(TRACCC_CUSTOM_SCALARTYPE)
     message(STATUS "Building with custom scalar type: " ${TRACCC_CUSTOM_SCALARTYPE})
