@@ -21,9 +21,7 @@ namespace eigen {
 template <typename T, std::size_t N>
 using array = Eigen::Matrix<T, N, 1>;
 using transform3 = algebra::eigen::transform3;
-    
+
 }  // namespace eigen
-    
+
 }  // namespace traccc
-
-
