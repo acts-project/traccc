@@ -40,10 +40,10 @@ struct spacepoint_grouping {
     void operator()(const host_spacepoint_container& sp_container,
                     host_internal_spacepoint_container& internal_sp_container) {
         // get region of interest (or full detector if configured accordingly)
-        float phiMin = m_config.phiMin;
-        float phiMax = m_config.phiMax;
-        float zMin = m_config.zMin;
-        float zMax = m_config.zMax;
+        scalar phiMin = m_config.phiMin;
+        scalar phiMax = m_config.phiMax;
+        scalar zMin = m_config.zMin;
+        scalar zMax = m_config.zMax;
 
         // sort by radius
         // add magnitude of beamPos to rMax to avoid excluding measurements
@@ -56,16 +56,16 @@ struct spacepoint_grouping {
 
         for (auto& sp_vec : sp_container.items) {
             for (auto& sp : sp_vec) {
-                float spX = sp.global[0];
-                float spY = sp.global[1];
-                float spZ = sp.global[2];
-                float varR = sp.variance[0];  // Need a check
-                float varZ = sp.variance[1];
+                scalar spX = sp.global[0];
+                scalar spY = sp.global[1];
+                scalar spZ = sp.global[2];
+                scalar varR = sp.variance[0];  // Need a check
+                scalar varZ = sp.variance[1];
 
                 if (spZ > zMax || spZ < zMin) {
                     continue;
                 }
-                float spPhi = std::atan2(spY, spX);
+                scalar spPhi = std::atan2(spY, spX);
                 if (spPhi > phiMax || spPhi < phiMin) {
                     continue;
                 }
@@ -151,20 +151,20 @@ spacepoint_grouping::spacepoint_grouping(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config)
     : m_config(config), m_grid_config(grid_config) {
     // calculate circle intersections of helix and max detector radius
-    float minHelixRadius =
+    scalar minHelixRadius =
         grid_config.minPt / (300. * grid_config.bFieldInZ);  // in mm
-    float maxR2 = grid_config.rMax * grid_config.rMax;
-    float xOuter = maxR2 / (2 * minHelixRadius);
-    float yOuter = std::sqrt(maxR2 - xOuter * xOuter);
-    float outerAngle = std::atan(xOuter / yOuter);
+    scalar maxR2 = grid_config.rMax * grid_config.rMax;
+    scalar xOuter = maxR2 / (2 * minHelixRadius);
+    scalar yOuter = std::sqrt(maxR2 - xOuter * xOuter);
+    scalar outerAngle = std::atan(xOuter / yOuter);
     // intersection of helix and max detector radius minus maximum R distance
     // from middle SP to top SP
-    float innerAngle = 0;
+    scalar innerAngle = 0;
     if (grid_config.rMax > grid_config.deltaRMax) {
-        float innerCircleR2 = (grid_config.rMax - grid_config.deltaRMax) *
-                              (grid_config.rMax - grid_config.deltaRMax);
-        float xInner = innerCircleR2 / (2 * minHelixRadius);
-        float yInner = std::sqrt(innerCircleR2 - xInner * xInner);
+        scalar innerCircleR2 = (grid_config.rMax - grid_config.deltaRMax) *
+                               (grid_config.rMax - grid_config.deltaRMax);
+        scalar xInner = innerCircleR2 / (2 * minHelixRadius);
+        scalar yInner = std::sqrt(innerCircleR2 - xInner * xInner);
         innerAngle = std::atan(xInner / yInner);
     }
 
@@ -181,7 +181,7 @@ spacepoint_grouping::spacepoint_grouping(
     // seeds
     // FIXME: zBinSize must include scattering
 
-    float zBinSize = grid_config.cotThetaMax * grid_config.deltaRMax;
+    scalar zBinSize = grid_config.cotThetaMax * grid_config.deltaRMax;
     int zBins = std::floor((grid_config.zMax - grid_config.zMin) / zBinSize);
     Acts::detail::Axis<Acts::detail::AxisType::Equidistant,
                        Acts::detail::AxisBoundaryType::Bound>

@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "definitions/qualifiers.hpp"
 #include "edm/container.hpp"
-#include "utils/arch_qualifiers.hpp"
 
 namespace traccc {
 
@@ -20,8 +20,8 @@ struct sp_location {
     unsigned int sp_idx;
 };
 
-__CUDA_HOST_DEVICE__
-bool operator==(const sp_location& lhs, const sp_location& rhs) {
+inline TRACCC_HOST_DEVICE bool operator==(const sp_location& lhs,
+                                          const sp_location& rhs) {
     return (lhs.bin_idx == rhs.bin_idx && lhs.sp_idx == rhs.sp_idx);
 }
 

@@ -111,7 +111,8 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
             auto module = measurements_per_event.headers[i];
             for (const auto &measurement : measurements_per_module) {
                 const auto &local = measurement.local;
-                mwriter.append({module.module, local[0], local[1], 0., 0.});
+                mwriter.append({module.module, "", local[0], local[1], 0., 0.,
+                                0., 0., 0., 0., 0., 0.});
             }
         }
 

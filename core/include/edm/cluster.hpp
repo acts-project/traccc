@@ -22,7 +22,7 @@ struct cluster {
 };
 
 using position_estimation = std::function<vector2(channel_id, channel_id)>;
-using signal_modeling = std::function<float(float)>;
+using signal_modeling = std::function<scalar(scalar)>;
 
 /// A cluster collection which carries the geometry_id, the clusters
 /// and the additional information to create the cluster position
@@ -37,11 +37,13 @@ struct cluster_collection {
 
     position_estimation position_from_cell = [](channel_id ch0,
                                                 channel_id ch1) -> vector2 {
-        return {static_cast<float>(ch0), static_cast<float>(ch1)};
+        return {static_cast<scalar>(ch0), static_cast<scalar>(ch1)};
     };
 
-    float threshold = 0.;
-    signal_modeling signal = [](float signal_in) -> float { return signal_in; };
+    scalar threshold = 0.;
+    signal_modeling signal = [](scalar signal_in) -> scalar {
+        return signal_in;
+    };
 };
 
 using cluster_container = std::vector<cluster_collection>;

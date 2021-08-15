@@ -7,8 +7,12 @@
 
 #pragma once
 
+#include <definitions/common.hpp>
+#include <definitions/primitives.hpp>
+#include <definitions/qualifiers.hpp>
 #include <vector>
 
+#include "collection.hpp"
 #include "container.hpp"
 
 namespace traccc {
@@ -17,7 +21,27 @@ namespace traccc {
 struct spacepoint {
     point3 global = {0., 0., 0.};
     variance3 variance = {0., 0., 0.};
+
+    TRACCC_HOST_DEVICE
+    const scalar& x() const { return global[0]; }
+    TRACCC_HOST_DEVICE
+    const scalar& y() const { return global[1]; }
+    TRACCC_HOST_DEVICE
+    const scalar& z() const { return global[2]; }
+    TRACCC_HOST_DEVICE
+    scalar radius() const {
+        return std::sqrt(global[0] * global[0] + global[1] * global[1]);
+    }
 };
+
+inline bool operator==(const spacepoint& lhs, const spacepoint& rhs) {
+    if (std::abs(lhs.global[0] - rhs.global[0]) < float_epsilon &&
+        std::abs(lhs.global[1] - rhs.global[1]) < float_epsilon &&
+        std::abs(lhs.global[2] - rhs.global[2]) < float_epsilon) {
+        return true;
+    }
+    return false;
+}
 
 /// Convenience declaration for the spacepoint collection type to use in host
 /// code

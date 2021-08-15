@@ -29,6 +29,11 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-compiler-options )
 
+# Set GPU-related options
+if( TRACCC_BUILD_CUDA )
+  add_subdirectory( device/cuda )
+endif()
+
 # Build the traccc code.
 add_subdirectory(core)
 add_subdirectory(io)
