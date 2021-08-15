@@ -41,6 +41,11 @@ if(TRACCC_CUSTOM_SCALARTYPE)
     message(STATUS "Building with custom scalar type: " ${TRACCC_CUSTOM_SCALARTYPE})
     set(ALGEBRA_PLUGIN_CUSTOM_SCALARTYPE ${TRACCC_CUSTOM_SCALARTYPE})
 endif()
+    
+# Set GPU-related options
+if( TRACCC_BUILD_CUDA )
+  add_subdirectory( device/cuda )
+endif()
 
 # Build the traccc code.
 add_subdirectory(core)

@@ -6,7 +6,9 @@
  */
 
 #pragma once
-#include <seeding/detail/singlet.hpp>
+
+#include "definitions/qualifiers.hpp"
+#include "edm/container.hpp"
 
 namespace traccc {
 
@@ -15,35 +17,35 @@ namespace traccc {
 /// Item: transformed coordinate of doublet of middle-bottom or middle-top
 struct lin_circle {
     // z origin
-    float m_Zo;
+    scalar m_Zo;
     // cotangent of pitch angle
-    float m_cotTheta;
+    scalar m_cotTheta;
     // reciprocal of square of distance between two spacepoints
-    float m_iDeltaR;
+    scalar m_iDeltaR;
     // error term for sp-pair without correlation of middle space point
-    float m_Er;
+    scalar m_Er;
     // u component in transformed coordinate
-    float m_U;
+    scalar m_U;
     // v component in transformed coordinate
-    float m_V;
+    scalar m_V;
 
-    __CUDA_HOST_DEVICE__
-    const float& Zo() const { return m_Zo; }
+    TRACCC_HOST_DEVICE
+    const scalar& Zo() const { return m_Zo; }
 
-    __CUDA_HOST_DEVICE__
-    const float& cotTheta() const { return m_cotTheta; }
+    TRACCC_HOST_DEVICE
+    const scalar& cotTheta() const { return m_cotTheta; }
 
-    __CUDA_HOST_DEVICE__
-    const float& iDeltaR() const { return m_iDeltaR; }
+    TRACCC_HOST_DEVICE
+    const scalar& iDeltaR() const { return m_iDeltaR; }
 
-    __CUDA_HOST_DEVICE__
-    const float& Er() const { return m_Er; }
+    TRACCC_HOST_DEVICE
+    const scalar& Er() const { return m_Er; }
 
-    __CUDA_HOST_DEVICE__
-    const float& U() const { return m_U; }
+    TRACCC_HOST_DEVICE
+    const scalar& U() const { return m_U; }
 
-    __CUDA_HOST_DEVICE__
-    const float& V() const { return m_V; }
+    TRACCC_HOST_DEVICE
+    const scalar& V() const { return m_V; }
 };
 
 /// Container of lin_circle belonging to one detector module

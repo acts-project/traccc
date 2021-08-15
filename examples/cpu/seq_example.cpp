@@ -24,8 +24,8 @@
 #include "clusterization/spacepoint_formation.hpp"
 
 // seeding
+#include "seeding/seed_finding.hpp"
 #include "seeding/spacepoint_grouping.hpp"
-//#include "seeding/seed_finding.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
@@ -151,8 +151,11 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         grid_config.cotThetaMax = config.cotThetaMax;
 
         traccc::spacepoint_grouping sg(config, grid_config);
-
         auto internal_sp_per_event = sg(spacepoints_per_event, &resource);
+
+        // seed finding
+        traccc::seed_finding sf(config);
+        auto seeds = sf(internal_sp_per_event);
 
         /*------------
              Writer
@@ -165,7 +168,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             auto module = measurements_per_event.headers[i];
             for (const auto& measurement : measurements_per_module) {
                 const auto& local = measurement.local;
-                mwriter.append({module.module, local[0], local[1], 0., 0.});
+                mwriter.append({module.module, "", local[0], local[1], 0., 0.,
+                                0., 0., 0., 0., 0., 0.});
             }
         }
 
