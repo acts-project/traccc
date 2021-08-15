@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include "plugins/algebra/array_definitions.hpp"
+#include "plugins/algebra/eigen_definitions.hpp"
+
 namespace traccc {
 namespace array {
 
