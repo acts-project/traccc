@@ -92,8 +92,8 @@ class collection {
     /**
      * @brief Push an element into the collection.
      */
-    template <typename v_prime>
-    TRACCC_HOST void push_back(v_prime&& new_item) {
+    template <typename i_prime>
+    TRACCC_HOST void push_back(i_prime&& new_item) {
         items.push_back(std::forward<item_t>(new_item));
     }
 
