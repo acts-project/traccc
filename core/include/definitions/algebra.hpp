@@ -8,39 +8,53 @@
 #pragma once
 
 // array
-#if defined(ALGEBRA_array)
+#if defined(ALGEBRA_ARRAY)
 #include "plugins/algebra/array_definitions.hpp"
 
 namespace traccc {
+namespace array {
+
 template <typename T, std::size_t N>
 using array = darray<T, N>;
 using transform3 = algebra::array::transform3;
+
+}  // namespace array
 }  // namespace traccc
 
+#endif
+
 // eigen
-#elif defined(ALGEBRA_eigen)
+#if defined(ALGEBRA_EIGEN)
 #include "plugins/algebra/eigen_definitions.hpp"
 
 namespace traccc {
+namespace eigen {
+
 template <typename T, std::size_t N>
 using array = Eigen::Matrix<T, N, 1>;
 using transform3 = algebra::eigen::transform3;
+
+}  // namespace eigen
 }  // namespace traccc
 
+#endif
+
 // smatrix
-#elif defined(ALGEBRA_smatrix)
+#if defined(ALGEBRA_SMATRIX)
 #include "plugins/algebra/smatrix_definitions.hpp"
 
 namespace traccc {
-using transform3 = algebra::smatrix::transform3;
-}
+namespace smatrix {}  // namespace smatrix
+}  // namespace traccc
+
+#endif
 
 // vc_array
-#elif defined(ALGEBRA_vc)
+#if defined(ALGEBRA_VC)
 #include "plugins/algebra/vc_array_definitions.hpp"
 
 namespace traccc {
-using transform3 = algebra::vc_array::transform3;
-}
+namespace vc {}  // namespace vc
+}  // namespace traccc
 
 #endif

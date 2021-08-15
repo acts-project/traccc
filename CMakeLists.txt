@@ -29,10 +29,6 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-compiler-options )
 
-# option for algebra plugins ( array[default] / eigen / smatrix / vc )
-set(TRACCC_ALGEBRA_PLUGIN array CACHE STRING "") 
-add_definitions( -DALGEBRA_${TRACCC_ALGEBRA_PLUGIN} )
-
 # option for algebra scalar type ( double[default] / float )
 if(TRACCC_CUSTOM_SCALARTYPE)
     message(STATUS "Building with custom scalar type: " ${TRACCC_CUSTOM_SCALARTYPE})
