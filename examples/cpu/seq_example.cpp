@@ -27,6 +27,8 @@
 #include "seeding/seed_finding.hpp"
 #include "seeding/spacepoint_grouping.hpp"
 
+#include "clusterization/clusterization_algorithm.hpp"
+
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
 
