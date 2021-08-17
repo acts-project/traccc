@@ -64,7 +64,7 @@ struct cell_module {
     channel_id range0[2] = {std::numeric_limits<channel_id>::max(), 0};
     channel_id range1[2] = {std::numeric_limits<channel_id>::max(), 0};
 
-    pixel_segmentation pixel;
+    pixel_segmentation pixel = pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
 };  // struct cell_module
 
 /// Convenience declaration for the cell container type to use in host code

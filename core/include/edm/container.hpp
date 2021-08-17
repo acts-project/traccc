@@ -56,6 +56,15 @@ class container {
 
     /// All objects in the event
     item_vector items;
+
+    /// Get number of items
+    uint64_t total_size() {
+        uint64_t ret = 0;
+        for (auto& item : items) {
+            ret += item.size();
+        }
+        return ret;
+    }
 };
 
 /// Convenience declaration for the container type to use in host code

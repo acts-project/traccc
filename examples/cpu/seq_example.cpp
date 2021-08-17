@@ -24,10 +24,10 @@
 #include "clusterization/spacepoint_formation.hpp"
 
 // seeding
+#include "clusterization/clusterization_algorithm.hpp"
 #include "seeding/seed_finding.hpp"
 #include "seeding/spacepoint_grouping.hpp"
-
-#include "clusterization/clusterization_algorithm.hpp"
+#include "track_finding/seeding_algorithm.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
@@ -42,10 +42,9 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
     // Output stats
     uint64_t n_cells = 0;
-    uint64_t m_modules = 0;
-    uint64_t n_clusters = 0;
+    uint64_t n_modules = 0;
     uint64_t n_measurements = 0;
-    uint64_t n_space_points = 0;
+    uint64_t n_spacepoints = 0;
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource resource;
@@ -62,45 +61,17 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
                             "activation", "time"});
         traccc::host_cell_container cells_per_event =
             traccc::read_cells(creader, resource, &surface_transforms);
-        m_modules += cells_per_event.headers.size();
 
-        // Output containers
-        traccc::host_measurement_container measurements_per_event;
-        traccc::host_spacepoint_container spacepoints_per_event;
-        measurements_per_event.headers.reserve(cells_per_event.headers.size());
-        measurements_per_event.items.reserve(cells_per_event.headers.size());
-        spacepoints_per_event.headers.reserve(cells_per_event.headers.size());
-        spacepoints_per_event.items.reserve(cells_per_event.headers.size());
+        // clusterization algorithm
+        traccc::clusterization_algorithm ca;
+        auto ca_result = ca(cells_per_event);
+        auto& measurements_per_event = ca_result.first;
+        auto& spacepoints_per_event = ca_result.second;
 
-        for (std::size_t i = 0; i < cells_per_event.items.size(); ++i) {
-            auto& module = cells_per_event.headers[i];
-            module.pixel =
-                traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
-
-            // The algorithmic code part: start
-            traccc::cluster_collection clusters_per_module =
-                cc({cells_per_event.items[i], cells_per_event.headers[i]});
-            clusters_per_module.position_from_cell = module.pixel;
-
-            traccc::host_measurement_collection measurements_per_module =
-                mt({clusters_per_module, module});
-            traccc::host_spacepoint_collection spacepoints_per_module =
-                sp({module, measurements_per_module});
-            // The algorithmnic code part: end
-
-            n_cells += cells_per_event.items[i].size();
-            n_clusters += clusters_per_module.items.size();
-            n_measurements += measurements_per_module.size();
-            n_space_points += spacepoints_per_module.size();
-
-            measurements_per_event.items.push_back(
-                std::move(measurements_per_module));
-            measurements_per_event.headers.push_back(module);
-
-            spacepoints_per_event.items.push_back(
-                std::move(spacepoints_per_module));
-            spacepoints_per_event.headers.push_back(module.module);
-        }
+        n_modules += cells_per_event.headers.size();
+        n_cells += cells_per_event.total_size();
+        n_measurements += measurements_per_event.total_size();
+        n_spacepoints += spacepoints_per_event.total_size();
 
         /*-------------------
              Seed finding
@@ -205,12 +176,11 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_cells << " cells from " << m_modules
+    std::cout << "- read    " << n_cells << " cells from " << n_modules
               << " modules" << std::endl;
-    std::cout << "- created " << n_clusters << " clusters. " << std::endl;
     std::cout << "- created " << n_measurements << " measurements. "
               << std::endl;
-    std::cout << "- created " << n_space_points << " space points. "
+    std::cout << "- created " << n_spacepoints << " space points. "
               << std::endl;
 
     return 0;
