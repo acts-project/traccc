@@ -35,11 +35,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
 
-    // Algorithms
-    traccc::component_connection cc;
-    traccc::measurement_creation mt;
-    traccc::spacepoint_formation sp;
-
     // Output stats
     uint64_t n_cells = 0;
     uint64_t n_modules = 0;
@@ -62,7 +57,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         traccc::host_cell_container cells_per_event =
             traccc::read_cells(creader, resource, &surface_transforms);
 
-        // clusterization algorithm
+        /*-------------------
+            Clusterization
+          -------------------*/
+
         traccc::clusterization_algorithm ca;
         auto ca_result = ca(cells_per_event);
         auto& measurements_per_event = ca_result.first;
@@ -77,58 +75,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Seed finding
           -------------------*/
 
-        // Seed finder config
-        traccc::seedfinder_config config;
-        // silicon detector max
-        config.rMax = 160.;
-        config.deltaRMin = 5.;
-        config.deltaRMax = 160.;
-        config.collisionRegionMin = -250.;
-        config.collisionRegionMax = 250.;
-        // config.zMin = -2800.; // this value introduces redundant bins without
-        // any spacepoints config.zMax = 2800.;
-        config.zMin = -1186.;
-        config.zMax = 1186.;
-        config.maxSeedsPerSpM = 5;
-        // 2.7 eta
-        config.cotThetaMax = 7.40627;
-        config.sigmaScattering = 1.00000;
-
-        config.minPt = 500.;
-        config.bFieldInZ = 0.00199724;
-
-        config.beamPos = {-.5, -.5};
-        config.impactMax = 10.;
-
-        config.highland = 13.6 * std::sqrt(config.radLengthPerSeed) *
-                          (1 + 0.038 * std::log(config.radLengthPerSeed));
-        float maxScatteringAngle = config.highland / config.minPt;
-        config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
-        // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
-        // and millimeter
-        // TODO: change using ACTS units
-        config.pTPerHelixRadius = 300. * config.bFieldInZ;
-        config.minHelixDiameter2 =
-            std::pow(config.minPt * 2 / config.pTPerHelixRadius, 2);
-        config.pT2perRadius =
-            std::pow(config.highland / config.pTPerHelixRadius, 2);
-
-        // setup spacepoint grid config
-        traccc::spacepoint_grid_config grid_config;
-        grid_config.bFieldInZ = config.bFieldInZ;
-        grid_config.minPt = config.minPt;
-        grid_config.rMax = config.rMax;
-        grid_config.zMax = config.zMax;
-        grid_config.zMin = config.zMin;
-        grid_config.deltaRMax = config.deltaRMax;
-        grid_config.cotThetaMax = config.cotThetaMax;
-
-        traccc::spacepoint_grouping sg(config, grid_config);
-        auto internal_sp_per_event = sg(spacepoints_per_event, &resource);
-
-        // seed finding
-        traccc::seed_finding sf(config);
-        auto seeds = sf(internal_sp_per_event);
+        traccc::seeding_algorithm sa;
+        auto sa_result = sa(spacepoints_per_event);
+        auto& internal_sp_per_event = sa_result.first;
+        auto& seeds = sa_result.second;
 
         /*------------
              Writer

@@ -26,10 +26,6 @@ class clusterization_algorithm
           const host_cell_container&,
           std::pair<host_measurement_container, host_spacepoint_container> > {
     public:
-    struct config {
-        // currently left empty
-    };
-
     output_type operator()(const input_type& cells_per_event) const override {
         output_type o;
         this->operator()(cells_per_event, o);

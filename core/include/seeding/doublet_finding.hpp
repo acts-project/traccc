@@ -27,7 +27,7 @@ struct doublet_finding
     ///
     /// @param seedfinder_config is the configuration parameters
     /// @param isp_container is the internal spacepoint container
-    doublet_finding(seedfinder_config& config) : m_config(config) {}
+    doublet_finding(const seedfinder_config& config) : m_config(config) {}
 
     /// Callable operator for doublet finding per middle spacepoint
     ///

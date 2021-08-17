@@ -28,7 +28,7 @@ struct triplet_finding
     ///
     /// @param seedfinder_config is the configuration parameters
     /// @param isp_container is the internal spacepoint container
-    triplet_finding(seedfinder_config& config) : m_config(config) {}
+    triplet_finding(const seedfinder_config& config) : m_config(config) {}
 
     /// Callable operator for triplet finding per middle-bottom doublet
     ///
