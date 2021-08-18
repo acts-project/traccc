@@ -75,7 +75,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Seed finding
           -------------------*/
 
-        traccc::seeding_algorithm sa;
+        traccc::seeding_algorithm sa(&resource);
         auto sa_result = sa(spacepoints_per_event);
         auto& internal_sp_per_event = sa_result.first;
         auto& seeds = sa_result.second;

@@ -77,8 +77,8 @@ class seeding_algorithm
 
         // spacepoint grouping
         spacepoint_grouping sg(m_config, m_grid_config);
-        internal_sp_per_event = sg(spacepoints_per_event);
-
+        internal_sp_per_event = sg(spacepoints_per_event, m_mr);
+	
         // seed finding
         seed_finding sf(m_config);
         seeds = sf(internal_sp_per_event);

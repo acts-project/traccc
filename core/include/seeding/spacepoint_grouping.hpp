@@ -90,6 +90,7 @@ struct spacepoint_grouping {
             }
         }
 
+	
         // fill rbins into grid such that each grid bin is sorted in r
         // space points with delta r < rbin size can be out of order
         auto& headers = internal_sp_container.headers;
@@ -100,7 +101,7 @@ struct spacepoint_grouping {
         for (size_t i = 1; i <= local_bins[0]; ++i) {
             for (size_t j = 1; j <= local_bins[1]; ++j) {
                 std::array<size_t, 2> local_bin({i, j});
-
+		
                 size_t global_bin = m_spgrid->globalBinFromLocalBins(local_bin);
                 auto bottom_indices = m_bottom_bin_finder->find_bins(
                     local_bin[0], local_bin[1], m_spgrid.get());
@@ -111,19 +112,19 @@ struct spacepoint_grouping {
                 bin_info.global_index = global_bin;
                 bin_info.bottom_idx.counts = bottom_indices.size();
                 bin_info.top_idx.counts = top_indices.size();
-
+		
                 std::copy(bottom_indices.begin(), bottom_indices.end(),
                           &bin_info.bottom_idx.global_indices[0]);
 
                 std::copy(top_indices.begin(), top_indices.end(),
                           &bin_info.top_idx.global_indices[0]);
 
-                headers.push_back(bin_info);
+                headers.push_back(bin_info);		
                 items.push_back(
                     vecmem::vector<internal_spacepoint<spacepoint>>());
             }
         }
-
+	
         for (auto& rbin : rBins) {
             for (auto& isp : rbin) {
                 vector2 spLocation({isp.phi(), isp.z()});
@@ -135,7 +136,7 @@ struct spacepoint_grouping {
                 items.at(location).push_back(std::move(isp));
             }
         }
-
+	
         fill_vector_id(internal_sp_container);
     }
 
