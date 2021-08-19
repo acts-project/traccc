@@ -20,6 +20,8 @@
 #include <edm/seed.hpp>
 #include <iostream>
 #include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
+#include <seeding/seed_filtering.hpp>
 
 namespace traccc {
 namespace cuda {
