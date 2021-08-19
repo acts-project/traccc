@@ -14,7 +14,7 @@ namespace traccc {
 struct seedfinder_config {
     // limiting location of measurements
     // Beomki's note: this value introduces redundant bins
-    // without any spacepoints 
+    // without any spacepoints
     // m_config.zMin = -2800.;
     // m_config.zMax = 2800.;
     scalar zMin = -1186;
@@ -31,7 +31,7 @@ struct seedfinder_config {
     scalar collisionRegionMax = +250;
     scalar phiMin = -M_PI;
     scalar phiMax = M_PI;
-    
+
     // Seed Cuts
     // lower cutoff for seeds in MeV
     // FIXME: Acts units

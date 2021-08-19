@@ -47,7 +47,7 @@ class clusterization_algorithm
         measurements_per_event.items.resize(cells_per_event.headers.size());
         spacepoints_per_event.headers.resize(cells_per_event.headers.size());
         spacepoints_per_event.items.resize(cells_per_event.headers.size());
-	
+
         for (std::size_t i = 0; i < cells_per_event.items.size(); ++i) {
             const auto& module = cells_per_event.headers[i];
 
@@ -61,8 +61,9 @@ class clusterization_algorithm
             traccc::host_spacepoint_collection spacepoints_per_module =
                 sp({module, measurements_per_module});
             // The algorithmnic code part: end
-	    
-            measurements_per_event.items[i] = std::move(measurements_per_module) ;
+
+            measurements_per_event.items[i] =
+                std::move(measurements_per_module);
             measurements_per_event.headers[i] = module;
 
             spacepoints_per_event.items[i] = std::move(spacepoints_per_module);
@@ -70,7 +71,7 @@ class clusterization_algorithm
         }
     }
 
-private:
+    private:
     // algorithms
     component_connection cc;
     measurement_creation mt;

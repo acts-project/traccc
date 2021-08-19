@@ -10,13 +10,13 @@
 #include <iostream>
 
 // vecmem
-#include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // algorithms
 #include "clusterization/clusterization_algorithm.hpp"
-#include "track_finding/seeding_algorithm.hpp"
 #include "cuda/track_finding/seeding_algorithm.hpp"
+#include "track_finding/seeding_algorithm.hpp"
 
 // io
 #include "io/csv.hpp"
@@ -59,6 +59,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
 
+    traccc::clusterization_algorithm ca;
+    traccc::cuda::seeding_algorithm sa_cuda(&mng_mr);
+    traccc::seeding_algorithm sa(&host_mr);
+
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
     // Loop over events
@@ -70,7 +74,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         /*-----------------------------
               Read the cell data
           -----------------------------*/
-	
+
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
         std::string event_string = "000000000";
@@ -96,9 +100,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
               Clusterization (cpu)
           -----------------------------*/
 
-        /*time*/ auto start_clusterization_cpu = std::chrono::system_clock::now();
-	
-	traccc::clusterization_algorithm ca;
+        /*time*/ auto start_clusterization_cpu =
+            std::chrono::system_clock::now();
         auto ca_result = ca(cells_per_event);
         auto& measurements_per_event = ca_result.first;
         auto& spacepoints_per_event = ca_result.second;
@@ -107,50 +110,48 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         /*time*/ std::chrono::duration<double> time_clusterization_cpu =
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
-	
+
         n_modules += cells_per_event.headers.size();
         n_cells += cells_per_event.total_size();
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
-		
+
         /*----------------------------
           Seeding algorithm
           ----------------------------*/
-	
-	// cuda
-	
+
+        // cuda
+
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
-	
-	traccc::cuda::seeding_algorithm sa_cuda(&mng_mr);
+
         auto sa_cuda_result = sa_cuda(spacepoints_per_event);
         auto& seeds_cuda = sa_cuda_result.second;
-	n_seeds_cuda += seeds_cuda.headers[0];
-	
+        n_seeds_cuda += seeds_cuda.headers[0];
+
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
-	
-	// cpu
-	
+
+        // cpu
+
         /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
-	traccc::host_seed_container seeds;
-	traccc::host_internal_spacepoint_container internal_sp_per_event;
-        if (!skip_cpu) {	
-	    traccc::seeding_algorithm sa(&host_mr);
-	    auto sa_result = sa(spacepoints_per_event);
-	    internal_sp_per_event = sa_result.first;
-	    seeds = sa_result.second;
-	    n_internal_spacepoints += internal_sp_per_event.total_size();
-	}
-	n_seeds += seeds.total_size();
-	
-	/*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-	/*time*/ std::chrono::duration<double> time_seeding_cpu =
-	    end_seeding_cpu - start_seeding_cpu;
-	/*time*/ seeding_cpu += time_seeding_cpu.count();
-	
+        traccc::host_seed_container seeds;
+        traccc::host_internal_spacepoint_container internal_sp_per_event;
+        if (!skip_cpu) {
+            auto sa_result = sa(spacepoints_per_event);
+            internal_sp_per_event = sa_result.first;
+            seeds = sa_result.second;
+            n_internal_spacepoints += internal_sp_per_event.total_size();
+        }
+        n_seeds += seeds.total_size();
+
+        /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_seeding_cpu =
+            end_seeding_cpu - start_seeding_cpu;
+        /*time*/ seeding_cpu += time_seeding_cpu.count();
+
         /*----------------------------------
           compare seeds from cpu and cuda
           ----------------------------------*/
@@ -174,21 +175,21 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         /*------------
              Writer
           ------------*/
-	
+
         if (!skip_write && !skip_cpu) {
-            
+
             traccc::measurement_writer mwriter{
-                  std::string("event") + event_number + "-measurements.csv"};
+                std::string("event") + event_number + "-measurements.csv"};
             for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
                 auto measurements_per_module = measurements_per_event.items[i];
                 auto module = measurements_per_event.headers[i];
                 for (const auto& measurement : measurements_per_module) {
                     const auto& local = measurement.local;
-		    mwriter.append({module.module, "", local[0], local[1], 0., 0.,
-				    0., 0., 0., 0., 0., 0.});
+                    mwriter.append({module.module, "", local[0], local[1], 0.,
+                                    0., 0., 0., 0., 0., 0., 0.});
                 }
             }
-            
+
             traccc::spacepoint_writer spwriter{
                 std::string("event") + event_number + "-spacepoints.csv"};
             for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
@@ -217,7 +218,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
                     internal_spwriter.append({bin, x, y, z, varR, varZ});
                 }
             }
-        }	
+        }
     }
 
     /*time*/ auto end_wall_time = std::chrono::system_clock::now();

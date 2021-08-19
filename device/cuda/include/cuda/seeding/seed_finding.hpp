@@ -8,7 +8,6 @@
 #pragma once
 
 #include <algorithm>
-#include <seeding/detail/seeding_config.hpp>
 #include <cuda/seeding/detail/doublet_counter.hpp>
 #include <cuda/seeding/detail/multiplet_estimator.hpp>
 #include <cuda/seeding/doublet_counting.cuh>
@@ -20,6 +19,7 @@
 #include <edm/internal_spacepoint.hpp>
 #include <edm/seed.hpp>
 #include <iostream>
+#include <seeding/detail/seeding_config.hpp>
 
 namespace traccc {
 namespace cuda {
@@ -33,11 +33,10 @@ struct seed_finding {
     /// @param stats_config experiment-dependent statistics estimator
     /// @param mr vecmem memory resource
     seed_finding(seedfinder_config& config,
-                 std::shared_ptr< spacepoint_grid > sp_grid,
-		 multiplet_estimator& estimator,
-                 vecmem::memory_resource* mr)
+                 std::shared_ptr<spacepoint_grid> sp_grid,
+                 multiplet_estimator& estimator, vecmem::memory_resource* mr)
         : m_seedfinder_config(config),
-	  m_estimator(estimator),
+          m_estimator(estimator),
           m_mr(mr),
 
           // initialize all vecmem containers:

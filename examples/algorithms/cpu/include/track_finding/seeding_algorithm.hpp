@@ -18,7 +18,7 @@ class seeding_algorithm
           std::pair<host_internal_spacepoint_container, host_seed_container> > {
     public:
     seeding_algorithm(vecmem::memory_resource* mr = nullptr) : m_mr(mr) {
-	
+
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
         float maxScatteringAngle = m_config.highland / m_config.minPt;
@@ -31,7 +31,7 @@ class seeding_algorithm
             std::pow(m_config.minPt * 2 / m_config.pTPerHelixRadius, 2);
         m_config.pT2perRadius =
             std::pow(m_config.highland / m_config.pTPerHelixRadius, 2);
-	
+
         m_grid_config.bFieldInZ = m_config.bFieldInZ;
         m_grid_config.minPt = m_config.minPt;
         m_grid_config.rMax = m_config.rMax;
@@ -39,10 +39,14 @@ class seeding_algorithm
         m_grid_config.zMin = m_config.zMin;
         m_grid_config.deltaRMax = m_config.deltaRMax;
         m_grid_config.cotThetaMax = m_config.cotThetaMax;
+
+        sg = std::make_shared<traccc::spacepoint_grouping>(
+            traccc::spacepoint_grouping(m_config, m_grid_config, m_mr));
+        sf = std::make_shared<traccc::seed_finding>(
+            traccc::seed_finding(m_config));
     }
 
-    output_type operator()(
-        const input_type& i) const override {
+    output_type operator()(const input_type& i) const override {
         output_type o;
         this->operator()(i, o);
         return o;
@@ -55,17 +59,17 @@ class seeding_algorithm
         auto& seeds = o.second;
 
         // spacepoint grouping
-	traccc::spacepoint_grouping sg(m_config, m_grid_config, m_mr);
-        internal_sp_per_event = sg(spacepoints_per_event);
-	
+        internal_sp_per_event = sg->operator()(spacepoints_per_event);
+
         // seed finding
-	traccc::seed_finding sf(m_config);
-        seeds = sf(internal_sp_per_event);
+        seeds = sf->operator()(internal_sp_per_event);
     }
 
-private:
+    private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
+    std::shared_ptr<traccc::spacepoint_grouping> sg;
+    std::shared_ptr<traccc::seed_finding> sf;
     vecmem::memory_resource* m_mr;
 };
 

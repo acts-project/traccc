@@ -10,13 +10,13 @@
 #include <iostream>
 
 // vecmem
-#include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // algorithms
 #include "clusterization/clusterization_algorithm.hpp"
-#include "track_finding/seeding_algorithm.hpp"
 #include "cuda/track_finding/seeding_algorithm.hpp"
+#include "track_finding/seeding_algorithm.hpp"
 
 // io
 #include "io/csv.hpp"
@@ -44,6 +44,9 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     float hit_reading_cpu(0);
     float seeding_cpu(0);
     float seeding_cuda(0);
+
+    traccc::seeding_algorithm sa(&host_mr);
+    traccc::cuda::seeding_algorithm sa_cuda(&mng_mr);
 
     /*-----------------
       hit reading
@@ -92,44 +95,42 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     /*-------------------
       Seeding
       --------------------*/
-    
+
     for (unsigned int event = 0; event < events; ++event) {
 
         auto& spacepoints_per_event = all_spacepoints[event];
-	
-	// cuda
-	
+
+        // cuda
+
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
-	
-	traccc::cuda::seeding_algorithm sa_cuda(&mng_mr);
+
         auto sa_cuda_result = sa_cuda(spacepoints_per_event);
         auto& seeds_cuda = sa_cuda_result.second;
-	n_seeds_cuda += seeds_cuda.headers[0];
-	
+        n_seeds_cuda += seeds_cuda.headers[0];
+
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
-	
-	// cpu
-	
+
+        // cpu
+
         /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
-	traccc::host_seed_container seeds;
-	traccc::host_internal_spacepoint_container internal_sp_per_event;
-        if (!skip_cpu) {	
-	    traccc::seeding_algorithm sa(&host_mr);
-	    auto sa_result = sa(spacepoints_per_event);
-	    internal_sp_per_event = sa_result.first;
-	    seeds = sa_result.second;
-	    n_internal_spacepoints += internal_sp_per_event.total_size();
-	}
-	n_seeds += seeds.total_size();
-	
-	/*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-	/*time*/ std::chrono::duration<double> time_seeding_cpu =
-	    end_seeding_cpu - start_seeding_cpu;
-	/*time*/ seeding_cpu += time_seeding_cpu.count();
+        traccc::host_seed_container seeds;
+        traccc::host_internal_spacepoint_container internal_sp_per_event;
+        if (!skip_cpu) {
+            auto sa_result = sa(spacepoints_per_event);
+            internal_sp_per_event = sa_result.first;
+            seeds = sa_result.second;
+            n_internal_spacepoints += internal_sp_per_event.total_size();
+        }
+        n_seeds += seeds.total_size();
+
+        /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_seeding_cpu =
+            end_seeding_cpu - start_seeding_cpu;
+        /*time*/ seeding_cpu += time_seeding_cpu.count();
 
         /*----------------------------------
           compare seeds from cpu and cuda
@@ -204,7 +205,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
                                   spT.x(), spT.y(), spT.z(), 0, 0});
             }
 
-	    /*
+            /*
             traccc::multiplet_statistics_writer multiplet_stat_writer{
                 "event" + event_string + "-multiplet_statistics.csv"};
 
@@ -222,7 +223,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
             auto seed_stats = sf.get_seed_stats();
             seed_stat_writer.append(
                 {seed_stats.n_internal_sp, seed_stats.n_seeds});
-	    */
+            */
         }
     }
 

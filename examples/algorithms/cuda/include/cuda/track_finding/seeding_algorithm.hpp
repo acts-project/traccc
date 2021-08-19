@@ -7,17 +7,20 @@
 
 #pragma once
 
-#include "seeding/spacepoint_grouping.hpp"
-#include "cuda/seeding/seed_finding.hpp"
+#include <chrono>
+#include <iostream>
 
-namespace traccc{
-namespace cuda{
+#include "cuda/seeding/seed_finding.hpp"
+#include "seeding/spacepoint_grouping.hpp"
+
+namespace traccc {
+namespace cuda {
 
 class seeding_algorithm {
-public:
-
+    public:
     using input_type = host_spacepoint_container&;
-    using output_type = std::pair< host_internal_spacepoint_container, host_seed_container >;
+    using output_type =
+        std::pair<host_internal_spacepoint_container, host_seed_container>;
 
     seeding_algorithm(vecmem::memory_resource* mr = nullptr) : m_mr(mr) {
 
@@ -42,53 +45,49 @@ public:
         m_grid_config.deltaRMax = m_config.deltaRMax;
         m_grid_config.cotThetaMax = m_config.cotThetaMax;
 
-	// multiplet estimator
-	m_estimator.m_cfg.safety_factor = 2.0;
-	m_estimator.m_cfg.safety_adder = 10;
+        // multiplet estimator
+        m_estimator.m_cfg.safety_factor = 2.0;
+        m_estimator.m_cfg.safety_adder = 10;
         // m_estimator.m_cfg.safety_factor = 10.0;
         // m_estimator.m_cfg.safety_adder = 50000;
         m_estimator.m_cfg.par_for_mb_doublets = {1, 28.77, 0.4221};
         m_estimator.m_cfg.par_for_mt_doublets = {1, 19.73, 0.232};
         m_estimator.m_cfg.par_for_triplets = {1, 0, 0.02149};
         m_estimator.m_cfg.par_for_seeds = {0, 0.3431};
+
+        sg = std::make_shared<traccc::spacepoint_grouping>(
+            traccc::spacepoint_grouping(m_config, m_grid_config, m_mr));
+        sf = std::make_shared<traccc::cuda::seed_finding>(
+            traccc::cuda::seed_finding(m_config, sg->get_spgrid(), m_estimator,
+                                       m_mr));
     }
-            
-    output_type operator()(input_type &i){
-	output_type o;
-	/*
-	output_type o({
-		{host_internal_spacepoint_container::header_vector(m_mr),
-		 host_internal_spacepoint_container::item_vector(m_mr)},
-		{host_seed_container::header_vector(m_mr),
-		 host_seed_container::item_vector(m_mr)}		
-	    });	
-	*/
+
+    output_type operator()(input_type& i) {
+        output_type o;
         this->operator()(i, o);
         return o;
     }
 
-    void operator()(input_type& spacepoints_per_event, output_type& o){
-	
+    void operator()(input_type& spacepoints_per_event, output_type& o) {
         // spacepoint grouping
-	traccc::spacepoint_grouping sg(m_config, m_grid_config, m_mr);
-	auto internal_sp_per_event = sg(spacepoints_per_event);
-	
-	// seed finding
-	traccc::cuda::seed_finding sf(m_config, sg.get_spgrid(), m_estimator, m_mr);
-	auto seeds = sf(internal_sp_per_event);
+        auto internal_sp_per_event = sg->operator()(spacepoints_per_event);
 
-	// output container
-	o.first = std::move(internal_sp_per_event);
-	o.second = std::move(seeds);
+        // seed finding
+        auto seeds = sf->operator()(internal_sp_per_event);
+
+        // output container
+        o.first = std::move(internal_sp_per_event);
+        o.second = std::move(seeds);
     }
 
-private:
+    private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     multiplet_estimator m_estimator;
-    vecmem::memory_resource* m_mr;    
+    std::shared_ptr<traccc::spacepoint_grouping> sg;
+    std::shared_ptr<traccc::cuda::seed_finding> sf;
+    vecmem::memory_resource* m_mr;
 };
 
-} // namespace cuda
-} // namespace traccc
-    
+}  // namespace cuda
+}  // namespace traccc

@@ -29,7 +29,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     uint64_t n_spacepoints = 0;
 
     // Memory resource used by the EDM.
-    vecmem::host_memory_resource resource;
+    vecmem::host_memory_resource host_mr;
+
+    traccc::clusterization_algorithm ca;
+    traccc::seeding_algorithm sa(&host_mr);
 
     // Loop over events
     for (unsigned int event = 0; event < events; ++event) {
@@ -42,13 +45,12 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1",
                             "activation", "time"});
         traccc::host_cell_container cells_per_event =
-            traccc::read_cells(creader, resource, &surface_transforms);
+            traccc::read_cells(creader, host_mr, &surface_transforms);
 
         /*-------------------
             Clusterization
           -------------------*/
 
-        traccc::clusterization_algorithm ca;
         auto ca_result = ca(cells_per_event);
         auto& measurements_per_event = ca_result.first;
         auto& spacepoints_per_event = ca_result.second;
@@ -62,7 +64,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Seed finding
           -------------------*/
 
-        traccc::seeding_algorithm sa(&resource);
         auto sa_result = sa(spacepoints_per_event);
         auto& internal_sp_per_event = sa_result.first;
         auto& seeds = sa_result.second;
