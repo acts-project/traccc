@@ -89,10 +89,11 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
     }
 
+    /*-------------------
+      Seeding
+      --------------------*/
+    
     for (unsigned int event = 0; event < events; ++event) {
-	/*-------------------
-	  Seeding
-	  --------------------*/
 
         auto& spacepoints_per_event = all_spacepoints[event];
 	
