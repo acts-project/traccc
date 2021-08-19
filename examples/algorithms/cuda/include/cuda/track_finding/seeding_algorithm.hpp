@@ -68,9 +68,10 @@ public:
     }
 
     void operator()(input_type& spacepoints_per_event, output_type& o){
+	
         // spacepoint grouping
 	traccc::spacepoint_grouping sg(m_config, m_grid_config, m_mr);
-        auto internal_sp_per_event = sg(spacepoints_per_event);
+	auto internal_sp_per_event = sg(spacepoints_per_event);
 	
 	// seed finding
 	traccc::cuda::seed_finding sf(m_config, sg.get_spgrid(), m_estimator, m_mr);

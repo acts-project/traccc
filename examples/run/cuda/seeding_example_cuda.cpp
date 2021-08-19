@@ -38,7 +38,6 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     uint64_t n_modules = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_internal_spacepoints = 0;
-    uint64_t n_doublets = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
