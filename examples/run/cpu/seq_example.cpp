@@ -6,27 +6,14 @@
  */
 
 #include <iostream>
-#include <vecmem/memory/host_memory_resource.hpp>
 
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
-#include "edm/internal_spacepoint.hpp"
-#include "edm/measurement.hpp"
-#include "edm/spacepoint.hpp"
-#include "geometry/pixel_segmentation.hpp"
+// io
 #include "io/csv.hpp"
 #include "io/reader.hpp"
 #include "io/utils.hpp"
 
-// clusterization
-#include "clusterization/component_connection.hpp"
-#include "clusterization/measurement_creation.hpp"
-#include "clusterization/spacepoint_formation.hpp"
-
-// seeding
+// algorithms
 #include "clusterization/clusterization_algorithm.hpp"
-#include "seeding/seed_finding.hpp"
-#include "seeding/spacepoint_grouping.hpp"
 #include "track_finding/seeding_algorithm.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,

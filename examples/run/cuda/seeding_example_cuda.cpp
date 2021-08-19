@@ -30,9 +30,6 @@
 #include <chrono>
 #include <iomanip>
 
-// custom
-#include "tml_stats_config.hpp"
-
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
             unsigned int skip_events, unsigned int events, bool skip_cpu,
             bool skip_write) {
@@ -108,12 +105,11 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     grid_config.deltaRMax = config.deltaRMax;
     grid_config.cotThetaMax = config.cotThetaMax;
 
-    traccc::spacepoint_grouping sg(config, grid_config);
+    traccc::spacepoint_grouping sg(config, grid_config, &mng_mr);
     traccc::seed_finding sf(config);
 
-    traccc::cuda::tml_stats_config tml_cfg;
-    traccc::cuda::seed_finding sf_cuda(config, sg.get_spgrid(), &tml_cfg,
-                                       &mng_mr);
+    traccc::multiplet_estimator tml_cfg;
+    traccc::cuda::seed_finding sf_cuda(config, sg.get_spgrid(), tml_cfg, &mng_mr);
 
     /*-----------------
       hit reading
@@ -169,7 +165,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         auto& spacepoints_per_event = all_spacepoints[event];
 
-        auto internal_sp_per_event = sg(spacepoints_per_event, &mng_mr);
+        auto internal_sp_per_event = sg(spacepoints_per_event);
 
         /*time*/ auto end_binning_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_binning_cpu =

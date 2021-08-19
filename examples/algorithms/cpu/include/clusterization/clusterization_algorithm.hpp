@@ -70,7 +70,7 @@ class clusterization_algorithm
         }
     }
 
-    private:
+private:
     // algorithms
     component_connection cc;
     measurement_creation mt;

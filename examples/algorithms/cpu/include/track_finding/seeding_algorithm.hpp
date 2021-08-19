@@ -63,9 +63,9 @@ class seeding_algorithm
     }
 
     output_type operator()(
-        const input_type& spacepoints_per_event) const override {
+        const input_type& i) const override {
         output_type o;
-        this->operator()(spacepoints_per_event, o);
+        this->operator()(i, o);
         return o;
     }
 
@@ -76,16 +76,15 @@ class seeding_algorithm
         auto& seeds = o.second;
 
         // spacepoint grouping
-        spacepoint_grouping sg(m_config, m_grid_config);
-        internal_sp_per_event = sg(spacepoints_per_event, m_mr);
+	traccc::spacepoint_grouping sg(m_config, m_grid_config, m_mr);
+        internal_sp_per_event = sg(spacepoints_per_event);
 	
         // seed finding
-        seed_finding sf(m_config);
+	traccc::seed_finding sf(m_config);
         seeds = sf(internal_sp_per_event);
     }
 
-    private:
-    // algorithms
+private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     vecmem::memory_resource* m_mr;
