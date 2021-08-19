@@ -21,28 +21,6 @@ public:
 
     seeding_algorithm(vecmem::memory_resource* mr = nullptr) : m_mr(mr) {
 
-        // Seed finder config
-        // silicon detector max
-        m_config.rMax = 160.;
-        m_config.deltaRMin = 5.;
-        m_config.deltaRMax = 160.;
-        m_config.collisionRegionMin = -250.;
-        m_config.collisionRegionMax = 250.;
-        // m_config.zMin = -2800.; // this value introduces redundant bins
-        // without any spacepoints m_config.zMax = 2800.;
-        m_config.zMin = -1186.;
-        m_config.zMax = 1186.;
-        m_config.maxSeedsPerSpM = 5;
-        // 2.7 eta
-        m_config.cotThetaMax = 7.40627;
-        m_config.sigmaScattering = 1.00000;
-
-        m_config.minPt = 500.;
-        m_config.bFieldInZ = 0.00199724;
-
-        m_config.beamPos = {-.5, -.5};
-        m_config.impactMax = 10.;
-
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
         float maxScatteringAngle = m_config.highland / m_config.minPt;

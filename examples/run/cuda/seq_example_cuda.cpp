@@ -35,11 +35,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
 
-    // Algorithms
-    traccc::component_connection cc;
-    traccc::measurement_creation mt;
-    traccc::spacepoint_formation sp;
-
     // Output stats
     uint64_t n_cells = 0;
     uint64_t n_modules = 0;
@@ -47,20 +42,15 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_internal_spacepoints = 0;
-    uint64_t n_doublets = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
     // Elapsed time
     float wall_time(0);
-
     float file_reading_cpu(0);
     float clusterization_cpu(0);
-    float binning_cpu(0);
     float seeding_cpu(0);
-
     float clusterization_cuda(0);
-    float binning_cuda(0);
     float seeding_cuda(0);
 
     // Memory resource used by the EDM.
@@ -128,32 +118,33 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
           ----------------------------*/
 	
 	// cuda
+	
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 	
 	traccc::cuda::seeding_algorithm sa_cuda(&mng_mr);
         auto sa_cuda_result = sa_cuda(spacepoints_per_event);
         auto& seeds_cuda = sa_cuda_result.second;
-
+	n_seeds_cuda += seeds_cuda.headers[0];
+	
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
 	
 	// cpu
+	
         /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
 	traccc::host_seed_container seeds;
-	
+	traccc::host_internal_spacepoint_container internal_sp_per_event;
         if (!skip_cpu) {	
 	    traccc::seeding_algorithm sa(&host_mr);
 	    auto sa_result = sa(spacepoints_per_event);
-	    auto& internal_sp_per_event = sa_result.first;
+	    internal_sp_per_event = sa_result.first;
 	    seeds = sa_result.second;
 	    n_internal_spacepoints += internal_sp_per_event.total_size();
 	}
-
-	//std::cout << seeds.total_size() << std::endl;
-	//std::cout << seeds_cuda.headers[0] << std::endl;
+	n_seeds += seeds.total_size();
 	
 	/*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
 	/*time*/ std::chrono::duration<double> time_seeding_cpu =
@@ -183,8 +174,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         /*------------
              Writer
           ------------*/
-	/*
-        if (!skip_write) {
+	
+        if (!skip_write && !skip_cpu) {
             
             traccc::measurement_writer mwriter{
                   std::string("event") + event_number + "-measurements.csv"};
@@ -226,8 +217,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
                     internal_spwriter.append({bin, x, y, z, varR, varZ});
                 }
             }
-        }
-	*/
+        }	
     }
 
     /*time*/ auto end_wall_time = std::chrono::system_clock::now();
@@ -257,8 +247,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
               << file_reading_cpu << std::endl;
     std::cout << "clusterization_time (cpu)" << std::setw(10) << std::left
               << clusterization_cpu << std::endl;
-    std::cout << "binning_time (cpu)       " << std::setw(10) << std::left
-              << binning_cpu << std::endl;
     std::cout << "seeding_time (cpu)       " << std::setw(10) << std::left
               << seeding_cpu << std::endl;
     std::cout << "seeding_time (cuda)      " << std::setw(10) << std::left
