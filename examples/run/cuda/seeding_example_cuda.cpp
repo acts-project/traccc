@@ -5,30 +5,22 @@
  * Mozilla Public License Version 2.0
  */
 
-// edm
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
-#include "edm/internal_spacepoint.hpp"
-#include "edm/measurement.hpp"
-#include "edm/spacepoint.hpp"
-#include "geometry/pixel_segmentation.hpp"
+#include <chrono>
+#include <iomanip>
+#include <iostream>
 
-// seeding (cpu)
-#include "seeding/seed_finding.hpp"
-#include "seeding/spacepoint_grouping.hpp"
-// seeding (cuda)
-#include "cuda/seeding/seed_finding.hpp"
+// vecmem
+#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/cuda/managed_memory_resource.hpp>
+
+// algorithms
+#include "clusterization/clusterization_algorithm.hpp"
+#include "track_finding/seeding_algorithm.hpp"
+#include "cuda/track_finding/seeding_algorithm.hpp"
 
 // io
 #include "io/csv.hpp"
-
-// vecmem
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
-#include <vecmem/memory/host_memory_resource.hpp>
-
-// std
-#include <chrono>
-#include <iomanip>
+#include "io/reader.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
             unsigned int skip_events, unsigned int events, bool skip_cpu,
@@ -42,7 +34,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     uint64_t n_seeds_cuda = 0;
 
     // Memory resource used by the EDM.
-    vecmem::host_memory_resource resource;
+    vecmem::host_memory_resource host_mr;
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -50,65 +42,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     // Elapsed time
     float wall_time(0);
     float hit_reading_cpu(0);
-    float binning_cpu(0);
     float seeding_cpu(0);
     float seeding_cuda(0);
-
-    /*------------------------------
-      Spacepoint grid configuration
-      ------------------------------*/
-
-    // Seed finder config
-    traccc::seedfinder_config config;
-    // silicon detector max
-    config.rMax = 160.;
-    config.deltaRMin = 5.;
-    config.deltaRMax = 160.;
-    config.collisionRegionMin = -250.;
-    config.collisionRegionMax = 250.;
-    // config.zMin = -2800.; // this value introduces redundant bins without any
-    // spacepoints config.zMax = 2800.;
-    config.zMin = -1186.;
-    config.zMax = 1186.;
-    config.maxSeedsPerSpM = 5;
-    // 2.7 eta
-    config.cotThetaMax = 7.40627;
-    config.sigmaScattering = 1.00000;
-
-    config.minPt = 500.;
-    config.bFieldInZ = 0.00199724;
-
-    config.beamPos = {-.5, -.5};
-    config.impactMax = 10.;
-
-    config.highland = 13.6 * std::sqrt(config.radLengthPerSeed) *
-                      (1 + 0.038 * std::log(config.radLengthPerSeed));
-    float maxScatteringAngle = config.highland / config.minPt;
-    config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
-    // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV and
-    // millimeter
-    // TODO: change using ACTS units
-    config.pTPerHelixRadius = 300. * config.bFieldInZ;
-    config.minHelixDiameter2 =
-        std::pow(config.minPt * 2 / config.pTPerHelixRadius, 2);
-    config.pT2perRadius =
-        std::pow(config.highland / config.pTPerHelixRadius, 2);
-
-    // setup spacepoint grid config
-    traccc::spacepoint_grid_config grid_config;
-    grid_config.bFieldInZ = config.bFieldInZ;
-    grid_config.minPt = config.minPt;
-    grid_config.rMax = config.rMax;
-    grid_config.zMax = config.zMax;
-    grid_config.zMin = config.zMin;
-    grid_config.deltaRMax = config.deltaRMax;
-    grid_config.cotThetaMax = config.cotThetaMax;
-
-    traccc::spacepoint_grouping sg(config, grid_config, &mng_mr);
-    traccc::seed_finding sf(config);
-
-    traccc::multiplet_estimator tml_cfg;
-    traccc::cuda::seed_finding sf_cuda(config, sg.get_spgrid(), tml_cfg, &mng_mr);
 
     /*-----------------
       hit reading
@@ -137,7 +72,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
             {"particle_id", "geometry_id", "tx", "ty", "tz", "tt", "tpx", "tpy",
              "tpz", "te", "deltapx", "deltapy", "deltapz", "deltae", "index"});
         traccc::host_spacepoint_container spacepoints_per_event =
-            traccc::read_hits(hreader, resource);
+            traccc::read_hits(hreader, host_mr);
 
         for (size_t i = 0; i < spacepoints_per_event.headers.size(); i++) {
             auto& spacepoints_per_module = spacepoints_per_event.items[i];
@@ -155,60 +90,45 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     }
 
     for (unsigned int event = 0; event < events; ++event) {
-        /*-------------------
-          spacepoint binning
-          -------------------*/
-
-        // create internal spacepoints grouped in bins
-        /*time*/ auto start_binning_cpu = std::chrono::system_clock::now();
+	/*-------------------
+	  Seeding
+	  --------------------*/
 
         auto& spacepoints_per_event = all_spacepoints[event];
-
-        auto internal_sp_per_event = sg(spacepoints_per_event);
-
-        /*time*/ auto end_binning_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_binning_cpu =
-            end_binning_cpu - start_binning_cpu;
-
-        /*time*/ binning_cpu += time_binning_cpu.count();
-
-        /*-----------------------
-          seed finding -- cpu
-          -----------------------*/
-
-        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
-
-        traccc::host_seed_container seeds;
-
-        if (skip_cpu == false) {
-            seeds = sf(internal_sp_per_event);
-            // n_seeds += seeds.size();
-            n_seeds += seeds.headers[0];
-
-            /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-            /*time*/ std::chrono::duration<double> time_seeding_cpu =
-                end_seeding_cpu - start_seeding_cpu;
-            /*time*/ seeding_cpu += time_seeding_cpu.count();
-
-            for (size_t i = 0; i < internal_sp_per_event.headers.size(); ++i) {
-                n_internal_spacepoints += internal_sp_per_event.items[i].size();
-            }
-        }
-
-        /*-----------------------
-          seed finding -- cuda
-          -----------------------*/
-
+	
+	// cuda
+	
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
-        auto seeds_cuda = sf_cuda(internal_sp_per_event);
-        n_seeds_cuda += seeds_cuda.headers[0];
-
+	
+	traccc::cuda::seeding_algorithm sa_cuda(&mng_mr);
+        auto sa_cuda_result = sa_cuda(spacepoints_per_event);
+        auto& seeds_cuda = sa_cuda_result.second;
+	n_seeds_cuda += seeds_cuda.headers[0];
+	
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
+	
+	// cpu
+	
+        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
-        // std::cout << time_seeding_cuda.count() << std::endl;
+	traccc::host_seed_container seeds;
+	traccc::host_internal_spacepoint_container internal_sp_per_event;
+        if (!skip_cpu) {	
+	    traccc::seeding_algorithm sa(&host_mr);
+	    auto sa_result = sa(spacepoints_per_event);
+	    internal_sp_per_event = sa_result.first;
+	    seeds = sa_result.second;
+	    n_internal_spacepoints += internal_sp_per_event.total_size();
+	}
+	n_seeds += seeds.total_size();
+	
+	/*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+	/*time*/ std::chrono::duration<double> time_seeding_cpu =
+	    end_seeding_cpu - start_seeding_cpu;
+	/*time*/ seeding_cpu += time_seeding_cpu.count();
 
         /*----------------------------------
           compare seeds from cpu and cuda
@@ -239,7 +159,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         event_string.replace(event_string.size() - event_number.size(),
                              event_number.size(), event_number);
 
-        if (!skip_write) {
+        if (!skip_write && !skip_cpu) {
             traccc::spacepoint_writer spwriter{"event" + event_string +
                                                "-spacepoints.csv"};
             for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
@@ -271,7 +191,6 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
             traccc::seed_writer sd_writer{"event" + event_string +
                                           "-seeds.csv"};
-            // for (size_t i = 0; i < seeds.size(); ++i) {
             for (auto seed : seeds.items[0]) {
                 auto weight = seed.weight;
                 auto z_vertex = seed.z_vertex;
@@ -284,6 +203,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
                                   spT.x(), spT.y(), spT.z(), 0, 0});
             }
 
+	    /*
             traccc::multiplet_statistics_writer multiplet_stat_writer{
                 "event" + event_string + "-multiplet_statistics.csv"};
 
@@ -301,6 +221,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
             auto seed_stats = sf.get_seed_stats();
             seed_stat_writer.append(
                 {seed_stats.n_internal_sp, seed_stats.n_seeds});
+	    */
         }
     }
 
@@ -322,9 +243,6 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
               << wall_time << std::endl;
     std::cout << "hit reading (cpu)   " << std::setw(10) << std::left
               << hit_reading_cpu << std::endl;
-
-    std::cout << "binning_time (cpu)  " << std::setw(10) << std::left
-              << binning_cpu << std::endl;
     std::cout << "seeding_time (cpu)  " << std::setw(10) << std::left
               << seeding_cpu << std::endl;
     std::cout << "seeding_time (cuda) " << std::setw(10) << std::left
