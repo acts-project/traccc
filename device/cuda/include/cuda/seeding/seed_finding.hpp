@@ -37,7 +37,6 @@ struct seed_finding {
 		 multiplet_estimator& estimator,
                  vecmem::memory_resource* mr)
         : m_seedfinder_config(config),
-          m_sp_grid(sp_grid),
 	  m_estimator(estimator),
           m_mr(mr),
 
@@ -158,7 +157,6 @@ struct seed_finding {
     bool first_alloc;
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
-    std::shared_ptr<spacepoint_grid> m_sp_grid;
     multiplet_estimator m_estimator;
     seed_filtering m_seed_filtering;
 

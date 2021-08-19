@@ -94,6 +94,7 @@ struct seedfinder_config {
 
 // spacepoint grid configuration
 struct spacepoint_grid_config {
+
     // magnetic field in kTesla
     scalar bFieldInZ;
     // minimum pT to be found by seedfinder in MeV

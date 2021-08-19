@@ -52,7 +52,7 @@ class seeding_algorithm
             std::pow(m_config.minPt * 2 / m_config.pTPerHelixRadius, 2);
         m_config.pT2perRadius =
             std::pow(m_config.highland / m_config.pTPerHelixRadius, 2);
-
+	
         m_grid_config.bFieldInZ = m_config.bFieldInZ;
         m_grid_config.minPt = m_config.minPt;
         m_grid_config.rMax = m_config.rMax;
