@@ -8,12 +8,12 @@ on:
 
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
-  
+
 jobs:
   builds:
     name: ${{ matrix.platform.name }}-${{ matrix.build }}
     runs-on: ubuntu-latest
-    container: ghcr.io/acts-project/ubuntu2004:v11
+    container: ${{ matrix.platform.container }}
     strategy:
       matrix:
         platform:
@@ -36,10 +36,9 @@ jobs:
           if ${{ matrix.platform.name == 'CPU'}}; then
             cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -B build -S .	  
           elif ${{ matrix.platform.name == 'CUDA'}}; then
-            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DTRACCC_BUILD_CUDA=ON -B build -S .
+            cmake -B build -S . -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DTRACCC_BUILD_CUDA=ON -DCMAKE_CXX_COMPILER=/usr/bin/g++-8 -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
           fi
       - name: Build
         run: cmake --build build -- -j$(nproc)
       - name: Run tests & examples
         run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
-          
