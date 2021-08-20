@@ -20,14 +20,15 @@ jobs:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v11
           - name: CUDA
-            container: ghcr.io/acts-project/ubuntu1804_cuda:v9
+            container: ghcr.io/acts-project/ubuntu1804_cuda:v11
         build:
           - Release
           - Debug
     steps:
       - name: Dependencies
         run: apt-get install -y git-lfs
-      - uses: actions/checkout@v2  
+      #- uses: actions/checkout@v2
+      - uses: actions/checkout@v1      
         with:
           submodules: true
           lfs: true
