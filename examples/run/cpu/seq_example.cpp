@@ -73,10 +73,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Writer
           ------------*/
 
-	traccc::write_measurements(event, measurements_per_event);
-	traccc::write_spacepoints(event, spacepoints_per_event);
-	traccc::write_internal_spacepoints(event, internal_sp_per_event);
-	traccc::write_seeds(event, seeds);
+        traccc::write_measurements(event, measurements_per_event);
+        traccc::write_spacepoints(event, spacepoints_per_event);
+        traccc::write_internal_spacepoints(event, internal_sp_per_event);
+        traccc::write_seeds(event, seeds);
     }
 
     std::cout << "==> Statistics ... " << std::endl;

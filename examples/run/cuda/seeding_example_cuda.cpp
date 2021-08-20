@@ -58,7 +58,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
     // Loop over events
     for (unsigned int event = 0; event < events; ++event) {
-	
+
         /*time*/ auto start_hit_reading_cpu = std::chrono::system_clock::now();
 
         // Read the cells from the relevant event file
@@ -162,10 +162,10 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
                              event_number.size(), event_number);
 
         if (!skip_cpu) {
-	    traccc::write_spacepoints(event, spacepoints_per_event);
-	    traccc::write_internal_spacepoints(event, internal_sp_per_event);
-	    traccc::write_seeds(event, seeds);	    
-	    
+            traccc::write_spacepoints(event, spacepoints_per_event);
+            traccc::write_internal_spacepoints(event, internal_sp_per_event);
+            traccc::write_seeds(event, seeds);
+
             /*
             traccc::multiplet_statistics_writer multiplet_stat_writer{
                 "event" + event_string + "-multiplet_statistics.csv"};
@@ -231,7 +231,7 @@ int main(int argc, char* argv[]) {
     bool skip_cpu = std::atoi(argv[4]);
 
     std::cout << "Running ./seeding_example " << detector_file << " "
-              << hit_directory << " " << " " << events << " "
-              << skip_cpu  << std::endl;
+              << hit_directory << " "
+              << " " << events << " " << skip_cpu << std::endl;
     return seq_run(detector_file, hit_directory, events, skip_cpu);
 }

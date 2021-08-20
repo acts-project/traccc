@@ -15,8 +15,8 @@
 
 // io
 #include "io/csv.hpp"
-#include "io/utils.hpp"
 #include "io/reader.hpp"
+#include "io/utils.hpp"
 #include "io/writer.hpp"
 
 // algorithms
@@ -76,7 +76,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
                             "activation", "time"});
         traccc::host_cell_container cells_per_event =
             traccc::read_cells(creader, host_mr, &surface_transforms);
-	
+
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
             end_file_reading_cpu - start_file_reading_cpu;
@@ -163,10 +163,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
           ------------*/
 
         if (!skip_cpu) {
-	    traccc::write_measurements(event, measurements_per_event);
-	    traccc::write_spacepoints(event, spacepoints_per_event);
-	    traccc::write_internal_spacepoints(event, internal_sp_per_event);
-	    traccc::write_seeds(event, seeds);
+            traccc::write_measurements(event, measurements_per_event);
+            traccc::write_spacepoints(event, spacepoints_per_event);
+            traccc::write_internal_spacepoints(event, internal_sp_per_event);
+            traccc::write_seeds(event, seeds);
         }
     }
 
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
     bool skip_cpu = std::atoi(argv[4]);
 
     std::cout << "Running ./seq_example " << detector_file << " "
-              << hit_directory << " " << " " << events << " "
-              << skip_cpu << " " << std::endl;
+              << hit_directory << " "
+              << " " << events << " " << skip_cpu << " " << std::endl;
     return seq_run(detector_file, hit_directory, events, skip_cpu);
 }

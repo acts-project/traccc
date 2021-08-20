@@ -65,7 +65,7 @@ class seeding_algorithm
         internal_sp_per_event = sg->operator()(spacepoints_per_event);
 
         // seed finding
-        seeds = sf->operator()(internal_sp_per_event);	
+        seeds = sf->operator()(internal_sp_per_event);
     }
 
     private:
