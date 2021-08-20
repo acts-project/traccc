@@ -11,6 +11,7 @@
 #include "io/csv.hpp"
 #include "io/reader.hpp"
 #include "io/utils.hpp"
+#include "io/writer.hpp"
 
 // algorithms
 #include "clusterization/clusterization_algorithm.hpp"
@@ -72,45 +73,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Writer
           ------------*/
 
-        traccc::measurement_writer mwriter{
-            traccc::get_event_filename(event, "-measurements.csv")};
-        for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
-            auto measurements_per_module = measurements_per_event.items[i];
-            auto module = measurements_per_event.headers[i];
-            for (const auto& measurement : measurements_per_module) {
-                const auto& local = measurement.local;
-                mwriter.append({module.module, "", local[0], local[1], 0., 0.,
-                                0., 0., 0., 0., 0., 0.});
-            }
-        }
-
-        traccc::spacepoint_writer spwriter{
-            traccc::get_event_filename(event, "-spacepoints.csv")};
-        for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
-            auto spacepoints_per_module = spacepoints_per_event.items[i];
-            auto module = spacepoints_per_event.headers[i];
-
-            for (const auto& spacepoint : spacepoints_per_module) {
-                const auto& pos = spacepoint.global;
-                spwriter.append({module, pos[0], pos[1], pos[2], 0., 0., 0.});
-            }
-        }
-
-        traccc::internal_spacepoint_writer internal_spwriter{
-            traccc::get_event_filename(event, "-internal_spacepoints.csv")};
-        for (size_t i = 0; i < internal_sp_per_event.items.size(); ++i) {
-            auto internal_sp_per_bin = internal_sp_per_event.items[i];
-            auto bin = internal_sp_per_event.headers[i].global_index;
-
-            for (const auto& internal_sp : internal_sp_per_bin) {
-                const auto& x = internal_sp.m_x;
-                const auto& y = internal_sp.m_y;
-                const auto& z = internal_sp.m_z;
-                const auto& varR = internal_sp.m_varianceR;
-                const auto& varZ = internal_sp.m_varianceZ;
-                internal_spwriter.append({bin, x, y, z, varR, varZ});
-            }
-        }
+	traccc::write_measurements(event, measurements_per_event);
+	traccc::write_spacepoints(event, spacepoints_per_event);
+	traccc::write_internal_spacepoints(event, internal_sp_per_event);
+	traccc::write_seeds(event, seeds);
     }
 
     std::cout << "==> Statistics ... " << std::endl;

@@ -21,10 +21,10 @@
 // io
 #include "io/csv.hpp"
 #include "io/reader.hpp"
+#include "io/writer.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
-            unsigned int skip_events, unsigned int events, bool skip_cpu,
-            bool skip_write) {
+            unsigned int events, bool skip_cpu) {
 
     // Output stats
     uint64_t n_modules = 0;
@@ -57,8 +57,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     std::vector<traccc::host_spacepoint_container> all_spacepoints;
 
     // Loop over events
-    for (unsigned int event = skip_events; event < skip_events + events;
-         ++event) {
+    for (unsigned int event = 0; event < events; ++event) {
+	
         /*time*/ auto start_hit_reading_cpu = std::chrono::system_clock::now();
 
         // Read the cells from the relevant event file
@@ -148,7 +148,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
                 }
             }
             float matching_rate = float(n_match) / seeds.headers[0];
-            std::cout << "event " << std::to_string(skip_events + event)
+            std::cout << "event " << std::to_string(event)
                       << " seed matching rate: " << matching_rate << std::endl;
         }
 
@@ -157,54 +157,15 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
           ------------*/
 
         std::string event_string = "000000000";
-        std::string event_number = std::to_string(skip_events + event);
+        std::string event_number = std::to_string(event);
         event_string.replace(event_string.size() - event_number.size(),
                              event_number.size(), event_number);
 
-        if (!skip_write && !skip_cpu) {
-            traccc::spacepoint_writer spwriter{"event" + event_string +
-                                               "-spacepoints.csv"};
-            for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
-                auto spacepoints_per_module = spacepoints_per_event.items[i];
-                auto module = spacepoints_per_event.headers[i];
-
-                for (const auto& spacepoint : spacepoints_per_module) {
-                    const auto& pos = spacepoint.global;
-                    spwriter.append(
-                        {module, pos[0], pos[1], pos[2], 0., 0., 0.});
-                }
-            }
-
-            traccc::internal_spacepoint_writer internal_spwriter{
-                "event" + event_string + "-internal_spacepoints.csv"};
-            for (size_t i = 0; i < internal_sp_per_event.items.size(); ++i) {
-                auto internal_sp_per_bin = internal_sp_per_event.items[i];
-                auto bin = internal_sp_per_event.headers[i].global_index;
-
-                for (const auto& internal_sp : internal_sp_per_bin) {
-                    const auto& x = internal_sp.m_x;
-                    const auto& y = internal_sp.m_y;
-                    const auto& z = internal_sp.m_z;
-                    const auto& varR = internal_sp.m_varianceR;
-                    const auto& varZ = internal_sp.m_varianceZ;
-                    internal_spwriter.append({bin, x, y, z, varR, varZ});
-                }
-            }
-
-            traccc::seed_writer sd_writer{"event" + event_string +
-                                          "-seeds.csv"};
-            for (auto seed : seeds.items[0]) {
-                auto weight = seed.weight;
-                auto z_vertex = seed.z_vertex;
-                auto spB = seed.spB;
-                auto spM = seed.spM;
-                auto spT = seed.spT;
-
-                sd_writer.append({weight, z_vertex, spB.x(), spB.y(), spB.z(),
-                                  0, 0, spM.x(), spM.y(), spM.z(), 0, 0,
-                                  spT.x(), spT.y(), spT.z(), 0, 0});
-            }
-
+        if (!skip_cpu) {
+	    traccc::write_spacepoints(event, spacepoints_per_event);
+	    traccc::write_internal_spacepoints(event, internal_sp_per_event);
+	    traccc::write_seeds(event, seeds);	    
+	    
             /*
             traccc::multiplet_statistics_writer multiplet_stat_writer{
                 "event" + event_string + "-multiplet_statistics.csv"};
@@ -259,21 +220,18 @@ int main(int argc, char* argv[]) {
     if (argc < 4) {
         std::cout << "Not enough arguments, minimum requirement: " << std::endl;
         std::cout << "./seq_example <detector_file> <hit_directory> "
-                     "<skip_events> <events> <skip_cpu> <skip_write>"
+                     "<events> <skip_cpu>"
                   << std::endl;
         return -1;
     }
 
     auto detector_file = std::string(argv[1]);
     auto hit_directory = std::string(argv[2]);
-    auto skip_events = std::atoi(argv[3]);
-    auto events = std::atoi(argv[4]);
-    bool skip_cpu = std::atoi(argv[5]);
-    bool skip_write = std::atoi(argv[6]);
+    auto events = std::atoi(argv[3]);
+    bool skip_cpu = std::atoi(argv[4]);
 
     std::cout << "Running ./seeding_example " << detector_file << " "
-              << hit_directory << " " << skip_events << " " << events << " "
-              << skip_cpu << " " << skip_write << std::endl;
-    return seq_run(detector_file, hit_directory, skip_events, events, skip_cpu,
-                   skip_write);
+              << hit_directory << " " << " " << events << " "
+              << skip_cpu  << std::endl;
+    return seq_run(detector_file, hit_directory, events, skip_cpu);
 }

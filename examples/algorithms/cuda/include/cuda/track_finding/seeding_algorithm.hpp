@@ -74,18 +74,18 @@ class seeding_algorithm {
 
         // seed finding
         auto seeds = sf->operator()(internal_sp_per_event);
-
+	
         // output container
         o.first = std::move(internal_sp_per_event);
         o.second = std::move(seeds);
     }
 
-    private:
+private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     multiplet_estimator m_estimator;
     std::shared_ptr<traccc::spacepoint_grouping> sg;
-    std::shared_ptr<traccc::cuda::seed_finding> sf;
+    std::shared_ptr<traccc::cuda::seed_finding> sf;        
     vecmem::memory_resource* m_mr;
 };
 
