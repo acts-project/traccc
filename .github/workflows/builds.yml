@@ -27,12 +27,17 @@ jobs:
     steps:
       - name: Dependencies
         run: apt-get install -y git-lfs
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2  
         with:
           submodules: true
           lfs: true
       - name: Configure
-        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -B build -S .
+        run: |
+          if ${{ matrix.platform.name == 'CPU'}}; then
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -B build -S .	  
+          elif ${{ matrix.platform.name == 'CUDA'}}; then
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DTRACCC_BUILD_CUDA=ON -B build -S .
+          fi
       - name: Build
         run: cmake --build build -- -j$(nproc)
       - name: Run tests & examples
