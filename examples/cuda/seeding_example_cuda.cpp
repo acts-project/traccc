@@ -33,7 +33,7 @@
 // custom
 #include "tml_stats_config.hpp"
 
-int seq_run(const std::string& detector_file, const std::string& hits_dir,
+int seq_run(const std::string&, const std::string& hits_dir,
             unsigned int skip_events, unsigned int events, bool skip_cpu,
             bool skip_write) {
 
@@ -41,7 +41,6 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     uint64_t n_modules = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_internal_spacepoints = 0;
-    uint64_t n_doublets = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 

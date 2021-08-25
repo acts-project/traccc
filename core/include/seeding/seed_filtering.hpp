@@ -22,8 +22,9 @@ struct seed_filtering
           std::pair<host_triplet_collection&, host_seed_container&> > {
     seed_filtering() {}
 
-    output_type operator()(const input_type& i) const override {
+    output_type operator()(const input_type&) const override {
         // not used
+        __builtin_unreachable();
     }
 
     /// Callable operator for the seed filtering

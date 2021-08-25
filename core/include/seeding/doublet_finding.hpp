@@ -67,10 +67,6 @@ struct doublet_finding
         // Run the algorithm
         const auto& spM =
             isp_container.items[spM_location.bin_idx][spM_location.sp_idx];
-        const auto& rM = spM.radius();
-        const auto& zM = spM.z();
-        const auto& varianceRM = spM.varianceR();
-        const auto& varianceZM = spM.varianceZ();
 
         auto& counts = bin_information.bottom_idx.counts;
         auto& bottom_bin_indices = bin_information.bottom_idx.vector_indices;
