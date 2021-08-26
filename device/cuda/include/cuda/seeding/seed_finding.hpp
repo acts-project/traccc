@@ -38,7 +38,6 @@ struct seed_finding {
         : m_seedfinder_config(config),
           m_sp_grid(sp_grid),
           m_stats_config(stats_cfg),
-          m_mr(mr),
 
           // initialize all vecmem containers:
           // the size of header and item vector = the number of spacepoint bins
@@ -69,7 +68,8 @@ struct seed_finding {
                                                      mr),
                host_triplet_container::item_vector(sp_grid->size(false), mr)}),
           seed_container({host_seed_container::header_vector(1, 0, mr),
-                          host_seed_container::item_vector(1, mr)}) {
+                          host_seed_container::item_vector(1, mr)}),
+          m_mr(mr) {
         first_alloc = true;
     }
 

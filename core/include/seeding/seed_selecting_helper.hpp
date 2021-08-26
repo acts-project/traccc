@@ -23,7 +23,7 @@ struct seed_selecting_helper {
     /// @param triplet_weight is the weight of triplet to be updated
     static TRACCC_HOST_DEVICE void seed_weight(
         const seedfilter_config& filter_config,
-        const internal_spacepoint<spacepoint>& spM,
+        const internal_spacepoint<spacepoint>&,
         const internal_spacepoint<spacepoint>& spB,
         const internal_spacepoint<spacepoint>& spT, scalar& triplet_weight) {
         scalar weight = 0;
@@ -50,10 +50,9 @@ struct seed_selecting_helper {
     /// @return boolean value
     static TRACCC_HOST_DEVICE bool single_seed_cut(
         const seedfilter_config& filter_config,
-        const internal_spacepoint<spacepoint>& spM,
+        const internal_spacepoint<spacepoint>&,
         const internal_spacepoint<spacepoint>& spB,
-        const internal_spacepoint<spacepoint>& spT,
-        const scalar& triplet_weight) {
+        const internal_spacepoint<spacepoint>&, const scalar& triplet_weight) {
         return !(spB.radius() > filter_config.good_spB_min_radius &&
                  triplet_weight < filter_config.good_spB_min_weight);
     }
@@ -68,8 +67,8 @@ struct seed_selecting_helper {
     ///
     /// @return boolean value
     static TRACCC_HOST_DEVICE bool cut_per_middle_sp(
-        const seedfilter_config& filter_config, const spacepoint& spM,
-        const spacepoint& spB, const spacepoint& spT,
+        const seedfilter_config& filter_config, const spacepoint&,
+        const spacepoint& spB, const spacepoint&,
         const scalar& triplet_weight) {
         return (triplet_weight > filter_config.seed_min_weight ||
                 spB.radius() > filter_config.spB_min_radius);
