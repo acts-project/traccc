@@ -35,15 +35,16 @@ jobs:
         run: >
           if ${{ matrix.platform.name == 'CPU'}}; then
             cmake -B build -S . \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }} 
+              -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+              -DCMAKE_CXX_FLAGS="-Werror"
           elif ${{ matrix.platform.name == 'CUDA'}}; then
             cmake -B build -S . \
               -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
               -DCMAKE_CUDA_COMPILER=$(which nvcc) \
-              -DTRACCC_BUILD_CUDA=ON 
+              -DTRACCC_BUILD_CUDA=ON \
+              -DCMAKE_CXX_FLAGS="-Werror"
           fi
       - name: Build
         run: cmake --build build -- -j$(nproc)
       - name: Run tests & examples
         run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
-
