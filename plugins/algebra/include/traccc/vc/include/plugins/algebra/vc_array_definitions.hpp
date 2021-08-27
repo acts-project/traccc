@@ -1,6 +1,13 @@
-#include "algebra/definitions/vc_array.hpp"
+/** Algebra plugins, part of the ACTS project
+ * 
+ * (c) 2020 CERN for the benefit of the ACTS project
+ * 
+ * Mozilla Public License Version 2.0
+ */
+ 
+#pragma once
 
-#define ALGEBRA_PLUGIN vc_array
+#include "algebra/definitions/vc_array.hpp"
 
 namespace traccc {
 
