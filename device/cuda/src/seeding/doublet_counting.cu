@@ -74,19 +74,21 @@ __global__ void doublet_counting_kernel(
     // bin index
     unsigned int bin_idx = 0;
     unsigned int ref_block_idx = 0;
-    cuda_helper::get_header_idx(internal_sp_device.items, bin_idx,
+    cuda_helper::get_header_idx(internal_sp_device.get_items(), bin_idx,
                                 ref_block_idx);
 
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    const auto& bin_info = internal_sp_device.headers.at(bin_idx);
-    auto internal_sp_per_bin = internal_sp_device.items.at(bin_idx);
+    const auto& bin_info = internal_sp_device.get_headers().at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    auto& num_compat_spM_per_bin = doublet_counter_device.headers.at(bin_idx);
-    auto doublet_counter_per_bin = doublet_counter_device.items.at(bin_idx);
+    auto& num_compat_spM_per_bin =
+        doublet_counter_device.get_headers().at(bin_idx);
+    auto doublet_counter_per_bin =
+        doublet_counter_device.get_items().at(bin_idx);
 
     // index of internal spacepoint in the item vector
     auto sp_idx = (blockIdx.x - ref_block_idx) * blockDim.x + threadIdx.x;
@@ -113,7 +115,7 @@ __global__ void doublet_counting_kernel(
     for (size_t i_n = 0; i_n < bin_info.bottom_idx.counts; ++i_n) {
         const auto& neigh_bin = bin_info.bottom_idx.vector_indices[i_n];
         const auto& neigh_internal_sp_per_bin =
-            internal_sp_device.items.at(neigh_bin);
+            internal_sp_device.get_items().at(neigh_bin);
 
         for (size_t spB_idx = 0; spB_idx < neigh_internal_sp_per_bin.size();
              ++spB_idx) {
