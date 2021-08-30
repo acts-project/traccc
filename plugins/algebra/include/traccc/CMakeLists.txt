@@ -24,4 +24,11 @@ if (${ALGEBRA_PLUGIN_INCLUDE_VC})
   add_subdirectory(vc)
 endif()
 
+# vecmem
+if (${ALGEBRA_PLUGIN_INCLUDE_VECMEM})  
+  target_link_libraries(traccc_algebra_plugins INTERFACE traccc::vecmem)  
+  add_subdirectory(vecmem)
+endif()
+
+
 add_library(traccc::algebra_plugins ALIAS traccc_algebra_plugins)

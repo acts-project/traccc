@@ -1,5 +1,5 @@
 
-#include "algebra/definitions/std_array.hpp"
+#include "algebra/definitions/vecmem_array.hpp"
 
 namespace traccc {
 
