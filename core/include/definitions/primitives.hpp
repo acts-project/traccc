@@ -8,6 +8,7 @@
 #pragma once
 
 #include <stdint.h>
+
 #include "definitions/algebra.hpp"
 
 namespace traccc {

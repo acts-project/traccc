@@ -16,8 +16,8 @@ namespace traccc {
 template <typename T, std::size_t N>
 using array = std::array<T, N>;
 using transform3 = algebra::std_array::transform3;
-    
-} // namespace traccc
+
+}  // namespace traccc
 
 #endif
 
@@ -31,7 +31,7 @@ template <typename T, std::size_t N>
 using array = Eigen::Matrix<T, N, 1>;
 using transform3 = algebra::eigen::transform3;
 
-} // namespace traccc
+}  // namespace traccc
 
 #endif
 
@@ -45,7 +45,6 @@ template <typename T, std::size_t N>
 using array = vecmem::static_array<T, N>;
 using transform3 = algebra::array::transform3;
 
-} // namespace traccc
+}  // namespace traccc
 
 #endif
-
