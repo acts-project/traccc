@@ -145,16 +145,14 @@ class container {
 #endif
     }
 
-    /**
-     * @brief Argument-forwarding constructor.
-     *
-     * This constructor forwards its arguments to both internal vectors.
-     * Obviously, this requires the arguments to be quite general, but this
-     * constructor can be useful when initializing a container for a
-     * specific vecmem memory resource.
-     */
-    template <class... args>
-    TRACCC_HOST explicit container(args&&... a) : headers(a...), items(a...) {}
+    template <typename size_type>
+    TRACCC_HOST explicit container(size_type size, vecmem::memory_resource* mr)
+        : headers(size, mr), items(size, mr) {}
+
+    TRACCC_HOST explicit container(vecmem::memory_resource* mr)
+        : headers(mr), items(mr) {}
+
+    TRACCC_HOST container() = default;
 
     /**
      * @brief Bounds-checking mutable element accessor.

@@ -26,9 +26,7 @@ struct spacepoint_grouping {
     host_internal_spacepoint_container operator()(
         const host_spacepoint_container& sp_container,
         vecmem::memory_resource* mr = nullptr) {
-        host_internal_spacepoint_container internal_sp_container = {
-            host_internal_spacepoint_container::header_vector(mr),
-            host_internal_spacepoint_container::item_vector(mr)};
+        host_internal_spacepoint_container internal_sp_container(mr);
 
         this->operator()(sp_container, internal_sp_container);
 

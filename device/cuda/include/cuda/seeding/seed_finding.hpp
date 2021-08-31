@@ -41,35 +41,14 @@ struct seed_finding {
 
           // initialize all vecmem containers:
           // the size of header and item vector = the number of spacepoint bins
-          doublet_counter_container(
-              {host_doublet_counter_container::header_vector(
-                   sp_grid->size(false), 0, mr),
-               host_doublet_counter_container::item_vector(sp_grid->size(false),
-                                                           mr)}),
-
-          mid_bot_container(
-              {host_doublet_container::header_vector(sp_grid->size(false), 0,
-                                                     mr),
-               host_doublet_container::item_vector(sp_grid->size(false), mr)}),
-
-          mid_top_container(
-              {host_doublet_container::header_vector(sp_grid->size(false), 0,
-                                                     mr),
-               host_doublet_container::item_vector(sp_grid->size(false), mr)}),
-
-          triplet_counter_container(
-              {host_triplet_counter_container::header_vector(
-                   sp_grid->size(false), 0, mr),
-               host_triplet_counter_container::item_vector(sp_grid->size(false),
-                                                           mr)}),
-
-          triplet_container(
-              {host_triplet_container::header_vector(sp_grid->size(false), 0,
-                                                     mr),
-               host_triplet_container::item_vector(sp_grid->size(false), mr)}),
-          seed_container({host_seed_container::header_vector(1, 0, mr),
-                          host_seed_container::item_vector(1, mr)}),
+          doublet_counter_container(sp_grid->size(false), mr),
+          mid_bot_container(sp_grid->size(false), mr),
+          mid_top_container(sp_grid->size(false), mr),
+          triplet_counter_container(sp_grid->size(false), mr),
+          triplet_container(sp_grid->size(false), mr),
+          seed_container(1, mr),
           m_mr(mr) {
+
         first_alloc = true;
     }
 
