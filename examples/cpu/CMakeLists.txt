@@ -1,5 +1,5 @@
 add_executable (seq_single_module seq_single_module.cpp)
-target_link_libraries (seq_single_module LINK_PUBLIC traccc::core vecmem::core)
+target_link_libraries (seq_single_module LINK_PUBLIC traccc::core)
 add_test(NAME example_seq_single_module
          COMMAND seq_single_module)
 
