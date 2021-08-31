@@ -22,8 +22,9 @@ struct seed_filtering
           std::pair<host_triplet_collection&, host_seed_container&> > {
     seed_filtering() {}
 
-    output_type operator()(const input_type& i) const override {
+    output_type operator()(const input_type&) const override {
         // not used
+        __builtin_unreachable();
     }
 
     /// Callable operator for the seed filtering
@@ -45,15 +46,18 @@ struct seed_filtering
         for (auto& triplet : triplets) {
             // bottom
             auto spB_idx = triplet.sp1;
-            auto spB = isp_container.items[spB_idx.bin_idx][spB_idx.sp_idx];
+            auto spB =
+                isp_container.get_items()[spB_idx.bin_idx][spB_idx.sp_idx];
 
             // middle
             auto spM_idx = triplet.sp2;
-            auto spM = isp_container.items[spM_idx.bin_idx][spM_idx.sp_idx];
+            auto spM =
+                isp_container.get_items()[spM_idx.bin_idx][spM_idx.sp_idx];
 
             // top
             auto spT_idx = triplet.sp3;
-            auto spT = isp_container.items[spT_idx.bin_idx][spT_idx.sp_idx];
+            auto spT =
+                isp_container.get_items()[spT_idx.bin_idx][spT_idx.sp_idx];
 
             seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
                                                triplet.weight);
@@ -125,8 +129,8 @@ struct seed_filtering
 
         for (; it < itBegin + maxSeeds; ++it) {
             // seeds.push_back(*it);
-            seeds.headers[0]++;
-            seeds.items[0].push_back(*it);
+            seeds.get_headers()[0]++;
+            seeds.get_items()[0].push_back(*it);
         }
     }
 

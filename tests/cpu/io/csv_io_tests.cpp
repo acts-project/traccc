@@ -22,11 +22,9 @@ TEST_F(io, csv_read_single_module) {
 
     vecmem::host_memory_resource resource;
     auto single_module_cells = traccc::read_cells(creader, resource);
-    ASSERT_EQ(single_module_cells.items.size(), 1u);
-    ASSERT_EQ(single_module_cells.items.size(),
-              single_module_cells.headers.size());
-    auto module_cells = single_module_cells.items[0];
-    auto module = single_module_cells.headers[0];
+    ASSERT_EQ(single_module_cells.size(), 1u);
+    auto module_cells = single_module_cells.at(0).items;
+    auto module = single_module_cells.at(0).header;
 
     ASSERT_EQ(module.module, 0u);
     ASSERT_EQ(module.range0[0], 123u);
@@ -44,11 +42,10 @@ TEST_F(io, csv_read_two_modules) {
         file, {"module", "cannel0", "channel1", "activation", "time"});
     vecmem::host_memory_resource resource;
     auto two_module_cells = traccc::read_cells(creader, resource);
-    ASSERT_EQ(two_module_cells.items.size(), 2u);
-    ASSERT_EQ(two_module_cells.items.size(), two_module_cells.headers.size());
+    ASSERT_EQ(two_module_cells.size(), 2u);
 
-    auto first_module_cells = two_module_cells.items[0];
-    auto first_module = two_module_cells.headers[0];
+    auto first_module_cells = two_module_cells.at(0).items;
+    auto first_module = two_module_cells.at(0).header;
 
     ASSERT_EQ(first_module_cells.size(), 6u);
 
@@ -58,8 +55,8 @@ TEST_F(io, csv_read_two_modules) {
     ASSERT_EQ(first_module.range1[0], 32u);
     ASSERT_EQ(first_module.range1[1], 880u);
 
-    auto second_module_cells = two_module_cells.items[1];
-    auto second_module = two_module_cells.headers[1];
+    auto second_module_cells = two_module_cells.at(1).items;
+    auto second_module = two_module_cells.at(1).header;
 
     ASSERT_EQ(second_module_cells.size(), 8u);
 
@@ -92,7 +89,7 @@ TEST_F(io, csv_read_tml_pixelbarrel) {
     vecmem::host_memory_resource resource;
     auto tml_barrel_modules = traccc::read_cells(creader, resource);
 
-    ASSERT_EQ(tml_barrel_modules.items.size(), 2382u);
+    ASSERT_EQ(tml_barrel_modules.size(), 2382u);
 }
 
 // Google Test can be run manually from the main() function

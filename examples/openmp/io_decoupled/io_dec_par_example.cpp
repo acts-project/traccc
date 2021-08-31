@@ -37,23 +37,19 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 
         traccc::host_measurement_container measurements_per_event;
         traccc::host_spacepoint_container spacepoints_per_event;
-        measurements_per_event.headers.reserve(cells_per_event.headers.size());
-        measurements_per_event.items.reserve(cells_per_event.headers.size());
-        spacepoints_per_event.headers.reserve(cells_per_event.headers.size());
-        spacepoints_per_event.items.reserve(cells_per_event.headers.size());
+        measurements_per_event.reserve(cells_per_event.size());
+        spacepoints_per_event.reserve(cells_per_event.size());
 
 #pragma omp parallel for
-        for (size_t i = 0; i < cells_per_event.items.size(); ++i) {
-            auto& module = cells_per_event.headers[i];
+        for (size_t i = 0; i < cells_per_event.size(); ++i) {
+            auto& module = cells_per_event.get_headers()[i];
             module.pixel =
                 traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
 
             // The algorithmic code part: start
-            traccc::host_cell_collection cells_per_module(
-                cells_per_event.items[i]);
-
             traccc::cluster_collection clusters_per_module =
-                cc({cells_per_module, module});
+                cc({cells_per_event.get_items()[i],
+                    cells_per_event.get_headers()[i]});
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
@@ -62,20 +58,17 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                 sp({module, measurements_per_module});
             // The algorithmnic code part: end
 
-            n_cells += cells_per_event.items[i].size();
+            n_cells += cells_per_event.get_items()[i].size();
             n_clusters += clusters_per_module.items.size();
             n_measurements += measurements_per_module.size();
             n_space_points += spacepoints_per_module.size();
 
 #pragma omp critical
             {
-                measurements_per_event.items.push_back(
-                    std::move(measurements_per_module.items));
-                measurements_per_event.headers.push_back(module);
-
-                spacepoints_per_event.items.push_back(
-                    std::move(spacepoints_per_module.items));
-                spacepoints_per_event.headers.push_back(module.module);
+                measurements_per_event.push_back(
+                    module, std::move(measurements_per_module.items));
+                spacepoints_per_event.push_back(
+                    module.module, std::move(spacepoints_per_module.items));
             }
         }
 

@@ -38,7 +38,6 @@ struct seed_finding {
         : m_seedfinder_config(config),
           m_sp_grid(sp_grid),
           m_stats_config(stats_cfg),
-          m_mr(mr),
 
           // initialize all vecmem containers:
           // the size of header and item vector = the number of spacepoint bins
@@ -69,7 +68,8 @@ struct seed_finding {
                                                      mr),
                host_triplet_container::item_vector(sp_grid->size(false), mr)}),
           seed_container({host_seed_container::header_vector(1, 0, mr),
-                          host_seed_container::item_vector(1, mr)}) {
+                          host_seed_container::item_vector(1, mr)}),
+          m_mr(mr) {
         first_alloc = true;
     }
 
@@ -83,11 +83,11 @@ struct seed_finding {
 
         // resize the item vectors based on the pre-estimated statistics, which
         // is experiment-dependent
-        for (size_t i = 0; i < isp_container.headers.size(); ++i) {
+        for (size_t i = 0; i < isp_container.size(); ++i) {
 
             // estimate the number of multiplets as a function of the middle
             // spacepoints in the bin
-            size_t n_spM = isp_container.items[i].size();
+            size_t n_spM = isp_container.get_items()[i].size();
             size_t n_mid_bot_doublets =
                 m_stats_config->get_mid_bot_doublets_size(n_spM);
             size_t n_mid_top_doublets =
@@ -95,26 +95,26 @@ struct seed_finding {
             size_t n_triplets = m_stats_config->get_triplets_size(n_spM);
 
             // zero initialization
-            doublet_counter_container.headers[i] = 0;
-            mid_bot_container.headers[i] = 0;
-            mid_top_container.headers[i] = 0;
-            triplet_counter_container.headers[i] = 0;
-            triplet_container.headers[i] = 0;
+            doublet_counter_container.get_headers()[i] = 0;
+            mid_bot_container.get_headers()[i] = 0;
+            mid_top_container.get_headers()[i] = 0;
+            triplet_counter_container.get_headers()[i] = 0;
+            triplet_container.get_headers()[i] = 0;
 
             // resize the item vectors in container
-            doublet_counter_container.items[i].resize(n_spM);
-            mid_bot_container.items[i].resize(n_mid_bot_doublets);
-            mid_top_container.items[i].resize(n_mid_top_doublets);
-            triplet_counter_container.items[i].resize(n_mid_bot_doublets);
-            triplet_container.items[i].resize(n_triplets);
+            doublet_counter_container.get_items()[i].resize(n_spM);
+            mid_bot_container.get_items()[i].resize(n_mid_bot_doublets);
+            mid_top_container.get_items()[i].resize(n_mid_top_doublets);
+            triplet_counter_container.get_items()[i].resize(n_mid_bot_doublets);
+            triplet_container.get_items()[i].resize(n_triplets);
 
-            n_internal_sp += isp_container.items[i].size();
+            n_internal_sp += isp_container.get_items()[i].size();
         }
 
         // estimate the number of seeds as a function of the internal
         // spacepoints in an event
-        seed_container.headers[0] = 0;
-        seed_container.items[0].resize(
+        seed_container.get_headers()[0] = 0;
+        seed_container.get_items()[0].resize(
             m_stats_config->get_seeds_size(n_internal_sp));
 
         first_alloc = false;

@@ -66,11 +66,8 @@ struct doublet_finding
 
         // Run the algorithm
         const auto& spM =
-            isp_container.items[spM_location.bin_idx][spM_location.sp_idx];
-        const auto& rM = spM.radius();
-        const auto& zM = spM.z();
-        const auto& varianceRM = spM.varianceR();
-        const auto& varianceZM = spM.varianceZ();
+            isp_container
+                .get_items()[spM_location.bin_idx][spM_location.sp_idx];
 
         auto& counts = bin_information.bottom_idx.counts;
         auto& bottom_bin_indices = bin_information.bottom_idx.vector_indices;
@@ -80,7 +77,7 @@ struct doublet_finding
             for (size_t i = 0; i < counts; ++i) {
                 auto& bin_idx = bottom_bin_indices[i];
 
-                auto& spacepoints = isp_container.items[bin_idx];
+                auto& spacepoints = isp_container.get_items()[bin_idx];
 
                 for (size_t sp_idx = 0; sp_idx < spacepoints.size(); ++sp_idx) {
                     auto& spB = spacepoints[sp_idx];
@@ -107,7 +104,7 @@ struct doublet_finding
 
             for (size_t i = 0; i < counts; ++i) {
                 auto& bin_idx = top_bin_indices[i];
-                auto& spacepoints = isp_container.items[bin_idx];
+                auto& spacepoints = isp_container.get_items()[bin_idx];
 
                 for (size_t sp_idx = 0; sp_idx < spacepoints.size(); ++sp_idx) {
                     auto& spT = spacepoints[sp_idx];

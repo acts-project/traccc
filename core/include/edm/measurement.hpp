@@ -11,7 +11,6 @@
 
 #include "collection.hpp"
 #include "container.hpp"
-#include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 
 namespace traccc {

@@ -9,23 +9,30 @@
 
 #include <stdint.h>
 
-#include <array>
-#include <vecmem/containers/static_array.hpp>
+#ifdef ALGEBRA_PLUGIN_INCLUDE_ARRAY
+#include "plugins/algebra/array_definitions.hpp"
+#elif ALGEBRA_PLUGIN_INCLUDE_EIGEN
+#include "plugins/algebra/eigen_definitions.hpp"
+#elif ALGEBRA_PLUGIN_INCLUDE_SMATRIX
+#include "plugins/algebra/smatrix_definitions.hpp"
+#elif ALGEBRA_PLUGIN_INCLUDE_VC
+#include "plugins/algebra/vc_definitions.hpp"
+#elif ALGEBRA_PLUGIN_INCLUDE_VECMEM
+#include "plugins/algebra/vecmem_definitions.hpp"
+#endif
 
 namespace traccc {
 
-using scalar = float;
 using geometry_id = uint64_t;
 using event_id = uint64_t;
 using channel_id = unsigned int;
 
-template <typename T, std::size_t N>
-using array = vecmem::static_array<T, N>;
+using vector2 = __plugin::point2;
+using point2 = __plugin::point2;
+using variance2 = __plugin::point2;
+using point3 = __plugin::point3;
+using vector3 = __plugin::point3;
+using variance3 = __plugin::point3;
+using transform3 = __plugin::transform3;
 
-using vector2 = array<scalar, 2>;
-using point2 = array<scalar, 2>;
-using variance2 = array<scalar, 2>;
-using point3 = array<scalar, 3>;
-using vector3 = array<scalar, 3>;
-using variance3 = array<scalar, 3>;
 }  // namespace traccc

@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "definitions/qualifiers.hpp"
 #include "edm/container.hpp"
 
@@ -15,9 +17,9 @@ namespace traccc {
 /// location of spacepoint in internal spacepoint container
 struct sp_location {
     /// index of the bin of the spacepoint grid
-    unsigned int bin_idx;
+    std::size_t bin_idx;
     /// index of the spacepoint in the bin
-    unsigned int sp_idx;
+    std::size_t sp_idx;
 };
 
 inline TRACCC_HOST_DEVICE bool operator==(const sp_location& lhs,

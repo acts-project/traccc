@@ -8,7 +8,6 @@
 #pragma once
 
 // traccc include(s).
-#include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 #include "edm/collection.hpp"
 #include "edm/container.hpp"

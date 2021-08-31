@@ -35,8 +35,8 @@ void print_statistics(const traccc::host_cell_container& data) {
 
     std::vector<std::size_t> bins(bins_edges.size());
 
-    for (const traccc::host_cell_collection& module : data.items) {
-        std::size_t count = module.size();
+    for (std::size_t i = 0; i < data.size(); ++i) {
+        std::size_t count = data.at(i).items.size();
 
         for (std::size_t i = 0; i < bins_edges.size(); ++i) {
             if (count >= bins_edges[i] &&
@@ -75,11 +75,9 @@ void print_statistics(const traccc::host_cell_container& data) {
 
 void run_on_event(traccc::component_connection& cc,
                   const traccc::host_cell_container& data) {
-    for (std::size_t i = 0; i < data.headers.size(); ++i) {
-        traccc::host_cell_collection cells_per_module(data.items[i]);
-
+    for (std::size_t i = 0; i < data.size(); ++i) {
         traccc::cluster_collection clusters_per_module =
-            cc({cells_per_module, data.headers.at(i)});
+            cc({data.at(i).items, data.at(i).header});
     }
 }
 
