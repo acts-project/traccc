@@ -74,7 +74,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
                 traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
 
             // The algorithmic code part: start
-	    traccc::host_cell_collection cells_per_module(std::move(cells_per_event.at(i).items));	    
+            traccc::host_cell_collection cells_per_module(
+                std::move(cells_per_event.at(i).items));
             traccc::cluster_collection clusters_per_module =
                 cc({cells_per_module, cells_per_event.at(i).header});
             clusters_per_module.position_from_cell = module.pixel;
