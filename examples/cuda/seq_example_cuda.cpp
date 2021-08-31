@@ -192,9 +192,9 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
                 std::chrono::system_clock::now();
 
             // The algorithmic code part: start
+	    traccc::host_cell_collection cells_per_module(std::move(cells_per_event.at(i).items));	    
             traccc::cluster_collection clusters_per_module =
-                cc({cells_per_event.get_items()[i],
-                    cells_per_event.get_headers()[i]});
+                cc({cells_per_module, cells_per_event.at(i).header});
             clusters_per_module.position_from_cell = module.pixel;
 
             /*time*/ auto end_clusterization_cpu =
