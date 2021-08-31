@@ -16,7 +16,6 @@
 #include <map>
 #include <vecmem/memory/memory_resource.hpp>
 
-#include "definitions/algebra.hpp"
 #include "definitions/primitives.hpp"
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
