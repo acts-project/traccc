@@ -145,13 +145,23 @@ class container {
 #endif
     }
 
+    /**
+     * @brief Constructor with vector size and memory resource .
+     */
     template <typename size_type>
     TRACCC_HOST explicit container(size_type size, vecmem::memory_resource* mr)
         : headers(size, mr), items(size, mr) {}
 
+    /**
+     * @brief Constructor with memory resource .
+     */
+
     TRACCC_HOST explicit container(vecmem::memory_resource* mr)
         : headers(mr), items(mr) {}
 
+    /**
+     * @brief Default Constructor
+     */
     TRACCC_HOST container() = default;
 
     /**
