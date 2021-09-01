@@ -162,7 +162,7 @@ class container {
     /**
      * @brief Default Constructor
      */
-    TRACCC_HOST container() = default;
+    container() = default;
 
     /**
      * @brief Bounds-checking mutable element accessor.

@@ -74,12 +74,13 @@ struct doublet_finding
 
         // for middle-bottom doublets
         if (bottom) {
-            for (size_t i = 0; i < counts; ++i) {
+            for (unsigned int i = 0; i < counts; ++i) {
                 auto& bin_idx = bottom_bin_indices[i];
 
                 auto& spacepoints = isp_container.get_items()[bin_idx];
 
-                for (size_t sp_idx = 0; sp_idx < spacepoints.size(); ++sp_idx) {
+                for (unsigned int sp_idx = 0; sp_idx < spacepoints.size();
+                     ++sp_idx) {
                     auto& spB = spacepoints[sp_idx];
 
                     if (!doublet_finding_helper::isCompatible(
@@ -102,11 +103,12 @@ struct doublet_finding
             auto& counts = bin_information.top_idx.counts;
             auto& top_bin_indices = bin_information.top_idx.vector_indices;
 
-            for (size_t i = 0; i < counts; ++i) {
+            for (unsigned int i = 0; i < counts; ++i) {
                 auto& bin_idx = top_bin_indices[i];
                 auto& spacepoints = isp_container.get_items()[bin_idx];
 
-                for (size_t sp_idx = 0; sp_idx < spacepoints.size(); ++sp_idx) {
+                for (unsigned int sp_idx = 0; sp_idx < spacepoints.size();
+                     ++sp_idx) {
                     auto& spT = spacepoints[sp_idx];
 
                     if (!doublet_finding_helper::isCompatible(

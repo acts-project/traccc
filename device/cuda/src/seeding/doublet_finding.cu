@@ -54,7 +54,7 @@ void doublet_finding(const seedfinder_config& config,
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_middle_sp_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
         num_blocks +=
             doublet_counter_container.get_headers()[i] / num_threads + 1;
     }
@@ -155,18 +155,18 @@ __global__ void doublet_finding_kernel(
     // spacepoints
     unsigned int mid_bot_start_idx = 0;
     unsigned int mid_top_start_idx = 0;
-    for (size_t i = 0; i < gid; i++) {
+    for (unsigned int i = 0; i < gid; i++) {
         mid_bot_start_idx += doublet_counter_per_bin[i].n_mid_bot;
         mid_top_start_idx += doublet_counter_per_bin[i].n_mid_top;
     }
 
     // Loop over (bottom and top) internal spacepoints in tje neighbor bins
-    for (size_t i_n = 0; i_n < bin_info.bottom_idx.counts; ++i_n) {
+    for (unsigned int i_n = 0; i_n < bin_info.bottom_idx.counts; ++i_n) {
         const auto& neigh_bin = bin_info.bottom_idx.vector_indices[i_n];
         const auto& neigh_internal_sp_per_bin =
             internal_sp_device.get_items().at(neigh_bin);
 
-        for (size_t spB_idx = 0; spB_idx < neigh_internal_sp_per_bin.size();
+        for (unsigned int spB_idx = 0; spB_idx < neigh_internal_sp_per_bin.size();
              ++spB_idx) {
             const auto& neigh_isp = neigh_internal_sp_per_bin[spB_idx];
 
@@ -183,7 +183,7 @@ __global__ void doublet_finding_kernel(
                         doublet_counter_per_bin[gid].n_mid_bot &&
                     num_mid_bot_doublets_per_bin <
                         mid_bot_doublets_per_bin.size()) {
-                    size_t pos = mid_bot_start_idx + n_mid_bot_per_spM;
+                    unsigned int pos = mid_bot_start_idx + n_mid_bot_per_spM;
 
                     // prevent overflow again
                     if (pos >= mid_bot_doublets_per_bin.size()) {
@@ -209,7 +209,7 @@ __global__ void doublet_finding_kernel(
                         doublet_counter_per_bin[gid].n_mid_top &&
                     num_mid_top_doublets_per_bin <
                         mid_top_doublets_per_bin.size()) {
-                    size_t pos = mid_top_start_idx + n_mid_top_per_spM;
+                    unsigned int pos = mid_top_start_idx + n_mid_top_per_spM;
 
                     // prevent overflow again
                     if (pos >= mid_top_doublets_per_bin.size()) {

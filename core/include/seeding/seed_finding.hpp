@@ -59,7 +59,7 @@ struct seed_finding
         const bool top = false;
 
         // iterate over grid bins
-        for (size_t i = 0; i < isp_container.size(); ++i) {
+        for (unsigned int i = 0; i < isp_container.size(); ++i) {
             auto& bin_information = isp_container.get_headers()[i];
             auto& spM_collection = isp_container.get_items()[i];
 
@@ -70,7 +70,7 @@ struct seed_finding
             */
 
             /// iterate over middle spacepoints
-            for (size_t j = 0; j < spM_collection.size(); ++j) {
+            for (unsigned int j = 0; j < spM_collection.size(); ++j) {
                 sp_location spM_location({i, j});
 
                 // middule-bottom doublet search
@@ -91,7 +91,7 @@ struct seed_finding
 
                 // triplet search from the combinations of two doublets which
                 // share middle spacepoint
-                for (size_t k = 0; k < mid_bot.first.size(); ++k) {
+                for (unsigned int k = 0; k < mid_bot.first.size(); ++k) {
                     auto& doublet_mb = mid_bot.first[k];
                     auto& lb = mid_bot.second[k];
 
