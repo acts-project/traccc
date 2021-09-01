@@ -166,8 +166,8 @@ __global__ void doublet_finding_kernel(
         const auto& neigh_internal_sp_per_bin =
             internal_sp_device.get_items().at(neigh_bin);
 
-        for (unsigned int spB_idx = 0; spB_idx < neigh_internal_sp_per_bin.size();
-             ++spB_idx) {
+        for (unsigned int spB_idx = 0;
+             spB_idx < neigh_internal_sp_per_bin.size(); ++spB_idx) {
             const auto& neigh_isp = neigh_internal_sp_per_bin[spB_idx];
 
             // Check if middle and bottom sp can form a doublet
