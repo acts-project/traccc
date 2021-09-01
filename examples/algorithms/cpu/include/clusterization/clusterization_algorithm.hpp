@@ -43,17 +43,15 @@ class clusterization_algorithm
         auto& spacepoints_per_event = o.second;
 
         // reserve the vector size
-        measurements_per_event.headers.resize(cells_per_event.headers.size());
-        measurements_per_event.items.resize(cells_per_event.headers.size());
-        spacepoints_per_event.headers.resize(cells_per_event.headers.size());
-        spacepoints_per_event.items.resize(cells_per_event.headers.size());
+        measurements_per_event.reserve(cells_per_event.size());
+        spacepoints_per_event.reserve(cells_per_event.size());
 
-        for (std::size_t i = 0; i < cells_per_event.items.size(); ++i) {
-            const auto& module = cells_per_event.headers[i];
+        for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
+            auto module = cells_per_event.at(i).header;
 
             // The algorithmic code part: start
             traccc::cluster_collection clusters_per_module =
-                cc({cells_per_event.items[i], cells_per_event.headers[i]});
+                cc({cells_per_event.at(i).items, cells_per_event.at(i).header});
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
@@ -62,12 +60,11 @@ class clusterization_algorithm
                 sp({module, measurements_per_module});
             // The algorithmnic code part: end
 
-            measurements_per_event.items[i] =
-                std::move(measurements_per_module);
-            measurements_per_event.headers[i] = module;
+            measurements_per_event.push_back(
+                module, std::move(measurements_per_module));
 
-            spacepoints_per_event.items[i] = std::move(spacepoints_per_module);
-            spacepoints_per_event.headers[i] = module.module;
+            spacepoints_per_event.push_back(module.module,
+                                            std::move(spacepoints_per_module));
         }
     }
 

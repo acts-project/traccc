@@ -55,7 +55,8 @@ void doublet_finding(const seedfinder_config& config,
     // num_compatible_middle_sp_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
-        num_blocks += doublet_counter_container.headers[i] / num_threads + 1;
+        num_blocks +=
+            doublet_counter_container.get_headers()[i] / num_threads + 1;
     }
 
     // shared memory assignment for the number of and mid_top doublets per
@@ -97,25 +98,29 @@ __global__ void doublet_finding_kernel(
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    const auto& bin_info = internal_sp_device.headers.at(bin_idx);
-    auto internal_sp_per_bin = internal_sp_device.items.at(bin_idx);
+    const auto& bin_info = internal_sp_device.get_headers().at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    auto& num_compat_spM_per_bin = doublet_counter_device.headers.at(bin_idx);
-    auto doublet_counter_per_bin = doublet_counter_device.items.at(bin_idx);
+    auto& num_compat_spM_per_bin =
+        doublet_counter_device.get_headers().at(bin_idx);
+    auto doublet_counter_per_bin =
+        doublet_counter_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_bot doublets per bin
     // Item of doublet: doublet objects per bin
     auto& num_mid_bot_doublets_per_bin =
-        mid_bot_doublet_device.headers.at(bin_idx);
-    auto mid_bot_doublets_per_bin = mid_bot_doublet_device.items.at(bin_idx);
+        mid_bot_doublet_device.get_headers().at(bin_idx);
+    auto mid_bot_doublets_per_bin =
+        mid_bot_doublet_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
     auto& num_mid_top_doublets_per_bin =
-        mid_top_doublet_device.headers.at(bin_idx);
-    auto mid_top_doublets_per_bin = mid_top_doublet_device.items.at(bin_idx);
+        mid_top_doublet_device.get_headers().at(bin_idx);
+    auto mid_top_doublets_per_bin =
+        mid_top_doublet_device.get_items().at(bin_idx);
 
     // zero initialization for the number of doublets per threads
     extern __shared__ int num_doublets_per_thread[];
@@ -159,7 +164,7 @@ __global__ void doublet_finding_kernel(
     for (size_t i_n = 0; i_n < bin_info.bottom_idx.counts; ++i_n) {
         const auto& neigh_bin = bin_info.bottom_idx.vector_indices[i_n];
         const auto& neigh_internal_sp_per_bin =
-            internal_sp_device.items.at(neigh_bin);
+            internal_sp_device.get_items().at(neigh_bin);
 
         for (size_t spB_idx = 0; spB_idx < neigh_internal_sp_per_bin.size();
              ++spB_idx) {

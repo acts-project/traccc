@@ -73,7 +73,7 @@ struct triplet_finding
         // Run the algorithm
 
         auto& spM_idx = mid_bot.sp1;
-        auto& spM = isp_container.items[spM_idx.bin_idx][spM_idx.sp_idx];
+        auto& spM = isp_container.get_items()[spM_idx.bin_idx][spM_idx.sp_idx];
 
         scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
         scalar scatteringInRegion2 = m_config.maxScatteringAngle2 * iSinTheta2;
@@ -104,7 +104,7 @@ struct triplet_finding
             auto& current_triplet = triplets[i];
             auto& spT_idx = current_triplet.sp3;
             auto& current_spT =
-                isp_container.items[spT_idx.bin_idx][spT_idx.sp_idx];
+                isp_container.get_items()[spT_idx.bin_idx][spT_idx.sp_idx];
             const auto& currentTop_r = current_spT.radius();
 
             // if two compatible seeds with high distance in r are found,
@@ -124,8 +124,8 @@ struct triplet_finding
                 auto& other_triplet = triplets[j];
                 auto& other_spT_idx = other_triplet.sp3;
                 auto& other_spT =
-                    isp_container
-                        .items[other_spT_idx.bin_idx][other_spT_idx.sp_idx];
+                    isp_container.get_items()[other_spT_idx.bin_idx]
+                                             [other_spT_idx.sp_idx];
 
                 // compared top SP should have at least deltaRMin distance
                 const auto& otherTop_r = other_spT.radius();

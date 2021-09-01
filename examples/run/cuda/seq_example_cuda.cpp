@@ -97,7 +97,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
-        n_modules += cells_per_event.headers.size();
+        n_modules += cells_per_event.size();
         n_cells += cells_per_event.total_size();
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
@@ -112,7 +112,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
         auto sa_cuda_result = sa_cuda(spacepoints_per_event);
         auto& seeds_cuda = sa_cuda_result.second;
-        n_seeds_cuda += seeds_cuda.headers[0];
+        n_seeds_cuda += seeds_cuda.get_headers()[0];
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -144,16 +144,16 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
         if (!skip_cpu) {
             int n_match = 0;
-            for (auto seed : seeds.items[0]) {
-                if (std::find(
-                        seeds_cuda.items[0].begin(),
-                        seeds_cuda.items[0].begin() + seeds_cuda.headers[0],
-                        seed) !=
-                    seeds_cuda.items[0].begin() + seeds_cuda.headers[0]) {
+            for (auto seed : seeds.get_items()[0]) {
+                if (std::find(seeds_cuda.get_items()[0].begin(),
+                              seeds_cuda.get_items()[0].begin() +
+                                  seeds_cuda.get_headers()[0],
+                              seed) != seeds_cuda.get_items()[0].begin() +
+                                           seeds_cuda.get_headers()[0]) {
                     n_match++;
                 }
             }
-            float matching_rate = float(n_match) / seeds.headers[0];
+            float matching_rate = float(n_match) / seeds.get_headers()[0];
             std::cout << "event " << std::to_string(event)
                       << " seed matching rate: " << matching_rate << std::endl;
         }

@@ -52,16 +52,16 @@ struct seed_finding
         auto& seeds = o;
 
         // Run the algorithm
-        seeds.headers = host_seed_container::header_vector(1, 0);
-        seeds.items = host_seed_container::item_vector(1);
+        seeds = {host_seed_container::header_vector(1, 0),
+                 host_seed_container::item_vector(1)};
 
         const bool bottom = true;
         const bool top = false;
 
         // iterate over grid bins
-        for (size_t i = 0; i < isp_container.headers.size(); ++i) {
-            auto& bin_information = isp_container.headers[i];
-            auto& spM_collection = isp_container.items[i];
+        for (size_t i = 0; i < isp_container.size(); ++i) {
+            auto& bin_information = isp_container.get_headers()[i];
+            auto& spM_collection = isp_container.get_items()[i];
 
             // multiplet statistics for GPU vector size estimation
             /*

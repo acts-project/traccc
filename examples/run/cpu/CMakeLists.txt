@@ -1,5 +1,6 @@
 add_executable (seq_single_module seq_single_module.cpp)
 target_link_libraries (seq_single_module LINK_PUBLIC traccc::io traccc::algorithms)
+
 add_test(NAME example_seq_single_module
          COMMAND seq_single_module)
 

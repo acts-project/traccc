@@ -29,6 +29,21 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-compiler-options )
 
+# option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
+set(TRACCC_ALGEBRA_PLUGIN EIGEN)
+if (TRACCC_ALGEBRA_PLUGIN)
+  message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGIN})
+  set(ALGEBRA_PLUGIN_INCLUDE_${TRACCC_ALGEBRA_PLUGIN} ON)
+  add_definitions(-DALGEBRA_PLUGIN_INCLUDE_${TRACCC_ALGEBRA_PLUGIN})
+endif()
+
+# option for algebra scalar type 
+set(TRACCC_CUSTOM_SCALARTYPE float)
+if(TRACCC_CUSTOM_SCALARTYPE)
+    message(STATUS "Building with custom scalar type: " ${TRACCC_CUSTOM_SCALARTYPE})
+    set(ALGEBRA_PLUGIN_CUSTOM_SCALARTYPE ${TRACCC_CUSTOM_SCALARTYPE})
+endif()
+    
 # Set GPU-related options
 if( TRACCC_BUILD_CUDA )
   add_subdirectory( device/cuda )
@@ -38,8 +53,9 @@ endif()
 add_subdirectory(core)
 add_subdirectory(io)
 add_subdirectory(examples)
+add_subdirectory(plugins)
 if(BUILD_TESTING)
-   add_subdirectory(tests)
+  add_subdirectory(tests)
 endif()
 
 # Build the necessary externals.

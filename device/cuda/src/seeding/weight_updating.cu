@@ -49,7 +49,7 @@ void weight_updating(const seedfilter_config& filter_config,
     // / num_threads + 1
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
-        num_blocks += triplet_container.headers[i] / num_threads + 1;
+        num_blocks += triplet_container.get_headers()[i] / num_threads + 1;
     }
 
     // shared memory assignment for the radius of the compatible top spacepoints
@@ -86,17 +86,19 @@ __global__ void weight_updating_kernel(
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    auto internal_sp_per_bin = internal_sp_device.items.at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
 
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
-    auto& num_compat_mb_per_bin = triplet_counter_device.headers.at(bin_idx);
-    auto triplet_counter_per_bin = triplet_counter_device.items.at(bin_idx);
+    auto& num_compat_mb_per_bin =
+        triplet_counter_device.get_headers().at(bin_idx);
+    auto triplet_counter_per_bin =
+        triplet_counter_device.get_items().at(bin_idx);
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
-    auto& num_triplets_per_bin = triplet_device.headers.at(bin_idx);
-    auto triplets_per_bin = triplet_device.items.at(bin_idx);
+    auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
+    auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
     extern __shared__ scalar compat_seedR[];
     __syncthreads();
@@ -139,7 +141,7 @@ __global__ void weight_updating_kernel(
     }
 
     auto& current_spT =
-        internal_sp_device.items[spT_idx.bin_idx][spT_idx.sp_idx];
+        internal_sp_device.get_items()[spT_idx.bin_idx][spT_idx.sp_idx];
 
     scalar currentTop_r = current_spT.radius();
 
@@ -163,7 +165,7 @@ __global__ void weight_updating_kernel(
         auto other_spT_idx = (*tr_it).sp3;
         auto other_spT =
             internal_sp_device
-                .items[other_spT_idx.bin_idx][other_spT_idx.sp_idx];
+                .get_items()[other_spT_idx.bin_idx][other_spT_idx.sp_idx];
 
         // compared top SP should have at least deltaRMin distance
         scalar otherTop_r = other_spT.radius();

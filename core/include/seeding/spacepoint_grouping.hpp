@@ -26,10 +26,7 @@ struct spacepoint_grouping {
 
     host_internal_spacepoint_container operator()(
         const host_spacepoint_container& sp_container) {
-        host_internal_spacepoint_container internal_sp_container = {
-            host_internal_spacepoint_container::header_vector(m_mr),
-            host_internal_spacepoint_container::item_vector(m_mr)};
-
+        host_internal_spacepoint_container internal_sp_container(m_mr);
         this->operator()(sp_container, internal_sp_container);
 
         return internal_sp_container;
@@ -54,7 +51,7 @@ struct spacepoint_grouping {
         std::vector<std::vector<internal_spacepoint<spacepoint>>> rBins(
             numRBins);
 
-        for (auto& sp_vec : sp_container.items) {
+        for (auto& sp_vec : sp_container.get_items()) {
             for (auto& sp : sp_vec) {
                 scalar spX = sp.global[0];
                 scalar spY = sp.global[1];
@@ -92,9 +89,6 @@ struct spacepoint_grouping {
 
         // fill rbins into grid such that each grid bin is sorted in r
         // space points with delta r < rbin size can be out of order
-        auto& headers = internal_sp_container.headers;
-        auto& items = internal_sp_container.items;
-
         // iterate over all bins (without under/overflow bins)
         auto local_bins = m_spgrid->numLocalBins();
         for (size_t i = 1; i <= local_bins[0]; ++i) {
@@ -118,9 +112,9 @@ struct spacepoint_grouping {
                 std::copy(top_indices.begin(), top_indices.end(),
                           &bin_info.top_idx.global_indices[0]);
 
-                headers.push_back(bin_info);
-                items.push_back(
-                    vecmem::vector<internal_spacepoint<spacepoint>>());
+                internal_sp_container.push_back(
+                    std::move(bin_info),
+                    vecmem::vector<internal_spacepoint<spacepoint>>(m_mr));
             }
         }
 
@@ -130,9 +124,10 @@ struct spacepoint_grouping {
                 auto local_bin = m_spgrid->localBinsFromPosition(spLocation);
                 auto global_bin = m_spgrid->globalBinFromLocalBins(local_bin);
 
-                auto location =
-                    find_vector_id_from_global_id(global_bin, headers);
-                items.at(location).push_back(std::move(isp));
+                auto location = find_vector_id_from_global_id(
+                    global_bin, internal_sp_container.get_headers());
+                internal_sp_container.at(location).items.push_back(
+                    std::move(isp));
             }
         }
 

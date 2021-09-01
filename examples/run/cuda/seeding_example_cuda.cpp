@@ -77,8 +77,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         traccc::host_spacepoint_container spacepoints_per_event =
             traccc::read_hits(hreader, host_mr);
 
-        for (size_t i = 0; i < spacepoints_per_event.headers.size(); i++) {
-            auto& spacepoints_per_module = spacepoints_per_event.items[i];
+        for (size_t i = 0; i < spacepoints_per_event.size(); i++) {
+            auto& spacepoints_per_module = spacepoints_per_event.get_items()[i];
 
             n_spacepoints += spacepoints_per_module.size();
             n_modules++;
@@ -106,7 +106,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         auto sa_cuda_result = sa_cuda(spacepoints_per_event);
         auto& seeds_cuda = sa_cuda_result.second;
-        n_seeds_cuda += seeds_cuda.headers[0];
+        n_seeds_cuda += seeds_cuda.get_headers()[0];
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -138,16 +138,16 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         if (!skip_cpu) {
             int n_match = 0;
-            for (auto seed : seeds.items[0]) {
-                if (std::find(
-                        seeds_cuda.items[0].begin(),
-                        seeds_cuda.items[0].begin() + seeds_cuda.headers[0],
-                        seed) !=
-                    seeds_cuda.items[0].begin() + seeds_cuda.headers[0]) {
+            for (auto seed : seeds.get_items()[0]) {
+                if (std::find(seeds_cuda.get_items()[0].begin(),
+                              seeds_cuda.get_items()[0].begin() +
+                                  seeds_cuda.get_headers()[0],
+                              seed) != seeds_cuda.get_items()[0].begin() +
+                                           seeds_cuda.get_headers()[0]) {
                     n_match++;
                 }
             }
-            float matching_rate = float(n_match) / seeds.headers[0];
+            float matching_rate = float(n_match) / seeds.get_headers()[0];
             std::cout << "event " << std::to_string(event)
                       << " seed matching rate: " << matching_rate << std::endl;
         }

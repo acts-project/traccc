@@ -30,7 +30,11 @@ FetchContent_Declare( VecMem
 # builds/uses GoogleTest.
 set( BUILD_TESTING FALSE )
 
-# Get it into the current directory.
-FetchContent_Populate( VecMem )
-add_subdirectory( "${vecmem_SOURCE_DIR}" "${vecmem_BINARY_DIR}"
-   EXCLUDE_FROM_ALL )
+# Check whether vecmem has been already populated
+FetchContent_GetProperties( vecmem )
+if (NOT vecmem_POPULATED)
+  # Get it into the current directory.
+  FetchContent_Populate( VecMem )
+  add_subdirectory( "${vecmem_SOURCE_DIR}" "${vecmem_BINARY_DIR}"
+    EXCLUDE_FROM_ALL )
+endif()
