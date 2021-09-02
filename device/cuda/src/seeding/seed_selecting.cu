@@ -84,7 +84,8 @@ void seed_selecting(const seedfilter_config& filter_config,
     // / num_threads + 1
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
-        num_blocks += triplet_counter_container.headers[i] / num_threads + 1;
+        num_blocks +=
+            triplet_counter_container.get_headers()[i] / num_threads + 1;
     }
 
     // shared memory assignment for the triplets of a compatible middle
@@ -128,26 +129,29 @@ __global__ void seed_selecting_kernel(
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    auto internal_sp_per_bin = internal_sp_device.items.at(bin_idx);
-    auto& num_compat_spM_per_bin = doublet_counter_device.headers.at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+    auto& num_compat_spM_per_bin =
+        doublet_counter_device.get_headers().at(bin_idx);
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    auto doublet_counter_per_bin = doublet_counter_device.items.at(bin_idx);
+    auto doublet_counter_per_bin =
+        doublet_counter_device.get_items().at(bin_idx);
 
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
-    auto& num_compat_mb_per_bin = triplet_counter_device.headers.at(bin_idx);
+    auto& num_compat_mb_per_bin =
+        triplet_counter_device.get_headers().at(bin_idx);
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
-    auto& num_triplets_per_bin = triplet_device.headers.at(bin_idx);
-    auto triplets_per_bin = triplet_device.items.at(bin_idx);
+    auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
+    auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
     // Header of seed: number of seeds per event
     // Item of seed: seed objects per event
-    auto& num_seeds = seed_device.headers.at(0);
-    auto seeds = seed_device.items.at(0);
+    auto& num_seeds = seed_device.get_headers().at(0);
+    auto seeds = seed_device.get_items().at(0);
 
     extern __shared__ triplet triplets_per_spM[];
 
@@ -176,8 +180,10 @@ __global__ void seed_selecting_kernel(
         auto& aTriplet = triplets_per_bin[i];
         auto& spB_loc = aTriplet.sp1;
         auto& spT_loc = aTriplet.sp3;
-        auto& spB = internal_sp_device.items[spB_loc.bin_idx][spB_loc.sp_idx];
-        auto& spT = internal_sp_device.items[spT_loc.bin_idx][spT_loc.sp_idx];
+        auto& spB =
+            internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
+        auto& spT =
+            internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
 
         // consider only the triplets with the same middle spacepoint
         if (spM_loc == aTriplet.sp2) {
@@ -257,8 +263,10 @@ __global__ void seed_selecting_kernel(
         auto& aTriplet = triplets_per_spM[i];
         auto& spB_loc = aTriplet.sp1;
         auto& spT_loc = aTriplet.sp3;
-        auto& spB = internal_sp_device.items[spB_loc.bin_idx][spB_loc.sp_idx];
-        auto& spT = internal_sp_device.items[spT_loc.bin_idx][spT_loc.sp_idx];
+        auto& spB =
+            internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
+        auto& spT =
+            internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
 
         // if the number of seeds reaches the threshold, break
         if (n_seeds_per_spM >= filter_config.maxSeedsPerSpM + 1) {

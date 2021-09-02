@@ -15,9 +15,9 @@ inline void write_measurements(
     const traccc::host_measurement_container &measurements_per_event) {
     traccc::measurement_writer mwriter{
         get_event_filename(event, "-measurements.csv")};
-    for (size_t i = 0; i < measurements_per_event.items.size(); ++i) {
-        auto measurements_per_module = measurements_per_event.items[i];
-        auto module = measurements_per_event.headers[i];
+    for (size_t i = 0; i < measurements_per_event.size(); ++i) {
+        auto measurements_per_module = measurements_per_event.get_items()[i];
+        auto module = measurements_per_event.get_headers()[i];
         for (const auto &measurement : measurements_per_module) {
             const auto &local = measurement.local;
             mwriter.append({module.module, "", local[0], local[1], 0., 0., 0.,
@@ -31,9 +31,9 @@ inline void write_spacepoints(
     const traccc::host_spacepoint_container &spacepoints_per_event) {
     traccc::spacepoint_writer spwriter{
         get_event_filename(event, "-spacepoints.csv")};
-    for (size_t i = 0; i < spacepoints_per_event.items.size(); ++i) {
-        auto spacepoints_per_module = spacepoints_per_event.items[i];
-        auto module = spacepoints_per_event.headers[i];
+    for (size_t i = 0; i < spacepoints_per_event.size(); ++i) {
+        auto spacepoints_per_module = spacepoints_per_event.get_items()[i];
+        auto module = spacepoints_per_event.get_headers()[i];
         for (const auto &spacepoint : spacepoints_per_module) {
             const auto &pos = spacepoint.global;
             spwriter.append({module, pos[0], pos[1], pos[2], 0., 0., 0.});

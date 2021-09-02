@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
@@ -15,7 +17,40 @@
 #include <vecmem/containers/jagged_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
+#include "definitions/qualifiers.hpp"
+
 namespace traccc {
+/**
+ * @brief View class for an element in a header-vector container.
+ *
+ * In order to enforce certain invariants on the @c container header-vector
+ * type, we access elements (which, of course, are product types of a header
+ * and a vector) through this wrapper class. This class provides
+ * low-overhead access to the struct-of-arrays container class to emulate an
+ * array-of-structs architecture.
+ *
+ * @tparam header_t The type of the header object.
+ * @tparam vector_t The fully qualified vector type.
+ */
+template <typename header_t, typename vector_t>
+class container_element {
+    public:
+    /**
+     * @brief Construct a new container element view.
+     *
+     * This constructor is extremely trivial, as it simply takes a reference
+     * to a header, a reference to a vector, and saves them in this object's
+     * internal state.
+     *
+     * @param[in] h The header object reference.
+     * @param[in] v The vector object reference.
+     */
+    TRACCC_HOST_DEVICE
+    container_element(header_t& h, vector_t& v) : header(h), items(v) {}
+
+    header_t& header;
+    vector_t& items;
+};
 
 /// Container describing objects in a given event
 ///
@@ -51,6 +86,181 @@ class container {
 
     /// @}
 
+    /**
+     * @brief The type name of the element view which is returned by various
+     * methods in this class.
+     */
+    using element_view =
+        container_element<header_t, typename item_vector::value_type>;
+
+    /**
+     * @brief The type name of the constant element view which is returned
+     * by various methods in this class.
+     */
+    using const_element_view =
+        container_element<const header_t,
+                          const typename item_vector::value_type>;
+
+    /**
+     * @brief The size type of this container, which is the type by which
+     * its elements are indexed.
+     */
+    using size_type = typename header_vector::size_type;
+
+    /**
+     * We need to assert that the header vector and the outer layer of the
+     * jagged vector have the same size type, so they can be indexed using
+     * the same type.
+     */
+    static_assert(
+        std::is_convertible<typename header_vector::size_type,
+                            typename item_vector::size_type>::value,
+        "Size type for container header and item vectors must be the same.");
+
+    /**
+     * @brief Standard two-argument constructor.
+     *
+     * To enforce the invariant that both vectors must be the same size, we
+     * check this in the constructor. This is also checked in release
+     * builds.
+     */
+    TRACCC_HOST
+    container(header_vector&& hv, item_vector&& iv) : headers(hv), items(iv) {
+        if (headers.size() != items.size()) {
+            throw std::logic_error("Header and item length not equal.");
+        }
+    }
+
+    template <typename header_vector_tp, typename item_vector_tp,
+              typename = std::enable_if<
+                  std::is_same<header_vector_tp, vector_t<header_t>>::value>,
+              typename = std::enable_if<
+                  std::is_same<item_vector_tp, jagged_vector_t<item_t>>::value>>
+    TRACCC_HOST_DEVICE container(header_vector_tp&& hv, item_vector_tp&& iv)
+        : headers(hv), items(iv) {
+#ifndef __CUDACC__
+        if (headers.size() != items.size()) {
+            throw std::logic_error("Header and item length not equal.");
+        }
+#endif
+    }
+
+    /**
+     * @brief Constructor with vector size and memory resource .
+     */
+    template <typename size_type>
+    TRACCC_HOST explicit container(size_type size, vecmem::memory_resource* mr)
+        : headers(size, mr), items(size, mr) {}
+
+    /**
+     * @brief Constructor with memory resource .
+     */
+
+    TRACCC_HOST explicit container(vecmem::memory_resource* mr)
+        : headers(mr), items(mr) {}
+
+    /**
+     * @brief Default Constructor
+     */
+    TRACCC_HOST container() = default;
+
+    /**
+     * @brief Bounds-checking mutable element accessor.
+     */
+    TRACCC_HOST
+    element_view at(size_type i) {
+        if (i >= size()) {
+            throw std::out_of_range("Index out of range.");
+        }
+
+        return operator[](i);
+    }
+
+    /**
+     * @brief Bounds-checking immutable element accessor.
+     */
+    TRACCC_HOST
+    const_element_view at(size_type i) const {
+        if (i >= size()) {
+            throw std::out_of_range("Index out of range.");
+        }
+
+        return operator[](i);
+    }
+
+    /**
+     * @brief Mutable element accessor.
+     */
+    TRACCC_HOST_DEVICE
+    element_view operator[](size_type i) { return {headers[i], items[i]}; }
+
+    /**
+     * @brief Immutable element accessor.
+     */
+    TRACCC_HOST_DEVICE
+    const_element_view operator[](size_type i) const {
+        return {headers[i], items[i]};
+    }
+
+    /**
+     * @brief Return the size of the container.
+     *
+     * In principle, the size of the two internal vectors should always be
+     * equal, but we can assert this at runtime for debug builds.
+     */
+    TRACCC_HOST_DEVICE
+    size_type size(void) const { return headers.size(); }
+
+    /**
+     * @brief Reserve space in both vectors.
+     */
+    TRACCC_HOST
+    void reserve(size_type s) {
+        headers.reserve(s);
+        items.reserve(s);
+    }
+
+    /**
+     * @brief Push a header and a vector into the container.
+     */
+    template <typename h_prime, typename v_prime>
+    TRACCC_HOST void push_back(h_prime&& new_header, v_prime&& new_items) {
+        headers.push_back(std::forward<header_t>(new_header));
+        items.push_back(
+            std::forward<typename item_vector::value_type>(new_items));
+    }
+
+    /**
+     * @brief Accessor method for the internal header vector.
+     */
+    TRACCC_HOST_DEVICE
+    const header_vector& get_headers() const { return headers; }
+
+    /**
+     * @brief Non-const accessor method for the internal header vector.
+     *
+     * @warning Do not use this function! It is dangerous, and risks breaking
+     * invariants!
+     */
+    TRACCC_HOST_DEVICE
+    header_vector& get_headers() { return headers; }
+
+    /**
+     * @brief Accessor method for the internal item vector-of-vectors.
+     */
+    TRACCC_HOST_DEVICE
+    const item_vector& get_items() const { return items; }
+
+    /**
+     * @brief Non-const accessor method for the internal item vector-of-vectors.
+     *
+     * @warning Do not use this function! It is dangerous, and risks breaking
+     * invariants!
+     */
+    TRACCC_HOST_DEVICE
+    item_vector& get_items() { return items; }
+
+    private:
     /// Headers information related to the objects in the event
     header_vector headers;
 
@@ -120,8 +330,8 @@ template <typename header_t, typename item_t>
 inline container_data<header_t, item_t> get_data(
     host_container<header_t, item_t>& cc,
     vecmem::memory_resource* resource = nullptr) {
-    return {{vecmem::get_data(cc.headers)},
-            {vecmem::get_data(cc.items, resource)}};
+    return {{vecmem::get_data(cc.get_headers())},
+            {vecmem::get_data(cc.get_items(), resource)}};
 }
 
 }  // namespace traccc
