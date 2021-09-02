@@ -28,7 +28,7 @@ struct seed_finding
     ///
     /// @param config is seed finder configuration parameters
     /// @param isp_container is internal spacepoint container
-    seed_finding(seedfinder_config& config)
+    seed_finding(const seedfinder_config& config)
         : m_doublet_finding(config), m_triplet_finding(config) {}
 
     /// Callable operator for the seed finding
