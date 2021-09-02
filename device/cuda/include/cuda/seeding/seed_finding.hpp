@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <cuda/seeding/detail/doublet_counter.hpp>
-#include <cuda/seeding/detail/stats_config.hpp>
+#include <cuda/seeding/detail/multiplet_estimator.hpp>
 #include <cuda/seeding/doublet_counting.cuh>
 #include <cuda/seeding/doublet_finding.cuh>
 #include <cuda/seeding/seed_selecting.cuh>
@@ -20,6 +20,8 @@
 #include <edm/seed.hpp>
 #include <iostream>
 #include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
+#include <seeding/seed_filtering.hpp>
 
 namespace traccc {
 namespace cuda {
@@ -34,11 +36,10 @@ struct seed_finding {
     /// @param mr vecmem memory resource
     seed_finding(seedfinder_config& config,
                  std::shared_ptr<spacepoint_grid> sp_grid,
-                 stats_config* stats_cfg, vecmem::memory_resource* mr)
+                 multiplet_estimator& estimator, vecmem::memory_resource* mr)
         : m_seedfinder_config(config),
-          m_sp_grid(sp_grid),
-          m_stats_config(stats_cfg),
-
+          m_estimator(estimator),
+          m_mr(mr),
           // initialize all vecmem containers:
           // the size of header and item vector = the number of spacepoint bins
           doublet_counter_container(sp_grid->size(false), mr),
@@ -46,8 +47,7 @@ struct seed_finding {
           mid_top_container(sp_grid->size(false), mr),
           triplet_counter_container(sp_grid->size(false), mr),
           triplet_container(sp_grid->size(false), mr),
-          seed_container(1, mr),
-          m_mr(mr) {
+          seed_container(1, mr) {
 
         first_alloc = true;
     }
@@ -68,10 +68,10 @@ struct seed_finding {
             // spacepoints in the bin
             size_t n_spM = isp_container.get_items()[i].size();
             size_t n_mid_bot_doublets =
-                m_stats_config->get_mid_bot_doublets_size(n_spM);
+                m_estimator.get_mid_bot_doublets_size(n_spM);
             size_t n_mid_top_doublets =
-                m_stats_config->get_mid_top_doublets_size(n_spM);
-            size_t n_triplets = m_stats_config->get_triplets_size(n_spM);
+                m_estimator.get_mid_top_doublets_size(n_spM);
+            size_t n_triplets = m_estimator.get_triplets_size(n_spM);
 
             // zero initialization
             doublet_counter_container.get_headers()[i] = 0;
@@ -94,7 +94,7 @@ struct seed_finding {
         // spacepoints in an event
         seed_container.get_headers()[0] = 0;
         seed_container.get_items()[0].resize(
-            m_stats_config->get_seeds_size(n_internal_sp));
+            m_estimator.get_seeds_size(n_internal_sp));
 
         first_alloc = false;
 
@@ -136,8 +136,7 @@ struct seed_finding {
     bool first_alloc;
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
-    std::shared_ptr<spacepoint_grid> m_sp_grid;
-    stats_config* m_stats_config;
+    multiplet_estimator m_estimator;
     seed_filtering m_seed_filtering;
 
     host_doublet_counter_container doublet_counter_container;

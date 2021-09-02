@@ -12,17 +12,37 @@
 namespace traccc {
 
 struct seedfinder_config {
+    // limiting location of measurements
+    // Beomki's note: this value introduces redundant bins
+    // without any spacepoints
+    // m_config.zMin = -2800.;
+    // m_config.zMax = 2800.;
+    scalar zMin = -1186;
+    scalar zMax = 1186;
+    scalar rMax = 160;
+    // WARNING: if rMin is smaller than impactMax, the bin size will be 2*pi,
+    // which will make seeding very slow!
+    scalar rMin = 33;
+
+    // Geometry Settings
+    // Detector ROI
+    // limiting location of collision region in z
+    scalar collisionRegionMin = -250;
+    scalar collisionRegionMax = +250;
+    scalar phiMin = -M_PI;
+    scalar phiMax = M_PI;
+
     // Seed Cuts
     // lower cutoff for seeds in MeV
     // FIXME: Acts units
-    scalar minPt = 400.;
+    scalar minPt = 500.;
     // cot of maximum theta angle
     // equivalent to 2.7 eta (pseudorapidity)
     scalar cotThetaMax = 7.40627;
     // minimum distance in mm in r between two measurements within one seed
     scalar deltaRMin = 5;
     // maximum distance in mm in r between two measurements within one seed
-    scalar deltaRMax = 270;
+    scalar deltaRMax = 160;
 
     // FIXME: this is not used yet
     //        scalar upperPtResolutionPerSeed = 20* Acts::GeV;
@@ -35,37 +55,21 @@ struct seedfinder_config {
 
     // impact parameter in mm
     // FIXME: Acts units
-    scalar impactMax = 20.;
-
+    scalar impactMax = 10.;
     // how many sigmas of scattering angle should be considered?
-    scalar sigmaScattering = 5;
+    scalar sigmaScattering = 1.0;
     // Upper pt limit for scattering calculation
     scalar maxPtScattering = 10000;
 
     // for how many seeds can one SpacePoint be the middle SpacePoint?
     int maxSeedsPerSpM = 5;
 
-    // Geometry Settings
-    // Detector ROI
-    // limiting location of collision region in z
-    scalar collisionRegionMin = -150;
-    scalar collisionRegionMax = +150;
-    scalar phiMin = -M_PI;
-    scalar phiMax = M_PI;
-    // limiting location of measurements
-    scalar zMin = -2800;
-    scalar zMax = 2800;
-    scalar rMax = 600;
-    // WARNING: if rMin is smaller than impactMax, the bin size will be 2*pi,
-    // which will make seeding very slow!
-    scalar rMin = 33;
-
     // Unit in kiloTesla
     // FIXME: Acts units
-    scalar bFieldInZ = 0.00208;
+    scalar bFieldInZ = 0.00199724;
     // location of beam in x,y plane.
     // used as offset for Space Points
-    vector2 beamPos{0, 0};
+    vector2 beamPos{-.5, -.5};
 
     // average radiation lengths of material on the length of a seed. used for
     // scattering.
@@ -94,6 +98,7 @@ struct seedfinder_config {
 
 // spacepoint grid configuration
 struct spacepoint_grid_config {
+
     // magnetic field in kTesla
     scalar bFieldInZ;
     // minimum pT to be found by seedfinder in MeV
