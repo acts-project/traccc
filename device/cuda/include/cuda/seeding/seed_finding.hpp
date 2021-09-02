@@ -139,13 +139,13 @@ struct seed_finding {
     multiplet_estimator m_estimator;
     seed_filtering m_seed_filtering;
 
+    vecmem::memory_resource* m_mr;
     host_doublet_counter_container doublet_counter_container;
     host_doublet_container mid_bot_container;
     host_doublet_container mid_top_container;
     host_triplet_counter_container triplet_counter_container;
     host_triplet_container triplet_container;
     host_seed_container seed_container;
-    vecmem::memory_resource* m_mr;
 };
 
 }  // namespace cuda

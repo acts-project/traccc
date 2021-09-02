@@ -33,7 +33,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     // Output stats
     uint64_t n_cells = 0;
     uint64_t n_modules = 0;
-    uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_internal_spacepoints = 0;
@@ -45,7 +44,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     float file_reading_cpu(0);
     float clusterization_cpu(0);
     float seeding_cpu(0);
-    float clusterization_cuda(0);
     float seeding_cuda(0);
 
     // Memory resource used by the EDM.
