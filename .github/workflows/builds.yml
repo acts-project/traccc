@@ -39,8 +39,8 @@ jobs:
           elif ${{ matrix.platform.name == 'CUDA'}}; then
             cmake -B build -S . \
               -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-              -DCMAKE_CXX_COMPILER=/usr/bin/g++-8 \
-              -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
+              #-DCMAKE_CXX_COMPILER=/usr/bin/g++-8 \
+              #-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
               -DTRACCC_BUILD_CUDA=ON 
           fi
       - name: Build
