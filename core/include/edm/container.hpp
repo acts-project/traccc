@@ -221,6 +221,15 @@ class container {
     }
 
     /**
+     * @brief Resize space in both vectors.
+     */
+    TRACCC_HOST
+    void resize(size_type s) {
+        headers.resize(s);
+        items.resize(s);
+    }
+
+    /**
      * @brief Push a header and a vector into the container.
      */
     template <typename h_prime, typename v_prime>
@@ -259,6 +268,17 @@ class container {
      */
     TRACCC_HOST_DEVICE
     item_vector& get_items() { return items; }
+
+    /**
+     * @breif Get number of items of jagged vector
+     */
+    uint64_t total_size() {
+        uint64_t ret = 0;
+        for (auto& item : items) {
+            ret += item.size();
+        }
+        return ret;
+    }
 
     private:
     /// Headers information related to the objects in the event

@@ -21,13 +21,12 @@ namespace traccc {
 struct spacepoint_grouping {
     // constructor declaration
     spacepoint_grouping(const seedfinder_config& config,
-                        const spacepoint_grid_config& grid_config);
+                        const spacepoint_grid_config& grid_config,
+                        vecmem::memory_resource* mr);
 
     host_internal_spacepoint_container operator()(
-        const host_spacepoint_container& sp_container,
-        vecmem::memory_resource* mr = nullptr) {
-        host_internal_spacepoint_container internal_sp_container(mr);
-
+        const host_spacepoint_container& sp_container) {
+        host_internal_spacepoint_container internal_sp_container(m_mr);
         this->operator()(sp_container, internal_sp_container);
 
         return internal_sp_container;
@@ -114,8 +113,8 @@ struct spacepoint_grouping {
                           &bin_info.top_idx.global_indices[0]);
 
                 internal_sp_container.push_back(
-                    bin_info,
-                    vecmem::vector<internal_spacepoint<spacepoint>>());
+                    std::move(bin_info),
+                    vecmem::vector<internal_spacepoint<spacepoint>>(m_mr));
             }
         }
 
@@ -141,11 +140,13 @@ struct spacepoint_grouping {
     std::shared_ptr<spacepoint_grid> m_spgrid;
     std::unique_ptr<bin_finder> m_bottom_bin_finder;
     std::unique_ptr<bin_finder> m_top_bin_finder;
+    vecmem::memory_resource* m_mr;
 };
 
 spacepoint_grouping::spacepoint_grouping(
-    const seedfinder_config& config, const spacepoint_grid_config& grid_config)
-    : m_config(config), m_grid_config(grid_config) {
+    const seedfinder_config& config, const spacepoint_grid_config& grid_config,
+    vecmem::memory_resource* mr)
+    : m_config(config), m_grid_config(grid_config), m_mr(mr) {
     // calculate circle intersections of helix and max detector radius
     scalar minHelixRadius =
         grid_config.minPt / (300. * grid_config.bFieldInZ);  // in mm
