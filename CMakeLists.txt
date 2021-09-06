@@ -46,6 +46,7 @@ endif()
     
 # Set GPU-related options
 if( TRACCC_BUILD_CUDA )
+  set( CMAKE_CUDA_STANDARD 17 CACHE STRING "The (CUDA) C++ standard to use" )
   add_subdirectory( device/cuda )
 endif()
 
