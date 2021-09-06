@@ -46,6 +46,8 @@ endif()
     
 # Set GPU-related options
 if( TRACCC_BUILD_CUDA )
+  # TODO: Tuck all of this away neatly in a CUDA configuration file.
+  cmake_minimum_required(VERSION 3.18)
   set( CMAKE_CUDA_STANDARD 17 CACHE STRING "The (CUDA) C++ standard to use" )
   add_subdirectory( device/cuda )
 endif()
