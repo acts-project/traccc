@@ -58,7 +58,7 @@ void triplet_counting(const seedfinder_config& config,
     // N_i is the number of blocks for i-th bin, defined as
     // num_mid_bot_doublet_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
         num_blocks +=
             mid_bot_doublet_container.get_headers()[i] / num_threads + 1;
     }

@@ -24,19 +24,19 @@
 namespace traccc {
 
 struct neighbor_idx {
-    size_t counts;
+    unsigned int counts;
     /// global_indices: the global indices of neighbor bins provided by axis
     /// class size of 9 is from (3 neighbors on z-axis) x (3 neighbors on
     /// phi-axis)
-    size_t global_indices[9];
+    unsigned int global_indices[9];
     /// vector_indices: the actual indices of neighbor bins, which are used for
     /// navigating internal_spacepoint_container
-    size_t vector_indices[9];
+    unsigned int vector_indices[9];
 };
 
 /// Header: bin information (global bin index, neighborhood bin indices)
 struct bin_information {
-    size_t global_index;
+    unsigned int global_index;
     neighbor_idx bottom_idx;
     neighbor_idx top_idx;
 };
@@ -154,8 +154,8 @@ using internal_spacepoint_container_buffer =
 using internal_spacepoint_container_view =
     container_view<bin_information, internal_spacepoint<spacepoint> >;
 
-inline size_t find_vector_id_from_global_id(
-    size_t global_bin, vecmem::vector<bin_information>& headers) {
+inline unsigned int find_vector_id_from_global_id(
+    unsigned int global_bin, vecmem::vector<bin_information>& headers) {
     auto iterator =
         std::find_if(headers.begin(), headers.end(),
                      [&global_bin](const bin_information& bin_info) {
