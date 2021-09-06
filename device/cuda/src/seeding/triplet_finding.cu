@@ -61,7 +61,7 @@ void triplet_finding(const seedfinder_config& config,
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_mid_bot_doublets_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
         num_blocks +=
             triplet_counter_container.get_headers()[i] / num_threads + 1;
     }
@@ -245,7 +245,7 @@ __global__ void triplet_finding_kernel(
         if (triplet_finding_helper::isCompatible(
                 spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
                 impact_parameter)) {
-            size_t pos = triplet_start_idx + n_triplets_per_mb;
+            unsigned int pos = triplet_start_idx + n_triplets_per_mb;
             // prevent the overflow
             if (pos >= triplets_per_bin.size()) {
                 continue;

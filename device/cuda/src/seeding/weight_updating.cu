@@ -48,7 +48,7 @@ void weight_updating(const seedfilter_config& filter_config,
     // N_i is the number of blocks for i-th bin, defined as num_triplets_per_bin
     // / num_threads + 1
     unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
         num_blocks += triplet_container.get_headers()[i] / num_threads + 1;
     }
 
@@ -117,8 +117,8 @@ __global__ void weight_updating_kernel(
 
     // find the reference index (start and end) of the triplet container item
     // vector
-    size_t start_idx = 0;
-    size_t end_idx = 0;
+    unsigned int start_idx = 0;
+    unsigned int end_idx = 0;
 
     for (auto triplet_counter : triplet_counter_per_bin) {
         end_idx += triplet_counter.n_triplets;
@@ -187,7 +187,7 @@ __global__ void weight_updating_kernel(
 
         bool newCompSeed = true;
 
-        for (size_t i_s = 0; i_s < num_compat_seedR; ++i_s) {
+        for (unsigned int i_s = 0; i_s < num_compat_seedR; ++i_s) {
             scalar previousDiameter = compat_seedR[i_s];
 
             // original ATLAS code uses higher min distance for 2nd found

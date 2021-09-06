@@ -83,7 +83,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     // N_i is the number of blocks for i-th bin, defined as num_triplets_per_bin
     // / num_threads + 1
     unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
         num_blocks +=
             triplet_counter_container.get_headers()[i] / num_threads + 1;
     }
@@ -170,13 +170,13 @@ __global__ void seed_selecting_kernel(
     auto& spM = internal_sp_per_bin[spM_idx];
 
     // number of triplets per compatible middle spacepoint
-    size_t n_triplets_per_spM = 0;
+    unsigned int n_triplets_per_spM = 0;
 
     // the start index of triplets_per_spM
-    size_t stride = threadIdx.x * filter_config.max_triplets_per_spM;
+    unsigned int stride = threadIdx.x * filter_config.max_triplets_per_spM;
 
     // iterate over the triplets in the bin
-    for (size_t i = 0; i < num_triplets_per_bin; ++i) {
+    for (unsigned int i = 0; i < num_triplets_per_bin; ++i) {
         auto& aTriplet = triplets_per_bin[i];
         auto& spB_loc = aTriplet.sp1;
         auto& spT_loc = aTriplet.sp3;
@@ -256,10 +256,10 @@ __global__ void seed_selecting_kernel(
                  triplet_weight_descending());
 
     // the number of good seed per compatible middle spacepoint
-    size_t n_seeds_per_spM = 0;
+    unsigned int n_seeds_per_spM = 0;
 
     // iterate over the good triplets for final selection of seeds
-    for (size_t i = stride; i < stride + n_triplets_per_spM; ++i) {
+    for (unsigned int i = stride; i < stride + n_triplets_per_spM; ++i) {
         auto& aTriplet = triplets_per_spM[i];
         auto& spB_loc = aTriplet.sp1;
         auto& spT_loc = aTriplet.sp3;
