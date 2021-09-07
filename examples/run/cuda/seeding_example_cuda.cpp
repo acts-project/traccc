@@ -120,7 +120,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         traccc::host_seed_container seeds;
         traccc::host_internal_spacepoint_container internal_sp_per_event;
         if (!skip_cpu) {
-            auto sa_result = sa(spacepoints_per_event);
+            auto sa_result =
+                sa(traccc::host_spacepoint_container(spacepoints_per_event));
             internal_sp_per_event = sa_result.first;
             seeds = sa_result.second;
             n_internal_spacepoints += internal_sp_per_event.total_size();

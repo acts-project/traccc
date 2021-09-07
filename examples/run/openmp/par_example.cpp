@@ -73,13 +73,14 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
 
             // The algorithmic code part: start
             traccc::cluster_collection clusters_per_module =
-                cc({cells_per_event.at(i).items, cells_per_event.at(i).header});
+                cc(std::move(cells_per_event.at(i).items),
+                   cells_per_event.at(i).header);
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
-                mt({clusters_per_module, module});
+                mt(std::move(clusters_per_module), module);
             traccc::host_spacepoint_collection spacepoints_per_module =
-                sp({module, measurements_per_module});
+                sp(module, std::move(measurements_per_module));
             // The algorithmnic code part: end
 
             n_cells += cells_per_event.at(i).items.size();

@@ -15,9 +15,8 @@ namespace traccc {
 
 /// Connected component labeling.
 struct spacepoint_formation
-    : public algorithm<
-          std::pair<const cell_module&, const host_measurement_collection&>,
-          host_spacepoint_collection> {
+    : public algorithm<host_spacepoint_collection(
+          const cell_module&, const host_measurement_collection&)> {
 
     /// Callable operator for the space point formation, based on one single
     /// module
@@ -30,10 +29,11 @@ struct spacepoint_formation
     ///
     /// @return a measurement collection - size of input/output container is
     /// identical
-    output_type operator()(const input_type& i) const override {
-
+    output_type operator()(
+        const cell_module& c,
+        const host_measurement_collection& m) const override {
         output_type spacepoints;
-        this->operator()(i, spacepoints);
+        this->operator()(c, m, spacepoints);
         return spacepoints;
     }
 
@@ -48,9 +48,9 @@ struct spacepoint_formation
     ///
     /// @return a measurement collection - size of input/output container is
     /// identical
-    void operator()(const input_type& i, output_type& spacepoints) const {
-        const cell_module& module = i.first;
-        const host_measurement_collection& measurements = i.second;
+    void operator()(const cell_module& module,
+                    const host_measurement_collection& measurements,
+                    output_type& spacepoints) const {
         // Run the algorithm
         spacepoints.reserve(measurements.size());
         for (const auto& m : measurements) {

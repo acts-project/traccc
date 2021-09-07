@@ -27,17 +27,18 @@ namespace traccc {
 
 class clusterization_algorithm
     : public algorithm<
-          const host_cell_container&,
-          std::pair<host_measurement_container, host_spacepoint_container> > {
+          std::pair<host_measurement_container, host_spacepoint_container>(
+              const host_cell_container&)> {
     public:
-    output_type operator()(const input_type& cells_per_event) const override {
+    output_type operator()(
+        const host_cell_container& cells_per_event) const override {
         output_type o;
         this->operator()(cells_per_event, o);
         return o;
     }
 
-    void operator()(const input_type& cells_per_event,
-                    output_type& o) const override {
+    void operator()(const host_cell_container& cells_per_event,
+                    output_type& o) const {
         // output containers
         auto& measurements_per_event = o.first;
         auto& spacepoints_per_event = o.second;
@@ -51,13 +52,14 @@ class clusterization_algorithm
 
             // The algorithmic code part: start
             traccc::cluster_collection clusters_per_module =
-                cc({cells_per_event.at(i).items, cells_per_event.at(i).header});
+                cc(std::move(cells_per_event.at(i).items),
+                   cells_per_event.at(i).header);
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
-                mt({clusters_per_module, module});
+                mt(std::move(clusters_per_module), module);
             traccc::host_spacepoint_collection spacepoints_per_module =
-                sp({module, measurements_per_module});
+                sp(module, std::move(measurements_per_module));
             // The algorithmnic code part: end
 
             measurements_per_event.push_back(

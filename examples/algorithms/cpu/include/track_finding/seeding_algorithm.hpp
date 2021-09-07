@@ -17,8 +17,8 @@ namespace traccc {
 
 class seeding_algorithm
     : public algorithm<
-          const host_spacepoint_container&,
-          std::pair<host_internal_spacepoint_container, host_seed_container> > {
+          std::pair<host_internal_spacepoint_container, host_seed_container>(
+              const host_spacepoint_container&)> {
     public:
     seeding_algorithm(vecmem::memory_resource* mr = nullptr) : m_mr(mr) {
 
@@ -49,14 +49,14 @@ class seeding_algorithm
             traccc::seed_finding(m_config));
     }
 
-    output_type operator()(const input_type& i) const override {
+    output_type operator()(const host_spacepoint_container& i) const override {
         output_type o;
         this->operator()(i, o);
         return o;
     }
 
-    void operator()(const input_type& spacepoints_per_event,
-                    output_type& o) const override {
+    void operator()(const host_spacepoint_container& spacepoints_per_event,
+                    output_type& o) const {
         // output containers
         auto& internal_sp_per_event = o.first;
         auto& seeds = o.second;

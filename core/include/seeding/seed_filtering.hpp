@@ -18,11 +18,12 @@ namespace traccc {
 /// Seed filtering to filter out the bad triplets
 struct seed_filtering
     : public algorithm<
-          const host_internal_spacepoint_container&,
-          std::pair<host_triplet_collection&, host_seed_container&> > {
+          std::pair<host_triplet_collection&, host_seed_container&>(
+              const host_internal_spacepoint_container&)> {
     seed_filtering() {}
 
-    output_type operator()(const input_type&) const override {
+    output_type operator()(
+        const host_internal_spacepoint_container&) const override {
         // not used
         __builtin_unreachable();
     }
@@ -36,8 +37,8 @@ struct seed_filtering
     ///
     /// @return seeds are the vector of seeds where the new compatible seeds are
     /// added
-    void operator()(const input_type& i, output_type& o) const {
-        const auto& isp_container = i;
+    void operator()(const host_internal_spacepoint_container& isp_container,
+                    output_type& o) const {
         auto& triplets = o.first;
         auto& seeds = o.second;
 

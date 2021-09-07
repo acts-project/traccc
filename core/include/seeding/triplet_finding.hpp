@@ -19,11 +19,10 @@ namespace traccc {
 /// Triplet finding to search the compatible combintations of two doublets which
 /// share same middle spacepoint
 struct triplet_finding
-    : public algorithm<
-          std::tuple<const host_internal_spacepoint_container&, const doublet&,
-                     const lin_circle&, const host_doublet_collection&,
-                     const host_lin_circle_collection&>,
-          host_triplet_collection> {
+    : public algorithm<host_triplet_collection(
+          const host_internal_spacepoint_container&, const doublet&,
+          const lin_circle&, const host_doublet_collection&,
+          const host_lin_circle_collection&)> {
     /// Constructor for the triplet finding
     ///
     /// @param seedfinder_config is the configuration parameters
@@ -40,9 +39,12 @@ struct triplet_finding
     /// doublets_mid_top
     ///
     /// @return a vector of triplets
-    output_type operator()(const input_type& i) const override {
+    output_type operator()(
+        const host_internal_spacepoint_container& isp, const doublet& d,
+        const lin_circle& lc, const host_doublet_collection& doublet,
+        const host_lin_circle_collection& lincol) const override {
         output_type result;
-        this->operator()(i, result);
+        this->operator()(isp, d, lc, doublet, lincol, result);
         return result;
     }
 
@@ -58,14 +60,11 @@ struct triplet_finding
     /// void interface
     ///
     /// @return a vector of triplets
-    void operator()(const input_type& i, output_type& o) const {
-
-        // input
-        const auto& isp_container = std::get<0>(i);
-        const auto& mid_bot = std::get<1>(i);
-        const auto& lb = std::get<2>(i);
-        const auto& doublets_mid_top = std::get<3>(i);
-        const auto& lin_circles_mid_top = std::get<4>(i);
+    void operator()(const host_internal_spacepoint_container& isp_container,
+                    const doublet& mid_bot, const lin_circle& lb,
+                    const host_doublet_collection& doublets_mid_top,
+                    const host_lin_circle_collection& lin_circles_mid_top,
+                    output_type& o) const {
 
         // output
         auto& triplets = o;
