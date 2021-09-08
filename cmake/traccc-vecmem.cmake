@@ -24,7 +24,7 @@ message( STATUS "Building VecMem as part of the traccc project" )
 # Declare where to get VecMem from.
 FetchContent_Declare( VecMem
    GIT_REPOSITORY "https://github.com/acts-project/vecmem.git"
-   GIT_TAG "v0.2.0" )
+   GIT_TAG "v0.3.0" )
 
 # Prevent VecMem from building its tests. As it would interfere with how traccc
 # builds/uses GoogleTest.
