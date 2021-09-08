@@ -20,7 +20,7 @@ jobs:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v11
           - name: CUDA
-            container: ghcr.io/acts-project/ubuntu2004_cuda:latest
+            container: ghcr.io/acts-project/ubuntu2004_cuda:v13
         build:
           - Release
           - Debug
