@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Dependencies
         run: apt-get install -y git-lfs
-      - uses: actions/checkout@v1      
+      - uses: actions/checkout@v2      
         with:
           submodules: true
           lfs: true
