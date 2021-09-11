@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Dependencies
         run: apt-get install -y git-lfs
-      - uses: actions/checkout@v2      
+      - uses: actions/checkout@v2
         with:
           submodules: true
           lfs: true
@@ -46,4 +46,3 @@ jobs:
         run: cmake --build build -- -j$(nproc)
       - name: Run tests & examples
         run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
-	
