@@ -8,19 +8,19 @@ on:
 
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
-  
+
 jobs:
   builds:
     name: ${{ matrix.platform.name }}-${{ matrix.build }}
     runs-on: ubuntu-latest
-    container: ghcr.io/acts-project/ubuntu2004:v11
+    container: ${{ matrix.platform.container }}
     strategy:
       matrix:
         platform:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v11
           - name: CUDA
-            container: ghcr.io/acts-project/ubuntu1804_cuda:v11
+            container: ghcr.io/acts-project/ubuntu2004_cuda:v13
         build:
           - Release
           - Debug
@@ -32,9 +32,18 @@ jobs:
           submodules: true
           lfs: true
       - name: Configure
-        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -B build -S .
+        run: >
+          if ${{ matrix.platform.name == 'CPU'}}; then
+            cmake -B build -S . \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build }} 
+          elif ${{ matrix.platform.name == 'CUDA'}}; then
+            cmake -B build -S . \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+              -DCMAKE_CUDA_COMPILER=$(which nvcc) \
+              -DTRACCC_BUILD_CUDA=ON 
+          fi
       - name: Build
         run: cmake --build build -- -j$(nproc)
       - name: Run tests & examples
         run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
-          
+
