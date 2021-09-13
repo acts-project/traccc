@@ -46,3 +46,4 @@ jobs:
         run: cmake --build build -- -j$(nproc)
       - name: Run tests & examples
         run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
+
