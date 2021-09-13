@@ -21,4 +21,5 @@ target_include_directories(
 
 add_library(traccc::tests::common ALIAS traccc_tests_common)
 
+add_subdirectory(core)
 add_subdirectory(cpu)
