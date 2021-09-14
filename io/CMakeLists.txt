@@ -14,7 +14,7 @@ install(TARGETS traccc_io
 target_link_libraries(traccc_io INTERFACE traccc::core dfelibs vecmem::core)
 
 install(
-  DIRECTORY include/csv
+  DIRECTORY include/io
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 add_library(traccc::io ALIAS traccc_io)
