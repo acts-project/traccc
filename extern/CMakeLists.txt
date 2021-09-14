@@ -12,9 +12,15 @@ option(INSTALL_GTEST "Flag controlling the installation of GTest" OFF)
 #set(BENCHMARK_ENABLE_TESTING OFF)
 
 # Add the external submodules.
-add_subdirectory(dfelibs)
-add_subdirectory(googletest)
+if (NOT TARGET dfelibs)
+  add_subdirectory(dfelibs)
+endif()
+if (NOT TARGET gtest)
+  add_subdirectory(googletest)
+endif()
 
 # enable vecmem for algebra plugins
 SET(ALGEBRA_PLUGIN_USE_VECMEM ON CACHE BOOL "Use Vecmem for array algebra")
-add_subdirectory(algebra-plugins)
+if (NOT ${ALGEBRA_PLUGIN_SOURCE_DIR})
+  add_subdirectory(algebra-plugins)
+endif()  
