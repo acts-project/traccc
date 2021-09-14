@@ -17,8 +17,8 @@ FetchContent_Declare( Detray
 
 # Prevent Detray from building its tests and benchmarks
 # builds/uses GoogleTest.
-set( DETRAY_UNIT_TESTS OFF )
-set( DETRAY_BENCHMARKS OFF )
+set( DETRAY_UNIT_TESTS OFF CACHE BOOL "Build tests" )
+set( DETRAY_BENCHMARKS OFF CACHE BOOL "Build benchmarks" )
 set( DETRAY_CUSTOM_SCALARTYPE ${TRACCC_CUSTOM_SCALARTYPE} )
 set( DETRAY_${TRACCC_ALGEBRA_PLUGIN}_PLUGIN ON )
 if(TRACC_BUILD_CUDA)
