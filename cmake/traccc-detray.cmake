@@ -7,24 +7,13 @@
 # Guard against multiple includes.
 include_guard( GLOBAL )
 
-# Look for Detray, quietly first time around. Since if it is not found (which is
-# likely), it prints multiple lines of warnings.
-find_package( detray QUIET )
-
-# If it was found, then we're finished.
-if( detray_FOUND )
-   # Call find_package again, just to nicely print where it is picked up from.
-   find_package( detray )
-   return()
-endif()
-
 # Tell the user what's happening.
 message( STATUS "Building detray as part of the traccc project" )
 
 # Declare where to get VecMem from.
 FetchContent_Declare( Detray
   GIT_REPOSITORY "https://github.com/acts-project/detray.git"
-  GIT_TAG        552d5622a0dc4aeb99a13576b4ebc12ca469eadd)
+  GIT_TAG        origin/main)
 
 # Prevent Detray from building its tests and benchmarks
 # builds/uses GoogleTest.
