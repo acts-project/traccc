@@ -59,9 +59,9 @@ struct measurement_creation
 
         measurements.reserve(clusters.items.size());
         for (const auto &cluster : clusters.items) {
-            point2 p = {0., 0.};
-            variance2 v = {0., 0.};
             scalar totalWeight = 0.;
+
+            point2 mean = {0., 0.}, var = {0., 0.};
 
             // Should not happen
             if (cluster.cells.empty()) {
@@ -72,26 +72,28 @@ struct measurement_creation
                 scalar weight = clusters.signal(cell.activation);
                 if (weight > clusters.threshold) {
                     totalWeight += cell.activation;
-                    auto cell_position = clusters.position_from_cell(
+                    const point2 cell_position = clusters.position_from_cell(
                         cell.channel0, cell.channel1);
-                    p = p + weight * cell_position;
-                    point2 square_pos = {cell_position[0] * cell_position[0],
-                                         cell_position[1] * cell_position[1]};
-                    v = v + weight * square_pos;
+
+                    const point2 prev = mean;
+                    const point2 diff = cell_position - prev;
+
+                    for (std::size_t i = 0; i < 2; ++i) {
+                        mean[i] = prev[i] + (weight / totalWeight) * (diff[i]);
+                        var[i] = var[i] + weight * (diff[i]) *
+                                              (cell_position[i] - mean[i]);
+                    }
                 }
             }
             if (totalWeight > 0.) {
                 measurement m;
                 // normalize the cell position
-                m.local = 1. / totalWeight * p;
+                m.local = mean;
                 // normalize the variance
-                m.variance = 1. / totalWeight * v;
+                m.variance = var / totalWeight;
                 // plus pitch^2 / 12
                 m.variance = m.variance + point2{pitch[0] * pitch[0] / 12,
                                                  pitch[1] * pitch[1] / 12};
-                // minus <x>^2
-                m.variance = m.variance - point2{m.local[0] * m.local[0],
-                                                 m.local[1] * m.local[1]};
                 // @todo add variance estimation
                 measurements.push_back(std::move(m));
             }
