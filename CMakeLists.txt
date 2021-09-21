@@ -60,5 +60,5 @@ if(BUILD_TESTING)
 endif()
 
 # Build the necessary externals.
-add_subdirectory(extern)
 include(traccc-dependencies)
+add_subdirectory(extern)
