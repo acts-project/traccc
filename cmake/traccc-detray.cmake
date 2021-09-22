@@ -27,6 +27,9 @@ if(TRACC_BUILD_CUDA)
   set( DETRAY_BUILD_CUDA ON )
 endif()  
 
+# Always use vecmem
+set( DETRAY_USE_VECMEM ON CACHE BOOL "Use Vecmem" )
+
 # Get it into the current directory.
 FetchContent_Populate( Detray )
 add_subdirectory( "${detray_SOURCE_DIR}" "${detray_BINARY_DIR}"
