@@ -18,9 +18,3 @@ endif()
 if (NOT TARGET gtest)
   add_subdirectory(googletest)
 endif()
-
-# enable vecmem for algebra plugins
-SET(ALGEBRA_PLUGIN_USE_VECMEM ON CACHE BOOL "Use Vecmem for array algebra")
-if (NOT ${ALGEBRA_PLUGIN_SOURCE_DIR})
-  add_subdirectory(algebra-plugins)
-endif()  
