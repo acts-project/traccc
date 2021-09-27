@@ -10,6 +10,8 @@ include_guard(GLOBAL)
 cmake_minimum_required(VERSION 3.11)
 include(FetchContent)
 
-# Include the CMake scripts for vecmem and the ACTS core.
+# Include the CMake scripts for vecmem, detray and the ACTS core.
 include(traccc-vecmem)
+include(traccc-detray)
 include(traccc-acts)
+
