@@ -61,6 +61,15 @@ struct measurement_creation
         for (const auto &cluster : clusters.items) {
             scalar totalWeight = 0.;
 
+            // To calculate the mean and variance with high numerical stability
+            // we use a weighted variant of Welford's algorithm. This is a
+            // single-pass online algorithm that works well for large numbers
+            // of samples, as well as samples with very high values.
+            //
+            // To learn more about this algorithm please refer to:
+            // [1] https://doi.org/10.1080/00401706.1962.10490022
+            // [2] The Art of Computer Programming, Donald E. Knuth, second
+            //     edition, chapter 4.2.2.
             point2 mean = {0., 0.}, var = {0., 0.};
 
             // Should not happen
