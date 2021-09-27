@@ -77,7 +77,7 @@ void run_on_event(traccc::component_connection& cc,
                   traccc::host_cell_container& data) {
     for (std::size_t i = 0; i < data.size(); ++i) {
         traccc::cluster_collection clusters_per_module =
-            cc(std::move(data.at(i).items), data.at(i).header);
+            cc(data.at(i).items, data.at(i).header);
     }
 }
 

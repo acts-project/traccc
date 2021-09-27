@@ -89,10 +89,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         /*time*/ auto start_clusterization_cpu =
             std::chrono::system_clock::now();
 
-        n_modules += cells_per_event.size();
-        n_cells += cells_per_event.total_size();
-
-        auto ca_result = ca(std::move(cells_per_event));
+        auto ca_result = ca(cells_per_event);
         auto& measurements_per_event = ca_result.first;
         auto& spacepoints_per_event = ca_result.second;
 
@@ -101,6 +98,8 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
+        n_modules += cells_per_event.size();
+        n_cells += cells_per_event.total_size();
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
 
@@ -128,8 +127,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         traccc::host_seed_container seeds;
         traccc::host_internal_spacepoint_container internal_sp_per_event;
         if (!skip_cpu) {
-            auto sa_result =
-                sa(traccc::host_spacepoint_container(spacepoints_per_event));
+            auto sa_result = sa(spacepoints_per_event);
             internal_sp_per_event = sa_result.first;
             seeds = sa_result.second;
             n_internal_spacepoints += internal_sp_per_event.total_size();

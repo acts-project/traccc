@@ -52,14 +52,13 @@ class clusterization_algorithm
 
             // The algorithmic code part: start
             traccc::cluster_collection clusters_per_module =
-                cc(std::move(cells_per_event.at(i).items),
-                   cells_per_event.at(i).header);
+                cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
-                mt(std::move(clusters_per_module), module);
+                mt(clusters_per_module, module);
             traccc::host_spacepoint_collection spacepoints_per_module =
-                sp(module, std::move(measurements_per_module));
+                sp(module, measurements_per_module);
             // The algorithmnic code part: end
 
             measurements_per_event.push_back(
