@@ -25,12 +25,10 @@ namespace traccc {
 /// implementation internally.
 ///
 class component_connection
-    : public algorithm<
-          std::pair<const host_cell_collection&, const cell_module&>,
-          cluster_collection>,
-      public algorithm<
-          std::pair<const device_cell_collection&, const cell_module&>,
-          cluster_collection> {
+    : public algorithm<cluster_collection(const host_cell_collection&,
+                                          const cell_module&)>,
+      public algorithm<cluster_collection(const device_cell_collection&,
+                                          const cell_module&)> {
 
     public:
     /// @name Operators to use in host code
@@ -46,30 +44,9 @@ class component_connection
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    cluster_collection operator()(
-        const std::pair<const host_cell_collection&, const cell_module&>& i)
-        const override {
-        const host_cell_collection& cells = i.first;
-        const cell_module& module = i.second;
+    cluster_collection operator()(const host_cell_collection& cells,
+                                  const cell_module& module) const override {
         return this->operator()<vecmem::vector>(cells, module);
-    }
-
-    /// Callable operator for the connected component, based on one single
-    /// module
-    ///
-    /// @param cells are the input cells into the connected component, they are
-    ///              per module and unordered
-    /// @param module The description of the module that the cells belong to
-    /// @param clusters[in,out] are the output clusters
-    ///
-    /// void interface
-    ///
-    void operator()(
-        const std::pair<const host_cell_collection&, const cell_module&>& i,
-        cluster_collection& clusters) const override {
-        const host_cell_collection& cells = i.first;
-        const cell_module& module = i.second;
-        this->operator()<vecmem::vector>(cells, module, clusters);
     }
 
     /// @}
@@ -89,30 +66,9 @@ class component_connection
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    cluster_collection operator()(
-        const std::pair<const device_cell_collection&, const cell_module&>& i)
-        const override {
-        const device_cell_collection& cells = i.first;
-        const cell_module& module = i.second;
+    cluster_collection operator()(const device_cell_collection& cells,
+                                  const cell_module& module) const override {
         return this->operator()<vecmem::device_vector>(cells, module);
-    }
-
-    /// Callable operator for the connected component, based on one single
-    /// module
-    ///
-    /// @param cells are the input cells into the connected component, they are
-    ///              per module and unordered
-    /// @param module The description of the module that the cells belong to
-    /// @param clusters[in,out] are the output clusters
-    ///
-    /// void interface
-    ///
-    void operator()(
-        const std::pair<const device_cell_collection&, const cell_module&>& i,
-        cluster_collection& clusters) const override {
-        const device_cell_collection& cells = i.first;
-        const cell_module& module = i.second;
-        this->operator()<vecmem::device_vector>(cells, module, clusters);
     }
 
     private:

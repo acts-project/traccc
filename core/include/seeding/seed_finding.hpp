@@ -21,9 +21,8 @@
 namespace traccc {
 
 /// Seed finding
-struct seed_finding
-    : public algorithm<const host_internal_spacepoint_container&,
-                       host_seed_container> {
+struct seed_finding : public algorithm<host_seed_container(
+                          const host_internal_spacepoint_container&)> {
     /// Constructor for the seed finding
     ///
     /// @param config is seed finder configuration parameters
@@ -34,7 +33,8 @@ struct seed_finding
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(const input_type& i) const override {
+    output_type operator()(
+        const host_internal_spacepoint_container& i) const override {
         output_type result;
         this->operator()(i, result);
         return result;
@@ -45,9 +45,8 @@ struct seed_finding
     /// void interface
     ///
     /// @return seed_collection is the vector of seeds per event
-    void operator()(const input_type& i, output_type& o) const {
-        // input
-        const auto& isp_container = i;
+    void operator()(const host_internal_spacepoint_container& isp_container,
+                    output_type& o) const {
         // output
         auto& seeds = o;
 
@@ -74,15 +73,15 @@ struct seed_finding
                 sp_location spM_location({i, j});
 
                 // middule-bottom doublet search
-                auto mid_bot = m_doublet_finding(
-                    {isp_container, bin_information, spM_location, bottom});
+                auto mid_bot = m_doublet_finding(isp_container, bin_information,
+                                                 spM_location, bottom);
 
                 if (mid_bot.first.empty())
                     continue;
 
                 // middule-top doublet search
-                auto mid_top = m_doublet_finding(
-                    {isp_container, bin_information, spM_location, top});
+                auto mid_top = m_doublet_finding(isp_container, bin_information,
+                                                 spM_location, top);
 
                 if (mid_top.first.empty())
                     continue;
@@ -96,8 +95,8 @@ struct seed_finding
                     auto& lb = mid_bot.second[k];
 
                     host_triplet_collection triplets =
-                        m_triplet_finding({isp_container, doublet_mb, lb,
-                                           mid_top.first, mid_top.second});
+                        m_triplet_finding(isp_container, doublet_mb, lb,
+                                          mid_top.first, mid_top.second);
 
                     triplets_per_spM.insert(std::end(triplets_per_spM),
                                             triplets.begin(), triplets.end());

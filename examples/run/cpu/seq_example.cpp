@@ -52,12 +52,13 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             Clusterization
           -------------------*/
 
-        auto ca_result = ca(cells_per_event);
-        auto& measurements_per_event = ca_result.first;
-        auto& spacepoints_per_event = ca_result.second;
-
         n_modules += cells_per_event.size();
         n_cells += cells_per_event.total_size();
+
+        auto ca_result = ca(cells_per_event);
+        auto measurements_per_event = ca_result.first;
+        auto spacepoints_per_event = ca_result.second;
+
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
 

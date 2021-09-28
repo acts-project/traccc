@@ -9,6 +9,15 @@
 #pragma once
 
 namespace traccc {
+template <typename T>
+using rvalue_or_const_lvalue = std::disjunction<
+    std::is_rvalue_reference<T>,
+    std::conjunction<std::is_lvalue_reference<T>,
+                     std::is_const<std::remove_reference_t<T>>>>;
+
+template <typename T>
+class algorithm {};
+
 /**
  * @brief Unified algorithm semantics which convert an input to an output.
  *
@@ -18,35 +27,41 @@ namespace traccc {
  * to be able to transform the input type into the output type in one way or
  * another.
  *
- * @param I The input type of the algorithm
+ * @param A The input types of the algorithm
  * @param O The output type of the algorithm
  */
-template <typename I, typename O>
-class algorithm {
+template <typename R, typename... A>
+class algorithm<R(A...)> {
     public:
-    using input_type = I;
-    using output_type = O;
+    using output_type = R;
 
-    /**
-     * @brief Execute the algorithm, returning by value.
-     *
-     * Turn the object into a callable, accepting only an input and
-     * returning the output through value return.
-     *
-     * @param[in] i The input value to the algorithm
-     * @return An instance of the specified output type
-     */
-    virtual output_type operator()(const input_type& i) const = 0;
+    using function_type = R(A...);
 
-    /**
-     * @brief Execute the algorithm, returning by input reference.
-     *
-     * Turn the object into a callable, accepting an input as well as an
-     * output parameter to write to.
-     *
-     * @param[in] i The input value to the algorithm
-     * @param[out] o The output of the algorithm
-     */
-    virtual void operator()(const input_type& i, output_type& o) const = 0;
+    static_assert(
+        std::conjunction<rvalue_or_const_lvalue<A>...>::value,
+        "All arguments must be either affine types (rvalue references), or "
+        "immutable constant types (const lvalue references).");
+
+    virtual output_type operator()(A... args) const = 0;
 };
+
+template <typename A, typename B, typename C, typename... R>
+auto compose(std::function<std::remove_reference_t<B>(A)> f,
+             std::function<C(B)> g, R... rs) {
+    if constexpr (sizeof...(R) > 0) {
+        auto h = compose(g, rs...);
+        return [f, h](A&& i) { return h(f(std::forward<A>(i))); };
+    } else {
+        return [f, g](A&& i) { return g(f(std::forward<A>(i))); };
+    }
+}
+
+template <typename A, typename B, typename C>
+std::function<B(A&&)> side_effect(std::function<B(A)> f,
+                                  std::function<void(const C&)> s) {
+    return [=](A&& i) -> B {
+        s(i);
+        return f(std::forward<A>(i));
+    };
+}
 }  // namespace traccc
