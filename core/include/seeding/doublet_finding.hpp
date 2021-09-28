@@ -19,9 +19,9 @@ namespace traccc {
 /// Doublet finding to search the combinations of two compatible spacepoints
 struct doublet_finding
     : public algorithm<
-          std::tuple<const host_internal_spacepoint_container&,
-                     const bin_information&, const sp_location&, const bool>,
-          std::pair<host_doublet_collection, host_lin_circle_collection> > {
+          std::pair<host_doublet_collection, host_lin_circle_collection>(
+              const host_internal_spacepoint_container&, const bin_information&,
+              const sp_location&, const bool&)> {
 
     /// Constructor for the doublet finding
     ///
@@ -37,9 +37,11 @@ struct doublet_finding
     /// @param bottom is whether it is for bottom or top spacepoints
     ///
     /// @return a pair of vectors of doublets and transformed coordinates
-    output_type operator()(const input_type& i) const override {
+    output_type operator()(const host_internal_spacepoint_container& s,
+                           const bin_information& b, const sp_location& l,
+                           const bool& q) const override {
         output_type result;
-        this->operator()(i, result);
+        this->operator()(s, b, l, q, result);
         return result;
     }
 
@@ -52,13 +54,10 @@ struct doublet_finding
     /// void interface
     ///
     /// @return a pair of vectors of doublets and transformed coordinates
-    void operator()(const input_type& i, output_type& o) const {
-
-        // input
-        const auto& isp_container = std::get<0>(i);
-        const auto& bin_information = std::get<1>(i);
-        const auto& spM_location = std::get<2>(i);
-        const auto& bottom = std::get<3>(i);
+    void operator()(const host_internal_spacepoint_container& isp_container,
+                    const bin_information& bin_information,
+                    const sp_location& spM_location, const bool& bottom,
+                    output_type& o) const {
 
         // output
         auto& doublets = o.first;

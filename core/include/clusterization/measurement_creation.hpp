@@ -17,9 +17,8 @@ namespace traccc {
 
 /// Connected component labeling.
 struct measurement_creation
-    : public algorithm<
-          std::pair<const cluster_collection &, const cell_module &>,
-          host_measurement_collection> {
+    : public algorithm<host_measurement_collection(const cluster_collection &,
+                                                   const cell_module &)> {
 
     /// Callable operator for the connected component, based on one single
     /// module
@@ -32,9 +31,10 @@ struct measurement_creation
     ///
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
-    host_measurement_collection operator()(const input_type &i) const override {
+    host_measurement_collection operator()(
+        const cluster_collection &c, const cell_module &m) const override {
         output_type measurements;
-        this->operator()(i, measurements);
+        this->operator()(c, m, measurements);
         return measurements;
     }
 
@@ -49,10 +49,9 @@ struct measurement_creation
     ///
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
-    void operator()(const input_type &i,
-                    output_type &measurements) const override {
-        const cluster_collection &clusters = i.first;
-        const cell_module &module = i.second;
+    void operator()(const cluster_collection &clusters,
+                    const cell_module &module,
+                    output_type &measurements) const {
 
         // Run the algorithm
         auto pitch = module.pixel.get_pitch();

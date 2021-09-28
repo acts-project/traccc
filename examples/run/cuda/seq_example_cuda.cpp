@@ -88,6 +88,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
         /*time*/ auto start_clusterization_cpu =
             std::chrono::system_clock::now();
+
         auto ca_result = ca(cells_per_event);
         auto& measurements_per_event = ca_result.first;
         auto& spacepoints_per_event = ca_result.second;
