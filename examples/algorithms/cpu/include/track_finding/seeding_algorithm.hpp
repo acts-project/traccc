@@ -61,11 +61,29 @@ class seeding_algorithm
         auto& internal_sp_per_event = o.first;
         auto& seeds = o.second;
 
+	float binning(0);
+        /*time*/ auto start_binning = std::chrono::system_clock::now();
+	
         // spacepoint grouping
         internal_sp_per_event = sg->operator()(spacepoints_per_event);
 
+        /*time*/ auto end_binning = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_binning =
+            end_binning - start_binning;
+        /*time*/ binning += time_binning.count();
+
+	float seeding(0);
+        /*time*/ auto start_seeding = std::chrono::system_clock::now();
+	
         // seed finding
         seeds = sf->operator()(internal_sp_per_event);
+
+        /*time*/ auto end_seeding = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_seeding =
+            end_seeding - start_seeding;
+        /*time*/ seeding += time_seeding.count();
+
+	printf("cpu  %f %f \n", binning ,seeding);
     }
 
     private:
