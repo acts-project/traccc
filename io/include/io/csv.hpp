@@ -172,7 +172,8 @@ using surface_reader = dfe::NamedTupleCsvReader<csv_surface>;
 /// Read the geometry information per module and fill into a map
 ///
 /// @param sreader The surface reader type
-std::map<geometry_id, transform3> read_surfaces(surface_reader& sreader) {
+inline std::map<geometry_id, transform3> read_surfaces(
+    surface_reader& sreader) {
 
     std::map<geometry_id, transform3> transform_map;
     csv_surface iosurface;
@@ -316,7 +317,7 @@ inline std::vector<cluster_collection> read_truth_clusters(
 ///
 /// @param hreader The measurement reader type
 /// @param resource The memory resource to use for the return value
-host_measurement_container read_measurements(
+inline host_measurement_container read_measurements(
     measurement_reader& mreader, vecmem::memory_resource& resource,
     const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_measurements = std::numeric_limits<unsigned int>::max()) {

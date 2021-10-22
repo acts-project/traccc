@@ -23,7 +23,8 @@ namespace detail {
 /// @param L an equivalance table
 ///
 /// @return the root of @param e
-unsigned int find_root(const std::vector<unsigned int>& L, unsigned int e) {
+inline unsigned int find_root(const std::vector<unsigned int>& L,
+                              unsigned int e) {
     unsigned int r = e;
     while (L[r] != r) {
         r = L[r];
@@ -36,8 +37,8 @@ unsigned int find_root(const std::vector<unsigned int>& L, unsigned int e) {
 /// @param L an equivalance table
 ///
 /// @return the rleast common ancestor of the entries
-unsigned int make_union(std::vector<unsigned int>& L, unsigned int e1,
-                        unsigned int e2) {
+inline unsigned int make_union(std::vector<unsigned int>& L, unsigned int e1,
+                               unsigned int e2) {
     int e;
     if (e1 < e2) {
         e = e1;
@@ -55,7 +56,7 @@ unsigned int make_union(std::vector<unsigned int>& L, unsigned int e1,
 /// @param b the second cell
 ///
 /// @return boolan to indicate 8-cell connectivity
-bool is_adjacent(cell a, cell b) {
+inline bool is_adjacent(cell a, cell b) {
     return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 and
            (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1;
 }
@@ -68,14 +69,14 @@ bool is_adjacent(cell a, cell b) {
 /// @param b the second cell
 ///
 /// @return boolan to indicate !8-cell connectivity
-bool is_far_enough(cell a, cell b) {
+inline bool is_far_enough(cell a, cell b) {
     return (a.channel1 - b.channel1) > 1;
 }
 
 /// Sparce CCL algorithm
 ///
 template <template <typename> class vector_type>
-std::tuple<unsigned int, std::vector<unsigned int>> sparse_ccl(
+inline std::tuple<unsigned int, std::vector<unsigned int>> sparse_ccl(
     const cell_collection<vector_type>& cells) {
 
     // Internal list linking
