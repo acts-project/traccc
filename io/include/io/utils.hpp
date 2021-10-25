@@ -5,7 +5,7 @@
 
 namespace traccc {
 
-const std::string &data_directory() {
+inline const std::string &data_directory() {
     static const std::string data_dir = [] {
         auto env_d_d = std::getenv("TRACCC_TEST_DATA_DIR");
         if (env_d_d == nullptr) {
@@ -20,7 +20,7 @@ const std::string &data_directory() {
     return data_dir;
 }
 
-std::string get_event_filename(size_t event, const std::string &suffix) {
+inline std::string get_event_filename(size_t event, const std::string &suffix) {
     std::stringstream stream;
     stream << "event";
     stream << std::setfill('0') << std::setw(9) << event;
