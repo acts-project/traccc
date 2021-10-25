@@ -23,7 +23,7 @@
 #include "io/reader.hpp"
 #include "io/writer.hpp"
 
-int seq_run(const std::string& detector_file, const std::string& hits_dir,
+int seq_run(const std::string&, const std::string& hits_dir,
             unsigned int events, bool skip_cpu) {
 
     // Output stats
@@ -138,7 +138,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         if (!skip_cpu) {
             int n_match = 0;
-            for (auto seed : seeds.get_items()[0]) {
+            for (auto& seed : seeds.get_items()[0]) {
                 if (std::find(seeds_cuda.get_items()[0].begin(),
                               seeds_cuda.get_items()[0].begin() +
                                   seeds_cuda.get_headers()[0],
