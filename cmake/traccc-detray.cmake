@@ -7,6 +7,16 @@
 # Guard against multiple includes.
 include_guard( GLOBAL )
 
+# Try to find detray installed on the system.
+find_package(detray QUIET)
+
+# If it was found, then we're finished.
+if(detray_FOUND)
+  # Call find_package again, just to nicely print where it is picked up from.
+  find_package(detray)
+  return()
+endif()
+
 # Tell the user what's happening.
 message( STATUS "Building detray as part of the traccc project" )
 
