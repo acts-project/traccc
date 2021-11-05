@@ -17,6 +17,6 @@ if(ALGEBRA_CUSTOM_SCALARTYPE)
     INTERFACE -DALGEBRA_CUSTOM_SCALARTYPE=${ALGEBRA_CUSTOM_SCALARTYPE})
 endif()
 
-target_link_libraries(traccc_smatrix INTERFACE algebra::smatrix ROOT::MathCore)
+target_link_libraries(traccc_smatrix INTERFACE algebra::smatrix_smatrix vecmem::core)
 
 add_library(traccc::smatrix ALIAS traccc_smatrix)
