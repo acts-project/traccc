@@ -1,15 +1,3 @@
-[submodule "extern/googletest"]
-	path = extern/googletest
-	url = https://github.com/google/googletest
-[submodule "extern/benchmark"]
-	path = extern/benchmark
-	url = https://github.com/google/benchmark
-[submodule "extern/dfelibs"]
-	path = extern/dfelibs
-	url = https://github.com/msmk0/dfelibs.git
 [submodule "data"]
 	path = data
 	url = https://gitlab.cern.ch/acts/traccc-data.git
-[submodule "extern/algebra-plugins"]
-	path = extern/algebra-plugins
-	url = https://github.com/acts-project/algebra-plugins.git
