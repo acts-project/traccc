@@ -50,6 +50,11 @@ if( TRACCC_BUILD_CUDA )
   add_subdirectory( device/cuda )
 endif()
 
+# enable SYCL language
+if ( TRACCC_BUILD_SYCL )
+  enable_language(SYCL)
+endif()
+
 # Build the traccc code.
 add_subdirectory(core)
 add_subdirectory(io)
