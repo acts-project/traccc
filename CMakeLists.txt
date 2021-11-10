@@ -39,6 +39,7 @@ endif()
 # Flags controlling which parts of traccc to build.
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
+option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 
 # Clean up.
@@ -52,9 +53,11 @@ option( TRACCC_USE_SYSTEM_VECMEM
    FALSE )
 if( TRACCC_SETUP_VECMEM )
    if( TRACCC_USE_SYSTEM_VECMEM )
-      find_package( vecmem REQUIRED )
+      find_package( vecmem 0.7.0 REQUIRED COMPONENTS LANGUAGE )
    else()
       add_subdirectory( extern/vecmem )
+      # Make the "VecMem language code" available for the whole project.
+      include( "${VECMEM_LANGUAGE_DIR}/vecmem-check-language.cmake" )
    endif()
 endif()
 
