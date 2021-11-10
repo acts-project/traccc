@@ -11,6 +11,8 @@ enable_language( SYCL )
 add_executable( traccc_sycl_language_example "sycl_language_example.sycl" )
 add_executable (seeding_example_sycl seeding_example_sycl.sycl)
 
+#target_link_libraries(seeding_example_sycl PUBLIC vecmem::sycl)
+
 target_link_libraries (seeding_example_sycl LINK_PUBLIC
   traccc::io
   traccc::algorithms

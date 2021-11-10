@@ -1,3 +1,6 @@
+# We need the SYCL language in this directory.
+enable_language( SYCL )
+
 add_library(traccc_sycl SHARED 
 # header files
 include/sycl/seeding/detail/doublet_counter.hpp
