@@ -211,9 +211,3 @@ TEST(algorithm, partial_application_compose) {
     ASSERT_EQ(f(-1), 14);
     ASSERT_EQ(f(5), 20);
 }
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-
-    return RUN_ALL_TESTS();
-}

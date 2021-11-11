@@ -160,9 +160,3 @@ TEST(geometry, module_map_read_trackml) {
         ASSERT_EQ(map.at(i.first), i.second);
     }
 }
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-
-    return RUN_ALL_TESTS();
-}

@@ -1,25 +1,27 @@
+function(traccc_add_test name)
+    # Parse the function's options.
+    cmake_parse_arguments(ARG "" "" "LINK_LIBRARIES" ${ARGN})
 
-macro(add_traccc_test TESTNAME FILES PLUGIN_LIBRARY)
-    add_executable(${TESTNAME} ${FILES})
-    target_link_libraries(${TESTNAME} gtest gmock gtest_main)
-    target_link_libraries(${TESTNAME} traccc::core)
-    target_link_libraries(${TESTNAME} traccc::tests::common)
-    target_link_libraries(${TESTNAME} ${PLUGIN_LIBRARY})
-    set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
-    add_test(NAME unit_test_${TESTNAME} COMMAND ${TESTNAME})
-    set_tests_properties(unit_test_${TESTNAME} PROPERTIES
-    ENVIRONMENT TRACCC_TEST_DATA_DIR=${PROJECT_SOURCE_DIR}/data/)
-endmacro()
+    # Create the test executable.
+    set(TEST_NAME "test_${name}")
+    add_executable(${TEST_NAME} ${ARG_UNPARSED_ARGUMENTS})
 
-add_library(traccc_tests_common INTERFACE)
+    if(ARG_LINK_LIBRARIES)
+        target_link_libraries(${TEST_NAME} PRIVATE ${ARG_LINK_LIBRARIES})
+    endif()
 
-target_include_directories(
-    traccc_tests_common
-    INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+    # Run the executable as a test.
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 
-add_library(traccc::tests::common ALIAS traccc_tests_common)
+    # Make sure this test knows where to find its data.
+    set_tests_properties(
+        ${TEST_NAME}
+        PROPERTIES
+        ENVIRONMENT TRACCC_TEST_DATA_DIR=${PROJECT_SOURCE_DIR}/data/
+    )
+endfunction(traccc_add_test)
 
+add_subdirectory(common)
 add_subdirectory(core)
 add_subdirectory(cpu)
+add_subdirectory(io)
