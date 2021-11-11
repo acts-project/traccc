@@ -17,6 +17,6 @@ if(ALGEBRA_CUSTOM_SCALARTYPE)
     INTERFACE -DALGEBRA_CUSTOM_SCALARTYPE=${ALGEBRA_CUSTOM_SCALARTYPE})
 endif()
 
-target_link_libraries(traccc_vecmem INTERFACE algebra::vecmem_array)
+target_link_libraries(traccc_vecmem INTERFACE algebra::vecmem_cmath vecmem::core)
 
 add_library(traccc::vecmem ALIAS traccc_vecmem)
