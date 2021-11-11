@@ -5,6 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
+#define EIGEN_DONT_VECTORIZE
+
 #include "sycl/seeding/seed_selecting.hpp"
 
 namespace traccc {
