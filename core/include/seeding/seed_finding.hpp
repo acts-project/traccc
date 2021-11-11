@@ -141,7 +141,7 @@ struct seed_finding : public algorithm<host_seed_container(
     seed_filtering m_seed_filtering;
 
     // for statistics pre-estimation
-    seed_statistics m_seed_stats;
+    seed_statistics m_seed_stats{0, 0};
     std::vector<multiplet_statistics> m_multiplet_stats;
 };
 }  // namespace traccc

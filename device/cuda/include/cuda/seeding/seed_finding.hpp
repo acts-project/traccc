@@ -39,7 +39,6 @@ struct seed_finding {
                  multiplet_estimator& estimator, vecmem::memory_resource* mr)
         : m_seedfinder_config(config),
           m_estimator(estimator),
-          m_mr(mr),
           // initialize all vecmem containers:
           // the size of header and item vector = the number of spacepoint bins
           doublet_counter_container(sp_grid->size(false), mr),
@@ -47,7 +46,8 @@ struct seed_finding {
           mid_top_container(sp_grid->size(false), mr),
           triplet_counter_container(sp_grid->size(false), mr),
           triplet_container(sp_grid->size(false), mr),
-          seed_container(1, mr) {
+          seed_container(1, mr),
+          m_mr(mr) {
 
         first_alloc = true;
     }
