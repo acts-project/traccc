@@ -1,6 +1,3 @@
-# We need the SYCL language in this directory.
-#enable_language( SYCL )
-
 add_library(traccc_algorithms_sycl INTERFACE
 ${CMAKE_CURRENT_SOURCE_DIR}/include/sycl/track_finding/seeding_algorithm.hpp)
 
