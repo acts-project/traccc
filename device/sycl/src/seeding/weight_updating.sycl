@@ -27,19 +27,17 @@ void weight_updating(const seedfilter_config& filter_config,
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
 
-    // -- localRange
+    // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localRange = 64;
+    unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
-    unsigned int globalRange = 0;
-    for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
-        globalRange += triplet_container.get_headers()[i];
+    unsigned int num_groups = 0;
+    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
+        num_groups += triplet_container.get_headers()[i] / localSize + 1;
     }
-    // Tweak the global range so that it is exactly how it is in cuda (make it multiple of the local range)
-    globalRange -= localRange * internal_sp_view.headers.size();
+    unsigned int globalSize = localSize * num_groups;  
     // 1 dim ND Range for the kernel
-    auto weightUpdateNdRange = ::sycl::nd_range<1>{::sycl::range<1>{globalRange},
-                                                 ::sycl::range<1>{localRange}};    
+    auto weightUpdateNdRange = ::sycl::nd_range<1>{{globalSize},{localSize}};    
     
     q->submit([&](::sycl::handler& h){
 

@@ -24,18 +24,15 @@ void doublet_counting(const seedfinder_config& config,
         get_data(doublet_counter_container, resource);
 
     // The local number of threads per work-group (block in cuda) (number taken from cuda implementation, warp size *2)
-    unsigned int localRange = 64;
+    unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
-    unsigned int globalRange = 0;
+    unsigned int num_groups = 0;
     for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
-        globalRange += internal_sp_view.items.m_ptr[i].size();
+        num_groups += internal_sp_view.items.m_ptr[i].size() / localSize + 1;
     }
-    // Tweak the global range so that it is exactly how it is in cuda (make it multiple of the local range)
-    globalRange -= localRange * internal_sp_view.headers.size();
-
+    unsigned int globalSize = num_groups * localSize;
     // 1 dim ND Range for the kernel
-    auto doubletCountNdRange = ::sycl::nd_range<1>{::sycl::range<1>{globalRange},
-                                                        ::sycl::range<1>{localRange}};
+    auto doubletCountNdRange = ::sycl::nd_range<1>{{globalSize}, {localSize}};
     
     q->submit([&](::sycl::handler& h){
         DupletCount kernel( config, internal_sp_view, 
