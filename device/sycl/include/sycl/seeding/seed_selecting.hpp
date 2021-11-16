@@ -43,17 +43,6 @@ void seed_selecting(const seedfilter_config& filter_config,
                     vecmem::memory_resource* resource,
                     ::sycl::queue* q);
 
-// Thrust comparator function for triplet weight (in descending order)
-// struct triplet_weight_descending
-//     : public thrust::binary_function<triplet, triplet, bool> {
-//         bool operator()(const triplet& lhs, const triplet& rhs) const {
-//         if (lhs.weight != rhs.weight) {
-//             return lhs.weight > rhs.weight;
-//         } else {
-//             return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
-//         }
-//     }
-// };
 
 // comparator function for triplet weight (in ascending order)
 static bool triplet_weight_compare(const triplet& lhs,
@@ -89,14 +78,18 @@ public:
                triplet_counter_container_view triplet_counter_view,
                triplet_container_view triplet_view, 
                seed_container_view seed_view,
-               local_accessor<triplet> localMem)
+               local_accessor<triplet> localMem,
+               local_accessor<std::byte> scratch,
+               std::size_t temp_memory_size)
     : m_filter_config(filter_config),
       m_internal_sp_view(internal_sp_view),
       m_doublet_counter_view(doublet_counter_view),
       m_triplet_counter_view(triplet_counter_view),
       m_triplet_view(triplet_view),
       m_seed_view(seed_view),
-      m_localMem(localMem) {}
+      m_localMem(localMem),
+      m_scratch(scratch),
+      m_temp_memory_size(m_temp_memory_size) {}
 
       void operator()(::sycl::nd_item<1> item) const {
 
@@ -260,11 +253,23 @@ public:
         }
         
         // sort the triplets per spM
-        // sequential version of thrust sorting algorithm is used
-        // thrust::sort(thrust::seq, triplets_per_spM.get_pointer() + stride,
-        //             triplets_per_spM.get_pointer() + stride + n_triplets_per_spM,
-        //             triplet_weight_descending());
-         
+        ::sycl::ext::oneapi::joint_sort(
+            ::sycl::ext::oneapi::experimental::
+            group_with_scratchpad(
+                workGroup,
+                ::sycl::span{&m_scratch[0], m_temp_memory_size}
+            ),
+            static_cast<triplet*>(triplets_per_spM.get_pointer()) + stride,
+            static_cast<triplet*>(triplets_per_spM.get_pointer()) + stride + n_triplets_per_spM,
+            [](const triplet& lhs, const triplet& rhs) {
+                if (lhs.weight != rhs.weight) {
+                    return lhs.weight > rhs.weight;
+                } else {
+                    return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
+                }
+            }
+        );
+
         // the number of good seed per compatible middle spacepoint
         unsigned int n_seeds_per_spM = 0;
 
@@ -310,6 +315,8 @@ private:
     triplet_container_view m_triplet_view;
     seed_container_view m_seed_view;
     local_accessor<triplet> m_localMem;
+    local_accessor<std::byte> m_scratch;
+    std::size_t m_temp_memory_size;
 };                                  
 }  // namespace sycl
 }  // namespace traccc

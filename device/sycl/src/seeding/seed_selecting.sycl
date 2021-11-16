@@ -49,15 +49,25 @@ void seed_selecting(const seedfilter_config& filter_config,
     // 1 dim ND Range for the kernel
     auto seedSelectNdRange = ::sycl::nd_range<1>{::sycl::range<1>{globalRange},
                                                 ::sycl::range<1>{localRange}};
+    // Shared memory for scratchspace for sorting
+    std::size_t temp_memory_size =
+        ::sycl::ext::oneapi::experimental::default_sorter<>
+        ::memory_required<triplet>
+        (::sycl::memory_scope::work_group, localRange*filter_config.max_triplets_per_spM);
+    
     q->submit([&](::sycl::handler& h){
 
         // local memory initialization (equivalent to shared memory in CUDA)
         auto localMem = 
             local_accessor<triplet>(localRange * filter_config.max_triplets_per_spM, 
                                     h); 
+        // scratch space for sorting
+        auto scratch = 
+            local_accessor<std::byte>({temp_memory_size}, h);
+
         SeedSelect kernel(filter_config, internal_sp_view, doublet_counter_container_view,
                           triplet_counter_container_view, triplet_container_view,
-                          seed_container_view, localMem);
+                          seed_container_view, localMem, scratch, temp_memory_size);
 
         h.parallel_for<class seed_select_kernel>(seedSelectNdRange, kernel);
     });
