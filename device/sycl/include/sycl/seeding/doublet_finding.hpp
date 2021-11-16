@@ -39,10 +39,10 @@ void doublet_finding(const seedfinder_config& config,
 
 // Define shorthand alias for the type of atomics needed by this kernel 
 template <typename T>
-using global_atomic_ref = ::sycl::ONEAPI::atomic_ref<
+using global_atomic_ref = ::sycl::ext::oneapi::atomic_ref<
     T,
-    ::sycl::ONEAPI::memory_order::relaxed,
-    ::sycl::ONEAPI::memory_scope::system,
+    ::sycl::ext::oneapi::memory_order::relaxed,
+    ::sycl::ext::oneapi::memory_scope::system,
     ::sycl::access::address_space::global_space>;
 
 // Short aliast for accessor to local memory (shared memory in CUDA)
@@ -238,8 +238,8 @@ public:
         }
         // Calculate the number doublets per "block" with reducing sum technique
         item.barrier();
-        auto bottom_result = ::sycl::ONEAPI::reduce(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ONEAPI::plus<>());
-        auto top_result = ::sycl::ONEAPI::reduce(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ONEAPI::plus<>());
+        auto bottom_result = ::sycl::ext::oneapi::reduce(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+        auto top_result = ::sycl::ext::oneapi::reduce(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
 
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block

@@ -4,18 +4,8 @@
  *
  * Mozilla Public License Version 2.0
  */
-/*
-#include <oneapi/dpl/execution>
-#include <oneapi/dpl/iterator>
-#include <oneapi/dpl/algorithm>
-#include <oneapi/dpl/async>
-*/
-#include <CL/sycl.hpp>
 
-// #include <thrust/device_ptr.h>
-// #include <thrust/execution_policy.h>
-// #include <thrust/functional.h>
-// #include <thrust/sort.h>
+#include <CL/sycl.hpp>
 
 #include <algorithm>
 #include "sycl/seeding/detail/doublet_counter.hpp"
@@ -77,10 +67,10 @@ static bool triplet_weight_compare(const triplet& lhs,
 
 // Define shorthand alias for the type of atomics needed by this kernel 
 template <typename T>
-using global_atomic_ref = ::sycl::ONEAPI::atomic_ref<
+using global_atomic_ref = ::sycl::ext::oneapi::atomic_ref<
     T,
-    ::sycl::ONEAPI::memory_order::relaxed,
-    ::sycl::ONEAPI::memory_scope::system,
+    ::sycl::ext::oneapi::memory_order::relaxed,
+    ::sycl::ext::oneapi::memory_scope::system,
     ::sycl::access::address_space::global_space>;
 
 // Short aliast for accessor to local memory (shared memory in CUDA)
@@ -275,26 +265,6 @@ public:
         //             triplets_per_spM.get_pointer() + stride + n_triplets_per_spM,
         //             triplet_weight_descending());
          
-        /*
-        std::sort(triplets_per_spM.get_pointer() + stride,
-                    triplets_per_spM.get_pointer() + stride + n_triplets_per_spM, [&](const triplet& lhs, const triplet& rhs){
-
-                    if (lhs.weight != rhs.weight) return lhs.weight > rhs.weight;
-                    else return fabs(lhs.z_vertex) < fabs(rhs.z_vertex); 
-                    });
-                    
-        */
-        /*
-        // Trying the dpl sorting algortihm
-        oneapi::dpl::experimental::sort_async(oneapi::dpl::execution::dpcpp_default, 
-                                              triplets_per_spM + stride,
-                                              triplets_per_spM + stride + n_triplets_per_spM, 
-                                              [&](const triplet& lhs, const triplet& rhs){
-
-                    if (lhs.weight != rhs.weight) return lhs.weight > rhs.weight;
-                    else return fabs(lhs.z_vertex) < fabs(rhs.z_vertex); 
-        });*/
-        
         // the number of good seed per compatible middle spacepoint
         unsigned int n_seeds_per_spM = 0;
 

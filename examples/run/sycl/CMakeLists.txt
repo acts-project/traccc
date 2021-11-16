@@ -22,3 +22,8 @@ target_link_libraries (seq_example_sycl LINK_PUBLIC
    traccc::io
    traccc::algorithms
    traccc::algorithms_sycl)
+
+target_link_libraries (practice LINK_PUBLIC
+   traccc::io
+   traccc::algorithms
+   traccc::algorithms_sycl)
