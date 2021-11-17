@@ -238,8 +238,8 @@ public:
         }
         // Calculate the number doublets per "block" with reducing sum technique
         item.barrier();
-        auto bottom_result = ::sycl::ext::oneapi::reduce(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-        auto top_result = ::sycl::ext::oneapi::reduce(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+        auto bottom_result = ::sycl::detail::reduce_over_group(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+        auto top_result = ::sycl::detail::reduce_over_group(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
 
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block

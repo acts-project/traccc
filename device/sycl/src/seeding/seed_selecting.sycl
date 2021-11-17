@@ -48,7 +48,8 @@ void seed_selecting(const seedfilter_config& filter_config,
 
     // 1 dim ND Range for the kernel
     auto seedSelectNdRange = ::sycl::nd_range<1>{{globalSize}, {localSize}};
-    // Shared memory for scratchspace for sorting
+    
+    // Shared memory for scratchspace (for sorting)
     std::size_t temp_memory_size =
         ::sycl::ext::oneapi::experimental::default_sorter<>
         ::memory_required<triplet>

@@ -285,7 +285,7 @@ public:
         
         // Calculate the number of triplets per "block" with reducing sum technique
         item.barrier();
-        auto triplets_result = ::sycl::ext::oneapi::reduce(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+        auto triplets_result = ::sycl::detail::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
 
         // Calculate the number of triplets per bin by atomic-adding the number of
         // triplets per block
