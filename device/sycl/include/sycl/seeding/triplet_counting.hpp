@@ -10,6 +10,7 @@
 
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/triplet_counter.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>
@@ -41,14 +42,6 @@ void triplet_counting(const seedfinder_config& config,
                       host_triplet_counter_container& triplet_counter_container,
                       vecmem::memory_resource* resource,
                       ::sycl::queue* q);
-
-// Define shorthand alias for the type of atomics needed by this kernel 
-template <typename T>
-using global_atomic_ref = ::sycl::ext::oneapi::atomic_ref<
-    T,
-    ::sycl::ext::oneapi::memory_order::relaxed,
-    ::sycl::ext::oneapi::memory_scope::system,
-    ::sycl::access::address_space::global_space>;
     
 // Kernel class for triplet counting
 class TripletCount {
@@ -221,8 +214,7 @@ public:
         // if the number of triplets per mb is larger than 0, write the triplet
         // counter into the container
         if (num_triplets_per_mb > 0) {
-            auto pos = global_atomic_ref<uint32_t>(num_compat_mb_per_bin);
-            pos += 1;
+            auto pos = atomic_add(&num_compat_mb_per_bin, 1);
             triplet_counter_per_bin[pos] = {mid_bot_doublet, num_triplets_per_mb};
         }
                 

@@ -6,6 +6,7 @@ add_library(traccc_sycl SHARED
 include/sycl/seeding/detail/doublet_counter.hpp
 include/sycl/seeding/detail/triplet_counter.hpp
 include/sycl/seeding/detail/multiplet_estimator.hpp
+include/sycl/seeding/detail/sycl_helper.hpp
 include/sycl/seeding/doublet_counting.hpp
 include/sycl/seeding/doublet_finding.hpp
 include/sycl/seeding/seed_finding.hpp

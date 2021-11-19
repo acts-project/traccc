@@ -10,6 +10,7 @@
 #include <algorithm>
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/triplet_counter.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 #include <edm/internal_spacepoint.hpp>
 #include <edm/seed.hpp>
 #include <seeding/detail/doublet.hpp>
@@ -42,25 +43,6 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_seed_container& seed_container,
                     vecmem::memory_resource* resource,
                     ::sycl::queue* q);
-
-
-// comparator function for triplet weight (in ascending order)
-static bool triplet_weight_compare(const triplet& lhs,
-                                              const triplet& rhs) {
-    if (lhs.weight != rhs.weight) {
-        return lhs.weight < rhs.weight;
-    } else {
-        return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
-    }
-}
-
-// Define shorthand alias for the type of atomics needed by this kernel 
-template <typename T>
-using global_atomic_ref = ::sycl::ext::oneapi::atomic_ref<
-    T,
-    ::sycl::ext::oneapi::memory_order::relaxed,
-    ::sycl::ext::oneapi::memory_scope::system,
-    ::sycl::access::address_space::global_space>;
 
 // Short aliast for accessor to local memory (shared memory in CUDA)
 template <typename T>
@@ -292,8 +274,7 @@ public:
             if (seed_selecting_helper::cut_per_middle_sp(
                     m_filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
                 n_seeds_per_spM == 0) {
-                auto pos = global_atomic_ref<uint32_t>(num_seeds);
-                pos += 1;
+                auto pos = atomic_add(&num_seeds, 1);
 
                 // prevent overflow
                 if (pos >= seeds.size()) {

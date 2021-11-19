@@ -9,6 +9,7 @@
 #include <CL/sycl.hpp>
 
 #include "sycl/seeding/detail/doublet_counter.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/doublet_finding_helper.hpp>
@@ -36,14 +37,6 @@ void doublet_finding(const seedfinder_config& config,
                      host_doublet_container& mid_top_doublet_container,
                      vecmem::memory_resource* resource,
                      ::sycl::queue* q);
-
-// Define shorthand alias for the type of atomics needed by this kernel 
-template <typename T>
-using global_atomic_ref = ::sycl::ext::oneapi::atomic_ref<
-    T,
-    ::sycl::ext::oneapi::memory_order::relaxed,
-    ::sycl::ext::oneapi::memory_scope::system,
-    ::sycl::access::address_space::global_space>;
 
 // Short aliast for accessor to local memory (shared memory in CUDA)
 template <typename T>
@@ -244,8 +237,8 @@ public:
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block
         if (workItemIdx == 0) {
-            global_atomic_ref<uint32_t> (num_mid_bot_doublets_per_bin) += bottom_result;
-            global_atomic_ref<uint32_t> (num_mid_top_doublets_per_bin) += top_result;
+            atomic_add(&num_mid_bot_doublets_per_bin, bottom_result);
+            atomic_add(&num_mid_top_doublets_per_bin, top_result);
         }
     }
 private:

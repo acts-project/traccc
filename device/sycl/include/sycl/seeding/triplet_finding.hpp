@@ -10,6 +10,7 @@
 
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/triplet_counter.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>
@@ -290,7 +291,7 @@ public:
         // Calculate the number of triplets per bin by atomic-adding the number of
         // triplets per block
         if (workItemIdx == 0) {
-            global_atomic_ref<uint32_t>(num_triplets_per_bin) += triplets_result;
+            atomic_add(&num_triplets_per_bin, triplets_result);
         }
     }
 private:
