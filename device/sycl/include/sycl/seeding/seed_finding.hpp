@@ -105,30 +105,29 @@ struct seed_finding {
         // doublet counting
         traccc::sycl::doublet_counting(m_seedfinder_config, isp_container,
                                        doublet_counter_container, m_mr, m_q);
-        std::cout << doublet_counter_container.get_items().at(0)[0].n_mid_bot << " ";
         // doublet finding
         traccc::sycl::doublet_finding(m_seedfinder_config, isp_container, doublet_counter_container,
                                      mid_bot_container, mid_top_container, m_mr, m_q);
-
+        std::cout << mid_bot_container.get_headers().at(0) << " ";
         // triplet counting
-        traccc::sycl::triplet_counting(m_seedfinder_config, isp_container,
-                                       doublet_counter_container,
-                                       mid_bot_container, mid_top_container,
-                                       triplet_counter_container, m_mr, m_q);  
+        // traccc::sycl::triplet_counting(m_seedfinder_config, isp_container,
+        //                                doublet_counter_container,
+        //                                mid_bot_container, mid_top_container,
+        //                                triplet_counter_container, m_mr, m_q);  
 
-        // triplet finding
-        traccc::sycl::triplet_finding(m_seedfinder_config, m_seedfilter_config, isp_container,
-                                      doublet_counter_container, mid_bot_container, mid_top_container,
-                                      triplet_counter_container, triplet_container, m_mr, m_q);
+        // // triplet finding
+        // traccc::sycl::triplet_finding(m_seedfinder_config, m_seedfilter_config, isp_container,
+        //                               doublet_counter_container, mid_bot_container, mid_top_container,
+        //                               triplet_counter_container, triplet_container, m_mr, m_q);
 
-        // weight updating
-        traccc::sycl::weight_updating(m_seedfilter_config, isp_container,
-                                      triplet_counter_container,
-                                      triplet_container, m_mr, m_q);    
+        // // weight updating
+        // traccc::sycl::weight_updating(m_seedfilter_config, isp_container,
+        //                               triplet_counter_container,
+        //                               triplet_container, m_mr, m_q);    
 
-        // seed selecting
-        traccc::sycl::seed_selecting(m_seedfilter_config, isp_container, doublet_counter_container,
-                                     triplet_counter_container, triplet_container, seed_container, m_mr, m_q);
+        // // seed selecting
+        // traccc::sycl::seed_selecting(m_seedfilter_config, isp_container, doublet_counter_container,
+        //                              triplet_counter_container, triplet_container, seed_container, m_mr, m_q);
 
         return seed_container;  
         

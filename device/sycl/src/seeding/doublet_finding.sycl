@@ -44,7 +44,6 @@ void doublet_finding(const seedfinder_config& config,
         // 1 dim ND Range for the kernel
         auto doubletFindNdRange = ::sycl::nd_range<1>{{globalSize}, {localSize}};
          q->submit([&](::sycl::handler& h) {
-
             // local memory initialization (equivalent to shared memory in CUDA)
             auto localMem = 
                 local_accessor<int>(localSize*2, h);

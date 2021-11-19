@@ -40,12 +40,10 @@ class DupletCount {
 public:
     DupletCount(const seedfinder_config& config,
                internal_spacepoint_container_view internal_sp_view, 
-                doublet_counter_container_view doublet_counter_view,
-                ::sycl::stream out)
+                doublet_counter_container_view doublet_counter_view)
     : m_config(config),
       m_internal_sp_view(internal_sp_view),
-      m_doublet_counter_view(doublet_counter_view),
-      m_out(std::move(out)) {} 
+      m_doublet_counter_view(doublet_counter_view) {} 
 
     void operator()(::sycl::nd_item<1> item) const {
         
@@ -98,7 +96,6 @@ public:
     // bin
     const auto& bin_info = internal_sp_device.get_headers().at(bin_idx);
     auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
-    // m_out << bin_idx << " ";
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
@@ -152,7 +149,6 @@ public:
     // larger than 0, the entry is added to the doublet counter
     if (n_mid_bot > 0 && n_mid_top > 0) {
         auto pos = atomic_add(&num_compat_spM_per_bin, 1);
-        //m_out << pos << " ";
         doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
     }        
 }
@@ -160,7 +156,6 @@ private:
     const seedfinder_config m_config;
     internal_spacepoint_container_view m_internal_sp_view;
     doublet_counter_container_view m_doublet_counter_view;
-    ::sycl::stream m_out;
 };
 
 } // namespace sycl

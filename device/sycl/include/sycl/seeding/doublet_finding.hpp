@@ -233,7 +233,7 @@ public:
         item.barrier();
         auto bottom_result = ::sycl::reduce_over_group(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
         auto top_result = ::sycl::reduce_over_group(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-
+        //item.barrier();
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block
         if (workItemIdx == 0) {
