@@ -114,7 +114,7 @@ public:
         auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
         auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
-        auto compat_seedR = m_localMem;
+        auto compat_seedR = m_localMem.get_pointer();
         item.barrier();
 
         // index of triplet in the item vector

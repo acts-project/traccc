@@ -214,7 +214,10 @@ public:
         // if the number of triplets per mb is larger than 0, write the triplet
         // counter into the container
         if (num_triplets_per_mb > 0) {
-            auto pos = atomic_add(&num_compat_mb_per_bin, 1);
+            ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::device,
+                                   ::sycl::access::address_space::global_space> obj (num_compat_mb_per_bin);
+            auto pos = obj.fetch_add(1);
             triplet_counter_per_bin[pos] = {mid_bot_doublet, num_triplets_per_mb};
         }
                 

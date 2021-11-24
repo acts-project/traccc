@@ -170,7 +170,7 @@ public:
         auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
         auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
-        auto num_triplets_per_thread = m_localMem;
+        auto num_triplets_per_thread = m_localMem.get_pointer();
         num_triplets_per_thread[workItemIdx] = 0;
 
         // index of triplet counter in the item vector
@@ -286,12 +286,16 @@ public:
         
         // Calculate the number of triplets per "block" with reducing sum technique
         item.barrier();
-        auto triplets_result = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+        reduceInShared(num_triplets_per_thread, item);
 
         // Calculate the number of triplets per bin by atomic-adding the number of
         // triplets per block
         if (workItemIdx == 0) {
-            atomic_add(&num_triplets_per_bin, triplets_result);
+            ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::device,
+                                   ::sycl::access::address_space::global_space> obj (num_triplets_per_bin);
+            obj.fetch_add(num_triplets_per_thread[0]);
+            //atomic_add(&num_triplets_per_bin, triplets_result);
         }
     }
 private:

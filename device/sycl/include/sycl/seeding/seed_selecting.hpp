@@ -145,7 +145,7 @@ public:
         auto& num_seeds = seed_device.get_headers().at(0);
         auto seeds = seed_device.get_items().at(0);
 
-        auto triplets_per_spM = m_localMem;
+        auto triplets_per_spM = m_localMem.get_pointer();
 
         // index of doublet counter in the item vector
         auto gid = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
@@ -209,8 +209,8 @@ public:
                     //       Let's not be so obsessed about achieving
                     //       perfectly same result :))))))))
 
-                    int min_index = std::min_element(triplets_per_spM.get_pointer() + begin_idx,
-                                                    triplets_per_spM.get_pointer() + end_idx,
+                    int min_index = std::min_element(triplets_per_spM + begin_idx,
+                                                    triplets_per_spM + end_idx,
                                                     [&](const triplet& lhs, const triplet& rhs){
                                                         if (lhs.weight != rhs.weight) {
                                                             return lhs.weight < rhs.weight;
@@ -218,7 +218,7 @@ public:
                                                             return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
                                                         }
                                                     }) -
-                                    triplets_per_spM.get_pointer();
+                                    triplets_per_spM;
 
                     auto& min_weight = triplets_per_spM[min_index].weight;
 
@@ -241,8 +241,8 @@ public:
                 workGroup,
                 ::sycl::span{&m_scratch[0], m_temp_memory_size}
             ),
-            static_cast<triplet*>(triplets_per_spM.get_pointer()) + stride,
-            static_cast<triplet*>(triplets_per_spM.get_pointer()) + stride + n_triplets_per_spM,
+            static_cast<triplet*>(triplets_per_spM) + stride,
+            static_cast<triplet*>(triplets_per_spM) + stride + n_triplets_per_spM,
             [](const triplet& lhs, const triplet& rhs) {
                 if (lhs.weight != rhs.weight) {
                     return lhs.weight > rhs.weight;
@@ -274,7 +274,10 @@ public:
             if (seed_selecting_helper::cut_per_middle_sp(
                     m_filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
                 n_seeds_per_spM == 0) {
-                auto pos = atomic_add(&num_seeds, 1);
+                ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::device,
+                                   ::sycl::access::address_space::global_space> obj (num_seeds);
+                auto pos = obj.fetch_add(1);
 
                 // prevent overflow
                 if (pos >= seeds.size()) {

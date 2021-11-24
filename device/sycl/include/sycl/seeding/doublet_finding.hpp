@@ -234,8 +234,8 @@ public:
         }
         // Calculate the number doublets per "block" with reducing sum technique
         item.barrier(::sycl::access::fence_space::local_space);
-        //reduceInShared(num_mid_bot_doublets_per_thread, item);
-        //reduceInShared(num_mid_top_doublets_per_thread, item);
+        reduceInShared(num_mid_bot_doublets_per_thread, item);
+        reduceInShared(num_mid_top_doublets_per_thread, item);
         // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 16);
         // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 8);
         // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 4);
@@ -265,8 +265,14 @@ public:
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block
         if (workItemIdx == 0) {
-            atomic_add(&num_mid_bot_doublets_per_bin, num_mid_bot_doublets_per_thread[0]);
-            atomic_add(&num_mid_top_doublets_per_bin, num_mid_top_doublets_per_thread[0]);
+            ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::device,
+                                   ::sycl::access::address_space::global_space> objBot (num_mid_bot_doublets_per_bin),
+                                                                                objTop (num_mid_top_doublets_per_bin);
+            objBot.fetch_add(num_mid_bot_doublets_per_thread[0]);
+            objTop.fetch_add(num_mid_top_doublets_per_thread[0]);                                                                            
+            // atomic_add(&num_mid_bot_doublets_per_bin, num_mid_bot_doublets_per_thread[0]);
+            // atomic_add(&num_mid_top_doublets_per_bin, num_mid_top_doublets_per_thread[0]);
         }
     }
 private:

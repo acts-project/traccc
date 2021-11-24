@@ -145,9 +145,12 @@ public:
     // if number of mid-bot and mid-top doublet for a middle spacepoint is
     // larger than 0, the entry is added to the doublet counter
     if (n_mid_bot > 0 && n_mid_top > 0) {
-        auto pos = atomic_add(&num_compat_spM_per_bin, 1);
+        //auto pos = atomic_add(num_compat_spM_per_bin, 1);
+        ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::seq_cst,
+                                   ::sycl::memory_scope::device,
+                                   ::sycl::access::address_space::global_space> obj (num_compat_spM_per_bin);
         // auto obj = ::sycl::atomic<uint32_t, ::sycl::access::address_space::global_space>(&num_compat_spM_per_bin);
-        // auto pos = obj.fetch_add(1);
+        auto pos = obj.fetch_add(1);
         doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
     }        
 }
