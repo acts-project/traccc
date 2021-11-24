@@ -31,3 +31,26 @@ unsigned int atomic_add(unsigned int *address, unsigned int val)
 
 } // namespace sycl
 } // namespace traccc
+
+// inline
+// void reduceInShared(int *const v, ::sycl::nd_item<1> &item)
+// {
+//   int lid = item.get_local_id(0);
+//   if(lid<64) v[lid] = v[lid] + v[lid+64];
+//   item.barrier(::sycl::access::fence_space::local_space);
+//   if(lid<32) v[lid] = v[lid] + v[lid+32];
+//   item.barrier(::sycl::access::fence_space::local_space);
+//   if(lid<32) v[lid] = v[lid] + v[lid+16];
+//   item.barrier(::sycl::access::fence_space::local_space);
+//   if(lid<32) v[lid] = v[lid] + v[lid+8];
+//   item.barrier(::sycl::access::fence_space::local_space);
+//   if(lid<32) v[lid] = v[lid] + v[lid+4];
+//   item.barrier(::sycl::access::fence_space::local_space);
+//   if(lid<32) v[lid] = v[lid] + v[lid+2];
+//   item.barrier(::sycl::access::fence_space::local_space);
+//   if(lid<32) v[lid] = v[lid] + v[lid+1];
+//   item.barrier(::sycl::access::fence_space::local_space);
+// }
+
+// } // namespace sycl
+// } // namespace traccc

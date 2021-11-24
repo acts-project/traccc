@@ -54,16 +54,19 @@ public:
                 doublet_counter_container_view doublet_counter_view,
                 doublet_container_view mid_bot_doublet_view,
                 doublet_container_view mid_top_doublet_view,
-                local_accessor<int> localMem)
+                local_accessor<int> localMemBot,
+                local_accessor<int> localMemTop)
     : m_config(config),
       m_internal_sp_view(internal_sp_view),
       m_doublet_counter_view(doublet_counter_view),
       m_mid_bot_doublet_view(mid_bot_doublet_view),
       m_mid_top_doublet_view(mid_top_doublet_view),
-      m_localMem(localMem) {}
+      m_localMemBot(localMemBot),
+      m_localMemTop(localMemTop) {}
 
     void operator()(::sycl::nd_item<1> item) const {
         
+        auto sg = item.get_sub_group();
         // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
@@ -134,8 +137,8 @@ public:
         auto mid_top_doublets_per_bin =
             mid_top_doublet_device.get_items().at(bin_idx);        
 
-        auto num_mid_bot_doublets_per_thread = m_localMem;
-        auto num_mid_top_doublets_per_thread = &num_mid_bot_doublets_per_thread[groupDim];
+        auto num_mid_bot_doublets_per_thread = m_localMemBot.get_pointer();
+        auto num_mid_top_doublets_per_thread = m_localMemTop.get_pointer();
         num_mid_bot_doublets_per_thread[workItemIdx] = 0;
         num_mid_top_doublets_per_thread[workItemIdx] = 0;
 
@@ -230,15 +233,40 @@ public:
             }
         }
         // Calculate the number doublets per "block" with reducing sum technique
-        item.barrier();
-        auto bottom_result = ::sycl::reduce_over_group(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-        auto top_result = ::sycl::reduce_over_group(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-        //item.barrier();
+        item.barrier(::sycl::access::fence_space::local_space);
+        //reduceInShared(num_mid_bot_doublets_per_thread, item);
+        //reduceInShared(num_mid_top_doublets_per_thread, item);
+        // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 16);
+        // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 8);
+        // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 4);
+        // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 2);
+        // num_mid_bot_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_bot_doublets_per_thread[workItemIdx], 1);
+
+        //item.barrier(::sycl::access::fence_space::local_space);
+        // if (workItemIdx == 0) {
+        //     for (int i = 1; i < groupDim / 32; i++) {
+        //         num_mid_bot_doublets_per_thread[workItemIdx] += num_mid_bot_doublets_per_thread[i * 32];
+        //     }
+        // }
+
+        // num_mid_top_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_top_doublets_per_thread[workItemIdx], 16);
+        // num_mid_top_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_top_doublets_per_thread[workItemIdx], 8);
+        // num_mid_top_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_top_doublets_per_thread[workItemIdx], 4);
+        // num_mid_top_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_top_doublets_per_thread[workItemIdx], 2);
+        // num_mid_top_doublets_per_thread[workItemIdx] += ::sycl::shift_group_left(sg, num_mid_top_doublets_per_thread[workItemIdx], 1);
+        
+        // item.barrier();
+        // if (workItemIdx == 0) {
+        //     for (int i = 1; i < groupDim / 32; i++) {
+        //         num_mid_top_doublets_per_thread[workItemIdx] += num_mid_top_doublets_per_thread[i * 32];
+        //     }
+        // }
+
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block
         if (workItemIdx == 0) {
-            atomic_add(&num_mid_bot_doublets_per_bin, bottom_result);
-            atomic_add(&num_mid_top_doublets_per_bin, top_result);
+            atomic_add(&num_mid_bot_doublets_per_bin, num_mid_bot_doublets_per_thread[0]);
+            atomic_add(&num_mid_top_doublets_per_bin, num_mid_top_doublets_per_thread[0]);
         }
     }
 private:
@@ -247,7 +275,8 @@ private:
     doublet_counter_container_view m_doublet_counter_view;
     doublet_container_view m_mid_bot_doublet_view;
     doublet_container_view m_mid_top_doublet_view;
-    local_accessor<int> m_localMem;
+    local_accessor<int> m_localMemBot;
+    local_accessor<int> m_localMemTop;
 };
 
 } // namespace sycl

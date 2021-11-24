@@ -38,7 +38,7 @@ void doublet_counting(const seedfinder_config& config,
 // Kernel class for doublet counting
 class DupletCount {
 public:
-    DupletCount(const seedfinder_config& config,
+    DupletCount(const seedfinder_config config,
                internal_spacepoint_container_view internal_sp_view, 
                 doublet_counter_container_view doublet_counter_view)
     : m_config(config),
@@ -47,15 +47,12 @@ public:
 
     void operator()(::sycl::nd_item<1> item) const {
         
-        // Mapping cuda indexing to dpc++
-        auto workGroup = item.get_group();
-        
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = workGroup.get_linear_id();
+        auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = workGroup.get_local_range(0);
+        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_linear_id();
+        auto workItemIdx = item.get_local_id(0);
         
         // Get device container for input parameters
         device_internal_spacepoint_container internal_sp_device(
@@ -99,13 +96,13 @@ public:
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    uint32_t& num_compat_spM_per_bin =
+    auto& num_compat_spM_per_bin =
         doublet_counter_device.get_headers().at(bin_idx);
     auto doublet_counter_per_bin =
         doublet_counter_device.get_items().at(bin_idx);
 
     // index of internal spacepoint in the item vector
-    uint32_t sp_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
+    auto sp_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
 
     if (sp_idx >= doublet_counter_per_bin.size()) return;
 
@@ -118,7 +115,7 @@ public:
     doublet_counter_per_bin[sp_idx].n_mid_top = 0;
 
     // middle spacepoint index
-    auto spM_loc = sp_location({bin_idx, sp_idx});
+    auto spM_loc = sp_location({bin_idx, static_cast<uint32_t>(sp_idx)});
     // middle spacepoint
     const auto& isp = internal_sp_per_bin[sp_idx];
 
@@ -149,6 +146,8 @@ public:
     // larger than 0, the entry is added to the doublet counter
     if (n_mid_bot > 0 && n_mid_top > 0) {
         auto pos = atomic_add(&num_compat_spM_per_bin, 1);
+        // auto obj = ::sycl::atomic<uint32_t, ::sycl::access::address_space::global_space>(&num_compat_spM_per_bin);
+        // auto pos = obj.fetch_add(1);
         doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
     }        
 }

@@ -38,7 +38,7 @@ void doublet_counting(const seedfinder_config& config,
         DupletCount kernel( config, internal_sp_view, 
                             doublet_counter_container_view);
         h.parallel_for<class doublet_count_kernel>(doubletCountNdRange, kernel);
-    });
+    }).wait_and_throw();
 }
 
 } // namespace sycl
