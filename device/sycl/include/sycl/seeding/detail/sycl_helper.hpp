@@ -12,41 +12,44 @@
 namespace traccc{
 namespace sycl {
 
-inline
-unsigned int atomic_add(unsigned int* address, unsigned int val)
-{
-  ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
-                                   ::sycl::memory_scope::device,
-                                   ::sycl::access::address_space::global_space> obj (*address);
+// inline
+// unsigned int atomic_add(unsigned int* address, unsigned int val)
+// {
+//   ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
+//                                    ::sycl::memory_scope::device,
+//                                    ::sycl::access::address_space::global_space> obj (*address);
 
-  unsigned int old_val = *address;
-  while(true)
-  {
-    const unsigned int new_val = old_val + val;
-    if(obj.compare_exchange_strong(old_val, new_val))
-      break;
+//   unsigned int old_val = *address;
+//   while(true)
+//   {
+//     const unsigned int new_val = old_val + val;
+//     if(obj.compare_exchange_strong(old_val, new_val))
+//       break;
+//   }
+//   return old_val;
+// }
+
+inline
+void reduceInShared(int* array, ::sycl::nd_item<1> &item)
+{
+  const auto& workItemIdx = item.get_local_linear_id();
+  const auto& groupDim = item.get_local_range(0);
+  auto sg = item.get_sub_group();
+  auto workGroup = item.get_group();
+
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
+
+  ::sycl::group_barrier(workGroup);
+
+  if (workItemIdx == 0) {
+      for (int i = 1; i < groupDim / 32; i++) {
+          array[workItemIdx] += array[i * 32];
+    }
   }
-  return old_val;
-}
-
-inline
-void reduceInShared(int *const v, ::sycl::nd_item<1> &item)
-{
-  int lid = item.get_local_id(0);
-  if(lid<64) v[lid] = v[lid] + v[lid+64];
-  item.barrier(::sycl::access::fence_space::local_space);
-  if(lid<32) v[lid] = v[lid] + v[lid+32];
-  item.barrier(::sycl::access::fence_space::local_space);
-  if(lid<32) v[lid] = v[lid] + v[lid+16];
-  item.barrier(::sycl::access::fence_space::local_space);
-  if(lid<32) v[lid] = v[lid] + v[lid+8];
-  item.barrier(::sycl::access::fence_space::local_space);
-  if(lid<32) v[lid] = v[lid] + v[lid+4];
-  item.barrier(::sycl::access::fence_space::local_space);
-  if(lid<32) v[lid] = v[lid] + v[lid+2];
-  item.barrier(::sycl::access::fence_space::local_space);
-  if(lid<32) v[lid] = v[lid] + v[lid+1];
-  item.barrier(::sycl::access::fence_space::local_space);
 }
 
 } // namespace sycl
