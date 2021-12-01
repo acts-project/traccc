@@ -98,7 +98,8 @@ struct measurement_creation
                 // normalize the cell position
                 m.local = mean;
                 // normalize the variance
-                m.variance = var / totalWeight;
+                m.variance[0] = var[0] / totalWeight;
+                m.variance[1] = var[1] / totalWeight;
                 // plus pitch^2 / 12
                 m.variance = m.variance + point2{pitch[0] * pitch[0] / 12,
                                                  pitch[1] * pitch[1] / 12};
