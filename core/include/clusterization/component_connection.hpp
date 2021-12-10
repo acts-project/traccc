@@ -29,8 +29,12 @@ class component_connection
                                           const cell_module&)>,
       public algorithm<cluster_collection(const device_cell_collection&,
                                           const cell_module&)> {
-
     public:
+    /// Constructor for component_connection
+    ///
+    /// @param mr is the memory resource
+    component_connection(vecmem::memory_resource& mr) : m_mr(mr) {}
+
     /// @name Operators to use in host code
     /// @{
 
@@ -102,6 +106,9 @@ class component_connection
         }
         clusters.items = cluster_items;
     }
+
+    private:
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 
 };  // class component_connection
 

@@ -10,6 +10,7 @@
 #include <cuda/seeding/detail/doublet_counter.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/doublet_finding_helper.hpp>
 
 #include "seeding/detail/doublet.hpp"
@@ -27,8 +28,7 @@ namespace cuda {
 /// @param mid_bot_doublet_container vecmem container for mid-bot doublets
 /// @param mid_top_doublet_container vecmem container for mid-top doublets
 /// @param resource vecmem memory resource
-void doublet_finding(const seedfinder_config& config,
-                     host_internal_spacepoint_container& internal_sp_container,
+void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,

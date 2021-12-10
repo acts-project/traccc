@@ -6,8 +6,6 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <functional>
-
 #pragma once
 
 namespace traccc {

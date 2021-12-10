@@ -34,7 +34,7 @@ TEST(algorithms, component_connection) {
     traccc::cell_module module;
     module.module = 0;
 
-    traccc::component_connection ccl;
+    traccc::component_connection ccl(resource);
     auto clusters = ccl(cells, module);
 
     ASSERT_EQ(clusters.items.size(), 4u);

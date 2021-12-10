@@ -20,6 +20,11 @@ namespace traccc {
 struct measurement {
     point2 local = {0., 0.};
     variance2 variance = {0., 0.};
+
+    TRACCC_HOST_DEVICE
+    static inline measurement invalid_value() {
+        return measurement({{0., 0.}, {0., 0.}});
+    }
 };
 
 /// Container of measurements belonging to one detector module

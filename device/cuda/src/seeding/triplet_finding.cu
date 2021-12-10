@@ -25,7 +25,7 @@ namespace cuda {
 /// @param triplet_container vecmem container for triplets
 __global__ void triplet_finding_kernel(
     const seedfinder_config config, const seedfilter_config filter_config,
-    internal_spacepoint_container_view internal_sp_view,
+    sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
@@ -34,19 +34,20 @@ __global__ void triplet_finding_kernel(
 
 void triplet_finding(const seedfinder_config& config,
                      const seedfilter_config& filter_config,
-                     host_internal_spacepoint_container& internal_sp_container,
+                     sp_grid& internal_sp,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
                      vecmem::memory_resource& resource) {
-    auto internal_sp_view = get_data(internal_sp_container, &resource);
+
     auto doublet_counter_view = get_data(doublet_counter_container, &resource);
     auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
     auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
     auto triplet_counter_view = get_data(triplet_counter_container, &resource);
     auto triplet_view = get_data(triplet_container, &resource);
+    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -61,7 +62,7 @@ void triplet_finding(const seedfinder_config& config,
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_mid_bot_doublets_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
-    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (size_t i = 0; i < internal_sp.nbins(); ++i) {
         num_blocks +=
             triplet_counter_container.get_headers()[i] / num_threads + 1;
     }
@@ -82,14 +83,16 @@ void triplet_finding(const seedfinder_config& config,
 
 __global__ void triplet_finding_kernel(
     const seedfinder_config config, const seedfilter_config filter_config,
-    internal_spacepoint_container_view internal_sp_view,
+    sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view) {
-    device_internal_spacepoint_container internal_sp_device(
-        {internal_sp_view.headers, internal_sp_view.items});
+
+    // Get device container for input parameters
+    sp_grid_device internal_sp_device(internal_sp_view);
+
     device_doublet_counter_container doublet_counter_device(
         {doublet_counter_view.headers, doublet_counter_view.items});
     device_doublet_container mid_bot_doublet_device(
@@ -102,16 +105,15 @@ __global__ void triplet_finding_kernel(
     device_triplet_container triplet_device(
         {triplet_view.headers, triplet_view.items});
 
-    // Get the bin index of spacepoint binning and reference block idx for the
-    // bin index
-    unsigned int bin_idx = 0;
-    unsigned int ref_block_idx = 0;
-    cuda_helper::get_header_idx(triplet_counter_device, bin_idx, ref_block_idx);
+    // Get the bin and item index
+    unsigned int bin_idx(0), item_idx(0);
+    cuda_helper::find_idx_on_container(triplet_counter_device, bin_idx,
+                                       item_idx);
 
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
     auto& num_compat_spM_per_bin =
         doublet_counter_device.get_headers().at(bin_idx);
 
@@ -150,16 +152,14 @@ __global__ void triplet_finding_kernel(
     extern __shared__ int num_triplets_per_thread[];
     num_triplets_per_thread[threadIdx.x] = 0;
 
-    // index of triplet counter in the item vector
-    auto gid = (blockIdx.x - ref_block_idx) * blockDim.x + threadIdx.x;
-
     // prevent the tail threads referring the null triplet counter
-    if (gid >= num_compat_mb_per_bin) {
+    if (item_idx >= num_compat_mb_per_bin) {
         return;
     }
 
     // middle-bot doublet
-    const auto& mid_bot_doublet = triplet_counter_per_bin[gid].mid_bot_doublet;
+    const auto& mid_bot_doublet =
+        triplet_counter_per_bin[item_idx].mid_bot_doublet;
     // middle spacepoint index
     const auto& spM_idx = mid_bot_doublet.sp1.sp_idx;
     // middle spacepoint
@@ -169,7 +169,7 @@ __global__ void triplet_finding_kernel(
     // bottom spacepoint index
     const auto& spB_idx = mid_bot_doublet.sp2.sp_idx;
     // bottom spacepoint
-    const auto& spB = internal_sp_device.get_items().at(spB_bin)[spB_idx];
+    const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
 
     // Apply the conformal transformation to middle-bot doublet
     auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
@@ -226,7 +226,7 @@ __global__ void triplet_finding_kernel(
 
     // The start index is calculated by accumulating the number of triplets of
     // all previous compatible middle-bottom doublets
-    for (unsigned int i = 0; i < gid; i++) {
+    for (unsigned int i = 0; i < item_idx; i++) {
         triplet_start_idx += triplet_counter_per_bin[i].n_triplets;
     }
 
@@ -236,7 +236,7 @@ __global__ void triplet_finding_kernel(
 
         const auto& spT_bin = mid_top_doublet.sp2.bin_idx;
         const auto& spT_idx = mid_top_doublet.sp2.sp_idx;
-        const auto& spT = internal_sp_device.get_items().at(spT_bin)[spT_idx];
+        const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
         // Apply the conformal transformation to middle-top doublet
         auto lt =
             doublet_finding_helper::transform_coordinates(spM, spT, false);

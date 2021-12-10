@@ -24,6 +24,12 @@ struct spacepoint {
     measurement meas;
 
     TRACCC_HOST_DEVICE
+    static inline spacepoint invalid_value() {
+        measurement ms = measurement::invalid_value();
+        return spacepoint({{0., 0., 0.}, {0., 0., 0.}, ms});
+    }
+
+    TRACCC_HOST_DEVICE
     const scalar& x() const { return global[0]; }
     TRACCC_HOST_DEVICE
     const scalar& y() const { return global[1]; }

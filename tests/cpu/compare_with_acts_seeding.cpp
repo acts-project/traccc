@@ -104,7 +104,6 @@ TEST(algorithms, compare_with_acts_seeding) {
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
-    traccc::clusterization_algorithm ca;
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
@@ -120,9 +119,7 @@ TEST(algorithms, compare_with_acts_seeding) {
       TRACCC seeding
       --------------------------------*/
 
-    auto sa_output = sa(spacepoints_per_event);
-    // auto& internal_sp_per_event = sa_output.first;
-    auto& seeds = sa_output.second;
+    auto seeds = sa(spacepoints_per_event);
 
     /*--------------------------------
       TRACCC track params estimation
@@ -142,10 +139,11 @@ TEST(algorithms, compare_with_acts_seeding) {
         for (auto& sp : items) {
 
             SpacePoint* acts_sp =
-                new SpacePoint{sp.global[0],
-                               sp.global[1],
-                               sp.global[2],
-                               std::hypot(sp.global[0], sp.global[1]),
+                new SpacePoint{static_cast<float>(sp.global[0]),
+                               static_cast<float>(sp.global[1]),
+                               static_cast<float>(sp.global[2]),
+                               std::hypot(static_cast<float>(sp.global[0]),
+                                          static_cast<float>(sp.global[1])),
                                0,
                                0,
                                0};
@@ -333,4 +331,8 @@ TEST(algorithms, compare_with_acts_seeding) {
 
     float params_match_ratio = float(n_params_match) / traccc_params.size();
     EXPECT_TRUE((params_match_ratio > 0.95) && (params_match_ratio <= 1.));
+
+    std::cout << "-------- Result ---------" << std::endl;
+    std::cout << "seed matching ratio: " << seed_match_ratio << std::endl;
+    std::cout << "params matching ratio: " << params_match_ratio << std::endl;
 }

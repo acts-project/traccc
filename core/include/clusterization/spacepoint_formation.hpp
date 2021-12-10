@@ -18,6 +18,12 @@ struct spacepoint_formation
     : public algorithm<host_spacepoint_collection(
           const cell_module&, const host_measurement_collection&)> {
 
+    public:
+    /// Constructor for spacepoint_formation
+    ///
+    /// @param mr is the memory resource
+    spacepoint_formation(vecmem::memory_resource& mr) : m_mr(mr) {}
+
     /// Callable operator for the space point formation, based on one single
     /// module
     ///
@@ -63,6 +69,9 @@ struct spacepoint_formation
             spacepoints.push_back(std::move(s));
         }
     }
+
+    private:
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 };
 
 }  // namespace traccc

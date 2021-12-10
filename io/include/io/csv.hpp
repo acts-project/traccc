@@ -92,19 +92,6 @@ struct csv_measurement {
 using measurement_reader = dfe::NamedTupleCsvReader<csv_measurement>;
 using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
 
-struct csv_internal_spacepoint {
-    size_t global_bin;
-    scalar x, y, z;
-    scalar var_R = 0;
-    scalar var_Z = 0;
-
-    // geometry_id,hit_id,channel0,channel1,timestamp,value
-    DFE_NAMEDTUPLE(csv_internal_spacepoint, global_bin, x, y, z, var_R, var_Z);
-};
-
-using internal_spacepoint_writer =
-    dfe::NamedTupleCsvWriter<csv_internal_spacepoint>;
-
 struct csv_spacepoint {
 
     uint64_t geometry_id = 0;
@@ -399,9 +386,7 @@ inline host_spacepoint_container read_hits(
     fatras_hit_reader& hreader, vecmem::memory_resource& resource,
     const traccc::geometry* tfmap = nullptr,
     unsigned int max_hits = std::numeric_limits<unsigned int>::max()) {
-    host_spacepoint_container result = {
-        host_spacepoint_container::header_vector(&resource),
-        host_spacepoint_container::item_vector(&resource)};
+    host_spacepoint_container result(&resource);
 
     unsigned int read_hits = 0;
     csv_fatras_hit iohit;

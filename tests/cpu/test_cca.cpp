@@ -15,10 +15,12 @@
 #include "edm/cell.hpp"
 #include "edm/cluster.hpp"
 #include "tests/cca_test.hpp"
+#include "vecmem/memory/host_memory_resource.hpp"
 
 namespace {
-traccc::component_connection cc;
-traccc::measurement_creation mc;
+vecmem::host_memory_resource resource;
+traccc::component_connection cc(resource);
+traccc::measurement_creation mc(resource);
 traccc::cell_module module;
 
 std::function<traccc::host_measurement_collection(

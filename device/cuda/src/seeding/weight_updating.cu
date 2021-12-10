@@ -21,19 +21,19 @@ namespace cuda {
 /// @param triplet_counter_container vecmem container for triplet counters
 /// @param triplet_container vecmem container for triplets
 __global__ void weight_updating_kernel(
-    const seedfilter_config filter_config,
-    internal_spacepoint_container_view internal_sp_view,
+    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view);
 
 void weight_updating(const seedfilter_config& filter_config,
-                     host_internal_spacepoint_container& internal_sp_container,
+                     sp_grid& internal_sp,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
                      vecmem::memory_resource& resource) {
-    auto internal_sp_view = get_data(internal_sp_container, &resource);
+
     auto triplet_counter_view = get_data(triplet_counter_container, &resource);
     auto triplet_view = get_data(triplet_container, &resource);
+    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread update the weight of eac
     // triplet
@@ -48,7 +48,7 @@ void weight_updating(const seedfilter_config& filter_config,
     // N_i is the number of blocks for i-th bin, defined as num_triplets_per_bin
     // / num_threads + 1
     unsigned int num_blocks = 0;
-    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (size_t i = 0; i < internal_sp.nbins(); ++i) {
         num_blocks += triplet_container.get_headers()[i] / num_threads + 1;
     }
 
@@ -65,28 +65,26 @@ void weight_updating(const seedfilter_config& filter_config,
 }
 
 __global__ void weight_updating_kernel(
-    const seedfilter_config filter_config,
-    internal_spacepoint_container_view internal_sp_view,
+    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view) {
-    device_internal_spacepoint_container internal_sp_device(
-        {internal_sp_view.headers, internal_sp_view.items});
+
+    // Get device container for input parameters
+    sp_grid_device internal_sp_device(internal_sp_view);
 
     device_triplet_counter_container triplet_counter_device(
         {triplet_counter_view.headers, triplet_counter_view.items});
     device_triplet_container triplet_device(
         {triplet_view.headers, triplet_view.items});
 
-    // Get the bin index of spacepoint binning and reference block idx for the
-    // bin index
-    unsigned int bin_idx = 0;
-    unsigned int ref_block_idx = 0;
-    cuda_helper::get_header_idx(triplet_device, bin_idx, ref_block_idx);
+    // Get the bin and item index
+    unsigned int bin_idx(0), tr_idx(0);
+    cuda_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx);
 
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
 
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
@@ -104,7 +102,6 @@ __global__ void weight_updating_kernel(
     __syncthreads();
 
     // index of triplet in the item vector
-    auto tr_idx = (blockIdx.x - ref_block_idx) * blockDim.x + threadIdx.x;
     auto& triplet = triplets_per_bin[tr_idx];
     auto& spB_idx = triplet.sp1;
     auto& spM_idx = triplet.sp2;
@@ -140,8 +137,7 @@ __global__ void weight_updating_kernel(
         return;
     }
 
-    auto& current_spT =
-        internal_sp_device.get_items()[spT_idx.bin_idx][spT_idx.sp_idx];
+    auto& current_spT = internal_sp_device.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
 
     scalar currentTop_r = current_spT.radius();
 
@@ -164,8 +160,7 @@ __global__ void weight_updating_kernel(
         auto& other_triplet = *tr_it;
         auto other_spT_idx = (*tr_it).sp3;
         auto other_spT =
-            internal_sp_device
-                .get_items()[other_spT_idx.bin_idx][other_spT_idx.sp_idx];
+            internal_sp_device.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx];
 
         // compared top SP should have at least deltaRMin distance
         scalar otherTop_r = other_spT.radius();

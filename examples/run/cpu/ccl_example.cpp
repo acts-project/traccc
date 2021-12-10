@@ -92,11 +92,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Running " << argv[0] << " on " << event_file << std::endl;
 
-    traccc::component_connection cc;
+    vecmem::host_memory_resource mem;
+
+    traccc::component_connection cc(mem);
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
-
-    vecmem::host_memory_resource mem;
 
     traccc::cell_reader creader(event_file, {"geometry_id", "hit_id", "cannel0",
                                              "channel1", "activation", "time"});

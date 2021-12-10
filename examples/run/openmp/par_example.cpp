@@ -28,10 +28,13 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
 
+    // Memory resource used by the EDM.
+    vecmem::host_memory_resource resource;
+
     // Algorithms
-    traccc::component_connection cc;
-    traccc::measurement_creation mt;
-    traccc::spacepoint_formation sp;
+    traccc::component_connection cc(resource);
+    traccc::measurement_creation mt(resource);
+    traccc::spacepoint_formation sp(resource);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -39,9 +42,6 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
     uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
     uint64_t n_space_points = 0;
-
-    // Memory resource used by the EDM.
-    vecmem::host_memory_resource resource;
 
 #pragma omp parallel for reduction (+:n_cells, n_clusters, n_measurements, n_space_points, m_modules)
     // Loop over events

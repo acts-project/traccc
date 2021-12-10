@@ -49,26 +49,26 @@ __device__ static bool triplet_weight_compare(const triplet& lhs,
 /// @param triplet_container vecmem container for triplets
 /// @param seed_container vecmem container for seeds
 __global__ void seed_selecting_kernel(
-    const seedfilter_config filter_config,
-    internal_spacepoint_container_view internal_sp_view,
+    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view, seed_container_view seed_view);
 
 void seed_selecting(const seedfilter_config& filter_config,
-                    host_internal_spacepoint_container& internal_sp_container,
+                    sp_grid& internal_sp,
                     host_doublet_counter_container& doublet_counter_container,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     host_seed_container& seed_container,
                     vecmem::memory_resource& resource) {
-    auto internal_sp_view = get_data(internal_sp_container, &resource);
+
     auto doublet_counter_container_view =
         get_data(doublet_counter_container, &resource);
     auto triplet_counter_container_view =
         get_data(triplet_counter_container, &resource);
     auto triplet_container_view = get_data(triplet_container, &resource);
     auto seed_container_view = get_data(seed_container, &resource);
+    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread investigate the
     // compatible middle spacepoint
@@ -83,7 +83,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     // N_i is the number of blocks for i-th bin, defined as num_triplets_per_bin
     // / num_threads + 1
     unsigned int num_blocks = 0;
-    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (size_t i = 0; i < internal_sp.nbins(); ++i) {
         num_blocks +=
             triplet_counter_container.get_headers()[i] / num_threads + 1;
     }
@@ -98,20 +98,20 @@ void seed_selecting(const seedfilter_config& filter_config,
         filter_config, internal_sp_view, doublet_counter_container_view,
         triplet_counter_container_view, triplet_container_view,
         seed_container_view);
-
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 }
 
 __global__ void seed_selecting_kernel(
-    const seedfilter_config filter_config,
-    internal_spacepoint_container_view internal_sp_view,
+    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view, seed_container_view seed_view) {
-    device_internal_spacepoint_container internal_sp_device(
-        {internal_sp_view.headers, internal_sp_view.items});
+
+    // Get device container for input parameters
+    sp_grid_device internal_sp_device(internal_sp_view);
+
     device_doublet_counter_container doublet_counter_device(
         {doublet_counter_view.headers, doublet_counter_view.items});
     device_triplet_counter_container triplet_counter_device(
@@ -120,16 +120,14 @@ __global__ void seed_selecting_kernel(
         {triplet_view.headers, triplet_view.items});
     device_seed_container seed_device({seed_view.headers, seed_view.items});
 
-    // Get the bin index of spacepoint binning and reference block idx for the
-    // bin index
-    unsigned int bin_idx = 0;
-    unsigned int ref_block_idx = 0;
-    cuda_helper::get_header_idx(triplet_counter_device, bin_idx, ref_block_idx);
-
+    // Get the bin and item index
+    unsigned int bin_idx(0), item_idx(0);
+    cuda_helper::find_idx_on_container(triplet_counter_device, bin_idx,
+                                       item_idx);
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
-    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+    auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
     auto& num_compat_spM_per_bin =
         doublet_counter_device.get_headers().at(bin_idx);
 
@@ -155,16 +153,13 @@ __global__ void seed_selecting_kernel(
 
     extern __shared__ triplet triplets_per_spM[];
 
-    // index of doublet counter in the item vector
-    auto gid = (blockIdx.x - ref_block_idx) * blockDim.x + threadIdx.x;
-
     // prevent overflow
-    if (gid >= num_compat_spM_per_bin) {
+    if (item_idx >= num_compat_spM_per_bin) {
         return;
     }
 
     // middle spacepoint index
-    auto& spM_loc = doublet_counter_per_bin[gid].spM;
+    auto& spM_loc = doublet_counter_per_bin[item_idx].spM;
     auto& spM_idx = spM_loc.sp_idx;
     // middle spacepoint
     auto& spM = internal_sp_per_bin[spM_idx];
@@ -180,10 +175,8 @@ __global__ void seed_selecting_kernel(
         auto& aTriplet = triplets_per_bin[i];
         auto& spB_loc = aTriplet.sp1;
         auto& spT_loc = aTriplet.sp3;
-        auto& spB =
-            internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
-        auto& spT =
-            internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
+        auto& spB = internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
+        auto& spT = internal_sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
 
         // consider only the triplets with the same middle spacepoint
         if (spM_loc == aTriplet.sp2) {
@@ -263,10 +256,8 @@ __global__ void seed_selecting_kernel(
         auto& aTriplet = triplets_per_spM[i];
         auto& spB_loc = aTriplet.sp1;
         auto& spT_loc = aTriplet.sp3;
-        auto& spB =
-            internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
-        auto& spT =
-            internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
+        auto& spB = internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
+        auto& spT = internal_sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
 
         // if the number of seeds reaches the threshold, break
         if (n_seeds_per_spM >= filter_config.maxSeedsPerSpM + 1) {

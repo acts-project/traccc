@@ -8,6 +8,7 @@
 #pragma once
 
 #include <definitions/primitives.hpp>
+#include <definitions/qualifiers.hpp>
 
 namespace traccc {
 
@@ -94,6 +95,18 @@ struct seedfinder_config {
     scalar pTPerHelixRadius = 0;
     scalar minHelixDiameter2 = 0;
     scalar pT2perRadius = 0;
+
+    darray<unsigned long, 2> neighbor_scope{1, 1};
+
+    TRACCC_HOST_DEVICE
+    size_t get_num_rbins() const {
+        return static_cast<size_t>(rMax + getter::norm(beamPos));
+    }
+
+    TRACCC_HOST_DEVICE
+    unsigned int get_max_neighbor_bins() const {
+        return std::pow(neighbor_scope[0] + neighbor_scope[1] + 1, 2);
+    }
 };
 
 // spacepoint grid configuration

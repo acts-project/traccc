@@ -31,18 +31,7 @@ struct track_params_estimation
     /// @return vector of bound track parameters
     output_type operator()(const host_seed_container& i) const override {
         output_type result(&m_mr.get());
-        this->operator()(i, result);
-        return result;
-    }
 
-    /// Callable operator for track_params_esitmation
-    ///
-    /// @param input_type is the seed container
-    ///
-    /// void interface
-    ///
-    /// @return vector of bound track parameter
-    void operator()(const host_seed_container& i, output_type& o) const {
         // input for seed vector
         const auto& seeds = i.get_items()[0];
 
@@ -55,8 +44,10 @@ struct track_params_estimation
             track_params.vector() =
                 seed_to_bound_vector(seed, bfield, PION_MASS_MEV);
 
-            o.push_back(track_params);
+            result.push_back(track_params);
         }
+
+        return result;
     }
 
     private:

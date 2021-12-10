@@ -19,6 +19,11 @@ namespace traccc {
 struct measurement_creation
     : public algorithm<host_measurement_collection(const cluster_collection &,
                                                    const cell_module &)> {
+    public:
+    /// Constructor for measurement_creation
+    ///
+    /// @param mr is the memory resource
+    measurement_creation(vecmem::memory_resource &mr) : m_mr(mr) {}
 
     /// Callable operator for the connected component, based on one single
     /// module
@@ -108,6 +113,9 @@ struct measurement_creation
             }
         }
     }
+
+    private:
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 };
 
 }  // namespace traccc

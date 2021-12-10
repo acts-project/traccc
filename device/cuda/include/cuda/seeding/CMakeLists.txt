@@ -1,4 +1,6 @@
 add_library(traccc_cuda_seeding SHARED
+  ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/counting_grid_capacities.cu
+  ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/populating_grid.cu  
   ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/doublet_counting.cu
   ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/doublet_finding.cu
   ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/triplet_counting.cu

@@ -12,6 +12,7 @@
 #include <edm/seed.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/detail/triplet.hpp>
 #include <seeding/seed_selecting_helper.hpp>
 
@@ -31,7 +32,7 @@ namespace cuda {
 /// @param seed_container vecmem container for seeds
 /// @param resource vecmem memory resource
 void seed_selecting(const seedfilter_config& filter_config,
-                    host_internal_spacepoint_container& internal_sp_container,
+                    sp_grid& internal_sp,
                     host_doublet_counter_container& doublet_counter_container,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,

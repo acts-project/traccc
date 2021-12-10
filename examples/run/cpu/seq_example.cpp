@@ -35,7 +35,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
-    traccc::clusterization_algorithm ca;
+    traccc::clusterization_algorithm ca(host_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
@@ -59,9 +59,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
           Seeding algorithm
           -----------------------*/
 
-        auto sa_output = sa(spacepoints_per_event);
-        auto& internal_sp_per_event = sa_output.first;
-        auto& seeds = sa_output.second;
+        auto seeds = sa(spacepoints_per_event);
 
         /*----------------------------
           Track params estimation
@@ -78,7 +76,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         n_cells += cells_per_event.total_size();
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
-        n_internal_spacepoints += internal_sp_per_event.total_size();
         n_seeds += seeds.total_size();
 
         /*------------
@@ -87,7 +84,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
         traccc::write_measurements(event, measurements_per_event);
         traccc::write_spacepoints(event, spacepoints_per_event);
-        traccc::write_internal_spacepoints(event, internal_sp_per_event);
         traccc::write_seeds(event, seeds);
         traccc::write_estimated_track_parameters(event, params);
     }

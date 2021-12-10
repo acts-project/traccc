@@ -14,9 +14,6 @@
 #include "definitions/track_parametrization.hpp"
 #include "definitions/unit_vectors.hpp"
 
-// acts include
-#include "Acts/Utilities/UnitVectors.hpp"
-
 namespace traccc {
 
 struct TRACCC_ALIGN(32) bound_track_parameters {
