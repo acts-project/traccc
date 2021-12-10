@@ -34,17 +34,8 @@ struct seed_finding : public algorithm<host_seed_container(const sp_grid&)> {
     ///
     /// @return seed_collection is the vector of seeds per event
     output_type operator()(const sp_grid& i) const override {
-        output_type result;
-        this->operator()(i, result);
-        return result;
-    }
+        output_type seeds;
 
-    /// Callable operator for the seed finding
-    ///
-    /// void interface
-    ///
-    /// @return seed_collection is the vector of seeds per event
-    void operator()(const sp_grid& g2, output_type& seeds) const {
         // Run the algorithm
         seeds = {host_seed_container::header_vector(1, 0),
                  host_seed_container::item_vector(1)};
@@ -92,6 +83,8 @@ struct seed_finding : public algorithm<host_seed_container(const sp_grid&)> {
                 m_seed_filtering(g2, filter_output);
             }
         }
+
+        return seeds;
     }
 
     std::vector<multiplet_statistics> get_multiplet_stats() {
