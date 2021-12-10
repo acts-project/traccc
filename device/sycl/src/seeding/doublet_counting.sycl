@@ -6,6 +6,7 @@
  */
 
 #include "sycl/seeding/doublet_counting.hpp"
+#include "vecmem/memory/atomic.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -20,18 +21,18 @@ public:
       m_internal_sp_view(internal_sp_view),
       m_doublet_counter_view(doublet_counter_view) {} 
 
-    void operator()(::sycl::nd_item<1> item) const {
+    void operator()(::sycl::nd_item<3> item) const {
         
-        // Mapping cuda indexing to dpc++
+         // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = workGroup.get_linear_id();
+        auto groupIdx = item.get_group(2);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = workGroup.get_local_range(0);
+        auto groupDim = item.get_local_range(2);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_linear_id();
-        
+        auto workItemIdx = item.get_local_id(2);
+
         // Get device container for input parameters
         device_internal_spacepoint_container internal_sp_device(
             {m_internal_sp_view.headers, m_internal_sp_view.items});
@@ -45,7 +46,7 @@ public:
 
         /////////////// TAken from CUDA helper function ///////////////////////
         // the item jagged vector of edm
-        auto jag_vec = internal_sp_device.get_items();
+        auto& jag_vec = internal_sp_device.get_items();
 
         /// number of blocks accumulated upto current header idx
         unsigned int nblocks_accum = 0;
@@ -123,10 +124,10 @@ public:
         // if number of mid-bot and mid-top doublet for a middle spacepoint is
         // larger than 0, the entry is added to the doublet counter
         if (n_mid_bot > 0 && n_mid_top > 0) {
-            //auto pos = atomic_add(num_compat_spM_per_bin, 1);
-            ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::seq_cst,
-                                    ::sycl::memory_scope::device,
-                                    ::sycl::access::address_space::global_space> obj (num_compat_spM_per_bin);
+            // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
+            //                        ::sycl::memory_scope::device,
+            //                        ::sycl::access::address_space::global_space> obj (num_compat_spM_per_bin);
+            vecmem::atomic obj(&num_compat_spM_per_bin);
             auto pos = obj.fetch_add(1);
             doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
         }
@@ -157,7 +158,7 @@ void doublet_counting(const seedfinder_config& config,
         }
         unsigned int globalSize = num_groups * localSize;
         // 1 dim ND Range for the kernel
-        auto doubletCountNdRange = ::sycl::nd_range<1>{{globalSize}, {localSize}};
+        auto doubletCountNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};
         
         q->submit([&](::sycl::handler& h){
             DupletCount kernel( config, internal_sp_view, 

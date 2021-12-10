@@ -21,7 +21,7 @@
 #include <iostream>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/spacepoint_grid.hpp>
-#include <seeding/seed_filtering.hpp>      
+#include <seeding/seed_filtering.hpp>    
 
 namespace traccc {
 namespace sycl {
@@ -113,6 +113,10 @@ struct seed_finding {
         // doublet counting
         traccc::sycl::doublet_counting(m_seedfinder_config, isp_container,
                                        doublet_counter_container, m_mr, m_q);
+        for ( auto a : doublet_counter_container.get_items().at(0) ) {
+            std::cout << a.n_mid_bot << " ";
+        }
+        std::cout << std::endl;
         
         //doublet finding
         traccc::sycl::doublet_finding(m_seedfinder_config, isp_container, doublet_counter_container,

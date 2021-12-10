@@ -8,6 +8,7 @@
 #define EIGEN_DONT_VECTORIZE
 
 #include "sycl/seeding/seed_selecting.hpp"
+#include "vecmem/memory/atomic.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -33,17 +34,17 @@ public:
       m_scratch(scratch),
       m_temp_memory_size(m_temp_memory_size) {}
 
-      void operator()(::sycl::nd_item<1> item) const {
+      void operator()(::sycl::nd_item<3> item) const {
 
-        // Mapping cuda indexing to dpc++
+         // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = workGroup.get_linear_id();
+        auto groupIdx = item.get_group(2);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = workGroup.get_local_range(0);
+        auto groupDim = item.get_local_range(2);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_linear_id();
+        auto workItemIdx = item.get_local_id(2);
 
         device_internal_spacepoint_container internal_sp_device(
         {m_internal_sp_view.headers, m_internal_sp_view.items});
@@ -111,142 +112,143 @@ public:
         auto gid = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
 
         // prevent overflow
-        if (gid >= num_compat_spM_per_bin) {
-            return;
-        }
-        
-        // middle spacepoint index
-        auto& spM_loc = doublet_counter_per_bin[gid].spM;
-        auto& spM_idx = spM_loc.sp_idx;
-        // middle spacepoint
-        auto& spM = internal_sp_per_bin[spM_idx];
+        if (gid < num_compat_spM_per_bin) {
+            
+            // middle spacepoint index
+            auto& spM_loc = doublet_counter_per_bin[gid].spM;
+            auto& spM_idx = spM_loc.sp_idx;
+            // middle spacepoint
+            auto& spM = internal_sp_per_bin[spM_idx];
 
-        // number of triplets per compatible middle spacepoint
-        unsigned int n_triplets_per_spM = 0;
+            // number of triplets per compatible middle spacepoint
+            unsigned int n_triplets_per_spM = 0;
 
-        // the start index of triplets_per_spM
-        unsigned int stride = workItemIdx * m_filter_config.max_triplets_per_spM;
+            // the start index of triplets_per_spM
+            unsigned int stride = workItemIdx * m_filter_config.max_triplets_per_spM;
 
-        // iterate over the triplets in the bin
-        for (unsigned int i = 0; i < num_triplets_per_bin; ++i) {
-            auto& aTriplet = triplets_per_bin[i];
-            auto& spB_loc = aTriplet.sp1;
-            auto& spT_loc = aTriplet.sp3;
-            auto& spB =
-                internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
-            auto& spT =
-                internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
+            // iterate over the triplets in the bin
+            for (unsigned int i = 0; i < num_triplets_per_bin; ++i) {
+                auto& aTriplet = triplets_per_bin[i];
+                auto& spB_loc = aTriplet.sp1;
+                auto& spT_loc = aTriplet.sp3;
+                auto& spB =
+                    internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
+                auto& spT =
+                    internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
 
-            // consider only the triplets with the same middle spacepoint
-            if (spM_loc == aTriplet.sp2) {
+                // consider only the triplets with the same middle spacepoint
+                if (spM_loc == aTriplet.sp2) {
 
-                // update weight of triplet
-                seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
-                                                aTriplet.weight);
+                    // update weight of triplet
+                    seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
+                                                    aTriplet.weight);
 
-                // check if it is a good triplet
-                if (!seed_selecting_helper::single_seed_cut(m_filter_config, spM, spB,
-                                                            spT, aTriplet.weight)) {
-                    continue;
-                }
+                    // check if it is a good triplet
+                    if (!seed_selecting_helper::single_seed_cut(m_filter_config, spM, spB,
+                                                                spT, aTriplet.weight)) {
+                        continue;
+                    }
 
-                // if the number of good triplets is larger than the threshold, the
-                // triplet with the lowest weight is removed
-                if (n_triplets_per_spM >= m_filter_config.max_triplets_per_spM) {
-                    int begin_idx = stride;
-                    int end_idx = stride + m_filter_config.max_triplets_per_spM;
+                    // if the number of good triplets is larger than the threshold, the
+                    // triplet with the lowest weight is removed
+                    if (n_triplets_per_spM >= m_filter_config.max_triplets_per_spM) {
+                        int begin_idx = stride;
+                        int end_idx = stride + m_filter_config.max_triplets_per_spM;
 
-                    // Note: min_index method gives a result different
-                    //       from sorting method when there are the cases where
-                    //       weight & z_vertex are same.
-                    //
-                    //       So min_index method reduces seed matching ratio
-                    //       since the cpu version is using sorting method.
-                    //
-                    //       But that doesn't mean min_index method
-                    //       is wrong of course
-                    //
-                    //       Let's not be so obsessed about achieving
-                    //       perfectly same result :))))))))
+                        // Note: min_index method gives a result different
+                        //       from sorting method when there are the cases where
+                        //       weight & z_vertex are same.
+                        //
+                        //       So min_index method reduces seed matching ratio
+                        //       since the cpu version is using sorting method.
+                        //
+                        //       But that doesn't mean min_index method
+                        //       is wrong of course
+                        //
+                        //       Let's not be so obsessed about achieving
+                        //       perfectly same result :))))))))
 
-                    int min_index = std::min_element(triplets_per_spM + begin_idx,
-                                                    triplets_per_spM + end_idx,
-                                                    [&](const triplet& lhs, const triplet& rhs){
-                                                        if (lhs.weight != rhs.weight) {
-                                                            return lhs.weight < rhs.weight;
-                                                        } else {
-                                                            return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
-                                                        }
-                                                    }) -
-                                    triplets_per_spM;
+                        int min_index = std::min_element(triplets_per_spM + begin_idx,
+                                                        triplets_per_spM + end_idx,
+                                                        [&](const triplet& lhs, const triplet& rhs){
+                                                            if (lhs.weight != rhs.weight) {
+                                                                return lhs.weight < rhs.weight;
+                                                            } else {
+                                                                return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
+                                                            }
+                                                        }) -
+                                        triplets_per_spM;
 
-                    auto& min_weight = triplets_per_spM[min_index].weight;
+                        auto& min_weight = triplets_per_spM[min_index].weight;
 
-                    if (aTriplet.weight > min_weight) {
-                        triplets_per_spM[min_index] = aTriplet;
+                        if (aTriplet.weight > min_weight) {
+                            triplets_per_spM[min_index] = aTriplet;
+                        }
+                    }
+
+                    else if (n_triplets_per_spM < m_filter_config.max_triplets_per_spM) {
+                        triplets_per_spM[stride + n_triplets_per_spM] = aTriplet;
+                        n_triplets_per_spM++;
+                    }
+                }       
+            }
+            
+            // sort the triplets per spM
+            ::sycl::ext::oneapi::joint_sort(
+                ::sycl::ext::oneapi::experimental::
+                group_with_scratchpad(
+                    workGroup,
+                    ::sycl::span{&m_scratch[0], m_temp_memory_size}
+                ),
+                static_cast<triplet*>(triplets_per_spM) + stride,
+                static_cast<triplet*>(triplets_per_spM) + stride + n_triplets_per_spM,
+                [](const triplet& lhs, const triplet& rhs) {
+                    if (lhs.weight != rhs.weight) {
+                        return lhs.weight > rhs.weight;
+                    } else {
+                        return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
                     }
                 }
+            );
 
-                else if (n_triplets_per_spM < m_filter_config.max_triplets_per_spM) {
-                    triplets_per_spM[stride + n_triplets_per_spM] = aTriplet;
-                    n_triplets_per_spM++;
-                }
-            }       
-        }
-        
-        // sort the triplets per spM
-        ::sycl::ext::oneapi::joint_sort(
-            ::sycl::ext::oneapi::experimental::
-            group_with_scratchpad(
-                workGroup,
-                ::sycl::span{&m_scratch[0], m_temp_memory_size}
-            ),
-            static_cast<triplet*>(triplets_per_spM) + stride,
-            static_cast<triplet*>(triplets_per_spM) + stride + n_triplets_per_spM,
-            [](const triplet& lhs, const triplet& rhs) {
-                if (lhs.weight != rhs.weight) {
-                    return lhs.weight > rhs.weight;
-                } else {
-                    return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
-                }
-            }
-        );
+            // the number of good seed per compatible middle spacepoint
+            unsigned int n_seeds_per_spM = 0;
 
-        // the number of good seed per compatible middle spacepoint
-        unsigned int n_seeds_per_spM = 0;
+            // iterate over the good triplets for final selection of seeds
+            for (unsigned int i = stride; i < stride + n_triplets_per_spM; ++i) {
+                auto& aTriplet = triplets_per_spM[i];
+                auto& spB_loc = aTriplet.sp1;
+                auto& spT_loc = aTriplet.sp3;
+                auto& spB =
+                    internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
+                auto& spT =
+                    internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
 
-        // iterate over the good triplets for final selection of seeds
-        for (unsigned int i = stride; i < stride + n_triplets_per_spM; ++i) {
-            auto& aTriplet = triplets_per_spM[i];
-            auto& spB_loc = aTriplet.sp1;
-            auto& spT_loc = aTriplet.sp3;
-            auto& spB =
-                internal_sp_device.get_items()[spB_loc.bin_idx][spB_loc.sp_idx];
-            auto& spT =
-                internal_sp_device.get_items()[spT_loc.bin_idx][spT_loc.sp_idx];
-
-            // if the number of seeds reaches the threshold, break
-            if (n_seeds_per_spM >= m_filter_config.maxSeedsPerSpM + 1) {
-                break;
-            }
-
-            // check if it is a good triplet
-            if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
-                n_seeds_per_spM == 0) {
-                ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::seq_cst,
-                                   ::sycl::memory_scope::device,
-                                   ::sycl::access::address_space::global_space> obj (num_seeds);
-                auto pos = obj.fetch_add(1);
-
-                // prevent overflow
-                if (pos >= seeds.size()) {
+                // if the number of seeds reaches the threshold, break
+                if (n_seeds_per_spM >= m_filter_config.maxSeedsPerSpM + 1) {
                     break;
                 }
-                n_seeds_per_spM++;
 
-                seeds[pos] = seed({spB.m_sp, spM.m_sp, spT.m_sp, aTriplet.weight,
-                                aTriplet.z_vertex});
+                // check if it is a good triplet
+                if (seed_selecting_helper::cut_per_middle_sp(
+                        m_filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
+                    n_seeds_per_spM == 0) {
+                    // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
+                    //                ::sycl::memory_scope::device,
+                    //                ::sycl::access::address_space::global_space> obj (num_seeds);
+                    vecmem::atomic obj(&num_seeds);
+
+                    auto pos = obj.fetch_add(1);
+
+                    // prevent overflow
+                    if (pos >= seeds.size()) {
+                        break;
+                    }
+                    n_seeds_per_spM++;
+
+                    seeds[pos] = seed({spB.m_sp, spM.m_sp, spT.m_sp, aTriplet.weight,
+                                    aTriplet.z_vertex});
+                }
             }
         }
 
@@ -295,7 +297,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     unsigned int globalSize = localSize * num_groups;
 
     // 1 dim ND Range for the kernel
-    auto seedSelectNdRange = ::sycl::nd_range<1>{{globalSize}, {localSize}};
+    auto seedSelectNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};
     
     // Shared memory for scratchspace (for sorting)
     std::size_t temp_memory_size =

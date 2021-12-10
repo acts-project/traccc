@@ -6,6 +6,7 @@
  */
 
 #include "sycl/seeding/triplet_counting.hpp"
+#include "vecmem/memory/atomic.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -26,17 +27,17 @@ public:
       m_mid_top_doublet_view(mid_top_doublet_view),
       m_triplet_counter_view(triplet_counter_view) {}
     
-    void operator()(::sycl::nd_item<1> item) const {
+    void operator()(::sycl::nd_item<3> item) const {
 
-        // Mapping cuda indexing to dpc++
+         // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = workGroup.get_linear_id();
+        auto groupIdx = item.get_group(2);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = workGroup.get_local_range(0);
+        auto groupDim = item.get_local_range(2);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_linear_id();
+        auto workItemIdx = item.get_local_id(2);
 
         device_internal_spacepoint_container internal_sp_device(
             {m_internal_sp_view.headers, m_internal_sp_view.items});
@@ -181,9 +182,15 @@ public:
                 // if the number of triplets per mb is larger than 0, write the triplet
                 // counter into the container
                 if (num_triplets_per_mb > 0) {
-                    ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::seq_cst,
-                                        ::sycl::memory_scope::device,
-                                        ::sycl::access::address_space::global_space> obj (num_compat_mb_per_bin);
+                    // ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::seq_cst,
+                    //                     ::sycl::memory_scope::device,
+                    //                     ::sycl::access::address_space::global_space> obj (num_compat_mb_per_bin);
+                    // auto pos = obj.fetch_add(1);
+                    // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
+                    //                ::sycl::memory_scope::device,
+                    //                ::sycl::access::address_space::global_space> obj (num_compat_mb_per_bin);
+                    vecmem::atomic obj(&num_compat_mb_per_bin);
+
                     auto pos = obj.fetch_add(1);
                     triplet_counter_per_bin[pos] = {mid_bot_doublet, num_triplets_per_mb};
                 }
@@ -232,13 +239,13 @@ void triplet_counting(const seedfinder_config& config,
     unsigned int globalSize = localSize * num_groups;
     
     // 1 dim ND Range for the kernel
-    auto tripletCountNdRange = ::sycl::nd_range<1>{{globalSize}, {localSize}};
+    auto tripletCountNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};
     q->submit([&](::sycl::handler& h){
         TripletCount kernel(config, internal_sp_view, doublet_counter_container_view,
                             mid_bot_doublet_view, mid_top_doublet_view,
                             triplet_counter_container_view);
         h.parallel_for<class triplet_count_kernel>(tripletCountNdRange, kernel);
-    }).wait_and_throw();                                                      
+    }).wait_and_throw();  
 }
 
 } // namespace sycl

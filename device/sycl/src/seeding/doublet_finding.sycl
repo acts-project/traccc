@@ -6,10 +6,34 @@
  */
 
 #include "sycl/seeding/doublet_finding.hpp"
+#include "vecmem/memory/atomic.hpp"
 
 namespace traccc {
 namespace sycl {
+inline
+void reduceInSharedD(int* array, ::sycl::nd_item<3> &item)
+{
+    
+    // Equivalent to threadIdx.x in cuda
+auto workItemIdx = item.get_local_id(2);
 
+  auto sg = item.get_sub_group();
+  auto workGroup = item.get_group();
+
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
+  // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
+  // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
+  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
+
+  ::sycl::group_barrier(workGroup);
+
+//   if (workItemIdx == 0) {
+//       for (int i = 1; i < groupDim; i++) {
+//           array[workItemIdx] += array[i * 8];
+//     }
+//   }
+}
 // kernel class for doublet finding
 class DupletFind {
 public:
@@ -28,18 +52,18 @@ public:
       m_localMemBot(localMemBot),
       m_localMemTop(localMemTop) {}
 
-    void operator()(::sycl::nd_item<1> item) const {
+    void operator()(::sycl::nd_item<3> item) const {
         
 
-        // Mapping cuda indexing to dpc++
+         // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = workGroup.get_linear_id();
+        auto groupIdx = item.get_group(2);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = workGroup.get_local_range(0);
+        auto groupDim = item.get_local_range(2);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_linear_id();
+        auto workItemIdx = item.get_local_id(2);
 
         device_internal_spacepoint_container internal_sp_device(
         {m_internal_sp_view.headers, m_internal_sp_view.items});
@@ -199,20 +223,39 @@ public:
             }
             // Calculate the number doublets per "block" with reducing sum technique
             ::sycl::group_barrier(workGroup);
-            auto resultBot = ::sycl::reduce_over_group(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-            //reduceInShared(num_mid_bot_doublets_per_thread, item);
-            // reduceInShared(num_mid_top_doublets_per_thread, item);   
-            auto resultTop = ::sycl::reduce_over_group(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+             //auto resultBot = ::sycl::reduce_over_group(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+            reduceInSharedD(num_mid_bot_doublets_per_thread, item);
+            ::sycl::group_barrier(workGroup);
+            reduceInSharedD(num_mid_top_doublets_per_thread, item);   
+            //auto resultTop = ::sycl::reduce_over_group(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
             // Calculate the number doublets per bin by atomic-adding the number of
             // doublets per block
-            ::sycl::group_barrier(workGroup);
             if (workItemIdx == 0) {
-                ::sycl::ext::oneapi::atomic_ref<unsigned int,::sycl::memory_order::seq_cst,
-                                    ::sycl::memory_scope::device,
-                                    ::sycl::access::address_space::global_space> objBot (num_mid_bot_doublets_per_bin),
-                                                                                    objTop (num_mid_top_doublets_per_bin);
-                objBot.fetch_add(resultBot);
-                objTop.fetch_add(resultTop);                                                                            
+                // uint32_t resultbot = 0;
+                //     for (uint32_t i=0; i<groupDim; ++i){
+                //         resultbot += num_mid_bot_doublets_per_thread[i];
+                //     }
+                // uint32_t resulttop = 0;
+                //     for (uint32_t i=0; i<groupDim; ++i){
+                //         resulttop += num_mid_top_doublets_per_thread[i];
+                //     }
+                // atomic_add(&num_mid_bot_doublets_per_bin, resultbot);
+                // atomic_add(&num_mid_top_doublets_per_bin, resulttop); 
+                //atomic_add(num_mid_bot_doublets_per_bin, num_mid_bot_doublets_per_thread[0]);
+                //atomic_add(num_mid_top_doublets_per_bin, num_mid_top_doublets_per_thread[0]);  
+                // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
+                //                    ::sycl::memory_scope::device,
+                //                    ::sycl::access::address_space::global_space> objB (num_mid_bot_doublets_per_bin);
+                vecmem::atomic objB(&num_mid_bot_doublets_per_bin);
+
+                objB.fetch_add(num_mid_bot_doublets_per_thread[0]);
+
+                // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
+                //                     ::sycl::memory_scope::device,
+                //                     ::sycl::access::address_space::global_space> objT (num_mid_top_doublets_per_bin);
+                vecmem::atomic objT(&num_mid_top_doublets_per_bin);
+
+                objT.fetch_add(num_mid_top_doublets_per_thread[0]);                                                                     
             }
         }
     }
@@ -253,9 +296,8 @@ void doublet_finding(const seedfinder_config& config,
                 doublet_counter_container.get_headers()[i] / localSize + 1;
         }
         unsigned int globalSize = localSize * num_groups;
-        
         // 1 dim ND Range for the kernel
-        auto doubletFindNdRange = ::sycl::nd_range<1>{{globalSize}, {localSize}};
+        auto doubletFindNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};
          q->submit([&](::sycl::handler& h) {
             // local memory initialization (equivalent to shared memory in CUDA)
             auto localMemBot = 
@@ -263,7 +305,6 @@ void doublet_finding(const seedfinder_config& config,
 
             auto localMemTop =
                 local_accessor<int>(localSize, h);
-            
             DupletFind kernel(config, internal_sp_view, doublet_counter_view, 
                             mid_bot_doublet_view,mid_top_doublet_view,localMemBot,localMemTop);
 
