@@ -20,7 +20,7 @@ class seeding_algorithm
           std::pair<host_internal_spacepoint_container, host_seed_container>(
               const host_spacepoint_container&)> {
     public:
-    seeding_algorithm(vecmem::memory_resource* mr = nullptr) : m_mr(mr) {
+    seeding_algorithm(vecmem::memory_resource& mr) {
 
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
@@ -44,7 +44,7 @@ class seeding_algorithm
         m_grid_config.cotThetaMax = m_config.cotThetaMax;
 
         sg = std::make_shared<traccc::spacepoint_grouping>(
-            traccc::spacepoint_grouping(m_config, m_grid_config, m_mr));
+            traccc::spacepoint_grouping(m_config, m_grid_config, mr));
         sf = std::make_shared<traccc::seed_finding>(
             traccc::seed_finding(m_config));
     }
@@ -61,29 +61,16 @@ class seeding_algorithm
         auto& internal_sp_per_event = o.first;
         auto& seeds = o.second;
 
-	float binning(0);
-        /*time*/ auto start_binning = std::chrono::system_clock::now();
-	
         // spacepoint grouping
         internal_sp_per_event = sg->operator()(spacepoints_per_event);
 
-        /*time*/ auto end_binning = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_binning =
-            end_binning - start_binning;
-        /*time*/ binning += time_binning.count();
-
-	float seeding(0);
-        /*time*/ auto start_seeding = std::chrono::system_clock::now();
-	
         // seed finding
         seeds = sf->operator()(internal_sp_per_event);
+    }
 
-        /*time*/ auto end_seeding = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_seeding =
-            end_seeding - start_seeding;
-        /*time*/ seeding += time_seeding.count();
-
-	printf("cpu  %f %f \n", binning ,seeding);
+    seedfinder_config get_seedfinder_config() { return m_config; }
+    spacepoint_grid_config get_spacepoint_grid_config() {
+        return m_grid_config;
     }
 
     private:
@@ -91,7 +78,6 @@ class seeding_algorithm
     spacepoint_grid_config m_grid_config;
     std::shared_ptr<traccc::spacepoint_grouping> sg;
     std::shared_ptr<traccc::seed_finding> sf;
-    vecmem::memory_resource* m_mr;
 };
 
 }  // namespace traccc

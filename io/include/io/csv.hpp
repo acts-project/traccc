@@ -21,6 +21,7 @@
 #include "edm/cluster.hpp"
 #include "edm/measurement.hpp"
 #include "edm/spacepoint.hpp"
+#include "edm/track_parameters.hpp"
 #include "geometry/geometry.hpp"
 
 /// reader
@@ -153,6 +154,30 @@ struct csv_seed_statistics {
 };
 
 using seed_statistics_writer = dfe::NamedTupleCsvWriter<csv_seed_statistics>;
+
+struct csv_bound_track_parameters {
+    scalar loc0;
+    scalar loc1;
+    scalar theta;
+    scalar phi;
+    scalar qoverp;
+    scalar time;
+    scalar cov00;
+    scalar cov01, cov11;
+    scalar cov02, cov12, cov22;
+    scalar cov03, cov13, cov23, cov33;
+    scalar cov04, cov14, cov24, cov34, cov44;
+    scalar cov05, cov15, cov25, cov35, cov45, cov55;
+    unsigned int surface_id;
+
+    DFE_NAMEDTUPLE(csv_bound_track_parameters, loc0, loc1, theta, phi, qoverp,
+                   time, cov00, cov01, cov11, cov02, cov12, cov22, cov03, cov13,
+                   cov23, cov33, cov04, cov14, cov24, cov34, cov44, cov05,
+                   cov15, cov25, cov35, cov45, cov55, surface_id);
+};
+
+using bound_track_parameters_writer =
+    dfe::NamedTupleCsvWriter<csv_bound_track_parameters>;
 
 struct csv_surface {
 
@@ -372,6 +397,7 @@ inline host_measurement_container read_measurements(
 /// @param resource The memory resource to use for the return value
 inline host_spacepoint_container read_hits(
     fatras_hit_reader& hreader, vecmem::memory_resource& resource,
+    const traccc::geometry* tfmap = nullptr,
     unsigned int max_hits = std::numeric_limits<unsigned int>::max()) {
     host_spacepoint_container result = {
         host_spacepoint_container::header_vector(&resource),
@@ -384,9 +410,13 @@ inline host_spacepoint_container read_hits(
 
     while (hreader.read(iohit)) {
         geometry_id geom_id = iohit.geometry_id;
+        auto placement = (*tfmap)[geom_id];
+
         point3 position({iohit.tx, iohit.ty, iohit.tz});
         variance3 variance({0, 0, 0});
-        spacepoint sp({position, variance});
+        auto local = placement.point_to_local(position);
+        measurement m({point2({local[0], local[1]}), variance2({0., 0.})});
+        spacepoint sp({position, variance, m});
 
         const host_spacepoint_container::header_vector& headers =
             result.get_headers();

@@ -28,7 +28,7 @@ void weight_updating(const seedfilter_config& filter_config,
                      host_internal_spacepoint_container& internal_sp_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource* resource);
+                     vecmem::memory_resource& resource);
 
 }  // namespace cuda
 }  // namespace traccc

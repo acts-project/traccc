@@ -36,6 +36,20 @@ inline traccc::host_cell_container read_cells_from_event(
     return traccc::read_cells(creader, resource, &surface_transforms);
 }
 
+inline traccc::host_spacepoint_container read_spacepoints_from_event(
+    size_t event, const std::string &hits_dir,
+    traccc::geometry surface_transforms,
+    vecmem::host_memory_resource &resource) {
+    // Read the cells from the relevant event file
+    std::string io_hits_file =
+        data_directory() + hits_dir + get_event_filename(event, "-hits.csv");
+    traccc::fatras_hit_reader hreader(
+        io_hits_file,
+        {"particle_id", "geometry_id", "tx", "ty", "tz", "tt", "tpx", "tpy",
+         "tpz", "te", "deltapx", "deltapy", "deltapz", "deltae", "index"});
+    return traccc::read_hits(hreader, resource, &surface_transforms);
+}
+
 inline traccc::demonstrator_input read(size_t events,
                                        const std::string &detector_file,
                                        const std::string &cell_directory,

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "container.hpp"
+#include "edm/measurement.hpp"
 
 namespace traccc {
 
@@ -20,6 +21,7 @@ namespace traccc {
 struct spacepoint {
     point3 global = {0., 0., 0.};
     variance3 variance = {0., 0., 0.};
+    measurement meas;
 
     TRACCC_HOST_DEVICE
     const scalar& x() const { return global[0]; }

@@ -22,11 +22,11 @@ struct spacepoint_grouping {
     // constructor declaration
     spacepoint_grouping(const seedfinder_config& config,
                         const spacepoint_grid_config& grid_config,
-                        vecmem::memory_resource* mr);
+                        vecmem::memory_resource& mr);
 
     host_internal_spacepoint_container operator()(
         const host_spacepoint_container& sp_container) {
-        host_internal_spacepoint_container internal_sp_container(m_mr);
+        host_internal_spacepoint_container internal_sp_container(&m_mr);
         this->operator()(sp_container, internal_sp_container);
 
         return internal_sp_container;
@@ -114,7 +114,7 @@ struct spacepoint_grouping {
 
                 internal_sp_container.push_back(
                     std::move(bin_info),
-                    vecmem::vector<internal_spacepoint<spacepoint>>(m_mr));
+                    vecmem::vector<internal_spacepoint<spacepoint>>(&m_mr));
             }
         }
 
@@ -140,12 +140,12 @@ struct spacepoint_grouping {
     std::shared_ptr<spacepoint_grid> m_spgrid;
     std::unique_ptr<bin_finder> m_bottom_bin_finder;
     std::unique_ptr<bin_finder> m_top_bin_finder;
-    vecmem::memory_resource* m_mr;
+    vecmem::memory_resource& m_mr;
 };
 
 spacepoint_grouping::spacepoint_grouping(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    vecmem::memory_resource* mr)
+    vecmem::memory_resource& mr)
     : m_config(config), m_grid_config(grid_config), m_mr(mr) {
     // calculate circle intersections of helix and max detector radius
     scalar minHelixRadius =

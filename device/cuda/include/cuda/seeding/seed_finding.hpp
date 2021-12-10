@@ -10,15 +10,16 @@
 #include <algorithm>
 #include <cuda/seeding/detail/doublet_counter.hpp>
 #include <cuda/seeding/detail/multiplet_estimator.hpp>
-#include <cuda/seeding/doublet_counting.cuh>
-#include <cuda/seeding/doublet_finding.cuh>
-#include <cuda/seeding/seed_selecting.cuh>
-#include <cuda/seeding/triplet_counting.cuh>
-#include <cuda/seeding/triplet_finding.cuh>
-#include <cuda/seeding/weight_updating.cuh>
+#include <cuda/seeding/doublet_counting.hpp>
+#include <cuda/seeding/doublet_finding.hpp>
+#include <cuda/seeding/seed_selecting.hpp>
+#include <cuda/seeding/triplet_counting.hpp>
+#include <cuda/seeding/triplet_finding.hpp>
+#include <cuda/seeding/weight_updating.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <edm/seed.hpp>
 #include <iostream>
+#include <mutex>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/seed_filtering.hpp>
@@ -27,7 +28,9 @@ namespace traccc {
 namespace cuda {
 
 /// Seed finding for cuda
-struct seed_finding {
+struct seed_finding : public algorithm<host_seed_container(
+                          host_internal_spacepoint_container&&)> {
+
     /// Constructor for the cuda seed finding
     ///
     /// @param config is seed finder configuration parameters
@@ -36,27 +39,24 @@ struct seed_finding {
     /// @param mr vecmem memory resource
     seed_finding(seedfinder_config& config,
                  std::shared_ptr<spacepoint_grid> sp_grid,
-                 multiplet_estimator& estimator, vecmem::memory_resource* mr)
+                 multiplet_estimator& estimator, vecmem::memory_resource& mr)
         : m_seedfinder_config(config),
           m_estimator(estimator),
-          // initialize all vecmem containers:
-          // the size of header and item vector = the number of spacepoint bins
-          doublet_counter_container(sp_grid->size(false), mr),
-          mid_bot_container(sp_grid->size(false), mr),
-          mid_top_container(sp_grid->size(false), mr),
-          triplet_counter_container(sp_grid->size(false), mr),
-          triplet_container(sp_grid->size(false), mr),
-          seed_container(1, mr),
-          m_mr(mr) {
+          m_sp_grid(sp_grid),
+          m_mr(mr),
+          doublet_counter_container(m_sp_grid->size(false), &m_mr.get()),
+          mid_bot_container(m_sp_grid->size(false), &m_mr.get()),
+          mid_top_container(m_sp_grid->size(false), &m_mr.get()),
+          triplet_counter_container(m_sp_grid->size(false), &m_mr.get()),
+          triplet_container(m_sp_grid->size(false), &m_mr.get()),
+          seed_container(1, &m_mr.get()) {}
 
-        first_alloc = true;
-    }
-
-    /// Callable operator for the cuda seed finding
+    /// Callable operator for the seed finding
     ///
-    /// @return seed_container is the vecmem seed container
-    host_seed_container operator()(
-        host_internal_spacepoint_container& isp_container) {
+    /// @return seed_collection is the vector of seeds per event
+    output_type operator()(
+        host_internal_spacepoint_container&& isp_container) const override {
+        std::lock_guard<std::mutex> lock(*mutex.get());
 
         size_t n_internal_sp = 0;
 
@@ -96,8 +96,6 @@ struct seed_finding {
         seed_container.get_items()[0].resize(
             m_estimator.get_seeds_size(n_internal_sp));
 
-        first_alloc = false;
-
         // doublet counting
         traccc::cuda::doublet_counting(m_seedfinder_config, isp_container,
                                        doublet_counter_container, m_mr);
@@ -133,19 +131,21 @@ struct seed_finding {
     }
 
     private:
-    bool first_alloc;
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
     multiplet_estimator m_estimator;
+    std::shared_ptr<spacepoint_grid> m_sp_grid;
     seed_filtering m_seed_filtering;
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 
-    host_doublet_counter_container doublet_counter_container;
-    host_doublet_container mid_bot_container;
-    host_doublet_container mid_top_container;
-    host_triplet_counter_container triplet_counter_container;
-    host_triplet_container triplet_container;
-    host_seed_container seed_container;
-    vecmem::memory_resource* m_mr;
+    // mutable internal objects for multiplets
+    mutable std::shared_ptr<std::mutex> mutex{std::make_shared<std::mutex>()};
+    mutable host_doublet_counter_container doublet_counter_container;
+    mutable host_doublet_container mid_bot_container;
+    mutable host_doublet_container mid_top_container;
+    mutable host_triplet_counter_container triplet_counter_container;
+    mutable host_triplet_container triplet_container;
+    mutable host_seed_container seed_container;
 };
 
 }  // namespace cuda

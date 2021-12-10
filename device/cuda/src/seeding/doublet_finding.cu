@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <cuda/seeding/doublet_finding.cuh>
+#include <cuda/seeding/doublet_finding.hpp>
 #include <cuda/utils/cuda_helper.cuh>
 #include <cuda/utils/definitions.hpp>
 
@@ -34,11 +34,11 @@ void doublet_finding(const seedfinder_config& config,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,
-                     vecmem::memory_resource* resource) {
-    auto internal_sp_view = get_data(internal_sp_container, resource);
-    auto doublet_counter_view = get_data(doublet_counter_container, resource);
-    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, resource);
-    auto mid_top_doublet_view = get_data(mid_top_doublet_container, resource);
+                     vecmem::memory_resource& resource) {
+    auto internal_sp_view = get_data(internal_sp_container, &resource);
+    auto doublet_counter_view = get_data(doublet_counter_container, &resource);
+    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
+    auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
 
     // The thread-block is desinged to make each thread find doublets per
     // compatible middle spacepoints (comptible middle spacepoint means that the

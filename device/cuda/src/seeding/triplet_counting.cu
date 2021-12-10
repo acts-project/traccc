@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <cuda/seeding/triplet_counting.cuh>
+#include <cuda/seeding/triplet_counting.hpp>
 #include <cuda/utils/cuda_helper.cuh>
 
 namespace traccc {
@@ -36,14 +36,14 @@ void triplet_counting(const seedfinder_config& config,
                       host_doublet_container& mid_bot_doublet_container,
                       host_doublet_container& mid_top_doublet_container,
                       host_triplet_counter_container& triplet_counter_container,
-                      vecmem::memory_resource* resource) {
-    auto internal_sp_view = get_data(internal_sp_container, resource);
+                      vecmem::memory_resource& resource) {
+    auto internal_sp_view = get_data(internal_sp_container, &resource);
     auto doublet_counter_container_view =
-        get_data(doublet_counter_container, resource);
-    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, resource);
-    auto mid_top_doublet_view = get_data(mid_top_doublet_container, resource);
+        get_data(doublet_counter_container, &resource);
+    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
+    auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
     auto triplet_counter_container_view =
-        get_data(triplet_counter_container, resource);
+        get_data(triplet_counter_container, &resource);
 
     // The thread-block is desinged to make each thread count triplets per
     // middle-bot doublet

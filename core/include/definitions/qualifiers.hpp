@@ -25,3 +25,9 @@
 #else
 #define TRACCC_HOST_DEVICE
 #endif
+
+#if defined(__CUDACC__)
+#define TRACCC_ALIGN(x) __align__(x)
+#else
+#define TRACCC_ALIGN(x) alignas(x)
+#endif

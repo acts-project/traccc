@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <cuda/seeding/triplet_finding.cuh>
+#include <cuda/seeding/triplet_finding.hpp>
 #include <cuda/utils/cuda_helper.cuh>
 
 namespace traccc {
@@ -40,13 +40,13 @@ void triplet_finding(const seedfinder_config& config,
                      host_doublet_container& mid_top_doublet_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource* resource) {
-    auto internal_sp_view = get_data(internal_sp_container, resource);
-    auto doublet_counter_view = get_data(doublet_counter_container, resource);
-    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, resource);
-    auto mid_top_doublet_view = get_data(mid_top_doublet_container, resource);
-    auto triplet_counter_view = get_data(triplet_counter_container, resource);
-    auto triplet_view = get_data(triplet_container, resource);
+                     vecmem::memory_resource& resource) {
+    auto internal_sp_view = get_data(internal_sp_container, &resource);
+    auto doublet_counter_view = get_data(doublet_counter_container, &resource);
+    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
+    auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
+    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
+    auto triplet_view = get_data(triplet_container, &resource);
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet

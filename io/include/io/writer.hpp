@@ -81,6 +81,33 @@ inline void write_seeds(size_t event,
     }
 }
 
+inline void write_estimated_track_parameters(
+    size_t event,
+    const traccc::host_bound_track_parameters_collection &params) {
+    traccc::bound_track_parameters_writer btp_writer{
+        traccc::get_event_filename(event, "-estimated_track_parameters.csv")};
+    for (auto param : params) {
+        auto &b_vec = param.vector();
+        auto &b_cov = param.covariance();
+        auto &surf_id = param.surface_id;
+
+        btp_writer.append({b_vec[e_bound_loc0],   b_vec[e_bound_loc1],
+                           b_vec[e_bound_theta],  b_vec[e_bound_phi],
+                           b_vec[e_bound_qoverp], b_vec[e_bound_time],
+                           b_cov(0, 0),           b_cov(0, 1),
+                           b_cov(1, 1),           b_cov(0, 2),
+                           b_cov(1, 2),           b_cov(2, 2),
+                           b_cov(0, 3),           b_cov(1, 3),
+                           b_cov(2, 3),           b_cov(3, 3),
+                           b_cov(0, 4),           b_cov(1, 4),
+                           b_cov(2, 4),           b_cov(3, 4),
+                           b_cov(4, 4),           b_cov(0, 5),
+                           b_cov(1, 5),           b_cov(2, 5),
+                           b_cov(3, 5),           b_cov(4, 5),
+                           b_cov(5, 5),           surf_id});
+    }
+}
+
 inline void write(traccc::demonstrator_result aggregated_results) {
 
 #if defined(_OPENMP)
