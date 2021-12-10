@@ -33,7 +33,7 @@ struct seed_finding : public algorithm<host_seed_container(const sp_grid&)> {
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(const sp_grid& i) const override {
+    output_type operator()(const sp_grid& g2) const override {
         output_type seeds;
 
         // Run the algorithm
