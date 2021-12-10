@@ -14,7 +14,7 @@
 
 namespace traccc {
 
-traccc::geometry read_geometry(const std::string &detector_file) {
+inline traccc::geometry read_geometry(const std::string &detector_file) {
     // Read the surface transforms
     std::string io_detector_file = data_directory() + detector_file;
     traccc::surface_reader sreader(

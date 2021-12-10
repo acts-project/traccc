@@ -46,8 +46,9 @@ class algorithm<R(A...)> {
 };
 
 template <typename A, typename B, typename C, typename... R>
-auto compose(std::function<std::remove_reference_t<B>(A)> f,
-             std::function<C(B)> g, R... rs) {
+auto compose(
+    std::function<std::remove_const_t<std::remove_reference_t<B>>(A)> f,
+    std::function<C(B)> g, R... rs) {
     if constexpr (sizeof...(R) > 0) {
         auto h = compose(g, rs...);
         return [f, h](A&& i) { return h(f(std::forward<A>(i))); };

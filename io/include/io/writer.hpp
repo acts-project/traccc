@@ -68,7 +68,7 @@ inline void write_seeds(size_t event,
                         const traccc::host_seed_container &seeds) {
     traccc::seed_writer sd_writer{
         traccc::get_event_filename(event, "-seeds.csv")};
-    for (auto seed : seeds.get_items()[0]) {
+    for (auto &seed : seeds.get_items()[0]) {
         auto weight = seed.weight;
         auto z_vertex = seed.z_vertex;
         auto spB = seed.spB;

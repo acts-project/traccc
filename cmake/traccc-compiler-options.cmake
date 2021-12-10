@@ -10,16 +10,24 @@ include_guard( GLOBAL )
 # Include the helper function(s).
 include( traccc-functions )
 
-# Set up the used C++ standard(s).
-set( CMAKE_CXX_STANDARD 17 CACHE STRING "The (host) C++ standard to use" )
+# Set the language standards to use.
+set( CMAKE_CXX_STANDARD 17 CACHE STRING "The (Host) C++ standard to use" )
+set( CMAKE_CUDA_STANDARD 17 CACHE STRING "The (CUDA) C++ standard to use" )
 
 # Turn on a number of warnings for the "known compilers".
 if( ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" ) OR
     ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) )
 
    # Basic flags for all major build modes.
-   foreach( mode RELEASE RELWITHDEBINFO MINSIZEREL DEBUG )
-      traccc_add_flag( CMAKE_CXX_FLAGS_${mode} "-Wall" )
-      traccc_add_flag( CMAKE_CXX_FLAGS_${mode} "-Wextra" )
-   endforeach()
+   traccc_add_flag( CMAKE_CXX_FLAGS "-Wall" )
+   traccc_add_flag( CMAKE_CXX_FLAGS "-Wextra" )
+
 endif()
+
+# Set the CUDA architecture to build code for.
+set( CMAKE_CUDA_ARCHITECTURES "52" CACHE STRING
+   "CUDA architectures to build device code for" )
+
+# Make CUDA generate debug symbols for the device code as well in a debug
+# build.
+traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G" )
