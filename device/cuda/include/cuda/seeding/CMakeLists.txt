@@ -4,7 +4,8 @@ add_library(traccc_cuda_seeding SHARED
   ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/triplet_counting.cu
   ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/triplet_finding.cu
   ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/weight_updating.cu
-  ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/seed_selecting.cu)
+  ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/seed_selecting.cu
+  ${TRACCC_CUDA_SEEDING_SOURCE_DIR}/track_params_estimation.cu)
 
 target_include_directories(traccc_cuda_seeding
   PUBLIC

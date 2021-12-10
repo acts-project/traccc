@@ -8,6 +8,7 @@
 #pragma once
 
 #include "edm/container.hpp"
+#include "edm/spacepoint.hpp"
 
 namespace traccc {
 

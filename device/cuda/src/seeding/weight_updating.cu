@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <cuda/seeding/weight_updating.cuh>
+#include <cuda/seeding/weight_updating.hpp>
 #include <cuda/utils/cuda_helper.cuh>
 #include <cuda/utils/definitions.hpp>
 
@@ -30,10 +30,10 @@ void weight_updating(const seedfilter_config& filter_config,
                      host_internal_spacepoint_container& internal_sp_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource* resource) {
-    auto internal_sp_view = get_data(internal_sp_container, resource);
-    auto triplet_counter_view = get_data(triplet_counter_container, resource);
-    auto triplet_view = get_data(triplet_container, resource);
+                     vecmem::memory_resource& resource) {
+    auto internal_sp_view = get_data(internal_sp_container, &resource);
+    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
+    auto triplet_view = get_data(triplet_container, &resource);
 
     // The thread-block is desinged to make each thread update the weight of eac
     // triplet

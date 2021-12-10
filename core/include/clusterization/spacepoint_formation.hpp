@@ -54,9 +54,11 @@ struct spacepoint_formation
         // Run the algorithm
         spacepoints.reserve(measurements.size());
         for (const auto& m : measurements) {
-            spacepoint s;
             point3 local_3d = {m.local[0], m.local[1], 0.};
-            s.global = module.placement.point_to_global(local_3d);
+            point3 global = module.placement.point_to_global(local_3d);
+            variance3 variance = {0, 0, 0};
+            spacepoint s({global, variance, m});
+
             // @todo add variance estimation
             spacepoints.push_back(std::move(s));
         }

@@ -11,6 +11,7 @@
 
 #include "container.hpp"
 #include "definitions/primitives.hpp"
+#include "edm/cell.hpp"
 
 namespace traccc {
 

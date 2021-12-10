@@ -9,9 +9,14 @@
 
 #include <definitions/primitives.hpp>
 
+#include "Acts/Definitions/Units.hpp"
+
 namespace traccc {
 
 // epsilon for float variables
-static constexpr scalar float_epsilon = 1e-6;
+constexpr scalar float_epsilon = 1e-5;
+
+// pion mass for track parameter estimation
+constexpr scalar PION_MASS_MEV = 139.57018 * Acts::UnitConstants::MeV;
 
 }  // namespace traccc

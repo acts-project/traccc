@@ -19,6 +19,8 @@ mark_as_advanced( TRACCC_ALGEBRA_PLUGINS_SOURCE )
 FetchContent_Declare( AlgebraPlugins ${TRACCC_ALGEBRA_PLUGINS_SOURCE} )
 
 # Options used in the build of Algebra Plugins.
+set( ALGEBRA_PLUGINS_CUSTOM_SCALARTYPE "float" CACHE STRING
+   "Use float for scalar type" )
 set( ALGEBRA_PLUGINS_BUILD_TESTING FALSE CACHE BOOL
    "Turn off the build of the Algebra Plugins unit tests" )
 set( ALGEBRA_PLUGINS_INCLUDE_EIGEN TRUE CACHE BOOL

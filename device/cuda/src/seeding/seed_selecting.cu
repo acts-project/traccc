@@ -11,7 +11,7 @@
 #include <thrust/sort.h>
 
 #include <algorithm>
-#include <cuda/seeding/seed_selecting.cuh>
+#include <cuda/seeding/seed_selecting.hpp>
 #include <cuda/utils/cuda_helper.cuh>
 
 namespace traccc {
@@ -61,14 +61,14 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     host_seed_container& seed_container,
-                    vecmem::memory_resource* resource) {
-    auto internal_sp_view = get_data(internal_sp_container, resource);
+                    vecmem::memory_resource& resource) {
+    auto internal_sp_view = get_data(internal_sp_container, &resource);
     auto doublet_counter_container_view =
-        get_data(doublet_counter_container, resource);
+        get_data(doublet_counter_container, &resource);
     auto triplet_counter_container_view =
-        get_data(triplet_counter_container, resource);
-    auto triplet_container_view = get_data(triplet_container, resource);
-    auto seed_container_view = get_data(seed_container, resource);
+        get_data(triplet_counter_container, &resource);
+    auto triplet_container_view = get_data(triplet_container, &resource);
+    auto seed_container_view = get_data(seed_container, &resource);
 
     // The thread-block is desinged to make each thread investigate the
     // compatible middle spacepoint

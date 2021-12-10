@@ -37,7 +37,7 @@ void triplet_counting(const seedfinder_config& config,
                       host_doublet_container& mid_bot_doublet_container,
                       host_doublet_container& mid_top_doublet_container,
                       host_triplet_counter_container& triplet_counter_container,
-                      vecmem::memory_resource* resource);
+                      vecmem::memory_resource& resource);
 
 }  // namespace cuda
 }  // namespace traccc

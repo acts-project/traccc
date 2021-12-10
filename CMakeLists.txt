@@ -146,9 +146,9 @@ if( TRACCC_SETUP_GOOGLETEST )
 endif()
 
 # option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
-set(TRACCC_ALGEBRA_PLUGIN EIGEN CACHE STRING "Algebra plugin to use in the build")
-message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGIN})
-add_definitions(-DALGEBRA_PLUGIN_INCLUDE_${TRACCC_ALGEBRA_PLUGIN})
+set(TRACCC_ALGEBRA_PLUGINS EIGEN CACHE STRING "Algebra plugin to use in the build")
+message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGINS})
+add_definitions(-DALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
 
 # Build the traccc code.
 add_subdirectory( core )

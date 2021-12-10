@@ -36,7 +36,7 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     host_seed_container& seed_container,
-                    vecmem::memory_resource* resource);
+                    vecmem::memory_resource& resource);
 
 }  // namespace cuda
 }  // namespace traccc

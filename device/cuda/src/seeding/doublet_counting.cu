@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <cuda/seeding/doublet_counting.cuh>
+#include <cuda/seeding/doublet_counting.hpp>
 #include <cuda/utils/cuda_helper.cuh>
 #include <cuda/utils/definitions.hpp>
 
@@ -28,10 +28,10 @@ __global__ void doublet_counting_kernel(
 void doublet_counting(const seedfinder_config& config,
                       host_internal_spacepoint_container& internal_sp_container,
                       host_doublet_counter_container& doublet_counter_container,
-                      vecmem::memory_resource* resource) {
-    auto internal_sp_view = get_data(internal_sp_container, resource);
+                      vecmem::memory_resource& resource) {
+    auto internal_sp_view = get_data(internal_sp_container, &resource);
     auto doublet_counter_container_view =
-        get_data(doublet_counter_container, resource);
+        get_data(doublet_counter_container, &resource);
 
     // The thread-block is desinged to make each thread count the number of
     // doublets per middle spacepoint

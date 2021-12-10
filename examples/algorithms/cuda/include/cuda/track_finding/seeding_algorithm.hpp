@@ -16,13 +16,13 @@
 namespace traccc {
 namespace cuda {
 
-class seeding_algorithm {
-    public:
-    using input_type = host_spacepoint_container&;
-    using output_type =
-        std::pair<host_internal_spacepoint_container, host_seed_container>;
+class seeding_algorithm
+    : public algorithm<
+          std::pair<host_internal_spacepoint_container, host_seed_container>(
+              host_spacepoint_container&&)> {
 
-    seeding_algorithm(vecmem::memory_resource* mr = nullptr) : m_mr(mr) {
+    public:
+    seeding_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
 
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
@@ -56,37 +56,32 @@ class seeding_algorithm {
         m_estimator.m_cfg.par_for_seeds = {0, 0.3431};
 
         sg = std::make_shared<traccc::spacepoint_grouping>(
-            traccc::spacepoint_grouping(m_config, m_grid_config, m_mr));
+            traccc::spacepoint_grouping(m_config, m_grid_config, mr));
         sf = std::make_shared<traccc::cuda::seed_finding>(
             traccc::cuda::seed_finding(m_config, sg->get_spgrid(), m_estimator,
-                                       m_mr));
+                                       mr));
     }
 
-    output_type operator()(input_type& i) {
-        output_type o;
-        this->operator()(i, o);
-        return o;
-    }
+    output_type operator()(
+        host_spacepoint_container&& spacepoints) const override {
+        output_type outputs({host_internal_spacepoint_container(&m_mr.get()),
+                             host_seed_container(1, &m_mr.get())});
 
-    void operator()(input_type& spacepoints_per_event, output_type& o) {
-        // spacepoint grouping
-        auto internal_sp_per_event = sg->operator()(spacepoints_per_event);
+        auto& internal_sp_per_event = outputs.first;
+        auto& seeds = outputs.second;
 
-        // seed finding
-        auto seeds = sf->operator()(internal_sp_per_event);
-
-        // output container
-        o.first = std::move(internal_sp_per_event);
-        o.second = std::move(seeds);
+        internal_sp_per_event = sg->operator()(spacepoints);
+        seeds = sf->operator()(std::move(internal_sp_per_event));
+        return outputs;
     }
 
     private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     multiplet_estimator m_estimator;
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
     std::shared_ptr<traccc::spacepoint_grouping> sg;
     std::shared_ptr<traccc::cuda::seed_finding> sf;
-    vecmem::memory_resource* m_mr;
 };
 
 }  // namespace cuda
