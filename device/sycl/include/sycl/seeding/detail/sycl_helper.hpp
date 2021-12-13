@@ -9,43 +9,94 @@
 
 #include <CL/sycl.hpp>
 
-namespace traccc{
+namespace traccc {
 namespace sycl {
 
-// inline
-// unsigned int& atomic_add(unsigned int& address,int& val)
-// {
-//   ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
-//                                    ::sycl::memory_scope::device,
-//                                    ::sycl::access::address_space::global_space> obj (address);
+// Some useful helper functions for cuda device
+struct sycl_helper {
 
-//   unsigned int old_val = obj.fetch_add(val);
+    static
+    void reduceInShared(::sycl::multi_ptr<int, ::sycl::access::address_space::local_space> array, ::sycl::nd_item<3> &item)
+    {
+    auto workItemIdx = item.get_local_id(2);
+    auto sg = item.get_sub_group();
+    auto workGroup = item.get_group();
 
-//   return old_val;
-// }
+    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
+    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
+    // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
+    // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
+    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
 
-// inline
-// void reduceInShared(int* array, ::sycl::nd_item<1> &item)
-// {
-//   const auto& workItemIdx = item.get_local_id(0);
-//   const auto& groupDim = item.get_local_range(0);
-//   auto sg = item.get_sub_group();
-//   auto workGroup = item.get_group();
+    ::sycl::group_barrier(workGroup);
 
-//   array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-//   array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-//   // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-//   // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-//   array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
+    //   if (workItemIdx == 0) {
+    //       for (int i = 1; i < groupDim; i++) {
+    //           array[workItemIdx] += array[i * 8];
+    //     }
+    //   }
+}
 
-//   ::sycl::group_barrier(workGroup);
+    /// Get index of header vector of event data container for a given block ID.
+    ///
+    /// @param jag_vec the item jagged vector of edm
+    /// @param header_idx the header idx
+    /// @param ref_block_idx the reference block idx for a given header idx
+    template <typename T>
+    static void get_header_idx(
+        const vecmem::jagged_device_vector<T>& jag_vec,
+        unsigned int& header_idx, unsigned int& ref_block_idx, ::sycl::nd_item<3>& item) {
 
-//   if (workItemIdx == 0) {
-//       for (int i = 1; i < groupDim / 8; i++) {
-//           array[workItemIdx] += array[i * 8];
-//     }
-//   }
-// }
+        /// number of blocks accumulated upto current header idx
+        unsigned int nblocks_accum = 0;
 
-} // namespace sycl
-} // namespace traccc
+        /// number of blocks for one header entry
+        unsigned int nblocks_per_header = 0;
+        for (unsigned int i = 0; i < jag_vec.size(); ++i) {
+            nblocks_per_header = jag_vec[i].size() / item.get_local_range(2) + 1;
+            nblocks_accum += nblocks_per_header;
+
+            if (item.get_group(2) < nblocks_accum) {
+                header_idx = i;
+
+                break;
+            }
+
+            ref_block_idx += nblocks_per_header;
+        }
+    }
+
+    /// Get index of header vector of event data container for a given block ID.
+    ///
+    /// @param container event data container where header element indicates the
+    /// number of elements in item vector
+    /// @param header_idx the header idx
+    /// @param ref_block_idx the reference block idx for a given header idx
+    template <typename header_t, typename item_t>
+    static void get_header_idx(
+        const device_container<header_t, item_t>& container,
+        unsigned int& header_idx, unsigned int& ref_block_idx, ::sycl::nd_item<3>& item) {
+
+        /// number of blocks accumulated upto current header idx
+        unsigned int nblocks_accum = 0;
+
+        /// number of blocks for one header entry
+        unsigned int nblocks_per_header = 0;
+        for (unsigned int i = 0; i < container.size(); ++i) {
+            nblocks_per_header = container.get_headers()[i] / item.get_local_range(2) + 1;
+            nblocks_accum += nblocks_per_header;
+
+            if (item.get_group(2) < nblocks_accum) {
+                header_idx = i;
+
+                break;
+            }
+
+            ref_block_idx += nblocks_per_header;
+        }
+    }
+};
+
+}  // namespace sycl
+}  // namespace traccc
+

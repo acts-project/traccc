@@ -22,9 +22,9 @@ src/seeding/triplet_counting.sycl
 src/seeding/triplet_finding.sycl
 src/seeding/weight_updating.sycl)
 
-# target_compile_options(
-# 	traccc_sycl
-# 	PRIVATE -fsycl-targets=nvptx64-nvidia-cuda)
+target_compile_options(
+	traccc_sycl
+	PRIVATE -fsycl-targets=nvptx64-nvidia-cuda)
 
 target_include_directories(traccc_sycl PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

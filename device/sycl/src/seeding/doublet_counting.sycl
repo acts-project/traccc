@@ -7,6 +7,7 @@
 
 #include "sycl/seeding/doublet_counting.hpp"
 #include "vecmem/memory/atomic.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -39,33 +40,12 @@ public:
         device_doublet_counter_container doublet_counter_device(
             {m_doublet_counter_view.headers, m_doublet_counter_view.items});
         
-        // Get the bin index of spacepoint binning and reference block idx for the
-        // bin index
-        unsigned int bin_idx = 0;
-        unsigned int ref_block_idx = 0;
-
-        /////////////// TAken from CUDA helper function ///////////////////////
-        // the item jagged vector of edm
-        auto& jag_vec = internal_sp_device.get_items();
-
-        /// number of blocks accumulated upto current header idx
-        unsigned int nblocks_accum = 0;
-
-        /// number of blocks for one header entry
-        unsigned int nblocks_per_header = 0;
-
-        // taken from cuda helper functions - get_header_idx()
-        for (unsigned int i = 0; i < jag_vec.size(); ++i) {
-            nblocks_per_header = jag_vec[i].size() / groupDim + 1;
-            nblocks_accum += nblocks_per_header;
-
-            if (groupIdx < nblocks_accum) {
-                bin_idx = i;
-                break;
-            }
-            ref_block_idx += nblocks_per_header;
-        }
-        /////////////////// End of the helper funciton /////////////////////////   
+    // Get the bin index of spacepoint binning and reference block idx for the
+    // bin index
+    unsigned int bin_idx = 0;
+    unsigned int ref_block_idx = 0;
+    sycl_helper::get_header_idx(internal_sp_device.get_items(), bin_idx,
+                                ref_block_idx, item);
 
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
@@ -81,7 +61,7 @@ public:
         doublet_counter_device.get_items().at(bin_idx);
 
     // index of internal spacepoint in the item vector
-    auto sp_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
+    uint32_t sp_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
 
     if (sp_idx < doublet_counter_per_bin.size()) {
 
@@ -94,7 +74,7 @@ public:
         doublet_counter_per_bin[sp_idx].n_mid_top = 0;
 
         // middle spacepoint index
-        auto spM_loc = sp_location({bin_idx, static_cast<uint32_t>(sp_idx)});
+        auto spM_loc = sp_location({bin_idx, sp_idx});
         // middle spacepoint
         const auto& isp = internal_sp_per_bin[sp_idx];
 
@@ -124,7 +104,7 @@ public:
         // if number of mid-bot and mid-top doublet for a middle spacepoint is
         // larger than 0, the entry is added to the doublet counter
         if (n_mid_bot > 0 && n_mid_top > 0) {
-            // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
+            // ::sycl::ext::oneapi::atomic_ref<uint32_t, ::sycl::memory_order::seq_cst,
             //                        ::sycl::memory_scope::device,
             //                        ::sycl::access::address_space::global_space> obj (num_compat_spM_per_bin);
             vecmem::atomic obj(&num_compat_spM_per_bin);
@@ -150,7 +130,7 @@ void doublet_counting(const seedfinder_config& config,
             get_data(doublet_counter_container, resource);
 
         // The local number of threads per work-group (block in cuda) (number taken from cuda implementation, warp size *2)
-        unsigned int localSize = 8;
+        unsigned int localSize = 64;
         // Calculate the global number of threads to run in kernel
         unsigned int num_groups = 0;
         for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
@@ -162,7 +142,7 @@ void doublet_counting(const seedfinder_config& config,
         
         q->submit([&](::sycl::handler& h){
             DupletCount kernel( config, internal_sp_view, 
-                                doublet_counter_container_view);
+                                doublet_counter_container_view );
             h.parallel_for<class doublet_count_kernel>(doubletCountNdRange, kernel);
         }).wait_and_throw();
     }

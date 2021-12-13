@@ -25,12 +25,12 @@
 #include "io/reader.hpp"
 #include "io/writer.hpp"
 
-// class CUDADeviceSelector : public ::sycl::device_selector {
-// public:
-//     int operator()(const ::sycl::device &device) const override {
-//         return device.get_platform().get_backend() == ::sycl::backend::cuda ? 1 : -1;
-//     }
-// };
+class CUDADeviceSelector : public ::sycl::device_selector {
+public:
+    int operator()(const ::sycl::device &device) const override {
+        return device.get_platform().get_backend() == ::sycl::backend::cuda ? 1 : -1;
+    }
+};
 
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
             unsigned int events, bool skip_cpu) {

@@ -9,6 +9,7 @@
 
 #include "sycl/seeding/seed_selecting.hpp"
 #include "vecmem/memory/atomic.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -60,24 +61,7 @@ public:
         // bin index
         unsigned int bin_idx = 0;
         unsigned int ref_block_idx = 0;
-
-        /////////////// TAken from CUDA helper function ///////////////////////
-        /// number of blocks accumulated upto current header idx
-        unsigned int nblocks_accum = 0;
-
-        /// number of blocks for one header entry
-        unsigned int nblocks_per_header = 0;
-        for (unsigned int i = 0; i < triplet_counter_device.size(); ++i) {
-            nblocks_per_header = triplet_counter_device.get_headers()[i] / groupDim + 1;
-            nblocks_accum += nblocks_per_header;
-
-            if (groupIdx < nblocks_accum) {
-                bin_idx = i;
-                break;
-            }
-            ref_block_idx += nblocks_per_header;
-        }
-        /////////////////// End of the helper funciton ////////////////////
+        sycl_helper::get_header_idx(triplet_counter_device, bin_idx, ref_block_idx, item);
 
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects per
@@ -192,7 +176,6 @@ public:
                     }
                 }       
             }
-            
             // sort the triplets per spM
             ::sycl::ext::oneapi::joint_sort(
                 ::sycl::ext::oneapi::experimental::

@@ -7,43 +7,21 @@
 
 #include "sycl/seeding/doublet_finding.hpp"
 #include "vecmem/memory/atomic.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 
 namespace traccc {
 namespace sycl {
-inline
-void reduceInSharedD(int* array, ::sycl::nd_item<3> &item)
-{
-    
-    // Equivalent to threadIdx.x in cuda
-auto workItemIdx = item.get_local_id(2);
 
-  auto sg = item.get_sub_group();
-  auto workGroup = item.get_group();
-
-  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-  // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-  // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
-
-  ::sycl::group_barrier(workGroup);
-
-//   if (workItemIdx == 0) {
-//       for (int i = 1; i < groupDim; i++) {
-//           array[workItemIdx] += array[i * 8];
-//     }
-//   }
-}
 // kernel class for doublet finding
 class DupletFind {
 public:
-    DupletFind(const seedfinder_config& config,
+    DupletFind(const seedfinder_config config,
                 internal_spacepoint_container_view internal_sp_view,
                 doublet_counter_container_view doublet_counter_view,
                 doublet_container_view mid_bot_doublet_view,
                 doublet_container_view mid_top_doublet_view,
-                local_accessor<int> localMemBot,
-                local_accessor<int> localMemTop)
+                local_accessor<int>& localMemBot,
+                local_accessor<int>& localMemTop)
     : m_config(config),
       m_internal_sp_view(internal_sp_view),
       m_doublet_counter_view(doublet_counter_view),
@@ -79,24 +57,7 @@ public:
         // bin index
         unsigned int bin_idx = 0;
         unsigned int ref_block_idx = 0;
-
-       /////////////// TAken from CUDA helper function ///////////////////////
-       /// number of blocks accumulated upto current header idx
-        unsigned int nblocks_accum = 0;
-
-        /// number of blocks for one header entry
-        unsigned int nblocks_per_header = 0;
-        for (unsigned int i = 0; i < doublet_counter_device.size(); ++i) {
-            nblocks_per_header = doublet_counter_device.get_headers()[i] / groupDim + 1;
-            nblocks_accum += nblocks_per_header;
-
-            if (groupIdx < nblocks_accum) {
-                bin_idx = i;
-                break;
-            }
-            ref_block_idx += nblocks_per_header;
-        }
-        /////////////////// End of the helper funciton ////////////////////
+        sycl_helper::get_header_idx(doublet_counter_device, bin_idx, ref_block_idx, item);
 
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects per
@@ -105,41 +66,53 @@ public:
         auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
 
         // Header of doublet counter : number of compatible middle sp per bin
+        // Item of doublet counter : doublet counter objects per bin
         auto& num_compat_spM_per_bin =
             doublet_counter_device.get_headers().at(bin_idx);
+        auto doublet_counter_per_bin =
+            doublet_counter_device.get_items().at(bin_idx);
+        
+        // Header of doublet: number of mid_bot doublets per bin
+        // Item of doublet: doublet objects per bin
+        auto& num_mid_bot_doublets_per_bin =
+            mid_bot_doublet_device.get_headers().at(bin_idx);
+        auto mid_bot_doublets_per_bin =
+            mid_bot_doublet_device.get_items().at(bin_idx);
+        
+        // Header of doublet: number of mid_top doublets per bin
+        // Item of doublet: doublet objects per bin
+        auto& num_mid_top_doublets_per_bin =
+            mid_top_doublet_device.get_headers().at(bin_idx);
+        auto mid_top_doublets_per_bin =
+            mid_top_doublet_device.get_items().at(bin_idx);  
+                mid_top_doublet_device.get_items().at(bin_idx);        
+            mid_top_doublet_device.get_items().at(bin_idx);  
+                mid_top_doublet_device.get_items().at(bin_idx);        
+            mid_top_doublet_device.get_items().at(bin_idx);  
+                mid_top_doublet_device.get_items().at(bin_idx);        
+            mid_top_doublet_device.get_items().at(bin_idx);  
+                mid_top_doublet_device.get_items().at(bin_idx);        
+            mid_top_doublet_device.get_items().at(bin_idx);  
+                mid_top_doublet_device.get_items().at(bin_idx);        
+            mid_top_doublet_device.get_items().at(bin_idx);  
 
+        auto num_mid_bot_doublets_per_thread = m_localMemBot.get_pointer();
+        auto num_mid_top_doublets_per_thread = m_localMemTop.get_pointer();
+        
+        num_mid_bot_doublets_per_thread[workItemIdx] = 0;
+        num_mid_top_doublets_per_thread[workItemIdx] = 0;
         // index of doublet counter in the item vector
+
+        // Convenient alias for the number of doublets per thread
+        auto& n_mid_bot_per_spM = num_mid_bot_doublets_per_thread[workItemIdx];
+        auto& n_mid_top_per_spM = num_mid_top_doublets_per_thread[workItemIdx];
+        
         auto gid = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
     
         // prevent the tail threads referring the null doublet counter
-        if (gid < num_compat_spM_per_bin) { 
-            
-            // Item of doublet counter : doublet counter objects per bin
-            auto doublet_counter_per_bin =
-            doublet_counter_device.get_items().at(bin_idx);
-
-            // Header of doublet: number of mid_bot doublets per bin
-            // Item of doublet: doublet objects per bin
-            auto& num_mid_bot_doublets_per_bin =
-                mid_bot_doublet_device.get_headers().at(bin_idx);
-            auto mid_bot_doublets_per_bin =
-                mid_bot_doublet_device.get_items().at(bin_idx);
-
-            // Header of doublet: number of mid_top doublets per bin
-            // Item of doublet: doublet objects per bin
-            auto& num_mid_top_doublets_per_bin =
-                mid_top_doublet_device.get_headers().at(bin_idx);
-            auto mid_top_doublets_per_bin =
-                mid_top_doublet_device.get_items().at(bin_idx);        
-
-            auto num_mid_bot_doublets_per_thread = m_localMemBot.get_pointer();
-            auto num_mid_top_doublets_per_thread = m_localMemTop.get_pointer();
-            num_mid_bot_doublets_per_thread[workItemIdx] = 0;
-            num_mid_top_doublets_per_thread[workItemIdx] = 0;
-
-            // Convenient alias for the number of doublets per thread
-            auto& n_mid_bot_per_spM = num_mid_bot_doublets_per_thread[workItemIdx];
-            auto& n_mid_top_per_spM = num_mid_top_doublets_per_thread[workItemIdx];
+        if (gid >= num_compat_spM_per_bin) {
+            return;
+        }    
 
             // index of internal spacepoint in the item vector
             auto sp_idx = doublet_counter_per_bin[gid].spM.sp_idx;
@@ -224,9 +197,9 @@ public:
             // Calculate the number doublets per "block" with reducing sum technique
             ::sycl::group_barrier(workGroup);
              //auto resultBot = ::sycl::reduce_over_group(workGroup, num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-            reduceInSharedD(num_mid_bot_doublets_per_thread, item);
+            sycl_helper::reduceInShared(num_mid_bot_doublets_per_thread, item);
             ::sycl::group_barrier(workGroup);
-            reduceInSharedD(num_mid_top_doublets_per_thread, item);   
+            sycl_helper::reduceInShared(num_mid_top_doublets_per_thread, item);   
             //auto resultTop = ::sycl::reduce_over_group(workGroup, num_mid_top_doublets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
             // Calculate the number doublets per bin by atomic-adding the number of
             // doublets per block
@@ -257,7 +230,6 @@ public:
 
                 objT.fetch_add(num_mid_top_doublets_per_thread[0]);                                                                     
             }
-        }
     }
 private:
     const seedfinder_config m_config;
