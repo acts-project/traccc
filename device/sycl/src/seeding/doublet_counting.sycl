@@ -130,7 +130,7 @@ void doublet_counting(const seedfinder_config& config,
             get_data(doublet_counter_container, resource);
 
         // The local number of threads per work-group (block in cuda) (number taken from cuda implementation, warp size *2)
-        unsigned int localSize = 64;
+        unsigned int localSize = 8;
         // Calculate the global number of threads to run in kernel
         unsigned int num_groups = 0;
         for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {

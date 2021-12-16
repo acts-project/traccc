@@ -12,29 +12,6 @@
 namespace traccc {
 namespace sycl {
 
-inline
-void reduceInSharedT(int* array, ::sycl::nd_item<1> &item)
-{
-  const auto& workItemIdx = item.get_local_id(0);
-  const auto& groupDim = item.get_local_range(0);
-  auto sg = item.get_sub_group();
-  auto workGroup = item.get_group();
-
-  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-  // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-  // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-  array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
-
-  ::sycl::group_barrier(workGroup);
-
-
-//   if (workItemIdx == 0) {
-//       for (int i = 1; i < groupDim; i++) {
-//           array[workItemIdx] += array[i * 8];
-//     }
-//   }
-}
 class TripletFind {
 public:
     TripletFind(const seedfinder_config& config,
@@ -238,16 +215,16 @@ public:
                 
                 // Calculate the number of triplets per "block" with reducing sum technique
                 ::sycl::group_barrier(workGroup);
-                auto resultTriplets = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-                //reduceInSharedT(num_triplets_per_thread, item);
+                // uint32_t resultTriplets = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+                //sycl_helper::reduceInShared(num_triplets_per_thread, item);
                 //::sycl::group_barrier(workGroup);
                 // Calculate the number of triplets per bin by atomic-adding the number of
                 // triplets per block
                 if (workItemIdx == 0) {
-                    // uint32_t resultTriplets = 0;
-                    // for (uint32_t i=0; i<groupDim; ++i){
-                    //     resultTriplets += num_triplets_per_thread[i];
-                    // }
+                    uint32_t resultTriplets = 0;
+                    for (uint32_t i=0; i<groupDim; ++i){
+                        resultTriplets += num_triplets_per_thread[i];
+                    }
                     //atomic_add(num_triplets_per_bin, resultTriplets);
                     // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
                     //                ::sycl::memory_scope::device,
@@ -318,8 +295,8 @@ void triplet_finding(const seedfinder_config& config,
     }).wait_and_throw();
     // for (auto i : triplet_container.get_headers()) {
     //         std:: cout << i << " ";
-    // }                                               
-    // std::cout << std::endl;
+    //     }                                               
+    //     std::cout << std::endl;
 }
 
 } // namespace sycl

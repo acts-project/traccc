@@ -35,17 +35,17 @@ public:
       m_scratch(scratch),
       m_temp_memory_size(m_temp_memory_size) {}
 
-      void operator()(::sycl::nd_item<3> item) const {
+      void operator()(::sycl::nd_item<1> item) const {
 
          // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(2);
+        auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(2);
+        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(2);
+        auto workItemIdx = item.get_local_id(0);
 
         device_internal_spacepoint_container internal_sp_device(
         {m_internal_sp_view.headers, m_internal_sp_view.items});
@@ -176,6 +176,7 @@ public:
                     }
                 }       
             }
+            //::sycl::group_barrier(workGroup);
             // sort the triplets per spM
             ::sycl::ext::oneapi::joint_sort(
                 ::sycl::ext::oneapi::experimental::
@@ -183,8 +184,8 @@ public:
                     workGroup,
                     ::sycl::span{&m_scratch[0], m_temp_memory_size}
                 ),
-                static_cast<triplet*>(triplets_per_spM) + stride,
-                static_cast<triplet*>(triplets_per_spM) + stride + n_triplets_per_spM,
+                triplets_per_spM + stride,
+                triplets_per_spM + stride + n_triplets_per_spM,
                 [](const triplet& lhs, const triplet& rhs) {
                     if (lhs.weight != rhs.weight) {
                         return lhs.weight > rhs.weight;
@@ -193,7 +194,7 @@ public:
                     }
                 }
             );
-
+            //::sycl::group_barrier(workGroup);
             // the number of good seed per compatible middle spacepoint
             unsigned int n_seeds_per_spM = 0;
 
@@ -270,7 +271,7 @@ void seed_selecting(const seedfilter_config& filter_config,
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localSize = 8;
+    unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
@@ -280,7 +281,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     unsigned int globalSize = localSize * num_groups;
 
     // 1 dim ND Range for the kernel
-    auto seedSelectNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};
+    auto seedSelectNdRange = ::sycl::nd_range<1>{globalSize,localSize};
     
     // Shared memory for scratchspace (for sorting)
     std::size_t temp_memory_size =

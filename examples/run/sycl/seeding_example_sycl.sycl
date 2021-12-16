@@ -46,7 +46,9 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     vecmem::host_memory_resource host_mr;
 
     // Memory resource used by the EDM.
-    ::sycl::queue q( ::sycl::gpu_selector{} );
+    ::sycl::queue q( CUDADeviceSelector{} );
+    std::cout << "Running on device: "
+                << q.get_device().get_info<::sycl::info::device::name>() << "\n";
     vecmem::sycl::shared_memory_resource shared_mr(&q);
 
     // Elapsed time
