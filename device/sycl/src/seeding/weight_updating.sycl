@@ -200,7 +200,7 @@ void weight_updating(const seedfilter_config& filter_config,
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localSize = 8;
+    unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {

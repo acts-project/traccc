@@ -216,22 +216,22 @@ public:
                 // Calculate the number of triplets per "block" with reducing sum technique
                 ::sycl::group_barrier(workGroup);
                 // uint32_t resultTriplets = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
-                //sycl_helper::reduceInShared(num_triplets_per_thread, item);
+                sycl_helper::reduceInShared(num_triplets_per_thread, item);
                 //::sycl::group_barrier(workGroup);
                 // Calculate the number of triplets per bin by atomic-adding the number of
                 // triplets per block
                 if (workItemIdx == 0) {
-                    uint32_t resultTriplets = 0;
-                    for (uint32_t i=0; i<groupDim; ++i){
-                        resultTriplets += num_triplets_per_thread[i];
-                    }
+                    // uint32_t resultTriplets = 0;
+                    // for (uint32_t i=0; i<groupDim; ++i){
+                    //     resultTriplets += num_triplets_per_thread[i];
+                    // }
                     //atomic_add(num_triplets_per_bin, resultTriplets);
                     // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
                     //                ::sycl::memory_scope::device,
                     //                ::sycl::access::address_space::global_space> obj (num_triplets_per_bin);
                     vecmem::atomic obj(&num_triplets_per_bin);
 
-                    obj.fetch_add(resultTriplets);
+                    obj.fetch_add(num_triplets_per_thread[0]);
                 }
             }
         }
@@ -270,7 +270,7 @@ void triplet_finding(const seedfinder_config& config,
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localSize = 8;
+    unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {

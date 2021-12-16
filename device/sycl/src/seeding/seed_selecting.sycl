@@ -14,6 +14,31 @@
 namespace traccc {
 namespace sycl {
 
+static
+bool tripletCompare(const triplet& lhs, const triplet& rhs){
+    if (lhs.weight != rhs.weight) {
+        return lhs.weight < rhs.weight;
+    } else {
+        return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
+    }
+}
+
+static 
+void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::local_space> arr, int n) {
+    int j = 0;
+    triplet key = arr[0];
+    for (int i = 1; i < n; ++i) {
+        key = arr[i];
+        j = i - 1;
+ 
+        while (j >= 0 && tripletCompare(arr[j],key)) {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}
+
 class SeedSelect {
 public:
     SeedSelect(const seedfilter_config& filter_config,
@@ -177,25 +202,26 @@ public:
                 }       
             }
             //::sycl::group_barrier(workGroup);
-            // sort the triplets per spM
-            ::sycl::ext::oneapi::joint_sort(
-                ::sycl::ext::oneapi::experimental::
-                group_with_scratchpad(
-                    workGroup,
-                    ::sycl::span{&m_scratch[0], m_temp_memory_size}
-                ),
-                triplets_per_spM + stride,
-                triplets_per_spM + stride + n_triplets_per_spM,
-                [](const triplet& lhs, const triplet& rhs) {
-                    if (lhs.weight != rhs.weight) {
-                        return lhs.weight > rhs.weight;
-                    } else {
-                        return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
-                    }
-                }
-            );
+            // // sort the triplets per spM
+            // ::sycl::ext::oneapi::joint_sort(
+            //     ::sycl::ext::oneapi::experimental::
+            //     group_with_scratchpad(
+            //         workGroup,
+            //         ::sycl::span{&m_scratch[0], m_temp_memory_size}
+            //     ),
+            //     triplets_per_spM + stride,
+            //     triplets_per_spM + stride + n_triplets_per_spM,
+            //     [](const triplet& lhs, const triplet& rhs) {
+            //         if (lhs.weight != rhs.weight) {
+            //             return lhs.weight > rhs.weight;
+            //         } else {
+            //             return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
+            //         }
+            //     }
+            // );
             //::sycl::group_barrier(workGroup);
             // the number of good seed per compatible middle spacepoint
+            insertionSort(triplets_per_spM + stride, n_triplets_per_spM);
             unsigned int n_seeds_per_spM = 0;
 
             // iterate over the good triplets for final selection of seeds

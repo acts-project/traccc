@@ -23,19 +23,19 @@ struct sycl_helper {
     auto workGroup = item.get_group();
     auto groupDim = item.get_local_range(2);
 
-    //array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
-    //array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
+    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
+    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
     array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
     array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
     array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
 
     ::sycl::group_barrier(workGroup);
 
-    //   if (workItemIdx == 0) {
-    //       for (int i = 1; i < groupDim / 32; i++) {
-    //           array[workItemIdx] += array[i * 32];
-    //     }
-    //   }
+      if (workItemIdx == 0) {
+          for (int i = 1; i < groupDim / 32; i++) {
+              array[workItemIdx] += array[i * 32];
+        }
+      }
 }
 
     /// Get index of header vector of event data container for a given block ID.
