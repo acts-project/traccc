@@ -6,8 +6,6 @@
  */
 
 #include "sycl/seeding/triplet_finding.hpp"
-#include "vecmem/memory/atomic.hpp"
-#include "sycl/seeding/detail/sycl_helper.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -33,17 +31,17 @@ public:
       m_triplet_view(triplet_view),
       m_localMem(localMem) {}
 
-    void operator()(::sycl::nd_item<3> item) const {
+    void operator()(::sycl::nd_item<1> item) const {
 
          // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(2);
+        auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(2);
+        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(2);
+        auto workItemIdx = item.get_local_id(0);
     
         device_internal_spacepoint_container internal_sp_device(
         {m_internal_sp_view.headers, m_internal_sp_view.items});
@@ -215,22 +213,19 @@ public:
                 
                 // Calculate the number of triplets per "block" with reducing sum technique
                 ::sycl::group_barrier(workGroup);
-                // uint32_t resultTriplets = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::ext::oneapi::plus<>());
+                // disable following for Intel's intgr. gpu
                 sycl_helper::reduceInShared(num_triplets_per_thread, item);
-                //::sycl::group_barrier(workGroup);
+
                 // Calculate the number of triplets per bin by atomic-adding the number of
                 // triplets per block
                 if (workItemIdx == 0) {
+                // uncomment following for Intel's intgr. gpu
                     // uint32_t resultTriplets = 0;
                     // for (uint32_t i=0; i<groupDim; ++i){
                     //     resultTriplets += num_triplets_per_thread[i];
-                    // }
-                    //atomic_add(num_triplets_per_bin, resultTriplets);
-                    // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
-                    //                ::sycl::memory_scope::device,
-                    //                ::sycl::access::address_space::global_space> obj (num_triplets_per_bin);
-                    vecmem::atomic obj(&num_triplets_per_bin);
-
+                    // }           
+                    // num_triplets_per_thread[0] = resultTriplets;         
+                    vecmem::atomic<uint32_t> obj(&num_triplets_per_bin);
                     obj.fetch_add(num_triplets_per_thread[0]);
                 }
             }
@@ -270,7 +265,7 @@ void triplet_finding(const seedfinder_config& config,
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localSize = 64;
+    unsigned int localSize = 8;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
@@ -280,7 +275,7 @@ void triplet_finding(const seedfinder_config& config,
     unsigned int globalSize = localSize * num_groups;
 
     // 1 dim ND Range for the kernel
-    auto tripletFindNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};
+    auto tripletFindNdRange = ::sycl::nd_range<1>{globalSize,localSize};
     q->submit([&](::sycl::handler& h){
 
         // local memory initialization (equivalent to shared memory in CUDA)
@@ -293,10 +288,6 @@ void triplet_finding(const seedfinder_config& config,
 
         h.parallel_for<class triplet_find_kernel>(tripletFindNdRange, kernel);
     }).wait_and_throw();
-    // for (auto i : triplet_container.get_headers()) {
-    //         std:: cout << i << " ";
-    //     }                                               
-    //     std::cout << std::endl;
 }
 
 } // namespace sycl

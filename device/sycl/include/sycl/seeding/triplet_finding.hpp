@@ -11,6 +11,7 @@
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/triplet_counter.hpp"
 #include "sycl/seeding/detail/sycl_helper.hpp"
+#include "vecmem/memory/atomic.hpp"
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>
@@ -45,22 +46,6 @@ void triplet_finding(const seedfinder_config& config,
                      host_triplet_container& triplet_container,
                      vecmem::memory_resource* resource,
                      ::sycl::queue* q);
-
-// Define shorthand alias for the type of atomics needed by this kernel 
-template <typename T>
-using global_atomic_ref = ::sycl::ext::oneapi::atomic_ref<
-    T,
-    ::sycl::ext::oneapi::memory_order::relaxed,
-    ::sycl::ext::oneapi::memory_scope::system,
-    ::sycl::access::address_space::global_space>;
-
-// Short aliast for accessor to local memory (shared memory in CUDA)
-template <typename T>
-using local_accessor = ::sycl::accessor<
-    T,
-    1,
-    ::sycl::access::mode::read_write,
-    ::sycl::access::target::local>;
 
 } // namespace traccc
 } // namespace sycl

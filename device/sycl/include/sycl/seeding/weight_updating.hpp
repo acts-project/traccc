@@ -10,6 +10,7 @@
 #include <CL/sycl.hpp>
 
 #include "sycl/seeding/detail/triplet_counter.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/triplet.hpp>

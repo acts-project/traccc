@@ -25,6 +25,7 @@
 #include "io/reader.hpp"
 #include "io/writer.hpp"
 
+// Selector to pass to sycl::queue object for running on NVIDIA device
 class CUDADeviceSelector : public ::sycl::device_selector {
 public:
     int operator()(const ::sycl::device &device) const override {
@@ -46,6 +47,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     vecmem::host_memory_resource host_mr;
 
     // Memory resource used by the EDM.
+    // change to ::sycl::gpu_selector{} to run on different device
     ::sycl::queue q( CUDADeviceSelector{} );
     std::cout << "Running on device: "
                 << q.get_device().get_info<::sycl::info::device::name>() << "\n";

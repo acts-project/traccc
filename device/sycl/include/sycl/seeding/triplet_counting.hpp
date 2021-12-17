@@ -11,6 +11,7 @@
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/triplet_counter.hpp"
 #include "sycl/seeding/detail/sycl_helper.hpp"
+#include <vecmem/memory/atomic.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>

@@ -11,7 +11,6 @@ enable_language( SYCL )
 add_executable( traccc_sycl_language_example "sycl_language_example.sycl" )
 add_executable (seeding_example_sycl seeding_example_sycl.sycl)
 add_executable(seq_example_sycl seq_example_sycl.sycl)
-add_executable(practice practice.sycl)
 
 target_link_libraries (seeding_example_sycl LINK_PUBLIC
    traccc::io
@@ -19,11 +18,6 @@ target_link_libraries (seeding_example_sycl LINK_PUBLIC
    traccc::algorithms_sycl)
 
 target_link_libraries (seq_example_sycl LINK_PUBLIC
-   traccc::io
-   traccc::algorithms
-   traccc::algorithms_sycl)
-
-target_link_libraries (practice LINK_PUBLIC
    traccc::io
    traccc::algorithms
    traccc::algorithms_sycl)

@@ -10,12 +10,12 @@
 
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/sycl_helper.hpp"
+#include <vecmem/memory/atomic.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/doublet_finding_helper.hpp>
 
 #include "seeding/detail/doublet.hpp"
-
 
 namespace traccc {
 namespace sycl {
@@ -37,14 +37,6 @@ void doublet_finding(const seedfinder_config& config,
                      host_doublet_container& mid_top_doublet_container,
                      vecmem::memory_resource* resource,
                      ::sycl::queue* q);
-
-// Short aliast for accessor to local memory (shared memory in CUDA)
-template <typename T>
-using local_accessor = ::sycl::accessor<
-    T,
-    1,
-    ::sycl::access::mode::read_write,
-    ::sycl::access::target::local>;
 
 } // namespace sycl
 } // namespace traccc

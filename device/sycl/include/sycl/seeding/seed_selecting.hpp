@@ -4,6 +4,7 @@
  *
  * Mozilla Public License Version 2.0
  */
+#pragma once
 
 #include <CL/sycl.hpp>
 
@@ -11,6 +12,7 @@
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/triplet_counter.hpp"
 #include "sycl/seeding/detail/sycl_helper.hpp"
+#include <vecmem/memory/atomic.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <edm/seed.hpp>
 #include <seeding/detail/doublet.hpp>
@@ -18,11 +20,8 @@
 #include <seeding/detail/triplet.hpp>
 #include <seeding/seed_selecting_helper.hpp>
 
-#pragma once
-
 namespace traccc {
 namespace sycl {
-
 
 /// Forward declaration of seed selecting function
 /// The good triplets are selected and recorded into seed container
@@ -43,14 +42,6 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_seed_container& seed_container,
                     vecmem::memory_resource* resource,
                     ::sycl::queue* q);
-
-// Short aliast for accessor to local memory (shared memory in CUDA)
-template <typename T>
-using local_accessor = ::sycl::accessor<
-    T,
-    1,
-    ::sycl::access::mode::read_write,
-    ::sycl::access::target::local>;
     
 }  // namespace sycl
 }  // namespace traccc

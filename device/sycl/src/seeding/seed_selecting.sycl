@@ -8,12 +8,11 @@
 #define EIGEN_DONT_VECTORIZE
 
 #include "sycl/seeding/seed_selecting.hpp"
-#include "vecmem/memory/atomic.hpp"
-#include "sycl/seeding/detail/sycl_helper.hpp"
 
 namespace traccc {
 namespace sycl {
 
+// Comparator funciton for comparing triplets when sorting
 static
 bool tripletCompare(const triplet& lhs, const triplet& rhs){
     if (lhs.weight != rhs.weight) {
@@ -22,7 +21,6 @@ bool tripletCompare(const triplet& lhs, const triplet& rhs){
         return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
     }
 }
-
 static 
 void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::local_space> arr, int n) {
     int j = 0;
@@ -30,7 +28,6 @@ void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::loc
     for (int i = 1; i < n; ++i) {
         key = arr[i];
         j = i - 1;
- 
         while (j >= 0 && tripletCompare(arr[j],key)) {
             arr[j + 1] = arr[j];
             j = j - 1;
@@ -47,18 +44,14 @@ public:
                triplet_counter_container_view triplet_counter_view,
                triplet_container_view triplet_view, 
                seed_container_view seed_view,
-               local_accessor<triplet> localMem,
-               local_accessor<std::byte> scratch,
-               std::size_t temp_memory_size)
+               local_accessor<triplet> localMem)
     : m_filter_config(filter_config),
       m_internal_sp_view(internal_sp_view),
       m_doublet_counter_view(doublet_counter_view),
       m_triplet_counter_view(triplet_counter_view),
       m_triplet_view(triplet_view),
       m_seed_view(seed_view),
-      m_localMem(localMem),
-      m_scratch(scratch),
-      m_temp_memory_size(m_temp_memory_size) {}
+      m_localMem(localMem) {}
 
       void operator()(::sycl::nd_item<1> item) const {
 
@@ -201,27 +194,9 @@ public:
                     }
                 }       
             }
-            //::sycl::group_barrier(workGroup);
-            // // sort the triplets per spM
-            // ::sycl::ext::oneapi::joint_sort(
-            //     ::sycl::ext::oneapi::experimental::
-            //     group_with_scratchpad(
-            //         workGroup,
-            //         ::sycl::span{&m_scratch[0], m_temp_memory_size}
-            //     ),
-            //     triplets_per_spM + stride,
-            //     triplets_per_spM + stride + n_triplets_per_spM,
-            //     [](const triplet& lhs, const triplet& rhs) {
-            //         if (lhs.weight != rhs.weight) {
-            //             return lhs.weight > rhs.weight;
-            //         } else {
-            //             return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
-            //         }
-            //     }
-            // );
-            //::sycl::group_barrier(workGroup);
-            // the number of good seed per compatible middle spacepoint
+            // sort the triplets per spM
             insertionSort(triplets_per_spM + stride, n_triplets_per_spM);
+            // the number of good seed per compatible middle spacepoint
             unsigned int n_seeds_per_spM = 0;
 
             // iterate over the good triplets for final selection of seeds
@@ -243,11 +218,8 @@ public:
                 if (seed_selecting_helper::cut_per_middle_sp(
                         m_filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
                     n_seeds_per_spM == 0) {
-                    // ::sycl::ext::oneapi::atomic_ref<unsigned int, ::sycl::memory_order::seq_cst,
-                    //                ::sycl::memory_scope::device,
-                    //                ::sycl::access::address_space::global_space> obj (num_seeds);
-                    vecmem::atomic obj(&num_seeds);
-
+            
+                    vecmem::atomic<uint32_t> obj(&num_seeds);
                     auto pos = obj.fetch_add(1);
 
                     // prevent overflow
@@ -261,8 +233,7 @@ public:
                 }
             }
         }
-
-      }
+    }
 private:
     const seedfilter_config m_filter_config;
     internal_spacepoint_container_view m_internal_sp_view;
@@ -271,8 +242,6 @@ private:
     triplet_container_view m_triplet_view;
     seed_container_view m_seed_view;
     local_accessor<triplet> m_localMem;
-    local_accessor<std::byte> m_scratch;
-    std::size_t m_temp_memory_size;
 };                                  
 
 void seed_selecting(const seedfilter_config& filter_config,
@@ -297,7 +266,7 @@ void seed_selecting(const seedfilter_config& filter_config,
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localSize = 64;
+    unsigned int localSize = 8;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
@@ -309,25 +278,16 @@ void seed_selecting(const seedfilter_config& filter_config,
     // 1 dim ND Range for the kernel
     auto seedSelectNdRange = ::sycl::nd_range<1>{globalSize,localSize};
     
-    // Shared memory for scratchspace (for sorting)
-    std::size_t temp_memory_size =
-        ::sycl::ext::oneapi::experimental::default_sorter<>
-        ::memory_required<triplet>
-        (::sycl::memory_scope::work_group, localSize*filter_config.max_triplets_per_spM);
-    
     q->submit([&](::sycl::handler& h){
 
         // local memory initialization (equivalent to shared memory in CUDA)
         auto localMem = 
             local_accessor<triplet>(localSize * filter_config.max_triplets_per_spM, 
                                     h); 
-        // scratch space for sorting
-        auto scratch = 
-            local_accessor<std::byte>({temp_memory_size}, h);
 
         SeedSelect kernel(filter_config, internal_sp_view, doublet_counter_container_view,
                           triplet_counter_container_view, triplet_container_view,
-                          seed_container_view, localMem, scratch, temp_memory_size);
+                          seed_container_view, localMem);
 
         h.parallel_for<class seed_select_kernel>(seedSelectNdRange, kernel);
     }).wait_and_throw();

@@ -6,8 +6,6 @@
  */
 
 #include "sycl/seeding/doublet_counting.hpp"
-#include "vecmem/memory/atomic.hpp"
-#include "sycl/seeding/detail/sycl_helper.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -22,17 +20,17 @@ public:
       m_internal_sp_view(internal_sp_view),
       m_doublet_counter_view(doublet_counter_view) {} 
 
-    void operator()(::sycl::nd_item<3> item) const {
+    void operator()(::sycl::nd_item<1> item) const {
         
          // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(2);
+        auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(2);
+        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(2);
+        auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
         device_internal_spacepoint_container internal_sp_device(
@@ -104,10 +102,7 @@ public:
         // if number of mid-bot and mid-top doublet for a middle spacepoint is
         // larger than 0, the entry is added to the doublet counter
         if (n_mid_bot > 0 && n_mid_top > 0) {
-            // ::sycl::ext::oneapi::atomic_ref<uint32_t, ::sycl::memory_order::seq_cst,
-            //                        ::sycl::memory_scope::device,
-            //                        ::sycl::access::address_space::global_space> obj (num_compat_spM_per_bin);
-            vecmem::atomic obj(&num_compat_spM_per_bin);
+            vecmem::atomic<uint32_t> obj(&num_compat_spM_per_bin);
             auto pos = obj.fetch_add(1);
             doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
         }
@@ -138,7 +133,7 @@ void doublet_counting(const seedfinder_config& config,
         }
         unsigned int globalSize = num_groups * localSize;
         // 1 dim ND Range for the kernel
-        auto doubletCountNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};
+        auto doubletCountNdRange = ::sycl::nd_range<1>{globalSize,localSize};
         
         q->submit([&](::sycl::handler& h){
             DupletCount kernel( config, internal_sp_view, 
@@ -146,6 +141,5 @@ void doublet_counting(const seedfinder_config& config,
             h.parallel_for<class doublet_count_kernel>(doubletCountNdRange, kernel);
         }).wait_and_throw();
     }
-
 } // namespace sycl
 } // namespace traccc

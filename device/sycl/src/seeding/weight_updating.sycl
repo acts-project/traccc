@@ -6,7 +6,7 @@
  */
 
 #include "sycl/seeding/weight_updating.hpp"
-#include "sycl/seeding/detail/sycl_helper.hpp"
+
 namespace traccc {
 namespace sycl {
     
@@ -23,17 +23,17 @@ public:
       m_triplet_view(triplet_view),
       m_localMem(localMem) {}
 
-      void operator()(::sycl::nd_item<3> item) const {
+      void operator()(::sycl::nd_item<1> item) const {
 
          // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(2);
+        auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(2);
+        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(2);
+        auto workItemIdx = item.get_local_id(0);
 
         device_internal_spacepoint_container internal_sp_device(
         {m_internal_sp_view.headers, m_internal_sp_view.items});
@@ -208,7 +208,7 @@ void weight_updating(const seedfilter_config& filter_config,
     }
     unsigned int globalSize = localSize * num_groups;  
     // 1 dim ND Range for the kernel
-    auto weightUpdateNdRange = ::sycl::nd_range<3>{::sycl::range<3>{1,1,globalSize},::sycl::range<3>{1,1,localSize}};    
+    auto weightUpdateNdRange = ::sycl::nd_range<1>{globalSize,localSize};    
   
     q->submit([&](::sycl::handler& h){
 
@@ -222,7 +222,6 @@ void weight_updating(const seedfilter_config& filter_config,
 
         h.parallel_for<class weight_update_kernel>(weightUpdateNdRange, kernel);
     }).wait_and_throw();
-
 }
 
 } // namespace sycl
