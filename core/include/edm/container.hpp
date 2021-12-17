@@ -272,7 +272,7 @@ class container {
     /**
      * @breif Get number of items of jagged vector
      */
-    uint64_t total_size() {
+    uint64_t total_size() const {
         uint64_t ret = 0;
         for (auto& item : items) {
             ret += item.size();

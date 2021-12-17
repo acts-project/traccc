@@ -46,3 +46,24 @@ template <unsigned int kSize>
 using traccc_sym_matrix = Eigen::Matrix<scalar, kSize, kSize>;
 
 }  // namespace traccc
+
+namespace detray {
+
+using scalar = traccc::scalar;
+
+template <typename value_type, unsigned int kDIM>
+using darray = traccc::darray<value_type, kDIM>;
+
+template <typename value_type>
+using dvector = traccc::dvector<value_type>;
+
+template <typename value_type>
+using djagged_vector = traccc::djagged_vector<value_type>;
+
+template <typename key_type, typename value_type>
+using dmap = traccc::dmap<key_type, value_type>;
+
+template <class... types>
+using dtuple = traccc::dtuple<types...>;
+
+}  // namespace detray

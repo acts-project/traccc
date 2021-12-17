@@ -11,15 +11,13 @@
 #include <iostream>
 
 #include "cuda/seeding/seed_finding.hpp"
-#include "seeding/spacepoint_grouping.hpp"
+#include "cuda/seeding/spacepoint_binning.hpp"
 
 namespace traccc {
 namespace cuda {
 
 class seeding_algorithm
-    : public algorithm<
-          std::pair<host_internal_spacepoint_container, host_seed_container>(
-              host_spacepoint_container&&)> {
+    : public algorithm<host_seed_container(host_spacepoint_container&&)> {
 
     public:
     seeding_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
@@ -55,24 +53,18 @@ class seeding_algorithm
         m_estimator.m_cfg.par_for_triplets = {1, 0, 0.02149};
         m_estimator.m_cfg.par_for_seeds = {0, 0.3431};
 
-        sg = std::make_shared<traccc::spacepoint_grouping>(
-            traccc::spacepoint_grouping(m_config, m_grid_config, mr));
+        sb = std::make_shared<traccc::cuda::spacepoint_binning>(
+            traccc::cuda::spacepoint_binning(m_config, m_grid_config, mr));
         sf = std::make_shared<traccc::cuda::seed_finding>(
-            traccc::cuda::seed_finding(m_config, sg->get_spgrid(), m_estimator,
-                                       mr));
+            traccc::cuda::seed_finding(m_config, m_estimator, sb->nbins(), mr));
     }
 
     output_type operator()(
         host_spacepoint_container&& spacepoints) const override {
-        output_type outputs({host_internal_spacepoint_container(&m_mr.get()),
-                             host_seed_container(1, &m_mr.get())});
-
-        auto& internal_sp_per_event = outputs.first;
-        auto& seeds = outputs.second;
-
-        internal_sp_per_event = sg->operator()(spacepoints);
-        seeds = sf->operator()(std::move(internal_sp_per_event));
-        return outputs;
+        output_type seeds({host_seed_container(1, &m_mr.get())});
+        auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
+        seeds = sf->operator()(std::move(internal_sp_g2));
+        return seeds;
     }
 
     private:
@@ -80,7 +72,7 @@ class seeding_algorithm
     spacepoint_grid_config m_grid_config;
     multiplet_estimator m_estimator;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-    std::shared_ptr<traccc::spacepoint_grouping> sg;
+    std::shared_ptr<traccc::cuda::spacepoint_binning> sb;
     std::shared_ptr<traccc::cuda::seed_finding> sf;
 };
 

@@ -13,11 +13,7 @@ namespace traccc {
 
 /// Components of a bound track parameters vector.
 ///
-/// To be used to access components by named indices instead of just numbers.
-/// This must be a regular `enum` and not a scoped `enum class` to allow
-/// implicit conversion to an integer. The enum value are thus visible directly
-/// in `namespace Acts` and are prefixed to avoid naming collisions.
-
+/// TODO: consider to use enum class instead of enum
 enum bound_indices : unsigned int {
     // Local position on the reference surface.
     // This is intentionally named different from the position components in

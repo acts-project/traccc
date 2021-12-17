@@ -44,45 +44,52 @@ struct cuda_helper {
         }
     }
 
-    /// Get index of header vector of event data container for a given block ID.
+    /// Get header and item index of jagged vector
+    /// This can be used when there is no null value (or invalid value) in
+    /// jagged vector
     ///
     /// @param jag_vec the item jagged vector of edm
-    /// @param header_idx the header idx
-    /// @param ref_block_idx the reference block idx for a given header idx
+    /// @param header_idx output for header index
+    /// @param item_idx output for item index
     template <typename T>
-    static __device__ void get_header_idx(
+    static __device__ void find_idx_on_jagged_vector(
         const vecmem::jagged_device_vector<T>& jag_vec,
-        unsigned int& header_idx, unsigned int& ref_block_idx) {
+        unsigned int& header_idx, unsigned int& item_idx) {
+
+        unsigned int ref_block_idx = 0;
 
         /// number of blocks accumulated upto current header idx
-        unsigned int nblocks_accum = 0;
+        unsigned int nblocks_acc = 0;
 
         /// number of blocks for one header entry
         unsigned int nblocks_per_header = 0;
         for (unsigned int i = 0; i < jag_vec.size(); ++i) {
             nblocks_per_header = jag_vec[i].size() / blockDim.x + 1;
-            nblocks_accum += nblocks_per_header;
+            nblocks_acc += nblocks_per_header;
 
-            if (blockIdx.x < nblocks_accum) {
+            if (blockIdx.x < nblocks_acc) {
                 header_idx = i;
 
                 break;
             }
-
             ref_block_idx += nblocks_per_header;
         }
+        item_idx = (blockIdx.x - ref_block_idx) * blockDim.x + threadIdx.x;
     }
 
-    /// Get index of header vector of event data container for a given block ID.
+    /// Get header and item index of edm container
+    /// This can be used when there are null values in jagged vector and the
+    /// header indicates the number of effective elements
     ///
-    /// @param container event data container where header element indicates the
-    /// number of elements in item vector
-    /// @param header_idx the header idx
-    /// @param ref_block_idx the reference block idx for a given header idx
+    /// @param jag_vec the item jagged vector of edm
+    /// @param header_idx output for header index
+    /// @param item_idx output for item index
     template <typename header_t, typename item_t>
-    static __device__ void get_header_idx(
+    static __device__ void find_idx_on_container(
         const device_container<header_t, item_t>& container,
-        unsigned int& header_idx, unsigned int& ref_block_idx) {
+        unsigned int& header_idx, unsigned int& item_idx) {
+
+        unsigned int ref_block_idx = 0;
 
         /// number of blocks accumulated upto current header idx
         unsigned int nblocks_accum = 0;
@@ -101,6 +108,7 @@ struct cuda_helper {
 
             ref_block_idx += nblocks_per_header;
         }
+        item_idx = (blockIdx.x - ref_block_idx) * blockDim.x + threadIdx.x;
     }
 };
 

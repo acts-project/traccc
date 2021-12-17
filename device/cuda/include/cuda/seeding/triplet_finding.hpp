@@ -13,6 +13,7 @@
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/doublet_finding_helper.hpp>
 #include <seeding/seed_selecting_helper.hpp>
 #include <seeding/triplet_finding_helper.hpp>
@@ -35,7 +36,7 @@ namespace cuda {
 /// @param resource vecmem memory resource
 void triplet_finding(const seedfinder_config& config,
                      const seedfilter_config& filter_config,
-                     host_internal_spacepoint_container& internal_sp_container,
+                     sp_grid& internal_sp,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,

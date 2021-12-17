@@ -29,10 +29,25 @@ class clusterization_algorithm
     : public algorithm<
           std::pair<host_measurement_container, host_spacepoint_container>(
               const host_cell_container&)> {
+
     public:
+    /// Constructor for clusterization algorithm
+    ///
+    /// @param mr is the memory resource
+    clusterization_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
+
+        cc = std::make_shared<traccc::component_connection>(
+            traccc::component_connection(mr));
+        mt = std::make_shared<traccc::measurement_creation>(
+            traccc::measurement_creation(mr));
+        sp = std::make_shared<traccc::spacepoint_formation>(
+            traccc::spacepoint_formation(mr));
+    }
+
     output_type operator()(
         const host_cell_container& cells_per_event) const override {
-        output_type o;
+        output_type o({host_measurement_container(&m_mr.get()),
+                       host_spacepoint_container(&m_mr.get())});
         this->operator()(cells_per_event, o);
         return o;
     }
@@ -51,14 +66,14 @@ class clusterization_algorithm
             auto module = cells_per_event.at(i).header;
 
             // The algorithmic code part: start
-            traccc::cluster_collection clusters_per_module =
-                cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
+            traccc::cluster_collection clusters_per_module = cc->operator()(
+                cells_per_event.at(i).items, cells_per_event.at(i).header);
             clusters_per_module.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
-                mt(clusters_per_module, module);
+                mt->operator()(clusters_per_module, module);
             traccc::host_spacepoint_collection spacepoints_per_module =
-                sp(module, measurements_per_module);
+                sp->operator()(module, measurements_per_module);
             // The algorithmnic code part: end
 
             measurements_per_event.push_back(
@@ -71,9 +86,10 @@ class clusterization_algorithm
 
     private:
     // algorithms
-    component_connection cc;
-    measurement_creation mt;
-    spacepoint_formation sp;
+    std::shared_ptr<traccc::component_connection> cc;
+    std::shared_ptr<traccc::measurement_creation> mt;
+    std::shared_ptr<traccc::spacepoint_formation> sp;
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 };
 
 }  // namespace traccc

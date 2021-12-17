@@ -23,22 +23,21 @@ namespace cuda {
 /// @param mid_top_doublet_container vecmem container for mid-top doublets
 /// @param resource vecmem memory resource
 __global__ void doublet_finding_kernel(
-    const seedfinder_config config,
-    internal_spacepoint_container_view internal_sp_data,
+    const seedfinder_config config, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view);
 
-void doublet_finding(const seedfinder_config& config,
-                     host_internal_spacepoint_container& internal_sp_container,
+void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,
                      vecmem::memory_resource& resource) {
-    auto internal_sp_view = get_data(internal_sp_container, &resource);
+
     auto doublet_counter_view = get_data(doublet_counter_container, &resource);
     auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
     auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
+    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread find doublets per
     // compatible middle spacepoints (comptible middle spacepoint means that the
@@ -54,7 +53,7 @@ void doublet_finding(const seedfinder_config& config,
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_middle_sp_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
-    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_blocks +=
             doublet_counter_container.get_headers()[i] / num_threads + 1;
     }
@@ -74,13 +73,14 @@ void doublet_finding(const seedfinder_config& config,
 }
 
 __global__ void doublet_finding_kernel(
-    const seedfinder_config config,
-    internal_spacepoint_container_view internal_sp_view,
+    const seedfinder_config config, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view) {
-    device_internal_spacepoint_container internal_sp_device(
-        {internal_sp_view.headers, internal_sp_view.items});
+
+    // Get device container for input parameters
+    sp_grid_device internal_sp_device(internal_sp_view);
+
     device_doublet_counter_container doublet_counter_device(
         {doublet_counter_view.headers, doublet_counter_view.items});
 
@@ -89,17 +89,13 @@ __global__ void doublet_finding_kernel(
     device_doublet_container mid_top_doublet_device(
         {mid_top_doublet_view.headers, mid_top_doublet_view.items});
 
-    // Get the bin index of spacepoint binning and reference block idx for the
-    // bin index
-    unsigned int bin_idx = 0;
-    unsigned int ref_block_idx = 0;
-    cuda_helper::get_header_idx(doublet_counter_device, bin_idx, ref_block_idx);
+    // Get the bin and item index
+    unsigned int bin_idx(0), item_idx(0);
+    cuda_helper::find_idx_on_container(doublet_counter_device, bin_idx,
+                                       item_idx);
 
-    // Header of internal spacepoint container : spacepoint bin information
-    // Item of internal spacepoint container : internal spacepoint objects per
-    // bin
-    const auto& bin_info = internal_sp_device.get_headers().at(bin_idx);
-    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+    // get internal spacepoints for current bin
+    auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
@@ -134,16 +130,13 @@ __global__ void doublet_finding_kernel(
     auto& n_mid_bot_per_spM = num_mid_bot_doublets_per_thread[threadIdx.x];
     auto& n_mid_top_per_spM = num_mid_top_doublets_per_thread[threadIdx.x];
 
-    // index of doublet counter in the item vector
-    auto gid = (blockIdx.x - ref_block_idx) * blockDim.x + threadIdx.x;
-
     // prevent the tail threads referring the null doublet counter
-    if (gid >= num_compat_spM_per_bin) {
+    if (item_idx >= num_compat_spM_per_bin) {
         return;
     }
 
     // index of internal spacepoint in the item vector
-    auto sp_idx = doublet_counter_per_bin[gid].spM.sp_idx;
+    auto sp_idx = doublet_counter_per_bin[item_idx].spM.sp_idx;
     // middle spacepoint index
     auto spM_loc = sp_location({bin_idx, sp_idx});
     // middle spacepoint
@@ -155,20 +148,28 @@ __global__ void doublet_finding_kernel(
     // spacepoints
     unsigned int mid_bot_start_idx = 0;
     unsigned int mid_top_start_idx = 0;
-    for (unsigned int i = 0; i < gid; i++) {
+    for (unsigned int i = 0; i < item_idx; i++) {
         mid_bot_start_idx += doublet_counter_per_bin[i].n_mid_bot;
         mid_top_start_idx += doublet_counter_per_bin[i].n_mid_top;
     }
 
-    // Loop over (bottom and top) internal spacepoints in tje neighbor bins
-    for (unsigned int i_n = 0; i_n < bin_info.bottom_idx.counts; ++i_n) {
-        const auto& neigh_bin = bin_info.bottom_idx.vector_indices[i_n];
-        const auto& neigh_internal_sp_per_bin =
-            internal_sp_device.get_items().at(neigh_bin);
+    // get the neighbor indices
+    auto phi_bins =
+        internal_sp_device.axis_p0().range(isp.phi(), config.neighbor_scope);
+    auto z_bins =
+        internal_sp_device.axis_p1().range(isp.z(), config.neighbor_scope);
+    auto i_p = phi_bins[0];
+    auto i_z = z_bins[0];
 
-        for (unsigned int spB_idx = 0;
-             spB_idx < neigh_internal_sp_per_bin.size(); ++spB_idx) {
-            const auto& neigh_isp = neigh_internal_sp_per_bin[spB_idx];
+    for (unsigned int c = 0; c < config.get_max_neighbor_bins(); c++) {
+
+        auto neighbors = internal_sp_device.bin(i_p, i_z);
+        auto neigh_bin = static_cast<unsigned int>(
+            i_p + i_z * internal_sp_device.axis_p0().bins());
+
+        // for (auto& neigh_isp: neighbors){
+        for (unsigned int spB_idx = 0; spB_idx < neighbors.size(); spB_idx++) {
+            const auto& neigh_isp = neighbors[spB_idx];
 
             // Check if middle and bottom sp can form a doublet
             if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
@@ -180,7 +181,7 @@ __global__ void doublet_finding_kernel(
                 // what is counted in doublet_counting (so it should be true
                 // always) 2) prevent overflow
                 if (n_mid_bot_per_spM <
-                        doublet_counter_per_bin[gid].n_mid_bot &&
+                        doublet_counter_per_bin[item_idx].n_mid_bot &&
                     num_mid_bot_doublets_per_bin <
                         mid_bot_doublets_per_bin.size()) {
                     unsigned int pos = mid_bot_start_idx + n_mid_bot_per_spM;
@@ -206,7 +207,7 @@ __global__ void doublet_finding_kernel(
                 // what is counted in doublet_counting (so it should be true
                 // always) 2) prevent overflow
                 if (n_mid_top_per_spM <
-                        doublet_counter_per_bin[gid].n_mid_top &&
+                        doublet_counter_per_bin[item_idx].n_mid_top &&
                     num_mid_top_doublets_per_bin <
                         mid_top_doublets_per_bin.size()) {
                     unsigned int pos = mid_top_start_idx + n_mid_top_per_spM;
@@ -221,6 +222,20 @@ __global__ void doublet_finding_kernel(
                     n_mid_top_per_spM++;
                 }
             }
+        }
+
+        i_z++;
+        // terminate if we went through all neighbor bins
+        if (i_z > z_bins[1] && i_p == phi_bins[1]) {
+            break;
+        }
+
+        // increse phi_index and reset i_z
+        // if i_z is larger than last neighbor index
+        if (i_z > z_bins[1]) {
+            i_p++;
+            i_p = i_p % internal_sp_device.axis_p0().bins();
+            i_z = z_bins[0];
         }
     }
 

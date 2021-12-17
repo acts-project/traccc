@@ -38,8 +38,7 @@ inline traccc::host_cell_container read_cells_from_event(
 
 inline traccc::host_spacepoint_container read_spacepoints_from_event(
     size_t event, const std::string &hits_dir,
-    traccc::geometry surface_transforms,
-    vecmem::host_memory_resource &resource) {
+    traccc::geometry surface_transforms, vecmem::memory_resource &resource) {
     // Read the cells from the relevant event file
     std::string io_hits_file =
         data_directory() + hits_dir + get_event_filename(event, "-hits.csv");

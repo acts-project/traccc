@@ -7,18 +7,30 @@
 
 #pragma once
 
-// ActsCore
-#include "Acts/Utilities/detail/Axis.hpp"
-#include "Acts/Utilities/detail/Grid.hpp"
+#include "edm/internal_spacepoint.hpp"
+
+// detray core
+#include "detray/grids/axis.hpp"
+#include "detray/grids/grid2.hpp"
+#include "detray/grids/populator.hpp"
+#include "detray/grids/serializer2.hpp"
+#include "detray/utils/indexing.hpp"
 
 namespace traccc {
 
-// define spacepoint_grid
-using spacepoint_grid = Acts::detail::Grid<
-    int,
-    Acts::detail::Axis<Acts::detail::AxisType::Equidistant,
-                       Acts::detail::AxisBoundaryType::Closed>,
-    Acts::detail::Axis<Acts::detail::AxisType::Equidistant,
-                       Acts::detail::AxisBoundaryType::Bound> >;
+using sp_grid =
+    detray::grid2<detray::attach_populator, detray::axis::circular<>,
+                  detray::axis::regular<>, detray::serializer2, detray::dvector,
+                  detray::djagged_vector, detray::darray, detray::dtuple,
+                  internal_spacepoint<spacepoint>, false>;
+
+using sp_grid_device = detray::grid2<
+    detray::attach_populator, detray::axis::circular<>, detray::axis::regular<>,
+    detray::serializer2, vecmem::device_vector, vecmem::jagged_device_vector,
+    detray::darray, detray::dtuple, internal_spacepoint<spacepoint>, false>;
+
+using sp_grid_data = detray::grid2_data<sp_grid>;
+using sp_grid_view = detray::grid2_view<sp_grid>;
+using sp_grid_buffer = detray::grid2_buffer<sp_grid>;
 
 }  // namespace traccc

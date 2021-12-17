@@ -14,9 +14,9 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                                 vecmem::host_memory_resource resource) {
 
     // Algorithms
-    traccc::component_connection cc;
-    traccc::measurement_creation mt;
-    traccc::spacepoint_formation sp;
+    traccc::component_connection cc(resource);
+    traccc::measurement_creation mt(resource);
+    traccc::spacepoint_formation sp(resource);
 
     auto startAlgorithms = std::chrono::system_clock::now();
 

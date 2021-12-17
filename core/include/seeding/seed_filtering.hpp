@@ -17,13 +17,11 @@ namespace traccc {
 
 /// Seed filtering to filter out the bad triplets
 struct seed_filtering
-    : public algorithm<
-          std::pair<host_triplet_collection&, host_seed_container&>(
-              const host_internal_spacepoint_container&)> {
+    : public algorithm<std::pair<host_triplet_collection&,
+                                 host_seed_container&>(const sp_grid&)> {
     seed_filtering() {}
 
-    output_type operator()(
-        const host_internal_spacepoint_container&) const override {
+    output_type operator()(const sp_grid&) const override {
         // not used
         __builtin_unreachable();
     }
@@ -37,8 +35,7 @@ struct seed_filtering
     ///
     /// @return seeds are the vector of seeds where the new compatible seeds are
     /// added
-    void operator()(const host_internal_spacepoint_container& isp_container,
-                    output_type& o) const {
+    void operator()(const sp_grid& g2, output_type& o) const {
         auto& triplets = o.first;
         auto& seeds = o.second;
 
@@ -46,19 +43,16 @@ struct seed_filtering
 
         for (auto& triplet : triplets) {
             // bottom
-            auto spB_idx = triplet.sp1;
-            auto spB =
-                isp_container.get_items()[spB_idx.bin_idx][spB_idx.sp_idx];
+            const auto& spB_idx = triplet.sp1;
+            const auto& spB = g2.bin(spB_idx.bin_idx)[spB_idx.sp_idx];
 
             // middle
-            auto spM_idx = triplet.sp2;
-            auto spM =
-                isp_container.get_items()[spM_idx.bin_idx][spM_idx.sp_idx];
+            const auto& spM_idx = triplet.sp2;
+            const auto& spM = g2.bin(spM_idx.bin_idx)[spM_idx.sp_idx];
 
             // top
-            auto spT_idx = triplet.sp3;
-            auto spT =
-                isp_container.get_items()[spT_idx.bin_idx][spT_idx.sp_idx];
+            const auto& spT_idx = triplet.sp3;
+            const auto& spT = g2.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
 
             seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
                                                triplet.weight);

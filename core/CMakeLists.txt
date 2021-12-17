@@ -7,7 +7,7 @@ target_include_directories(traccc_core
 )
 
 target_link_libraries(traccc_core
-  INTERFACE vecmem::core ActsCore traccc::algebra_plugins)
+  INTERFACE vecmem::core detray::core ActsCore traccc::algebra_plugins)
 
 install(TARGETS traccc_core
         PUBLIC_HEADER

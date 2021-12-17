@@ -28,8 +28,7 @@ namespace traccc {
 namespace cuda {
 
 /// Seed finding for cuda
-struct seed_finding : public algorithm<host_seed_container(
-                          host_internal_spacepoint_container&&)> {
+struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
 
     /// Constructor for the cuda seed finding
     ///
@@ -37,36 +36,33 @@ struct seed_finding : public algorithm<host_seed_container(
     /// @param sp_grid spacepoint grid
     /// @param stats_config experiment-dependent statistics estimator
     /// @param mr vecmem memory resource
-    seed_finding(seedfinder_config& config,
-                 std::shared_ptr<spacepoint_grid> sp_grid,
-                 multiplet_estimator& estimator, vecmem::memory_resource& mr)
+    seed_finding(seedfinder_config& config, multiplet_estimator& estimator,
+                 unsigned int nbins, vecmem::memory_resource& mr)
         : m_seedfinder_config(config),
           m_estimator(estimator),
-          m_sp_grid(sp_grid),
           m_mr(mr),
-          doublet_counter_container(m_sp_grid->size(false), &m_mr.get()),
-          mid_bot_container(m_sp_grid->size(false), &m_mr.get()),
-          mid_top_container(m_sp_grid->size(false), &m_mr.get()),
-          triplet_counter_container(m_sp_grid->size(false), &m_mr.get()),
-          triplet_container(m_sp_grid->size(false), &m_mr.get()),
+          doublet_counter_container(nbins, &m_mr.get()),
+          mid_bot_container(nbins, &m_mr.get()),
+          mid_top_container(nbins, &m_mr.get()),
+          triplet_counter_container(nbins, &m_mr.get()),
+          triplet_container(nbins, &m_mr.get()),
           seed_container(1, &m_mr.get()) {}
 
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(
-        host_internal_spacepoint_container&& isp_container) const override {
-        std::lock_guard<std::mutex> lock(*mutex.get());
+    output_type operator()(sp_grid&& g2) const override {
+        std::lock_guard<std::mutex> lock(*mutex);
 
         size_t n_internal_sp = 0;
 
         // resize the item vectors based on the pre-estimated statistics, which
         // is experiment-dependent
-        for (size_t i = 0; i < isp_container.size(); ++i) {
+        for (size_t i = 0; i < g2.nbins(); ++i) {
 
             // estimate the number of multiplets as a function of the middle
             // spacepoints in the bin
-            size_t n_spM = isp_container.get_items()[i].size();
+            size_t n_spM = g2.bin(i).size();
             size_t n_mid_bot_doublets =
                 m_estimator.get_mid_bot_doublets_size(n_spM);
             size_t n_mid_top_doublets =
@@ -87,7 +83,7 @@ struct seed_finding : public algorithm<host_seed_container(
             triplet_counter_container.get_items()[i].resize(n_mid_bot_doublets);
             triplet_container.get_items()[i].resize(n_triplets);
 
-            n_internal_sp += isp_container.get_items()[i].size();
+            n_internal_sp += n_spM;
         }
 
         // estimate the number of seeds as a function of the internal
@@ -97,36 +93,36 @@ struct seed_finding : public algorithm<host_seed_container(
             m_estimator.get_seeds_size(n_internal_sp));
 
         // doublet counting
-        traccc::cuda::doublet_counting(m_seedfinder_config, isp_container,
-                                       doublet_counter_container, m_mr);
+        traccc::cuda::doublet_counting(m_seedfinder_config, g2,
+                                       doublet_counter_container, m_mr.get());
 
         // doublet finding
         traccc::cuda::doublet_finding(
-            m_seedfinder_config, isp_container, doublet_counter_container,
-            mid_bot_container, mid_top_container, m_mr);
+            m_seedfinder_config, g2, doublet_counter_container,
+            mid_bot_container, mid_top_container, m_mr.get());
 
         // triplet counting
-        traccc::cuda::triplet_counting(m_seedfinder_config, isp_container,
+        traccc::cuda::triplet_counting(m_seedfinder_config, g2,
                                        doublet_counter_container,
                                        mid_bot_container, mid_top_container,
-                                       triplet_counter_container, m_mr);
+                                       triplet_counter_container, m_mr.get());
 
         // triplet finding
         traccc::cuda::triplet_finding(
-            m_seedfinder_config, m_seedfilter_config, isp_container,
+            m_seedfinder_config, m_seedfilter_config, g2,
             doublet_counter_container, mid_bot_container, mid_top_container,
-            triplet_counter_container, triplet_container, m_mr);
+            triplet_counter_container, triplet_container, m_mr.get());
 
         // weight updating
-        traccc::cuda::weight_updating(m_seedfilter_config, isp_container,
+        traccc::cuda::weight_updating(m_seedfilter_config, g2,
                                       triplet_counter_container,
-                                      triplet_container, m_mr);
+                                      triplet_container, m_mr.get());
 
         // seed selecting
         traccc::cuda::seed_selecting(
-            m_seedfilter_config, isp_container, doublet_counter_container,
-            triplet_counter_container, triplet_container, seed_container, m_mr);
-
+            m_seedfilter_config, g2, doublet_counter_container,
+            triplet_counter_container, triplet_container, seed_container,
+            m_mr.get());
         return seed_container;
     }
 
@@ -134,12 +130,11 @@ struct seed_finding : public algorithm<host_seed_container(
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
     multiplet_estimator m_estimator;
-    std::shared_ptr<spacepoint_grid> m_sp_grid;
     seed_filtering m_seed_filtering;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
     // mutable internal objects for multiplets
-    mutable std::shared_ptr<std::mutex> mutex{std::make_shared<std::mutex>()};
+    mutable std::unique_ptr<std::mutex> mutex{std::make_unique<std::mutex>()};
     mutable host_doublet_counter_container doublet_counter_container;
     mutable host_doublet_container mid_bot_container;
     mutable host_doublet_container mid_top_container;

@@ -45,9 +45,9 @@ int main() {
 
     traccc::host_spacepoint_collection spacepoints;
 
-    traccc::component_connection cc;
-    traccc::measurement_creation mt;
-    traccc::spacepoint_formation sp;
+    traccc::component_connection cc(resource);
+    traccc::measurement_creation mt(resource);
+    traccc::spacepoint_formation sp(resource);
 
     // Algorithmic code: start
     clusters = cc(cells, module);
