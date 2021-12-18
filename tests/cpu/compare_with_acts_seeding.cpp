@@ -60,37 +60,15 @@ inline bool operator==(const traccc::spacepoint& traccc_sp,
 inline bool operator==(const Acts::BoundVector& acts_vec,
                        const traccc::bound_vector& traccc_vec) {
     if (std::abs(acts_vec[Acts::eBoundLoc0] -
-                 traccc_vec[traccc::e_bound_loc0]) <
-            traccc::float_epsilon * 10 &&
+                 traccc_vec[traccc::e_bound_loc0]) < traccc::float_epsilon &&
         std::abs(acts_vec[Acts::eBoundLoc1] -
-                 traccc_vec[traccc::e_bound_loc1]) <
-            traccc::float_epsilon * 10 &&
+                 traccc_vec[traccc::e_bound_loc1]) < traccc::float_epsilon &&
         std::abs(acts_vec[Acts::eBoundTheta] -
-                 traccc_vec[traccc::e_bound_theta]) <
-            traccc::float_epsilon * 10 &&
+                 traccc_vec[traccc::e_bound_theta]) < traccc::float_epsilon &&
         std::abs(acts_vec[Acts::eBoundPhi] - traccc_vec[traccc::e_bound_phi]) <
-            traccc::float_epsilon * 10) {
+            traccc::float_epsilon) {
         return true;
     }
-    return false;
-}
-
-inline bool operator==(const traccc::seed& rhs,
-                       const Acts::Seed<SpacePoint>& lhs) {
-    auto& triplets = lhs.sp();
-    auto& acts_spB = triplets[0];
-    auto& acts_spM = triplets[1];
-    auto& acts_spT = triplets[2];
-
-    auto& traccc_spB = rhs.spB;
-    auto& traccc_spM = rhs.spM;
-    auto& traccc_spT = rhs.spT;
-
-    if (acts_spB == traccc_spB && acts_spM == traccc_spM &&
-        acts_spT == traccc_spT) {
-        return true;
-    }
-
     return false;
 }
 
@@ -125,7 +103,7 @@ TEST(algorithms, compare_with_acts_seeding) {
       TRACCC track params estimation
       --------------------------------*/
 
-    auto tp_output = tp(seeds);
+    auto tp_output = tp(spacepoints_per_event, seeds);
     auto& traccc_params = tp_output;
 
     /*--------------------------------
@@ -248,9 +226,31 @@ TEST(algorithms, compare_with_acts_seeding) {
     int n_seed_match = 0;
     for (auto& outputVec : seedVector) {
         for (auto& seed : outputVec) {
-            if (std::find(seeds.get_items()[0].begin(),
-                          seeds.get_items()[0].end(),
-                          seed) != seeds.get_items()[0].end()) {
+            if (std::find_if(
+                    seeds.get_items()[0].begin(), seeds.get_items()[0].end(),
+                    [&](traccc::seed traccc_seed) {
+                        // check if traccc and acts seed are the same
+                        auto& triplets = seed.sp();
+                        auto& acts_spB = triplets[0];
+                        auto& acts_spM = triplets[1];
+                        auto& acts_spT = triplets[2];
+
+                        auto traccc_spB =
+                            spacepoints_per_event.at(traccc_seed.spB_link);
+                        auto traccc_spM =
+                            spacepoints_per_event.at(traccc_seed.spM_link);
+                        auto traccc_spT =
+                            spacepoints_per_event.at(traccc_seed.spT_link);
+
+                        if (acts_spB == traccc_spB && acts_spM == traccc_spM &&
+                            acts_spT == traccc_spT) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    ) != seeds.get_items()[0].end()) {
                 n_seed_match++;
             }
         }

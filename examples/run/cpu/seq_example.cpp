@@ -65,7 +65,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
           Track params estimation
           ----------------------------*/
 
-        auto tp_output = tp(seeds);
+        auto tp_output = tp(spacepoints_per_event, seeds);
         auto& params = tp_output;
 
         /*----------------------------
@@ -84,7 +84,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
         traccc::write_measurements(event, measurements_per_event);
         traccc::write_spacepoints(event, spacepoints_per_event);
-        traccc::write_seeds(event, seeds);
+        traccc::write_seeds(event, spacepoints_per_event, seeds);
         traccc::write_estimated_track_parameters(event, params);
     }
 

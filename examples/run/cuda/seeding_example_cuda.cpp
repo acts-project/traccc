@@ -115,7 +115,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         /*time*/ auto start_tp_estimating_cuda =
             std::chrono::system_clock::now();
 
-        auto params_cuda = tp_cuda(std::move(seeds_cuda));
+        auto params_cuda =
+            tp_cuda(std::move(spacepoints_per_event), std::move(seeds_cuda));
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
@@ -129,7 +130,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         traccc::track_params_estimation::output_type params;
         if (!skip_cpu) {
-            params = tp(seeds);
+            params = tp(std::move(spacepoints_per_event), seeds);
         }
 
         /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
@@ -184,7 +185,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         if (!skip_cpu) {
             traccc::write_spacepoints(event, spacepoints_per_event);
-            traccc::write_seeds(event, seeds);
+            traccc::write_seeds(event, spacepoints_per_event, seeds);
             traccc::write_estimated_track_parameters(event, params);
 
             /*

@@ -10,6 +10,8 @@
 #include <type_traits>
 
 // VecMem include(s).
+#include <thrust/pair.h>
+
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
@@ -64,7 +66,8 @@ class container_element {
 /// header and item type.
 template <typename header_t, typename item_t,
           template <typename> class vector_t,
-          template <typename> class jagged_vector_t>
+          template <typename> class jagged_vector_t,
+          template <typename...> class pair_type = thrust::pair>
 class container {
     public:
     /// @name Type definitions
@@ -84,6 +87,16 @@ class container {
     /// The item vector type
     using item_vector = jagged_vector_type<item_t>;
 
+    /**
+     * @brief The size type of this container, which is the type by which
+     * its elements are indexed.
+     */
+    using size_type = typename header_vector::size_type;
+
+    /// The element link type
+    using link_type = pair_type<typename header_vector::size_type,
+                                typename item_vector::size_type>;
+
     /// @}
 
     /**
@@ -100,12 +113,6 @@ class container {
     using const_element_view =
         container_element<const header_t,
                           const typename item_vector::value_type>;
-
-    /**
-     * @brief The size type of this container, which is the type by which
-     * its elements are indexed.
-     */
-    using size_type = typename header_vector::size_type;
 
     /**
      * We need to assert that the header vector and the outer layer of the
@@ -172,7 +179,6 @@ class container {
         if (i >= size()) {
             throw std::out_of_range("Index out of range.");
         }
-
         return operator[](i);
     }
 
@@ -184,8 +190,21 @@ class container {
         if (i >= size()) {
             throw std::out_of_range("Index out of range.");
         }
-
         return operator[](i);
+    }
+
+    /**
+     * @brief Bounds-checking mutable item vector element accessor.
+     */
+    TRACCC_HOST_DEVICE
+    item_t at(const link_type& link) { return items[link.first][link.second]; }
+
+    /**
+     * @brief Bounds-checking immutable item vector element accessor.
+     */
+    TRACCC_HOST_DEVICE
+    const item_t at(const link_type& link) const {
+        return items[link.first][link.second];
     }
 
     /**

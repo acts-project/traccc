@@ -17,11 +17,13 @@ namespace traccc {
 
 /// Seed filtering to filter out the bad triplets
 struct seed_filtering
-    : public algorithm<std::pair<host_triplet_collection&,
-                                 host_seed_container&>(const sp_grid&)> {
+    : public algorithm<
+          std::pair<host_triplet_collection&, host_seed_container&>(
+              const host_spacepoint_container&, const sp_grid&)> {
     seed_filtering() {}
 
-    output_type operator()(const sp_grid&) const override {
+    output_type operator()(const host_spacepoint_container&,
+                           const sp_grid&) const override {
         // not used
         __builtin_unreachable();
     }
@@ -35,7 +37,8 @@ struct seed_filtering
     ///
     /// @return seeds are the vector of seeds where the new compatible seeds are
     /// added
-    void operator()(const sp_grid& g2, output_type& o) const {
+    void operator()(const host_spacepoint_container& sp_container,
+                    const sp_grid& g2, output_type& o) const {
         auto& triplets = o.first;
         auto& seeds = o.second;
 
@@ -62,7 +65,7 @@ struct seed_filtering
                 continue;
             }
 
-            seeds_per_spM.push_back({spB.m_sp, spM.m_sp, spT.m_sp,
+            seeds_per_spM.push_back({spB.m_link, spM.m_link, spT.m_link,
                                      triplet.weight, triplet.z_vertex});
         }
 
@@ -101,8 +104,7 @@ struct seed_filtering
             // don't cut first element
             for (size_t i = 1; i < itLength; i++) {
                 if (seed_selecting_helper::cut_per_middle_sp(
-                        m_filter_config, seeds_per_spM[i].spM,
-                        seeds_per_spM[i].spB, seeds_per_spM[i].spT,
+                        m_filter_config, sp_container, seeds_per_spM[i],
                         seeds_per_spM[i].weight)) {
                     new_seeds.push_back(std::move(seeds_per_spM[i]));
                 }
