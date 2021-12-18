@@ -63,5 +63,5 @@ cmake --build <build_directory> <options>
 - Users can generate cuda examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
 
 ```sh
-<build_directory>/bin/seq_example_cuda tml_detector/trackml-detector.csv tml_pixels/ <int: number of events> <bool: run cpu tracking as well>
+<build_directory>/bin/seq_example_cuda tml_detector/trackml-detector.csv tml_pixels/ <number of events> <run cpu tracking>
 ```
