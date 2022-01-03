@@ -85,6 +85,18 @@ struct internal_spacepoint {
     }
 
     TRACCC_HOST_DEVICE
+    internal_spacepoint& operator=(internal_spacepoint sp) {
+        m_link = sp.m_link;
+        m_x = sp.m_x;
+        m_y = sp.m_y;
+        m_z = sp.m_z;
+        m_r = sp.m_r;
+        m_varianceR = sp.m_varianceR;
+        m_varianceZ = sp.m_varianceZ;
+        return *this;
+    }
+
+    TRACCC_HOST_DEVICE
     static inline internal_spacepoint<spacepoint_t> invalid_value() {
 
         link_type l = {detray::invalid_value<decltype(l.first)>(),
