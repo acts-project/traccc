@@ -86,7 +86,8 @@ struct internal_spacepoint {
 
     TRACCC_HOST_DEVICE
     internal_spacepoint& operator=(internal_spacepoint sp) {
-        m_link = sp.m_link;
+        m_link.first = sp.m_link.first;
+        m_link.second = sp.m_link.second;
         m_x = sp.m_x;
         m_y = sp.m_y;
         m_z = sp.m_z;
