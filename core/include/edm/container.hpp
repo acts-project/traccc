@@ -67,7 +67,7 @@ class container_element {
 template <typename header_t, typename item_t,
           template <typename> class vector_t,
           template <typename> class jagged_vector_t,
-          template <typename...> class pair_type = std::pair>
+          template <typename...> class pair_type = thrust::pair>
 class container {
     public:
     /// @name Type definitions
