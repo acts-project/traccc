@@ -36,10 +36,9 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
     /// @param sp_grid spacepoint grid
     /// @param stats_config experiment-dependent statistics estimator
     /// @param mr vecmem memory resource
-    seed_finding(seedfinder_config& config, multiplet_estimator& estimator,
-                 unsigned int nbins, vecmem::memory_resource& mr)
+    seed_finding(seedfinder_config& config, unsigned int nbins,
+                 vecmem::memory_resource& mr)
         : m_seedfinder_config(config),
-          m_estimator(estimator),
           m_mr(mr),
           doublet_counter_container(nbins, &m_mr.get()),
           mid_bot_container(nbins, &m_mr.get()),
@@ -54,40 +53,15 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
     output_type operator()(sp_grid&& g2) const override {
         std::lock_guard<std::mutex> lock(*mutex);
 
-        size_t n_internal_sp = 0;
-
-        // resize the item vectors based on the pre-estimated statistics, which
-        // is experiment-dependent
+        // reinitialize the number of multiplets to zero
         for (size_t i = 0; i < g2.nbins(); ++i) {
-
-            // estimate the number of multiplets as a function of the middle
-            // spacepoints in the bin
-            size_t n_spM = g2.bin(i).size();
-
-            size_t n_mid_bot_doublets =
-                m_estimator.get_mid_bot_doublets_size(n_spM);
-            size_t n_mid_top_doublets =
-                m_estimator.get_mid_top_doublets_size(n_spM);
-            size_t n_triplets = m_estimator.get_triplets_size(n_spM);
-
-            // zero initialization
             doublet_counter_container.get_headers()[i].zeros();
             mid_bot_container.get_headers()[i].zeros();
             mid_top_container.get_headers()[i].zeros();
             triplet_counter_container.get_headers()[i].zeros();
             triplet_container.get_headers()[i].zeros();
-
-            // resize the item vectors in container
-            doublet_counter_container.get_items()[i].resize(n_spM);
-
-            n_internal_sp += n_spM;
         }
-
-        // estimate the number of seeds as a function of the internal
-        // spacepoints in an event
         seed_container.get_headers()[0] = 0;
-        seed_container.get_items()[0].resize(
-            m_estimator.get_seeds_size(n_internal_sp));
 
         // resize the doublet counter container with the number of middle
         // spacepoint
@@ -142,6 +116,14 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
                                       triplet_counter_container,
                                       triplet_container, m_mr.get());
 
+        // resize the seed container with the number of triplets per event
+        unsigned int n_triplets_per_event = 0;
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            n_triplets_per_event +=
+                triplet_counter_container.get_headers()[i].n_triplets;
+        }
+        seed_container.get_items()[0].resize(n_triplets_per_event);
+
         // seed selecting
         traccc::cuda::seed_selecting(
             m_seedfilter_config, g2, doublet_counter_container,
@@ -153,7 +135,6 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
     private:
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
-    multiplet_estimator m_estimator;
     seed_filtering m_seed_filtering;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
