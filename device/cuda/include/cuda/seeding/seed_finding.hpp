@@ -63,6 +63,7 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
             // estimate the number of multiplets as a function of the middle
             // spacepoints in the bin
             size_t n_spM = g2.bin(i).size();
+
             size_t n_mid_bot_doublets =
                 m_estimator.get_mid_bot_doublets_size(n_spM);
             size_t n_mid_top_doublets =
@@ -70,18 +71,19 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
             size_t n_triplets = m_estimator.get_triplets_size(n_spM);
 
             // zero initialization
-            doublet_counter_container.get_headers()[i] = 0;
-            mid_bot_container.get_headers()[i] = 0;
-            mid_top_container.get_headers()[i] = 0;
-            triplet_counter_container.get_headers()[i] = 0;
-            triplet_container.get_headers()[i] = 0;
+            doublet_counter_container.get_headers()[i].zeros();
+            mid_bot_container.get_headers()[i].zeros();
+            mid_top_container.get_headers()[i].zeros();
+            triplet_counter_container.get_headers()[i].zeros();
+            triplet_container.get_headers()[i].zeros();
 
             // resize the item vectors in container
             doublet_counter_container.get_items()[i].resize(n_spM);
-            mid_bot_container.get_items()[i].resize(n_mid_bot_doublets);
-            mid_top_container.get_items()[i].resize(n_mid_top_doublets);
-            triplet_counter_container.get_items()[i].resize(n_mid_bot_doublets);
-            triplet_container.get_items()[i].resize(n_triplets);
+
+            // mid_bot_container.get_items()[i].resize(n_mid_bot_doublets);
+            // mid_top_container.get_items()[i].resize(n_mid_top_doublets);
+            // triplet_counter_container.get_items()[i].resize(n_mid_bot_doublets);
+            // triplet_container.get_items()[i].resize(n_triplets);
 
             n_internal_sp += n_spM;
         }
@@ -96,16 +98,36 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
         traccc::cuda::doublet_counting(m_seedfinder_config, g2,
                                        doublet_counter_container, m_mr.get());
 
+        // resize the doublet container with the number of doublets
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            mid_bot_container.get_items()[i].resize(
+                doublet_counter_container.get_headers()[i].n_mid_bot);
+            mid_top_container.get_items()[i].resize(
+                doublet_counter_container.get_headers()[i].n_mid_top);
+        }
+
         // doublet finding
         traccc::cuda::doublet_finding(
             m_seedfinder_config, g2, doublet_counter_container,
             mid_bot_container, mid_top_container, m_mr.get());
+
+        // resize the triplet_counter container with the number of doublets
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            triplet_counter_container.get_items()[i].resize(
+                doublet_counter_container.get_headers()[i].n_mid_bot);
+        }
 
         // triplet counting
         traccc::cuda::triplet_counting(m_seedfinder_config, g2,
                                        doublet_counter_container,
                                        mid_bot_container, mid_top_container,
                                        triplet_counter_container, m_mr.get());
+
+        // resize the triplet container with the number of triplets
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            triplet_container.get_items()[i].resize(
+                triplet_counter_container.get_headers()[i].n_triplets);
+        }
 
         // triplet finding
         traccc::cuda::triplet_finding(

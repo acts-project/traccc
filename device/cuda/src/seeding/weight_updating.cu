@@ -49,7 +49,8 @@ void weight_updating(const seedfilter_config& filter_config,
     // / num_threads + 1
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp.nbins(); ++i) {
-        num_blocks += triplet_container.get_headers()[i] / num_threads + 1;
+        num_blocks +=
+            triplet_container.get_headers()[i].n_triplets / num_threads + 1;
     }
 
     // shared memory assignment for the radius of the compatible top spacepoints
@@ -89,13 +90,14 @@ __global__ void weight_updating_kernel(
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
     auto& num_compat_mb_per_bin =
-        triplet_counter_device.get_headers().at(bin_idx);
+        triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
     auto triplet_counter_per_bin =
         triplet_counter_device.get_items().at(bin_idx);
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
-    auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
+    auto& num_triplets_per_bin =
+        triplet_device.get_headers().at(bin_idx).n_triplets;
     auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
     extern __shared__ scalar compat_seedR[];

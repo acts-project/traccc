@@ -9,6 +9,8 @@
 
 #include <seeding/detail/singlet.hpp>
 
+#include "definitions/qualifiers.hpp"
+
 namespace traccc {
 namespace cuda {
 
@@ -16,8 +18,23 @@ namespace cuda {
 ///
 /// header element: number of the middle sp which have positive number (>0) of
 /// compatible mid-bot and mid-top doublets item element: doublet counter
-struct doublet_counter {
+struct doublet_counter_per_bin {
+    unsigned int n_spM = 0;
+    unsigned int n_mid_bot = 0;
+    unsigned int n_mid_top = 0;
 
+    TRACCC_HOST_DEVICE
+    unsigned int get_ref_num() const { return n_spM; }
+
+    TRACCC_HOST
+    void zeros() {
+        n_spM = 0;
+        n_mid_bot = 0;
+        n_mid_top = 0;
+    }
+};
+
+struct doublet_counter {
     /// index of a given middle spacepoint
     sp_location spM;
     /// number of compatible middle-bot doublets for a given middle spacepoint
@@ -43,27 +60,27 @@ using device_doublet_counter_collection =
 /// Convenience declaration for the doublet_counter container type to use in
 /// host code
 using host_doublet_counter_container =
-    host_container<unsigned int, doublet_counter>;
+    host_container<doublet_counter_per_bin, doublet_counter>;
 
 /// Convenience declaration for the doublet_counter container type to use in
 /// device code
 using device_doublet_counter_container =
-    device_container<unsigned int, doublet_counter>;
+    device_container<doublet_counter_per_bin, doublet_counter>;
 
 /// Convenience declaration for the doublet_counter container data type to use
 /// in host code
 using doublet_counter_container_data =
-    container_data<unsigned int, doublet_counter>;
+    container_data<doublet_counter_per_bin, doublet_counter>;
 
 /// Convenience declaration for the doublet_counter container buffer type to use
 /// in host code
 using doublet_counter_container_buffer =
-    container_buffer<unsigned int, doublet_counter>;
+    container_buffer<doublet_counter_per_bin, doublet_counter>;
 
 /// Convenience declaration for the doublet_counter container view type to use
 /// in host code
 using doublet_counter_container_view =
-    container_view<unsigned int, doublet_counter>;
+    container_view<doublet_counter_per_bin, doublet_counter>;
 
 }  // namespace cuda
 }  // namespace traccc
