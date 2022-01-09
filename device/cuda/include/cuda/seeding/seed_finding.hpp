@@ -80,11 +80,6 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
             // resize the item vectors in container
             doublet_counter_container.get_items()[i].resize(n_spM);
 
-            // mid_bot_container.get_items()[i].resize(n_mid_bot_doublets);
-            // mid_top_container.get_items()[i].resize(n_mid_top_doublets);
-            // triplet_counter_container.get_items()[i].resize(n_mid_bot_doublets);
-            // triplet_container.get_items()[i].resize(n_triplets);
-
             n_internal_sp += n_spM;
         }
 
@@ -93,6 +88,13 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
         seed_container.get_headers()[0] = 0;
         seed_container.get_items()[0].resize(
             m_estimator.get_seeds_size(n_internal_sp));
+
+        // resize the doublet counter container with the number of middle
+        // spacepoint
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            size_t n_spM = g2.bin(i).size();
+            doublet_counter_container.get_items()[i].resize(n_spM);
+        }
 
         // doublet counting
         traccc::cuda::doublet_counting(m_seedfinder_config, g2,
