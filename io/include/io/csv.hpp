@@ -120,28 +120,6 @@ struct csv_seed {
 
 using seed_writer = dfe::NamedTupleCsvWriter<csv_seed>;
 
-struct csv_multiplet_statistics {
-    size_t n_spM;
-    size_t n_mid_bot_doublets;
-    size_t n_mid_top_doublets;
-    size_t n_triplets;
-
-    DFE_NAMEDTUPLE(csv_multiplet_statistics, n_spM, n_mid_bot_doublets,
-                   n_mid_top_doublets, n_triplets);
-};
-
-using multiplet_statistics_writer =
-    dfe::NamedTupleCsvWriter<csv_multiplet_statistics>;
-
-struct csv_seed_statistics {
-    size_t n_internal_sp;
-    size_t n_seeds;
-
-    DFE_NAMEDTUPLE(csv_seed_statistics, n_internal_sp, n_seeds);
-};
-
-using seed_statistics_writer = dfe::NamedTupleCsvWriter<csv_seed_statistics>;
-
 struct csv_bound_track_parameters {
     scalar loc0;
     scalar loc1;

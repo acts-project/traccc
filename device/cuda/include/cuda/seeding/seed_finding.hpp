@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <cuda/seeding/detail/doublet_counter.hpp>
-#include <cuda/seeding/detail/multiplet_estimator.hpp>
 #include <cuda/seeding/doublet_counting.hpp>
 #include <cuda/seeding/doublet_finding.hpp>
 #include <cuda/seeding/seed_selecting.hpp>
@@ -34,7 +33,6 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
     ///
     /// @param config is seed finder configuration parameters
     /// @param sp_grid spacepoint grid
-    /// @param stats_config experiment-dependent statistics estimator
     /// @param mr vecmem memory resource
     seed_finding(seedfinder_config& config, unsigned int nbins,
                  vecmem::memory_resource& mr)
@@ -129,6 +127,7 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
             m_seedfilter_config, g2, doublet_counter_container,
             triplet_counter_container, triplet_container, seed_container,
             m_mr.get());
+
         return seed_container;
     }
 

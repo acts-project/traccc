@@ -11,7 +11,6 @@
 #include <edm/seed.hpp>
 #include <iostream>
 #include <seeding/detail/seeding_config.hpp>
-#include <seeding/detail/statistics.hpp>
 #include <seeding/doublet_finding.hpp>
 #include <seeding/seed_filtering.hpp>
 #include <seeding/triplet_finding.hpp>
@@ -87,19 +86,9 @@ struct seed_finding : public algorithm<host_seed_container(const sp_grid&)> {
         return seeds;
     }
 
-    std::vector<multiplet_statistics> get_multiplet_stats() {
-        return m_multiplet_stats;
-    }
-
-    seed_statistics get_seed_stats() { return m_seed_stats; }
-
     private:
     doublet_finding m_doublet_finding;
     triplet_finding m_triplet_finding;
     seed_filtering m_seed_filtering;
-
-    // for statistics pre-estimation
-    seed_statistics m_seed_stats{0, 0};
-    std::vector<multiplet_statistics> m_multiplet_stats;
 };
 }  // namespace traccc
