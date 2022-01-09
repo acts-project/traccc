@@ -12,7 +12,7 @@
 
 namespace traccc {
 
-/// Header: unsigned int for the number of doublets per spacepoint bin
+/// Header: the number of doublets per spacepoint bin
 struct doublet_per_bin {
     unsigned int n_doublets = 0;
 

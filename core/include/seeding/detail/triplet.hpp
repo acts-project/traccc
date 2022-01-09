@@ -11,7 +11,7 @@
 
 namespace traccc {
 
-/// Header: unsigned int for the number of triplets per spacepoint bin
+/// Header: the number of triplets per spacepoint bin
 struct triplet_per_bin {
     unsigned int n_triplets = 0;
 

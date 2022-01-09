@@ -16,8 +16,7 @@ namespace cuda {
 
 /// Definition the container for doublet counter
 ///
-/// header element: number of the middle sp which have positive number (>0) of
-/// compatible mid-bot and mid-top doublets item element: doublet counter
+/// header: the number of compatible middle spacepoint and doublets per bin
 struct doublet_counter_per_bin {
     unsigned int n_spM = 0;
     unsigned int n_mid_bot = 0;
@@ -34,6 +33,7 @@ struct doublet_counter_per_bin {
     }
 };
 
+/// item: the number of doublets per compatible middle spacepoint
 struct doublet_counter {
     /// index of a given middle spacepoint
     sp_location spM;

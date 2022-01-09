@@ -16,8 +16,7 @@ namespace cuda {
 
 /// Definition the container for triplet counter
 ///
-/// header element: number of the mid-bot doublet which have positive number
-/// (>0) of compatible triplet item element: triplet counter
+/// header: number of the mid-bot doublet and triplets per bin
 struct triplet_counter_per_bin {
     unsigned int n_mid_bot = 0;
     unsigned int n_triplets = 0;
@@ -32,6 +31,7 @@ struct triplet_counter_per_bin {
     }
 };
 
+/// item: number of triplets per mid-bot doublet
 struct triplet_counter {
 
     /// indices of two spacepoints of mid-bot doublet
