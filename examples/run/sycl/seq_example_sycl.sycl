@@ -25,6 +25,14 @@
 #include "../../algorithms/sycl/include/sycl/track_finding/seeding_algorithm.hpp"
 #include "track_finding/seeding_algorithm.hpp"
 
+// Selector to pass to sycl::queue object for running on NVIDIA device
+class CUDADeviceSelector : public ::sycl::device_selector {
+public:
+    int operator()(const ::sycl::device &device) const override {
+	return device.get_platform().get_backend() == ::sycl::backend::cuda ? 1 : -1;
+    }
+};
+
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events, bool skip_cpu) {
 
@@ -53,7 +61,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     vecmem::host_memory_resource host_mr;
 
     // Memory resource used by the EDM.
-    ::sycl::queue q( ::sycl::gpu_selector{} );
+    ::sycl::queue q( CUDADeviceSelector{} );
     vecmem::sycl::shared_memory_resource shared_mr(&q);
 
     traccc::clusterization_algorithm ca;
