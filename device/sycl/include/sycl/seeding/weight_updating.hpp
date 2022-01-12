@@ -27,20 +27,13 @@ namespace sycl {
 /// @param triplet_counter_container vecmem container for triplet counters
 /// @param triplet_container vecmem container for triplets
 /// @param resource vecmem memory resource
+/// @param q sycl queue for kernel scheduling
 void weight_updating(const seedfilter_config& filter_config,
                      host_internal_spacepoint_container& internal_sp_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
                      vecmem::memory_resource* resource,
                      ::sycl::queue* q);
-
-// Short aliast for accessor to local memory (shared memory in CUDA)
-template <typename T>
-using local_accessor = ::sycl::accessor<
-    T,
-    1,
-    ::sycl::access::mode::read_write,
-    ::sycl::access::target::local>;
 
 }  // namespace sycl
 }  // namespace traccc

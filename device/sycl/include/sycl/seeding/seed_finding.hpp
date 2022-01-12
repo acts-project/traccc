@@ -8,7 +8,7 @@
 #pragma once
 
 #include <algorithm>
-#include "sycl/seeding/detail/doublet_counter.hpp"          //  it's duplicate code for sycl and cuda right now
+#include "sycl/seeding/detail/doublet_counter.hpp"         
 #include "sycl/seeding/detail/multiplet_estimator.hpp"    
 #include "sycl/seeding/doublet_counting.hpp"
 #include "sycl/seeding/doublet_finding.hpp"
@@ -117,10 +117,7 @@ struct seed_finding {
         //doublet finding
         traccc::sycl::doublet_finding(m_seedfinder_config, isp_container, doublet_counter_container,
                                      mid_bot_container, mid_top_container, m_mr, m_q);
-        //    for (auto i : mid_bot_container.get_headers()) {
-        //     std:: cout << i << " ";
-        // }                                               
-        // std::cout << std::endl;  
+        
         // triplet counting
         traccc::sycl::triplet_counting(m_seedfinder_config, isp_container,
                                        doublet_counter_container,

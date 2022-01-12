@@ -7,7 +7,6 @@
 #pragma once
 
 #include <CL/sycl.hpp>
-
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/sycl_helper.hpp"
 #include <vecmem/memory/atomic.hpp>

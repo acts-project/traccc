@@ -12,14 +12,6 @@
 namespace traccc {
 namespace sycl {
 
-// Define shorthand alias for the type of atomics needed by this kernel 
-// template <typename T>
-// using global_atomic_ref = ::sycl::ext::oneapi::atomic_ref<
-//     T,
-//     ::sycl::ext::oneapi::memory_order::relaxed,
-//     ::sycl::ext::oneapi::memory_scope::system,
-//     ::sycl::access::address_space::global_space>;
-
 // Short aliast for accessor to local memory (shared memory in CUDA)
 template <typename T>
 using local_accessor = ::sycl::accessor<
@@ -28,31 +20,35 @@ using local_accessor = ::sycl::accessor<
     ::sycl::access::mode::read_write,
     ::sycl::access::target::local>;
 
-// Some useful helper functions for cuda device
+// Some useful helper funcitons
 struct sycl_helper {
 
+    /// Function that performs reduction on the local memory using subgroup operations
+    ///
+    /// @param array pointer to an array in local memory
+    /// @param item sycl nd_item for quering local indexes and groups
     static
     void reduceInShared(::sycl::multi_ptr<int, ::sycl::access::address_space::local_space> array, ::sycl::nd_item<1> &item)
     {
-    auto workItemIdx = item.get_local_id(0);
-    auto sg = item.get_sub_group();
-    auto workGroup = item.get_group();
-    auto groupDim = item.get_local_range(0);
+        auto workItemIdx = item.get_local_id(0);
+        auto sg = item.get_sub_group();
+        auto workGroup = item.get_group();
+        auto groupDim = item.get_local_range(0);
 
-    // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
-    // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
-    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-    array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
+        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
+        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
+        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
+        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
+        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
 
-    ::sycl::group_barrier(workGroup);
+        ::sycl::group_barrier(workGroup);
 
-      if (workItemIdx == 0) {
-          for (int i = 1; i < groupDim / 32; i++) {
-              array[workItemIdx] += array[i * 32];
+        if (workItemIdx == 0) {
+            for (int i = 1; i < groupDim / 32; i++) {
+                array[workItemIdx] += array[i * 32];
+            }
         }
-      }
-}
+    }
 
     /// Get index of header vector of event data container for a given block ID.
     ///

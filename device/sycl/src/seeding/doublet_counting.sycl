@@ -22,7 +22,7 @@ public:
 
     void operator()(::sycl::nd_item<1> item) const {
         
-         // Mapping cuda indexing to dpc++
+         // Mapping cuda indexing to sycl
         auto workGroup = item.get_group();
         
         // Equivalent to blockIdx.x in cuda
@@ -38,30 +38,30 @@ public:
         device_doublet_counter_container doublet_counter_device(
             {m_doublet_counter_view.headers, m_doublet_counter_view.items});
         
-    // Get the bin index of spacepoint binning and reference block idx for the
-    // bin index
-    unsigned int bin_idx = 0;
-    unsigned int ref_block_idx = 0;
-    sycl_helper::get_header_idx(internal_sp_device.get_items(), bin_idx,
-                                ref_block_idx, item);
+        // Get the bin index of spacepoint binning and reference block idx for the
+        // bin index
+        unsigned int bin_idx = 0;
+        unsigned int ref_block_idx = 0;
+        sycl_helper::get_header_idx(internal_sp_device.get_items(), bin_idx,
+                                    ref_block_idx, item);
 
-    // Header of internal spacepoint container : spacepoint bin information
-    // Item of internal spacepoint container : internal spacepoint objects per
-    // bin
-    const auto& bin_info = internal_sp_device.get_headers().at(bin_idx);
-    auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+        // Header of internal spacepoint container : spacepoint bin information
+        // Item of internal spacepoint container : internal spacepoint objects per
+        // bin
+        const auto& bin_info = internal_sp_device.get_headers().at(bin_idx);
+        auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
 
-    // Header of doublet counter : number of compatible middle sp per bin
-    // Item of doublet counter : doublet counter objects per bin
-    auto& num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx);
-    auto doublet_counter_per_bin =
-        doublet_counter_device.get_items().at(bin_idx);
+        // Header of doublet counter : number of compatible middle sp per bin
+        // Item of doublet counter : doublet counter objects per bin
+        auto& num_compat_spM_per_bin =
+            doublet_counter_device.get_headers().at(bin_idx);
+        auto doublet_counter_per_bin =
+            doublet_counter_device.get_items().at(bin_idx);
 
-    // index of internal spacepoint in the item vector
-    uint32_t sp_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
+        // index of internal spacepoint in the item vector
+        uint32_t sp_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
 
-    if (sp_idx < doublet_counter_per_bin.size()) {
+        if (sp_idx >= doublet_counter_per_bin.size()) return;
 
         // zero initialization for the number of doublets per thread (or middle sp)
         unsigned int n_mid_bot = 0;
@@ -107,7 +107,7 @@ public:
             doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
         }
     }        
-}
+
 private: 
     const seedfinder_config m_config;
     internal_spacepoint_container_view m_internal_sp_view;
