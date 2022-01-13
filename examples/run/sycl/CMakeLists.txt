@@ -9,6 +9,8 @@ enable_language( SYCL )
 
 # Example executable(s).
 add_executable( traccc_sycl_language_example "sycl_language_example.sycl" )
+
+# SYCL seeding executables
 add_executable (seeding_example_sycl seeding_example_sycl.sycl)
 add_executable(seq_example_sycl seq_example_sycl.sycl)
 
