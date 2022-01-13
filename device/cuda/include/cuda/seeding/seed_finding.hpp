@@ -115,12 +115,7 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
                                       triplet_container, m_mr.get());
 
         // resize the seed container with the number of triplets per event
-        unsigned int n_triplets_per_event = 0;
-        for (size_t i = 0; i < g2.nbins(); ++i) {
-            n_triplets_per_event +=
-                triplet_counter_container.get_headers()[i].n_triplets;
-        }
-        seed_container.get_items()[0].resize(n_triplets_per_event);
+        seed_container.get_items()[0].resize(triplet_container.total_size());
 
         // seed selecting
         traccc::cuda::seed_selecting(
