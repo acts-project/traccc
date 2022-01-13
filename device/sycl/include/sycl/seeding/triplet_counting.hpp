@@ -15,6 +15,7 @@
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/detail/triplet.hpp>
 #include <seeding/doublet_finding_helper.hpp>
 #include <seeding/triplet_finding_helper.hpp>
@@ -35,12 +36,12 @@ namespace sycl {
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
 void triplet_counting(const seedfinder_config& config,
-                      host_internal_spacepoint_container& internal_sp_container,
+                      sp_grid& internal_sp,
                       host_doublet_counter_container& doublet_counter_container,
                       host_doublet_container& mid_bot_doublet_container,
                       host_doublet_container& mid_top_doublet_container,
                       host_triplet_counter_container& triplet_counter_container,
-                      vecmem::memory_resource* resource,
+                      vecmem::memory_resource& resource,
                       ::sycl::queue* q);
     
 } // namespace sycl

@@ -8,7 +8,6 @@
 
 #include <CL/sycl.hpp>
 
-#include <algorithm>
 #include "sycl/seeding/detail/doublet_counter.hpp"
 #include "sycl/seeding/detail/triplet_counter.hpp"
 #include "sycl/seeding/detail/sycl_helper.hpp"
@@ -17,6 +16,7 @@
 #include <edm/seed.hpp>
 #include <seeding/detail/doublet.hpp>
 #include <seeding/detail/seeding_config.hpp>
+#include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/detail/triplet.hpp>
 #include <seeding/seed_selecting_helper.hpp>
 
@@ -35,12 +35,12 @@ namespace sycl {
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
 void seed_selecting(const seedfilter_config& filter_config,
-                    host_internal_spacepoint_container& internal_sp_container,
+                    sp_grid& internal_sp,
                     host_doublet_counter_container& doublet_counter_container,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     host_seed_container& seed_container,
-                    vecmem::memory_resource* resource,
+                    vecmem::memory_resource& resource,
                     ::sycl::queue* q);
     
 }  // namespace sycl
