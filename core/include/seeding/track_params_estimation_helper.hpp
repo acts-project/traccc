@@ -33,14 +33,16 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// @param seed is the input seed
 /// @param bfield is the magnetic field
 /// @param mass is the mass of particle
+template <typename spacepoint_container_t>
 inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
-    const seed& seed, const vector3& bfield, const scalar mass) {
+    const spacepoint_container_t& sp_container, const seed& seed,
+    const vector3& bfield, const scalar mass) {
 
     bound_vector params;
 
-    const auto& spB = seed.spB;
-    const auto& spM = seed.spM;
-    const auto& spT = seed.spT;
+    const auto& spB = sp_container.at(seed.spB_link);
+    const auto& spM = sp_container.at(seed.spM_link);
+    const auto& spT = sp_container.at(seed.spT_link);
 
     darray<vector3, 3> sp_global_positions;
     sp_global_positions[0] = spB.global;
@@ -85,7 +87,8 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
 
     // The momentum direction in the new frame (the center of the circle
     // has the coordinate (-1.*A/(2*B), 1./(2*B)))
-    vector3 transDirection({1., A, scalar(std::hypot(1., A)) * invTanTheta});
+    vector3 transDirection =
+        vector3({1., A, scalar(std::hypot(1., A)) * invTanTheta});
     // Transform it back to the original frame
     vector3 direction =
         transform3::rotate(trans._data, vector::normalize(transDirection));

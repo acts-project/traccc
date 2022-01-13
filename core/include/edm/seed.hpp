@@ -16,17 +16,28 @@ namespace traccc {
 
 /// Item: seed consisting of three spacepoints, z origin and weight
 struct seed {
-    spacepoint spB;
-    spacepoint spM;
-    spacepoint spT;
+
+    using link_type = typename host_spacepoint_container::link_type;
+
+    link_type spB_link;
+    link_type spM_link;
+    link_type spT_link;
+
     scalar weight;
     scalar z_vertex;
 
     TRACCC_HOST_DEVICE
     seed& operator=(const seed& aSeed) {
-        spB = aSeed.spB;
-        spM = aSeed.spM;
-        spT = aSeed.spT;
+
+        spB_link.first = aSeed.spB_link.first;
+        spB_link.second = aSeed.spB_link.second;
+
+        spM_link.first = aSeed.spM_link.first;
+        spM_link.second = aSeed.spM_link.second;
+
+        spT_link.first = aSeed.spT_link.first;
+        spT_link.second = aSeed.spT_link.second;
+
         weight = aSeed.weight;
         z_vertex = aSeed.z_vertex;
         return *this;
@@ -34,7 +45,8 @@ struct seed {
 };
 
 inline bool operator==(const seed& lhs, const seed& rhs) {
-    return (lhs.spB == rhs.spB && lhs.spM == rhs.spM && lhs.spT == rhs.spT);
+    return (lhs.spB_link == rhs.spB_link && lhs.spM_link == rhs.spM_link &&
+            lhs.spT_link == rhs.spT_link);
 }
 
 /// Container of internal_spacepoint for an event

@@ -89,7 +89,9 @@ __global__ void populating_grid_kernel(
 
     /// Ignore is radius index is invalid value
     if (r_index != detray::invalid_value<size_t>()) {
-        auto isp = internal_spacepoint<spacepoint>(sp, config.beamPos);
+
+        auto isp = internal_spacepoint<spacepoint>(
+            spacepoints_device, {header_idx, sp_idx}, config.beamPos);
 
         /// Get bin index in grid
         size_t bin_index =
