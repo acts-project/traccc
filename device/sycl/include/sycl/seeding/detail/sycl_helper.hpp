@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -35,6 +35,7 @@ struct sycl_helper {
         auto workGroup = item.get_group();
         auto groupDim = item.get_local_range(0);
 
+        // Comment out the first two lines of shift_left for Intel platform (min blockSize is 8 in that case)
         array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
         array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
         array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);

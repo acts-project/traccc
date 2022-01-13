@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -61,6 +61,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     vecmem::host_memory_resource host_mr;
 
     // Memory resource used by the EDM.
+    // Change to ::sycl::gpu_selector{} to run on different device
     ::sycl::queue q( CUDADeviceSelector{} );
     vecmem::sycl::shared_memory_resource shared_mr(&q);
 
