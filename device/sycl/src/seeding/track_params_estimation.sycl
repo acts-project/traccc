@@ -1,0 +1,93 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+#include "sycl/seeding/track_params_estimation.hpp"
+
+namespace traccc {
+namespace sycl {
+
+// kernel class 
+class TrackParamsEstimation {
+    public:
+        TrackParamsEstimation(seed_container_view seeds_view,
+                              vecmem::data::vector_view<bound_track_parameters> params_view)
+        : m_seeds_view(seeds_view),
+          m_params_view(params_view) {}
+
+    void operator()(::sycl::nd_item<1> item) const {
+
+         // Mapping cuda indexing to sycl
+        auto workGroup = item.get_group();
+        
+        // Equivalent to blockIdx.x in cuda
+        auto groupIdx = item.get_group(0);
+        // Equivalent to blockDim.x in cuda
+        auto groupDim = item.get_local_range(0);
+        // Equivalent to threadIdx.x in cuda
+        auto workItemIdx = item.get_local_id(0);
+
+        // Get device container for input parameters
+        device_seed_container seeds_device({m_seeds_view.headers, m_seeds_view.items});
+        device_bound_track_parameters_collection params_device({m_params_view});
+
+        // vector index for threads
+        unsigned int gid = workItemIdx + groupIdx * groupDim;
+        const auto& n_seeds = seeds_device.get_headers()[0];
+
+        // prevent overflow
+        if (gid >= n_seeds) {
+            return;
+        }
+
+        // convenient assumption on bfield and mass
+        vector3 bfield = {0, 0, 2};
+
+        const auto& seed = seeds_device.get_items()[0][gid];
+        auto& param = params_device[gid].vector();
+
+        // Get bound track parameter
+        param = seed_to_bound_vector(seed, bfield, PION_MASS_MEV);
+
+    }
+private:
+    seed_container_view m_seeds_view;
+    vecmem::data::vector_view<bound_track_parameters> m_params_view;
+};
+
+track_params_estimation::output_type track_params_estimation::operator()(
+    host_seed_container&& seeds) const {
+
+    auto n_seeds = seeds.get_headers()[0];
+    output_type params(n_seeds, &m_mr.get());
+
+    auto seeds_view = get_data(seeds, &m_mr.get());
+    auto params_view = vecmem::get_data(params);
+
+    // -- localSize
+    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
+    unsigned int localSize = 64;
+
+    // -- Num groups
+    // The dimension of grid is number_of_seeds / localSize + 1
+    unsigned int num_groups =
+        (seeds.get_headers()[0] + localSize - 1) / localSize;
+
+    unsigned int globalSize = localSize * num_groups;
+    // 1 dim ND Range for the kernel
+    auto trackParamsNdRange = ::sycl::nd_range<1>{globalSize,localSize};
+        m_q->submit([&](::sycl::handler& h) {
+
+        TrackParamsEstimation kernel(seeds_view, params_view);
+
+        h.parallel_for<class track_params_kernel>(trackParamsNdRange, kernel);
+    }).wait_and_throw();          
+
+    return params;
+}
+
+} // namespace sycl
+} // namespace traccc

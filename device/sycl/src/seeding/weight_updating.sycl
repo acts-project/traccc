@@ -13,7 +13,7 @@ namespace sycl {
 class WeightUpdate {
 public:
     WeightUpdate(const seedfilter_config& filter_config,
-                internal_spacepoint_container_view internal_sp_view,
+                sp_grid_view internal_sp_view,
                 triplet_counter_container_view triplet_counter_view,
                 triplet_container_view triplet_view,
                 local_accessor<scalar> localMem)
@@ -35,24 +35,22 @@ public:
         // Equivalent to threadIdx.x in cuda
         auto workItemIdx = item.get_local_id(0);
 
-        device_internal_spacepoint_container internal_sp_device(
-        {m_internal_sp_view.headers, m_internal_sp_view.items});
+        // Get device container for input parameters
+        sp_grid_device internal_sp_device(internal_sp_view);
 
         device_triplet_counter_container triplet_counter_device(
             {m_triplet_counter_view.headers, m_triplet_counter_view.items});
         device_triplet_container triplet_device(
             {m_triplet_view.headers, m_triplet_view.items});
 
-        // Get the bin index of spacepoint binning and reference block idx for the
-        // bin index
-        unsigned int bin_idx = 0;
-        unsigned int ref_block_idx = 0;
-        sycl_helper::get_header_idx(triplet_device, bin_idx, ref_block_idx, item);
+        // Get the bin and item index
+        unsigned int bin_idx(0), tr_idx(0);
+        sycl_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx);
 
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects per
         // bin
-        auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+        auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
 
         // Header of triplet counter: number of compatible mid_top doublets per bin
         // Item of triplet counter: triplet counter objects per bin
@@ -101,9 +99,8 @@ public:
 
         // prevent overflow
         if (start_idx >= triplets_per_bin.size()) return;
-            
-        auto& current_spT =
-        internal_sp_device.get_items()[spT_idx.bin_idx][spT_idx.sp_idx];
+
+        auto& current_spT = internal_sp_device.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
 
         scalar currentTop_r = current_spT.radius();
 
@@ -111,9 +108,9 @@ public:
         // seeds span 5 layers
         // -> very good seed
         scalar lowerLimitCurv =
-            triplet.curvature - m_filter_config.deltaInvHelixDiameter;
+            triplet.curvature - filter_config.deltaInvHelixDiameter;
         scalar upperLimitCurv =
-            triplet.curvature + m_filter_config.deltaInvHelixDiameter;
+            triplet.curvature + filter_config.deltaInvHelixDiameter;
         int num_compat_seedR = 0;
 
         // iterate over triplets
@@ -122,16 +119,16 @@ public:
             if (triplet == *tr_it) {
                 continue;
             }
+
             auto& other_triplet = *tr_it;
             auto other_spT_idx = (*tr_it).sp3;
             auto other_spT =
-                internal_sp_device
-                    .get_items()[other_spT_idx.bin_idx][other_spT_idx.sp_idx];
+                internal_sp_device.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx];
 
             // compared top SP should have at least deltaRMin distance
             scalar otherTop_r = other_spT.radius();
             scalar deltaR = currentTop_r - otherTop_r;
-            if (std::abs(deltaR) < m_filter_config.deltaRMin) {
+            if (std::abs(deltaR) < filter_config.deltaRMin) {
                 continue;
             }
 
@@ -156,7 +153,7 @@ public:
                 // only if distance larger than rmin to all other compatible
                 // seeds
                 if (std::abs(previousDiameter - otherTop_r) <
-                    m_filter_config.deltaRMin) {
+                    filter_config.deltaRMin) {
                     newCompSeed = false;
                     break;
                 }
@@ -164,36 +161,33 @@ public:
 
             if (newCompSeed) {
                 compat_seedR[num_compat_seedR] = otherTop_r;
-                triplet.weight += m_filter_config.compatSeedWeight;
+                triplet.weight += filter_config.compatSeedWeight;
                 num_compat_seedR++;
             }
 
-            if (num_compat_seedR >= m_filter_config.compatSeedLimit) {
+            if (num_compat_seedR >= filter_config.compatSeedLimit) {
                 break;
             }
         }
-    
-    
-
-      }
+    }
 private:
     const seedfilter_config m_filter_config;
-    internal_spacepoint_container_view m_internal_sp_view;
+    sp_grid_view m_internal_sp_view;
     triplet_counter_container_view m_triplet_counter_view;
     triplet_container_view m_triplet_view;
     local_accessor<scalar> m_localMem;
 };
 
 void weight_updating(const seedfilter_config& filter_config,
-                     host_internal_spacepoint_container& internal_sp_container,
+                     sp_grid& internal_sp,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource* resource,
+                     vecmem::memory_resource& resource,
                      ::sycl::queue* q) {
 
-    auto internal_sp_view = get_data(internal_sp_container, resource);
-    auto triplet_counter_view = get_data(triplet_counter_container, resource);
-    auto triplet_view = get_data(triplet_container, resource);
+    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
+    auto triplet_view = get_data(triplet_container, &resource);
+    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -203,7 +197,7 @@ void weight_updating(const seedfilter_config& filter_config,
     unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
-    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_groups += triplet_container.get_headers()[i] / localSize + 1;
     }
     unsigned int globalSize = localSize * num_groups;  

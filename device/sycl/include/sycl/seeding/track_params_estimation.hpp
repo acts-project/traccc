@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <CL/sycl.hpp>
+
 #include <seeding/track_params_estimation_helper.hpp>
 #include <utils/algorithm.hpp>
 
@@ -21,7 +23,8 @@ struct track_params_estimation
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
-    track_params_estimation(vecmem::memory_resource& mr) : m_mr(mr) {}
+    track_params_estimation(vecmem::memory_resource& mr, ::sycl::queue* q) : m_mr(mr),
+                                                                             m_q(q)   {}
 
     /// Callable operator for track_params_esitmation
     ///
@@ -32,6 +35,7 @@ struct track_params_estimation
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
+    ::sycl::queue* m_q;
 };
 
 }  // namespace sycl

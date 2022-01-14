@@ -57,9 +57,9 @@ struct sycl_helper {
     /// @param header_idx the header idx
     /// @param ref_block_idx the reference block idx for a given header idx
     template <typename T>
-    static void get_header_idx(
+    static void find_idx_on_jagged_vector(
         const vecmem::jagged_device_vector<T>& jag_vec,
-        unsigned int& header_idx, unsigned int& ref_block_idx, ::sycl::nd_item<1>& item) {
+        unsigned int& header_idx, unsigned int& item_idx, ::sycl::nd_item<1>& item) {
 
         /// number of blocks accumulated upto current header idx
         unsigned int nblocks_accum = 0;
@@ -76,7 +76,7 @@ struct sycl_helper {
                 break;
             }
 
-            ref_block_idx += nblocks_per_header;
+            item_idx += nblocks_per_header;
         }
     }
 
@@ -87,9 +87,9 @@ struct sycl_helper {
     /// @param header_idx the header idx
     /// @param ref_block_idx the reference block idx for a given header idx
     template <typename header_t, typename item_t>
-    static void get_header_idx(
+    static void find_idx_on_container(
         const device_container<header_t, item_t>& container,
-        unsigned int& header_idx, unsigned int& ref_block_idx, ::sycl::nd_item<1>& item) {
+        unsigned int& header_idx, unsigned int& item_idx, ::sycl::nd_item<1>& item) {
 
         /// number of blocks accumulated upto current header idx
         unsigned int nblocks_accum = 0;
@@ -106,7 +106,7 @@ struct sycl_helper {
                 break;
             }
 
-            ref_block_idx += nblocks_per_header;
+            item_idx += nblocks_per_header;
         }
     }
 };

@@ -14,7 +14,7 @@ namespace sycl {
 class DupletCount {
 public:
     DupletCount(const seedfinder_config config,
-               internal_spacepoint_container_view internal_sp_view, 
+                sp_grid_view internal_sp_view, 
                 doublet_counter_container_view doublet_counter_view)
     : m_config(config),
       m_internal_sp_view(internal_sp_view),
@@ -33,23 +33,19 @@ public:
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        device_internal_spacepoint_container internal_sp_device(
-            {m_internal_sp_view.headers, m_internal_sp_view.items});
+        sp_grid_device internal_sp_device(m_internal_sp_view);
+
         device_doublet_counter_container doublet_counter_device(
             {m_doublet_counter_view.headers, m_doublet_counter_view.items});
         
         // Get the bin index of spacepoint binning and reference block idx for the
         // bin index
-        unsigned int bin_idx = 0;
-        unsigned int ref_block_idx = 0;
-        sycl_helper::get_header_idx(internal_sp_device.get_items(), bin_idx,
-                                    ref_block_idx, item);
+        unsigned int bin_idx(0), sp_idx(0);
+        sycl_helper::find_idx_on_jagged_vector(internal_sp_device.get_items(), bin_idx,
+                                    sp_idx, item);
 
-        // Header of internal spacepoint container : spacepoint bin information
-        // Item of internal spacepoint container : internal spacepoint objects per
-        // bin
-        const auto& bin_info = internal_sp_device.get_headers().at(bin_idx);
-        auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+        // get internal spacepoints for current bin
+        auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
 
         // Header of doublet counter : number of compatible middle sp per bin
         // Item of doublet counter : doublet counter objects per bin
@@ -58,10 +54,10 @@ public:
         auto doublet_counter_per_bin =
             doublet_counter_device.get_items().at(bin_idx);
 
-        // index of internal spacepoint in the item vector
-        uint32_t sp_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
-
-        if (sp_idx >= doublet_counter_per_bin.size()) return;
+        // kill the process before overflow
+        if (sp_idx >= doublet_counter_per_bin.size()) {
+            return;
+        }
 
         // zero initialization for the number of doublets per thread (or middle sp)
         unsigned int n_mid_bot = 0;
@@ -76,29 +72,48 @@ public:
         // middle spacepoint
         const auto& isp = internal_sp_per_bin[sp_idx];
 
-        // Loop over (bottom and top) internal spacepoints in the neighbor bins
-        for (size_t i_n = 0; i_n < bin_info.bottom_idx.counts; ++i_n) {
-            const auto& neigh_bin = bin_info.bottom_idx.vector_indices[i_n];
-            const auto& neigh_internal_sp_per_bin =
-                internal_sp_device.get_items().at(neigh_bin);
+        // get the neighbor indices
+        auto phi_bins =
+            internal_sp_device.axis_p0().range(isp.phi(), config.neighbor_scope);
+        auto z_bins =
+            internal_sp_device.axis_p1().range(isp.z(), config.neighbor_scope);
+        auto i_p = phi_bins[0];
+        auto i_z = z_bins[0];
 
-            for (size_t spB_idx = 0; spB_idx < neigh_internal_sp_per_bin.size();
-                ++spB_idx) {
-                const auto& neigh_isp = neigh_internal_sp_per_bin[spB_idx];
+        for (unsigned int c = 0; c < config.get_max_neighbor_bins(); c++) {
+
+            auto neighbors = internal_sp_device.bin(i_p, i_z);
+
+            for (auto& neigh_isp : neighbors) {
 
                 // Check if middle and bottom sp can form a doublet
-                if (doublet_finding_helper::isCompatible(isp, neigh_isp, m_config,
+                if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
                                                         true)) {
                     n_mid_bot++;
                 }
 
                 // Check if middle and top sp can form a doublet
-                if (doublet_finding_helper::isCompatible(isp, neigh_isp, m_config,
+                if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
                                                         false)) {
                     n_mid_top++;
                 }
             }
+
+            i_z++;
+            // terminate if we went through all neighbot bins
+            if (i_z > z_bins[1] && i_p == phi_bins[1]) {
+                break;
+            }
+
+            // increse phi_index and reset i_z
+            // if i_z is larger than last neighbor index
+            if (i_z > z_bins[1]) {
+                i_p++;
+                i_p = i_p % internal_sp_device.axis_p0().bins();
+                i_z = z_bins[0];
+            }
         }
+
         // if number of mid-bot and mid-top doublet for a middle spacepoint is
         // larger than 0, the entry is added to the doublet counter
         if (n_mid_bot > 0 && n_mid_top > 0) {
@@ -110,26 +125,26 @@ public:
 
 private: 
     const seedfinder_config m_config;
-    internal_spacepoint_container_view m_internal_sp_view;
+    sp_grid_view m_internal_sp_view;
     doublet_counter_container_view m_doublet_counter_view;
 };
 
 void doublet_counting(const seedfinder_config& config,
-                      host_internal_spacepoint_container& internal_sp_container,
+                      sp_grid& internal_sp,
                       host_doublet_counter_container& doublet_counter_container,
-                      vecmem::memory_resource* resource,
+                      vecmem::memory_resource& resource,
                       ::sycl::queue* q) {
 
-        auto internal_sp_view = get_data(internal_sp_container, resource);
         auto doublet_counter_container_view =
-            get_data(doublet_counter_container, resource);
+            get_data(doublet_counter_container, &resource);
+        auto internal_sp_view = get_data(internal_sp, resource);
 
         // The local number of threads per work-group (block in cuda) (number taken from cuda implementation, warp size *2)
         unsigned int localSize = 64;
         // Calculate the global number of threads to run in kernel
         unsigned int num_groups = 0;
-        for (size_t i = 0; i < internal_sp_view.headers.size(); ++i) {
-            num_groups += internal_sp_view.items.m_ptr[i].size() / localSize + 1;
+        for (size_t i = 0; i < internal_sp.nbins(); ++i) {
+            num_groups += internal_sp.bin(i).size() / localSize + 1;
         }
         unsigned int globalSize = num_groups * localSize;
         // 1 dim ND Range for the kernel

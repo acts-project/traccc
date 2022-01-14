@@ -12,9 +12,9 @@ namespace sycl {
 
 class TripletFind {
 public:
-    TripletFind(const seedfinder_config& config,
-                const seedfilter_config& filter_config,
-                internal_spacepoint_container_view internal_sp_view,
+    TripletFind(const seedfinder_config config,
+                const seedfilter_config filter_config,
+                sp_grid_view internal_sp_view,
                 doublet_counter_container_view doublet_counter_view,
                 doublet_container_view mid_bot_doublet_view,
                 doublet_container_view mid_top_doublet_view,
@@ -43,8 +43,9 @@ public:
         // Equivalent to threadIdx.x in cuda
         auto workItemIdx = item.get_local_id(0);
     
-        device_internal_spacepoint_container internal_sp_device(
-        {m_internal_sp_view.headers, m_internal_sp_view.items});
+        // Get device container for input parameters
+        sp_grid_device internal_sp_device(internal_sp_view);
+
         device_doublet_counter_container doublet_counter_device(
             {m_doublet_counter_view.headers, m_doublet_counter_view.items});
         device_doublet_container mid_bot_doublet_device(
@@ -57,19 +58,18 @@ public:
         device_triplet_container triplet_device(
             {m_triplet_view.headers, m_triplet_view.items});
         
-        // Get the bin index of spacepoint binning and reference block idx for the
-        // bin index
-        unsigned int bin_idx = 0;
-        unsigned int ref_block_idx = 0;
-        sycl_helper::get_header_idx(triplet_counter_device, bin_idx, ref_block_idx, item);
+        // Get the bin and item index
+        unsigned int bin_idx(0), item_idx(0);
+        sycl::find_idx_on_container(triplet_counter_device, bin_idx,
+                                        item_idx);
 
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects per
         // bin
-        auto internal_sp_per_bin = internal_sp_device.get_items().at(bin_idx);
+        auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
         auto& num_compat_spM_per_bin =
             doublet_counter_device.get_headers().at(bin_idx);
-        
+
         // Header of doublet counter : number of compatible middle sp per bin
         // Item of doublet counter : doublet counter objects per bin
         auto doublet_counter_per_bin =
@@ -104,13 +104,14 @@ public:
         auto num_triplets_per_thread = m_localMem.get_pointer();
         num_triplets_per_thread[workItemIdx] = 0;
 
-        // index of triplet counter in the item vector
-        auto gid = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
-         // prevent the tail threads referring the null triplet counter
-        if (gid >= num_compat_mb_per_bin) return;
+        // prevent the tail threads referring the null triplet counter
+        if (item_idx >= num_compat_mb_per_bin) {
+            return;
+        }
 
         // middle-bot doublet
-        const auto& mid_bot_doublet = triplet_counter_per_bin[gid].mid_bot_doublet;
+        const auto& mid_bot_doublet =
+            triplet_counter_per_bin[item_idx].mid_bot_doublet;
         // middle spacepoint index
         const auto& spM_idx = mid_bot_doublet.sp1.sp_idx;
         // middle spacepoint
@@ -120,7 +121,7 @@ public:
         // bottom spacepoint index
         const auto& spB_idx = mid_bot_doublet.sp2.sp_idx;
         // bottom spacepoint
-        const auto& spB = internal_sp_device.get_items().at(spB_bin)[spB_idx];
+        const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
 
         // Apply the conformal transformation to middle-bot doublet
         auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
@@ -128,8 +129,8 @@ public:
         // Calculate some physical quantities required for triplet compatibility
         // check
         scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
-        scalar scatteringInRegion2 = m_config.maxScatteringAngle2 * iSinTheta2;
-        scatteringInRegion2 *= m_config.sigmaScattering * m_config.sigmaScattering;
+        scalar scatteringInRegion2 = config.maxScatteringAngle2 * iSinTheta2;
+        scatteringInRegion2 *= config.sigmaScattering * config.sigmaScattering;
         scalar curvature, impact_parameter;
 
         // find the reference (start) index of the mid-top doublet container item
@@ -164,7 +165,9 @@ public:
             mt_end_idx = fmin(mid_top_doublets_per_bin.size(), mt_end_idx);
         }
 
-        if (mt_start_idx >= mid_top_doublets_per_bin.size()) return;
+        if (mt_start_idx >= mid_top_doublets_per_bin.size()) {
+            return;
+        }
 
         // number of triplets per thread (or per middle-bot doublet)
         unsigned int n_triplets_per_mb = 0;
@@ -175,7 +178,7 @@ public:
 
         // The start index is calculated by accumulating the number of triplets of
         // all previous compatible middle-bottom doublets
-        for (unsigned int i = 0; i < gid; i++) {
+        for (unsigned int i = 0; i < item_idx; i++) {
             triplet_start_idx += triplet_counter_per_bin[i].n_triplets;
         }
 
@@ -185,14 +188,14 @@ public:
 
             const auto& spT_bin = mid_top_doublet.sp2.bin_idx;
             const auto& spT_idx = mid_top_doublet.sp2.sp_idx;
-            const auto& spT = internal_sp_device.get_items().at(spT_bin)[spT_idx];
+            const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
             // Apply the conformal transformation to middle-top doublet
             auto lt =
                 doublet_finding_helper::transform_coordinates(spM, spT, false);
 
             // Check if mid-bot and mid-top doublets can form a triplet
             if (triplet_finding_helper::isCompatible(
-                    spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2, curvature,
+                    spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
                     impact_parameter)) {
                 unsigned int pos = triplet_start_idx + n_triplets_per_mb;
                 // prevent the overflow
@@ -203,14 +206,13 @@ public:
                 triplets_per_bin[pos] =
                     triplet({mid_bot_doublet.sp2, mid_bot_doublet.sp1,
                             mid_top_doublet.sp2, curvature,
-                            -impact_parameter * m_filter_config.impactWeightFactor,
+                            -impact_parameter * filter_config.impactWeightFactor,
                             lb.Zo()});
 
-                num_triplets_per_thread[workItemIdx]++;
+                num_triplets_per_thread[threadIdx.x]++;
                 n_triplets_per_mb++;
             }
         }
-        
         // Calculate the number of triplets per "block" with reducing sum technique
         ::sycl::group_barrier(workGroup);
         // disable following for Intel's intgr. gpu
@@ -231,12 +233,11 @@ public:
             vecmem::atomic<uint32_t> obj(&num_triplets_per_bin);
             obj.fetch_add(num_triplets_per_thread[0]);
         }
-    
     }
 private:
     const seedfinder_config m_config;
     const seedfilter_config m_filter_config;
-    internal_spacepoint_container_view m_internal_sp_view;
+    sp_grid_view m_internal_sp_view;
     doublet_counter_container_view m_doublet_counter_view;
     doublet_container_view m_mid_bot_doublet_view;
     doublet_container_view m_mid_top_doublet_view;
@@ -247,20 +248,20 @@ private:
 
 void triplet_finding(const seedfinder_config& config,
                      const seedfilter_config& filter_config,
-                     host_internal_spacepoint_container& internal_sp_container,
+                     sp_grid& internal_sp,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource* resource,
+                     vecmem::memory_resource& resource,
                      ::sycl::queue* q) {                      
-    auto internal_sp_view = get_data(internal_sp_container, resource);
-    auto doublet_counter_view = get_data(doublet_counter_container, resource);
-    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, resource);
-    auto mid_top_doublet_view = get_data(mid_top_doublet_container, resource);
-    auto triplet_counter_view = get_data(triplet_counter_container, resource);
-    auto triplet_view = get_data(triplet_container, resource);
+    auto doublet_counter_view = get_data(doublet_counter_container, &resource);
+    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
+    auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
+    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
+    auto triplet_view = get_data(triplet_container, &resource);
+    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -270,7 +271,7 @@ void triplet_finding(const seedfinder_config& config,
     unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
-    for (unsigned int i = 0; i < internal_sp_view.headers.size(); ++i) {
+    for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_groups +=
             triplet_counter_container.get_headers()[i] / localSize + 1;
     }

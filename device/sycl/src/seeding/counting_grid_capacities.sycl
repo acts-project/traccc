@@ -1,0 +1,120 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+#include <sycl/seeding/counting_grid_capacities.hpp>
+
+namespace traccc {
+namespace sycl {
+    
+// Kernel class for counting grid capacities
+class CountGridCapacities {
+    public:
+        CountGridCapacities(const seedfinder_config config, sp_grid_view grid_view,
+                            spacepoint_container_view spacepoints_view,
+                            vecmem::data::vector_view<std::pair<unsigned int, unsigned int>>
+                            sp_container_indices_view,
+                            vecmem::data::vector_view<unsigned int> grid_capacities_view)
+        : m_config(config),
+          m_grid_view(grid_view),
+          m_spacepoints_view(spacepoints_view),
+          m_sp_container_indices_view(sp_container_indices_view),
+          m_grid_capacities_view(grid_capacities_view) {}
+        
+        void operator()(::sycl::nd_item<1> item) const {
+
+            // Mapping cuda indexing to sycl
+            auto workGroup = item.get_group();
+            
+            // Equivalent to blockIdx.x in cuda
+            auto groupIdx = item.get_group(0);
+            // Equivalent to blockDim.x in cuda
+            auto groupDim = item.get_local_range(0);
+            // Equivalent to threadIdx.x in cuda
+            auto workItemIdx = item.get_local_id(0);
+
+            // Get device container for input parameters
+            sp_grid_device g2_device(m_grid_view);
+            device_spacepoint_container spacepoints_device(
+                {m_spacepoints_view.headers, m_spacepoints_view.items});
+            vecmem::device_vector<std::pair<unsigned int, unsigned int>>
+                sp_container_indices(m_sp_container_indices_view);
+            vecmem::device_vector<unsigned int> grid_capacities_device(
+                m_grid_capacities_view);
+
+            auto gid = workItemIdx + groupIdx * groupDim;
+
+            /// kill the process before overflow
+            if (gid >= sp_container_indices.size()) {
+                return;
+            }
+
+            const auto& header_idx = sp_container_indices[gid].first;
+            const auto& sp_idx = sp_container_indices[gid].second;
+
+            auto spacepoints_per_module = spacepoints_device.get_items().at(header_idx);
+            const auto& sp = spacepoints_per_module[sp_idx];
+
+            /// Check out if the spacepoints can be used for seeding
+            size_t r_index = is_valid_sp(m_config, sp);
+
+            /// Get axis information from grid
+            const auto& phi_axis = g2_device.axis_p0();
+            const auto& z_axis = g2_device.axis_p1();
+
+            /// Ignore is radius index is invalid value
+            if (r_index != detray::invalid_value<size_t>()) {
+                auto isp = internal_spacepoint<spacepoint>(sp, m_config.beamPos);
+
+                /// Get bin index in grid
+                size_t bin_index =
+                    phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
+
+                /// increase the capacity for the grid bin
+                vecmem::atomic<uint32_t> obj(&grid_capacities_device[bin_index]);
+                obj.fetch_add(1);
+            }
+        }
+private:
+    const seedfinder_config m_config;
+    sp_grid_view m_grid_view;
+    spacepoint_container_view m_spacepoints_view;
+    vecmem::data::vector_view<std::pair<unsigned int, unsigned, int>> m_sp_container_indices_view;
+    vecmem::data::vector_view<unsigned int> m_grid_capacities_view;
+};
+
+void counting_grid_capacities(
+    const seedfinder_config config, sp_grid& grid,
+    host_spacepoint_container& spacepoints,
+    vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
+    vecmem::vector<unsigned int>& grid_capacities,
+    vecmem::memory_resource& resource,
+    ::sycl::queue* q) {
+
+    auto grid_view = get_data(grid, resource);
+    auto spacepoints_view = get_data(spacepoints, &resource);
+    auto sp_container_indices_view = vecmem::get_data(sp_container_indices);
+    auto grid_capacities_view = vecmem::get_data(grid_capacities);
+
+    // The local number of threads per work-group (block in cuda) (number taken from cuda implementation, warp size *2)
+    unsigned int localSize = 64;
+    unsigned int num_groups = spacepoints.total_size() / localSize + 1;
+
+    unsigned int globalSize = num_groups * localSize;
+    // 1 dim ND Range for the kernel
+    auto countGridNdRange = ::sycl::nd_range<1>{globalSize,localSize};
+
+    // Run the Sycl kernel 
+    q->submit([&](::sycl::handler& h){
+        CountGridCapacities kernel( config, grid_view, 
+                            spacepoints_view, sp_container_indices_view,
+                            grid_capacities_view);
+        h.parallel_for<class count_grid_kernel>(countGridNdRange, kernel);
+    }).wait_and_throw();
+}
+
+} // sycl namespace
+} // traccc namespace
