@@ -144,7 +144,6 @@ TEST(algorithms, compare_with_acts_seeding) {
 
     // Setup the config
     auto traccc_config = sa.get_seedfinder_config();
-    // auto traccc_grid_config = sa.get_spacepoint_grid_config();
 
     Acts::SeedfinderConfig<SpacePoint> config;
 
@@ -316,6 +315,8 @@ TEST(algorithms, compare_with_acts_seeding) {
                 geoCtx, spacePointPtrs.begin(), spacePointPtrs.end(),
                 *bottomSurface, Acts::Vector3(0, 0, 2), 0.1);
 
+            EXPECT_TRUE(fullParamsOpt != std::nullopt);
+
             acts_params.push_back(*fullParamsOpt);
         }
     }
@@ -335,9 +336,14 @@ TEST(algorithms, compare_with_acts_seeding) {
     float params_match_ratio = float(n_params_match) / traccc_params.size();
     EXPECT_TRUE((params_match_ratio > 0.95) && (params_match_ratio <= 1.));
 
-    std::cout << "-------- Result ---------" << std::endl;
+    std::cout << "-------- Seeding Result ---------" << std::endl;
     std::cout << "number of ACTS seeds: " << n_acts_seeds << std::endl;
     std::cout << "number of traccc seeds: " << n_traccc_seeds << std::endl;
     std::cout << "seed matching ratio: " << seed_match_ratio << std::endl;
+    std::cout << "-------- Track Parameters Estimation Result ---------"
+              << std::endl;
+    std::cout << "number of ACTS params: " << acts_params.size() << std::endl;
+    std::cout << "number of traccc params: " << traccc_params.size()
+              << std::endl;
     std::cout << "params matching ratio: " << params_match_ratio << std::endl;
 }
