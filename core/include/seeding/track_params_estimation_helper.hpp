@@ -102,8 +102,6 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     params[e_bound_loc0] = meas_for_spB.local[0];
     params[e_bound_loc1] = meas_for_spB.local[1];
 
-    // printf("%f %f \n", meas_for_spB.local[0], meas_for_spB.local[1]);
-
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)
     scalar qOverPt =

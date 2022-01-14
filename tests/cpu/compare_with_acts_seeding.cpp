@@ -223,8 +223,11 @@ TEST(algorithms, compare_with_acts_seeding) {
     }
 
     // seed equality check
+    unsigned int n_traccc_seeds = seeds.get_headers()[0];
+    unsigned int n_acts_seeds = 0;
     int n_seed_match = 0;
     for (auto& outputVec : seedVector) {
+        n_acts_seeds += outputVec.size();
         for (auto& seed : outputVec) {
             if (std::find_if(
                     seeds.get_items()[0].begin(), seeds.get_items()[0].end(),
@@ -333,6 +336,8 @@ TEST(algorithms, compare_with_acts_seeding) {
     EXPECT_TRUE((params_match_ratio > 0.95) && (params_match_ratio <= 1.));
 
     std::cout << "-------- Result ---------" << std::endl;
+    std::cout << "number of ACTS seeds: " << n_acts_seeds << std::endl;
+    std::cout << "number of traccc seeds: " << n_traccc_seeds << std::endl;
     std::cout << "seed matching ratio: " << seed_match_ratio << std::endl;
     std::cout << "params matching ratio: " << params_match_ratio << std::endl;
 }
