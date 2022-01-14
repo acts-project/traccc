@@ -212,51 +212,50 @@ TEST(algorithms, compare_with_acts_seeding) {
         spVec.begin(), spVec.end(), ct, bottomBinFinder, topBinFinder,
         std::move(grid), config);
 
-    std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector;
     auto groupIt = spGroup.begin();
     auto endOfGroups = spGroup.end();
 
+    std::vector<Acts::Seed<SpacePoint>> seedVector;
     for (; !(groupIt == endOfGroups); ++groupIt) {
-        seedVector.push_back(a.createSeedsForGroup(
-            groupIt.bottom(), groupIt.middle(), groupIt.top()));
+        auto seed_group = a.createSeedsForGroup(
+            groupIt.bottom(), groupIt.middle(), groupIt.top());
+        seedVector.insert(seedVector.end(), seed_group.begin(),
+                          seed_group.end());
     }
+
+    std::vector<Acts::Seed<SpacePoint>> sorted_seedVector;
 
     // seed equality check
     unsigned int n_traccc_seeds = seeds.get_headers()[0];
-    unsigned int n_acts_seeds = 0;
+    unsigned int n_acts_seeds = seedVector.size();
     int n_seed_match = 0;
-    for (auto& outputVec : seedVector) {
-        n_acts_seeds += outputVec.size();
-        for (auto& seed : outputVec) {
-            if (std::find_if(
-                    seeds.get_items()[0].begin(), seeds.get_items()[0].end(),
-                    [&](traccc::seed traccc_seed) {
-                        // check if traccc and acts seed are the same
-                        auto& triplets = seed.sp();
-                        auto& acts_spB = triplets[0];
-                        auto& acts_spM = triplets[1];
-                        auto& acts_spT = triplets[2];
+    for (unsigned int i = 0; i < n_traccc_seeds; i++) {
+        auto it = std::find_if(
+            seedVector.begin(), seedVector.end(), [&](auto acts_seed) {
+                auto& seed = seeds.get_items()[0][i];
+                auto traccc_spB = spacepoints_per_event.at(seed.spB_link);
+                auto traccc_spM = spacepoints_per_event.at(seed.spM_link);
+                auto traccc_spT = spacepoints_per_event.at(seed.spT_link);
 
-                        auto traccc_spB =
-                            spacepoints_per_event.at(traccc_seed.spB_link);
-                        auto traccc_spM =
-                            spacepoints_per_event.at(traccc_seed.spM_link);
-                        auto traccc_spT =
-                            spacepoints_per_event.at(traccc_seed.spT_link);
+                auto& triplets = acts_seed.sp();
+                auto& acts_spB = triplets[0];
+                auto& acts_spM = triplets[1];
+                auto& acts_spT = triplets[2];
 
-                        if (acts_spB == traccc_spB && acts_spM == traccc_spM &&
-                            acts_spT == traccc_spT) {
-                            return true;
-                        }
+                if (acts_spB == traccc_spB && acts_spM == traccc_spM &&
+                    acts_spT == traccc_spT) {
+                    return true;
+                }
 
-                        return false;
-                    }
+                return false;
+            });
 
-                    ) != seeds.get_items()[0].end()) {
-                n_seed_match++;
-            }
+        if (it != seedVector.end()) {
+            sorted_seedVector.push_back(*it);
+            n_seed_match++;
         }
     }
+    seedVector = sorted_seedVector;
 
     float seed_match_ratio = float(n_seed_match) / seeds.total_size();
     EXPECT_TRUE((seed_match_ratio > 0.95) && (seed_match_ratio <= 1.));
@@ -264,61 +263,58 @@ TEST(algorithms, compare_with_acts_seeding) {
     /*--------------------------------
       ACTS track params estimation
       --------------------------------*/
+
     const Acts::GeometryContext geoCtx;
 
     std::vector<Acts::BoundVector> acts_params;
 
-    for (auto& outputVec : seedVector) {
-        for (auto& seed : outputVec) {
+    for (auto& seed : seedVector) {
 
-            auto& spacePoints = seed.sp();
+        auto& spacePoints = seed.sp();
 
-            // get SpacePointPtr
-            std::array<const SpacePoint*, 3> spacePointPtrs;
-            spacePointPtrs[0] = spacePoints[0];
-            spacePointPtrs[1] = spacePoints[1];
-            spacePointPtrs[2] = spacePoints[2];
+        // get SpacePointPtr
+        std::array<const SpacePoint*, 3> spacePointPtrs;
+        spacePointPtrs[0] = spacePoints[0];
+        spacePointPtrs[1] = spacePoints[1];
+        spacePointPtrs[2] = spacePoints[2];
 
-            // find geometry id
-            auto spB = spacePoints[0];
-            traccc::geometry_id geo_id = 0;
-            for (std::size_t i_h = 0; i_h < spacepoints_per_event.size();
-                 i_h++) {
-                auto& items = spacepoints_per_event.get_items()[i_h];
-                if (std::find(items.begin(), items.end(), spB) != items.end()) {
-                    geo_id = spacepoints_per_event.get_headers()[i_h];
-                    break;
-                }
+        // find geometry id
+        auto spB = spacePoints[0];
+        traccc::geometry_id geo_id = 0;
+        for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
+            auto& items = spacepoints_per_event.get_items()[i_h];
+            if (std::find(items.begin(), items.end(), spB) != items.end()) {
+                geo_id = spacepoints_per_event.get_headers()[i_h];
+                break;
             }
-
-            EXPECT_TRUE(geo_id != 0);
-
-            const auto& tf3 = surface_transforms[geo_id];
-            const auto& tsl = tf3.translation();
-            const auto& rot = tf3.rotation();
-
-            Acts::Vector3 center;
-            center(0, 0) = tsl[0];
-            center(1, 0) = tsl[1];
-            center(2, 0) = tsl[2];
-
-            Acts::Vector3 normal;
-            normal(0, 0) = traccc::transform3::element_getter()(rot, 0, 2);
-            normal(1, 0) = traccc::transform3::element_getter()(rot, 1, 2);
-            normal(2, 0) = traccc::transform3::element_getter()(rot, 2, 2);
-
-            auto bottomSurface =
-                Acts::Surface::makeShared<Acts::PlaneSurface>(center, normal);
-
-            // Test the full track parameters estimator
-            auto fullParamsOpt = estimateTrackParamsFromSeed(
-                geoCtx, spacePointPtrs.begin(), spacePointPtrs.end(),
-                *bottomSurface, Acts::Vector3(0, 0, 2), 0.1);
-
-            EXPECT_TRUE(fullParamsOpt != std::nullopt);
-
-            acts_params.push_back(*fullParamsOpt);
         }
+
+        EXPECT_TRUE(geo_id != 0);
+
+        const auto& tf3 = surface_transforms[geo_id];
+        const auto& tsl = tf3.translation();
+        const auto& rot = tf3.rotation();
+
+        Acts::Vector3 center;
+        center(0, 0) = tsl[0];
+        center(1, 0) = tsl[1];
+        center(2, 0) = tsl[2];
+
+        Acts::Vector3 normal;
+        normal(0, 0) = traccc::transform3::element_getter()(rot, 0, 2);
+        normal(1, 0) = traccc::transform3::element_getter()(rot, 1, 2);
+        normal(2, 0) = traccc::transform3::element_getter()(rot, 2, 2);
+        auto bottomSurface =
+            Acts::Surface::makeShared<Acts::PlaneSurface>(center, normal);
+
+        // Test the full track parameters estimator
+        auto fullParamsOpt = estimateTrackParamsFromSeed(
+            geoCtx, spacePointPtrs.begin(), spacePointPtrs.end(),
+            *bottomSurface, Acts::Vector3(0, 0, 2), 0.1);
+
+        EXPECT_TRUE(fullParamsOpt != std::nullopt);
+
+        acts_params.push_back(*fullParamsOpt);
     }
 
     // params equality check
@@ -330,6 +326,48 @@ TEST(algorithms, compare_with_acts_seeding) {
                 n_params_match++;
                 break;
             }
+        }
+    }
+
+    for (unsigned int i = 0; i < traccc_params.size(); i++) {
+        if (!(acts_params[i] == traccc_params[i].vector())) {
+            auto& seed = seeds.get_items()[0][i];
+            auto traccc_spB = spacepoints_per_event.at(seed.spB_link);
+
+            traccc::geometry_id geo_id = 0;
+            for (std::size_t i_h = 0; i_h < spacepoints_per_event.size();
+                 i_h++) {
+                auto& items = spacepoints_per_event.get_items()[i_h];
+                if (std::find(items.begin(), items.end(), traccc_spB) !=
+                    items.end()) {
+                    geo_id = spacepoints_per_event.get_headers()[i_h];
+                    break;
+                }
+            }
+
+            const auto& tf3 = surface_transforms[geo_id];
+
+            auto new_param = tf3.point_to_local(traccc_spB.global);
+
+            std::cout << "original -------------------------------"
+                      << std::endl;
+            std::cout << tf3._data(0, 0) << "  " << tf3._data(0, 1) << "  "
+                      << tf3._data(0, 2) << "  " << tf3._data(0, 3)
+                      << std::endl;
+            std::cout << tf3._data(1, 0) << "  " << tf3._data(1, 1) << "  "
+                      << tf3._data(1, 2) << "  " << tf3._data(1, 3)
+                      << std::endl;
+            std::cout << tf3._data(2, 0) << "  " << tf3._data(2, 1) << "  "
+                      << tf3._data(2, 2) << "  " << tf3._data(2, 3)
+                      << std::endl;
+            std::cout << tf3._data(3, 0) << "  " << tf3._data(3, 1) << "  "
+                      << tf3._data(3, 2) << "  " << tf3._data(3, 3)
+                      << std::endl;
+
+            std::cout << traccc_params[i].vector()[0] << "  "
+                      << traccc_params[i].vector()[1] << "  "
+                      << acts_params[i][0] << "  " << acts_params[i][1] << "  "
+                      << new_param[0] << "  " << new_param[1] << std::endl;
         }
     }
 
