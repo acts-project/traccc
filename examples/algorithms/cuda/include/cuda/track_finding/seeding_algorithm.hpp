@@ -43,34 +43,26 @@ class seeding_algorithm
         m_grid_config.deltaRMax = m_config.deltaRMax;
         m_grid_config.cotThetaMax = m_config.cotThetaMax;
 
-        // multiplet estimator
-        m_estimator.m_cfg.safety_factor = 2.0;
-        m_estimator.m_cfg.safety_adder = 10;
-        // m_estimator.m_cfg.safety_factor = 10.0;
-        // m_estimator.m_cfg.safety_adder = 50000;
-        m_estimator.m_cfg.par_for_mb_doublets = {1, 28.77, 0.4221};
-        m_estimator.m_cfg.par_for_mt_doublets = {1, 19.73, 0.232};
-        m_estimator.m_cfg.par_for_triplets = {1, 0, 0.02149};
-        m_estimator.m_cfg.par_for_seeds = {0, 0.3431};
-
         sb = std::make_shared<traccc::cuda::spacepoint_binning>(
             traccc::cuda::spacepoint_binning(m_config, m_grid_config, mr));
         sf = std::make_shared<traccc::cuda::seed_finding>(
-            traccc::cuda::seed_finding(m_config, m_estimator, sb->nbins(), mr));
+            traccc::cuda::seed_finding(m_config, sb->nbins(), mr));
     }
 
     output_type operator()(
         host_spacepoint_container&& spacepoints) const override {
+
         output_type seeds({host_seed_container(1, &m_mr.get())});
         auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
-        seeds = sf->operator()(std::move(internal_sp_g2));
+        seeds =
+            sf->operator()(std::move(spacepoints), std::move(internal_sp_g2));
+
         return seeds;
     }
 
     private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
-    multiplet_estimator m_estimator;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
     std::shared_ptr<traccc::cuda::spacepoint_binning> sb;
     std::shared_ptr<traccc::cuda::seed_finding> sf;
