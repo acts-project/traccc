@@ -329,48 +329,6 @@ TEST(algorithms, compare_with_acts_seeding) {
         }
     }
 
-    for (unsigned int i = 0; i < traccc_params.size(); i++) {
-        if (!(acts_params[i] == traccc_params[i].vector())) {
-            auto& seed = seeds.get_items()[0][i];
-            auto traccc_spB = spacepoints_per_event.at(seed.spB_link);
-
-            traccc::geometry_id geo_id = 0;
-            for (std::size_t i_h = 0; i_h < spacepoints_per_event.size();
-                 i_h++) {
-                auto& items = spacepoints_per_event.get_items()[i_h];
-                if (std::find(items.begin(), items.end(), traccc_spB) !=
-                    items.end()) {
-                    geo_id = spacepoints_per_event.get_headers()[i_h];
-                    break;
-                }
-            }
-
-            const auto& tf3 = surface_transforms[geo_id];
-
-            auto new_param = tf3.point_to_local(traccc_spB.global);
-
-            std::cout << "original -------------------------------"
-                      << std::endl;
-            std::cout << tf3._data(0, 0) << "  " << tf3._data(0, 1) << "  "
-                      << tf3._data(0, 2) << "  " << tf3._data(0, 3)
-                      << std::endl;
-            std::cout << tf3._data(1, 0) << "  " << tf3._data(1, 1) << "  "
-                      << tf3._data(1, 2) << "  " << tf3._data(1, 3)
-                      << std::endl;
-            std::cout << tf3._data(2, 0) << "  " << tf3._data(2, 1) << "  "
-                      << tf3._data(2, 2) << "  " << tf3._data(2, 3)
-                      << std::endl;
-            std::cout << tf3._data(3, 0) << "  " << tf3._data(3, 1) << "  "
-                      << tf3._data(3, 2) << "  " << tf3._data(3, 3)
-                      << std::endl;
-
-            std::cout << traccc_params[i].vector()[0] << "  "
-                      << traccc_params[i].vector()[1] << "  "
-                      << acts_params[i][0] << "  " << acts_params[i][1] << "  "
-                      << new_param[0] << "  " << new_param[1] << std::endl;
-        }
-    }
-
     float params_match_ratio = float(n_params_match) / traccc_params.size();
     EXPECT_TRUE((params_match_ratio > 0.95) && (params_match_ratio <= 1.));
 
