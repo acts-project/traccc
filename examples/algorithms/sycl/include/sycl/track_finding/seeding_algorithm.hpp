@@ -11,18 +11,16 @@
 #include <iostream>
 
 #include "../../../device/sycl/include/sycl/seeding/seed_finding.hpp"
-#include "seeding/spacepoint_grouping.hpp"
+#include "../../../device/sycl/include/sycl/seeding/spacepoint_binning.hpp"
 
 namespace traccc {
 namespace sycl {
 
 class seeding_algorithm {
-    public:
-    using input_type = host_spacepoint_container&;
-    using output_type =
-        std::pair<host_internal_spacepoint_container, host_seed_container>;
+    : public algorithm<host_seed_container(host_spacepoint_container&&)> {
 
-    seeding_algorithm(vecmem::memory_resource* mr = nullptr, ::sycl::queue* q = nullptr) : m_mr(mr), m_q(q) {
+    public:
+    seeding_algorithm(vecmem::memory_resource& mr = nullptr, ::sycl::queue* q = nullptr) : m_mr(mr), m_q(q) {
 
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
@@ -55,39 +53,28 @@ class seeding_algorithm {
         m_estimator.m_cfg.par_for_triplets = {1, 0, 0.02149};
         m_estimator.m_cfg.par_for_seeds = {0, 0.3431};
 
-        sg = std::make_shared<traccc::spacepoint_grouping>(
-            traccc::spacepoint_grouping(m_config, m_grid_config, m_mr));
+        sb = std::make_shared<traccc::sycl::spacepoint_binning>(
+            traccc::sycl::spacepoint_binning(m_config, m_grid_config, mr));
         sf = std::make_shared<traccc::sycl::seed_finding>(
-            traccc::sycl::seed_finding(m_config, sg->get_spgrid(), m_estimator,
-                                       m_mr, m_q));
+            traccc::sycl::seed_finding(m_config, m_estimator, sb->nbins(), mr, q));
     }
 
-    output_type operator()(input_type& i) {
-        output_type o;
-        this->operator()(i, o);
-        return o;
+    output_type operator()(
+        host_spacepoint_container&& spacepoints) const override {
+        output_type seeds({host_seed_container(1, &m_mr.get())});
+        auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
+        seeds = sf->operator()(std::move(internal_sp_g2));
+        return seeds;
     }
 
-    void operator()(input_type& spacepoints_per_event, output_type& o) {
-        // spacepoint grouping
-        auto internal_sp_per_event = sg->operator()(spacepoints_per_event);
-
-        // seed finding
-        auto seeds = sf->operator()(internal_sp_per_event);
-
-        // output container
-        o.first = std::move(internal_sp_per_event);
-        o.second = std::move(seeds);
-    }
-
-    private:
-    seedfinder_config m_config;
-    spacepoint_grid_config m_grid_config;
-    multiplet_estimator m_estimator;
-    std::shared_ptr<traccc::spacepoint_grouping> sg;
-    std::shared_ptr<traccc::sycl::seed_finding> sf;
-    vecmem::memory_resource* m_mr;
-    ::sycl::queue* m_q;
+private:
+seedfinder_config m_config;
+spacepoint_grid_config m_grid_config;
+multiplet_estimator m_estimator;
+std::reference_wrapper<vecmem::memory_resource> m_mr;
+::sycl::queue* m_q;
+std::shared_ptr<traccc::sycl::spacepoint_binning> sb;
+std::shared_ptr<traccc::sycl::seed_finding> sf;
 };
 
 }  // namespace sycl

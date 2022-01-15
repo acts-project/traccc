@@ -19,6 +19,7 @@
 #include <edm/internal_spacepoint.hpp>
 #include <edm/seed.hpp>
 #include <iostream>
+#include <mutex>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/seed_filtering.hpp>    
@@ -35,7 +36,8 @@ class weight_update_kernel;
 class seed_select_kernel;
 
 // Sycl seeding function object
-struct seed_finding {
+struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
+
     /// Constructor for the sycl seed finding
     ///
     /// @param config is seed finder configuration parameters
@@ -44,9 +46,9 @@ struct seed_finding {
     /// @param mr vecmem memory resource
     /// @param q sycl queue for kernel scheduling
     seed_finding(seedfinder_config& config,
-                 std::shared_ptr<spacepoint_grid> sp_grid,
                  multiplet_estimator& estimator, 
-                 vecmem::memory_resource* mr,
+                 unsigned int nbins,
+                 vecmem::memory_resource& mr,
                  ::sycl::queue* q)
         : m_seedfinder_config(config),
           m_estimator(estimator),
@@ -54,31 +56,28 @@ struct seed_finding {
           m_q(q),
           // initialize all vecmem containers:
           // the size of header and item vector = the number of spacepoint bins
-          doublet_counter_container(sp_grid->size(false), mr),
-          mid_bot_container(sp_grid->size(false), mr),
-          mid_top_container(sp_grid->size(false), mr),
-          triplet_counter_container(sp_grid->size(false), mr),
-          triplet_container(sp_grid->size(false), mr),
-          seed_container(1, mr) {
+          doublet_counter_container(nbins, &m_mr.get()),
+          mid_bot_container(nbins, &m_mr.get()),
+          mid_top_container(nbins, &m_mr.get()),
+          triplet_counter_container(nbins, &m_mr.get()),
+          triplet_container(nbins, &m_mr.get()),
+          seed_container(1, &m_mr.get()) {}
 
-        first_alloc = true;
-    }
-
-    /// Callable operator for the sycl seed finding
+    /// Callable operator for the seed finding
     ///
-    /// @return seed_container is the vecmem seed container
-    host_seed_container operator()(
-        host_internal_spacepoint_container& isp_container) { 
+    /// @return seed_collection is the vector of seeds per event
+    output_type operator()(sp_grid&& g2) const override {
+        std::lock_guard<std::mutex> lock(*mutex);
 
         size_t n_internal_sp = 0;
 
         // resize the item vectors based on the pre-estimated statistics, which
         // is experiment-dependent
-        for (size_t i = 0; i < isp_container.size(); ++i) {
+        for (size_t i = 0; i < g2.nbins(); ++i) {
 
             // estimate the number of multiplets as a function of the middle
             // spacepoints in the bin
-            size_t n_spM = isp_container.get_items()[i].size();
+            size_t n_spM = g2.bin(i).size();
             size_t n_mid_bot_doublets =
                 m_estimator.get_mid_bot_doublets_size(n_spM);
             size_t n_mid_top_doublets =
@@ -99,7 +98,7 @@ struct seed_finding {
             triplet_counter_container.get_items()[i].resize(n_mid_bot_doublets);
             triplet_container.get_items()[i].resize(n_triplets);
 
-            n_internal_sp += isp_container.get_items()[i].size();
+            n_internal_sp += n_spM;
         }
 
         // estimate the number of seeds as a function of the internal
@@ -108,54 +107,52 @@ struct seed_finding {
         seed_container.get_items()[0].resize(
             m_estimator.get_seeds_size(n_internal_sp));
 
-        first_alloc = false;
-
         // doublet counting
-        traccc::sycl::doublet_counting(m_seedfinder_config, isp_container,
-                                       doublet_counter_container, m_mr, m_q);
+        traccc::sycl::doublet_counting(m_seedfinder_config, g2,
+                                       doublet_counter_container, m_mr.get(), m_q);
         
         //doublet finding
-        traccc::sycl::doublet_finding(m_seedfinder_config, isp_container, doublet_counter_container,
-                                     mid_bot_container, mid_top_container, m_mr, m_q);
+        traccc::sycl::doublet_finding(m_seedfinder_config, g2, doublet_counter_container,
+                                     mid_bot_container, mid_top_container, m_mr.get(), m_q);
         
         // triplet counting
-        traccc::sycl::triplet_counting(m_seedfinder_config, isp_container,
+        traccc::sycl::triplet_counting(m_seedfinder_config, g2,
                                        doublet_counter_container,
                                        mid_bot_container, mid_top_container,
-                                       triplet_counter_container, m_mr, m_q);  
+                                       triplet_counter_container, m_mr.get(), m_q);  
 
         // triplet finding
-        traccc::sycl::triplet_finding(m_seedfinder_config, m_seedfilter_config, isp_container,
+        traccc::sycl::triplet_finding(m_seedfinder_config, m_seedfilter_config, g2,
                                       doublet_counter_container, mid_bot_container, mid_top_container,
-                                      triplet_counter_container, triplet_container, m_mr, m_q);
+                                      triplet_counter_container, triplet_container, m_mr.get(), m_q);
 
         // weight updating
-        traccc::sycl::weight_updating(m_seedfilter_config, isp_container,
+        traccc::sycl::weight_updating(m_seedfilter_config, g2,
                                       triplet_counter_container,
-                                      triplet_container, m_mr, m_q);    
+                                      triplet_container, m_mr.get(), m_q);    
         
         // seed selecting
-        traccc::sycl::seed_selecting(m_seedfilter_config, isp_container, doublet_counter_container,
-                                     triplet_counter_container, triplet_container, seed_container, m_mr, m_q);
+        traccc::sycl::seed_selecting(m_seedfilter_config, g2, doublet_counter_container,
+                                     triplet_counter_container, triplet_container, seed_container, m_mr.get(), m_q);
 
         return seed_container;  
-        
     }
 private:
-    bool first_alloc;
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
     multiplet_estimator m_estimator;
     seed_filtering m_seed_filtering;
-
-    host_doublet_counter_container doublet_counter_container;
-    host_doublet_container mid_bot_container;
-    host_doublet_container mid_top_container;
-    host_triplet_counter_container triplet_counter_container;
-    host_triplet_container triplet_container;
-    host_seed_container seed_container;
-    vecmem::memory_resource* m_mr;
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
     ::sycl::queue* m_q;
+
+    // mutable internal objects for multiplets
+    mutable std::unique_ptr<std::mutex> mutex{std::make_unique<std::mutex>()};
+    mutable host_doublet_counter_container doublet_counter_container;
+    mutable host_doublet_container mid_bot_container;
+    mutable host_doublet_container mid_top_container;
+    mutable host_triplet_counter_container triplet_counter_container;
+    mutable host_triplet_container triplet_container;
+    mutable host_seed_container seed_container;
 };
 
 } // namespace sycl

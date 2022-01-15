@@ -16,8 +16,9 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // algorithms
-#include "clusterization/clusterization_algorithm.hpp"
+#include "../../../device/sycl/include/sycl/seeding/track_params_estimation.hpp"
 #include "../../algorithms/sycl/include/sycl/track_finding/seeding_algorithm.hpp"
+#include "seeding/track_params_estimation.hpp"
 #include "track_finding/seeding_algorithm.hpp"
 
 // io
@@ -32,16 +33,18 @@ public:
         return device.get_platform().get_backend() == ::sycl::backend::cuda ? 1 : -1;
     }
 };
-
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
             unsigned int events, bool skip_cpu) {
+
+    // Read the surface transforms
+    auto surface_transforms = traccc::read_geometry(detector_file);
 
     // Output stats
     uint64_t n_modules = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_internal_spacepoints = 0;
     uint64_t n_seeds = 0;
-    uint64_t n_seeds_sycl = 0;
+    uint64_t n_seeds_cuda = 0;
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -57,102 +60,106 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     float wall_time(0);
     float hit_reading_cpu(0);
     float seeding_cpu(0);
-    float seeding_sycl(0);
+    float seeding_cuda(0);
+    float tp_estimating_cpu(0);
+    float tp_estimating_cuda(0);
 
-    traccc::seeding_algorithm sa(&host_mr);
-    traccc::sycl::seeding_algorithm sa_sycl(&shared_mr, &q);
+    traccc::seeding_algorithm sa(host_mr);
+    traccc::track_params_estimation tp(host_mr);
 
-    /*-----------------
-      hit reading
-      -----------------*/
+    traccc::sycl::seeding_algorithm sa_sycl(shared_mr, &q);
+    traccc::sycl::track_params_estimation tp_sycl(shared_mr, &q);
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
-
-    std::vector<traccc::host_spacepoint_container> all_spacepoints;
 
     // Loop over events
     for (unsigned int event = 0; event < events; ++event) {
 
+        /*-----------------
+          hit file reading
+          -----------------*/
+
         /*time*/ auto start_hit_reading_cpu = std::chrono::system_clock::now();
 
-        // Read the cells from the relevant event file
-        std::string event_string = "000000000";
-        std::string event_number = std::to_string(event);
-        event_string.replace(event_string.size() - event_number.size(),
-                             event_number.size(), event_number);
-
-        std::string io_hits_file = hits_dir + std::string("/event") +
-                                   event_string + std::string("-hits.csv");
-
-        traccc::fatras_hit_reader hreader(
-            io_hits_file,
-            {"particle_id", "geometry_id", "tx", "ty", "tz", "tt", "tpx", "tpy",
-             "tpz", "te", "deltapx", "deltapy", "deltapz", "deltae", "index"});
+        // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
-            traccc::read_hits(hreader, host_mr);
-
-        for (size_t i = 0; i < spacepoints_per_event.size(); i++) {
-            auto& spacepoints_per_module = spacepoints_per_event.get_items()[i];
-
-            n_spacepoints += spacepoints_per_module.size();
-            n_modules++;
-        }
-
-        all_spacepoints.push_back(spacepoints_per_event);
+            traccc::read_spacepoints_from_event(event, hits_dir,
+                                                surface_transforms, shared_mr);
 
         /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_hit_reading_cpu =
             end_hit_reading_cpu - start_hit_reading_cpu;
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
-    }
 
-    /*-------------------
-      Seeding
-      --------------------*/
+        /*----------------------------
+             Seeding algorithm
+          ----------------------------*/
 
-    for (unsigned int event = 0; event < events; ++event) {
-
-        auto& spacepoints_per_event = all_spacepoints[event];
-
-        // sycl
+        /// SYCL
 
         /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
 
-        auto sa_sycl_result = sa_sycl(spacepoints_per_event);
-        auto& seeds_sycl = sa_sycl_result.second;
-        n_seeds_sycl += seeds_sycl.get_headers()[0];
+        auto seeds_sycl = sa_sycl(std::move(spacepoints_per_event));
 
         /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_sycl =
             end_seeding_sycl - start_seeding_sycl;
         /*time*/ seeding_sycl += time_seeding_sycl.count();
 
-        // cpu
+        // CPU
 
         /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
-        traccc::host_seed_container seeds;
-        traccc::host_internal_spacepoint_container internal_sp_per_event;
+        traccc::seeding_algorithm::output_type seeds;
+
         if (!skip_cpu) {
-            auto sa_result = sa(spacepoints_per_event);
-            internal_sp_per_event = sa_result.first;
-            seeds = sa_result.second;
-            n_internal_spacepoints += internal_sp_per_event.total_size();
+            seeds = sa(spacepoints_per_event);
         }
-        n_seeds += seeds.total_size();
 
         /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cpu =
             end_seeding_cpu - start_seeding_cpu;
         /*time*/ seeding_cpu += time_seeding_cpu.count();
 
+        /*----------------------------
+          Track params estimation
+          ----------------------------*/
+
+        // SYCL
+
+        /*time*/ auto start_tp_estimating_sycl =
+            std::chrono::system_clock::now();
+
+        auto params_sycl = tp_sycl(std::move(seeds_sycl));
+
+        /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
+            end_tp_estimating_sycl - start_tp_estimating_sycl;
+        /*time*/ tp_estimating_sycl += time_tp_estimating_sycl.count();
+
+        // CPU
+
+        /*time*/ auto start_tp_estimating_cpu =
+            std::chrono::system_clock::now();
+
+        traccc::track_params_estimation::output_type params;
+        if (!skip_cpu) {
+            params = tp(seeds);
+        }
+
+        /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
+            end_tp_estimating_cpu - start_tp_estimating_cpu;
+        /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+
         /*----------------------------------
           compare seeds from cpu and sycl
           ----------------------------------*/
 
         if (!skip_cpu) {
+            // seeding
             int n_match = 0;
-            for (auto seed : seeds.get_items()[0]) {
+            for (auto& seed : seeds.get_items()[0]) {
                 if (std::find(seeds_sycl.get_items()[0].begin(),
                               seeds_sycl.get_items()[0].begin() +
                                   seeds_sycl.get_headers()[0],
@@ -162,23 +169,38 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
                 }
             }
             float matching_rate = float(n_match) / seeds.get_headers()[0];
-            std::cout << "event " << std::to_string(event)
-                      << " seed matching rate: " << matching_rate << std::endl;
+            std::cout << "event " << std::to_string(event) << std::endl;
+            std::cout << " seed matching rate: " << matching_rate << std::endl;
+
+            // track parameter estimation
+            n_match = 0;
+            for (auto& param : params) {
+                if (std::find(params_sycl.begin(), params_sycl.end(), param) !=
+                    params_sycl.end()) {
+                    n_match++;
+                }
+            }
+            matching_rate = float(n_match) / params.size();
+            std::cout << " track parameters matching rate: " << matching_rate
+                      << std::endl;
         }
+
+        /*----------------
+             Statistics
+          ---------------*/
+
+        n_spacepoints += spacepoints_per_event.total_size();
+        n_seeds_sycl += seeds_sycl.get_headers()[0];
+        n_seeds += seeds.total_size();
 
         /*------------
           Writer
           ------------*/
 
-        std::string event_string = "000000000";
-        std::string event_number = std::to_string(event);
-        event_string.replace(event_string.size() - event_number.size(),
-                             event_number.size(), event_number);
-
         if (!skip_cpu) {
             traccc::write_spacepoints(event, spacepoints_per_event);
-            traccc::write_internal_spacepoints(event, internal_sp_per_event);
             traccc::write_seeds(event, seeds);
+            traccc::write_estimated_track_parameters(event, params);
 
             /*
             traccc::multiplet_statistics_writer multiplet_stat_writer{
@@ -224,6 +246,10 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
               << seeding_cpu << std::endl;
     std::cout << "seeding_time (sycl) " << std::setw(10) << std::left
               << seeding_sycl << std::endl;
+    std::cout << "tr_par_esti_time (cpu)    " << std::setw(10) << std::left
+              << tp_estimating_cpu << std::endl;
+    std::cout << "tr_par_esti_time (sycl)   " << std::setw(10) << std::left
+              << tp_estimating_sycl << std::endl;
 
     return 0;
 }
