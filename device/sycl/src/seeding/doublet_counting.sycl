@@ -41,7 +41,7 @@ public:
         // Get the bin index of spacepoint binning and reference block idx for the
         // bin index
         unsigned int bin_idx(0), sp_idx(0);
-        sycl_helper::find_idx_on_jagged_vector(internal_sp_device.get_items(), bin_idx,
+        sycl_helper::find_idx_on_jagged_vector(internal_sp_device.data(), bin_idx,
                                     sp_idx, item);
 
         // get internal spacepoints for current bin
@@ -74,26 +74,26 @@ public:
 
         // get the neighbor indices
         auto phi_bins =
-            internal_sp_device.axis_p0().range(isp.phi(), config.neighbor_scope);
+            internal_sp_device.axis_p0().range(isp.phi(), m_config.neighbor_scope);
         auto z_bins =
-            internal_sp_device.axis_p1().range(isp.z(), config.neighbor_scope);
+            internal_sp_device.axis_p1().range(isp.z(), m_config.neighbor_scope);
         auto i_p = phi_bins[0];
         auto i_z = z_bins[0];
 
-        for (unsigned int c = 0; c < config.get_max_neighbor_bins(); c++) {
+        for (unsigned int c = 0; c < m_config.get_max_neighbor_bins(); c++) {
 
             auto neighbors = internal_sp_device.bin(i_p, i_z);
 
             for (auto& neigh_isp : neighbors) {
 
                 // Check if middle and bottom sp can form a doublet
-                if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
+                if (doublet_finding_helper::isCompatible(isp, neigh_isp, m_config,
                                                         true)) {
                     n_mid_bot++;
                 }
 
                 // Check if middle and top sp can form a doublet
-                if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
+                if (doublet_finding_helper::isCompatible(isp, neigh_isp, m_config,
                                                         false)) {
                     n_mid_top++;
                 }

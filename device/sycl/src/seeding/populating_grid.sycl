@@ -72,7 +72,7 @@ class PopulatingGrid {
                     phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 
                 /// increase the size for the grid bin
-                vecmem::atomic<uint32_t> obj(&grid_sizes[bin_idex]);
+                vecmem::atomic<uint32_t> obj(&grid_sizes[bin_index]);
                 auto pos = obj.fetch_add(1);
 
                 /// replace the value
@@ -118,7 +118,7 @@ void populating_grid(
 
     // Run the Sycl kernel 
     q->submit([&](::sycl::handler& h){
-        PopulateGrid kernel( config, grid_view, grid_sizes_view, 
+        PopulatingGrid kernel( config, grid_view, grid_sizes_view, 
                             spacepoints_view, sp_container_indices_view);
         h.parallel_for<class populate_grid_kernel>(populateGridNdRange, kernel);
     }).wait_and_throw();

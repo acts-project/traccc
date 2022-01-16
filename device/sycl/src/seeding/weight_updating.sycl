@@ -36,7 +36,7 @@ public:
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        sp_grid_device internal_sp_device(internal_sp_view);
+        sp_grid_device internal_sp_device(m_internal_sp_view);
 
         device_triplet_counter_container triplet_counter_device(
             {m_triplet_counter_view.headers, m_triplet_counter_view.items});
@@ -45,7 +45,7 @@ public:
 
         // Get the bin and item index
         unsigned int bin_idx(0), tr_idx(0);
-        sycl_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx);
+        sycl_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx, item);
 
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects per
@@ -68,7 +68,6 @@ public:
         ::sycl::group_barrier(workGroup);
 
         // index of triplet in the item vector
-        auto tr_idx = (groupIdx - ref_block_idx) * groupDim + workItemIdx;
         auto& triplet = triplets_per_bin[tr_idx];
         auto& spB_idx = triplet.sp1;
         auto& spM_idx = triplet.sp2;
@@ -108,9 +107,9 @@ public:
         // seeds span 5 layers
         // -> very good seed
         scalar lowerLimitCurv =
-            triplet.curvature - filter_config.deltaInvHelixDiameter;
+            triplet.curvature - m_filter_config.deltaInvHelixDiameter;
         scalar upperLimitCurv =
-            triplet.curvature + filter_config.deltaInvHelixDiameter;
+            triplet.curvature + m_filter_config.deltaInvHelixDiameter;
         int num_compat_seedR = 0;
 
         // iterate over triplets
@@ -128,7 +127,7 @@ public:
             // compared top SP should have at least deltaRMin distance
             scalar otherTop_r = other_spT.radius();
             scalar deltaR = currentTop_r - otherTop_r;
-            if (std::abs(deltaR) < filter_config.deltaRMin) {
+            if (std::abs(deltaR) < m_filter_config.deltaRMin) {
                 continue;
             }
 
@@ -153,7 +152,7 @@ public:
                 // only if distance larger than rmin to all other compatible
                 // seeds
                 if (std::abs(previousDiameter - otherTop_r) <
-                    filter_config.deltaRMin) {
+                    m_filter_config.deltaRMin) {
                     newCompSeed = false;
                     break;
                 }
@@ -161,11 +160,11 @@ public:
 
             if (newCompSeed) {
                 compat_seedR[num_compat_seedR] = otherTop_r;
-                triplet.weight += filter_config.compatSeedWeight;
+                triplet.weight += m_filter_config.compatSeedWeight;
                 num_compat_seedR++;
             }
 
-            if (num_compat_seedR >= filter_config.compatSeedLimit) {
+            if (num_compat_seedR >= m_filter_config.compatSeedLimit) {
                 break;
             }
         }

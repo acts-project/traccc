@@ -82,7 +82,7 @@ private:
     const seedfinder_config m_config;
     sp_grid_view m_grid_view;
     spacepoint_container_view m_spacepoints_view;
-    vecmem::data::vector_view<std::pair<unsigned int, unsigned, int>> m_sp_container_indices_view;
+    vecmem::data::vector_view<std::pair<unsigned int, unsigned int>> m_sp_container_indices_view;
     vecmem::data::vector_view<unsigned int> m_grid_capacities_view;
 };
 

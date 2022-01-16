@@ -69,7 +69,7 @@ public:
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        sp_grid_device internal_sp_device(internal_sp_view);
+        sp_grid_device internal_sp_device(m_internal_sp_view);
 
         device_doublet_counter_container doublet_counter_device(
             {m_doublet_counter_view.headers, m_doublet_counter_view.items});
@@ -82,7 +82,7 @@ public:
         // Get the bin and item index
         unsigned int bin_idx(0), item_idx(0);
         sycl_helper::find_idx_on_container(triplet_counter_device, bin_idx,
-                                        item_idx);
+                                        item_idx, item);
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects per
         // bin
@@ -138,20 +138,20 @@ public:
             if (spM_loc == aTriplet.sp2) {
 
                 // update weight of triplet
-                seed_selecting_helper::seed_weight(filter_config, spM, spB, spT,
+                seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
                                                 aTriplet.weight);
 
                 // check if it is a good triplet
-                if (!seed_selecting_helper::single_seed_cut(filter_config, spM, spB,
+                if (!seed_selecting_helper::single_seed_cut(m_filter_config, spM, spB,
                                                             spT, aTriplet.weight)) {
                     continue;
                 }
 
                 // if the number of good triplets is larger than the threshold, the
                 // triplet with the lowest weight is removed
-                if (n_triplets_per_spM >= filter_config.max_triplets_per_spM) {
+                if (n_triplets_per_spM >= m_filter_config.max_triplets_per_spM) {
                     int begin_idx = stride;
-                    int end_idx = stride + filter_config.max_triplets_per_spM;
+                    int end_idx = stride + m_filter_config.max_triplets_per_spM;
 
                     // Note: min_index method gives a result different
                     //       from sorting method when there are the cases where
@@ -204,13 +204,13 @@ public:
             auto& spT = internal_sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
 
             // if the number of seeds reaches the threshold, break
-            if (n_seeds_per_spM >= filter_config.maxSeedsPerSpM + 1) {
+            if (n_seeds_per_spM >= m_filter_config.maxSeedsPerSpM + 1) {
                 break;
             }
 
             // check if it is a good triplet
             if (seed_selecting_helper::cut_per_middle_sp(
-                    filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
+                    m_filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
                 n_seeds_per_spM == 0) {
 
                 vecmem::atomic<uint32_t> obj(&num_seeds);

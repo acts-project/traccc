@@ -82,8 +82,8 @@ public:
         auto num_mid_bot_doublets_per_thread = m_localMemBot.get_pointer();
         auto num_mid_top_doublets_per_thread = m_localMemTop.get_pointer();
         // Convenient alias for the number of doublets per thread
-        auto& n_mid_bot_per_spM = num_mid_bot_doublets_per_thread[threadIdx.x];
-        auto& n_mid_top_per_spM = num_mid_top_doublets_per_thread[threadIdx.x];
+        auto& n_mid_bot_per_spM = num_mid_bot_doublets_per_thread[workItemIdx];
+        auto& n_mid_top_per_spM = num_mid_top_doublets_per_thread[workItemIdx];
 
         // prevent the tail threads referring the null doublet counter
         if (item_idx >= num_compat_spM_per_bin) {
