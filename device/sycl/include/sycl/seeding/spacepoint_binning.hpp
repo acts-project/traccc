@@ -10,14 +10,17 @@
 #include <CL/sycl.hpp>
 
 #include "sycl/seeding/counting_grid_capacities.hpp"
-#include <sycl/seeding/populating_grid.hpp>
+#include "sycl/seeding/populating_grid.hpp"
 #include <seeding/spacepoint_binning_helper.hpp>
 #include <utils/algorithm.hpp>
 
-#include "vecmem/memory/sycl/device_memory_resource.hpp"
+// #include <vecmem/memory/sycl/device_memory_resource.hpp>
 
 namespace traccc {
 namespace sycl {
+
+class count_grid_kernel;
+class populate_grid_kernel;
 
 /// Spacepoing binning for cuda
 struct spacepoint_binning

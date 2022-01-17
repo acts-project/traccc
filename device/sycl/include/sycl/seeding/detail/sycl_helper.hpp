@@ -36,8 +36,8 @@ struct sycl_helper {
         auto groupDim = item.get_local_range(0);
 
         // Comment out the first two lines of shift_left for Intel platform (min blockSize is 8 in that case)
-        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
-        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
+        // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
+        // array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
         array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
         array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
         array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);

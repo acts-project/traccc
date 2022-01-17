@@ -216,7 +216,7 @@ public:
         // Calculate the number of triplets per "block" with reducing sum technique
         ::sycl::group_barrier(workGroup);
         // disable following for Intel's intgr. gpu
-        sycl_helper::reduceInShared(num_triplets_per_thread, item);
+        // sycl_helper::reduceInShared(num_triplets_per_thread, item);
         
         // Following is the sycl group reduction algorithm - doesn't always work correctly
         // num_triplets_per_thread[0] = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::plus<>());
@@ -225,11 +225,11 @@ public:
         // triplets per block
         if (workItemIdx == 0) {
         // uncomment following for Intel's gpu
-            // uint32_t resultTriplets = 0;
-                //for (uint32_t i=0; i<groupDim; ++i){
-                //  resultTriplets += num_triplets_per_thread[i];
-                //}           
-            //num_triplets_per_thread[0] = resultTriplets;         
+            uint32_t resultTriplets = 0;
+                for (uint32_t i=0; i<groupDim; ++i){
+                 resultTriplets += num_triplets_per_thread[i];
+                }           
+            num_triplets_per_thread[0] = resultTriplets;         
             vecmem::atomic<uint32_t> obj(&num_triplets_per_bin);
             obj.fetch_add(num_triplets_per_thread[0]);
         }
@@ -268,7 +268,7 @@ void triplet_finding(const seedfinder_config& config,
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localSize = 64;
+    unsigned int localSize = 8;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {

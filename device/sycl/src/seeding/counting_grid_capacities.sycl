@@ -101,7 +101,7 @@ void counting_grid_capacities(
     auto grid_capacities_view = vecmem::get_data(grid_capacities);
 
     // The local number of threads per work-group (block in cuda) (number taken from cuda implementation, warp size *2)
-    unsigned int localSize = 64;
+    unsigned int localSize = 32*4;
     unsigned int num_groups = spacepoints.total_size() / localSize + 1;
 
     unsigned int globalSize = num_groups * localSize;

@@ -68,13 +68,13 @@ class seeding_algorithm
     }
 
 private:
-seedfinder_config m_config;
-spacepoint_grid_config m_grid_config;
-multiplet_estimator m_estimator;
-std::reference_wrapper<vecmem::memory_resource> m_mr;
-::sycl::queue* m_q;
-std::shared_ptr<traccc::sycl::spacepoint_binning> sb;
-std::shared_ptr<traccc::sycl::seed_finding> sf;
+    seedfinder_config m_config;
+    spacepoint_grid_config m_grid_config;
+    multiplet_estimator m_estimator;
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
+    ::sycl::queue* m_q;
+    std::shared_ptr<traccc::sycl::spacepoint_binning> sb;
+    std::shared_ptr<traccc::sycl::seed_finding> sf;
 };
 
 }  // namespace sycl
