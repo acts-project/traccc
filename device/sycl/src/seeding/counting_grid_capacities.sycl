@@ -5,7 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <sycl/seeding/counting_grid_capacities.hpp>
+#define EIGEN_DONT_VECTORIZE
+#include "sycl/seeding/counting_grid_capacities.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -67,7 +68,7 @@ class CountGridCapacities {
 
             /// Ignore is radius index is invalid value
             if (r_index != detray::invalid_value<size_t>()) {
-                auto isp = internal_spacepoint<spacepoint>(sp, m_config.beamPos);
+                auto isp = internal_spacepoint<spacepoint>(sp, vector2{m_config.beamPos_x, m_config.beamPos_y});
 
                 /// Get bin index in grid
                 size_t bin_index =

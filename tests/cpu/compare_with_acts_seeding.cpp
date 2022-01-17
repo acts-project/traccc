@@ -174,8 +174,8 @@ TEST(algorithms, compare_with_acts_seeding) {
     config.minPt = traccc_config.minPt;
     config.bFieldInZ = traccc_config.bFieldInZ;
 
-    config.beamPos[0] = traccc_config.beamPos[0];
-    config.beamPos[1] = traccc_config.beamPos[1];
+    config.beamPos[0] = traccc_config.beamPos_x;
+    config.beamPos[1] = traccc_config.beamPos_y;
 
     config.impactMax = traccc_config.impactMax;
 

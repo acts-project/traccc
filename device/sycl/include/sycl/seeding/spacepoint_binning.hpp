@@ -90,7 +90,7 @@ struct spacepoint_binning
     spacepoint_grid_config m_grid_config;
     std::pair<output_type::axis_p0_t, output_type::axis_p1_t> m_axes;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-    ::syc::queue* m_q;
+    ::sycl::queue* m_q;
 };
 
 }  // namespace sycl

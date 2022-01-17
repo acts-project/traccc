@@ -37,7 +37,8 @@ void counting_grid_capacities(
     host_spacepoint_container& spacepoints,
     vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
     vecmem::vector<unsigned int>& grid_capacities,
-    vecmem::memory_resource& resource);
+    vecmem::memory_resource& resource,
+    ::sycl::queue* q);
 
 }  // namespace sycl
 }  // namespace traccc

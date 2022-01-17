@@ -44,7 +44,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     uint64_t n_spacepoints = 0;
     uint64_t n_internal_spacepoints = 0;
     uint64_t n_seeds = 0;
-    uint64_t n_seeds_cuda = 0;
+    uint64_t n_seeds_sycl = 0;
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -60,9 +60,9 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     float wall_time(0);
     float hit_reading_cpu(0);
     float seeding_cpu(0);
-    float seeding_cuda(0);
+    float seeding_sycl(0);
     float tp_estimating_cpu(0);
-    float tp_estimating_cuda(0);
+    float tp_estimating_sycl(0);
 
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
