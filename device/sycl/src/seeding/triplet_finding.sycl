@@ -215,21 +215,21 @@ public:
         }
         // Calculate the number of triplets per "block" with reducing sum technique
         ::sycl::group_barrier(workGroup);
-        // disable following for Intel's intgr. gpu
+        // Warp shuffle reduction algorithm  
         // sycl_helper::reduceInShared(num_triplets_per_thread, item);
         
-        // Following is the sycl group reduction algorithm - doesn't always work correctly
+        // Sycl group reduction algorithm - doesn't always work correctly
         num_triplets_per_thread[0] = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::plus<>());
 
         // Calculate the number of triplets per bin by atomic-adding the number of
         // triplets per block
         if (workItemIdx == 0) {
-        // uncomment following for Intel's gpu
+        // For loop reduction  
         //    uint32_t resultTriplets = 0;
-         //       for (uint32_t i=0; i<groupDim; ++i){
-          //       resultTriplets += num_triplets_per_thread[i];
-           //     }           
-           // num_triplets_per_thread[0] = resultTriplets;         
+        //        for (uint32_t i=0; i<groupDim; ++i){
+        //         resultTriplets += num_triplets_per_thread[i];
+        //        }           
+        //    num_triplets_per_thread[0] = resultTriplets;         
             vecmem::atomic<uint32_t> obj(&num_triplets_per_bin);
             obj.fetch_add(num_triplets_per_thread[0]);
         }
