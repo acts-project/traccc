@@ -150,7 +150,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
         traccc::track_params_estimation::output_type params;
         if (run_cpu) {
-            params = tp(seeds);
+            params = tp(spacepoints_per_event, seeds);
         }
 
         /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
