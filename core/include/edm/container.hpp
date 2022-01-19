@@ -10,8 +10,6 @@
 #include <type_traits>
 
 // VecMem include(s).
-#include <thrust/pair.h>
-
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
@@ -67,7 +65,7 @@ class container_element {
 template <typename header_t, typename item_t,
           template <typename> class vector_t,
           template <typename> class jagged_vector_t,
-          template <typename...> class pair_type = std::pair>
+          template <typename, typename> class pair_t = std::pair>
 class container {
     public:
     /// @name Type definitions
@@ -94,8 +92,8 @@ class container {
     using size_type = typename header_vector::size_type;
 
     /// The element link type
-    using link_type = pair_type<typename header_vector::size_type,
-                                typename item_vector::size_type>;
+    using link_type = pair_t<typename header_vector::size_type,
+                             typename item_vector::size_type>;
 
     /// @}
 
