@@ -19,7 +19,7 @@ struct doublet_per_bin {
     TRACCC_HOST_DEVICE
     unsigned int get_ref_num() const { return n_doublets; }
 
-    TRACCC_HOST
+    TRACCC_HOST_DEVICE
     void zeros() { n_doublets = 0; }
 };
 

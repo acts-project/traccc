@@ -25,7 +25,7 @@ struct doublet_counter_per_bin {
     TRACCC_HOST_DEVICE
     unsigned int get_ref_num() const { return n_spM; }
 
-    TRACCC_HOST
+    TRACCC_HOST_DEVICE
     void zeros() {
         n_spM = 0;
         n_mid_bot = 0;

@@ -27,7 +27,7 @@
 #include "track_finding/seeding_algorithm.hpp"
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
-            unsigned int events, bool skip_cpu) {
+            unsigned int events, bool run_cpu) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
@@ -117,7 +117,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 
         traccc::seeding_algorithm::output_type seeds;
 
-        if (!skip_cpu) {
+        if (run_cpu) {
             seeds = sa(spacepoints_per_event);
         }
 
@@ -149,7 +149,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             std::chrono::system_clock::now();
 
         traccc::track_params_estimation::output_type params;
-        if (!skip_cpu) {
+        if (run_cpu) {
             params = tp(spacepoints_per_event, seeds);
         }
 
@@ -162,7 +162,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
           compare cpu and cuda result
           ----------------------------------*/
 
-        if (!skip_cpu) {
+        if (run_cpu) {
             // seeding
             int n_match = 0;
             for (auto& seed : seeds.get_items()[0]) {
@@ -206,7 +206,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Writer
           ------------*/
 
-        if (!skip_cpu) {
+        if (run_cpu) {
             traccc::write_measurements(event, measurements_per_event);
             traccc::write_spacepoints(event, spacepoints_per_event);
             traccc::write_seeds(event, spacepoints_per_event, seeds);
@@ -259,7 +259,7 @@ int main(int argc, char* argv[]) {
     if (argc < 4) {
         std::cout << "Not enough arguments, minimum requirement: " << std::endl;
         std::cout << "./seq_example <detector_file> <hit_directory> "
-                     "<events> <skip_cpu>"
+                     "<events> <run_cpu>"
                   << std::endl;
         return -1;
     }
@@ -267,10 +267,10 @@ int main(int argc, char* argv[]) {
     auto detector_file = std::string(argv[1]);
     auto hit_directory = std::string(argv[2]);
     auto events = std::atoi(argv[3]);
-    bool skip_cpu = std::atoi(argv[4]);
+    bool run_cpu = std::atoi(argv[4]);
 
     std::cout << "Running ./seq_example " << detector_file << " "
               << hit_directory << " "
-              << " " << events << " " << skip_cpu << " " << std::endl;
-    return seq_run(detector_file, hit_directory, events, skip_cpu);
+              << " " << events << " " << run_cpu << " " << std::endl;
+    return seq_run(detector_file, hit_directory, events, run_cpu);
 }

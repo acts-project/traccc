@@ -18,7 +18,7 @@ struct triplet_per_bin {
     TRACCC_HOST_DEVICE
     unsigned int get_ref_num() const { return n_triplets; }
 
-    TRACCC_HOST
+    TRACCC_HOST_DEVICE
     void zeros() { n_triplets = 0; }
 };
 
