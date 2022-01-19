@@ -216,10 +216,10 @@ public:
         // Calculate the number of triplets per "block" with reducing sum technique
         ::sycl::group_barrier(workGroup);
         // Warp shuffle reduction algorithm  
-        // sycl_helper::reduceInShared(num_triplets_per_thread, item);
+        sycl_helper::reduceInShared(num_triplets_per_thread, item);
         
         // Sycl group reduction algorithm - doesn't always work correctly
-        num_triplets_per_thread[0] = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::plus<>());
+        // num_triplets_per_thread[0] = ::sycl::reduce_over_group(workGroup, num_triplets_per_thread[workItemIdx], ::sycl::plus<>());
 
         // Calculate the number of triplets per bin by atomic-adding the number of
         // triplets per block
