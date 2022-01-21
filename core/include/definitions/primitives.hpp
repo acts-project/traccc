@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -27,13 +27,13 @@ using geometry_id = uint64_t;
 using event_id = uint64_t;
 using channel_id = unsigned int;
 
-using vector2 = __plugin::point2;
-using point2 = __plugin::point2;
-using variance2 = __plugin::point2;
-using point3 = __plugin::point3;
-using vector3 = __plugin::point3;
-using variance3 = __plugin::point3;
-using transform3 = __plugin::transform3;
+using vector2 = __plugin::point2<traccc::scalar>;
+using point2 = __plugin::point2<traccc::scalar>;
+using variance2 = __plugin::point2<traccc::scalar>;
+using point3 = __plugin::point3<traccc::scalar>;
+using vector3 = __plugin::point3<traccc::scalar>;
+using variance3 = __plugin::point3<traccc::scalar>;
+using transform3 = __plugin::transform3<traccc::scalar>;
 
 // Fixme: Need to utilize algebra plugin for vector and matrix
 template <unsigned int kSize>

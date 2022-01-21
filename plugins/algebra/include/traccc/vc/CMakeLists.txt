@@ -1,3 +1,9 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
 message(STATUS "Building 'traccc::vc_array' plugin")
 
 add_library(traccc_vc_array INTERFACE)
@@ -11,11 +17,9 @@ install(
   DIRECTORY include/plugins
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if(ALGEBRA_CUSTOM_SCALARTYPE)
-  target_compile_definitions(
-    traccc_vc_array
-    INTERFACE -DALGEBRA_CUSTOM_SCALARTYPE=${ALGEBRA_CUSTOM_SCALARTYPE})
-endif()
+target_compile_definitions(
+  traccc_vc_array
+  INTERFACE TRACCC_CUSTOM_SCALARTYPE=${TRACCC_CUSTOM_SCALARTYPE})
 
 target_link_libraries(traccc_vc_array INTERFACE algebra::vc_vc vecmem::core)
 
