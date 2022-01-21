@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021 CERN for the benefit of the ACTS project
+# (c) 2021-2022 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -13,14 +13,12 @@ message( STATUS "Building Algebra Plugins as part of the TRACCC project" )
 
 # Declare where to get Algebra Plugins from.
 set( TRACCC_ALGEBRA_PLUGINS_SOURCE
-   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.3.0.tar.gz;URL_MD5;7ffcfe299ebf654074b196e949afb010"
+   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.5.1.tar.gz;URL_MD5;285e6cc01f41d4daecea62150dc717a8"
    CACHE STRING "Source for Algebra Plugins, when built as part of this project" )
 mark_as_advanced( TRACCC_ALGEBRA_PLUGINS_SOURCE )
 FetchContent_Declare( AlgebraPlugins ${TRACCC_ALGEBRA_PLUGINS_SOURCE} )
 
 # Options used in the build of Algebra Plugins.
-set( ALGEBRA_PLUGINS_CUSTOM_SCALARTYPE "float" CACHE STRING
-   "Use float for scalar type" )
 set( ALGEBRA_PLUGINS_BUILD_TESTING FALSE CACHE BOOL
    "Turn off the build of the Algebra Plugins unit tests" )
 set( ALGEBRA_PLUGINS_INCLUDE_EIGEN TRUE CACHE BOOL
