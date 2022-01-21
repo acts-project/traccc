@@ -55,7 +55,7 @@ void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
     unsigned int num_blocks = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_blocks +=
-            doublet_counter_container.get_headers()[i] / num_threads + 1;
+            doublet_counter_container.get_headers()[i].n_spM / num_threads + 1;
     }
 
     // shared memory assignment for the number of and mid_top doublets per
@@ -100,21 +100,22 @@ __global__ void doublet_finding_kernel(
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
     auto& num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx);
+        doublet_counter_device.get_headers().at(bin_idx).n_spM;
+
     auto doublet_counter_per_bin =
         doublet_counter_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_bot doublets per bin
     // Item of doublet: doublet objects per bin
     auto& num_mid_bot_doublets_per_bin =
-        mid_bot_doublet_device.get_headers().at(bin_idx);
+        mid_bot_doublet_device.get_headers().at(bin_idx).n_doublets;
     auto mid_bot_doublets_per_bin =
         mid_bot_doublet_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
     auto& num_mid_top_doublets_per_bin =
-        mid_top_doublet_device.get_headers().at(bin_idx);
+        mid_top_doublet_device.get_headers().at(bin_idx).n_doublets;
     auto mid_top_doublets_per_bin =
         mid_top_doublet_device.get_items().at(bin_idx);
 

@@ -12,7 +12,16 @@
 
 namespace traccc {
 
-/// Header: unsigned int for the number of doublets per spacepoint bin
+/// Header: the number of doublets per spacepoint bin
+struct doublet_per_bin {
+    unsigned int n_doublets = 0;
+
+    TRACCC_HOST_DEVICE
+    unsigned int get_ref_num() const { return n_doublets; }
+
+    TRACCC_HOST_DEVICE
+    void zeros() { n_doublets = 0; }
+};
 
 /// Item: doublet of middle-bottom or middle-top
 struct doublet {
@@ -42,21 +51,21 @@ using host_doublet_collection = doublet_collection<vecmem::vector>;
 using device_doublet_collection = doublet_collection<vecmem::device_vector>;
 
 /// Convenience declaration for the doublet container type to use in host code
-using host_doublet_container = host_container<unsigned int, doublet>;
+using host_doublet_container = host_container<doublet_per_bin, doublet>;
 
 /// Convenience declaration for the doublet container type to use in device code
-using device_doublet_container = device_container<unsigned int, doublet>;
+using device_doublet_container = device_container<doublet_per_bin, doublet>;
 
 /// Convenience declaration for the doublet container data type to use in host
 /// code
-using doublet_container_data = container_data<unsigned int, doublet>;
+using doublet_container_data = container_data<doublet_per_bin, doublet>;
 
 /// Convenience declaration for the doublet container buffer type to use in host
 /// code
-using doublet_container_buffer = container_buffer<unsigned int, doublet>;
+using doublet_container_buffer = container_buffer<doublet_per_bin, doublet>;
 
 /// Convenience declaration for the doublet container view type to use in host
 /// code
-using doublet_container_view = container_view<unsigned int, doublet>;
+using doublet_container_view = container_view<doublet_per_bin, doublet>;
 
 }  // namespace traccc

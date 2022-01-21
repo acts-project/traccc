@@ -187,26 +187,6 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
             traccc::write_spacepoints(event, spacepoints_per_event);
             traccc::write_seeds(event, spacepoints_per_event, seeds);
             traccc::write_estimated_track_parameters(event, params);
-
-            /*
-            traccc::multiplet_statistics_writer multiplet_stat_writer{
-                "event" + event_string + "-multiplet_statistics.csv"};
-
-            auto stats = sf.get_multiplet_stats();
-            for (size_t i = 0; i < stats.size(); ++i) {
-                auto stat = stats[i];
-                multiplet_stat_writer.append(
-                    {stat.n_spM, stat.n_mid_bot_doublets,
-                     stat.n_mid_top_doublets, stat.n_triplets});
-            }
-
-            traccc::seed_statistics_writer seed_stat_writer{
-                "event" + event_string + "-seed_statistics.csv"};
-
-            auto seed_stats = sf.get_seed_stats();
-            seed_stat_writer.append(
-                {seed_stats.n_internal_sp, seed_stats.n_seeds});
-            */
         }
     }
 
