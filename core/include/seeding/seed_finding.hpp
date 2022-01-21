@@ -20,7 +20,8 @@
 namespace traccc {
 
 /// Seed finding
-struct seed_finding : public algorithm<host_seed_container(const sp_grid&)> {
+struct seed_finding : public algorithm<host_seed_container(
+                          const host_spacepoint_container&, const sp_grid&)> {
 
     /// Constructor for the seed finding
     ///
@@ -32,12 +33,12 @@ struct seed_finding : public algorithm<host_seed_container(const sp_grid&)> {
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(const sp_grid& g2) const override {
-        output_type seeds;
+    output_type operator()(const host_spacepoint_container& sp_container,
+                           const sp_grid& g2) const override {
 
         // Run the algorithm
-        seeds = {host_seed_container::header_vector(1, 0),
-                 host_seed_container::item_vector(1)};
+        output_type seeds = {host_seed_container::header_vector(1, 0),
+                             host_seed_container::item_vector(1)};
 
         const bool bottom = true;
         const bool top = false;
@@ -79,7 +80,7 @@ struct seed_finding : public algorithm<host_seed_container(const sp_grid&)> {
                 // seed filtering
                 std::pair<host_triplet_collection&, host_seed_container&>
                     filter_output(triplets_per_spM, seeds);
-                m_seed_filtering(g2, filter_output);
+                m_seed_filtering(sp_container, g2, filter_output);
             }
         }
 

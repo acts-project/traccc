@@ -27,7 +27,8 @@ namespace traccc {
 namespace cuda {
 
 /// Seed finding for cuda
-struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
+struct seed_finding : public algorithm<host_seed_container(
+                          host_spacepoint_container&&, sp_grid&&)> {
 
     /// Constructor for the cuda seed finding
     ///
@@ -48,7 +49,8 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(sp_grid&& g2) const override {
+    output_type operator()(host_spacepoint_container&& spacepoints,
+                           sp_grid&& g2) const override {
         std::lock_guard<std::mutex> lock(*mutex);
 
         // reinitialize the number of multiplets to zero
@@ -119,7 +121,7 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
 
         // seed selecting
         traccc::cuda::seed_selecting(
-            m_seedfilter_config, g2, doublet_counter_container,
+            m_seedfilter_config, spacepoints, g2, doublet_counter_container,
             triplet_counter_container, triplet_container, seed_container,
             m_mr.get());
 

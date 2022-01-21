@@ -48,10 +48,10 @@ struct spacepoint_binning
         // space points with delta r < rbin size can be out of order
         for (auto& rbin : rbins) {
             for (auto& sp_loc : rbin) {
-                const spacepoint& sp =
-                    sp_container.get_items()[sp_loc.bin_idx][sp_loc.sp_idx];
-                auto isp =
-                    internal_spacepoint<spacepoint>(sp, m_config.beamPos);
+
+                auto isp = internal_spacepoint<spacepoint>(
+                    sp_container, {sp_loc.bin_idx, sp_loc.sp_idx},
+                    m_config.beamPos);
 
                 point2 sp_position = {isp.phi(), isp.z()};
                 g2.populate(sp_position, std::move(isp));

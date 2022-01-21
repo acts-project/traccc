@@ -47,16 +47,13 @@ class seeding_algorithm
             traccc::seed_finding(m_config));
     }
 
-    output_type operator()(const host_spacepoint_container& i) const override {
-        output_type o;
-        this->operator()(i, o);
-        return o;
-    }
+    output_type operator()(
+        const host_spacepoint_container& spacepoints) const override {
 
-    void operator()(const host_spacepoint_container& spacepoints_per_event,
-                    output_type& seeds) const {
-        auto internal_sp_g2 = sb->operator()(spacepoints_per_event);
-        seeds = sf->operator()(internal_sp_g2);
+        auto internal_sp_g2 = sb->operator()(spacepoints);
+        output_type seeds = sf->operator()(spacepoints, internal_sp_g2);
+
+        return seeds;
     }
 
     seedfinder_config get_seedfinder_config() { return m_config; }
