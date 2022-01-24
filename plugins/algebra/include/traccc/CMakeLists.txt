@@ -1,3 +1,13 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+# Temporary setting for the traccc::scalar type, until it can be removed.
+set( TRACCC_CUSTOM_SCALARTYPE "float" CACHE STRING
+   "Scalar type to use in the TRACCC code" )
+
 add_library(traccc_algebra_plugins INTERFACE)
 
 # array
