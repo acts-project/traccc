@@ -71,27 +71,23 @@ struct seed_filtering
 
         // sort seeds based on their weights
         std::sort(seeds_per_spM.begin(), seeds_per_spM.end(),
-                  [](seed& seed1, seed& seed2) {
+                  [&](seed& seed1, seed& seed2) {
                       if (seed1.weight != seed2.weight) {
                           return seed1.weight > seed2.weight;
                       } else {
-                          return std::abs(seed1.z_vertex) <
-                                 std::abs(seed2.z_vertex);
-                          /*
                           scalar seed1_sum = 0;
                           scalar seed2_sum = 0;
-                          seed1_sum += pow(seed1.spB.y(),2) +
-                          pow(seed1.spB.z(),2); seed1_sum +=
-                          pow(seed1.spM.y(),2) + pow(seed1.spM.z(),2); seed1_sum
-                          += pow(seed1.spT.y(),2) + pow(seed1.spT.z(),2);
+                          auto& spB1 = sp_container.at(seed1.spB_link);
+                          auto& spT1 = sp_container.at(seed1.spT_link);
+                          auto& spB2 = sp_container.at(seed2.spB_link);
+                          auto& spT2 = sp_container.at(seed2.spT_link);
 
-                          seed2_sum += pow(seed2.spB.y(),2) +
-                          pow(seed2.spB.z(),2); seed2_sum +=
-                          pow(seed2.spM.y(),2) + pow(seed2.spM.z(),2); seed2_sum
-                          += pow(seed2.spT.y(),2) + pow(seed2.spT.z(),2);
+                          seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
+                          seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
+                          seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
+                          seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
 
                           return seed1_sum > seed2_sum;
-                          */
                       }
                   });
 

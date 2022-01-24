@@ -17,28 +17,6 @@
 namespace traccc {
 namespace cuda {
 
-// Thrust comparator function for triplet weight (in descending order)
-struct triplet_weight_descending
-    : public thrust::binary_function<triplet, triplet, bool> {
-    __device__ bool operator()(const triplet& lhs, const triplet& rhs) const {
-        if (lhs.weight != rhs.weight) {
-            return lhs.weight > rhs.weight;
-        } else {
-            return fabs(lhs.z_vertex) < fabs(rhs.z_vertex);
-        }
-    }
-};
-
-// comparator function for triplet weight (in ascending order)
-__device__ static bool triplet_weight_compare(const triplet& lhs,
-                                              const triplet& rhs) {
-    if (lhs.weight != rhs.weight) {
-        return lhs.weight < rhs.weight;
-    } else {
-        return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
-    }
-}
-
 /// Forward declaration of seed selecting kernel
 /// The good triplets are selected and recorded into seed container
 ///
@@ -218,10 +196,13 @@ __global__ void seed_selecting_kernel(
                 //       Let's not be so obsessed about achieving
                 //       perfectly same result :))))))))
 
-                int min_index = std::min_element(triplets_per_spM + begin_idx,
-                                                 triplets_per_spM + end_idx,
-                                                 triplet_weight_compare) -
-                                triplets_per_spM;
+                int min_index =
+                    std::min_element(triplets_per_spM + begin_idx,
+                                     triplets_per_spM + end_idx,
+                                     [&](triplet& lhs, triplet& rhs) {
+                                         return lhs.weight < rhs.weight;
+                                     }) -
+                    triplets_per_spM;
 
                 auto& min_weight = triplets_per_spM[min_index].weight;
 
@@ -252,9 +233,40 @@ __global__ void seed_selecting_kernel(
 
     // sort the triplets per spM
     // sequential version of thrust sorting algorithm is used
-    thrust::sort(thrust::seq, triplets_per_spM + stride,
-                 triplets_per_spM + stride + n_triplets_per_spM,
-                 triplet_weight_descending());
+    thrust::sort(
+        thrust::seq, triplets_per_spM + stride,
+        triplets_per_spM + stride + n_triplets_per_spM,
+        [&](triplet& lhs, triplet& rhs) {
+            if (lhs.weight != rhs.weight) {
+                return lhs.weight > rhs.weight;
+            } else {
+
+                scalar seed1_sum = 0;
+                scalar seed2_sum = 0;
+
+                auto& ispB1 =
+                    internal_sp_device.bin(lhs.sp1.bin_idx)[lhs.sp1.sp_idx];
+                auto& ispT1 =
+                    internal_sp_device.bin(lhs.sp3.bin_idx)[lhs.sp3.sp_idx];
+                auto& ispB2 =
+                    internal_sp_device.bin(rhs.sp1.bin_idx)[rhs.sp1.sp_idx];
+                auto& ispT2 =
+                    internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
+
+                const auto& spB1 = spacepoints_device.at(ispB1.m_link);
+                const auto& spT1 = spacepoints_device.at(ispT1.m_link);
+                const auto& spB2 = spacepoints_device.at(ispB2.m_link);
+                const auto& spT2 = spacepoints_device.at(ispT2.m_link);
+
+                seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
+                seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
+                seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
+                seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
+
+                return seed1_sum > seed2_sum;
+            }
+        });
+    // triplet_weight_descending());
 
     // the number of good seed per compatible middle spacepoint
     unsigned int n_seeds_per_spM = 0;
