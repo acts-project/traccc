@@ -79,7 +79,12 @@ __global__ void doublet_counting_kernel(
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
     auto& num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx);
+        doublet_counter_device.get_headers().at(bin_idx).n_spM;
+    auto& num_mid_bot_per_bin =
+        doublet_counter_device.get_headers().at(bin_idx).n_mid_bot;
+    auto& num_mid_top_per_bin =
+        doublet_counter_device.get_headers().at(bin_idx).n_mid_top;
+
     auto doublet_counter_per_bin =
         doublet_counter_device.get_items().at(bin_idx);
 
@@ -147,6 +152,8 @@ __global__ void doublet_counting_kernel(
     // larger than 0, the entry is added to the doublet counter
     if (n_mid_bot > 0 && n_mid_top > 0) {
         auto pos = atomicAdd(&num_compat_spM_per_bin, 1);
+        atomicAdd(&num_mid_bot_per_bin, n_mid_bot);
+        atomicAdd(&num_mid_top_per_bin, n_mid_top);
         doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
     }
 }

@@ -58,8 +58,9 @@ void triplet_counting(const seedfinder_config& config, sp_grid& internal_sp,
     // num_mid_bot_doublet_per_bin / num_threads + 1
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp.nbins(); ++i) {
-        num_blocks +=
-            mid_bot_doublet_container.get_headers()[i] / num_threads + 1;
+        num_blocks += mid_bot_doublet_container.get_headers()[i].n_doublets /
+                          num_threads +
+                      1;
     }
 
     // run the kernel
@@ -99,7 +100,7 @@ __global__ void triplet_counting_kernel(
     // get internal spacepoints for current bin
     auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
     auto& num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx);
+        doublet_counter_device.get_headers().at(bin_idx).n_spM;
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
@@ -109,21 +110,24 @@ __global__ void triplet_counting_kernel(
     // Header of doublet: number of mid_bot doublets per bin
     // Item of doublet: doublet objects per bin
     const auto& num_mid_bot_doublets_per_bin =
-        mid_bot_doublet_device.get_headers().at(bin_idx);
+        mid_bot_doublet_device.get_headers().at(bin_idx).n_doublets;
     auto mid_bot_doublets_per_bin =
         mid_bot_doublet_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
     const auto& num_mid_top_doublets_per_bin =
-        mid_top_doublet_device.get_headers().at(bin_idx);
+        mid_top_doublet_device.get_headers().at(bin_idx).n_doublets;
     auto mid_top_doublets_per_bin =
         mid_top_doublet_device.get_items().at(bin_idx);
 
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
     auto& num_compat_mb_per_bin =
-        triplet_counter_device.get_headers().at(bin_idx);
+        triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
+    auto& num_triplets =
+        triplet_counter_device.get_headers().at(bin_idx).n_triplets;
+
     auto triplet_counter_per_bin =
         triplet_counter_device.get_items().at(bin_idx);
 
@@ -208,6 +212,7 @@ __global__ void triplet_counting_kernel(
     // counter into the container
     if (num_triplets_per_mb > 0) {
         auto pos = atomicAdd(&num_compat_mb_per_bin, 1);
+        atomicAdd(&num_triplets, num_triplets_per_mb);
         triplet_counter_per_bin[pos] = {mid_bot_doublet, num_triplets_per_mb};
     }
 }

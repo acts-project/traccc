@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <cuda/seeding/detail/doublet_counter.hpp>
-#include <cuda/seeding/detail/multiplet_estimator.hpp>
 #include <cuda/seeding/doublet_counting.hpp>
 #include <cuda/seeding/doublet_finding.hpp>
 #include <cuda/seeding/seed_selecting.hpp>
@@ -28,18 +27,17 @@ namespace traccc {
 namespace cuda {
 
 /// Seed finding for cuda
-struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
+struct seed_finding : public algorithm<host_seed_container(
+                          host_spacepoint_container&&, sp_grid&&)> {
 
     /// Constructor for the cuda seed finding
     ///
     /// @param config is seed finder configuration parameters
     /// @param sp_grid spacepoint grid
-    /// @param stats_config experiment-dependent statistics estimator
     /// @param mr vecmem memory resource
-    seed_finding(seedfinder_config& config, multiplet_estimator& estimator,
-                 unsigned int nbins, vecmem::memory_resource& mr)
+    seed_finding(seedfinder_config& config, unsigned int nbins,
+                 vecmem::memory_resource& mr)
         : m_seedfinder_config(config),
-          m_estimator(estimator),
           m_mr(mr),
           doublet_counter_container(nbins, &m_mr.get()),
           mid_bot_container(nbins, &m_mr.get()),
@@ -51,61 +49,61 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(sp_grid&& g2) const override {
+    output_type operator()(host_spacepoint_container&& spacepoints,
+                           sp_grid&& g2) const override {
         std::lock_guard<std::mutex> lock(*mutex);
 
-        size_t n_internal_sp = 0;
-
-        // resize the item vectors based on the pre-estimated statistics, which
-        // is experiment-dependent
+        // reinitialize the number of multiplets to zero
         for (size_t i = 0; i < g2.nbins(); ++i) {
-
-            // estimate the number of multiplets as a function of the middle
-            // spacepoints in the bin
-            size_t n_spM = g2.bin(i).size();
-            size_t n_mid_bot_doublets =
-                m_estimator.get_mid_bot_doublets_size(n_spM);
-            size_t n_mid_top_doublets =
-                m_estimator.get_mid_top_doublets_size(n_spM);
-            size_t n_triplets = m_estimator.get_triplets_size(n_spM);
-
-            // zero initialization
-            doublet_counter_container.get_headers()[i] = 0;
-            mid_bot_container.get_headers()[i] = 0;
-            mid_top_container.get_headers()[i] = 0;
-            triplet_counter_container.get_headers()[i] = 0;
-            triplet_container.get_headers()[i] = 0;
-
-            // resize the item vectors in container
-            doublet_counter_container.get_items()[i].resize(n_spM);
-            mid_bot_container.get_items()[i].resize(n_mid_bot_doublets);
-            mid_top_container.get_items()[i].resize(n_mid_top_doublets);
-            triplet_counter_container.get_items()[i].resize(n_mid_bot_doublets);
-            triplet_container.get_items()[i].resize(n_triplets);
-
-            n_internal_sp += n_spM;
+            doublet_counter_container.get_headers()[i].zeros();
+            mid_bot_container.get_headers()[i].zeros();
+            mid_top_container.get_headers()[i].zeros();
+            triplet_counter_container.get_headers()[i].zeros();
+            triplet_container.get_headers()[i].zeros();
         }
-
-        // estimate the number of seeds as a function of the internal
-        // spacepoints in an event
         seed_container.get_headers()[0] = 0;
-        seed_container.get_items()[0].resize(
-            m_estimator.get_seeds_size(n_internal_sp));
+
+        // resize the doublet counter container with the number of middle
+        // spacepoint
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            size_t n_spM = g2.bin(i).size();
+            doublet_counter_container.get_items()[i].resize(n_spM);
+        }
 
         // doublet counting
         traccc::cuda::doublet_counting(m_seedfinder_config, g2,
                                        doublet_counter_container, m_mr.get());
+
+        // resize the doublet container with the number of doublets
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            mid_bot_container.get_items()[i].resize(
+                doublet_counter_container.get_headers()[i].n_mid_bot);
+            mid_top_container.get_items()[i].resize(
+                doublet_counter_container.get_headers()[i].n_mid_top);
+        }
 
         // doublet finding
         traccc::cuda::doublet_finding(
             m_seedfinder_config, g2, doublet_counter_container,
             mid_bot_container, mid_top_container, m_mr.get());
 
+        // resize the triplet_counter container with the number of doublets
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            triplet_counter_container.get_items()[i].resize(
+                doublet_counter_container.get_headers()[i].n_mid_bot);
+        }
+
         // triplet counting
         traccc::cuda::triplet_counting(m_seedfinder_config, g2,
                                        doublet_counter_container,
                                        mid_bot_container, mid_top_container,
                                        triplet_counter_container, m_mr.get());
+
+        // resize the triplet container with the number of triplets
+        for (size_t i = 0; i < g2.nbins(); ++i) {
+            triplet_container.get_items()[i].resize(
+                triplet_counter_container.get_headers()[i].n_triplets);
+        }
 
         // triplet finding
         traccc::cuda::triplet_finding(
@@ -118,18 +116,21 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
                                       triplet_counter_container,
                                       triplet_container, m_mr.get());
 
+        // resize the seed container with the number of triplets per event
+        seed_container.get_items()[0].resize(triplet_container.total_size());
+
         // seed selecting
         traccc::cuda::seed_selecting(
-            m_seedfilter_config, g2, doublet_counter_container,
+            m_seedfilter_config, spacepoints, g2, doublet_counter_container,
             triplet_counter_container, triplet_container, seed_container,
             m_mr.get());
+
         return seed_container;
     }
 
     private:
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
-    multiplet_estimator m_estimator;
     seed_filtering m_seed_filtering;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 

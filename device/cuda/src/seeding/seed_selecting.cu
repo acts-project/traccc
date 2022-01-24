@@ -49,12 +49,14 @@ __device__ static bool triplet_weight_compare(const triplet& lhs,
 /// @param triplet_container vecmem container for triplets
 /// @param seed_container vecmem container for seeds
 __global__ void seed_selecting_kernel(
-    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
+    const seedfilter_config filter_config,
+    spacepoint_container_view spacepoints_view, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view, seed_container_view seed_view);
 
 void seed_selecting(const seedfilter_config& filter_config,
+                    host_spacepoint_container& spacepoints,
                     sp_grid& internal_sp,
                     host_doublet_counter_container& doublet_counter_container,
                     host_triplet_counter_container& triplet_counter_container,
@@ -62,6 +64,7 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_seed_container& seed_container,
                     vecmem::memory_resource& resource) {
 
+    auto spacepoints_view = get_data(spacepoints, &resource);
     auto doublet_counter_container_view =
         get_data(doublet_counter_container, &resource);
     auto triplet_counter_container_view =
@@ -85,7 +88,8 @@ void seed_selecting(const seedfilter_config& filter_config,
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp.nbins(); ++i) {
         num_blocks +=
-            triplet_counter_container.get_headers()[i] / num_threads + 1;
+            triplet_counter_container.get_headers()[i].n_mid_bot / num_threads +
+            1;
     }
 
     // shared memory assignment for the triplets of a compatible middle
@@ -95,21 +99,24 @@ void seed_selecting(const seedfilter_config& filter_config,
 
     // run the kernel
     seed_selecting_kernel<<<num_blocks, num_threads, sh_mem>>>(
-        filter_config, internal_sp_view, doublet_counter_container_view,
-        triplet_counter_container_view, triplet_container_view,
-        seed_container_view);
+        filter_config, spacepoints_view, internal_sp_view,
+        doublet_counter_container_view, triplet_counter_container_view,
+        triplet_container_view, seed_container_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 }
 
 __global__ void seed_selecting_kernel(
-    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
+    const seedfilter_config filter_config,
+    spacepoint_container_view spacepoints_view, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view, seed_container_view seed_view) {
 
     // Get device container for input parameters
+    device_spacepoint_container spacepoints_device(
+        {spacepoints_view.headers, spacepoints_view.items});
     sp_grid_device internal_sp_device(internal_sp_view);
 
     device_doublet_counter_container doublet_counter_device(
@@ -129,7 +136,7 @@ __global__ void seed_selecting_kernel(
     // bin
     auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
     auto& num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx);
+        doublet_counter_device.get_headers().at(bin_idx).n_spM;
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
@@ -139,11 +146,12 @@ __global__ void seed_selecting_kernel(
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
     auto& num_compat_mb_per_bin =
-        triplet_counter_device.get_headers().at(bin_idx);
+        triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
-    auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
+    auto& num_triplets_per_bin =
+        triplet_device.get_headers().at(bin_idx).n_triplets;
     auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
     // Header of seed: number of seeds per event
@@ -264,9 +272,12 @@ __global__ void seed_selecting_kernel(
             break;
         }
 
+        seed aSeed({spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
+                    aTriplet.z_vertex});
+
         // check if it is a good triplet
         if (seed_selecting_helper::cut_per_middle_sp(
-                filter_config, spM.sp(), spB.sp(), spT.sp(), aTriplet.weight) ||
+                filter_config, spacepoints_device, aSeed, aTriplet.weight) ||
             n_seeds_per_spM == 0) {
             auto pos = atomicAdd(&num_seeds, 1);
 
@@ -276,8 +287,7 @@ __global__ void seed_selecting_kernel(
             }
             n_seeds_per_spM++;
 
-            seeds[pos] = seed({spB.m_sp, spM.m_sp, spT.m_sp, aTriplet.weight,
-                               aTriplet.z_vertex});
+            seeds[pos] = aSeed;
         }
     }
 }
