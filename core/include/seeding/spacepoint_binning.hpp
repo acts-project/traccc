@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -26,7 +26,7 @@ struct spacepoint_binning
                        vecmem::memory_resource& mr)
         : m_config(config), m_grid_config(grid_config), m_mr(mr) {
 
-        m_axes = get_axes(grid_config);
+        m_axes = get_axes(grid_config, mr);
     }
 
     output_type operator()(

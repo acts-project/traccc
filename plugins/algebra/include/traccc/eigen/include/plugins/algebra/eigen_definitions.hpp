@@ -1,3 +1,10 @@
+/**
+ * TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
 
 #include <array>
 #include <map>
@@ -11,7 +18,7 @@
 
 namespace traccc {
 
-    using scalar = algebra::scalar;
+    using scalar = TRACCC_CUSTOM_SCALARTYPE;
 
     template <typename value_type, unsigned int kDIM>
     using darray = std::array<value_type, kDIM>;
@@ -21,7 +28,7 @@ namespace traccc {
 
     template <typename value_type>
     using djagged_vector = vecmem::jagged_vector<value_type>;
-    
+
     template <typename key_type, typename value_type>
     using dmap = std::map<key_type, value_type>;
 
