@@ -1,22 +1,26 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
+#pragma once
+
+// Project include(s).
 #include <edm/internal_spacepoint.hpp>
 #include <edm/spacepoint.hpp>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/singlet.hpp>
 #include <seeding/detail/spacepoint_grid.hpp>
 
-#pragma once
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
 
 namespace traccc {
 
 inline std::pair<detray::axis::circular<>, detray::axis::regular<>> get_axes(
-    const spacepoint_grid_config& grid_config) {
+    const spacepoint_grid_config& grid_config, vecmem::memory_resource& mr) {
 
     // calculate circle intersections of helix and max detector radius
     scalar minHelixRadius =
@@ -41,7 +45,7 @@ inline std::pair<detray::axis::circular<>, detray::axis::regular<>> get_axes(
     // size is always 2pi even for regions of interest
     detray::dindex phiBins = std::floor(2 * M_PI / (outerAngle - innerAngle));
 
-    detray::axis::circular<> m_phi_axis{phiBins, -M_PI, M_PI};
+    detray::axis::circular m_phi_axis{phiBins, -M_PI, M_PI, mr};
 
     // TODO: can probably be optimized using smaller z bins
     // and returning (multiple) neighbors only in one z-direction for forward
@@ -52,7 +56,8 @@ inline std::pair<detray::axis::circular<>, detray::axis::regular<>> get_axes(
     detray::dindex zBins =
         std::floor((grid_config.zMax - grid_config.zMin) / zBinSize);
 
-    detray::axis::regular<> m_z_axis{zBins, grid_config.zMin, grid_config.zMax};
+    detray::axis::regular m_z_axis{zBins, grid_config.zMin, grid_config.zMax,
+                                   mr};
 
     return {m_phi_axis, m_z_axis};
 }

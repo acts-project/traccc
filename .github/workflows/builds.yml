@@ -20,7 +20,7 @@ jobs:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v11
           - name: CUDA
-            container: ghcr.io/acts-project/ubuntu2004_cuda:v13
+            container: ghcr.io/acts-project/ubuntu2004_cuda:v16.1
         build:
           - Release
           - Debug
@@ -35,15 +35,14 @@ jobs:
         run: >
           if ${{ matrix.platform.name == 'CPU'}}; then
             cmake -B build -S . \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }} 
+              -DCMAKE_BUILD_TYPE=${{ matrix.build }}
           elif ${{ matrix.platform.name == 'CUDA'}}; then
             cmake -B build -S . \
               -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
               -DCMAKE_CUDA_COMPILER=$(which nvcc) \
-              -DTRACCC_BUILD_CUDA=ON 
+              -DTRACCC_BUILD_CUDA=ON
           fi
       - name: Build
         run: cmake --build build -- -j$(nproc)
       - name: Run tests & examples
         run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
-
