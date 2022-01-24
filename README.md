@@ -15,6 +15,8 @@ Demonstrator tracking chain for accelerators.
 |                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   |
 | **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   |
 
+✅: exists, 🟡: work started, ⚪: work not started yet
+
 ## Requirements and dependencies 
 
 #### OS & compilers:
