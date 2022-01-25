@@ -50,7 +50,11 @@ public:
         // Header of doublet counter : number of compatible middle sp per bin
         // Item of doublet counter : doublet counter objects per bin
         auto& num_compat_spM_per_bin =
-            doublet_counter_device.get_headers().at(bin_idx);
+            doublet_counter_device.get_headers().at(bin_idx).n_spM;
+        auto& num_mid_bot_per_bin =
+            doublet_counter_device.get_headers().at(bin_idx).n_mid_bot;
+        auto& num_mid_top_per_bin =
+            doublet_counter_device.get_headers().at(bin_idx).n_mid_top;
         auto doublet_counter_per_bin =
             doublet_counter_device.get_items().at(bin_idx);
 
@@ -119,6 +123,10 @@ public:
         if (n_mid_bot > 0 && n_mid_top > 0) {
             vecmem::atomic<uint32_t> obj(&num_compat_spM_per_bin);
             auto pos = obj.fetch_add(1);
+            vecmem::atomic<uint32_t> objBot(&num_mid_bot_per_bin);
+            objBot.fetch_add(n_mid_bot);
+            vecmem::atomic<uint32_t< objTop(&num_mid_top_per_bin);
+            objTop.fetch_add(n_mid_top);
             doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
         }
     }        

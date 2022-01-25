@@ -8,14 +8,29 @@
 #pragma once
 
 #include <seeding/detail/doublet.hpp>
+#include "definitions/qualifiers.hpp"
 
 namespace traccc {
 namespace sycl {
 
 /// Definition the container for triplet counter
 ///
-/// header element: number of the mid-bot doublet which have positive number
-/// (>0) of compatible triplet item element: triplet counter
+/// header: number of the mid-bot doublet and triplets per bin
+struct triplet_counter_per_bin {
+    unsigned int n_mid_bot = 0;
+    unsigned int n_triplets = 0;
+
+    TRACCC_HOST_DEVICE
+    unsigned int get_ref_num() const { return n_mid_bot; }
+
+    TRACCC_HOST_DEVICE
+    void zeros() {
+        n_mid_bot = 0;
+        n_triplets = 0;
+    }
+};
+
+/// item: number of triplets per mid-bot doublet
 struct triplet_counter {
 
     /// indices of two spacepoints of mid-bot doublet
@@ -42,27 +57,27 @@ using device_triplet_counter_collection =
 /// Convenience declaration for the triplet_counter container type to use in
 /// host code
 using host_triplet_counter_container =
-    host_container<unsigned int, triplet_counter>;
+    host_container<triplet_counter_per_bin, triplet_counter>;
 
 /// Convenience declaration for the triplet_counter container type to use in
 /// device code
 using device_triplet_counter_container =
-    device_container<unsigned int, triplet_counter>;
+    device_container<triplet_counter_per_bin, triplet_counter>;
 
 /// Convenience declaration for the triplet_counter container data type to use
 /// in host code
 using triplet_counter_container_data =
-    container_data<unsigned int, triplet_counter>;
+    container_data<triplet_counter_per_bin, triplet_counter>;
 
 /// Convenience declaration for the triplet_counter container buffer type to use
 /// in host code
 using triplet_counter_container_buffer =
-    container_buffer<unsigned int, triplet_counter>;
+    container_buffer<triplet_counter_per_bin, triplet_counter>;
 
 /// Convenience declaration for the triplet_counter container view type to use
 /// in host code
 using triplet_counter_container_view =
-    container_view<unsigned int, triplet_counter>;
+    container_view<triplet_counter_per_bin, triplet_counter>;
 
 }  // namespace sycl
 }  // namespace traccc

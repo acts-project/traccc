@@ -12,25 +12,16 @@
 namespace traccc {
 namespace sycl {
 
-// Comparator function for comparing triplets when sorting
-static
-bool tripletCompare(const triplet& lhs, const triplet& rhs){
-    if (lhs.weight != rhs.weight) {
-        return lhs.weight < rhs.weight;
-    } else {
-        return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
-    }
-}
-
 // Sorting algorithm for sorting seeds in the local memory
+template<typename Comparator>
 static 
-void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::local_space> arr, int n) {
+void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::local_space> arr, int n, Comparator comp) {
     int j = 0;
     triplet key = arr[0];
     for (int i = 1; i < n; ++i) {
         key = arr[i];
         j = i - 1;
-        while (j >= 0 && tripletCompare(arr[j],key)) {
+        while (j >= 0 && comp(arr[j],key)) {
             arr[j + 1] = arr[j];
             j = j - 1;
         }
@@ -93,7 +84,7 @@ public:
         // bin
         auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
         auto& num_compat_spM_per_bin =
-            doublet_counter_device.get_headers().at(bin_idx);
+            doublet_counter_device.get_headers().at(bin_idx).n_spM;
 
         // Header of doublet counter : number of compatible middle sp per bin
         // Item of doublet counter : doublet counter objects per bin
@@ -103,11 +94,11 @@ public:
         // Header of triplet counter: number of compatible mid_top doublets per bin
         // Item of triplet counter: triplet counter objects per bin
         auto& num_compat_mb_per_bin =
-            triplet_counter_device.get_headers().at(bin_idx);
+            triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
 
         // Header of triplet: number of triplets per bin
         // Item of triplet: triplet objects per bin
-        auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
+        auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx).n_triplets;
         auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
         // Header of seed: number of seeds per event
@@ -173,12 +164,8 @@ public:
 
                     int min_index = std::min_element(triplets_per_spM + begin_idx,
                                                     triplets_per_spM + end_idx,
-                                                    [&](const triplet& lhs, const triplet& rhs){
-                                                        if (lhs.weight != rhs.weight) {
+                                                    [&](triplet& lhs, triplet& rhs){
                                                             return lhs.weight < rhs.weight;
-                                                        } else {
-                                                            return fabs(lhs.z_vertex) > fabs(rhs.z_vertex);
-                                                        }
                                                     }) -
                                     triplets_per_spM;
 
@@ -196,7 +183,37 @@ public:
             }       
         }
         // sort the triplets per spM
-        insertionSort(triplets_per_spM + stride, n_triplets_per_spM);
+        insertionSort(triplets_per_spM + stride, n_triplets_per_spM, 
+                                        [&](triplet& lhs, triplet& rhs) {
+            if (lhs.weight != rhs.weight) {
+                return lhs.weight > rhs.weight;
+            } else {
+
+                scalar seed1_sum = 0;
+                scalar seed2_sum = 0;
+
+                auto& ispB1 =
+                    internal_sp_device.bin(lhs.sp1.bin_idx)[lhs.sp1.sp_idx];
+                auto& ispT1 =
+                    internal_sp_device.bin(lhs.sp3.bin_idx)[lhs.sp3.sp_idx];
+                auto& ispB2 =
+                    internal_sp_device.bin(rhs.sp1.bin_idx)[rhs.sp1.sp_idx];
+                auto& ispT2 =
+                    internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
+
+                const auto& spB1 = spacepoints_device.at(ispB1.m_link);
+                const auto& spT1 = spacepoints_device.at(ispT1.m_link);
+                const auto& spB2 = spacepoints_device.at(ispB2.m_link);
+                const auto& spT2 = spacepoints_device.at(ispT2.m_link);
+
+                seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
+                seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
+                seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
+                seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
+
+                return seed1_sum > seed2_sum;
+            }
+        });
         // the number of good seed per compatible middle spacepoint
         unsigned int n_seeds_per_spM = 0;
 
@@ -274,7 +291,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_groups +=
-            triplet_counter_container.get_headers()[i] / localSize + 1;
+            triplet_counter_container.get_headers()[i].n_mid_bot / localSize + 1;
     }
     unsigned int globalSize = localSize * num_groups;
 

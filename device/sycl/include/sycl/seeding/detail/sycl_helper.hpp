@@ -114,7 +114,7 @@ struct sycl_helper {
         /// number of blocks for one header entry
         unsigned int nblocks_per_header = 0;
         for (unsigned int i = 0; i < container.size(); ++i) {
-            nblocks_per_header = container.get_headers()[i] / groupDim + 1;
+            nblocks_per_header = container.get_headers()[i].get_ref_num() / groupDim + 1;
             nblocks_accum += nblocks_per_header;
 
             if (groupIdx < nblocks_accum) {

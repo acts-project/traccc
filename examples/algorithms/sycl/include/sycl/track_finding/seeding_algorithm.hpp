@@ -43,20 +43,10 @@ class seeding_algorithm
         m_grid_config.deltaRMax = m_config.deltaRMax;
         m_grid_config.cotThetaMax = m_config.cotThetaMax;
 
-        // multiplet estimator
-        m_estimator.m_cfg.safety_factor = 2.0;
-        m_estimator.m_cfg.safety_adder = 10;
-        // m_estimator.m_cfg.safety_factor = 10.0;
-        // m_estimator.m_cfg.safety_adder = 50000;
-        m_estimator.m_cfg.par_for_mb_doublets = {1, 28.77, 0.4221};
-        m_estimator.m_cfg.par_for_mt_doublets = {1, 19.73, 0.232};
-        m_estimator.m_cfg.par_for_triplets = {1, 0, 0.02149};
-        m_estimator.m_cfg.par_for_seeds = {0, 0.3431};
-
         sb = std::make_shared<traccc::sycl::spacepoint_binning>(
             traccc::sycl::spacepoint_binning(m_config, m_grid_config, mr, q));
         sf = std::make_shared<traccc::sycl::seed_finding>(
-            traccc::sycl::seed_finding(m_config, m_estimator, sb->nbins(), mr, q));
+            traccc::sycl::seed_finding(m_config, sb->nbins(), mr, q));
     }
 
     output_type operator()(
@@ -71,7 +61,6 @@ class seeding_algorithm
 private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
-    multiplet_estimator m_estimator;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
     ::sycl::queue* m_q;
     std::shared_ptr<traccc::sycl::spacepoint_binning> sb;

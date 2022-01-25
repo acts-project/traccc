@@ -55,14 +55,16 @@ public:
         // Header of triplet counter: number of compatible mid_top doublets per bin
         // Item of triplet counter: triplet counter objects per bin
         auto& num_compat_mb_per_bin =
-            triplet_counter_device.get_headers().at(bin_idx);
+            triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
         auto triplet_counter_per_bin =
             triplet_counter_device.get_items().at(bin_idx);
 
         // Header of triplet: number of triplets per bin
         // Item of triplet: triplet objects per bin
-        auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx);
-        auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
+        auto& num_triplets_per_bin = 
+            triplet_device.get_headers().at(bin_idx).n_triplets;
+        auto triplets_per_bin = 
+            triplet_device.get_items().at(bin_idx);
 
         auto compat_seedR = m_localMem.get_pointer();
         ::sycl::group_barrier(workGroup);
@@ -197,7 +199,7 @@ void weight_updating(const seedfilter_config& filter_config,
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
-        num_groups += triplet_container.get_headers()[i] / localSize + 1;
+        num_groups += triplet_container.get_headers()[i].n_triplets / localSize + 1;
     }
     unsigned int globalSize = localSize * num_groups;  
     // 1 dim ND Range for the kernel
