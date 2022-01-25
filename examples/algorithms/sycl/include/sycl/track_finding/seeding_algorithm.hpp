@@ -63,7 +63,8 @@ class seeding_algorithm
         host_spacepoint_container&& spacepoints) const override {
         output_type seeds({host_seed_container(1, &m_mr.get())});
         auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
-        seeds = sf->operator()(std::move(internal_sp_g2));
+        seeds =
+            sf->operator()(std::move(spacepoints), std::move(internal_sp_g2));
         return seeds;
     }
 

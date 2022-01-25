@@ -36,8 +36,8 @@ class weight_update_kernel;
 class seed_select_kernel;
 
 // Sycl seeding function object
-struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
-
+struct seed_finding : public algorithm<host_seed_container(
+                          host_spacepoint_container&&, sp_grid&&)> {
     /// Constructor for the sycl seed finding
     ///
     /// @param config is seed finder configuration parameters
@@ -66,7 +66,8 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(sp_grid&& g2) const override {
+    output_type operator()(host_spacepoint_container&& spacepoints,
+                           sp_grid&& g2) const override {
         std::lock_guard<std::mutex> lock(*mutex);
 
         size_t n_internal_sp = 0;
@@ -132,7 +133,7 @@ struct seed_finding : public algorithm<host_seed_container(sp_grid&&)> {
                                       triplet_container, m_mr.get(), m_q);    
         
         // seed selecting
-        traccc::sycl::seed_selecting(m_seedfilter_config, g2, doublet_counter_container,
+        traccc::sycl::seed_selecting(m_seedfilter_config, spacepoints, g2, doublet_counter_container,
                                      triplet_counter_container, triplet_container, seed_container, m_mr.get(), m_q);
 
         return seed_container;  

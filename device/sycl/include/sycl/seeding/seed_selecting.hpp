@@ -35,6 +35,7 @@ namespace sycl {
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
 void seed_selecting(const seedfilter_config& filter_config,
+                    host_spacepoint_container& spacepoints,
                     sp_grid& internal_sp,
                     host_doublet_counter_container& doublet_counter_container,
                     host_triplet_counter_container& triplet_counter_container,

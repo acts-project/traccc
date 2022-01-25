@@ -13,9 +13,10 @@ namespace sycl {
 // kernel class 
 class TrackParamsEstimation {
     public:
-        TrackParamsEstimation(seed_container_view seeds_view,
+        TrackParamsEstimation(spacepoint_container_view spacepoints_view, seed_container_view seeds_view,
                               vecmem::data::vector_view<bound_track_parameters> params_view)
-        : m_seeds_view(seeds_view),
+        : m_spacepoints_view(spacepoints_view),
+          m_seeds_view(seeds_view),
           m_params_view(params_view) {}
 
     void operator()(::sycl::nd_item<1> item) const {
@@ -31,6 +32,8 @@ class TrackParamsEstimation {
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
+        device_spacepoint_container spacepoints_device(
+            {m_spacepoints_view.headers, m_spacepoints_view.items});
         device_seed_container seeds_device({m_seeds_view.headers, m_seeds_view.items});
         device_bound_track_parameters_collection params_device({m_params_view});
 
@@ -50,20 +53,22 @@ class TrackParamsEstimation {
         auto& param = params_device[gid].vector();
 
         // Get bound track parameter
-        param = seed_to_bound_vector(seed, bfield, PION_MASS_MEV);
-
+        param = seed_to_bound_vector(spacepoints_device, seed, bfield, PION_MASS_MEV);
     }
 private:
+    spacepoint_container_view m_spacepoints_view;
     seed_container_view m_seeds_view;
     vecmem::data::vector_view<bound_track_parameters> m_params_view;
 };
 
 track_params_estimation::output_type track_params_estimation::operator()(
+    host_spacepoint_container&& spacepoints,
     host_seed_container&& seeds) const {
 
     auto n_seeds = seeds.get_headers()[0];
     output_type params(n_seeds, &m_mr.get());
 
+    auto spacepoints_view = get_data(spacepoints, &m_mr.get());
     auto seeds_view = get_data(seeds, &m_mr.get());
     auto params_view = vecmem::get_data(params);
 
@@ -81,7 +86,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     auto trackParamsNdRange = ::sycl::nd_range<1>{globalSize,localSize};
         m_q->submit([&](::sycl::handler& h) {
 
-        TrackParamsEstimation kernel(seeds_view, params_view);
+        TrackParamsEstimation kernel(spacepoints_view, seeds_view, params_view);
 
         h.parallel_for<class track_params_kernel>(trackParamsNdRange, kernel);
     }).wait_and_throw();          
