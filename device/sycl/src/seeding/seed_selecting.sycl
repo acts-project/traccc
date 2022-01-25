@@ -21,7 +21,7 @@ void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::loc
     for (int i = 1; i < n; ++i) {
         key = arr[i];
         j = i - 1;
-        while (j >= 0 && comp(arr[j],key)) {
+        while (j >= 0 && !comp(arr[j],key)) {
             arr[j + 1] = arr[j];
             j = j - 1;
         }
