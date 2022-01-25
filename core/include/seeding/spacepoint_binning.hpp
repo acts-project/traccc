@@ -51,7 +51,7 @@ struct spacepoint_binning
 
                 auto isp = internal_spacepoint<spacepoint>(
                     sp_container, {sp_loc.bin_idx, sp_loc.sp_idx},
-                    m_config.beamPos);
+                    vector2{m_config.beamPos_x, m_config.beamPos_y});
 
                 point2 sp_position = {isp.phi(), isp.z()};
                 g2.populate(sp_position, std::move(isp));

@@ -31,7 +31,7 @@ struct spacepoint_binning
                        vecmem::memory_resource& mr,
                        ::sycl::queue* q)
         : m_config(config), m_grid_config(grid_config), m_mr(mr), m_q(q) {
-        m_axes = get_axes(grid_config);
+        m_axes = get_axes(grid_config, mr);
     }
 
     unsigned int nbins() const {

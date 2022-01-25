@@ -125,7 +125,7 @@ public:
             auto pos = obj.fetch_add(1);
             vecmem::atomic<uint32_t> objBot(&num_mid_bot_per_bin);
             objBot.fetch_add(n_mid_bot);
-            vecmem::atomic<uint32_t< objTop(&num_mid_top_per_bin);
+            vecmem::atomic<uint32_t> objTop(&num_mid_top_per_bin);
             objTop.fetch_add(n_mid_top);
             doublet_counter_per_bin[pos] = {spM_loc, n_mid_bot, n_mid_top};
         }

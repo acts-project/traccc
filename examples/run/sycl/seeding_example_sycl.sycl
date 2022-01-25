@@ -130,7 +130,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         /*time*/ auto start_tp_estimating_sycl =
             std::chrono::system_clock::now();
 
-        auto params_cuda =
+        auto params_sycl =
             tp_sycl(std::move(spacepoints_per_event), std::move(seeds_sycl));
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
