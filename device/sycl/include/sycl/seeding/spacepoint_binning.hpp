@@ -8,11 +8,11 @@
 #pragma once
 
 #include <CL/sycl.hpp>
+#include <seeding/spacepoint_binning_helper.hpp>
+#include <utils/algorithm.hpp>
 
 #include "sycl/seeding/counting_grid_capacities.hpp"
 #include "sycl/seeding/populating_grid.hpp"
-#include <seeding/spacepoint_binning_helper.hpp>
-#include <utils/algorithm.hpp>
 
 namespace traccc {
 namespace sycl {
@@ -23,8 +23,7 @@ struct spacepoint_binning
 
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
-                       vecmem::memory_resource& mr,
-                       ::sycl::queue* q)
+                       vecmem::memory_resource& mr, ::sycl::queue* q)
         : m_config(config), m_grid_config(grid_config), m_mr(mr), m_q(q) {
         m_axes = get_axes(grid_config, mr);
     }
@@ -57,9 +56,9 @@ struct spacepoint_binning
         }
 
         // count the grid capacities
-        traccc::sycl::counting_grid_capacities(m_config, g2, spacepoints,
-                                               sp_container_indices,
-                                               grid_capacities, m_mr.get(), m_q);
+        traccc::sycl::counting_grid_capacities(
+            m_config, g2, spacepoints, sp_container_indices, grid_capacities,
+            m_mr.get(), m_q);
 
         // populate the internal spacepoints into the grid
         traccc::sycl::populating_grid(m_config, g2, spacepoints,

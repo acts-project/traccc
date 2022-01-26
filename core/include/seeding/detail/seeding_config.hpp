@@ -101,7 +101,8 @@ struct seedfinder_config {
 
     TRACCC_HOST_DEVICE
     size_t get_num_rbins() const {
-        return static_cast<size_t>(rMax + getter::norm(vector2{beamPos_x, beamPos_y}));
+        return static_cast<size_t>(rMax +
+                                   getter::norm(vector2{beamPos_x, beamPos_y}));
     }
 
     TRACCC_HOST_DEVICE

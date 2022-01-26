@@ -8,20 +8,21 @@
 #pragma once
 
 #include <algorithm>
-#include "sycl/seeding/detail/doublet_counter.hpp"         
-#include "sycl/seeding/doublet_counting.hpp"
-#include "sycl/seeding/doublet_finding.hpp"
-#include "sycl/seeding/seed_selecting.hpp"  
-#include "sycl/seeding/triplet_counting.hpp"
-#include "sycl/seeding/triplet_finding.hpp"
-#include "sycl/seeding/weight_updating.hpp"     
 #include <edm/internal_spacepoint.hpp>
 #include <edm/seed.hpp>
 #include <iostream>
 #include <mutex>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/spacepoint_grid.hpp>
-#include <seeding/seed_filtering.hpp>    
+#include <seeding/seed_filtering.hpp>
+
+#include "sycl/seeding/detail/doublet_counter.hpp"
+#include "sycl/seeding/doublet_counting.hpp"
+#include "sycl/seeding/doublet_finding.hpp"
+#include "sycl/seeding/seed_selecting.hpp"
+#include "sycl/seeding/triplet_counting.hpp"
+#include "sycl/seeding/triplet_finding.hpp"
+#include "sycl/seeding/weight_updating.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -36,10 +37,8 @@ struct seed_finding : public algorithm<host_seed_container(
     /// @param stats_config experiment-dependent statistics estimator
     /// @param mr vecmem memory resource
     /// @param q sycl queue for kernel scheduling
-    seed_finding(seedfinder_config& config,
-                 unsigned int nbins,
-                 vecmem::memory_resource& mr,
-                 ::sycl::queue* q)
+    seed_finding(seedfinder_config& config, unsigned int nbins,
+                 vecmem::memory_resource& mr, ::sycl::queue* q)
         : m_seedfinder_config(config),
           m_mr(mr),
           m_q(q),
@@ -59,9 +58,9 @@ struct seed_finding : public algorithm<host_seed_container(
                            sp_grid&& g2) const override {
         std::lock_guard<std::mutex> lock(*mutex);
 
-       // reinitialize the number of multiplets to zero 
+        // reinitialize the number of multiplets to zero
         for (size_t i = 0; i < g2.nbins(); ++i) {
-            
+
             doublet_counter_container.get_headers()[i].zeros();
             mid_bot_container.get_headers()[i].zeros();
             mid_top_container.get_headers()[i].zeros();
@@ -74,15 +73,15 @@ struct seed_finding : public algorithm<host_seed_container(
         // spacepoint
         for (size_t i = 0; i < g2.nbins(); ++i) {
             size_t n_spM = g2.bin(i).size();
-            
+
             doublet_counter_container.get_items()[i].resize(n_spM);
-            
         }
 
         // doublet counting
         traccc::sycl::doublet_counting(m_seedfinder_config, g2,
-                                       doublet_counter_container, m_mr.get(), m_q);
-        
+                                       doublet_counter_container, m_mr.get(),
+                                       m_q);
+
         // resize the doublet container with the number of doublets
         for (size_t i = 0; i < g2.nbins(); ++i) {
             mid_bot_container.get_items()[i].resize(
@@ -90,11 +89,12 @@ struct seed_finding : public algorithm<host_seed_container(
             mid_top_container.get_items()[i].resize(
                 doublet_counter_container.get_headers()[i].n_mid_top);
         }
-        
-        //doublet finding
-        traccc::sycl::doublet_finding(m_seedfinder_config, g2, doublet_counter_container,
-                                     mid_bot_container, mid_top_container, m_mr.get(), m_q);
-        
+
+        // doublet finding
+        traccc::sycl::doublet_finding(
+            m_seedfinder_config, g2, doublet_counter_container,
+            mid_bot_container, mid_top_container, m_mr.get(), m_q);
+
         // resize the triplet_counter container with the number of doublets
         for (size_t i = 0; i < g2.nbins(); ++i) {
             triplet_counter_container.get_items()[i].resize(
@@ -102,10 +102,10 @@ struct seed_finding : public algorithm<host_seed_container(
         }
 
         // triplet counting
-        traccc::sycl::triplet_counting(m_seedfinder_config, g2,
-                                       doublet_counter_container,
-                                       mid_bot_container, mid_top_container,
-                                       triplet_counter_container, m_mr.get(), m_q);  
+        traccc::sycl::triplet_counting(
+            m_seedfinder_config, g2, doublet_counter_container,
+            mid_bot_container, mid_top_container, triplet_counter_container,
+            m_mr.get(), m_q);
 
         // resize the triplet container with the number of triplets
         for (size_t i = 0; i < g2.nbins(); ++i) {
@@ -114,25 +114,29 @@ struct seed_finding : public algorithm<host_seed_container(
         }
 
         // triplet finding
-        traccc::sycl::triplet_finding(m_seedfinder_config, m_seedfilter_config, g2,
-                                      doublet_counter_container, mid_bot_container, mid_top_container,
-                                      triplet_counter_container, triplet_container, m_mr.get(), m_q);
+        traccc::sycl::triplet_finding(
+            m_seedfinder_config, m_seedfilter_config, g2,
+            doublet_counter_container, mid_bot_container, mid_top_container,
+            triplet_counter_container, triplet_container, m_mr.get(), m_q);
 
         // weight updating
         traccc::sycl::weight_updating(m_seedfilter_config, g2,
                                       triplet_counter_container,
-                                      triplet_container, m_mr.get(), m_q); 
+                                      triplet_container, m_mr.get(), m_q);
 
         // resize the seed container with the number of triplets per event
         seed_container.get_items()[0].resize(triplet_container.total_size());
-        
-        // seed selecting
-        traccc::sycl::seed_selecting(m_seedfilter_config, spacepoints, g2, doublet_counter_container,
-                                     triplet_counter_container, triplet_container, seed_container, m_mr.get(), m_q);
 
-        return seed_container;  
+        // seed selecting
+        traccc::sycl::seed_selecting(
+            m_seedfilter_config, spacepoints, g2, doublet_counter_container,
+            triplet_counter_container, triplet_container, seed_container,
+            m_mr.get(), m_q);
+
+        return seed_container;
     }
-private:
+
+    private:
     const seedfinder_config m_seedfinder_config;
     const seedfilter_config m_seedfilter_config;
     seed_filtering m_seed_filtering;
@@ -149,5 +153,5 @@ private:
     mutable host_seed_container seed_container;
 };
 
-} // namespace sycl
-} // namespace traccc
+}  // namespace sycl
+}  // namespace traccc

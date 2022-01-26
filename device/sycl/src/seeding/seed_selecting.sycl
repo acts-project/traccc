@@ -13,15 +13,16 @@ namespace traccc {
 namespace sycl {
 
 // Sorting algorithm for sorting seeds in the local memory
-template<typename Comparator>
-static 
-void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::local_space> arr, int n, Comparator comp) {
+template <typename Comparator>
+static void insertionSort(
+    ::sycl::multi_ptr<triplet, ::sycl::access::address_space::local_space> arr,
+    int n, Comparator comp) {
     int j = 0;
     triplet key = arr[0];
     for (int i = 1; i < n; ++i) {
         key = arr[i];
         j = i - 1;
-        while (j >= 0 && !comp(arr[j],key)) {
+        while (j >= 0 && !comp(arr[j], key)) {
             arr[j + 1] = arr[j];
             j = j - 1;
         }
@@ -31,29 +32,28 @@ void insertionSort(::sycl::multi_ptr<triplet, ::sycl::access::address_space::loc
 
 // Kernel class for seed selecting
 class SeedSelect {
-public:
+    public:
     SeedSelect(const seedfilter_config filter_config,
                spacepoint_container_view spacepoints_view,
                sp_grid_view internal_sp_view,
                doublet_counter_container_view doublet_counter_view,
                triplet_counter_container_view triplet_counter_view,
-               triplet_container_view triplet_view, 
-               seed_container_view seed_view,
-               local_accessor<triplet> localMem)
-    : m_filter_config(filter_config),
-      m_spacepoints_view(spacepoints_view),
-      m_internal_sp_view(internal_sp_view),
-      m_doublet_counter_view(doublet_counter_view),
-      m_triplet_counter_view(triplet_counter_view),
-      m_triplet_view(triplet_view),
-      m_seed_view(seed_view),
-      m_localMem(localMem) {}
+               triplet_container_view triplet_view,
+               seed_container_view seed_view, local_accessor<triplet> localMem)
+        : m_filter_config(filter_config),
+          m_spacepoints_view(spacepoints_view),
+          m_internal_sp_view(internal_sp_view),
+          m_doublet_counter_view(doublet_counter_view),
+          m_triplet_counter_view(triplet_counter_view),
+          m_triplet_view(triplet_view),
+          m_seed_view(seed_view),
+          m_localMem(localMem) {}
 
-      void operator()(::sycl::nd_item<1> item) const {
+    void operator()(::sycl::nd_item<1> item) const {
 
-         // Mapping cuda indexing to dpc++
+        // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
-        
+
         // Equivalent to blockIdx.x in cuda
         auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
@@ -73,15 +73,16 @@ public:
             {m_triplet_counter_view.headers, m_triplet_counter_view.items});
         device_triplet_container triplet_device(
             {m_triplet_view.headers, m_triplet_view.items});
-        device_seed_container seed_device({m_seed_view.headers, m_seed_view.items});
+        device_seed_container seed_device(
+            {m_seed_view.headers, m_seed_view.items});
 
         // Get the bin and item index
         unsigned int bin_idx(0), item_idx(0);
         sycl_helper::find_idx_on_container(triplet_counter_device, bin_idx,
-                                        item_idx, item);
+                                           item_idx, item);
         // Header of internal spacepoint container : spacepoint bin information
-        // Item of internal spacepoint container : internal spacepoint objects per
-        // bin
+        // Item of internal spacepoint container : internal spacepoint objects
+        // per bin
         auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
         auto& num_compat_spM_per_bin =
             doublet_counter_device.get_headers().at(bin_idx).n_spM;
@@ -91,14 +92,15 @@ public:
         auto doublet_counter_per_bin =
             doublet_counter_device.get_items().at(bin_idx);
 
-        // Header of triplet counter: number of compatible mid_top doublets per bin
-        // Item of triplet counter: triplet counter objects per bin
+        // Header of triplet counter: number of compatible mid_top doublets per
+        // bin Item of triplet counter: triplet counter objects per bin
         auto& num_compat_mb_per_bin =
             triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
 
         // Header of triplet: number of triplets per bin
         // Item of triplet: triplet objects per bin
-        auto& num_triplets_per_bin = triplet_device.get_headers().at(bin_idx).n_triplets;
+        auto& num_triplets_per_bin =
+            triplet_device.get_headers().at(bin_idx).n_triplets;
         auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
         // Header of seed: number of seeds per event
@@ -108,7 +110,8 @@ public:
 
         auto triplets_per_spM = m_localMem.get_pointer();
 
-        if (item_idx >= num_compat_spM_per_bin) return;
+        if (item_idx >= num_compat_spM_per_bin)
+            return;
 
         // middle spacepoint index
         auto& spM_loc = doublet_counter_per_bin[item_idx].spM;
@@ -120,7 +123,8 @@ public:
         unsigned int n_triplets_per_spM = 0;
 
         // the start index of triplets_per_spM
-        unsigned int stride = workItemIdx * m_filter_config.max_triplets_per_spM;
+        unsigned int stride =
+            workItemIdx * m_filter_config.max_triplets_per_spM;
 
         // iterate over the triplets in the bin
         for (unsigned int i = 0; i < num_triplets_per_bin; ++i) {
@@ -134,27 +138,29 @@ public:
             if (spM_loc == aTriplet.sp2) {
 
                 // update weight of triplet
-                seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
-                                                aTriplet.weight);
+                seed_selecting_helper::seed_weight(m_filter_config, spM, spB,
+                                                   spT, aTriplet.weight);
 
                 // check if it is a good triplet
-                if (!seed_selecting_helper::single_seed_cut(m_filter_config, spM, spB,
-                                                            spT, aTriplet.weight)) {
+                if (!seed_selecting_helper::single_seed_cut(
+                        m_filter_config, spM, spB, spT, aTriplet.weight)) {
                     continue;
                 }
 
-                // if the number of good triplets is larger than the threshold, the
-                // triplet with the lowest weight is removed
-                if (n_triplets_per_spM >= m_filter_config.max_triplets_per_spM) {
+                // if the number of good triplets is larger than the threshold,
+                // the triplet with the lowest weight is removed
+                if (n_triplets_per_spM >=
+                    m_filter_config.max_triplets_per_spM) {
                     int begin_idx = stride;
                     int end_idx = stride + m_filter_config.max_triplets_per_spM;
 
-                    int min_index = std::min_element(triplets_per_spM + begin_idx,
-                                                    triplets_per_spM + end_idx,
-                                                    [&](triplet& lhs, triplet& rhs){
-                                                            return lhs.weight < rhs.weight;
-                                                    }) -
-                                    triplets_per_spM;
+                    int min_index =
+                        std::min_element(triplets_per_spM + begin_idx,
+                                         triplets_per_spM + end_idx,
+                                         [&](triplet& lhs, triplet& rhs) {
+                                             return lhs.weight < rhs.weight;
+                                         }) -
+                        triplets_per_spM;
 
                     auto& min_weight = triplets_per_spM[min_index].weight;
 
@@ -163,44 +169,46 @@ public:
                     }
                 }
 
-                else if (n_triplets_per_spM < m_filter_config.max_triplets_per_spM) {
+                else if (n_triplets_per_spM <
+                         m_filter_config.max_triplets_per_spM) {
                     triplets_per_spM[stride + n_triplets_per_spM] = aTriplet;
                     n_triplets_per_spM++;
                 }
-            }       
+            }
         }
         // sort the triplets per spM
-        insertionSort(triplets_per_spM + stride, n_triplets_per_spM, 
-                                        [&](triplet& lhs, triplet& rhs) {
-            if (lhs.weight != rhs.weight) {
-                return lhs.weight > rhs.weight;
-            } else {
+        insertionSort(
+            triplets_per_spM + stride, n_triplets_per_spM,
+            [&](triplet& lhs, triplet& rhs) {
+                if (lhs.weight != rhs.weight) {
+                    return lhs.weight > rhs.weight;
+                } else {
 
-                scalar seed1_sum = 0;
-                scalar seed2_sum = 0;
+                    scalar seed1_sum = 0;
+                    scalar seed2_sum = 0;
 
-                auto& ispB1 =
-                    internal_sp_device.bin(lhs.sp1.bin_idx)[lhs.sp1.sp_idx];
-                auto& ispT1 =
-                    internal_sp_device.bin(lhs.sp3.bin_idx)[lhs.sp3.sp_idx];
-                auto& ispB2 =
-                    internal_sp_device.bin(rhs.sp1.bin_idx)[rhs.sp1.sp_idx];
-                auto& ispT2 =
-                    internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
+                    auto& ispB1 =
+                        internal_sp_device.bin(lhs.sp1.bin_idx)[lhs.sp1.sp_idx];
+                    auto& ispT1 =
+                        internal_sp_device.bin(lhs.sp3.bin_idx)[lhs.sp3.sp_idx];
+                    auto& ispB2 =
+                        internal_sp_device.bin(rhs.sp1.bin_idx)[rhs.sp1.sp_idx];
+                    auto& ispT2 =
+                        internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
 
-                const auto& spB1 = spacepoints_device.at(ispB1.m_link);
-                const auto& spT1 = spacepoints_device.at(ispT1.m_link);
-                const auto& spB2 = spacepoints_device.at(ispB2.m_link);
-                const auto& spT2 = spacepoints_device.at(ispT2.m_link);
+                    const auto& spB1 = spacepoints_device.at(ispB1.m_link);
+                    const auto& spT1 = spacepoints_device.at(ispT1.m_link);
+                    const auto& spB2 = spacepoints_device.at(ispB2.m_link);
+                    const auto& spT2 = spacepoints_device.at(ispT2.m_link);
 
-                seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
-                seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
-                seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
-                seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
+                    seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
+                    seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
+                    seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
+                    seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
 
-                return seed1_sum > seed2_sum;
-            }
-        });
+                    return seed1_sum > seed2_sum;
+                }
+            });
         // the number of good seed per compatible middle spacepoint
         unsigned int n_seeds_per_spM = 0;
 
@@ -218,11 +226,12 @@ public:
             }
 
             seed aSeed({spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
-                    aTriplet.z_vertex});
+                        aTriplet.z_vertex});
 
             // check if it is a good triplet
             if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config, spacepoints_device, aSeed, aTriplet.weight) ||
+                    m_filter_config, spacepoints_device, aSeed,
+                    aTriplet.weight) ||
                 n_seeds_per_spM == 0) {
 
                 vecmem::atomic<uint32_t> obj(&num_seeds);
@@ -238,7 +247,8 @@ public:
             }
         }
     }
-private:
+
+    private:
     const seedfilter_config m_filter_config;
     spacepoint_container_view m_spacepoints_view;
     sp_grid_view m_internal_sp_view;
@@ -247,7 +257,7 @@ private:
     triplet_container_view m_triplet_view;
     seed_container_view m_seed_view;
     local_accessor<triplet> m_localMem;
-};                                  
+};
 
 void seed_selecting(const seedfilter_config& filter_config,
                     host_spacepoint_container& spacepoints,
@@ -256,9 +266,8 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     host_seed_container& seed_container,
-                    vecmem::memory_resource& resource,
-                    ::sycl::queue* q) {
-    
+                    vecmem::memory_resource& resource, ::sycl::queue* q) {
+
     auto spacepoints_view = get_data(spacepoints, &resource);
     auto doublet_counter_container_view =
         get_data(doublet_counter_container, &resource);
@@ -272,33 +281,34 @@ void seed_selecting(const seedfilter_config& filter_config,
     // compatible middle-bot doublet
 
     // -- localSize
-    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
+    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
+    // (=32)
     unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_groups +=
-            triplet_counter_container.get_headers()[i].n_mid_bot / localSize + 1;
+            triplet_counter_container.get_headers()[i].n_mid_bot / localSize +
+            1;
     }
     unsigned int globalSize = localSize * num_groups;
 
     // 1 dim ND Range for the kernel
-    auto seedSelectNdRange = ::sycl::nd_range<1>{globalSize,localSize};
-    
-    q->submit([&](::sycl::handler& h){
+    auto seedSelectNdRange = ::sycl::nd_range<1>{globalSize, localSize};
 
-        // local memory initialization (equivalent to shared memory in CUDA)
-        auto localMem = 
-            local_accessor<triplet>(localSize * filter_config.max_triplets_per_spM, 
-                                    h); 
+    q->submit([&](::sycl::handler& h) {
+         // local memory initialization (equivalent to shared memory in CUDA)
+         auto localMem = local_accessor<triplet>(
+             localSize * filter_config.max_triplets_per_spM, h);
 
-        SeedSelect kernel(filter_config, spacepoints_view, internal_sp_view,
-                          doublet_counter_container_view, triplet_counter_container_view,
-                          triplet_container_view, seed_container_view, localMem);
+         SeedSelect kernel(
+             filter_config, spacepoints_view, internal_sp_view,
+             doublet_counter_container_view, triplet_counter_container_view,
+             triplet_container_view, seed_container_view, localMem);
 
-        h.parallel_for<class seed_select_kernel>(seedSelectNdRange, kernel);
-    }).wait_and_throw();
+         h.parallel_for<class seed_select_kernel>(seedSelectNdRange, kernel);
+     }).wait_and_throw();
 }
 
-} // namespace sycl
-} // namesapce traccc
+}  // namespace sycl
+}  // namespace traccc

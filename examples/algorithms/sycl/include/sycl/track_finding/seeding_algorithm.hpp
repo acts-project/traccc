@@ -16,11 +16,12 @@
 namespace traccc {
 namespace sycl {
 
-class seeding_algorithm 
+class seeding_algorithm
     : public algorithm<host_seed_container(host_spacepoint_container&&)> {
 
     public:
-    seeding_algorithm(vecmem::memory_resource& mr, ::sycl::queue* q = nullptr) : m_mr(mr), m_q(q) {
+    seeding_algorithm(vecmem::memory_resource& mr, ::sycl::queue* q = nullptr)
+        : m_mr(mr), m_q(q) {
 
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
@@ -58,7 +59,7 @@ class seeding_algorithm
         return seeds;
     }
 
-private:
+    private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     std::reference_wrapper<vecmem::memory_resource> m_mr;

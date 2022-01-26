@@ -8,13 +8,12 @@
 #pragma once
 
 #include <CL/sycl.hpp>
-
-#include <vecmem/memory/atomic.hpp>
 #include <edm/spacepoint.hpp>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/singlet.hpp>
 #include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/spacepoint_binning_helper.hpp>
+#include <vecmem/memory/atomic.hpp>
 
 namespace traccc {
 namespace sycl {
@@ -38,8 +37,7 @@ void counting_grid_capacities(
     host_spacepoint_container& spacepoints,
     vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
     vecmem::vector<unsigned int>& grid_capacities,
-    vecmem::memory_resource& resource,
-    ::sycl::queue* q);
+    vecmem::memory_resource& resource, ::sycl::queue* q);
 
 }  // namespace sycl
 }  // namespace traccc

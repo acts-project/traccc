@@ -8,6 +8,7 @@
 #pragma once
 
 #include <seeding/detail/doublet.hpp>
+
 #include "definitions/qualifiers.hpp"
 
 namespace traccc {

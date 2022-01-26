@@ -9,25 +9,25 @@
 
 namespace traccc {
 namespace sycl {
-    
+
 class WeightUpdate {
-public:
+    public:
     WeightUpdate(const seedfilter_config& filter_config,
-                sp_grid_view internal_sp_view,
-                triplet_counter_container_view triplet_counter_view,
-                triplet_container_view triplet_view,
-                local_accessor<scalar> localMem)
-    : m_filter_config(filter_config),
-      m_internal_sp_view(internal_sp_view),
-      m_triplet_counter_view(triplet_counter_view),
-      m_triplet_view(triplet_view),
-      m_localMem(localMem) {}
+                 sp_grid_view internal_sp_view,
+                 triplet_counter_container_view triplet_counter_view,
+                 triplet_container_view triplet_view,
+                 local_accessor<scalar> localMem)
+        : m_filter_config(filter_config),
+          m_internal_sp_view(internal_sp_view),
+          m_triplet_counter_view(triplet_counter_view),
+          m_triplet_view(triplet_view),
+          m_localMem(localMem) {}
 
-      void operator()(::sycl::nd_item<1> item) const {
+    void operator()(::sycl::nd_item<1> item) const {
 
-         // Mapping cuda indexing to dpc++
+        // Mapping cuda indexing to dpc++
         auto workGroup = item.get_group();
-        
+
         // Equivalent to blockIdx.x in cuda
         auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
@@ -45,15 +45,16 @@ public:
 
         // Get the bin and item index
         unsigned int bin_idx(0), tr_idx(0);
-        sycl_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx, item);
+        sycl_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx,
+                                           item);
 
         // Header of internal spacepoint container : spacepoint bin information
-        // Item of internal spacepoint container : internal spacepoint objects per
-        // bin
+        // Item of internal spacepoint container : internal spacepoint objects
+        // per bin
         auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
 
-        // Header of triplet counter: number of compatible mid_top doublets per bin
-        // Item of triplet counter: triplet counter objects per bin
+        // Header of triplet counter: number of compatible mid_top doublets per
+        // bin Item of triplet counter: triplet counter objects per bin
         auto& num_compat_mb_per_bin =
             triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
         auto triplet_counter_per_bin =
@@ -61,10 +62,9 @@ public:
 
         // Header of triplet: number of triplets per bin
         // Item of triplet: triplet objects per bin
-        auto& num_triplets_per_bin = 
+        auto& num_triplets_per_bin =
             triplet_device.get_headers().at(bin_idx).n_triplets;
-        auto triplets_per_bin = 
-            triplet_device.get_items().at(bin_idx);
+        auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
         auto compat_seedR = m_localMem.get_pointer();
         ::sycl::group_barrier(workGroup);
@@ -76,10 +76,11 @@ public:
         auto& spT_idx = triplet.sp3;
 
         // prevent overflow
-        if (tr_idx >= num_triplets_per_bin) return;
-            
-        // find the reference index (start and end) of the triplet container item
-        // vector
+        if (tr_idx >= num_triplets_per_bin)
+            return;
+
+        // find the reference index (start and end) of the triplet container
+        // item vector
         unsigned int start_idx = 0;
         unsigned int end_idx = 0;
 
@@ -99,9 +100,11 @@ public:
         }
 
         // prevent overflow
-        if (start_idx >= triplets_per_bin.size()) return;
+        if (start_idx >= triplets_per_bin.size())
+            return;
 
-        auto& current_spT = internal_sp_device.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
+        auto& current_spT =
+            internal_sp_device.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
 
         scalar currentTop_r = current_spT.radius();
 
@@ -116,15 +119,15 @@ public:
 
         // iterate over triplets
         for (auto tr_it = triplets_per_bin.begin() + start_idx;
-            tr_it != triplets_per_bin.begin() + end_idx; tr_it++) {
+             tr_it != triplets_per_bin.begin() + end_idx; tr_it++) {
             if (triplet == *tr_it) {
                 continue;
             }
 
             auto& other_triplet = *tr_it;
             auto other_spT_idx = (*tr_it).sp3;
-            auto other_spT =
-                internal_sp_device.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx];
+            auto other_spT = internal_sp_device.bin(
+                other_spT_idx.bin_idx)[other_spT_idx.sp_idx];
 
             // compared top SP should have at least deltaRMin distance
             scalar otherTop_r = other_spT.radius();
@@ -171,7 +174,8 @@ public:
             }
         }
     }
-private:
+
+    private:
     const seedfilter_config m_filter_config;
     sp_grid_view m_internal_sp_view;
     triplet_counter_container_view m_triplet_counter_view;
@@ -183,8 +187,7 @@ void weight_updating(const seedfilter_config& filter_config,
                      sp_grid& internal_sp,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource,
-                     ::sycl::queue* q) {
+                     vecmem::memory_resource& resource, ::sycl::queue* q) {
 
     auto triplet_counter_view = get_data(triplet_counter_container, &resource);
     auto triplet_view = get_data(triplet_container, &resource);
@@ -194,30 +197,31 @@ void weight_updating(const seedfilter_config& filter_config,
     // compatible middle-bot doublet
 
     // -- localSize
-    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
+    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
+    // (=32)
     unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
-        num_groups += triplet_container.get_headers()[i].n_triplets / localSize + 1;
+        num_groups +=
+            triplet_container.get_headers()[i].n_triplets / localSize + 1;
     }
-    unsigned int globalSize = localSize * num_groups;  
+    unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
-    auto weightUpdateNdRange = ::sycl::nd_range<1>{globalSize,localSize};    
-  
-    q->submit([&](::sycl::handler& h){
+    auto weightUpdateNdRange = ::sycl::nd_range<1>{globalSize, localSize};
 
-        // local memory initialization (equivalent to shared memory in CUDA)
-        auto localMem = 
-            local_accessor<scalar>(filter_config.compatSeedLimit, h);
-        
-        WeightUpdate kernel(filter_config, internal_sp_view, 
-                            triplet_counter_view, triplet_view,
-                            localMem);
+    q->submit([&](::sycl::handler& h) {
+         // local memory initialization (equivalent to shared memory in CUDA)
+         auto localMem =
+             local_accessor<scalar>(filter_config.compatSeedLimit, h);
 
-        h.parallel_for<class weight_update_kernel>(weightUpdateNdRange, kernel);
-    }).wait_and_throw();
+         WeightUpdate kernel(filter_config, internal_sp_view,
+                             triplet_counter_view, triplet_view, localMem);
+
+         h.parallel_for<class weight_update_kernel>(weightUpdateNdRange,
+                                                    kernel);
+     }).wait_and_throw();
 }
 
-} // namespace sycl
-} // namespace traccc
+}  // namespace sycl
+}  // namespace traccc

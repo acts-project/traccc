@@ -9,28 +9,27 @@
 
 namespace traccc {
 namespace sycl {
-    
+
 // Kernel class for triplet counting
 class TripletCount {
-public:
-    TripletCount(const seedfinder_config config,
-                sp_grid_view internal_sp_view,
-                doublet_counter_container_view doublet_counter_view,
-                doublet_container_view mid_bot_doublet_view,
-                doublet_container_view mid_top_doublet_view,
-                triplet_counter_container_view triplet_counter_view) 
-    : m_config(config),
-      m_internal_sp_view(internal_sp_view),
-      m_doublet_counter_view(doublet_counter_view),
-      m_mid_bot_doublet_view(mid_bot_doublet_view),
-      m_mid_top_doublet_view(mid_top_doublet_view),
-      m_triplet_counter_view(triplet_counter_view) {}
-    
+    public:
+    TripletCount(const seedfinder_config config, sp_grid_view internal_sp_view,
+                 doublet_counter_container_view doublet_counter_view,
+                 doublet_container_view mid_bot_doublet_view,
+                 doublet_container_view mid_top_doublet_view,
+                 triplet_counter_container_view triplet_counter_view)
+        : m_config(config),
+          m_internal_sp_view(internal_sp_view),
+          m_doublet_counter_view(doublet_counter_view),
+          m_mid_bot_doublet_view(mid_bot_doublet_view),
+          m_mid_top_doublet_view(mid_top_doublet_view),
+          m_triplet_counter_view(triplet_counter_view) {}
+
     void operator()(::sycl::nd_item<1> item) const {
 
-         // Mapping cuda indexing to sycl
+        // Mapping cuda indexing to sycl
         auto workGroup = item.get_group();
-        
+
         // Equivalent to blockIdx.x in cuda
         auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
@@ -49,11 +48,11 @@ public:
             {m_mid_top_doublet_view.headers, m_mid_top_doublet_view.items});
         device_triplet_counter_container triplet_counter_device(
             {m_triplet_counter_view.headers, m_triplet_counter_view.items});
-    
 
         // Get the bin and item index
         unsigned int bin_idx(0), mb_idx(0);
-        sycl_helper::find_idx_on_container(mid_bot_doublet_device, bin_idx, mb_idx, item);
+        sycl_helper::find_idx_on_container(mid_bot_doublet_device, bin_idx,
+                                           mb_idx, item);
 
         // get internal spacepoints for current bin
         auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
@@ -79,11 +78,11 @@ public:
         auto mid_top_doublets_per_bin =
             mid_top_doublet_device.get_items().at(bin_idx);
 
-        // Header of triplet counter: number of compatible mid_top doublets per bin
-        // Item of triplet counter: triplet counter objects per bin
+        // Header of triplet counter: number of compatible mid_top doublets per
+        // bin Item of triplet counter: triplet counter objects per bin
         auto& num_compat_mb_per_bin =
             triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
-        auto& num_triplets = 
+        auto& num_triplets =
             triplet_counter_device.get_headers().at(bin_idx).n_triplets;
         auto triplet_counter_per_bin =
             triplet_counter_device.get_items().at(bin_idx);
@@ -113,13 +112,14 @@ public:
         // check
         scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
         scalar scatteringInRegion2 = m_config.maxScatteringAngle2 * iSinTheta2;
-        scatteringInRegion2 *= m_config.sigmaScattering * m_config.sigmaScattering;
+        scatteringInRegion2 *=
+            m_config.sigmaScattering * m_config.sigmaScattering;
         scalar curvature, impact_parameter;
 
-        // find the reference (start) index of the mid-top doublet container item
-        // vector, where the doublets are recorded The start index is calculated by
-        // accumulating the number of mid-top doublets of all previous compatible
-        // middle spacepoints
+        // find the reference (start) index of the mid-top doublet container
+        // item vector, where the doublets are recorded The start index is
+        // calculated by accumulating the number of mid-top doublets of all
+        // previous compatible middle spacepoints
         unsigned int mb_end_idx = 0;
         unsigned int mt_start_idx = 0;
         unsigned int mt_end_idx = 0;
@@ -159,8 +159,8 @@ public:
 
             // Check if mid-bot and mid-top doublets can form a triplet
             if (triplet_finding_helper::isCompatible(
-                    spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2, curvature,
-                    impact_parameter)) {
+                    spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2,
+                    curvature, impact_parameter)) {
                 num_triplets_per_mb++;
             }
         }
@@ -171,10 +171,12 @@ public:
             auto pos = obj.fetch_add(1);
             vecmem::atomic<uint32_t> objT(&num_triplets);
             objT.fetch_add(num_triplets_per_mb);
-            triplet_counter_per_bin[pos] = {mid_bot_doublet, num_triplets_per_mb};
+            triplet_counter_per_bin[pos] = {mid_bot_doublet,
+                                            num_triplets_per_mb};
         }
     }
-private:
+
+    private:
     const seedfinder_config m_config;
     sp_grid_view m_internal_sp_view;
     doublet_counter_container_view m_doublet_counter_view;
@@ -183,15 +185,13 @@ private:
     triplet_counter_container_view m_triplet_counter_view;
 };
 
-void triplet_counting(const seedfinder_config& config,
-                    sp_grid& internal_sp,
-                    host_doublet_counter_container& doublet_counter_container,
-                    host_doublet_container& mid_bot_doublet_container,
-                    host_doublet_container& mid_top_doublet_container,
-                    host_triplet_counter_container& triplet_counter_container,
-                    vecmem::memory_resource& resource,
-                    ::sycl::queue* q) {
-    
+void triplet_counting(const seedfinder_config& config, sp_grid& internal_sp,
+                      host_doublet_counter_container& doublet_counter_container,
+                      host_doublet_container& mid_bot_doublet_container,
+                      host_doublet_container& mid_top_doublet_container,
+                      host_triplet_counter_container& triplet_counter_container,
+                      vecmem::memory_resource& resource, ::sycl::queue* q) {
+
     auto doublet_counter_container_view =
         get_data(doublet_counter_container, &resource);
     auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
@@ -204,27 +204,31 @@ void triplet_counting(const seedfinder_config& config,
     // middle-bot doublet
 
     // -- localSize
-    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
-    unsigned int localSize = 32*8;
+    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
+    // (=32)
+    unsigned int localSize = 32 * 8;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_groups +=
-            mid_bot_doublet_container.get_headers()[i].n_doublets / localSize + 1;
+            mid_bot_doublet_container.get_headers()[i].n_doublets / localSize +
+            1;
     }
 
     unsigned int globalSize = localSize * num_groups;
-    
-    // 1 dim ND Range for the kernel
-    auto tripletCountNdRange = ::sycl::nd_range<1>{globalSize,localSize};
 
-    q->submit([&](::sycl::handler& h){
-        TripletCount kernel(config, internal_sp_view, doublet_counter_container_view,
-                            mid_bot_doublet_view, mid_top_doublet_view,
-                            triplet_counter_container_view);
-        h.parallel_for<class triplet_count_kernel>(tripletCountNdRange, kernel);
-    }).wait_and_throw();  
+    // 1 dim ND Range for the kernel
+    auto tripletCountNdRange = ::sycl::nd_range<1>{globalSize, localSize};
+
+    q->submit([&](::sycl::handler& h) {
+         TripletCount kernel(config, internal_sp_view,
+                             doublet_counter_container_view,
+                             mid_bot_doublet_view, mid_top_doublet_view,
+                             triplet_counter_container_view);
+         h.parallel_for<class triplet_count_kernel>(tripletCountNdRange,
+                                                    kernel);
+     }).wait_and_throw();
 }
 
-} // namespace sycl
-} // namespace traccc
+}  // namespace sycl
+}  // namespace traccc

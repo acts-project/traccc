@@ -78,11 +78,11 @@ inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
     }
 
 #if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
-size_t r_index =
-    ::sycl::hypot(sp.x() - config.beamPos_x, sp.y() - config.beamPos_y);
+    size_t r_index =
+        ::sycl::hypot(sp.x() - config.beamPos_x, sp.y() - config.beamPos_y);
 #else
-size_t r_index =
-    std::hypot(sp.x() - config.beamPos_x, sp.y() - config.beamPos_y);
+    size_t r_index =
+        std::hypot(sp.x() - config.beamPos_x, sp.y() - config.beamPos_y);
 #endif
 
     if (r_index < config.get_num_rbins()) {

@@ -14,33 +14,38 @@ namespace sycl {
 
 // Short aliast for accessor to local memory (shared memory in CUDA)
 template <typename T>
-using local_accessor = ::sycl::accessor<
-    T,
-    1,
-    ::sycl::access::mode::read_write,
-    ::sycl::access::target::local>;
+using local_accessor = ::sycl::accessor<T, 1, ::sycl::access::mode::read_write,
+                                        ::sycl::access::target::local>;
 
 // Some useful helper funcitons
 struct sycl_helper {
 
-    /// Function that performs reduction on the local memory using subgroup operations
+    /// Function that performs reduction on the local memory using subgroup
+    /// operations
     ///
     /// @param array pointer to an array in local memory
     /// @param item sycl nd_item for quering local indexes and groups
-    static
-    void reduceInShared(::sycl::multi_ptr<int, ::sycl::access::address_space::local_space> array, ::sycl::nd_item<1> &item)
-    {
+    static void reduceInShared(
+        ::sycl::multi_ptr<int, ::sycl::access::address_space::local_space>
+            array,
+        ::sycl::nd_item<1>& item) {
         auto workItemIdx = item.get_local_id(0);
         auto sg = item.get_sub_group();
         auto workGroup = item.get_group();
         auto groupDim = item.get_local_range(0);
 
-        // Comment out the first two lines of shift_left for Intel platform (min blockSize is 8 in that case)
-        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 16);
-        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 8);
-        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 4);
-        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 2);
-        array[workItemIdx] += ::sycl::shift_group_left(sg, array[workItemIdx], 1);
+        // Comment out the first two lines of shift_left for Intel platform (min
+        // blockSize is 8 in that case)
+        array[workItemIdx] +=
+            ::sycl::shift_group_left(sg, array[workItemIdx], 16);
+        array[workItemIdx] +=
+            ::sycl::shift_group_left(sg, array[workItemIdx], 8);
+        array[workItemIdx] +=
+            ::sycl::shift_group_left(sg, array[workItemIdx], 4);
+        array[workItemIdx] +=
+            ::sycl::shift_group_left(sg, array[workItemIdx], 2);
+        array[workItemIdx] +=
+            ::sycl::shift_group_left(sg, array[workItemIdx], 1);
 
         ::sycl::group_barrier(workGroup);
 
@@ -59,7 +64,8 @@ struct sycl_helper {
     template <typename T>
     static void find_idx_on_jagged_vector(
         const vecmem::jagged_device_vector<T>& jag_vec,
-        unsigned int& header_idx, unsigned int& item_idx, ::sycl::nd_item<1>& item) {
+        unsigned int& header_idx, unsigned int& item_idx,
+        ::sycl::nd_item<1>& item) {
 
         // Equivalent to blockIdx.x in cuda
         auto groupIdx = item.get_group(0);
@@ -97,7 +103,8 @@ struct sycl_helper {
     template <typename header_t, typename item_t>
     static void find_idx_on_container(
         const device_container<header_t, item_t>& container,
-        unsigned int& header_idx, unsigned int& item_idx, ::sycl::nd_item<1>& item) {
+        unsigned int& header_idx, unsigned int& item_idx,
+        ::sycl::nd_item<1>& item) {
 
         // Equivalent to blockIdx.x in cuda
         auto groupIdx = item.get_group(0);
@@ -114,7 +121,8 @@ struct sycl_helper {
         /// number of blocks for one header entry
         unsigned int nblocks_per_header = 0;
         for (unsigned int i = 0; i < container.size(); ++i) {
-            nblocks_per_header = container.get_headers()[i].get_ref_num() / groupDim + 1;
+            nblocks_per_header =
+                container.get_headers()[i].get_ref_num() / groupDim + 1;
             nblocks_accum += nblocks_per_header;
 
             if (groupIdx < nblocks_accum) {
@@ -131,4 +139,3 @@ struct sycl_helper {
 
 }  // namespace sycl
 }  // namespace traccc
-

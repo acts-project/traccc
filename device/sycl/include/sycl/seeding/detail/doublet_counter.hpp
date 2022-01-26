@@ -8,6 +8,7 @@
 #pragma once
 
 #include <seeding/detail/singlet.hpp>
+
 #include "definitions/qualifiers.hpp"
 
 namespace traccc {
@@ -65,7 +66,7 @@ using host_doublet_counter_container =
 /// Convenience declaration for the doublet_counter container type to use in
 /// device code
 using device_doublet_counter_container =
-   device_container<doublet_counter_per_bin, doublet_counter>;
+    device_container<doublet_counter_per_bin, doublet_counter>;
 /// Convenience declaration for the doublet_counter container data type to use
 /// in host code
 using doublet_counter_container_data =

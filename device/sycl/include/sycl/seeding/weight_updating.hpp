@@ -8,13 +8,13 @@
 #pragma once
 
 #include <CL/sycl.hpp>
-
-#include "sycl/seeding/detail/triplet_counter.hpp"
-#include "sycl/seeding/detail/sycl_helper.hpp"
 #include <edm/internal_spacepoint.hpp>
 #include <seeding/detail/seeding_config.hpp>
 #include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/detail/triplet.hpp>
+
+#include "sycl/seeding/detail/sycl_helper.hpp"
+#include "sycl/seeding/detail/triplet_counter.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -33,8 +33,7 @@ void weight_updating(const seedfilter_config& filter_config,
                      sp_grid& internal_sp,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource,
-                     ::sycl::queue* q);
+                     vecmem::memory_resource& resource, ::sycl::queue* q);
 
 }  // namespace sycl
 }  // namespace traccc

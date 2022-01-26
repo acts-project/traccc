@@ -7,11 +7,6 @@
 #pragma once
 
 #include <CL/sycl.hpp>
-
-#include "sycl/seeding/detail/doublet_counter.hpp"
-#include "sycl/seeding/detail/triplet_counter.hpp"
-#include "sycl/seeding/detail/sycl_helper.hpp"
-#include <vecmem/memory/atomic.hpp>
 #include <edm/internal_spacepoint.hpp>
 #include <edm/seed.hpp>
 #include <seeding/detail/doublet.hpp>
@@ -19,6 +14,11 @@
 #include <seeding/detail/spacepoint_grid.hpp>
 #include <seeding/detail/triplet.hpp>
 #include <seeding/seed_selecting_helper.hpp>
+#include <vecmem/memory/atomic.hpp>
+
+#include "sycl/seeding/detail/doublet_counter.hpp"
+#include "sycl/seeding/detail/sycl_helper.hpp"
+#include "sycl/seeding/detail/triplet_counter.hpp"
 
 namespace traccc {
 namespace sycl {
@@ -41,8 +41,7 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     host_seed_container& seed_container,
-                    vecmem::memory_resource& resource,
-                    ::sycl::queue* q);
-    
+                    vecmem::memory_resource& resource, ::sycl::queue* q);
+
 }  // namespace sycl
 }  // namespace traccc
