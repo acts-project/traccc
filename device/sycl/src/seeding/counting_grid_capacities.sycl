@@ -6,6 +6,7 @@
  */
 
 #define EIGEN_DONT_VECTORIZE
+
 #include "sycl/seeding/counting_grid_capacities.hpp"
 
 namespace traccc {
@@ -88,13 +89,12 @@ private:
     vecmem::data::vector_view<unsigned int> m_grid_capacities_view;
 };
 
-void counting_grid_capacities(
-    const seedfinder_config config, sp_grid& grid,
-    host_spacepoint_container& spacepoints,
-    vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
-    vecmem::vector<unsigned int>& grid_capacities,
-    vecmem::memory_resource& resource,
-    ::sycl::queue* q) {
+void counting_grid_capacities(const seedfinder_config config, sp_grid& grid,
+                              host_spacepoint_container& spacepoints,
+                              vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
+                              vecmem::vector<unsigned int>& grid_capacities,
+                              vecmem::memory_resource& resource,
+                              ::sycl::queue* q) {
 
     auto grid_view = get_data(grid, resource);
     auto spacepoints_view = get_data(spacepoints, &resource);

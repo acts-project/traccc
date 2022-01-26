@@ -6,6 +6,7 @@
  */
 
 #define EIGEN_DONT_VECTORIZE
+
 #include "sycl/seeding/populating_grid.hpp"
 
 namespace traccc{
@@ -110,7 +111,8 @@ void populating_grid(
     auto spacepoints_view = get_data(spacepoints, &resource);
     auto sp_container_indices_view = vecmem::get_data(sp_container_indices);
 
-    // number of threads is the integer multiple of WARP_SIZE (=32)
+    // -- localSize
+    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE (=32)
     unsigned int localSize = 32*4;
     unsigned int num_groups = spacepoints.total_size() / localSize + 1;
 

@@ -31,6 +31,7 @@ namespace sycl {
 /// @param spacepoints spacepoint container
 /// @param sp_container_indices header and item index of spacepoints
 /// @param resource vecmem memory resource
+/// @param q sycl queue for kernel scheduling
 void populating_grid(
     const seedfinder_config config, sp_grid& grid,
     host_spacepoint_container& spacepoints,

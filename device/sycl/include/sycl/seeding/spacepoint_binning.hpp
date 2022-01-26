@@ -14,15 +14,10 @@
 #include <seeding/spacepoint_binning_helper.hpp>
 #include <utils/algorithm.hpp>
 
-// #include <vecmem/memory/sycl/device_memory_resource.hpp>
-
 namespace traccc {
 namespace sycl {
 
-class count_grid_kernel;
-class populate_grid_kernel;
-
-/// Spacepoing binning for cuda
+/// Spacepoing binning for sycl
 struct spacepoint_binning
     : public algorithm<sp_grid(host_spacepoint_container&&)> {
 
@@ -70,21 +65,6 @@ struct spacepoint_binning
         traccc::sycl::populating_grid(m_config, g2, spacepoints,
                                       sp_container_indices, grid_capacities,
                                       m_mr.get(), m_q);
-
-        /// It is OPTIONAL to do sorting with the radius of spacepoint,
-        /// since the sorting barely impacts seed matching ratio between cpu and
-        /// cuda
-        /*
-        for (unsigned int i = 0; i < g2.nbins(); i++){
-            auto& g2_bin = g2.data()[i];
-
-            // cpu sort
-            //std::sort(g2_bin.begin(), g2_bin.end());
-
-            // thrust sort
-            thrust::sort(g2_bin.begin(),g2_bin.end());
-        }
-        */
 
         return g2;
     }

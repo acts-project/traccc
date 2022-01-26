@@ -26,14 +26,6 @@
 namespace traccc {
 namespace sycl {
 
-// Forward decleration of the kernel classes in the order of execution
-class doublet_count_kernel;
-class doublet_find_kernel;
-class triplet_count_kernel;
-class triplet_find_kernel;
-class weight_update_kernel;
-class seed_select_kernel;
-
 // Sycl seeding function object
 struct seed_finding : public algorithm<host_seed_container(
                           host_spacepoint_container&&, sp_grid&&)> {

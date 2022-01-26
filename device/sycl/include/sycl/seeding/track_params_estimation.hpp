@@ -23,6 +23,7 @@ struct track_params_estimation
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
+    /// @param q sycl queue for kernel scheduling
     track_params_estimation(vecmem::memory_resource& mr, ::sycl::queue* q) : m_mr(mr),
                                                                              m_q(q)   {}
 

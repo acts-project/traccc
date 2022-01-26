@@ -149,19 +149,6 @@ public:
                     int begin_idx = stride;
                     int end_idx = stride + m_filter_config.max_triplets_per_spM;
 
-                    // Note: min_index method gives a result different
-                    //       from sorting method when there are the cases where
-                    //       weight & z_vertex are same.
-                    //
-                    //       So min_index method reduces seed matching ratio
-                    //       since the cpu version is using sorting method.
-                    //
-                    //       But that doesn't mean min_index method
-                    //       is wrong of course
-                    //
-                    //       Let's not be so obsessed about achieving
-                    //       perfectly same result :))))))))
-
                     int min_index = std::min_element(triplets_per_spM + begin_idx,
                                                     triplets_per_spM + end_idx,
                                                     [&](triplet& lhs, triplet& rhs){

@@ -38,11 +38,6 @@
 #include "Acts/Surfaces/PlaneSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 
-// SYCL include(s).
-#if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
-#include <CL/sycl.hpp>
-#endif
-
 inline bool operator==(const SpacePoint* acts_sp,
                        const traccc::spacepoint& traccc_sp) {
     if (abs(acts_sp->x() - traccc_sp.global[0]) < traccc::float_epsilon &&
@@ -124,18 +119,6 @@ TEST(algorithms, compare_with_acts_seeding) {
     for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
         auto& items = spacepoints_per_event.get_items()[i_h];
         for (auto& sp : items) {
-            
-            #if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
-            SpacePoint* acts_sp =
-                new SpacePoint{static_cast<float>(sp.global[0]),
-                               static_cast<float>(sp.global[1]),
-                               static_cast<float>(sp.global[2]),
-                               ::sycl::hypot(static_cast<float>(sp.global[0]),
-                                          static_cast<float>(sp.global[1])),
-                               0,
-                               0,
-                               0};
-            #else
             SpacePoint* acts_sp =
                 new SpacePoint{static_cast<float>(sp.global[0]),
                                static_cast<float>(sp.global[1]),
@@ -145,7 +128,6 @@ TEST(algorithms, compare_with_acts_seeding) {
                                0,
                                0,
                                0};
-            #endif
             spVec.push_back(acts_sp);
         }
     }

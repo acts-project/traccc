@@ -1,6 +1,3 @@
-# We need the SYCL language in this directory.
-enable_language( SYCL )
-
 add_library(traccc_core INTERFACE)
 
 target_include_directories(traccc_core

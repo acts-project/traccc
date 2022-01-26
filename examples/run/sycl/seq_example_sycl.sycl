@@ -63,11 +63,12 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     float tp_estimating_cpu(0);
     float tp_estimating_sycl(0);
 
-    // Memory resource used by the EDM.
     // Change to ::sycl::gpu_selector{} to run on different device
     ::sycl::queue q( CUDADeviceSelector{} );
     std::cout << "Running on device: "
                 << q.get_device().get_info<::sycl::info::device::name>() << "\n";
+
+    // Memory resource used by the EDM.
     vecmem::sycl::shared_memory_resource shared_mr(&q);
 
     // Memory resource used by the EDM.
