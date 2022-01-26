@@ -4,14 +4,15 @@
  *
  * Mozilla Public License Version 2.0
  */
-// sycl 
+
+// SYCL include(s) 
 #include <CL/sycl.hpp>
 
 #include <chrono>
 #include <iomanip>
 #include <iostream>
 
-// vecmem
+// Vecmem include(s)
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 
