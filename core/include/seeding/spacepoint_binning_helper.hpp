@@ -7,6 +7,11 @@
 
 #pragma once
 
+// SYCL include(s).
+#if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
+#include <CL/sycl.hpp>
+#endif
+
 // Project include(s).
 #include <edm/internal_spacepoint.hpp>
 #include <edm/spacepoint.hpp>
@@ -67,19 +72,17 @@ inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
     if (sp.z() > config.zMax || sp.z() < config.zMin) {
         return detray::invalid_value<size_t>();
     }
-    scalar spPhi = std::atan2(sp.y(), sp.x());
+    scalar spPhi = algebra::math::atan2(sp.y(), sp.x());
     if (spPhi > config.phiMax || spPhi < config.phiMin) {
         return detray::invalid_value<size_t>();
     }
-
+#if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
+    size_t r_index =
+        ::sycl::hypot(sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]);
+#else
     size_t r_index =
         std::hypot(sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]);
-
-    if (r_index < config.get_num_rbins()) {
-        return r_index;
-    }
-
-    return detray::invalid_value<size_t>();
+#endif
 }
 
 template <typename spacepoint_container_t,

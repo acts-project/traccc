@@ -11,7 +11,19 @@
 #include "edm/spacepoint.hpp"
 #include "edm/track_parameters.hpp"
 
+// SYCL include(s).
+#if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
+#include <CL/sycl.hpp>
+#endif
+
 namespace traccc {
+
+// Namespace to pick up math functions from
+#if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
+namespace math_ns = cl::sycl;
+#else
+namespace math_ns = std;
+#endif
 
 /// helper functions (for both cpu and gpu) to perform conformal transformation
 ///
@@ -78,7 +90,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     scalar B = uv2[1] - A * uv2[0];
 
     // Curvature (with a sign) estimate
-    scalar rho = -2.0 * B / std::hypot(1., A);
+    scalar rho = -2.0 * B / math_ns::hypot(float(1.), A);
     // The projection of the top space point on the transverse plane of
     // the new frame
     scalar rn = local2[0] * local2[0] + local2[1] * local2[1];
@@ -88,7 +100,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     // The momentum direction in the new frame (the center of the circle
     // has the coordinate (-1.*A/(2*B), 1./(2*B)))
     vector3 transDirection =
-        vector3({1., A, scalar(std::hypot(1., A)) * invTanTheta});
+        vector3({1., A, scalar(math_ns::hypot(float(1.), A)) * invTanTheta});
     // Transform it back to the original frame
     vector3 direction =
         transform3::rotate(trans._data, vector::normalize(transDirection));
@@ -107,7 +119,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     scalar qOverPt =
         rho * (Acts::UnitConstants::m) / (0.3 * getter::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
-    params[e_bound_qoverp] = qOverPt / std::hypot(1., invTanTheta);
+    params[e_bound_qoverp] = qOverPt / math_ns::hypot(float(1.), invTanTheta);
 
     // The estimated momentum, and its projection along the magnetic
     // field diretion
@@ -117,8 +129,8 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
 
     // The estimated velocity, and its projection along the magnetic
     // field diretion
-    scalar v = pInGeV / std::hypot(pInGeV, massInGeV);
-    scalar vz = pzInGeV / std::hypot(pInGeV, massInGeV);
+    scalar v = pInGeV / math_ns::hypot(pInGeV, massInGeV);
+    scalar vz = pzInGeV / math_ns::hypot(pInGeV, massInGeV);
     // The z coordinate of the bottom space point along the magnetic
     // field direction
     scalar pathz =
