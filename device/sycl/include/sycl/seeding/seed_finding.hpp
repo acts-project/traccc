@@ -78,7 +78,7 @@ struct seed_finding : public algorithm<host_seed_container(
         }
 
         // doublet counting
-        traccc::sycl::doublet_counting(m_seedfinder_config, g2,
+        traccc::sycl::doublet_counting(m_seedfinder_config, const_cast<sp_grid&>(g2),
                                        doublet_counter_container, m_mr.get(),
                                        m_q);
 
@@ -92,7 +92,7 @@ struct seed_finding : public algorithm<host_seed_container(
 
         // doublet finding
         traccc::sycl::doublet_finding(
-            m_seedfinder_config, g2, doublet_counter_container,
+            m_seedfinder_config, const_cast<sp_grid&>(g2), doublet_counter_container,
             mid_bot_container, mid_top_container, m_mr.get(), m_q);
 
         // resize the triplet_counter container with the number of doublets
@@ -103,7 +103,7 @@ struct seed_finding : public algorithm<host_seed_container(
 
         // triplet counting
         traccc::sycl::triplet_counting(
-            m_seedfinder_config, g2, doublet_counter_container,
+            m_seedfinder_config, const_cast<sp_grid&>(g2), doublet_counter_container,
             mid_bot_container, mid_top_container, triplet_counter_container,
             m_mr.get(), m_q);
 
@@ -115,12 +115,12 @@ struct seed_finding : public algorithm<host_seed_container(
 
         // triplet finding
         traccc::sycl::triplet_finding(
-            m_seedfinder_config, m_seedfilter_config, g2,
+            m_seedfinder_config, m_seedfilter_config, const_cast<sp_grid&>(g2),
             doublet_counter_container, mid_bot_container, mid_top_container,
             triplet_counter_container, triplet_container, m_mr.get(), m_q);
 
         // weight updating
-        traccc::sycl::weight_updating(m_seedfilter_config, g2,
+        traccc::sycl::weight_updating(m_seedfilter_config, const_cast<sp_grid&>(g2),
                                       triplet_counter_container,
                                       triplet_container, m_mr.get(), m_q);
 
@@ -129,7 +129,7 @@ struct seed_finding : public algorithm<host_seed_container(
 
         // seed selecting
         traccc::sycl::seed_selecting(
-            m_seedfilter_config, spacepoints, g2, doublet_counter_container,
+            m_seedfilter_config, const_cast<host_spacepoint_container&>(spacepoints), const_cast<sp_grid&>(g2), doublet_counter_container,
             triplet_counter_container, triplet_container, seed_container,
             m_mr.get(), m_q);
 

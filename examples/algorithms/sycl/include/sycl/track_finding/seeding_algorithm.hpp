@@ -17,7 +17,7 @@ namespace traccc {
 namespace sycl {
 
 class seeding_algorithm
-    : public algorithm<host_seed_container(const host_spacepoint_container&)> {
+    : public algorithm<host_seed_container(host_spacepoint_container&&)> {
 
     public:
     seeding_algorithm(vecmem::memory_resource& mr, ::sycl::queue* q = nullptr)
@@ -51,7 +51,7 @@ class seeding_algorithm
     }
 
     output_type operator()(
-        const host_spacepoint_container& spacepoints) const override {
+        host_spacepoint_container&& spacepoints) const override {
         output_type seeds(1, &m_mr.get());
         auto internal_sp_g2 = (*sb)(spacepoints);
         seeds = (*sf)(spacepoints, internal_sp_g2);
