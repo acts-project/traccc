@@ -27,16 +27,6 @@
 #include "seeding/track_params_estimation.hpp"
 #include "track_finding/seeding_algorithm.hpp"
 
-// Selector to pass to sycl::queue object for running on NVIDIA device
-class CUDADeviceSelector : public ::sycl::device_selector {
-    public:
-    int operator()(const ::sycl::device& device) const override {
-        return device.get_platform().get_backend() == ::sycl::backend::cuda
-                   ? 1
-                   : -1;
-    }
-};
-
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events, bool run_cpu) {
 
@@ -64,7 +54,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     float tp_estimating_sycl(0);
 
     // Change to ::sycl::gpu_selector{} to run on different device
-    ::sycl::queue q(CUDADeviceSelector{});
+    ::sycl::queue q(::sycl::gpu_selector{});
     std::cout << "Running on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
