@@ -19,7 +19,7 @@ namespace sycl {
 
 /// Spacepoing binning for sycl
 struct spacepoint_binning
-    : public algorithm<sp_grid(host_spacepoint_container&&)> {
+    : public algorithm<sp_grid(const host_spacepoint_container&)> {
 
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
@@ -34,7 +34,7 @@ struct spacepoint_binning
     }
 
     output_type operator()(
-        host_spacepoint_container&& spacepoints) const override {
+        const host_spacepoint_container& spacepoints) const override {
 
         // output object for grid of internal spacepoint
         output_type g2(m_axes.first, m_axes.second, m_mr.get());

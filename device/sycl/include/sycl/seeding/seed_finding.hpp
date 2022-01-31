@@ -29,7 +29,7 @@ namespace sycl {
 
 // Sycl seeding function object
 struct seed_finding : public algorithm<host_seed_container(
-                          host_spacepoint_container&&, sp_grid&&)> {
+                          const host_spacepoint_container&, const sp_grid&)> {
     /// Constructor for the sycl seed finding
     ///
     /// @param config is seed finder configuration parameters
@@ -54,8 +54,8 @@ struct seed_finding : public algorithm<host_seed_container(
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
-    output_type operator()(host_spacepoint_container&& spacepoints,
-                           sp_grid&& g2) const override {
+    output_type operator()(const host_spacepoint_container& spacepoints,
+                           const sp_grid& g2) const override {
         std::lock_guard<std::mutex> lock(*mutex);
 
         // reinitialize the number of multiplets to zero

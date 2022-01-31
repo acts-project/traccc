@@ -141,7 +141,7 @@ class DupletCount {
     doublet_counter_container_view m_doublet_counter_view;
 };
 
-void doublet_counting(const seedfinder_config& config, sp_grid& internal_sp,
+void doublet_counting(const seedfinder_config& config, const sp_grid& internal_sp,
                       host_doublet_counter_container& doublet_counter_container,
                       vecmem::memory_resource& resource, ::sycl::queue* q) {
 

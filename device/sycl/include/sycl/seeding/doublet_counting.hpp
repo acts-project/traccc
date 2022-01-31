@@ -30,7 +30,7 @@ namespace sycl {
 /// @param doublet_counter_container vecmem container for doublet_counter
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
-void doublet_counting(const seedfinder_config& config, sp_grid& internal_sp,
+void doublet_counting(const seedfinder_config& config, const sp_grid& internal_sp,
                       host_doublet_counter_container& doublet_counter_container,
                       vecmem::memory_resource& resource, ::sycl::queue* q);
 
