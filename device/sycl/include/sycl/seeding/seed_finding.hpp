@@ -78,9 +78,9 @@ struct seed_finding : public algorithm<host_seed_container(
         }
 
         // doublet counting
-        traccc::sycl::doublet_counting(m_seedfinder_config, const_cast<sp_grid&>(g2),
-                                       doublet_counter_container, m_mr.get(),
-                                       m_q);
+        traccc::sycl::doublet_counting(
+            m_seedfinder_config, const_cast<sp_grid&>(g2),
+            doublet_counter_container, m_mr.get(), m_q);
 
         // resize the doublet container with the number of doublets
         for (size_t i = 0; i < g2.nbins(); ++i) {
@@ -92,8 +92,9 @@ struct seed_finding : public algorithm<host_seed_container(
 
         // doublet finding
         traccc::sycl::doublet_finding(
-            m_seedfinder_config, const_cast<sp_grid&>(g2), doublet_counter_container,
-            mid_bot_container, mid_top_container, m_mr.get(), m_q);
+            m_seedfinder_config, const_cast<sp_grid&>(g2),
+            doublet_counter_container, mid_bot_container, mid_top_container,
+            m_mr.get(), m_q);
 
         // resize the triplet_counter container with the number of doublets
         for (size_t i = 0; i < g2.nbins(); ++i) {
@@ -103,9 +104,9 @@ struct seed_finding : public algorithm<host_seed_container(
 
         // triplet counting
         traccc::sycl::triplet_counting(
-            m_seedfinder_config, const_cast<sp_grid&>(g2), doublet_counter_container,
-            mid_bot_container, mid_top_container, triplet_counter_container,
-            m_mr.get(), m_q);
+            m_seedfinder_config, const_cast<sp_grid&>(g2),
+            doublet_counter_container, mid_bot_container, mid_top_container,
+            triplet_counter_container, m_mr.get(), m_q);
 
         // resize the triplet container with the number of triplets
         for (size_t i = 0; i < g2.nbins(); ++i) {
@@ -120,16 +121,18 @@ struct seed_finding : public algorithm<host_seed_container(
             triplet_counter_container, triplet_container, m_mr.get(), m_q);
 
         // weight updating
-        traccc::sycl::weight_updating(m_seedfilter_config, const_cast<sp_grid&>(g2),
-                                      triplet_counter_container,
-                                      triplet_container, m_mr.get(), m_q);
+        traccc::sycl::weight_updating(
+            m_seedfilter_config, const_cast<sp_grid&>(g2),
+            triplet_counter_container, triplet_container, m_mr.get(), m_q);
 
         // resize the seed container with the number of triplets per event
         seed_container.get_items()[0].resize(triplet_container.total_size());
 
         // seed selecting
         traccc::sycl::seed_selecting(
-            m_seedfilter_config, const_cast<host_spacepoint_container&>(spacepoints), const_cast<sp_grid&>(g2), doublet_counter_container,
+            m_seedfilter_config,
+            const_cast<host_spacepoint_container&>(spacepoints),
+            const_cast<sp_grid&>(g2), doublet_counter_container,
             triplet_counter_container, triplet_container, seed_container,
             m_mr.get(), m_q);
 

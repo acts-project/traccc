@@ -57,13 +57,13 @@ struct spacepoint_binning
 
         // count the grid capacities
         traccc::sycl::counting_grid_capacities(
-            m_config, g2, const_cast<host_spacepoint_container&>(spacepoints), sp_container_indices, grid_capacities,
-            m_mr.get(), m_q);
+            m_config, g2, const_cast<host_spacepoint_container&>(spacepoints),
+            sp_container_indices, grid_capacities, m_mr.get(), m_q);
 
         // populate the internal spacepoints into the grid
-        traccc::sycl::populating_grid(m_config, g2, const_cast<host_spacepoint_container&>(spacepoints),
-                                      sp_container_indices, grid_capacities,
-                                      m_mr.get(), m_q);
+        traccc::sycl::populating_grid(
+            m_config, g2, const_cast<host_spacepoint_container&>(spacepoints),
+            sp_container_indices, grid_capacities, m_mr.get(), m_q);
 
         return g2;
     }
