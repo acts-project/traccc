@@ -66,8 +66,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < internal_sp.nbins(); ++i) {
         num_blocks +=
-            triplet_counter_container.get_headers()[i].n_mid_bot / num_threads +
-            1;
+            doublet_counter_container.get_headers()[i].n_spM / num_threads + 1;
     }
 
     // shared memory assignment for the triplets of a compatible middle
@@ -107,7 +106,7 @@ __global__ void seed_selecting_kernel(
 
     // Get the bin and item index
     unsigned int bin_idx(0), item_idx(0);
-    cuda_helper::find_idx_on_container(triplet_counter_device, bin_idx,
+    cuda_helper::find_idx_on_container(doublet_counter_device, bin_idx,
                                        item_idx);
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
