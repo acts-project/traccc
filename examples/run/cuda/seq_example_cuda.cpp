@@ -176,6 +176,10 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
             }
             float matching_rate = float(n_match) / seeds.get_headers()[0];
             std::cout << "event " << std::to_string(event) << std::endl;
+            std::cout << " number of seeds (cpu): " << seeds.get_headers()[0]
+                      << std::endl;
+            std::cout << " number of seeds (cuda): "
+                      << seeds_cuda.get_headers()[0] << std::endl;
             std::cout << " seed matching rate: " << matching_rate << std::endl;
 
             // track parameter estimation
