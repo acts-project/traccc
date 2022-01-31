@@ -83,6 +83,11 @@ inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
     size_t r_index =
         std::hypot(sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]);
 #endif
+    if (r_index < config.get_num_rbins()) {
+        return r_index;
+    }
+
+    return detray::invalid_value<size_t>();
 }
 
 template <typename spacepoint_container_t,
