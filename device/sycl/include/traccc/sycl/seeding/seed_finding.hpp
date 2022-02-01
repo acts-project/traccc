@@ -7,22 +7,24 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/edm/internal_spacepoint.hpp"
+#include "traccc/edm/seed.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/seeding/seed_filtering.hpp"
+#include "traccc/sycl/seeding/detail/doublet_counter.hpp"
+#include "traccc/sycl/seeding/doublet_counting.hpp"
+#include "traccc/sycl/seeding/doublet_finding.hpp"
+#include "traccc/sycl/seeding/seed_selecting.hpp"
+#include "traccc/sycl/seeding/triplet_counting.hpp"
+#include "traccc/sycl/seeding/triplet_finding.hpp"
+#include "traccc/sycl/seeding/weight_updating.hpp"
+
+// System include(s).
 #include <algorithm>
-#include <edm/internal_spacepoint.hpp>
-#include <edm/seed.hpp>
 #include <iostream>
 #include <mutex>
-#include <seeding/detail/seeding_config.hpp>
-#include <seeding/detail/spacepoint_grid.hpp>
-#include <seeding/seed_filtering.hpp>
-
-#include "sycl/seeding/detail/doublet_counter.hpp"
-#include "sycl/seeding/doublet_counting.hpp"
-#include "sycl/seeding/doublet_finding.hpp"
-#include "sycl/seeding/seed_selecting.hpp"
-#include "sycl/seeding/triplet_counting.hpp"
-#include "sycl/seeding/triplet_finding.hpp"
-#include "sycl/seeding/weight_updating.hpp"
 
 namespace traccc {
 namespace sycl {

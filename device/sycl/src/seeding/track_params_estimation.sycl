@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/track_params_estimation.hpp"
 
 namespace traccc {
 namespace sycl {

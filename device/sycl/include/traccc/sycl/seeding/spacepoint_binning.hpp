@@ -7,12 +7,14 @@
 
 #pragma once
 
+// SYCL include(s).
 #include <CL/sycl.hpp>
-#include <seeding/spacepoint_binning_helper.hpp>
-#include <utils/algorithm.hpp>
 
-#include "sycl/seeding/counting_grid_capacities.hpp"
-#include "sycl/seeding/populating_grid.hpp"
+// Project include(s).
+#include "traccc/seeding/spacepoint_binning_helper.hpp"
+#include "traccc/sycl/seeding/counting_grid_capacities.hpp"
+#include "traccc/sycl/seeding/populating_grid.hpp"
+#include "traccc/utils/algorithm.hpp"
 
 namespace traccc {
 namespace sycl {

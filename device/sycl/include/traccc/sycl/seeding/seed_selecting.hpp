@@ -6,19 +6,20 @@
  */
 #pragma once
 
+// SYCL include(s).
 #include <CL/sycl.hpp>
-#include <edm/internal_spacepoint.hpp>
-#include <edm/seed.hpp>
-#include <seeding/detail/doublet.hpp>
-#include <seeding/detail/seeding_config.hpp>
-#include <seeding/detail/spacepoint_grid.hpp>
-#include <seeding/detail/triplet.hpp>
-#include <seeding/seed_selecting_helper.hpp>
-#include <vecmem/memory/atomic.hpp>
 
-#include "sycl/seeding/detail/doublet_counter.hpp"
-#include "sycl/seeding/detail/sycl_helper.hpp"
-#include "sycl/seeding/detail/triplet_counter.hpp"
+// Project include(s).
+#include "traccc/edm/internal_spacepoint.hpp"
+#include "traccc/edm/seed.hpp"
+#include "traccc/seeding/detail/doublet.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/seeding/seed_selecting_helper.hpp"
+#include "traccc/sycl/seeding/detail/doublet_counter.hpp"
+#include "traccc/sycl/seeding/detail/sycl_helper.hpp"
+#include "traccc/sycl/seeding/detail/triplet_counter.hpp"
 
 namespace traccc {
 namespace sycl {

@@ -7,9 +7,12 @@
 
 #pragma once
 
+// SYCL include(s).
 #include <CL/sycl.hpp>
-#include <seeding/track_params_estimation_helper.hpp>
-#include <utils/algorithm.hpp>
+
+// Project include(s).
+#include "traccc/seeding/track_params_estimation_helper.hpp"
+#include "traccc/utils/algorithm.hpp"
 
 namespace traccc {
 namespace sycl {

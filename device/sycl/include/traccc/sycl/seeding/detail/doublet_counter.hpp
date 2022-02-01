@@ -7,9 +7,8 @@
 
 #pragma once
 
-#include <seeding/detail/singlet.hpp>
-
-#include "definitions/qualifiers.hpp"
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/seeding/detail/singlet.hpp"
 
 namespace traccc {
 namespace sycl {

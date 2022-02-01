@@ -7,7 +7,14 @@
 
 #pragma once
 
+// SYCL include(s).
 #include <CL/sycl.hpp>
+
+// Project include(s).
+#include <traccc/edm/container.hpp>
+
+// VecMem include(s).
+#include <vecmem/containers/jagged_device_vector.hpp>
 
 namespace traccc {
 namespace sycl {
