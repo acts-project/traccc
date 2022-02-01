@@ -1,17 +1,20 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+// Project include(s).
+#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/edm/cell.hpp"
+#include "traccc/edm/cluster.hpp"
 
+// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "clusterization/component_connection.hpp"
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
+// GTest include(s).
+#include <gtest/gtest.h>
 
 // This defines the local frame test suite
 TEST(algorithms, component_connection) {

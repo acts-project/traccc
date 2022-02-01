@@ -1,18 +1,22 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
+#include "traccc/cuda/seeding/seed_selecting.hpp"
+#include "traccc/cuda/utils/cuda_helper.cuh"
+
+// Thrust include(s).
 #include <thrust/device_ptr.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/sort.h>
 
+// System include(s).
 #include <algorithm>
-#include <cuda/seeding/seed_selecting.hpp>
-#include <cuda/utils/cuda_helper.cuh>
 
 namespace traccc {
 namespace cuda {

@@ -1,20 +1,15 @@
-add_library(traccc_io INTERFACE)
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
 
-target_include_directories(traccc_io
-  INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-install(TARGETS traccc_io
-        PUBLIC_HEADER
-          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/io
-)
-
-target_link_libraries(traccc_io INTERFACE traccc::core dfelibs vecmem::core)
-
-install(
-  DIRECTORY include/io
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-add_library(traccc::io ALIAS traccc_io)
+# Set up the "build" of the traccc::io library.
+traccc_add_library( traccc_io io TYPE INTERFACE
+  "include/traccc/io/csv.hpp"
+  "include/traccc/io/demonstrator_edm.hpp"
+  "include/traccc/io/writer.hpp"
+  "include/traccc/io/utils.hpp"
+  "include/traccc/io/reader.hpp" )
+target_link_libraries( traccc_io
+  INTERFACE dfelibs::dfelibs vecmem::core traccc::core )

@@ -1,26 +1,32 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
-#include <chrono>
-#include <iostream>
+// Project include(s).
+#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/edm/cell.hpp"
+#include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/io/csv.hpp"
+#include "traccc/io/reader.hpp"
+#include "traccc/io/utils.hpp"
+
+// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "clusterization/component_connection.hpp"
-#include "clusterization/measurement_creation.hpp"
-#include "clusterization/spacepoint_formation.hpp"
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
-#include "edm/measurement.hpp"
-#include "edm/spacepoint.hpp"
-#include "geometry/pixel_segmentation.hpp"
-#include "io/csv.hpp"
-#include "io/reader.hpp"
-#include "io/utils.hpp"
-#include "omp.h"
+// OpenMP include(s).
+#include <omp.h>
+
+// System include(s).
+#include <chrono>
+#include <iostream>
 
 int par_run(const std::string &detector_file, const std::string &cells_dir,
             unsigned int events) {
