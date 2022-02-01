@@ -76,7 +76,7 @@ class SeedSelect {
 
         // Get the bin and item index
         unsigned int bin_idx(0), item_idx(0);
-        sycl_helper::find_idx_on_container(triplet_counter_device, bin_idx,
+        sycl_helper::find_idx_on_container(doublet_counter_device, bin_idx,
                                            item_idx, item);
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects
@@ -286,7 +286,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_groups +=
-            triplet_counter_container.get_headers()[i].n_mid_bot / localSize +
+            doublet_counter_container.get_headers()[i].n_spM / localSize +
             1;
     }
     unsigned int globalSize = localSize * num_groups;
