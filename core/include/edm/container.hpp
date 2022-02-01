@@ -143,7 +143,9 @@ class container {
                   std::is_same<item_vector_tp, jagged_vector_t<item_t>>::value>>
     TRACCC_HOST_DEVICE container(header_vector_tp&& hv, item_vector_tp&& iv)
         : headers(hv), items(iv) {
-#ifndef __CUDACC__
+#if defined(__CUDACC__) || defined(__SYCL_DEVICE_ONLY__)
+        assert(headers.size() == items.size());
+#else
         if (headers.size() != items.size()) {
             throw std::logic_error("Header and item length not equal.");
         }

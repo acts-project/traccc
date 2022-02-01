@@ -78,7 +78,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     scalar B = uv2[1] - A * uv2[0];
 
     // Curvature (with a sign) estimate
-    scalar rho = -2.0 * B / std::hypot(1., A);
+    scalar rho = -2.0 * B / getter::perp(vector2{1., A});
     // The projection of the top space point on the transverse plane of
     // the new frame
     scalar rn = local2[0] * local2[0] + local2[1] * local2[1];
@@ -88,7 +88,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     // The momentum direction in the new frame (the center of the circle
     // has the coordinate (-1.*A/(2*B), 1./(2*B)))
     vector3 transDirection =
-        vector3({1., A, scalar(std::hypot(1., A)) * invTanTheta});
+        vector3({1., A, scalar(getter::perp(vector2{1., A})) * invTanTheta});
     // Transform it back to the original frame
     vector3 direction =
         transform3::rotate(trans._data, vector::normalize(transDirection));
@@ -107,7 +107,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     scalar qOverPt =
         rho * (Acts::UnitConstants::m) / (0.3 * getter::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
-    params[e_bound_qoverp] = qOverPt / std::hypot(1., invTanTheta);
+    params[e_bound_qoverp] = qOverPt / getter::perp(vector2{1., invTanTheta});
 
     // The estimated momentum, and its projection along the magnetic
     // field diretion
@@ -117,8 +117,8 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
 
     // The estimated velocity, and its projection along the magnetic
     // field diretion
-    scalar v = pInGeV / std::hypot(pInGeV, massInGeV);
-    scalar vz = pzInGeV / std::hypot(pInGeV, massInGeV);
+    scalar v = pInGeV / getter::perp(vector2{pInGeV, massInGeV});
+    scalar vz = pzInGeV / getter::perp(vector2{pInGeV, massInGeV});
     // The z coordinate of the bottom space point along the magnetic
     // field direction
     scalar pathz =

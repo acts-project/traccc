@@ -121,7 +121,7 @@ struct internal_spacepoint {
     const scalar& radius() const { return m_r; }
 
     TRACCC_HOST_DEVICE
-    scalar phi() const { return atan2f(m_y, m_x); }
+    scalar phi() const { return algebra::math::atan2(m_y, m_x); }
 
     TRACCC_HOST_DEVICE
     const scalar& varianceR() const { return m_varianceR; }

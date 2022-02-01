@@ -67,13 +67,12 @@ inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
     if (sp.z() > config.zMax || sp.z() < config.zMin) {
         return detray::invalid_value<size_t>();
     }
-    scalar spPhi = std::atan2(sp.y(), sp.x());
+    scalar spPhi = algebra::math::atan2(sp.y(), sp.x());
     if (spPhi > config.phiMax || spPhi < config.phiMin) {
         return detray::invalid_value<size_t>();
     }
-
-    size_t r_index =
-        std::hypot(sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]);
+    size_t r_index = getter::perp(
+        vector2{sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]});
 
     if (r_index < config.get_num_rbins()) {
         return r_index;
