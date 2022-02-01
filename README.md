@@ -11,9 +11,9 @@ Demonstrator tracking chain for accelerators.
 | **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   |
 |                    | Measurement creation   | ✅  | 🟡   | 🟡   |
 |                    | Spacepoint formation   | ✅  | 🟡   | 🟡   |
-| **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   |
-|                    | Seed finding           | ✅  | ✅   | ✅   |
-|                    | Track param estimation | ✅  | ✅   | ✅   |
+| **Track finding**  | Spacepoint binning     | ✅  | ✅   | 🟡   |
+|                    | Seed finding           | ✅  | ✅   | 🟡   |
+|                    | Track param estimation | ✅  | ✅   | 🟡   |
 |                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   |
 | **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   |
 
