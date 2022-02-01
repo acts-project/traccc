@@ -1,16 +1,17 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+// Project include(s).
+#include "traccc/cuda/utils/definitions.hpp"
 
-#include <cuda/utils/definitions.hpp>
+// CUDA include(s).
+#include <cuda_runtime.h>
 
 namespace traccc {
 namespace cuda {

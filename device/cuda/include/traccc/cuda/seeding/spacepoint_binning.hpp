@@ -7,14 +7,17 @@
 
 #pragma once
 
-#include <thrust/sort.h>
+// Project include(s).
+#include "traccc/cuda/seeding/counting_grid_capacities.hpp"
+#include "traccc/cuda/seeding/populating_grid.hpp"
+#include "traccc/seeding/spacepoint_binning_helper.hpp"
+#include "traccc/utils/algorithm.hpp"
 
-#include <cuda/seeding/counting_grid_capacities.hpp>
-#include <cuda/seeding/populating_grid.hpp>
-#include <seeding/spacepoint_binning_helper.hpp>
-#include <utils/algorithm.hpp>
+// VecMem include(s).
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
 
-#include "vecmem/memory/cuda/device_memory_resource.hpp"
+// Thrust include(s).
+//#include <thrust/sort.h>
 
 namespace traccc {
 namespace cuda {

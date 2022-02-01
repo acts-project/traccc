@@ -1,27 +1,30 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Project include(s).
+#include "traccc/cuda/seeding/detail/doublet_counter.hpp"
+#include "traccc/cuda/seeding/doublet_counting.hpp"
+#include "traccc/cuda/seeding/doublet_finding.hpp"
+#include "traccc/cuda/seeding/seed_selecting.hpp"
+#include "traccc/cuda/seeding/triplet_counting.hpp"
+#include "traccc/cuda/seeding/triplet_finding.hpp"
+#include "traccc/cuda/seeding/weight_updating.hpp"
+#include "traccc/edm/internal_spacepoint.hpp"
+#include "traccc/edm/seed.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/seeding/seed_filtering.hpp"
+
+// System include(s).
 #include <algorithm>
-#include <cuda/seeding/detail/doublet_counter.hpp>
-#include <cuda/seeding/doublet_counting.hpp>
-#include <cuda/seeding/doublet_finding.hpp>
-#include <cuda/seeding/seed_selecting.hpp>
-#include <cuda/seeding/triplet_counting.hpp>
-#include <cuda/seeding/triplet_finding.hpp>
-#include <cuda/seeding/weight_updating.hpp>
-#include <edm/internal_spacepoint.hpp>
-#include <edm/seed.hpp>
 #include <iostream>
 #include <mutex>
-#include <seeding/detail/seeding_config.hpp>
-#include <seeding/detail/spacepoint_grid.hpp>
-#include <seeding/seed_filtering.hpp>
 
 namespace traccc {
 namespace cuda {
