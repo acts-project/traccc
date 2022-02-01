@@ -21,11 +21,14 @@ function( traccc_add_library fullname basename )
    # Parse the function's options.
    cmake_parse_arguments( ARG "" "TYPE" "" ${ARGN} )
 
-   # Group the source files.
-   vecmem_group_source_files( ${ARG_UNPARSED_ARGUMENTS} )
+   # Decide what sources to give to the library.
+   set( _sources ${ARG_UNPARSED_ARGUMENTS} )
+   if( "${ARG_TYPE}" STREQUAL "INTERFACE" )
+      set( _sources )
+   endif()
 
    # Create the library.
-   add_library( ${fullname} ${ARG_TYPE} ${ARG_UNPARSED_ARGUMENTS} )
+   add_library( ${fullname} ${ARG_TYPE} ${_sources} )
 
    # Set up how clients should find its headers.
    set( _depType PUBLIC )
