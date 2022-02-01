@@ -52,4 +52,4 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   "include/traccc/seeding/seed_finding.hpp"
   "include/traccc/seeding/spacepoint_binning.hpp" )
 target_link_libraries( traccc_core
-  INTERFACE vecmem::core detray::core ActsCore traccc::algebra_plugins )
+  INTERFACE Eigen3::Eigen vecmem::core detray::core ActsCore traccc::algebra )

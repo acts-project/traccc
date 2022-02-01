@@ -8,15 +8,15 @@
 #pragma once
 
 #if ALGEBRA_PLUGINS_INCLUDE_ARRAY
-#include "plugins/algebra/array_definitions.hpp"
+#include "traccc/plugins/algebra/array_definitions.hpp"
 #elif ALGEBRA_PLUGINS_INCLUDE_EIGEN
-#include "plugins/algebra/eigen_definitions.hpp"
+#include "traccc/plugins/algebra/eigen_definitions.hpp"
 #elif ALGEBRA_PLUGINS_INCLUDE_SMATRIX
-#include "plugins/algebra/smatrix_definitions.hpp"
+#include "traccc/plugins/algebra/smatrix_definitions.hpp"
 #elif ALGEBRA_PLUGINS_INCLUDE_VC
-#include "plugins/algebra/vc_definitions.hpp"
+#include "traccc/plugins/algebra/vc_definitions.hpp"
 #elif ALGEBRA_PLUGINS_INCLUDE_VECMEM
-#include "plugins/algebra/vecmem_definitions.hpp"
+#include "traccc/plugins/algebra/vecmem_definitions.hpp"
 #endif
 
 #include <Eigen/Core>
