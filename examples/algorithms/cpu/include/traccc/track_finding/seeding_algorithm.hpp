@@ -1,17 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-#include <chrono>
-#include <iostream>
-
-#include "seeding/seed_finding.hpp"
-#include "seeding/spacepoint_binning.hpp"
+#include "traccc/seeding/seed_finding.hpp"
+#include "traccc/seeding/spacepoint_binning.hpp"
 
 namespace traccc {
 

@@ -1,26 +1,30 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-#include <chrono>
-#include <iostream>
+// Project include(s).
+#include "traccc/edm/seed.hpp"
+#include "traccc/sycl/seeding/seed_finding.hpp"
+#include "traccc/sycl/seeding/spacepoint_binning.hpp"
+#include "traccc/utils/algorithm.hpp"
 
-#include "cuda/seeding/seed_finding.hpp"
-#include "cuda/seeding/spacepoint_binning.hpp"
+// System include(s).
+#include <memory>
 
 namespace traccc {
-namespace cuda {
+namespace sycl {
 
 class seeding_algorithm
     : public algorithm<host_seed_container(host_spacepoint_container&&)> {
 
     public:
-    seeding_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
+    seeding_algorithm(vecmem::memory_resource& mr, ::sycl::queue* q = nullptr)
+        : m_mr(mr), m_q(q) {
 
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
@@ -43,20 +47,17 @@ class seeding_algorithm
         m_grid_config.deltaRMax = m_config.deltaRMax;
         m_grid_config.cotThetaMax = m_config.cotThetaMax;
 
-        sb = std::make_shared<traccc::cuda::spacepoint_binning>(
-            traccc::cuda::spacepoint_binning(m_config, m_grid_config, mr));
-        sf = std::make_shared<traccc::cuda::seed_finding>(
-            traccc::cuda::seed_finding(m_config, sb->nbins(), mr));
+        sb = std::make_shared<traccc::sycl::spacepoint_binning>(
+            traccc::sycl::spacepoint_binning(m_config, m_grid_config, mr, q));
+        sf = std::make_shared<traccc::sycl::seed_finding>(
+            traccc::sycl::seed_finding(m_config, sb->nbins(), mr, q));
     }
 
     output_type operator()(
         host_spacepoint_container&& spacepoints) const override {
-
-        output_type seeds({host_seed_container(1, &m_mr.get())});
-        auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
-        seeds =
-            sf->operator()(std::move(spacepoints), std::move(internal_sp_g2));
-
+        output_type seeds(1, &m_mr.get());
+        auto internal_sp_g2 = (*sb)(spacepoints);
+        seeds = (*sf)(spacepoints, internal_sp_g2);
         return seeds;
     }
 
@@ -64,9 +65,10 @@ class seeding_algorithm
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-    std::shared_ptr<traccc::cuda::spacepoint_binning> sb;
-    std::shared_ptr<traccc::cuda::seed_finding> sf;
+    ::sycl::queue* m_q;
+    std::shared_ptr<traccc::sycl::spacepoint_binning> sb;
+    std::shared_ptr<traccc::sycl::seed_finding> sf;
 };
 
-}  // namespace cuda
+}  // namespace sycl
 }  // namespace traccc
