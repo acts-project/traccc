@@ -1,14 +1,23 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Project include(s).
+#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/io/demonstrator_edm.hpp"
+#include "traccc/io/reader.hpp"
+#include "traccc/io/writer.hpp"
+
+// System include(s).
 #include <chrono>
 #include <iostream>
-
-#include "clusterization/component_connection.hpp"
-#include "clusterization/measurement_creation.hpp"
-#include "clusterization/spacepoint_formation.hpp"
-#include "edm/measurement.hpp"
-#include "edm/spacepoint.hpp"
-#include "io/demonstrator_edm.hpp"
-#include "io/reader.hpp"
-#include "io/writer.hpp"
 
 traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                                 vecmem::host_memory_resource resource) {

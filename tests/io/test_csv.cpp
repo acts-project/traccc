@@ -1,16 +1,21 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+// Project include(s).
+#include "traccc/io/csv.hpp"
 
+// Test include(s).
+#include "tests/data_test.hpp"
+
+// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "io/csv.hpp"
-#include "tests/data_test.hpp"
+// GTest include(s).
+#include <gtest/gtest.h>
 
 class io : public traccc::tests::data_test {};
 

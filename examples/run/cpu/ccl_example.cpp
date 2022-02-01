@@ -1,20 +1,24 @@
 /*
  * TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
+#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/edm/cell.hpp"
+#include "traccc/io/csv.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
+
+// System include(s).
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-
-#include "clusterization/component_connection.hpp"
-#include "edm/cell.hpp"
-#include "io/csv.hpp"
-#include "vecmem/memory/host_memory_resource.hpp"
 
 namespace {
 double delta_ms(std::chrono::high_resolution_clock::time_point s,

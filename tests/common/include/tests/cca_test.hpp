@@ -1,20 +1,25 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/cell.hpp"
+#include "traccc/edm/cluster.hpp"
+
+// Test include(s).
+#include "tests/data_test.hpp"
+
+// GTest include(s).
 #include <gtest/gtest.h>
 
+// System include(s).
 #include <functional>
-
-#include "definitions/primitives.hpp"
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
-#include "tests/data_test.hpp"
 
 using cca_function_t = std::function<
     std::map<traccc::geometry_id, std::vector<traccc::measurement>>(

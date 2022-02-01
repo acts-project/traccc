@@ -7,24 +7,26 @@
 
 // SYCL include(s)
 #include <CL/sycl.hpp>
-#include <chrono>
-#include <iomanip>
-#include <iostream>
+
+// algorithms
+#include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/track_finding/seeding_algorithm.hpp"
+#include "traccc/track_finding/seeding_algorithm.hpp"
+
+// io
+#include "traccc/io/csv.hpp"
+#include "traccc/io/reader.hpp"
+#include "traccc/io/writer.hpp"
 
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 
-// algorithms
-#include "../../../device/sycl/include/sycl/seeding/track_params_estimation.hpp"
-#include "../../algorithms/sycl/include/sycl/track_finding/seeding_algorithm.hpp"
-#include "seeding/track_params_estimation.hpp"
-#include "track_finding/seeding_algorithm.hpp"
-
-// io
-#include "io/csv.hpp"
-#include "io/reader.hpp"
-#include "io/writer.hpp"
+// System include(s).
+#include <chrono>
+#include <iomanip>
+#include <iostream>
 
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
             unsigned int events, bool skip_cpu) {

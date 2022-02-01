@@ -1,21 +1,28 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
+#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/cell.hpp"
+#include "traccc/edm/cluster.hpp"
+
+// Test include(s).
+#include "tests/cca_test.hpp"
+
+// VecMem include(s).
+#include "vecmem/memory/host_memory_resource.hpp"
+
+// GTest include(s).
 #include <gtest/gtest.h>
 
+// System include(s).
 #include <functional>
-
-#include "clusterization/component_connection.hpp"
-#include "clusterization/measurement_creation.hpp"
-#include "definitions/primitives.hpp"
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
-#include "tests/cca_test.hpp"
-#include "vecmem/memory/host_memory_resource.hpp"
 
 namespace {
 vecmem::host_memory_resource resource;
