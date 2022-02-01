@@ -286,8 +286,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
         num_groups +=
-            doublet_counter_container.get_headers()[i].n_spM / localSize +
-            1;
+            doublet_counter_container.get_headers()[i].n_spM / localSize + 1;
     }
     unsigned int globalSize = localSize * num_groups;
 
