@@ -1,16 +1,19 @@
 /**
  * TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
+#include "traccc/utils/algorithm.hpp"
+
+// GTest include(s).
 #include <gtest/gtest.h>
 
+// System include(s).
 #include <string>
-
-#include "utils/algorithm.hpp"
 
 class double_int : public traccc::algorithm<int(const int &)> {
     public:
