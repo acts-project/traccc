@@ -1,16 +1,27 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
 #pragma once
 
-#include <functional>
+// Project include(s).
+#include "traccc/edm/cell.hpp"
+#include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/geometry.hpp"
+#include "traccc/io/csv.hpp"
+#include "traccc/io/demonstrator_edm.hpp"
+#include "traccc/io/utils.hpp"
+
+// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
-#include "edm/measurement.hpp"
-#include "edm/spacepoint.hpp"
-#include "geometry/geometry.hpp"
-#include "io/csv.hpp"
-#include "io/demonstrator_edm.hpp"
-#include "io/utils.hpp"
+// System include(s).
+#include <functional>
 
 namespace traccc {
 

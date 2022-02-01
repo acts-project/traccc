@@ -1,28 +1,34 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021 CERN for the benefit of the ACTS project
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-#include <cassert>
-#include <climits>
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/cell.hpp"
+#include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/track_parameters.hpp"
+#include "traccc/geometry/geometry.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
 #include <dfe/dfe_namedtuple.hpp>
+
+// System include(s).
+#include <cassert>
+#include <climits>
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <vecmem/memory/memory_resource.hpp>
-
-#include "definitions/primitives.hpp"
-#include "edm/cell.hpp"
-#include "edm/cluster.hpp"
-#include "edm/measurement.hpp"
-#include "edm/spacepoint.hpp"
-#include "edm/track_parameters.hpp"
-#include "geometry/geometry.hpp"
 
 /// reader
 namespace traccc {
