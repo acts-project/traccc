@@ -156,7 +156,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         if (!skip_cpu) {
             // seeding
             int n_match = 0;
-            for (auto& seed : seeds.size()) {
+            for (auto& seed : seeds) {
                 if (std::find(seeds_sycl.begin(), seeds_sycl.end(), seed) !=
                     seeds_sycl.end()) {
                     n_match++;
