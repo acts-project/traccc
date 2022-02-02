@@ -27,6 +27,7 @@ using local_accessor = ::sycl::accessor<T, 1, ::sycl::access::mode::read_write,
 // Some useful helper funcitons
 struct sycl_helper {
 
+    /*
     /// Function that performs reduction on the local memory using subgroup
     /// operations
     ///
@@ -62,6 +63,7 @@ struct sycl_helper {
             }
         }
     }
+    */
 
     /// Get index of header vector of event data container for a given block ID.
     ///
