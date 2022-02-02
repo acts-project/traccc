@@ -20,6 +20,7 @@
 #include "traccc/sycl/seeding/triplet_counting.hpp"
 #include "traccc/sycl/seeding/triplet_finding.hpp"
 #include "traccc/sycl/seeding/weight_updating.hpp"
+#include "vecmem/utils/sycl/copy.hpp"
 
 // System include(s).
 #include <algorithm>
@@ -30,7 +31,7 @@ namespace traccc {
 namespace sycl {
 
 // Sycl seeding function object
-struct seed_finding : public algorithm<host_seed_container(
+struct seed_finding : public algorithm<host_seed_collection(
                           const host_spacepoint_container&, const sp_grid&)> {
     /// Constructor for the sycl seed finding
     ///
@@ -51,7 +52,7 @@ struct seed_finding : public algorithm<host_seed_container(
           mid_top_container(nbins, &m_mr.get()),
           triplet_counter_container(nbins, &m_mr.get()),
           triplet_container(nbins, &m_mr.get()),
-          seed_container(1, &m_mr.get()) {}
+          seed_collection(&m_mr.get()) {}
 
     /// Callable operator for the seed finding
     ///
@@ -69,7 +70,6 @@ struct seed_finding : public algorithm<host_seed_container(
             triplet_counter_container.get_headers()[i].zeros();
             triplet_container.get_headers()[i].zeros();
         }
-        seed_container.get_headers()[0] = 0;
 
         // resize the doublet counter container with the number of middle
         // spacepoint
@@ -127,18 +127,22 @@ struct seed_finding : public algorithm<host_seed_container(
             m_seedfilter_config, const_cast<sp_grid&>(g2),
             triplet_counter_container, triplet_container, m_mr.get(), m_q);
 
-        // resize the seed container with the number of triplets per event
-        seed_container.get_items()[0].resize(triplet_container.total_size());
+        vecmem::sycl::copy copy;
+        vecmem::data::vector_buffer<seed> seed_buffer(
+            triplet_container.total_size(), 0, m_mr.get());
+        copy.setup(seed_buffer);
 
         // seed selecting
         traccc::sycl::seed_selecting(
             m_seedfilter_config,
             const_cast<host_spacepoint_container&>(spacepoints),
             const_cast<sp_grid&>(g2), doublet_counter_container,
-            triplet_counter_container, triplet_container, seed_container,
+            triplet_counter_container, triplet_container, seed_buffer,
             m_mr.get(), m_q);
 
-        return seed_container;
+        copy(seed_buffer, seed_collection);
+
+        return seed_collection;
     }
 
     private:
@@ -155,7 +159,7 @@ struct seed_finding : public algorithm<host_seed_container(
     mutable host_doublet_container mid_top_container;
     mutable host_triplet_counter_container triplet_counter_container;
     mutable host_triplet_container triplet_container;
-    mutable host_seed_container seed_container;
+    mutable host_seed_collection seed_collection;
 };
 
 }  // namespace sycl

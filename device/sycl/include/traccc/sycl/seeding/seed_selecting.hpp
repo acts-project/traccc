@@ -41,7 +41,7 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_doublet_counter_container& doublet_counter_container,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
-                    host_seed_container& seed_container,
+                    vecmem::data::vector_buffer<seed>& seed_buffer,
                     vecmem::memory_resource& resource, ::sycl::queue* q);
 
 }  // namespace sycl
