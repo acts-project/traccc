@@ -269,7 +269,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Ensure that ACTS and traccc give the same result
     EXPECT_EQ(seeds.get_headers()[0], seedVector.size());
-    EXPECT_EQ(seed_match_ratio, 1);
+    EXPECT_FLOAT_EQ(seed_match_ratio, 1);
 
     /*--------------------------------
       ACTS track params estimation
@@ -380,21 +380,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     float params_match_ratio = float(n_params_match) / traccc_params.size();
     EXPECT_EQ(acts_params.size(), traccc_params.size());
-    EXPECT_EQ(params_match_ratio, 1);
-
-    /*
-    std::cout << "-------- Seeding Result ---------" << std::endl;
-    std::cout << "number of ACTS seeds: " << seedVector.size() << std::endl;
-    std::cout << "number of traccc seeds: " << seeds.get_headers()[0]
-              << std::endl;
-    std::cout << "seed matching ratio: " << seed_match_ratio << std::endl;
-    std::cout << "-------- Track Parameters Estimation Result ---------"
-              << std::endl;
-    std::cout << "number of ACTS params: " << acts_params.size() << std::endl;
-    std::cout << "number of traccc params: " << traccc_params.size()
-              << std::endl;
-    std::cout << "params matching ratio: " << params_match_ratio << std::endl;
-    */
+    EXPECT_FLOAT_EQ(params_match_ratio, 1);
 }
 
 INSTANTIATE_TEST_CASE_P(
