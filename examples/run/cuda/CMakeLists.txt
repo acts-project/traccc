@@ -1,13 +1,12 @@
-add_executable (seq_example_cuda seq_example_cuda.cpp)
-add_executable (seeding_example_cuda seeding_example_cuda.cpp)
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
 
-target_link_libraries (seq_example_cuda LINK_PUBLIC
-  traccc::io
-  traccc::algorithms
-  traccc::algorithms_cuda)
-
-target_link_libraries (seeding_example_cuda LINK_PUBLIC
-  traccc::io
-  traccc::algorithms
-  traccc::algorithms_cuda)
-
+traccc_add_executable( seq_example_cuda "seq_example_cuda.cpp"
+   LINK_LIBRARIES vecmem::core vecmem::cuda
+                  traccc::io traccc::algorithms traccc::algorithms_cuda )
+traccc_add_executable( seeding_example_cuda "seeding_example_cuda.cpp"
+   LINK_LIBRARIES vecmem::core vecmem::cuda
+                  traccc::io traccc::algorithms traccc::algorithms_cuda )

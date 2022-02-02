@@ -1,10 +1,10 @@
-traccc_add_test(
-    core
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
 
-    # Define the sources for the test.
-    test_algorithm.cpp
-    test_module_map.cpp
-
-    LINK_LIBRARIES
-    traccc::testing traccc::core traccc::io gtest_main gtest
-)
+# Declare the core library test(s).
+traccc_add_test( core "test_algorithm.cpp" "test_module_map.cpp"
+   LINK_LIBRARIES GTest::gtest_main traccc_tests_common
+                  traccc::core traccc::io )

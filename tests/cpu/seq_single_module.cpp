@@ -18,7 +18,10 @@
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-int main() {
+// GTest include(s).
+#include <gtest/gtest.h>
+
+TEST(algorithms, seq_single_module) {
 
     // Memory resource used in the test.
     vecmem::host_memory_resource resource;
@@ -55,6 +58,4 @@ int main() {
     clusters = cc(cells, module);
     measurements = mt(clusters, module);
     spacepoints = sp(module, measurements);
-
-    return 0;
 }

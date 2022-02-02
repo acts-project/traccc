@@ -1,9 +1,10 @@
-traccc_add_test(
-    io
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
 
-    # Define the sources for the test.
-    test_csv.cpp
-
-    LINK_LIBRARIES
-    traccc::testing traccc::core traccc::io gtest_main gtest
-)
+# Declare the io library test(s).
+traccc_add_test( io "test_csv.cpp"
+   LINK_LIBRARIES GTest::gtest_main traccc_tests_common
+                  traccc::core traccc::io )
