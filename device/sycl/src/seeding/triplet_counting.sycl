@@ -135,7 +135,8 @@ class TripletCount {
         }
 
         if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
-            mt_end_idx = fmin(mid_top_doublets_per_bin.size(), mt_end_idx);
+            mt_end_idx =
+                ::sycl::min(mid_top_doublets_per_bin.size(), mt_end_idx);
         }
 
         if (mt_start_idx >= mid_top_doublets_per_bin.size()) {
