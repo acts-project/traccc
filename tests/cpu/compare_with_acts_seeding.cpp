@@ -78,12 +78,16 @@ inline bool operator==(const Acts::BoundVector& acts_vec,
     return false;
 }
 
-// This defines the local frame test suite
-TEST(algorithms, compare_with_acts_seeding) {
+class CompareWithActsSeedingTests
+    : public ::testing::TestWithParam<
+          std::tuple<std::string, std::string, unsigned int>> {};
 
-    std::string detector_file = "tml_detector/trackml-detector.csv";
-    std::string hits_dir = "tml_hits/";
-    unsigned int event = 0;
+// This defines the local frame test suite
+TEST_P(CompareWithActsSeedingTests, Run) {
+
+    std::string detector_file = std::get<0>(GetParam());
+    std::string hits_dir = std::get<1>(GetParam());
+    unsigned int event = std::get<2>(GetParam());
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -263,8 +267,9 @@ TEST(algorithms, compare_with_acts_seeding) {
 
     float seed_match_ratio = float(n_seed_match) / seeds.total_size();
 
-    // Ensure that the difference between ACTS and traccc is small enough
-    EXPECT_TRUE((seed_match_ratio > 0.95) && (seed_match_ratio <= 1.));
+    // Ensure that ACTS and traccc give the same result
+    EXPECT_EQ(seeds.get_headers()[0], seedVector.size());
+    EXPECT_FLOAT_EQ(seed_match_ratio, 1);
 
     /*--------------------------------
       ACTS track params estimation
@@ -374,17 +379,20 @@ TEST(algorithms, compare_with_acts_seeding) {
     }
 
     float params_match_ratio = float(n_params_match) / traccc_params.size();
-    EXPECT_TRUE((params_match_ratio > 0.95) && (params_match_ratio <= 1.));
-
-    std::cout << "-------- Seeding Result ---------" << std::endl;
-    std::cout << "number of ACTS seeds: " << seedVector.size() << std::endl;
-    std::cout << "number of traccc seeds: " << seeds.get_headers()[0]
-              << std::endl;
-    std::cout << "seed matching ratio: " << seed_match_ratio << std::endl;
-    std::cout << "-------- Track Parameters Estimation Result ---------"
-              << std::endl;
-    std::cout << "number of ACTS params: " << acts_params.size() << std::endl;
-    std::cout << "number of traccc params: " << traccc_params.size()
-              << std::endl;
-    std::cout << "params matching ratio: " << params_match_ratio << std::endl;
+    EXPECT_EQ(acts_params.size(), traccc_params.size());
+    EXPECT_FLOAT_EQ(params_match_ratio, 1);
 }
+
+INSTANTIATE_TEST_CASE_P(
+    SeedingValidation, CompareWithActsSeedingTests,
+    ::testing::Values(
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 0),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 1),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 2),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 3),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 4),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 5),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 6),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 7),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 8),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 9)));
