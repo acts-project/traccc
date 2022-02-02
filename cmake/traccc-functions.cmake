@@ -64,6 +64,34 @@ function( traccc_add_library fullname basename )
 
 endfunction( traccc_add_library )
 
+# Function for declaring the (installable) executables of the project
+#
+# Usage: traccc_add_executable( super_exe super_source.cpp )
+#
+function( traccc_add_executable name )
+
+   # Parse the function's options.
+   cmake_parse_arguments( ARG "" "" "LINK_LIBRARIES" ${ARGN} )
+
+   # Set up the executable.
+   set( exe_name "traccc_${name}" )
+   add_executable( ${exe_name} ${ARG_UNPARSED_ARGUMENTS} )
+   if( ARG_LINK_LIBRARIES )
+      target_link_libraries( ${exe_name} PRIVATE ${ARG_LINK_LIBRARIES} )
+   endif()
+
+   # Make sure that the executable is available as "traccc::${name}" in every
+   # situation.
+   set_target_properties( ${exe_name} PROPERTIES EXPORT_NAME ${name} )
+   add_executable( traccc::${name} ALIAS ${exe_name} )
+
+   # Set up the installation of the executable.
+   install( TARGETS ${exe_name}
+      EXPORT traccc-exports
+      RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" )
+
+endfunction( traccc_add_executable )
+
 # Helper function for setting up the traccc tests.
 #
 # Usage: traccc_add_test( core_containers source1.cpp source2.cpp
