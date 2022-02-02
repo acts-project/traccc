@@ -164,7 +164,8 @@ class TripletFind {
         }
 
         if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
-            mt_end_idx = fmin(mid_top_doublets_per_bin.size(), mt_end_idx);
+            mt_end_idx =
+                ::sycl::min(mid_top_doublets_per_bin.size(), mt_end_idx);
         }
 
         if (mt_start_idx >= mid_top_doublets_per_bin.size()) {
@@ -217,9 +218,10 @@ class TripletFind {
         }
         // Calculate the number of triplets per "block" with reducing sum
         // technique
-        ::sycl::group_barrier(workGroup);
+        // ::sycl::group_barrier(workGroup);
+        item.barrier();
         // Warp shuffle reduction algorithm
-        sycl_helper::reduceInShared(num_triplets_per_thread, item);
+        // sycl_helper::reduceInShared(num_triplets_per_thread, item);
 
         // Sycl group reduction algorithm - doesn't always work correctly
         // num_triplets_per_thread[0] = ::sycl::reduce_over_group(workGroup,
@@ -229,11 +231,11 @@ class TripletFind {
         // of triplets per block
         if (workItemIdx == 0) {
             // For loop reduction
-            //    uint32_t resultTriplets = 0;
-            //        for (uint32_t i=0; i<groupDim; ++i){
-            //         resultTriplets += num_triplets_per_thread[i];
-            //        }
-            //    num_triplets_per_thread[0] = resultTriplets;
+            uint32_t resultTriplets = 0;
+            for (uint32_t i = 0; i < groupDim; ++i) {
+                resultTriplets += num_triplets_per_thread[i];
+            }
+            num_triplets_per_thread[0] = resultTriplets;
             vecmem::atomic<uint32_t> obj(&num_triplets_per_bin);
             obj.fetch_add(num_triplets_per_thread[0]);
         }

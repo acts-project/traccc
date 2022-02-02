@@ -1,3 +1,9 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
 name: Builds
 
 on:
@@ -5,9 +11,6 @@ on:
   pull_request:
     branches:
       - main
-
-env:
-  CTEST_OUTPUT_ON_FAILURE: 1
 
 jobs:
   builds:
@@ -21,9 +24,15 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2004:v11
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2004_cuda:v16.1
+          - name: SYCL
+            container: ghcr.io/acts-project/ubuntu2004_oneapi:v16.1
         build:
           - Release
           - Debug
+    # Use BASH as the shell from the images.
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Dependencies
         run: apt-get install -y git-lfs
@@ -32,17 +41,15 @@ jobs:
           submodules: true
           lfs: true
       - name: Configure
-        run: >
-          if ${{ matrix.platform.name == 'CPU'}}; then
-            cmake -B build -S . \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }}
-          elif ${{ matrix.platform.name == 'CUDA'}}; then
-            cmake -B build -S . \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-              -DCMAKE_CUDA_COMPILER=$(which nvcc) \
-              -DTRACCC_BUILD_CUDA=ON
-          fi
+        run: |
+          source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DTRACCC_BUILD_${{ matrix.platform.name }}=TRUE -S ${GITHUB_WORKSPACE} -B build
       - name: Build
-        run: cmake --build build -- -j$(nproc)
-      - name: Run tests & examples
-        run: CTEST_PARALLEL_LEVEL=$(nproc) cmake --build build -- test
+        run: |
+          source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
+          cmake --build build
+      - name: Test
+        run: |
+          cd build
+          source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
+          ctest --output-on-failure

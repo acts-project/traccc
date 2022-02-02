@@ -67,7 +67,8 @@ class WeightUpdate {
         auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
         auto compat_seedR = m_localMem.get_pointer();
-        ::sycl::group_barrier(workGroup);
+        // ::sycl::group_barrier(workGroup);
+        item.barrier();
 
         // index of triplet in the item vector
         auto& triplet = triplets_per_bin[tr_idx];
@@ -96,7 +97,7 @@ class WeightUpdate {
         }
 
         if (end_idx >= triplets_per_bin.size()) {
-            end_idx = fmin(triplets_per_bin.size(), end_idx);
+            end_idx = ::sycl::min(triplets_per_bin.size(), end_idx);
         }
 
         // prevent overflow
