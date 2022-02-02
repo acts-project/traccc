@@ -9,6 +9,7 @@ include_guard( GLOBAL )
 
 # CMake include(s).
 include( CMakeParseArguments )
+include( GoogleTest )
 
 # Function for declaring the libraries of the project
 #
@@ -62,6 +63,31 @@ function( traccc_add_library fullname basename )
       DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" )
 
 endfunction( traccc_add_library )
+
+# Helper function for setting up the traccc tests.
+#
+# Usage: traccc_add_test( core_containers source1.cpp source2.cpp
+#                         LINK_LIBRARIES traccc::core )
+#
+function( traccc_add_test name )
+
+   # Parse the function's options.
+   cmake_parse_arguments( ARG "" "" "LINK_LIBRARIES" ${ARGN} )
+
+   # Create the test executable.
+   set( test_exe_name "traccc_test_${name}" )
+   add_executable( ${test_exe_name} ${ARG_UNPARSED_ARGUMENTS} )
+   if( ARG_LINK_LIBRARIES )
+      target_link_libraries( ${test_exe_name} PRIVATE ${ARG_LINK_LIBRARIES} )
+   endif()
+
+   # Discover all of the tests from the execuable, and set them up as individual
+   # CTest tests. All the while ensuring that they would find their data files.
+   gtest_discover_tests( ${test_exe_name}
+      PROPERTIES ENVIRONMENT
+                 TRACCC_TEST_DATA_DIR=${PROJECT_SOURCE_DIR}/data )
+
+endfunction( traccc_add_test )
 
 # Helper function for adding individual flags to "flag variables".
 #
