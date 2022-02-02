@@ -79,15 +79,15 @@ inline bool operator==(const Acts::BoundVector& acts_vec,
 }
 
 class CompareWithActsSeedingTests
-    : public ::testing::TestWithParam<std::tuple<std::string, unsigned int>> {};
+    : public ::testing::TestWithParam<
+          std::tuple<std::string, std::string, unsigned int>> {};
 
 // This defines the local frame test suite
 TEST_P(CompareWithActsSeedingTests, Run) {
 
-    std::string detector_file = "tml_detector/trackml-detector.csv";
-
-    std::string hits_dir = std::get<0>(GetParam());
-    unsigned int event = std::get<1>(GetParam());
+    std::string detector_file = std::get<0>(GetParam());
+    std::string hits_dir = std::get<1>(GetParam());
+    unsigned int event = std::get<2>(GetParam());
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -397,14 +397,16 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     */
 }
 
-INSTANTIATE_TEST_CASE_P(SeedingValidation, CompareWithActsSeedingTests,
-                        ::testing::Values(std::make_tuple("tml_hits/", 0),
-                                          std::make_tuple("tml_hits/", 1),
-                                          std::make_tuple("tml_hits/", 2),
-                                          std::make_tuple("tml_hits/", 3),
-                                          std::make_tuple("tml_hits/", 4),
-                                          std::make_tuple("tml_hits/", 5),
-                                          std::make_tuple("tml_hits/", 6),
-                                          std::make_tuple("tml_hits/", 7),
-                                          std::make_tuple("tml_hits/", 8),
-                                          std::make_tuple("tml_hits/", 9)));
+INSTANTIATE_TEST_CASE_P(
+    SeedingValidation, CompareWithActsSeedingTests,
+    ::testing::Values(
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 0),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 1),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 2),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 3),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 4),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 5),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 6),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 7),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 8),
+        std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 9)));
