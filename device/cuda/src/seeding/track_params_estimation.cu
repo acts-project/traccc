@@ -18,18 +18,18 @@ namespace cuda {
 /// @param params_view vector of bound track parameters at the bottom
 /// spacepoints
 __global__ void track_params_estimating_kernel(
-    spacepoint_container_view spacepoints_view, seed_container_view seeds_view,
+    spacepoint_container_view spacepoints_view,
+    vecmem::data::vector_view<seed> seeds_view,
     vecmem::data::vector_view<bound_track_parameters> params_view);
 
 track_params_estimation::output_type track_params_estimation::operator()(
     host_spacepoint_container&& spacepoints,
-    host_seed_container&& seeds) const {
+    host_seed_collection&& seeds) const {
 
-    auto n_seeds = seeds.get_headers()[0];
-    output_type params(n_seeds, &m_mr.get());
+    output_type params(seeds.size(), &m_mr.get());
 
     auto spacepoints_view = get_data(spacepoints, &m_mr.get());
-    auto seeds_view = get_data(seeds, &m_mr.get());
+    auto seeds_view = vecmem::get_data(seeds);
     auto params_view = vecmem::get_data(params);
 
     // -- Num threads
@@ -38,8 +38,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // -- Num blocks
     // The dimension of grid is number_of_seeds / num_threads + 1
-    unsigned int num_blocks =
-        (seeds.get_headers()[0] + num_threads - 1) / num_threads;
+    unsigned int num_blocks = (seeds.size() + num_threads - 1) / num_threads;
 
     // run the kernel
     track_params_estimating_kernel<<<num_blocks, num_threads>>>(
@@ -53,21 +52,21 @@ track_params_estimation::output_type track_params_estimation::operator()(
 }
 
 __global__ void track_params_estimating_kernel(
-    spacepoint_container_view spacepoints_view, seed_container_view seeds_view,
+    spacepoint_container_view spacepoints_view,
+    vecmem::data::vector_view<seed> seeds_view,
     vecmem::data::vector_view<bound_track_parameters> params_view) {
 
     // Get device container for input parameters
     device_spacepoint_container spacepoints_device(
         {spacepoints_view.headers, spacepoints_view.items});
-    device_seed_container seeds_device({seeds_view.headers, seeds_view.items});
+    device_seed_collection seeds_device(seeds_view);
     device_bound_track_parameters_collection params_device({params_view});
 
     // vector index for threads
     unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;
-    const auto& n_seeds = seeds_device.get_headers()[0];
 
     // prevent overflow
-    if (gid >= n_seeds) {
+    if (gid >= seeds_device.size()) {
         return;
     }
 
@@ -75,7 +74,7 @@ __global__ void track_params_estimating_kernel(
     // TODO: make use of bfield extension for the future
     vector3 bfield = {0, 0, 2};
 
-    const auto& seed = seeds_device.get_items()[0][gid];
+    const auto& seed = seeds_device.at(gid);
     auto& param = params_device[gid].vector();
 
     // Get bound track parameter
