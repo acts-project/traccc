@@ -166,15 +166,15 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         if (run_cpu) {
             // seeding
             int n_match = 0;
-            for (auto& seed : seeds.get_items()[0]) {
+            for (auto& seed : seeds) {
                 if (std::find(seeds_cuda.begin(), seeds_cuda.end(), seed) !=
                     seeds_cuda.end()) {
                     n_match++;
                 }
             }
-            float matching_rate = float(n_match) / seeds.get_headers()[0];
+            float matching_rate = float(n_match) / seeds.size();
             std::cout << "event " << std::to_string(event) << std::endl;
-            std::cout << " number of seeds (cpu): " << seeds.get_headers()[0]
+            std::cout << " number of seeds (cpu): " << seeds.size()
                       << std::endl;
             std::cout << " number of seeds (cuda): " << seeds_cuda.size()
                       << std::endl;
@@ -202,7 +202,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
         n_seeds_cuda += seeds_cuda.size();
-        n_seeds += seeds.total_size();
+        n_seeds += seeds.size();
 
         /*------------
              Writer

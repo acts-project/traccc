@@ -51,10 +51,10 @@ inline void write_spacepoints(
 
 inline void write_seeds(size_t event,
                         const traccc::host_spacepoint_container &sp_container,
-                        const traccc::host_seed_container &seeds) {
+                        const traccc::host_seed_collection &seeds) {
     traccc::seed_writer sd_writer{
         traccc::get_event_filename(event, "-seeds.csv")};
-    for (auto &seed : seeds.get_items()[0]) {
+    for (auto &seed : seeds) {
         auto weight = seed.weight;
         auto z_vertex = seed.z_vertex;
         const auto &spB = sp_container.at(seed.spB_link);

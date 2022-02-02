@@ -77,7 +77,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
         n_cells += cells_per_event.total_size();
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
-        n_seeds += seeds.total_size();
+        n_seeds += seeds.size();
 
         /*------------
              Writer

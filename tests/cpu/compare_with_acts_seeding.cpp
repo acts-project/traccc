@@ -234,7 +234,7 @@ TEST(algorithms, compare_with_acts_seeding) {
     // and push_back seed into sorted_seedVector
     std::vector<Acts::Seed<SpacePoint>> sorted_seedVector;
     int n_seed_match = 0;
-    for (auto& seed : seeds.get_items()[0]) {
+    for (auto& seed : seeds) {
         auto it = std::find_if(
             seedVector.begin(), seedVector.end(), [&](auto acts_seed) {
                 auto traccc_spB = spacepoints_per_event.at(seed.spB_link);
@@ -261,7 +261,7 @@ TEST(algorithms, compare_with_acts_seeding) {
     }
     seedVector = sorted_seedVector;
 
-    float seed_match_ratio = float(n_seed_match) / seeds.total_size();
+    float seed_match_ratio = float(n_seed_match) / seeds.size();
 
     // Ensure that the difference between ACTS and traccc is small enough
     EXPECT_TRUE((seed_match_ratio > 0.95) && (seed_match_ratio <= 1.));
@@ -378,8 +378,7 @@ TEST(algorithms, compare_with_acts_seeding) {
 
     std::cout << "-------- Seeding Result ---------" << std::endl;
     std::cout << "number of ACTS seeds: " << seedVector.size() << std::endl;
-    std::cout << "number of traccc seeds: " << seeds.get_headers()[0]
-              << std::endl;
+    std::cout << "number of traccc seeds: " << seeds.size() << std::endl;
     std::cout << "seed matching ratio: " << seed_match_ratio << std::endl;
     std::cout << "-------- Track Parameters Estimation Result ---------"
               << std::endl;
