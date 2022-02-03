@@ -35,7 +35,8 @@ __global__ void seed_selecting_kernel(
     spacepoint_container_view spacepoints_view, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
-    triplet_container_view triplet_view, seed_container_view seed_view);
+    triplet_container_view triplet_view,
+    vecmem::data::vector_view<seed> seed_view);
 
 void seed_selecting(const seedfilter_config& filter_config,
                     host_spacepoint_container& spacepoints,
@@ -43,7 +44,7 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_doublet_counter_container& doublet_counter_container,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
-                    host_seed_container& seed_container,
+                    vecmem::data::vector_buffer<seed>& seed_buffer,
                     vecmem::memory_resource& resource) {
 
     auto spacepoints_view = get_data(spacepoints, &resource);
@@ -52,7 +53,6 @@ void seed_selecting(const seedfilter_config& filter_config,
     auto triplet_counter_container_view =
         get_data(triplet_counter_container, &resource);
     auto triplet_container_view = get_data(triplet_container, &resource);
-    auto seed_container_view = get_data(seed_container, &resource);
     auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread investigate the
@@ -82,7 +82,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     seed_selecting_kernel<<<num_blocks, num_threads, sh_mem>>>(
         filter_config, spacepoints_view, internal_sp_view,
         doublet_counter_container_view, triplet_counter_container_view,
-        triplet_container_view, seed_container_view);
+        triplet_container_view, seed_buffer);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
@@ -93,7 +93,8 @@ __global__ void seed_selecting_kernel(
     spacepoint_container_view spacepoints_view, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
-    triplet_container_view triplet_view, seed_container_view seed_view) {
+    triplet_container_view triplet_view,
+    vecmem::data::vector_view<seed> seed_view) {
 
     // Get device container for input parameters
     device_spacepoint_container spacepoints_device(
@@ -106,7 +107,7 @@ __global__ void seed_selecting_kernel(
         {triplet_counter_view.headers, triplet_counter_view.items});
     device_triplet_container triplet_device(
         {triplet_view.headers, triplet_view.items});
-    device_seed_container seed_device({seed_view.headers, seed_view.items});
+    device_seed_collection seed_device(seed_view);
 
     // Get the bin and item index
     unsigned int bin_idx(0), item_idx(0);
@@ -134,11 +135,6 @@ __global__ void seed_selecting_kernel(
     auto& num_triplets_per_bin =
         triplet_device.get_headers().at(bin_idx).n_triplets;
     auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
-
-    // Header of seed: number of seeds per event
-    // Item of seed: seed objects per event
-    auto& num_seeds = seed_device.get_headers().at(0);
-    auto seeds = seed_device.get_items().at(0);
 
     extern __shared__ triplet triplets_per_spM[];
 
@@ -294,15 +290,10 @@ __global__ void seed_selecting_kernel(
         if (seed_selecting_helper::cut_per_middle_sp(
                 filter_config, spacepoints_device, aSeed, aTriplet.weight) ||
             n_seeds_per_spM == 0) {
-            auto pos = atomicAdd(&num_seeds, 1);
 
-            // prevent overflow
-            if (pos >= seeds.size()) {
-                break;
-            }
             n_seeds_per_spM++;
 
-            seeds[pos] = aSeed;
+            seed_device.push_back(aSeed);
         }
     }
 }

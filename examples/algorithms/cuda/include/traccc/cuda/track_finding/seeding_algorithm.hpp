@@ -22,7 +22,7 @@ namespace traccc {
 namespace cuda {
 
 class seeding_algorithm
-    : public algorithm<host_seed_container(host_spacepoint_container&&)> {
+    : public algorithm<host_seed_collection(host_spacepoint_container&&)> {
 
     public:
     seeding_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
@@ -57,7 +57,7 @@ class seeding_algorithm
     output_type operator()(
         host_spacepoint_container&& spacepoints) const override {
 
-        output_type seeds({host_seed_container(1, &m_mr.get())});
+        output_type seeds(&m_mr.get());
         auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
         seeds =
             sf->operator()(std::move(spacepoints), std::move(internal_sp_g2));

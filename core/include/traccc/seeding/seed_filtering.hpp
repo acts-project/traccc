@@ -17,7 +17,7 @@ namespace traccc {
 /// Seed filtering to filter out the bad triplets
 struct seed_filtering
     : public algorithm<
-          std::pair<host_triplet_collection&, host_seed_container&>(
+          std::pair<host_triplet_collection&, host_seed_collection&>(
               const host_spacepoint_container&, const sp_grid&)> {
     seed_filtering() {}
 
@@ -120,9 +120,7 @@ struct seed_filtering
         // weight seeds
 
         for (; it < itBegin + maxSeeds; ++it) {
-            // seeds.push_back(*it);
-            seeds.get_headers()[0]++;
-            seeds.get_items()[0].push_back(*it);
+            seeds.push_back(*it);
         }
     }
 

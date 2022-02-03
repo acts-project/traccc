@@ -238,7 +238,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // and push_back seed into sorted_seedVector
     std::vector<Acts::Seed<SpacePoint>> sorted_seedVector;
     int n_seed_match = 0;
-    for (auto& seed : seeds.get_items()[0]) {
+    for (auto& seed : seeds) {
         auto it = std::find_if(
             seedVector.begin(), seedVector.end(), [&](auto acts_seed) {
                 auto traccc_spB = spacepoints_per_event.at(seed.spB_link);
@@ -265,10 +265,10 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     }
     seedVector = sorted_seedVector;
 
-    float seed_match_ratio = float(n_seed_match) / seeds.total_size();
+    float seed_match_ratio = float(n_seed_match) / seeds.size();
 
     // Ensure that ACTS and traccc give the same result
-    EXPECT_EQ(seeds.get_headers()[0], seedVector.size());
+    EXPECT_EQ(seeds.size(), seedVector.size());
     EXPECT_FLOAT_EQ(seed_match_ratio, 1);
 
     /*--------------------------------
@@ -379,6 +379,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     }
 
     float params_match_ratio = float(n_params_match) / traccc_params.size();
+
     EXPECT_EQ(acts_params.size(), traccc_params.size());
     EXPECT_FLOAT_EQ(params_match_ratio, 1);
 }

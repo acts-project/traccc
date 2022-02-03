@@ -146,16 +146,13 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         if (!skip_cpu) {
             // seeding
             int n_match = 0;
-            for (auto& seed : seeds.get_items()[0]) {
-                if (std::find(seeds_cuda.get_items()[0].begin(),
-                              seeds_cuda.get_items()[0].begin() +
-                                  seeds_cuda.get_headers()[0],
-                              seed) != seeds_cuda.get_items()[0].begin() +
-                                           seeds_cuda.get_headers()[0]) {
+            for (auto& seed : seeds) {
+                if (std::find(seeds_cuda.begin(), seeds_cuda.end(), seed) !=
+                    seeds_cuda.end()) {
                     n_match++;
                 }
             }
-            float matching_rate = float(n_match) / seeds.get_headers()[0];
+            float matching_rate = float(n_match) / seeds.size();
             std::cout << "event " << std::to_string(event) << std::endl;
             std::cout << " seed matching rate: " << matching_rate << std::endl;
 
@@ -177,8 +174,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
           ---------------*/
 
         n_spacepoints += spacepoints_per_event.total_size();
-        n_seeds_cuda += seeds_cuda.get_headers()[0];
-        n_seeds += seeds.total_size();
+        n_seeds_cuda += seeds_cuda.size();
+        n_seeds += seeds.size();
 
         /*------------
           Writer

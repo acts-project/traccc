@@ -15,7 +15,7 @@ class TrackParamsEstimation {
     public:
     TrackParamsEstimation(
         spacepoint_container_view spacepoints_view,
-        seed_container_view seeds_view,
+        vecmem::data::vector_view<seed> seeds_view,
         vecmem::data::vector_view<bound_track_parameters> params_view)
         : m_spacepoints_view(spacepoints_view),
           m_seeds_view(seeds_view),
@@ -36,23 +36,21 @@ class TrackParamsEstimation {
         // Get device container for input parameters
         device_spacepoint_container spacepoints_device(
             {m_spacepoints_view.headers, m_spacepoints_view.items});
-        device_seed_container seeds_device(
-            {m_seeds_view.headers, m_seeds_view.items});
+        device_seed_collection seeds_device(m_seeds_view);
         device_bound_track_parameters_collection params_device({m_params_view});
 
         // vector index for threads
         unsigned int gid = workItemIdx + groupIdx * groupDim;
-        const auto& n_seeds = seeds_device.get_headers()[0];
 
         // prevent overflow
-        if (gid >= n_seeds) {
+        if (gid >= seeds_device.size()) {
             return;
         }
 
         // convenient assumption on bfield and mass
         vector3 bfield = {0, 0, 2};
 
-        const auto& seed = seeds_device.get_items()[0][gid];
+        const auto& seed = seeds_device.at(gid);
         auto& param = params_device[gid].vector();
 
         // Get bound track parameter
@@ -62,19 +60,18 @@ class TrackParamsEstimation {
 
     private:
     spacepoint_container_view m_spacepoints_view;
-    seed_container_view m_seeds_view;
+    vecmem::data::vector_view<seed> m_seeds_view;
     vecmem::data::vector_view<bound_track_parameters> m_params_view;
 };
 
 track_params_estimation::output_type track_params_estimation::operator()(
     host_spacepoint_container&& spacepoints,
-    host_seed_container&& seeds) const {
+    host_seed_collection&& seeds) const {
 
-    auto n_seeds = seeds.get_headers()[0];
-    output_type params(n_seeds, &m_mr.get());
+    output_type params(seeds.size(), &m_mr.get());
 
     auto spacepoints_view = get_data(spacepoints, &m_mr.get());
-    auto seeds_view = get_data(seeds, &m_mr.get());
+    auto seeds_view = vecmem::get_data(seeds);
     auto params_view = vecmem::get_data(params);
 
     // -- localSize
@@ -84,8 +81,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // -- Num groups
     // The dimension of grid is number_of_seeds / localSize + 1
-    unsigned int num_groups =
-        (seeds.get_headers()[0] + localSize - 1) / localSize;
+    unsigned int num_groups = (seeds.size() + localSize - 1) / localSize;
 
     unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel

@@ -20,7 +20,7 @@ namespace sycl {
 /// track parameter estimation for sycl
 struct track_params_estimation
     : public algorithm<host_bound_track_parameters_collection(
-          host_spacepoint_container&&, host_seed_container&&)> {
+          host_spacepoint_container&&, host_seed_collection&&)> {
     public:
     /// Constructor for track_params_estimation
     ///
@@ -35,7 +35,7 @@ struct track_params_estimation
     ///
     /// @return vector of bound track parameters
     output_type operator()(host_spacepoint_container&& spacepoints,
-                           host_seed_container&& seeds) const override;
+                           host_seed_collection&& seeds) const override;
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;

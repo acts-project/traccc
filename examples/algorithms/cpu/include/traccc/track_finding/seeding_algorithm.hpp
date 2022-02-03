@@ -13,7 +13,7 @@
 namespace traccc {
 
 class seeding_algorithm
-    : public algorithm<host_seed_container(const host_spacepoint_container&)> {
+    : public algorithm<host_seed_collection(const host_spacepoint_container&)> {
     public:
     seeding_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
 
