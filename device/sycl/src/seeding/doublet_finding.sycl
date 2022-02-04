@@ -82,7 +82,7 @@ class DupletFind {
         auto num_mid_bot_doublets_per_thread = m_localMemBot;
         auto num_mid_top_doublets_per_thread = m_localMemTop;
         num_mid_bot_doublets_per_thread[workItemIdx] = 0;
-        num_mid_top_doublets_per_thread[workItemIdx] = 0; 
+        num_mid_top_doublets_per_thread[workItemIdx] = 0;
         // Convenient alias for the number of doublets per thread
         auto& n_mid_bot_per_spM = num_mid_bot_doublets_per_thread[workItemIdx];
         auto& n_mid_top_per_spM = num_mid_top_doublets_per_thread[workItemIdx];
