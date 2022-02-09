@@ -37,7 +37,7 @@ struct track_params_estimation
         // TODO: Make use of bfield extenstion in the future
         vector3 bfield = {0, 0, 2};
 
-        for (auto seed : seeds) {
+        for (const auto& seed : seeds) {
             bound_track_parameters track_params;
             track_params.vector() =
                 seed_to_bound_vector(sp_container, seed, bfield, PION_MASS_MEV);
