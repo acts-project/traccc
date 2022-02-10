@@ -42,3 +42,10 @@ get_target_property( _incDirs eigen INTERFACE_INCLUDE_DIRECTORIES )
 target_include_directories( eigen
    SYSTEM INTERFACE ${_incDirs} )
 unset( _incDirs )
+
+# For some wicked reason CUDA keeps complaining about the Eigen headers, even
+# though they are set up from a "system include path". So I had to explicitly
+# disable the warning triggered by those headers, for anything that uses them.
+# This is pretty bad, as we're now blind to these types of warnings/errors. :-(
+target_compile_options( eigen INTERFACE
+   $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=20012> )
