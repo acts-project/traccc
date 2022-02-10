@@ -4,6 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-cpp )
+
 # Set up a common library, shared by all of the tests.
 add_library( traccc_tests_common INTERFACE )
 target_include_directories( traccc_tests_common

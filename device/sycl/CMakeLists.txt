@@ -4,6 +4,10 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-cpp )
+include( traccc-compiler-options-sycl )
+
 # We need the SYCL language in this directory.
 enable_language( SYCL )
 
