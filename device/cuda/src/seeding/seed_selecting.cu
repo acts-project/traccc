@@ -283,8 +283,8 @@ __global__ void seed_selecting_kernel(
             break;
         }
 
-        seed aSeed({spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
-                    aTriplet.z_vertex});
+        seed aSeed{spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
+                   aTriplet.z_vertex};
 
         // check if it is a good triplet
         if (seed_selecting_helper::cut_per_middle_sp(

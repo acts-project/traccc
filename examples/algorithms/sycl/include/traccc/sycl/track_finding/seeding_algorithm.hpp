@@ -24,7 +24,7 @@ class seeding_algorithm
 
     public:
     seeding_algorithm(vecmem::memory_resource& mr, ::sycl::queue* q = nullptr)
-        : m_mr(mr), m_q(q) {
+        : m_mr(mr) {
 
         m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
                             (1 + 0.038 * std::log(m_config.radLengthPerSeed));
@@ -65,7 +65,6 @@ class seeding_algorithm
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-    ::sycl::queue* m_q;
     std::shared_ptr<traccc::sycl::spacepoint_binning> sb;
     std::shared_ptr<traccc::sycl::seed_finding> sf;
 };

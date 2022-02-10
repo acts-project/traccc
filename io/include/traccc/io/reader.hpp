@@ -65,9 +65,9 @@ inline traccc::demonstrator_input read(size_t events,
                                        const std::string &cell_directory,
                                        vecmem::host_memory_resource &resource) {
     using namespace std::placeholders;
-    auto geometry = read_geometry(detector_file);
-    auto readFn = std::bind(read_cells_from_event, _1, cell_directory, geometry,
-                            resource);
+    auto geom = read_geometry(detector_file);
+    auto readFn =
+        std::bind(read_cells_from_event, _1, cell_directory, geom, resource);
     traccc::demonstrator_input input_data(events, &resource);
 
 #if defined(_OPENMP)

@@ -263,7 +263,7 @@ inline std::vector<cluster_collection> read_truth_clusters(
 
     // Reference for switching the container
     uint64_t reference_id = 0;
-    std::vector<cluster_collection> cluster_container;
+    std::vector<cluster_collection> clusters;
     // Reference for switching the cluster
     uint64_t truth_id = std::numeric_limits<uint64_t>::max();
 
@@ -285,7 +285,7 @@ inline std::vector<cluster_collection> read_truth_clusters(
             }
 
             // Sort in column major order
-            cluster_container.push_back(truth_clusters);
+            clusters.push_back(truth_clusters);
             // Clear for next round
             truth_clusters = cluster_collection();
         }
@@ -306,7 +306,7 @@ inline std::vector<cluster_collection> read_truth_clusters(
         }
     }
 
-    return cluster_container;
+    return clusters;
 }
 
 /// Read the collection of measurements per module and fill into a collection

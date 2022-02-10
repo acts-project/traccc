@@ -42,10 +42,10 @@ void print_statistics(const traccc::host_cell_container& data) {
     for (std::size_t i = 0; i < data.size(); ++i) {
         std::size_t count = data.at(i).items.size();
 
-        for (std::size_t i = 0; i < bins_edges.size(); ++i) {
-            if (count >= bins_edges[i] &&
-                (i + 1 >= bins_edges.size() || count < bins_edges[i + 1])) {
-                ++bins[i];
+        for (std::size_t j = 0; i < bins_edges.size(); ++j) {
+            if (count >= bins_edges[j] &&
+                (j + 1 >= bins_edges.size() || count < bins_edges[j + 1])) {
+                ++bins[j];
                 break;
             }
         }

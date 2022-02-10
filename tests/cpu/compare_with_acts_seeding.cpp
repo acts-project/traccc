@@ -384,7 +384,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     EXPECT_FLOAT_EQ(params_match_ratio, 1);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SeedingValidation, CompareWithActsSeedingTests,
     ::testing::Values(
         std::make_tuple("tml_detector/trackml-detector.csv", "tml_hits/", 0),
