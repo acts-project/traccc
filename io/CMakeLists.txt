@@ -8,6 +8,7 @@
 traccc_add_library( traccc_io io TYPE INTERFACE
   "include/traccc/io/csv.hpp"
   "include/traccc/io/demonstrator_edm.hpp"
+  "include/traccc/io/mapper.hpp"
   "include/traccc/io/writer.hpp"
   "include/traccc/io/utils.hpp"
   "include/traccc/io/reader.hpp" )

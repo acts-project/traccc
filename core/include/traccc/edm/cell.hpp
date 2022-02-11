@@ -39,6 +39,31 @@ struct cell {
     scalar time = 0.;
 };
 
+inline bool operator<(const cell& lhs, const cell& rhs) {
+    if (lhs.channel0 < rhs.channel0) {
+        return true;
+    } else if (lhs.channel0 == rhs.channel0) {
+        if (lhs.channel1 < rhs.channel1) {
+            return true;
+        } else if (lhs.channel1 == rhs.channel1) {
+            if (lhs.activation < rhs.activation) {
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+    return false;
+}
+
+inline bool operator==(const cell& lhs, const cell& rhs) {
+    if (lhs.channel0 == rhs.channel0 && lhs.channel1 == rhs.channel1 &&
+        lhs.activation == rhs.activation && lhs.time == rhs.time) {
+        return true;
+    }
+    return false;
+}
+
 /// Container of cells belonging to one detector module
 template <template <typename> class vector_t>
 using cell_collection = vector_t<cell>;
