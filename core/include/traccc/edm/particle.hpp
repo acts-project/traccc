@@ -24,6 +24,13 @@ struct particle {
     scalar charge;
 };
 
+inline bool operator<(const particle& lhs, const particle& rhs) {
+    if (lhs.particle_id < rhs.particle_id) {
+        return true;
+    }
+    return false;
+}
+
 /// Container of particle for an event
 template <template <typename> class vector_t>
 using particle_collection = vector_t<particle>;

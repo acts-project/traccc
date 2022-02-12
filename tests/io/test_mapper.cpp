@@ -138,4 +138,9 @@ TEST(mappper, cell_particle_map) {
             EXPECT_EQ(ptc.particle_id, 702628615719813121);
         }
     }
+
+    vecmem::host_memory_resource mr;
+    auto a = traccc::generate_measurement_particle_map(
+        0, "/tml_detector/trackml-detector.csv", "tml_pixels/ttbar_200/",
+        "tml_pixels/ttbar_200/", "tml_pixels/ttbar_200/", mr);
 }

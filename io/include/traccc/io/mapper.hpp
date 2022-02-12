@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#pragrma once
+#pragma once
 
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
@@ -26,7 +26,8 @@ using hit_map = std::map<hit_id, spacepoint>;
 using hit_cell_map = std::map<spacepoint, std::vector<cell>>;
 using cell_particle_map = std::map<cell, particle>;
 using measurement_cell_map = std::map<measurement, std::vector<cell>>;
-using measurement_particle_map = std::map<measurement, std::vector<particle>>;
+using measurement_particle_map =
+    std::map<measurement, std::map<particle, uint64_t>>;
 
 particle_map generate_particle_map(size_t event,
                                    const std::string& particle_dir) {
@@ -219,7 +220,7 @@ measurement_particle_map generate_measurement_particle_map(
 
     for (auto const& [meas, cells] : m_c_map) {
         for (const auto& c : cells) {
-            result[meas].push_back(c_p_map[c]);
+            result[meas][c_p_map[c]]++;
         }
     }
 
