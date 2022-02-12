@@ -16,7 +16,14 @@ namespace traccc {
 
 // Definition of truth particle
 struct particle {
-    uint64_t pid;
+    uint64_t particle_id;
+    int particle_type;
+    int process;
+    point3 pos;
+    scalar time;
+    vector3 mom;
+    scalar mass;
+    scalar charge;
 };
 
 /// Container of particle for an event

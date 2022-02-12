@@ -78,6 +78,7 @@ using fatras_hit_reader = dfe::NamedTupleCsvReader<csv_fatras_hit>;
 struct csv_particle {
     uint64_t particle_id = 0;
     int particle_type = 0;
+    int process = 0;
     scalar vx;
     scalar vy;
     scalar vz;
@@ -88,8 +89,8 @@ struct csv_particle {
     scalar m;
     scalar q;
 
-    DFE_NAMEDTUPLE(csv_particle, particle_id, particle_type, vx, vy, vz, vt, px,
-                   py, pz, m, q);
+    DFE_NAMEDTUPLE(csv_particle, particle_id, particle_type, process, vx, vy,
+                   vz, vt, px, py, pz, m, q);
 };
 
 using fatras_particle_reader = dfe::NamedTupleCsvReader<csv_particle>;

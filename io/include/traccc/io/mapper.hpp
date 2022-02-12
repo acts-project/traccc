@@ -17,6 +17,8 @@
 namespace traccc {
 
 using hit_id = uint64_t;
+using particle_id = uint64_t;
+using particle_map = std::map<particle_id, particle>;
 using hit_particle_map = std::map<spacepoint, particle>;
 using hit_map = std::map<hit_id, spacepoint>;
 using hit_cell_map = std::map<spacepoint, std::vector<cell>>;
@@ -24,9 +26,42 @@ using cell_particle_map = std::map<cell, particle>;
 using measurement_cell_map = std::map<measurement, std::vector<cell>>;
 using measurement_particle_map = std::map<measurement, std::vector<particle>>;
 
+particle_map generate_particle_map(size_t event,
+                                   const std::string& particle_dir) {
+
+    particle_map result;
+
+    // Read the particles from the relevant event file
+    std::string io_particles_file =
+        data_directory() + particle_dir +
+        get_event_filename(event, "-particles_initial.csv");
+
+    fatras_particle_reader preader(
+        io_particles_file, {"particle_id", "particle_type", "process", "vx",
+                            "vy", "vz", "vt", "px", "py", "pz", "m", "q"});
+
+    csv_particle ioptc;
+
+    while (preader.read(ioptc)) {
+        point3 pos{ioptc.vx, ioptc.vy, ioptc.vz};
+        vector3 mom{ioptc.px, ioptc.py, ioptc.pz};
+
+        result[ioptc.particle_id] =
+            particle{ioptc.particle_id, ioptc.particle_type,
+                     ioptc.process,     pos,
+                     ioptc.vt,          mom,
+                     ioptc.m,           ioptc.q};
+    }
+
+    return result;
+}
+
 hit_particle_map generate_hit_particle_map(size_t event,
-                                           const std::string& hits_dir) {
+                                           const std::string& hits_dir,
+                                           const std::string& particle_dir) {
     hit_particle_map result;
+
+    auto pmap = generate_particle_map(event, particle_dir);
 
     // Read the hits from the relevant event file
     std::string io_hits_file =
@@ -44,8 +79,7 @@ hit_particle_map generate_hit_particle_map(size_t event,
         spacepoint sp;
         sp.global = {iohit.tx, iohit.ty, iohit.tz};
 
-        particle ptc;
-        ptc.pid = iohit.particle_id;
+        particle ptc = pmap[iohit.particle_id];
 
         result[sp] = ptc;
     }
@@ -107,11 +141,12 @@ hit_cell_map generate_hit_cell_map(size_t event, const std::string& cells_dir,
 
 cell_particle_map generate_cell_particle_map(size_t event,
                                              const std::string& cells_dir,
-                                             const std::string& hits_dir) {
+                                             const std::string& hits_dir,
+                                             const std::string& particle_dir) {
 
     cell_particle_map result;
 
-    auto h_p_map = generate_hit_particle_map(event, hits_dir);
+    auto h_p_map = generate_hit_particle_map(event, hits_dir, particle_dir);
 
     auto h_c_map = generate_hit_cell_map(event, cells_dir, hits_dir);
 
@@ -168,12 +203,13 @@ measurement_cell_map generate_measurement_cell_map(
 measurement_particle_map generate_measurement_particle_map(
     size_t event, const std::string& detector_file,
     const std::string& cells_dir, const std::string& hits_dir,
-    vecmem::host_memory_resource& resource) {
+    const std::string& particle_dir, vecmem::host_memory_resource& resource) {
 
     measurement_particle_map result;
 
     // generate cell particle map
-    auto c_p_map = generate_cell_particle_map(event, cells_dir, hits_dir);
+    auto c_p_map =
+        generate_cell_particle_map(event, cells_dir, hits_dir, particle_dir);
 
     // generate measurement cell map
     auto m_c_map = generate_measurement_cell_map(event, detector_file,

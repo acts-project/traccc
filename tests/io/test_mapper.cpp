@@ -14,24 +14,45 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
+TEST(mappper, particle_map) {
+    auto p_map = traccc::generate_particle_map(0, "tml_pixels/ttbar_200/");
+
+    for (auto const& [pid, ptc] : p_map) {
+        if (pid == 4503600147464192) {
+            EXPECT_EQ(ptc.pos, traccc::vector3({-0.0120002991, -9.48547313e-05,
+                                                -15.1165705}));
+        }
+
+        else if (pid == 522486832617750528) {
+            EXPECT_EQ(ptc.pos,
+                      traccc::vector3({-16.0845699, -43.6837349, 33313.7969}));
+        }
+
+        else if (pid == 815244996511793152) {
+            EXPECT_EQ(ptc.pos, traccc::vector3(
+                                   {0.00947579276, 0.00682933675, 59.2630196}));
+        }
+    }
+}
+
 TEST(mappper, hit_particle_map) {
 
-    auto h_p_map =
-        traccc::generate_hit_particle_map(0, "tml_pixels/ttbar_200/");
+    auto h_p_map = traccc::generate_hit_particle_map(0, "tml_pixels/ttbar_200/",
+                                                     "tml_pixels/ttbar_200/");
 
     for (auto const& [hit, ptc] : h_p_map) {
 
         if (hit.global == traccc::point3{39.2037048, 0.352969825, -1502.5}) {
-            EXPECT_EQ(ptc.pid, 58546796263112704);
+            EXPECT_EQ(ptc.particle_id, 58546796263112704);
         }
 
         else if (hit.global == traccc::point3{65.2966003, -89.9105911, 598}) {
-            EXPECT_EQ(ptc.pid, 774619137115684864);
+            EXPECT_EQ(ptc.particle_id, 774619137115684864);
         }
 
         else if (hit.global ==
                  traccc::point3{-631.891235, 3.07215524, 1215.5}) {
-            EXPECT_EQ(ptc.pid, 369295170719449088);
+            EXPECT_EQ(ptc.particle_id, 369295170719449088);
         }
     }
 }
@@ -100,20 +121,21 @@ TEST(mappper, hit_cell_map) {
 TEST(mappper, cell_particle_map) {
 
     auto c_p_map = traccc::generate_cell_particle_map(
-        0, "tml_pixels/ttbar_200/", "tml_pixels/ttbar_200/");
+        0, "tml_pixels/ttbar_200/", "tml_pixels/ttbar_200/",
+        "tml_pixels/ttbar_200/");
 
     for (auto const& [c, ptc] : c_p_map) {
 
         if (c == traccc::cell{222, 1257, 0.0041470062, 0}) {
-            EXPECT_EQ(ptc.pid, 58546796263112704);
+            EXPECT_EQ(ptc.particle_id, 58546796263112704);
         }
 
         else if (c == traccc::cell{114, 1403, 0.00306466641, 0}) {
-            EXPECT_EQ(ptc.pid, 99079195543470080);
+            EXPECT_EQ(ptc.particle_id, 99079195543470080);
         }
 
         else if (c == traccc::cell{232, 1205, 0.00790336262, 0}) {
-            EXPECT_EQ(ptc.pid, 702628615719813121);
+            EXPECT_EQ(ptc.particle_id, 702628615719813121);
         }
     }
 }
