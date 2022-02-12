@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "traccc/edm/track_parameters.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/vector.hpp>
 
