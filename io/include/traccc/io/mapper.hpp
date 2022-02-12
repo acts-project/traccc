@@ -5,6 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
+#pragrma once
+
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
 #include "traccc/edm/cell.hpp"
