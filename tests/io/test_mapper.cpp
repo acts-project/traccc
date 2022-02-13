@@ -14,8 +14,14 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
+std::size_t event = 0;
+std::string detector_file = "/tml_detector/trackml-detector.csv";
+std::string hits_dir = "tml_pixels/ttbar_200/";
+std::string cells_dir = "tml_pixels/ttbar_200/";
+std::string particles_dir = "tml_pixels/ttbar_200/";
+
 TEST(mappper, particle_map) {
-    auto p_map = traccc::generate_particle_map(0, "tml_pixels/ttbar_200/");
+    auto p_map = traccc::generate_particle_map(event, particles_dir);
 
     for (auto const& [pid, ptc] : p_map) {
         if (pid == 4503600147464192) {
@@ -37,8 +43,8 @@ TEST(mappper, particle_map) {
 
 TEST(mappper, hit_particle_map) {
 
-    auto h_p_map = traccc::generate_hit_particle_map(0, "tml_pixels/ttbar_200/",
-                                                     "tml_pixels/ttbar_200/");
+    auto h_p_map =
+        traccc::generate_hit_particle_map(event, hits_dir, particles_dir);
 
     for (auto const& [hit, ptc] : h_p_map) {
 
@@ -59,7 +65,7 @@ TEST(mappper, hit_particle_map) {
 
 TEST(mappper, hit_map) {
 
-    auto h_map = traccc::generate_hit_map(0, "tml_pixels/ttbar_200/");
+    auto h_map = traccc::generate_hit_map(event, hits_dir);
 
     for (auto const& [hid, hit] : h_map) {
         if (hid == 0) {
@@ -81,8 +87,7 @@ TEST(mappper, hit_map) {
 
 TEST(mappper, hit_cell_map) {
 
-    auto h_c_map = traccc::generate_hit_cell_map(0, "tml_pixels/ttbar_200/",
-                                                 "tml_pixels/ttbar_200/");
+    auto h_c_map = traccc::generate_hit_cell_map(event, cells_dir, hits_dir);
 
     auto compare_cells = [](std::vector<traccc::cell>& cells1,
                             std::vector<traccc::cell>& cells2) {
@@ -120,9 +125,8 @@ TEST(mappper, hit_cell_map) {
 
 TEST(mappper, cell_particle_map) {
 
-    auto c_p_map = traccc::generate_cell_particle_map(
-        0, "tml_pixels/ttbar_200/", "tml_pixels/ttbar_200/",
-        "tml_pixels/ttbar_200/");
+    auto c_p_map = traccc::generate_cell_particle_map(event, cells_dir,
+                                                      hits_dir, particles_dir);
 
     for (auto const& [c, ptc] : c_p_map) {
 
@@ -138,9 +142,14 @@ TEST(mappper, cell_particle_map) {
             EXPECT_EQ(ptc.particle_id, 702628615719813121);
         }
     }
+}
+
+TEST(mappper, measurement_particle_map) {
 
     vecmem::host_memory_resource mr;
-    auto a = traccc::generate_measurement_particle_map(
-        0, "/tml_detector/trackml-detector.csv", "tml_pixels/ttbar_200/",
-        "tml_pixels/ttbar_200/", "tml_pixels/ttbar_200/", mr);
+
+    auto h_map = traccc::generate_hit_map(event, hits_dir);
+
+    auto m_p_map = traccc::generate_measurement_particle_map(
+        event, detector_file, hits_dir, particles_dir, mr);
 }

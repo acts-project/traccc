@@ -227,4 +227,37 @@ measurement_particle_map generate_measurement_particle_map(
     return result;
 }
 
+measurement_particle_map generate_measurement_particle_map(
+    size_t event, const std::string& detector_file, const std::string& hits_dir,
+    const std::string& particle_dir, vecmem::host_memory_resource& resource) {
+
+    measurement_particle_map result;
+
+    auto h_p_map = generate_hit_particle_map(event, hits_dir, particle_dir);
+
+    // Read the surface transforms
+    auto surface_transforms = read_geometry(detector_file);
+
+    // Read the spacepoints from the relevant event file
+    host_spacepoint_container spacepoints_per_event =
+        read_spacepoints_from_event(event, hits_dir, surface_transforms,
+                                    resource);
+
+    for (std::size_t i = 0; i < spacepoints_per_event.size(); ++i) {
+        const auto& spacepoints_per_module = spacepoints_per_event.at(i).items;
+
+        for (const auto& hit : spacepoints_per_module) {
+            const auto& meas = hit.meas;
+
+            spacepoint new_hit;
+            new_hit.global = hit.global;
+
+            const auto& ptc = h_p_map[new_hit];
+            result[meas][ptc]++;
+        }
+    }
+
+    return result;
+}
+
 }  // namespace traccc
