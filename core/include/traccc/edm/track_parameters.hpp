@@ -26,6 +26,8 @@ struct TRACCC_ALIGN(32) bound_track_parameters {
     // surface id
     unsigned int surface_id;
 
+    bound_track_parameters() = default;
+
     TRACCC_HOST_DEVICE
     scalar charge() const {
         if (m_vector[e_bound_qoverp] < 0) {
@@ -133,17 +135,17 @@ struct free_track_parameters {
     vector_t m_vector;
     covariance_t m_covariance;
 
-    free_track_parameters(const vector_t& params, const covariance_t& cov)
-        : m_vector(params), m_covariance(cov) {}
+    free_track_parameters() = default;
 
-    free_track_parameters(const point3& pos, const scalar& time,
-                          const vector3& mom, const scalar& q) {
-
-        m_vector[e_free_pos0] = pos[0];
-        m_vector[e_free_pos1] = pos[1];
-        m_vector[e_free_pos2] = pos[2];
-        m_vector[e_free_time] = time;
-
+    free_track_parameters(scalar tx, scalar ty, scalar tz, scalar tt,
+                          scalar tpx, scalar tpy, scalar tpz, scalar q) {
+        m_vector[e_free_pos0] = tx;
+        m_vector[e_free_pos1] = ty;
+        m_vector[e_free_pos2] = tz;
+        m_vector[e_free_time] = tt;
+        vector3 mom({tpx, tpy, tpz});
+        // scalar p = mom.norm();
+        // auto mom_norm = mom.normalized();
         scalar p = getter::norm(mom);
         auto mom_norm = vector::normalize(mom);
         m_vector[e_free_dir0] = mom_norm[0];
@@ -156,13 +158,13 @@ struct free_track_parameters {
     vector_t& vector() { return m_vector; }
 
     TRACCC_HOST_DEVICE
-    vector3 pos() const {
+    vector3 pos() {
         return {m_vector[e_free_pos0], m_vector[e_free_pos1],
                 m_vector[e_free_pos2]};
     }
 
     TRACCC_HOST_DEVICE
-    vector3 dir() const {
+    vector3 dir() {
         return {m_vector[e_free_dir0], m_vector[e_free_dir1],
                 m_vector[e_free_dir2]};
     }
@@ -171,7 +173,7 @@ struct free_track_parameters {
     covariance_t& covariance() { return m_covariance; }
 
     TRACCC_HOST_DEVICE
-    scalar qop() const { return m_vector[e_free_qoverp]; }
+    scalar& qop() { return m_vector[e_free_qoverp]; }
 };
 
 };  // namespace traccc
