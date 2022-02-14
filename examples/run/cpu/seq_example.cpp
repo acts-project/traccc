@@ -7,7 +7,6 @@
 
 // io
 #include "traccc/io/csv.hpp"
-#include "traccc/io/mapper.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/io/writer.hpp"
