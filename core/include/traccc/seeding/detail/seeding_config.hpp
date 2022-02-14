@@ -20,7 +20,7 @@ struct seedfinder_config {
     // m_config.zMax = 2800.;
     scalar zMin = -1186;
     scalar zMax = 1186;
-    scalar rMax = 160;
+    scalar rMax = 250;
     // WARNING: if rMin is smaller than impactMax, the bin size will be 2*pi,
     // which will make seeding very slow!
     scalar rMin = 33;
@@ -43,7 +43,7 @@ struct seedfinder_config {
     // minimum distance in mm in r between two measurements within one seed
     scalar deltaRMin = 5;
     // maximum distance in mm in r between two measurements within one seed
-    scalar deltaRMax = 160;
+    scalar deltaRMax = 200;
 
     // FIXME: this is not used yet
     //        scalar upperPtResolutionPerSeed = 20* Acts::GeV;
@@ -63,7 +63,7 @@ struct seedfinder_config {
     scalar maxPtScattering = 10000;
 
     // for how many seeds can one SpacePoint be the middle SpacePoint?
-    int maxSeedsPerSpM = 5;
+    int maxSeedsPerSpM = 20;
 
     // Unit in kiloTesla
     // FIXME: Acts units
@@ -146,7 +146,7 @@ struct seedfilter_config {
     scalar deltaRMin = 5.;
     // in dense environments many seeds may be found per middle space point.
     // only seeds with the highest weight will be kept if this limit is reached.
-    unsigned int maxSeedsPerSpM = 10;
+    unsigned int maxSeedsPerSpM = 20;
     // how often do you want to increase the weight of a seed for finding a
     // compatible seed?
     size_t compatSeedLimit = 2;
