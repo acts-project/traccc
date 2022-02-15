@@ -8,4 +8,4 @@
 traccc_add_test( cpu "compare_with_acts_seeding.cpp"
    "seq_single_module.cpp" "test_component_connection.cpp" "test_cca.cpp"
    LINK_LIBRARIES GTest::gtest_main vecmem::core traccc_tests_common
-                  traccc::core traccc::algorithms traccc::io )
+                  traccc::core traccc::io )
