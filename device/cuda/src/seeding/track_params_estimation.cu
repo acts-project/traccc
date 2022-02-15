@@ -38,7 +38,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // -- Num blocks
     // The dimension of grid is number_of_seeds / num_threads + 1
-    unsigned int num_blocks = (seeds.size() + num_threads - 1) / num_threads;
+    unsigned int num_blocks = seeds.size() / num_threads + 1;
 
     // run the kernel
     track_params_estimating_kernel<<<num_blocks, num_threads>>>(

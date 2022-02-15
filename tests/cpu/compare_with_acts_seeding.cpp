@@ -192,6 +192,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     auto topBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
         Acts::BinFinder<SpacePoint>());
     Acts::SeedFilterConfig sfconf;
+    sfconf.maxSeedsPerSpM = traccc::seedfilter_config().maxSeedsPerSpM;
+
     Acts::ATLASCuts<SpacePoint> atlasCuts = Acts::ATLASCuts<SpacePoint>();
     config.seedFilter = std::make_unique<Acts::SeedFilter<SpacePoint>>(
         Acts::SeedFilter<SpacePoint>(sfconf, &atlasCuts));
