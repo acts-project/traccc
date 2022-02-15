@@ -42,12 +42,10 @@ option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
+option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" FALSE )
 
 # Clean up.
 unset( TRACCC_BUILD_CUDA_DEFAULT )
-
-# Set up Boost.
-find_package( Boost 1.75.0 REQUIRED COMPONENTS program_options)
 
 # Set up VecMem.
 option( TRACCC_SETUP_VECMEM
@@ -162,9 +160,14 @@ endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )
 endif()
-add_subdirectory( examples )
 add_subdirectory( io )
 add_subdirectory( plugins )
+
+if ( TRACCC_BUILD_EXAMPLES )
+   # Set up Boost.
+   find_package( Boost 1.75.0 REQUIRED COMPONENTS program_options)
+   add_subdirectory( examples )
+endif()
 
 # Set up the test(s).
 include( CTest )

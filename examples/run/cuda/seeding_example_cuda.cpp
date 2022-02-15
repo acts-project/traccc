@@ -25,8 +25,13 @@
 #include <iomanip>
 #include <iostream>
 
+// Boost
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
-            unsigned int events, bool skip_cpu) {
+            unsigned int events, bool run_cpu) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
@@ -34,7 +39,6 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     // Output stats
     uint64_t n_modules = 0;
     uint64_t n_spacepoints = 0;
-    uint64_t n_internal_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
@@ -98,7 +102,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         traccc::seeding_algorithm::output_type seeds;
 
-        if (!skip_cpu) {
+        if (run_cpu) {
             seeds = sa(spacepoints_per_event);
         }
 
@@ -130,7 +134,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
             std::chrono::system_clock::now();
 
         traccc::track_params_estimation::output_type params;
-        if (!skip_cpu) {
+        if (run_cpu) {
             params = tp(std::move(spacepoints_per_event), seeds);
         }
 
@@ -143,7 +147,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
           compare seeds from cpu and cuda
           ----------------------------------*/
 
-        if (!skip_cpu) {
+        if (run_cpu) {
             // seeding
             int n_match = 0;
             for (auto& seed : seeds) {
@@ -181,7 +185,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
           Writer
           ------------*/
 
-        if (!skip_cpu) {
+        if (run_cpu) {
             traccc::write_spacepoints(event, spacepoints_per_event);
             traccc::write_seeds(event, spacepoints_per_event, seeds);
             traccc::write_estimated_track_parameters(event, params);
@@ -197,8 +201,6 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
-    std::cout << "- created        " << n_internal_spacepoints
-              << " internal spacepoints" << std::endl;
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (cuda) " << n_seeds_cuda << " seeds" << std::endl;
     std::cout << "==> Elpased time ... " << std::endl;
@@ -221,21 +223,27 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    if (argc < 4) {
-        std::cout << "Not enough arguments, minimum requirement: " << std::endl;
-        std::cout << "./seq_example <detector_file> <hit_directory> "
-                     "<events> <skip_cpu>"
-                  << std::endl;
-        return -1;
-    }
+    po::options_description desc("Allowed options");
+    desc.add_options()("detector_file", po::value<std::string>()->required(),
+                       "specify detector file");
+    desc.add_options()("hit_directory", po::value<std::string>()->required(),
+                       "specify the directory of hit files");
+    desc.add_options()("events", po::value<int>()->required(),
+                       "number of events");
+    desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
+                       "run cpu tracking as well");
 
-    auto detector_file = std::string(argv[1]);
-    auto hit_directory = std::string(argv[2]);
-    auto events = std::atoi(argv[3]);
-    bool skip_cpu = std::atoi(argv[4]);
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
 
-    std::cout << "Running ./seeding_example " << detector_file << " "
-              << hit_directory << " "
-              << " " << events << " " << skip_cpu << std::endl;
-    return seq_run(detector_file, hit_directory, events, skip_cpu);
+    auto detector_file = vm["detector_file"].as<std::string>();
+    auto hit_directory = vm["hit_directory"].as<std::string>();
+    auto events = vm["events"].as<int>();
+    auto run_cpu = vm["run_cpu"].as<bool>();
+
+    std::cout << "Running ./traccc_seeding_example_cuda " << detector_file
+              << " " << hit_directory << " " << events << std::endl;
+
+    return seq_run(detector_file, hit_directory, events, run_cpu);
 }

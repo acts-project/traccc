@@ -30,6 +30,11 @@
 #include <iomanip>
 #include <iostream>
 
+// Boost
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events, bool run_cpu) {
 
@@ -42,7 +47,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     // uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
-    uint64_t n_internal_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_sycl = 0;
 
@@ -241,8 +245,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
               << std::endl;
     std::cout << "- created        " << n_spacepoints << " spacepoints     "
               << std::endl;
-    std::cout << "- created        " << n_internal_spacepoints
-              << " internal spacepoints" << std::endl;
 
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (sycl) " << n_seeds_sycl << " seeds" << std::endl;
@@ -268,21 +270,27 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    if (argc < 4) {
-        std::cout << "Not enough arguments, minimum requirement: " << std::endl;
-        std::cout << "./seq_example <detector_file> <hit_directory> "
-                     "<events> <run_cpu>"
-                  << std::endl;
-        return -1;
-    }
+    po::options_description desc("Allowed options");
+    desc.add_options()("detector_file", po::value<std::string>()->required(),
+                       "specify detector file");
+    desc.add_options()("cell_directory", po::value<std::string>()->required(),
+                       "specify the directory of cell files");
+    desc.add_options()("events", po::value<int>()->required(),
+                       "number of events");
+    desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
+                       "run cpu tracking as well");
 
-    auto detector_file = std::string(argv[1]);
-    auto hit_directory = std::string(argv[2]);
-    auto events = std::atoi(argv[3]);
-    bool run_cpu = std::atoi(argv[4]);
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
 
-    std::cout << "Running ./seq_example " << detector_file << " "
-              << hit_directory << " "
-              << " " << events << " " << run_cpu << " " << std::endl;
-    return seq_run(detector_file, hit_directory, events, run_cpu);
+    auto detector_file = vm["detector_file"].as<std::string>();
+    auto cell_directory = vm["cell_directory"].as<std::string>();
+    auto events = vm["events"].as<int>();
+    auto run_cpu = vm["run_cpu"].as<bool>();
+
+    std::cout << "Running ./traccc_seq_example_sycl " << detector_file << " "
+              << cell_directory << " " << events << std::endl;
+
+    return seq_run(detector_file, cell_directory, events, run_cpu);
 }

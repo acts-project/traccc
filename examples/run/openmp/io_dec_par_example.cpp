@@ -19,6 +19,11 @@
 #include <chrono>
 #include <iostream>
 
+// Boost
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
 traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                                 vecmem::host_memory_resource resource) {
 
@@ -104,18 +109,24 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 
 // The main routine
 int main(int argc, char *argv[]) {
+    po::options_description desc("Allowed options");
+    desc.add_options()("detector_file", po::value<std::string>()->required(),
+                       "specify detector file");
+    desc.add_options()("cell_directory", po::value<std::string>()->required(),
+                       "specify the directory of cell files");
+    desc.add_options()("events", po::value<int>()->required(),
+                       "number of events");
 
-    if (argc < 4) {
-        std::cout << "Not enough arguments, minimum requirement: " << std::endl;
-        std::cout
-            << "./io_dec_par_example <detector_file> <cell_directory> <events>"
-            << std::endl;
-        return -1;
-    }
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
 
-    auto detector_file = std::string(argv[1]);
-    auto cell_directory = std::string(argv[2]);
-    auto events = static_cast<size_t>(std::atoi(argv[3]));
+    auto detector_file = vm["detector_file"].as<std::string>();
+    auto cell_directory = vm["cell_directory"].as<std::string>();
+    auto events = vm["events"].as<int>();
+
+    std::cout << "Running ./traccc_seq_example " << detector_file << " "
+              << cell_directory << " " << events << std::endl;
 
     auto start = std::chrono::system_clock::now();
     vecmem::host_memory_resource resource;

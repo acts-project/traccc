@@ -199,7 +199,9 @@ class container {
      * @brief Bounds-checking mutable item vector element accessor.
      */
     TRACCC_HOST_DEVICE
-    item_t at(const link_type& link) { return items[link.first][link.second]; }
+    item_t at(const link_type& link) {
+        return items[link.first][link.second];
+    }
 
     /**
      * @brief Bounds-checking immutable item vector element accessor.
@@ -213,7 +215,9 @@ class container {
      * @brief Mutable element accessor.
      */
     TRACCC_HOST_DEVICE
-    element_view operator[](size_type i) { return {headers[i], items[i]}; }
+    element_view operator[](size_type i) {
+        return {headers[i], items[i]};
+    }
 
     /**
      * @brief Immutable element accessor.
@@ -230,7 +234,9 @@ class container {
      * equal, but we can assert this at runtime for debug builds.
      */
     TRACCC_HOST_DEVICE
-    size_type size(void) const { return headers.size(); }
+    size_type size(void) const {
+        return headers.size();
+    }
 
     /**
      * @brief Reserve space in both vectors.
@@ -264,7 +270,9 @@ class container {
      * @brief Accessor method for the internal header vector.
      */
     TRACCC_HOST_DEVICE
-    const header_vector& get_headers() const { return headers; }
+    const header_vector& get_headers() const {
+        return headers;
+    }
 
     /**
      * @brief Non-const accessor method for the internal header vector.
@@ -273,13 +281,17 @@ class container {
      * invariants!
      */
     TRACCC_HOST_DEVICE
-    header_vector& get_headers() { return headers; }
+    header_vector& get_headers() {
+        return headers;
+    }
 
     /**
      * @brief Accessor method for the internal item vector-of-vectors.
      */
     TRACCC_HOST_DEVICE
-    const item_vector& get_items() const { return items; }
+    const item_vector& get_items() const {
+        return items;
+    }
 
     /**
      * @brief Non-const accessor method for the internal item vector-of-vectors.
@@ -288,7 +300,9 @@ class container {
      * invariants!
      */
     TRACCC_HOST_DEVICE
-    item_vector& get_items() { return items; }
+    item_vector& get_items() {
+        return items;
+    }
 
     /**
      * @breif Get number of items of jagged vector
