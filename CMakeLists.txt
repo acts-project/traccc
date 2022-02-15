@@ -47,18 +47,7 @@ option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 unset( TRACCC_BUILD_CUDA_DEFAULT )
 
 # Set up Boost.
-option( TRACCC_SETUP_BOOST
-   "Set up the Boost target(s) explicitly" TRUE )
-option( TRACCC_USE_SYSTEM_BOOST
-   "Pick up an existing installation of Boost from the build environment"
-   FALSE )
-if( TRACCC_SETUP_BOOST )
-   if( TRACCC_USE_SYSTEM_BOOST )
-      find_package( Boost 1.75.0 REQUIRED REQUIRED COMPONENTS program_options)
-   else()
-      add_subdirectory( extern/boost )
-   endif()
-endif()
+find_package( Boost 1.75.0 REQUIRED COMPONENTS program_options)
 
 # Set up VecMem.
 option( TRACCC_SETUP_VECMEM
