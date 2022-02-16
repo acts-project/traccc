@@ -25,16 +25,6 @@ class WeightUpdate {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Mapping cuda indexing to dpc++
-        auto workGroup = item.get_group();
-
-        // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(0);
-        // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(0);
-        // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(0);
-
         // Get device container for input parameters
         sp_grid_device internal_sp_device(m_internal_sp_view);
 
@@ -48,15 +38,8 @@ class WeightUpdate {
         sycl_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx,
                                            item);
 
-        // Header of internal spacepoint container : spacepoint bin information
-        // Item of internal spacepoint container : internal spacepoint objects
-        // per bin
-        auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
-
         // Header of triplet counter: number of compatible mid_top doublets per
         // bin Item of triplet counter: triplet counter objects per bin
-        auto& num_compat_mb_per_bin =
-            triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
         auto triplet_counter_per_bin =
             triplet_counter_device.get_items().at(bin_idx);
 
@@ -116,7 +99,7 @@ class WeightUpdate {
             triplet.curvature - m_filter_config.deltaInvHelixDiameter;
         scalar upperLimitCurv =
             triplet.curvature + m_filter_config.deltaInvHelixDiameter;
-        int num_compat_seedR = 0;
+        std::size_t num_compat_seedR = 0;
 
         // iterate over triplets
         for (auto tr_it = triplets_per_bin.begin() + start_idx;
@@ -150,7 +133,7 @@ class WeightUpdate {
 
             bool newCompSeed = true;
 
-            for (unsigned int i_s = 0; i_s < num_compat_seedR; ++i_s) {
+            for (std::size_t i_s = 0; i_s < num_compat_seedR; ++i_s) {
                 scalar previousDiameter = compat_seedR[i_s];
 
                 // original ATLAS code uses higher min distance for 2nd found

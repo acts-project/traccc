@@ -50,13 +50,6 @@ class SeedSelect {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Mapping cuda indexing to dpc++
-        auto workGroup = item.get_group();
-
-        // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(0);
-        // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
         auto workItemIdx = item.get_local_id(0);
 
@@ -68,8 +61,6 @@ class SeedSelect {
 
         device_doublet_counter_container doublet_counter_device(
             {m_doublet_counter_view.headers, m_doublet_counter_view.items});
-        device_triplet_counter_container triplet_counter_device(
-            {m_triplet_counter_view.headers, m_triplet_counter_view.items});
         device_triplet_container triplet_device(
             {m_triplet_view.headers, m_triplet_view.items});
         device_seed_collection seed_device(m_seed_view);
@@ -89,11 +80,6 @@ class SeedSelect {
         // Item of doublet counter : doublet counter objects per bin
         auto doublet_counter_per_bin =
             doublet_counter_device.get_items().at(bin_idx);
-
-        // Header of triplet counter: number of compatible mid_top doublets per
-        // bin Item of triplet counter: triplet counter objects per bin
-        auto& num_compat_mb_per_bin =
-            triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
 
         // Header of triplet: number of triplets per bin
         // Item of triplet: triplet objects per bin

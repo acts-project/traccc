@@ -17,8 +17,8 @@ class DupletFind {
                doublet_counter_container_view doublet_counter_view,
                doublet_container_view mid_bot_doublet_view,
                doublet_container_view mid_top_doublet_view,
-               local_accessor<int>& localMemBot,
-               local_accessor<int>& localMemTop)
+               local_accessor<unsigned int>& localMemBot,
+               local_accessor<unsigned int>& localMemTop)
         : m_config(config),
           m_internal_sp_view(internal_sp_view),
           m_doublet_counter_view(doublet_counter_view),
@@ -29,11 +29,6 @@ class DupletFind {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Mapping cuda indexing to sycl
-        auto workGroup = item.get_group();
-
-        // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
         auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
@@ -247,8 +242,8 @@ class DupletFind {
     doublet_counter_container_view m_doublet_counter_view;
     doublet_container_view m_mid_bot_doublet_view;
     doublet_container_view m_mid_top_doublet_view;
-    local_accessor<int> m_localMemBot;
-    local_accessor<int> m_localMemTop;
+    local_accessor<unsigned int> m_localMemBot;
+    local_accessor<unsigned int> m_localMemTop;
 };
 
 void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
@@ -281,8 +276,10 @@ void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
     auto doubletFindNdRange = ::sycl::nd_range<1>{globalSize, localSize};
     q->submit([&](::sycl::handler& h) {
          // local memory initialization (equivalent to shared memory in CUDA)
-         auto localMemBot = local_accessor<int>(::sycl::range<1>(localSize), h);
-         auto localMemTop = local_accessor<int>(::sycl::range<1>(localSize), h);
+         auto localMemBot =
+             local_accessor<unsigned int>(::sycl::range<1>(localSize), h);
+         auto localMemTop =
+             local_accessor<unsigned int>(::sycl::range<1>(localSize), h);
 
          DupletFind kernel(config, internal_sp_view, doublet_counter_view,
                            mid_bot_doublet_view, mid_top_doublet_view,

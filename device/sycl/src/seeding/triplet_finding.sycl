@@ -33,11 +33,6 @@ class TripletFind {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Mapping cuda indexing to dpc++
-        auto workGroup = item.get_group();
-
-        // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda
         auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
@@ -84,8 +79,6 @@ class TripletFind {
 
         // Header of doublet: number of mid_top doublets per bin
         // Item of doublet: doublet objects per bin
-        const auto& num_mid_top_doublets_per_bin =
-            mid_top_doublet_device.get_headers().at(bin_idx).n_doublets;
         auto mid_top_doublets_per_bin =
             mid_top_doublet_device.get_items().at(bin_idx);
 
