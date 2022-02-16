@@ -176,4 +176,4 @@ struct free_track_parameters {
     scalar& qop() { return m_vector[e_free_qoverp]; }
 };
 
-};  // namespace traccc
+}  // namespace traccc

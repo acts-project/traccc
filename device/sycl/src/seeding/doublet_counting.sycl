@@ -21,16 +21,6 @@ class DupletCount {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Mapping cuda indexing to sycl
-        auto workGroup = item.get_group();
-
-        // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(0);
-        // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(0);
-        // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(0);
-
         // Get device container for input parameters
         sp_grid_device internal_sp_device(m_internal_sp_view);
 

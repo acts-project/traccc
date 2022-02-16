@@ -1,5 +1,13 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
 #pragma once
 
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 
@@ -13,8 +21,7 @@ inline const std::string &data_directory() {
                 "Test data directory not found. Please set "
                 "TRACCC_TEST_DATA_DIR.");
         }
-        std::string data_dir = std::string(env_d_d);
-        return data_dir.append("/");
+        return std::string(env_d_d) + "/";
     }();
 
     return data_dir;

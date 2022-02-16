@@ -27,16 +27,6 @@ class TripletCount {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Mapping cuda indexing to sycl
-        auto workGroup = item.get_group();
-
-        // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(0);
-        // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(0);
-        // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(0);
-
         // Get device container for input parameters
         sp_grid_device internal_sp_device(m_internal_sp_view);
 
@@ -73,8 +63,6 @@ class TripletCount {
 
         // Header of doublet: number of mid_top doublets per bin
         // Item of doublet: doublet objects per bin
-        const auto& num_mid_top_doublets_per_bin =
-            mid_top_doublet_device.get_headers().at(bin_idx).n_doublets;
         auto mid_top_doublets_per_bin =
             mid_top_doublet_device.get_items().at(bin_idx);
 

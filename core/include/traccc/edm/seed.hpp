@@ -26,6 +26,9 @@ struct seed {
     scalar weight;
     scalar z_vertex;
 
+    seed() = default;
+    seed(const seed&) = default;
+
     TRACCC_HOST_DEVICE
     seed& operator=(const seed& aSeed) {
 
@@ -81,4 +84,4 @@ using seed_container_buffer = container_buffer<unsigned int, seed>;
 /// use in host code
 using seed_container_view = container_view<unsigned int, seed>;
 
-};  // namespace traccc
+}  // namespace traccc
