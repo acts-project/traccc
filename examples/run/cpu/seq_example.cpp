@@ -16,11 +16,11 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/track_finding/seeding_algorithm.hpp"
 
-// System include(s).
-#include <iostream>
-
 // Boost
 #include <boost/program_options.hpp>
+
+// System include(s).
+#include <iostream>
 
 namespace po = boost::program_options;
 

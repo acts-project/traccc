@@ -164,8 +164,8 @@ add_subdirectory( io )
 add_subdirectory( plugins )
 
 if ( TRACCC_BUILD_EXAMPLES )
-   # Set up Boost.
-   find_package( Boost 1.75.0 REQUIRED COMPONENTS program_options)
+   # Find Boost.
+   find_package( Boost REQUIRED COMPONENTS program_options)
    add_subdirectory( examples )
 endif()
 

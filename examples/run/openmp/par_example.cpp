@@ -21,15 +21,15 @@
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
+// Boost
+#include <boost/program_options.hpp>
+
 // OpenMP include(s).
 #include <omp.h>
 
 // System include(s).
 #include <chrono>
 #include <iostream>
-
-// Boost
-#include <boost/program_options.hpp>
 
 namespace po = boost::program_options;
 
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
     auto cell_directory = vm["cell_directory"].as<std::string>();
     auto events = vm["events"].as<int>();
 
-    std::cout << "Running ./traccc_seq_example " << detector_file << " "
+    std::cout << "Running " << argv[0] << " " << detector_file << " "
               << cell_directory << " " << events << std::endl;
 
     auto start = std::chrono::system_clock::now();

@@ -20,13 +20,13 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 
+// Boost
+#include <boost/program_options.hpp>
+
 // System include(s).
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-
-// Boost
-#include <boost/program_options.hpp>
 
 namespace po = boost::program_options;
 
@@ -242,8 +242,8 @@ int main(int argc, char* argv[]) {
     auto events = vm["events"].as<int>();
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    std::cout << "Running ./traccc_seeding_example_cuda " << detector_file
-              << " " << hit_directory << " " << events << std::endl;
+    std::cout << "Running " << argv[0] << " " << detector_file << " "
+              << hit_directory << " " << events << std::endl;
 
     return seq_run(detector_file, hit_directory, events, run_cpu);
 }
