@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
     auto cell_directory = vm["cell_directory"].as<std::string>();
     auto events = vm["events"].as<int>();
 
-    std::cout << "Running ./traccc_seq_example " << detector_file << " "
+    std::cout << "Running " << argv[0] << " " << detector_file << " "
               << cell_directory << " " << events << std::endl;
 
     return seq_run(detector_file, cell_directory, events);
