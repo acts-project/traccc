@@ -57,9 +57,9 @@ and toolchains that are currently known to work (last updated 2022/01/24):
 
 The `data` directory is a submodule hosted as `git lfs` on `https://gitlab.cern.ch/acts/traccc-data`
 
-### Optional dependency
+### Prerequisites
 
-- [Boost](https://www.boost.org/) >= 1.75 for examples
+- [Boost](https://www.boost.org/)
 
 ## Getting started
 

@@ -42,7 +42,7 @@ option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
-option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" FALSE )
+option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
 # Clean up.
 unset( TRACCC_BUILD_CUDA_DEFAULT )
