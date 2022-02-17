@@ -4,6 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-sycl )
+
 # We need the SYCL language in this directory.
 enable_language( SYCL )
 
@@ -14,7 +17,7 @@ traccc_add_executable( traccc_sycl_language_example
 # SYCL seeding executable(s).
 traccc_add_executable( seeding_example_sycl "seeding_example_sycl.sycl"
    LINK_LIBRARIES vecmem::core vecmem::sycl traccc::io
-                  traccc::algorithms traccc::algorithms_sycl )
+                  traccc::algorithms traccc::algorithms_sycl Boost::program_options)
 traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
    LINK_LIBRARIES vecmem::core vecmem::sycl traccc::io
-                  traccc::algorithms traccc::algorithms_sycl )
+                  traccc::algorithms traccc::algorithms_sycl Boost::program_options)

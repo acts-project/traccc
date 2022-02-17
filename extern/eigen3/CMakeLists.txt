@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021 CERN for the benefit of the ACTS project
+# (c) 2021-2022 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -36,5 +36,16 @@ else()
    unset( BUILD_TESTING CACHE )
 endif()
 
-# Set up an alias target that mimicks the imported target.
-add_library( Eigen3::Eigen ALIAS eigen )
+# Treat the Eigen headers as "system headers", to avoid getting warnings from
+# them.
+get_target_property( _incDirs eigen INTERFACE_INCLUDE_DIRECTORIES )
+target_include_directories( eigen
+   SYSTEM INTERFACE ${_incDirs} )
+unset( _incDirs )
+
+# For some wicked reason CUDA keeps complaining about the Eigen headers, even
+# though they are set up from a "system include path". So I had to explicitly
+# disable the warning triggered by those headers, for anything that uses them.
+# This is pretty bad, as we're now blind to these types of warnings/errors. :-(
+target_compile_options( eigen INTERFACE
+   $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=20012> )

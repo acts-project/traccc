@@ -23,9 +23,6 @@ class TrackParamsEstimation {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Mapping cuda indexing to sycl
-        auto workGroup = item.get_group();
-
         // Equivalent to blockIdx.x in cuda
         auto groupIdx = item.get_group(0);
         // Equivalent to blockDim.x in cuda

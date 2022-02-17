@@ -4,9 +4,12 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-cuda )
+
 traccc_add_executable( seq_example_cuda "seq_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda
-                  traccc::io traccc::algorithms traccc::algorithms_cuda )
+                  traccc::io traccc::algorithms traccc::algorithms_cuda Boost::program_options)
 traccc_add_executable( seeding_example_cuda "seeding_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda
-                  traccc::io traccc::algorithms traccc::algorithms_cuda )
+                  traccc::io traccc::algorithms traccc::algorithms_cuda Boost::program_options)

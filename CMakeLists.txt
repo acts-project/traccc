@@ -8,6 +8,13 @@
 cmake_minimum_required( VERSION 3.9 )
 project( traccc VERSION 0.1.0 LANGUAGES CXX )
 
+# Set up the used C++ standard(s).
+set( CMAKE_CXX_STANDARD 17 CACHE STRING "The (host) C++ standard to use" )
+set( CMAKE_CXX_EXTENSIONS FALSE CACHE BOOL "Disable (host) C++ extensions" )
+set( CMAKE_CUDA_STANDARD 17 CACHE STRING "The (CUDA) C++ standard to use" )
+set( CMAKE_CUDA_EXTENSIONS FALSE CACHE BOOL "Disable (CUDA) C++ extensions" )
+set( CMAKE_SYCL_STANDARD 17 CACHE STRING "The (SYCL) C++ standard to use" )
+
 # Standard CMake include(s).
 include( GNUInstallDirs )
 
@@ -26,7 +33,6 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 
 # Include the traccc CMake code.
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
-include( traccc-compiler-options )
 include( traccc-functions )
 
 # Check if CUDA is available.
@@ -42,6 +48,7 @@ option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
+option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
 # Clean up.
 unset( TRACCC_BUILD_CUDA_DEFAULT )
@@ -159,9 +166,14 @@ endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )
 endif()
-add_subdirectory( examples )
 add_subdirectory( io )
 add_subdirectory( plugins )
+
+if ( TRACCC_BUILD_EXAMPLES )
+   # Find Boost.
+   find_package( Boost REQUIRED COMPONENTS program_options)
+   add_subdirectory( examples )
+endif()
 
 # Set up the test(s).
 include( CTest )

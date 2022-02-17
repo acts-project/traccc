@@ -158,7 +158,8 @@ TEST(geometry, module_map_read_trackml) {
      * Next, iterate over all geometry IDs in the old map, and check whether
      * the two maps return exactly the same result.
      */
-    for (const std::pair<traccc::geometry_id, traccc::transform3> &i : inp) {
+    for (const std::map<traccc::geometry_id, traccc::transform3>::value_type
+             &i : inp) {
         ASSERT_EQ(map.at(i.first), i.second);
     }
 }
