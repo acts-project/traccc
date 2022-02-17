@@ -5,10 +5,17 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/sycl/seeding/doublet_finding.hpp"
+// SYCL library include(s).
+#include "doublet_finding.hpp"
 
-namespace traccc {
-namespace sycl {
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+#include "sycl_helper.hpp"
+
+// Project include(s).
+#include "traccc/seeding/doublet_finding_helper.hpp"
+
+namespace traccc::sycl {
 
 // Kernel class for doublet finding
 class DupletFind {
@@ -250,7 +257,7 @@ void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,
-                     vecmem::memory_resource& resource, ::sycl::queue* q) {
+                     vecmem::memory_resource& resource, queue_wrapper queue) {
 
     auto doublet_counter_view = get_data(doublet_counter_container, &resource);
     auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
@@ -274,19 +281,21 @@ void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
     unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
     auto doubletFindNdRange = ::sycl::nd_range<1>{globalSize, localSize};
-    q->submit([&](::sycl::handler& h) {
-         // local memory initialization (equivalent to shared memory in CUDA)
-         auto localMemBot =
-             local_accessor<unsigned int>(::sycl::range<1>(localSize), h);
-         auto localMemTop =
-             local_accessor<unsigned int>(::sycl::range<1>(localSize), h);
+    details::get_queue(queue)
+        .submit([&](::sycl::handler& h) {
+            // local memory initialization (equivalent to shared memory in CUDA)
+            auto localMemBot =
+                local_accessor<unsigned int>(::sycl::range<1>(localSize), h);
+            auto localMemTop =
+                local_accessor<unsigned int>(::sycl::range<1>(localSize), h);
 
-         DupletFind kernel(config, internal_sp_view, doublet_counter_view,
-                           mid_bot_doublet_view, mid_top_doublet_view,
-                           localMemBot, localMemTop);
+            DupletFind kernel(config, internal_sp_view, doublet_counter_view,
+                              mid_bot_doublet_view, mid_top_doublet_view,
+                              localMemBot, localMemTop);
 
-         h.parallel_for<class doublet_find_kernel>(doubletFindNdRange, kernel);
-     }).wait_and_throw();
+            h.parallel_for<DupletFind>(doubletFindNdRange, kernel);
+        })
+        .wait_and_throw();
 }
-}  // namespace sycl
-}  // namespace traccc
+
+}  // namespace traccc::sycl

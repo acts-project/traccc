@@ -50,7 +50,7 @@ class seeding_algorithm
         sb = std::make_shared<traccc::sycl::spacepoint_binning>(
             traccc::sycl::spacepoint_binning(m_config, m_grid_config, mr, q));
         sf = std::make_shared<traccc::sycl::seed_finding>(
-            traccc::sycl::seed_finding(m_config, sb->nbins(), mr, q));
+            traccc::sycl::seed_finding(m_config, mr, q));
     }
 
     output_type operator()(

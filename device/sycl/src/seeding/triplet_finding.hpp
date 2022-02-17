@@ -6,23 +6,21 @@
  */
 #pragma once
 
-// SYCL include(s).
-#include <CL/sycl.hpp>
+// SYCL library include(s).
+#include "doublet_counter.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
+#include "triplet_counter.hpp"
 
 // Project include(s).
-#include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/doublet_finding_helper.hpp"
-#include "traccc/seeding/seed_selecting_helper.hpp"
-#include "traccc/seeding/triplet_finding_helper.hpp"
-#include "traccc/sycl/seeding/detail/doublet_counter.hpp"
-#include "traccc/sycl/seeding/detail/sycl_helper.hpp"
-#include "traccc/sycl/seeding/detail/triplet_counter.hpp"
+#include "traccc/seeding/detail/triplet.hpp"
 
-namespace traccc {
-namespace sycl {
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+namespace traccc::sycl {
 
 /// Forward declaration of triplet finding function
 /// The triplets per mid-bot doublets are found for the compatible mid-bot
@@ -46,7 +44,6 @@ void triplet_finding(const seedfinder_config& config,
                      host_doublet_container& mid_top_doublet_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource, ::sycl::queue* q);
+                     vecmem::memory_resource& resource, queue_wrapper queue);
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

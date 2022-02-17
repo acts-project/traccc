@@ -7,18 +7,22 @@
 
 #pragma once
 
-// SYCL include(s).
-#include <CL/sycl.hpp>
+// SYCL library include(s).
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
-#include "traccc/seeding/detail/singlet.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
 
-namespace traccc {
-namespace sycl {
+// VecMem include(s).
+#include <vecmem/containers/vector.hpp>
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <utility>
+
+namespace traccc::sycl {
 
 /// Forward declaration of counting grid capacities function
 /// This kernel counts the number of internal spacepoints for all bins in grid
@@ -35,11 +39,11 @@ namespace sycl {
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
 void counting_grid_capacities(
-    const seedfinder_config config, sp_grid& grid,
+    const seedfinder_config& config, sp_grid& grid,
     host_spacepoint_container& spacepoints,
-    vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
+    const vecmem::vector<std::pair<unsigned int, unsigned int> >&
+        sp_container_indices,
     vecmem::vector<unsigned int>& grid_capacities,
-    vecmem::memory_resource& resource, ::sycl::queue* q);
+    vecmem::memory_resource& resource, queue_wrapper queue);
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

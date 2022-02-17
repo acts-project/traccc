@@ -6,23 +6,22 @@
  */
 #pragma once
 
-// SYCL include(s).
-#include <CL/sycl.hpp>
+// SYCL library include(s).
+#include "doublet_counter.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
+#include "triplet_counter.hpp"
 
 // Project include(s).
-#include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/edm/seed.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
-#include "traccc/seeding/seed_selecting_helper.hpp"
-#include "traccc/sycl/seeding/detail/doublet_counter.hpp"
-#include "traccc/sycl/seeding/detail/sycl_helper.hpp"
-#include "traccc/sycl/seeding/detail/triplet_counter.hpp"
 
-namespace traccc {
-namespace sycl {
+// VecMem include(s).
+#include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/memory/memory_resource.hpp>
+
+namespace traccc::sycl {
 
 /// Forward declaration of seed selecting function
 /// The good triplets are selected and recorded into seed container
@@ -42,7 +41,6 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     vecmem::data::vector_buffer<seed>& seed_buffer,
-                    vecmem::memory_resource& resource, ::sycl::queue* q);
+                    vecmem::memory_resource& resource, queue_wrapper queue);
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

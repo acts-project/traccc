@@ -7,17 +7,23 @@
 
 #pragma once
 
-// SYCL include(s).
-#include <CL/sycl.hpp>
+// SYCL library include(s).
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
-#include "traccc/sycl/seeding/counting_grid_capacities.hpp"
-#include "traccc/sycl/seeding/populating_grid.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-namespace traccc {
-namespace sycl {
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
+#include <utility>
+
+namespace traccc::sycl {
 
 /// Spacepoing binning for sycl
 struct spacepoint_binning
@@ -25,57 +31,18 @@ struct spacepoint_binning
 
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
-                       vecmem::memory_resource& mr, ::sycl::queue* q)
-        : m_config(config), m_grid_config(grid_config), m_mr(mr), m_q(q) {
-        m_axes = get_axes(grid_config, mr);
-    }
+                       vecmem::memory_resource& mr, const queue_wrapper& queue);
 
-    unsigned int nbins() const {
-        return static_cast<unsigned int>(m_axes.first.bins() *
-                                         m_axes.second.bins());
-    }
+    unsigned int nbins() const;
 
     output_type operator()(
-        const host_spacepoint_container& spacepoints) const override {
-
-        // output object for grid of internal spacepoint
-        output_type g2(m_axes.first, m_axes.second, m_mr.get());
-
-        // capacity for the bins of grid buffer
-        vecmem::vector<unsigned int> grid_capacities(g2.nbins(), 0,
-                                                     &m_mr.get());
-
-        // store the container id for spacepoints
-        vecmem::vector<std::pair<unsigned int, unsigned int>>
-            sp_container_indices(spacepoints.total_size(), &m_mr.get());
-
-        int k = 0;
-        for (unsigned int i = 0; i < spacepoints.size(); i++) {
-            for (unsigned int j = 0; j < spacepoints.get_items()[i].size();
-                 j++) {
-                sp_container_indices[k++] = std::make_pair(i, j);
-            }
-        }
-
-        // count the grid capacities
-        traccc::sycl::counting_grid_capacities(
-            m_config, g2, const_cast<host_spacepoint_container&>(spacepoints),
-            sp_container_indices, grid_capacities, m_mr.get(), m_q);
-
-        // populate the internal spacepoints into the grid
-        traccc::sycl::populating_grid(
-            m_config, g2, const_cast<host_spacepoint_container&>(spacepoints),
-            sp_container_indices, grid_capacities, m_mr.get(), m_q);
-
-        return g2;
-    }
+        const host_spacepoint_container& spacepoints) const override;
 
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     std::pair<output_type::axis_p0_type, output_type::axis_p1_type> m_axes;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-    ::sycl::queue* m_q;
+    mutable queue_wrapper m_queue;
 };
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl
