@@ -166,7 +166,7 @@ cell_particle_map generate_cell_particle_map(size_t event,
 
 measurement_cell_map generate_measurement_cell_map(
     size_t event, const std::string& detector_file,
-    const std::string& cells_dir, vecmem::host_memory_resource& resource) {
+    const std::string& cells_dir, vecmem::memory_resource& resource) {
 
     measurement_cell_map result;
 
@@ -206,7 +206,7 @@ measurement_cell_map generate_measurement_cell_map(
 measurement_particle_map generate_measurement_particle_map(
     size_t event, const std::string& detector_file,
     const std::string& cells_dir, const std::string& hits_dir,
-    const std::string& particle_dir, vecmem::host_memory_resource& resource) {
+    const std::string& particle_dir, vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
 
@@ -229,7 +229,7 @@ measurement_particle_map generate_measurement_particle_map(
 
 measurement_particle_map generate_measurement_particle_map(
     size_t event, const std::string& detector_file, const std::string& hits_dir,
-    const std::string& particle_dir, vecmem::host_memory_resource& resource) {
+    const std::string& particle_dir, vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
 
