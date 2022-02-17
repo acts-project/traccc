@@ -16,8 +16,13 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/track_finding/seeding_algorithm.hpp"
 
+// Boost
+#include <boost/program_options.hpp>
+
 // System include(s).
 #include <iostream>
+
+namespace po = boost::program_options;
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
             unsigned int events) {
@@ -30,7 +35,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     uint64_t n_modules = 0;
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
-    uint64_t n_internal_spacepoints = 0;
     uint64_t n_seeds = 0;
 
     // Memory resource used by the EDM.
@@ -96,8 +100,6 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
               << std::endl;
     std::cout << "- created " << n_spacepoints << " space points. "
               << std::endl;
-    std::cout << "- created " << n_internal_spacepoints
-              << " internal spacepoints" << std::endl;
     std::cout << "- created " << n_seeds << " seeds" << std::endl;
     return 0;
 }
@@ -105,18 +107,24 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    if (argc < 4) {
-        std::cout << "Not enough arguments, minimum requirement: " << std::endl;
-        std::cout << "./seq_example <detector_file> <cell_directory> <events>"
-                  << std::endl;
-        return -1;
-    }
+    po::options_description desc("Allowed options");
+    desc.add_options()("detector_file", po::value<std::string>()->required(),
+                       "specify detector file");
+    desc.add_options()("cell_directory", po::value<std::string>()->required(),
+                       "specify the directory of cell files");
+    desc.add_options()("events", po::value<int>()->required(),
+                       "number of events");
 
-    auto detector_file = std::string(argv[1]);
-    auto cell_directory = std::string(argv[2]);
-    auto events = std::atoi(argv[3]);
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
 
-    std::cout << "Running ./seq_exammple " << detector_file << " "
+    auto detector_file = vm["detector_file"].as<std::string>();
+    auto cell_directory = vm["cell_directory"].as<std::string>();
+    auto events = vm["events"].as<int>();
+
+    std::cout << "Running " << argv[0] << " " << detector_file << " "
               << cell_directory << " " << events << std::endl;
+
     return seq_run(detector_file, cell_directory, events);
 }

@@ -12,9 +12,9 @@
 #include "traccc/io/writer.hpp"
 
 // algorithms
-#include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/seeding/seed_finding.hpp"
+#include "traccc/seeding/spacepoint_binning.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-#include "traccc/track_finding/seeding_algorithm.hpp"
 
 // Acts
 #include "../../Tests/UnitTests/Core/Seeding/ATLASCuts.hpp"
@@ -92,7 +92,35 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
-    traccc::seeding_algorithm sa(host_mr);
+    // Seeding Config
+    traccc::seedfinder_config traccc_config;
+    traccc::spacepoint_grid_config grid_config;
+
+    traccc_config.highland =
+        13.6 * std::sqrt(traccc_config.radLengthPerSeed) *
+        (1 + 0.038 * std::log(traccc_config.radLengthPerSeed));
+    float maxScatteringAngle = traccc_config.highland / traccc_config.minPt;
+    traccc_config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
+    // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
+    // and millimeter
+    // TODO: change using ACTS units
+    traccc_config.pTPerHelixRadius = 300. * traccc_config.bFieldInZ;
+    traccc_config.minHelixDiameter2 =
+        std::pow(traccc_config.minPt * 2 / traccc_config.pTPerHelixRadius, 2);
+    traccc_config.pT2perRadius =
+        std::pow(traccc_config.highland / traccc_config.pTPerHelixRadius, 2);
+
+    grid_config.bFieldInZ = traccc_config.bFieldInZ;
+    grid_config.minPt = traccc_config.minPt;
+    grid_config.rMax = traccc_config.rMax;
+    grid_config.zMax = traccc_config.zMax;
+    grid_config.zMin = traccc_config.zMin;
+    grid_config.deltaRMax = traccc_config.deltaRMax;
+    grid_config.cotThetaMax = traccc_config.cotThetaMax;
+
+    // Declare algorithms
+    traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
+    traccc::seed_finding sf(traccc_config);
     traccc::track_params_estimation tp(host_mr);
 
     // Read the surface transforms
@@ -107,7 +135,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
       TRACCC seeding
       --------------------------------*/
 
-    auto seeds = sa(spacepoints_per_event);
+    auto internal_spacepoints_per_event = sb(spacepoints_per_event);
+    auto seeds = sf(spacepoints_per_event, internal_spacepoints_per_event);
 
     /*--------------------------------
       TRACCC track params estimation
@@ -152,40 +181,37 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     EXPECT_EQ(spacepoints_per_event.total_size(), n_sp_match);
     EXPECT_EQ(spVec.size(), n_sp_match);
 
-    // Setup the config
-    auto traccc_config = sa.get_seedfinder_config();
-
-    Acts::SeedfinderConfig<SpacePoint> config;
+    Acts::SeedfinderConfig<SpacePoint> acts_config;
 
     // silicon detector max
-    config.phiMin = traccc_config.phiMin;
-    config.phiMax = traccc_config.phiMax;
+    acts_config.phiMin = traccc_config.phiMin;
+    acts_config.phiMax = traccc_config.phiMax;
 
-    config.rMin = traccc_config.rMin;
-    config.rMax = traccc_config.rMax;
-    config.deltaRMin = traccc_config.deltaRMin;
-    config.deltaRMax = traccc_config.deltaRMax;
-    config.collisionRegionMin = traccc_config.collisionRegionMin;
-    config.collisionRegionMax = traccc_config.collisionRegionMax;
+    acts_config.rMin = traccc_config.rMin;
+    acts_config.rMax = traccc_config.rMax;
+    acts_config.deltaRMin = traccc_config.deltaRMin;
+    acts_config.deltaRMax = traccc_config.deltaRMax;
+    acts_config.collisionRegionMin = traccc_config.collisionRegionMin;
+    acts_config.collisionRegionMax = traccc_config.collisionRegionMax;
 
-    config.zMin = traccc_config.zMin;
-    config.zMax = traccc_config.zMax;
-    config.maxSeedsPerSpM = traccc_config.maxSeedsPerSpM;
+    acts_config.zMin = traccc_config.zMin;
+    acts_config.zMax = traccc_config.zMax;
+    acts_config.maxSeedsPerSpM = traccc_config.maxSeedsPerSpM;
 
     // 2.7 eta
-    config.cotThetaMax = traccc_config.cotThetaMax;
-    config.sigmaScattering = traccc_config.sigmaScattering;
-    config.maxPtScattering = traccc_config.maxPtScattering;
+    acts_config.cotThetaMax = traccc_config.cotThetaMax;
+    acts_config.sigmaScattering = traccc_config.sigmaScattering;
+    acts_config.maxPtScattering = traccc_config.maxPtScattering;
 
-    config.minPt = traccc_config.minPt;
-    config.bFieldInZ = traccc_config.bFieldInZ;
+    acts_config.minPt = traccc_config.minPt;
+    acts_config.bFieldInZ = traccc_config.bFieldInZ;
 
-    config.beamPos[0] = traccc_config.beamPos[0];
-    config.beamPos[1] = traccc_config.beamPos[1];
+    acts_config.beamPos[0] = traccc_config.beamPos[0];
+    acts_config.beamPos[1] = traccc_config.beamPos[1];
 
-    config.impactMax = traccc_config.impactMax;
+    acts_config.impactMax = traccc_config.impactMax;
 
-    config.sigmaError = traccc_config.sigmaError;
+    acts_config.sigmaError = traccc_config.sigmaError;
 
     auto bottomBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
         Acts::BinFinder<SpacePoint>());
@@ -195,9 +221,9 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     sfconf.maxSeedsPerSpM = traccc::seedfilter_config().maxSeedsPerSpM;
 
     Acts::ATLASCuts<SpacePoint> atlasCuts = Acts::ATLASCuts<SpacePoint>();
-    config.seedFilter = std::make_unique<Acts::SeedFilter<SpacePoint>>(
+    acts_config.seedFilter = std::make_unique<Acts::SeedFilter<SpacePoint>>(
         Acts::SeedFilter<SpacePoint>(sfconf, &atlasCuts));
-    Acts::Seedfinder<SpacePoint> a(config);
+    Acts::Seedfinder<SpacePoint> a(acts_config);
 
     // covariance tool, sets covariances per spacepoint as required
     auto ct = [=](const SpacePoint& sp, float, float,
@@ -209,20 +235,20 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // setup spacepoint grid config
     Acts::SpacePointGridConfig gridConf;
-    gridConf.bFieldInZ = config.bFieldInZ;
-    gridConf.minPt = config.minPt;
-    gridConf.rMax = config.rMax;
-    gridConf.zMax = config.zMax;
-    gridConf.zMin = config.zMin;
-    gridConf.deltaRMax = config.deltaRMax;
-    gridConf.cotThetaMax = config.cotThetaMax;
+    gridConf.bFieldInZ = acts_config.bFieldInZ;
+    gridConf.minPt = acts_config.minPt;
+    gridConf.rMax = acts_config.rMax;
+    gridConf.zMax = acts_config.zMax;
+    gridConf.zMin = acts_config.zMin;
+    gridConf.deltaRMax = acts_config.deltaRMax;
+    gridConf.cotThetaMax = acts_config.cotThetaMax;
 
     // create grid with bin sizes according to the configured geometry
     std::unique_ptr<Acts::SpacePointGrid<SpacePoint>> grid =
         Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf);
     auto spGroup = Acts::BinnedSPGroup<SpacePoint>(
         spVec.begin(), spVec.end(), ct, bottomBinFinder, topBinFinder,
-        std::move(grid), config);
+        std::move(grid), acts_config);
 
     auto groupIt = spGroup.begin();
     auto endOfGroups = spGroup.end();

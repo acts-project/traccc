@@ -8,5 +8,4 @@
 traccc_add_library( traccc_algorithms algorithms TYPE INTERFACE
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "include/traccc/track_finding/seeding_algorithm.hpp" )
-target_link_libraries( traccc_algorithms
-  INTERFACE traccc::core )
+target_link_libraries( traccc_algorithms INTERFACE traccc::core)

@@ -57,6 +57,10 @@ and toolchains that are currently known to work (last updated 2022/01/24):
 
 The `data` directory is a submodule hosted as `git lfs` on `https://gitlab.cern.ch/acts/traccc-data`
 
+### Prerequisites
+
+- [Boost](https://www.boost.org/)
+
 ## Getting started
 
 ### Clone the repository
@@ -83,6 +87,7 @@ cmake --build <build_directory> <options>
 | TRACCC_BUILD_CUDA  | Build the CUDA sources included in traccc |
 | TRACCC_BUILD_SYCL  | Build the SYCL sources included in traccc |
 | TRACCC_BUILD_TESTING  | Build the (unit) tests of traccc |
+| TRACCC_BUILD_EXAMPLES  | Build the examples of traccc |
 | TRACCC_USE_SYSTEM_VECMEM | Pick up an existing installation of VecMem from the build environment |
 | TRACCC_USE_SYSTEM_EIGEN3 | Pick up an existing installation of Eigen3 from the build environment |
 | TRACCC_USE_SYSTEM_ALGEBRA_PLUGINS | Pick up an existing installation of Algebra Plugins from the build environment |
@@ -96,7 +101,7 @@ cmake --build <build_directory> <options>
 ### cpu reconstruction chain
 
 ```sh
-<build_directory>/bin/seq_example tml_detector/trackml-detector.csv tml_pixels/ <number of events> 
+<build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --cell_directory=tml_pixels/ --events=10 
 ```
 
 ### cuda reconstruction chain
@@ -104,7 +109,7 @@ cmake --build <build_directory> <options>
 - Users can generate cuda examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
 
 ```sh
-<build_directory>/bin/seq_example_cuda tml_detector/trackml-detector.csv tml_pixels/ <number of events> <run cpu tracking>
+<build_directory>/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --cell_directory=tml_pixels/ --events=10 --run_cpu=1
 ```
 
 ## Troubleshooting

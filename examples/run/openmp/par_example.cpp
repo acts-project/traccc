@@ -21,12 +21,17 @@
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
+// Boost
+#include <boost/program_options.hpp>
+
 // OpenMP include(s).
 #include <omp.h>
 
 // System include(s).
 #include <chrono>
 #include <iostream>
+
+namespace po = boost::program_options;
 
 int par_run(const std::string &detector_file, const std::string &cells_dir,
             unsigned int events) {
@@ -143,19 +148,25 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
 // The main routine
 //
 int main(int argc, char *argv[]) {
-    if (argc < 4) {
-        std::cout << "Not enough arguments, minimum requirement: " << std::endl;
-        std::cout << "./par_example <detector_file> <cell_directory> <events>"
-                  << std::endl;
-        return -1;
-    }
+    po::options_description desc("Allowed options");
+    desc.add_options()("detector_file", po::value<std::string>()->required(),
+                       "specify detector file");
+    desc.add_options()("cell_directory", po::value<std::string>()->required(),
+                       "specify the directory of cell files");
+    desc.add_options()("events", po::value<int>()->required(),
+                       "number of events");
 
-    auto detector_file = std::string(argv[1]);
-    auto cell_directory = std::string(argv[2]);
-    auto events = std::atoi(argv[3]);
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
 
-    std::cout << "Running ./par_exammple " << detector_file << " "
+    auto detector_file = vm["detector_file"].as<std::string>();
+    auto cell_directory = vm["cell_directory"].as<std::string>();
+    auto events = vm["events"].as<int>();
+
+    std::cout << "Running " << argv[0] << " " << detector_file << " "
               << cell_directory << " " << events << std::endl;
+
     auto start = std::chrono::system_clock::now();
     auto result = par_run(detector_file, cell_directory, events);
     auto end = std::chrono::system_clock::now();
