@@ -99,114 +99,112 @@ class TripletFind {
         num_triplets_per_thread[workItemIdx] = 0;
 
         // prevent the tail threads referring the null triplet counter
-        if (item_idx >= num_compat_mb_per_bin) {
-            return;
-        }
+        if (item_idx < num_compat_mb_per_bin) {
 
-        // middle-bot doublet
-        const auto& mid_bot_doublet =
-            triplet_counter_per_bin[item_idx].mid_bot_doublet;
-        // middle spacepoint index
-        const auto& spM_idx = mid_bot_doublet.sp1.sp_idx;
-        // middle spacepoint
-        const auto& spM = internal_sp_per_bin[spM_idx];
-        // bin index of bottom spacepoint
-        const auto& spB_bin = mid_bot_doublet.sp2.bin_idx;
-        // bottom spacepoint index
-        const auto& spB_idx = mid_bot_doublet.sp2.sp_idx;
-        // bottom spacepoint
-        const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
+            // middle-bot doublet
+            const auto& mid_bot_doublet =
+                triplet_counter_per_bin[item_idx].mid_bot_doublet;
+            // middle spacepoint index
+            const auto& spM_idx = mid_bot_doublet.sp1.sp_idx;
+            // middle spacepoint
+            const auto& spM = internal_sp_per_bin[spM_idx];
+            // bin index of bottom spacepoint
+            const auto& spB_bin = mid_bot_doublet.sp2.bin_idx;
+            // bottom spacepoint index
+            const auto& spB_idx = mid_bot_doublet.sp2.sp_idx;
+            // bottom spacepoint
+            const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
 
-        // Apply the conformal transformation to middle-bot doublet
-        auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
+            // Apply the conformal transformation to middle-bot doublet
+            auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
 
-        // Calculate some physical quantities required for triplet compatibility
-        // check
-        scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
-        scalar scatteringInRegion2 = m_config.maxScatteringAngle2 * iSinTheta2;
-        scatteringInRegion2 *=
-            m_config.sigmaScattering * m_config.sigmaScattering;
-        scalar curvature, impact_parameter;
+            // Calculate some physical quantities required for triplet compatibility
+            // check
+            scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
+            scalar scatteringInRegion2 = m_config.maxScatteringAngle2 * iSinTheta2;
+            scatteringInRegion2 *=
+                m_config.sigmaScattering * m_config.sigmaScattering;
+            scalar curvature, impact_parameter;
 
-        // find the reference (start) index of the mid-top doublet container
-        // item vector, where the doublets are recorded The start index is
-        // calculated by accumulating the number of mid-top doublets of all
-        // previous compatible middle spacepoints
-        unsigned int mb_end_idx = 0;
-        unsigned int mt_start_idx = 0;
-        unsigned int mt_end_idx = 0;
-        unsigned int mb_idx;
+            // find the reference (start) index of the mid-top doublet container
+            // item vector, where the doublets are recorded The start index is
+            // calculated by accumulating the number of mid-top doublets of all
+            // previous compatible middle spacepoints
+            unsigned int mb_end_idx = 0;
+            unsigned int mt_start_idx = 0;
+            unsigned int mt_end_idx = 0;
+            unsigned int mb_idx;
 
-        // First, find the index of middle-bottom doublet
-        for (unsigned int i = 0; i < num_mid_bot_doublets_per_bin; i++) {
-            if (mid_bot_doublet == mid_bot_doublets_per_bin[i]) {
-                mb_idx = i;
-                break;
-            }
-        }
-
-        for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
-            mb_end_idx += doublet_counter_per_bin[i].n_mid_bot;
-            mt_end_idx += doublet_counter_per_bin[i].n_mid_top;
-
-            if (mb_end_idx > mb_idx) {
-                break;
+            // First, find the index of middle-bottom doublet
+            for (unsigned int i = 0; i < num_mid_bot_doublets_per_bin; i++) {
+                if (mid_bot_doublet == mid_bot_doublets_per_bin[i]) {
+                    mb_idx = i;
+                    break;
+                }
             }
 
-            mt_start_idx += doublet_counter_per_bin[i].n_mid_top;
-        }
+            for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
+                mb_end_idx += doublet_counter_per_bin[i].n_mid_bot;
+                mt_end_idx += doublet_counter_per_bin[i].n_mid_top;
 
-        if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
-            mt_end_idx =
-                ::sycl::min(mid_top_doublets_per_bin.size(), mt_end_idx);
-        }
-
-        if (mt_start_idx >= mid_top_doublets_per_bin.size()) {
-            return;
-        }
-
-        // number of triplets per thread (or per middle-bot doublet)
-        unsigned int n_triplets_per_mb = 0;
-
-        // find the reference (start) index of the triplet container item
-        // vector, where the triplets are recorded
-        unsigned int triplet_start_idx = 0;
-
-        // The start index is calculated by accumulating the number of triplets
-        // of all previous compatible middle-bottom doublets
-        for (unsigned int i = 0; i < item_idx; i++) {
-            triplet_start_idx += triplet_counter_per_bin[i].n_triplets;
-        }
-
-        // iterate over mid-top doublets
-        for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
-            const auto& mid_top_doublet = mid_top_doublets_per_bin[i];
-
-            const auto& spT_bin = mid_top_doublet.sp2.bin_idx;
-            const auto& spT_idx = mid_top_doublet.sp2.sp_idx;
-            const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
-            // Apply the conformal transformation to middle-top doublet
-            auto lt =
-                doublet_finding_helper::transform_coordinates(spM, spT, false);
-
-            // Check if mid-bot and mid-top doublets can form a triplet
-            if (triplet_finding_helper::isCompatible(
-                    spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2,
-                    curvature, impact_parameter)) {
-                unsigned int pos = triplet_start_idx + n_triplets_per_mb;
-                // prevent the overflow
-                if (pos >= triplets_per_bin.size()) {
-                    continue;
+                if (mb_end_idx > mb_idx) {
+                    break;
                 }
 
-                triplets_per_bin[pos] = triplet(
-                    {mid_bot_doublet.sp2, mid_bot_doublet.sp1,
-                     mid_top_doublet.sp2, curvature,
-                     -impact_parameter * m_filter_config.impactWeightFactor,
-                     lb.Zo()});
+                mt_start_idx += doublet_counter_per_bin[i].n_mid_top;
+            }
 
-                num_triplets_per_thread[workItemIdx]++;
-                n_triplets_per_mb++;
+            if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
+                mt_end_idx =
+                    ::sycl::min(mid_top_doublets_per_bin.size(), mt_end_idx);
+            }
+
+            if (mt_start_idx < mid_top_doublets_per_bin.size()) {
+
+                // number of triplets per thread (or per middle-bot doublet)
+                unsigned int n_triplets_per_mb = 0;
+
+                // find the reference (start) index of the triplet container item
+                // vector, where the triplets are recorded
+                unsigned int triplet_start_idx = 0;
+
+                // The start index is calculated by accumulating the number of triplets
+                // of all previous compatible middle-bottom doublets
+                for (unsigned int i = 0; i < item_idx; i++) {
+                    triplet_start_idx += triplet_counter_per_bin[i].n_triplets;
+                }
+
+                // iterate over mid-top doublets
+                for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
+                    const auto& mid_top_doublet = mid_top_doublets_per_bin[i];
+
+                    const auto& spT_bin = mid_top_doublet.sp2.bin_idx;
+                    const auto& spT_idx = mid_top_doublet.sp2.sp_idx;
+                    const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
+                    // Apply the conformal transformation to middle-top doublet
+                    auto lt =
+                        doublet_finding_helper::transform_coordinates(spM, spT, false);
+
+                    // Check if mid-bot and mid-top doublets can form a triplet
+                    if (triplet_finding_helper::isCompatible(
+                            spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2,
+                            curvature, impact_parameter)) {
+                        unsigned int pos = triplet_start_idx + n_triplets_per_mb;
+                        // prevent the overflow
+                        if (pos >= triplets_per_bin.size()) {
+                            continue;
+                        }
+
+                        triplets_per_bin[pos] = triplet(
+                            {mid_bot_doublet.sp2, mid_bot_doublet.sp1,
+                            mid_top_doublet.sp2, curvature,
+                            -impact_parameter * m_filter_config.impactWeightFactor,
+                            lb.Zo()});
+
+                        num_triplets_per_thread[workItemIdx]++;
+                        n_triplets_per_mb++;
+                    }
+                }
             }
         }
         // Calculate the number of triplets per "block" with reducing sum
