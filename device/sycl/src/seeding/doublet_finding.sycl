@@ -93,9 +93,9 @@ class DupletFind {
             auto& isp = internal_sp_per_bin[sp_idx];
 
             // find the reference (start) index of the doublet container item
-            // vector, where the doublets are recorded The start index is calculated
-            // by accumulating the number of doublets of all previous compatible
-            // middle spacepoints
+            // vector, where the doublets are recorded The start index is
+            // calculated by accumulating the number of doublets of all previous
+            // compatible middle spacepoints
             unsigned int mid_bot_start_idx = 0;
             unsigned int mid_top_start_idx = 0;
             for (unsigned int i = 0; i < item_idx; i++) {
@@ -111,7 +111,8 @@ class DupletFind {
             auto i_p = phi_bins[0];
             auto i_z = z_bins[0];
 
-            for (unsigned int c = 0; c < m_config.get_max_neighbor_bins(); c++) {
+            for (unsigned int c = 0; c < m_config.get_max_neighbor_bins();
+                 c++) {
 
                 auto neighbors = internal_sp_device.bin(i_p, i_z);
                 auto neigh_bin = static_cast<unsigned int>(
@@ -119,18 +120,18 @@ class DupletFind {
 
                 // for (auto& neigh_isp: neighbors){
                 for (unsigned int spB_idx = 0; spB_idx < neighbors.size();
-                    spB_idx++) {
+                     spB_idx++) {
                     const auto& neigh_isp = neighbors[spB_idx];
 
                     // Check if middle and bottom sp can form a doublet
                     if (doublet_finding_helper::isCompatible(isp, neigh_isp,
-                                                            m_config, true)) {
+                                                             m_config, true)) {
                         auto spB_loc = sp_location({neigh_bin, spB_idx});
 
                         // Check conditions
-                        // 1) number of mid-bot doublets per spM should be smaller
-                        // than what is counted in doublet_counting (so it should be
-                        // true always) 2) prevent overflow
+                        // 1) number of mid-bot doublets per spM should be
+                        // smaller than what is counted in doublet_counting (so
+                        // it should be true always) 2) prevent overflow
                         if (n_mid_bot_per_spM <
                                 doublet_counter_per_bin[item_idx].n_mid_bot &&
                             num_mid_bot_doublets_per_bin <
@@ -152,13 +153,13 @@ class DupletFind {
 
                     // Check if middle and top sp can form a doublet
                     if (doublet_finding_helper::isCompatible(isp, neigh_isp,
-                                                            m_config, false)) {
+                                                             m_config, false)) {
                         auto spT_loc = sp_location({neigh_bin, spB_idx});
 
                         // Check conditions
-                        // 1) number of mid-top doublets per spM should be smaller
-                        // than what is counted in doublet_counting (so it should be
-                        // true always) 2) prevent overflow
+                        // 1) number of mid-top doublets per spM should be
+                        // smaller than what is counted in doublet_counting (so
+                        // it should be true always) 2) prevent overflow
                         if (n_mid_top_per_spM <
                                 doublet_counter_per_bin[item_idx].n_mid_top &&
                             num_mid_top_doublets_per_bin <

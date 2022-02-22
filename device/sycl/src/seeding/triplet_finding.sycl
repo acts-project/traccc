@@ -116,12 +116,14 @@ class TripletFind {
             const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
 
             // Apply the conformal transformation to middle-bot doublet
-            auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
+            auto lb =
+                doublet_finding_helper::transform_coordinates(spM, spB, true);
 
-            // Calculate some physical quantities required for triplet compatibility
-            // check
+            // Calculate some physical quantities required for triplet
+            // compatibility check
             scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
-            scalar scatteringInRegion2 = m_config.maxScatteringAngle2 * iSinTheta2;
+            scalar scatteringInRegion2 =
+                m_config.maxScatteringAngle2 * iSinTheta2;
             scatteringInRegion2 *=
                 m_config.sigmaScattering * m_config.sigmaScattering;
             scalar curvature, impact_parameter;
@@ -164,12 +166,12 @@ class TripletFind {
                 // number of triplets per thread (or per middle-bot doublet)
                 unsigned int n_triplets_per_mb = 0;
 
-                // find the reference (start) index of the triplet container item
-                // vector, where the triplets are recorded
+                // find the reference (start) index of the triplet container
+                // item vector, where the triplets are recorded
                 unsigned int triplet_start_idx = 0;
 
-                // The start index is calculated by accumulating the number of triplets
-                // of all previous compatible middle-bottom doublets
+                // The start index is calculated by accumulating the number of
+                // triplets of all previous compatible middle-bottom doublets
                 for (unsigned int i = 0; i < item_idx; i++) {
                     triplet_start_idx += triplet_counter_per_bin[i].n_triplets;
                 }
@@ -182,24 +184,26 @@ class TripletFind {
                     const auto& spT_idx = mid_top_doublet.sp2.sp_idx;
                     const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
                     // Apply the conformal transformation to middle-top doublet
-                    auto lt =
-                        doublet_finding_helper::transform_coordinates(spM, spT, false);
+                    auto lt = doublet_finding_helper::transform_coordinates(
+                        spM, spT, false);
 
                     // Check if mid-bot and mid-top doublets can form a triplet
                     if (triplet_finding_helper::isCompatible(
-                            spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2,
-                            curvature, impact_parameter)) {
-                        unsigned int pos = triplet_start_idx + n_triplets_per_mb;
+                            spM, lb, lt, m_config, iSinTheta2,
+                            scatteringInRegion2, curvature, impact_parameter)) {
+                        unsigned int pos =
+                            triplet_start_idx + n_triplets_per_mb;
                         // prevent the overflow
                         if (pos >= triplets_per_bin.size()) {
                             continue;
                         }
 
-                        triplets_per_bin[pos] = triplet(
-                            {mid_bot_doublet.sp2, mid_bot_doublet.sp1,
-                            mid_top_doublet.sp2, curvature,
-                            -impact_parameter * m_filter_config.impactWeightFactor,
-                            lb.Zo()});
+                        triplets_per_bin[pos] =
+                            triplet({mid_bot_doublet.sp2, mid_bot_doublet.sp1,
+                                     mid_top_doublet.sp2, curvature,
+                                     -impact_parameter *
+                                         m_filter_config.impactWeightFactor,
+                                     lb.Zo()});
 
                         num_triplets_per_thread[workItemIdx]++;
                         n_triplets_per_mb++;
