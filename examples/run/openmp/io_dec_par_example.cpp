@@ -20,6 +20,7 @@
 
 // System include(s).
 #include <chrono>
+#include <exception>
 #include <iostream>
 
 namespace po = boost::program_options;
@@ -109,7 +110,10 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 
 // The main routine
 int main(int argc, char *argv[]) {
+
+    // Set up the program options.
     po::options_description desc("Allowed options");
+    desc.add_options()("help,h", "Give some help with the program's options");
     desc.add_options()("detector_file", po::value<std::string>()->required(),
                        "specify detector file");
     desc.add_options()("cell_directory", po::value<std::string>()->required(),
@@ -117,9 +121,25 @@ int main(int argc, char *argv[]) {
     desc.add_options()("events", po::value<int>()->required(),
                        "number of events");
 
+    // Interpret the program options.
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+
+    // Print a help message if the user asked for it.
+    if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        return 0;
+    }
+
+    // Handle any and all errors.
+    try {
+        po::notify(vm);
+    } catch (const std::exception &ex) {
+        std::cerr << "Couldn't interpret command line options because of:\n\n"
+                  << ex.what() << "\n\n"
+                  << desc << std::endl;
+        return 1;
+    }
 
     auto detector_file = vm["detector_file"].as<std::string>();
     auto cell_directory = vm["cell_directory"].as<std::string>();
