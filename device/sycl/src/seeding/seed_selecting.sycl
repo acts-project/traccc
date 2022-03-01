@@ -5,10 +5,20 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/sycl/seeding/seed_selecting.hpp"
+// SYCL library include(s).
+#include "seed_selecting.hpp"
 
-namespace traccc {
-namespace sycl {
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+#include "sycl_helper.hpp"
+
+// Project include(s).
+#include "traccc/seeding/seed_selecting_helper.hpp"
+
+// SYCL include(s).
+#include <CL/sycl.hpp>
+
+namespace traccc::sycl {
 
 // Sorting algorithm for sorting seeds in the local memory
 template <typename Comparator>
@@ -238,7 +248,7 @@ void seed_selecting(const seedfilter_config& filter_config,
                     host_triplet_counter_container& triplet_counter_container,
                     host_triplet_container& triplet_container,
                     vecmem::data::vector_buffer<seed>& seed_buffer,
-                    vecmem::memory_resource& resource, ::sycl::queue* q) {
+                    vecmem::memory_resource& resource, queue_wrapper queue) {
 
     auto spacepoints_view = get_data(spacepoints, &resource);
     auto doublet_counter_container_view =
@@ -266,20 +276,22 @@ void seed_selecting(const seedfilter_config& filter_config,
     // 1 dim ND Range for the kernel
     auto seedSelectNdRange = ::sycl::nd_range<1>{globalSize, localSize};
 
-    q->submit([&](::sycl::handler& h) {
-         // local memory initialization (equivalent to shared memory in CUDA)
-         auto localMem = local_accessor<triplet>(
-             ::sycl::range<1>(localSize * filter_config.max_triplets_per_spM),
-             h);
+    details::get_queue(queue)
+        .submit([&](::sycl::handler& h) {
+            // local memory initialization (equivalent to shared memory in CUDA)
+            auto localMem = local_accessor<triplet>(
+                ::sycl::range<1>(localSize *
+                                 filter_config.max_triplets_per_spM),
+                h);
 
-         SeedSelect kernel(filter_config, spacepoints_view, internal_sp_view,
-                           doublet_counter_container_view,
-                           triplet_counter_container_view,
-                           triplet_container_view, seed_buffer, localMem);
+            SeedSelect kernel(filter_config, spacepoints_view, internal_sp_view,
+                              doublet_counter_container_view,
+                              triplet_counter_container_view,
+                              triplet_container_view, seed_buffer, localMem);
 
-         h.parallel_for<class seed_select_kernel>(seedSelectNdRange, kernel);
-     }).wait_and_throw();
+            h.parallel_for<SeedSelect>(seedSelectNdRange, kernel);
+        })
+        .wait_and_throw();
 }
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

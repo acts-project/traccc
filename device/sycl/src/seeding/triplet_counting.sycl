@@ -5,10 +5,21 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/sycl/seeding/triplet_counting.hpp"
+// SYCL library include(s).
+#include "triplet_counting.hpp"
 
-namespace traccc {
-namespace sycl {
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+#include "sycl_helper.hpp"
+
+// Project include(s).
+#include "traccc/seeding/doublet_finding_helper.hpp"
+#include "traccc/seeding/triplet_finding_helper.hpp"
+
+// SYCL include(s).
+#include <CL/sycl.hpp>
+
+namespace traccc::sycl {
 
 // Kernel class for triplet counting
 class TripletCount {
@@ -179,7 +190,7 @@ void triplet_counting(const seedfinder_config& config, sp_grid& internal_sp,
                       host_doublet_container& mid_bot_doublet_container,
                       host_doublet_container& mid_top_doublet_container,
                       host_triplet_counter_container& triplet_counter_container,
-                      vecmem::memory_resource& resource, ::sycl::queue* q) {
+                      vecmem::memory_resource& resource, queue_wrapper queue) {
 
     auto doublet_counter_container_view =
         get_data(doublet_counter_container, &resource);
@@ -209,15 +220,15 @@ void triplet_counting(const seedfinder_config& config, sp_grid& internal_sp,
     // 1 dim ND Range for the kernel
     auto tripletCountNdRange = ::sycl::nd_range<1>{globalSize, localSize};
 
-    q->submit([&](::sycl::handler& h) {
-         TripletCount kernel(config, internal_sp_view,
-                             doublet_counter_container_view,
-                             mid_bot_doublet_view, mid_top_doublet_view,
-                             triplet_counter_container_view);
-         h.parallel_for<class triplet_count_kernel>(tripletCountNdRange,
-                                                    kernel);
-     }).wait_and_throw();
+    details::get_queue(queue)
+        .submit([&](::sycl::handler& h) {
+            TripletCount kernel(config, internal_sp_view,
+                                doublet_counter_container_view,
+                                mid_bot_doublet_view, mid_top_doublet_view,
+                                triplet_counter_container_view);
+            h.parallel_for<TripletCount>(tripletCountNdRange, kernel);
+        })
+        .wait_and_throw();
 }
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

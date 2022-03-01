@@ -5,10 +5,21 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/sycl/seeding/triplet_finding.hpp"
+// SYCL library include(s).
+#include "triplet_finding.hpp"
 
-namespace traccc {
-namespace sycl {
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+#include "sycl_helper.hpp"
+
+// Project include(s).
+#include "traccc/seeding/doublet_finding_helper.hpp"
+#include "traccc/seeding/triplet_finding_helper.hpp"
+
+// SYCL include(s).
+#include <CL/sycl.hpp>
+
+namespace traccc::sycl {
 
 class TripletFind {
     public:
@@ -256,7 +267,8 @@ void triplet_finding(const seedfinder_config& config,
                      host_doublet_container& mid_top_doublet_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource, ::sycl::queue* q) {
+                     vecmem::memory_resource& resource, queue_wrapper queue) {
+
     auto doublet_counter_view = get_data(doublet_counter_container, &resource);
     auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
     auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
@@ -282,18 +294,19 @@ void triplet_finding(const seedfinder_config& config,
 
     // 1 dim ND Range for the kernel
     auto tripletFindNdRange = ::sycl::nd_range<1>{globalSize, localSize};
-    q->submit([&](::sycl::handler& h) {
-         // local memory initialization (equivalent to shared memory in CUDA)
-         auto localMem = local_accessor<int>(::sycl::range<1>(localSize), h);
+    details::get_queue(queue)
+        .submit([&](::sycl::handler& h) {
+            // local memory initialization (equivalent to shared memory in CUDA)
+            auto localMem = local_accessor<int>(::sycl::range<1>(localSize), h);
 
-         TripletFind kernel(config, filter_config, internal_sp_view,
-                            doublet_counter_view, mid_bot_doublet_view,
-                            mid_top_doublet_view, triplet_counter_view,
-                            triplet_view, localMem);
+            TripletFind kernel(config, filter_config, internal_sp_view,
+                               doublet_counter_view, mid_bot_doublet_view,
+                               mid_top_doublet_view, triplet_counter_view,
+                               triplet_view, localMem);
 
-         h.parallel_for<class triplet_find_kernel>(tripletFindNdRange, kernel);
-     }).wait_and_throw();
+            h.parallel_for<TripletFind>(tripletFindNdRange, kernel);
+        })
+        .wait_and_throw();
 }
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl
