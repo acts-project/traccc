@@ -16,8 +16,10 @@ traccc_add_executable( traccc_sycl_language_example
 
 # SYCL seeding executable(s).
 traccc_add_executable( seeding_example_sycl "seeding_example_sycl.sycl"
-   LINK_LIBRARIES vecmem::core vecmem::sycl traccc::io
-                  traccc::algorithms traccc::algorithms_sycl Boost::program_options)
+   LINK_LIBRARIES Boost::program_options vecmem::core vecmem::sycl traccc::io
+                  traccc::algorithms traccc::algorithms_sycl )
+target_compile_definitions( traccc_seeding_example_sycl PRIVATE EIGEN_NO_CUDA )
 traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
-   LINK_LIBRARIES vecmem::core vecmem::sycl traccc::io
-                  traccc::algorithms traccc::algorithms_sycl Boost::program_options)
+   LINK_LIBRARIES Boost::program_options vecmem::core vecmem::sycl traccc::io
+                  traccc::algorithms traccc::algorithms_sycl )
+target_compile_definitions( traccc_seq_example_sycl PRIVATE EIGEN_NO_CUDA )
