@@ -36,8 +36,6 @@ class DupletFind {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
         auto workItemIdx = item.get_local_id(0);
 
@@ -81,8 +79,8 @@ class DupletFind {
         auto mid_top_doublets_per_bin =
             mid_top_doublet_device.get_items().at(bin_idx);
 
-        auto num_mid_bot_doublets_per_thread = m_localMemBot;
-        auto num_mid_top_doublets_per_thread = m_localMemTop;
+        auto& num_mid_bot_doublets_per_thread = m_localMemBot;
+        auto& num_mid_top_doublets_per_thread = m_localMemTop;
         num_mid_bot_doublets_per_thread[workItemIdx] = 0;
         num_mid_top_doublets_per_thread[workItemIdx] = 0;
         // Convenient alias for the number of doublets per thread
@@ -203,37 +201,21 @@ class DupletFind {
             }
         }
         // Calculate the number doublets per "block" with reducing sum technique
-        // ::sycl::group_barrier(workGroup);
-        item.barrier();
         // Warp shuffle reduction algorithm
         // sycl_helper::reduceInShared(num_mid_bot_doublets_per_thread, item);
         // sycl_helper::reduceInShared(num_mid_top_doublets_per_thread, item);
 
-        // Another reduction variant (doesn't always work)
-        //  num_mid_bot_doublets_per_thread[0] =
-        //  ::sycl::reduce_over_group(workGroup,
-        //  num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::plus<>());
-        //  num_mid_top_doublets_per_thread[0] =
-        //  ::sycl::reduce_over_group(workGroup,
-        //  num_mid_top_doublets_per_thread[workItemIdx], ::sycl::plus<>());
+        // SYCL group reduction algorithm 
+         num_mid_bot_doublets_per_thread[0] =
+         ::sycl::reduce_over_group(item.get_group(),
+         num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::plus<>());
+         num_mid_top_doublets_per_thread[0] =
+         ::sycl::reduce_over_group(item.get_group(),
+         num_mid_top_doublets_per_thread[workItemIdx], ::sycl::plus<>());
 
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block
         if (workItemIdx == 0) {
-
-            // For loop reduction
-
-            uint32_t resultBottom = 0;
-            for (uint32_t i = 0; i < groupDim; ++i) {
-                resultBottom += num_mid_bot_doublets_per_thread[i];
-            }
-            num_mid_bot_doublets_per_thread[0] = resultBottom;
-
-            uint32_t resultTop = 0;
-            for (uint32_t i = 0; i < groupDim; ++i) {
-                resultTop += num_mid_top_doublets_per_thread[i];
-            }
-            num_mid_top_doublets_per_thread[0] = resultTop;
 
             vecmem::atomic<uint32_t> objB(&num_mid_bot_doublets_per_bin);
             objB.fetch_add(num_mid_bot_doublets_per_thread[0]);

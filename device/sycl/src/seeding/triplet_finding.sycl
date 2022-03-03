@@ -44,8 +44,6 @@ class TripletFind {
 
     void operator()(::sycl::nd_item<1> item) const {
 
-        // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(0);
         // Equivalent to threadIdx.x in cuda
         auto workItemIdx = item.get_local_id(0);
 
@@ -106,7 +104,7 @@ class TripletFind {
             triplet_device.get_headers().at(bin_idx).n_triplets;
         auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
-        auto num_triplets_per_thread = m_localMem.get_pointer();
+        auto& num_triplets_per_thread = m_localMem;
         num_triplets_per_thread[workItemIdx] = 0;
 
         // prevent the tail threads referring the null triplet counter
@@ -224,24 +222,16 @@ class TripletFind {
         }
         // Calculate the number of triplets per "block" with reducing sum
         // technique
-        // ::sycl::group_barrier(workGroup);
-        item.barrier();
         // Warp shuffle reduction algorithm
         // sycl_helper::reduceInShared(num_triplets_per_thread, item);
 
-        // Sycl group reduction algorithm - doesn't always work correctly
-        // num_triplets_per_thread[0] = ::sycl::reduce_over_group(workGroup,
-        // num_triplets_per_thread[workItemIdx], ::sycl::plus<>());
+        // SYCL group reduction algorithm
+        num_triplets_per_thread[0] = ::sycl::reduce_over_group(item.get_group(),
+        num_triplets_per_thread[workItemIdx], ::sycl::plus<>());
 
         // Calculate the number of triplets per bin by atomic-adding the number
         // of triplets per block
         if (workItemIdx == 0) {
-            // For loop reduction
-            uint32_t resultTriplets = 0;
-            for (uint32_t i = 0; i < groupDim; ++i) {
-                resultTriplets += num_triplets_per_thread[i];
-            }
-            num_triplets_per_thread[0] = resultTriplets;
             vecmem::atomic<uint32_t> obj(&num_triplets_per_bin);
             obj.fetch_add(num_triplets_per_thread[0]);
         }
