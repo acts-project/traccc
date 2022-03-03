@@ -226,8 +226,9 @@ class TripletFind {
         // sycl_helper::reduceInShared(num_triplets_per_thread, item);
 
         // SYCL group reduction algorithm
-        num_triplets_per_thread[0] = ::sycl::reduce_over_group(item.get_group(),
-        num_triplets_per_thread[workItemIdx], ::sycl::plus<>());
+        num_triplets_per_thread[0] = ::sycl::reduce_over_group(
+            item.get_group(), num_triplets_per_thread[workItemIdx],
+            ::sycl::plus<>());
 
         // Calculate the number of triplets per bin by atomic-adding the number
         // of triplets per block

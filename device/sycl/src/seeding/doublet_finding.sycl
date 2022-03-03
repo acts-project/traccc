@@ -205,13 +205,13 @@ class DupletFind {
         // sycl_helper::reduceInShared(num_mid_bot_doublets_per_thread, item);
         // sycl_helper::reduceInShared(num_mid_top_doublets_per_thread, item);
 
-        // SYCL group reduction algorithm 
-         num_mid_bot_doublets_per_thread[0] =
-         ::sycl::reduce_over_group(item.get_group(),
-         num_mid_bot_doublets_per_thread[workItemIdx], ::sycl::plus<>());
-         num_mid_top_doublets_per_thread[0] =
-         ::sycl::reduce_over_group(item.get_group(),
-         num_mid_top_doublets_per_thread[workItemIdx], ::sycl::plus<>());
+        // SYCL group reduction algorithm
+        num_mid_bot_doublets_per_thread[0] = ::sycl::reduce_over_group(
+            item.get_group(), num_mid_bot_doublets_per_thread[workItemIdx],
+            ::sycl::plus<>());
+        num_mid_top_doublets_per_thread[0] = ::sycl::reduce_over_group(
+            item.get_group(), num_mid_top_doublets_per_thread[workItemIdx],
+            ::sycl::plus<>());
 
         // Calculate the number doublets per bin by atomic-adding the number of
         // doublets per block
