@@ -22,20 +22,34 @@ namespace traccc::sycl {
 
 // Sorting algorithm for sorting seeds in the local memory
 template <typename Comparator>
-static void insertionSort(
-    ::sycl::multi_ptr<triplet, ::sycl::access::address_space::local_space> arr,
-    int n, Comparator comp) {
+static void insertionSort(local_accessor<triplet>& arr, const int& begin_idx,
+                          const int& n, Comparator comp) {
     int j = 0;
-    triplet key = arr[0];
-    for (int i = 1; i < n; ++i) {
-        key = arr[i];
+    triplet key = arr[begin_idx];
+    for (int i = 0; i < n; ++i) {
+        key = arr[begin_idx + i];
         j = i - 1;
-        while (j >= 0 && !comp(arr[j], key)) {
-            arr[j + 1] = arr[j];
+        while (j >= 0 && !comp(arr[begin_idx + j], key)) {
+            arr[begin_idx + j + 1] = arr[begin_idx + j];
             j = j - 1;
         }
-        arr[j + 1] = key;
+        arr[begin_idx + j + 1] = key;
     }
+}
+
+// Finding minimum element algorithm
+template <typename Comparator>
+static int min_elem(const local_accessor<triplet>& arr, const int& begin_idx,
+                    const int& end_idx, Comparator comp) {
+    int min_i = begin_idx;
+    auto next = begin_idx;
+    while (next < end_idx - 1) {
+        ++next;
+        if (comp(arr[min_i], arr[next])) {
+            min_i = next;
+        }
+    }
+    return min_i;
 }
 
 // Kernel class for seed selecting
@@ -97,7 +111,7 @@ class SeedSelect {
             triplet_device.get_headers().at(bin_idx).n_triplets;
         auto triplets_per_bin = triplet_device.get_items().at(bin_idx);
 
-        auto triplets_per_spM = m_localMem.get_pointer();
+        auto triplets_per_spM = m_localMem;
 
         if (item_idx >= num_compat_spM_per_bin)
             return;
@@ -144,12 +158,10 @@ class SeedSelect {
                     int end_idx = stride + m_filter_config.max_triplets_per_spM;
 
                     int min_index =
-                        std::min_element(triplets_per_spM + begin_idx,
-                                         triplets_per_spM + end_idx,
-                                         [&](triplet& lhs, triplet& rhs) {
-                                             return lhs.weight < rhs.weight;
-                                         }) -
-                        triplets_per_spM;
+                        min_elem(triplets_per_spM, begin_idx, end_idx,
+                                 [&](triplet& lhs, triplet& rhs) {
+                                     return lhs.weight > rhs.weight;
+                                 });
 
                     auto& min_weight = triplets_per_spM[min_index].weight;
 
@@ -167,7 +179,7 @@ class SeedSelect {
         }
         // sort the triplets per spM
         insertionSort(
-            triplets_per_spM + stride, n_triplets_per_spM,
+            triplets_per_spM, stride, n_triplets_per_spM,
             [&](triplet& lhs, triplet& rhs) {
                 if (lhs.weight != rhs.weight) {
                     return lhs.weight > rhs.weight;
