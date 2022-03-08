@@ -59,37 +59,61 @@ inline bool operator==(const spacepoint& lhs, const spacepoint& rhs) {
     return false;
 }
 
-/// Container of spacepoints belonging to one detector module
+/// (Non-const) Container of spacepoints belonging to one detector module
 template <template <typename> class vector_t>
 using spacepoint_collection = vector_t<spacepoint>;
+
+/// (Const) Container of spacepoints belonging to one detector module
+template <template <typename> class vector_t>
+using spacepoint_const_collection = vector_t<const spacepoint>;
 
 /// Convenience declaration for the spacepoint collection type to use in host
 /// code
 using host_spacepoint_collection = spacepoint_collection<vecmem::vector>;
 
 /// Convenience declaration for the spacepoint collection type to use in device
-/// code
+/// code (non-const)
 using device_spacepoint_collection =
     spacepoint_collection<vecmem::device_vector>;
+
+/// Convenience declaration for the spacepoint collection type to use in device
+/// code (const)
+using device_spacepoint_const_collection =
+    spacepoint_const_collection<vecmem::device_vector>;
 
 /// Convenience declaration for the spacepoint container type to use in host
 /// code
 using host_spacepoint_container = host_container<geometry_id, spacepoint>;
 
 /// Convenience declaration for the spacepoint container type to use in device
-/// code
+/// code (non-const)
 using device_spacepoint_container = device_container<geometry_id, spacepoint>;
 
+/// Convenience declaration for the spacepoint container type to use in device
+/// code (const)
+using device_spacepoint_const_container =
+    device_container<const geometry_id, const spacepoint>;
+
 /// Convenience declaration for the spacepoint container data type to use in
-/// host code
+/// host code (non-const)
 using spacepoint_container_data = container_data<geometry_id, spacepoint>;
+
+/// Convenience declaration for the spacepoint container data type to use in
+/// host code (const)
+using spacepoint_container_const_data =
+    container_data<const geometry_id, const spacepoint>;
 
 /// Convenience declaration for the spacepoint container buffer type to use in
 /// host code
 using spacepoint_container_buffer = container_buffer<geometry_id, spacepoint>;
 
 /// Convenience declaration for the spacepoint container view type to use in
-/// host code
+/// host code (non-const)
 using spacepoint_container_view = container_view<geometry_id, spacepoint>;
+
+/// Convenience declaration for the spacepoint container view type to use in
+/// host code (const)
+using spacepoint_container_const_view =
+    container_view<const geometry_id, const spacepoint>;
 
 }  // namespace traccc

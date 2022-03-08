@@ -7,15 +7,22 @@
 
 #pragma once
 
-// SYCL include(s).
-#include <CL/sycl.hpp>
+// SYCL library include(s).
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/seeding/track_params_estimation_helper.hpp"
+#include "traccc/edm/seed.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-namespace traccc {
-namespace sycl {
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
+
+namespace traccc::sycl {
 
 /// track parameter estimation for sycl
 struct track_params_estimation
@@ -26,8 +33,7 @@ struct track_params_estimation
     ///
     /// @param mr is the memory resource
     /// @param q sycl queue for kernel scheduling
-    track_params_estimation(vecmem::memory_resource& mr, ::sycl::queue* q)
-        : m_mr(mr), m_q(q) {}
+    track_params_estimation(vecmem::memory_resource& mr, queue_wrapper queue);
 
     /// Callable operator for track_params_esitmation
     ///
@@ -39,8 +45,7 @@ struct track_params_estimation
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-    ::sycl::queue* m_q;
+    mutable queue_wrapper m_queue;
 };
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

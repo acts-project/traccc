@@ -7,19 +7,19 @@
 
 #pragma once
 
-// SYCL include(s).
-#include <CL/sycl.hpp>
+// SYCL library include(s).
+#include "traccc/sycl/utils/queue_wrapper.hpp"
+#include "triplet_counter.hpp"
 
 // Project include(s).
-#include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
-#include "traccc/sycl/seeding/detail/sycl_helper.hpp"
-#include "traccc/sycl/seeding/detail/triplet_counter.hpp"
 
-namespace traccc {
-namespace sycl {
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+namespace traccc::sycl {
 
 /// Forward declaration of weight updating function
 /// The weight of triplets are updated by iterating over triplets which share
@@ -35,7 +35,6 @@ void weight_updating(const seedfilter_config& filter_config,
                      sp_grid& internal_sp,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource, ::sycl::queue* q);
+                     vecmem::memory_resource& resource, queue_wrapper queue);
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

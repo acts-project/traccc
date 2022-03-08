@@ -5,10 +5,16 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL library include(s).
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 
-namespace traccc {
-namespace sycl {
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+
+// Project include(s).
+#include "traccc/seeding/track_params_estimation_helper.hpp"
+
+namespace traccc::sycl {
 
 // kernel class
 class TrackParamsEstimation {
@@ -61,6 +67,10 @@ class TrackParamsEstimation {
     vecmem::data::vector_view<bound_track_parameters> m_params_view;
 };
 
+track_params_estimation::track_params_estimation(vecmem::memory_resource& mr,
+                                                 queue_wrapper queue)
+    : m_mr(mr), m_queue(queue) {}
+
 track_params_estimation::output_type track_params_estimation::operator()(
     host_spacepoint_container&& spacepoints,
     host_seed_collection&& seeds) const {
@@ -83,17 +93,16 @@ track_params_estimation::output_type track_params_estimation::operator()(
     unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
     auto trackParamsNdRange = ::sycl::nd_range<1>{globalSize, localSize};
-    m_q->submit([&](::sycl::handler& h) {
-           TrackParamsEstimation kernel(spacepoints_view, seeds_view,
-                                        params_view);
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
+            TrackParamsEstimation kernel(spacepoints_view, seeds_view,
+                                         params_view);
 
-           h.parallel_for<class track_params_kernel>(trackParamsNdRange,
-                                                     kernel);
-       })
+            h.parallel_for<TrackParamsEstimation>(trackParamsNdRange, kernel);
+        })
         .wait_and_throw();
 
     return params;
 }
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

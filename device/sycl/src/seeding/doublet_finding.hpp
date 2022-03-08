@@ -6,20 +6,20 @@
  */
 #pragma once
 
-// SYCL include(s).
-#include <CL/sycl.hpp>
+// SYCL library include(s).
+#include "doublet_counter.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/doublet_finding_helper.hpp"
-#include "traccc/sycl/seeding/detail/doublet_counter.hpp"
-#include "traccc/sycl/seeding/detail/sycl_helper.hpp"
 
-namespace traccc {
-namespace sycl {
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+namespace traccc::sycl {
+
 /// Forward declaration of doublet finding function
 /// The mid-bot and mid-top doublets are found for the compatible middle
 /// spacepoints which was recorded by doublet_counting
@@ -35,7 +35,6 @@ void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
                      host_doublet_counter_container& doublet_counter_container,
                      host_doublet_container& mid_bot_doublet_container,
                      host_doublet_container& mid_top_doublet_container,
-                     vecmem::memory_resource& resource, ::sycl::queue* q);
+                     vecmem::memory_resource& resource, queue_wrapper queue);
 
-}  // namespace sycl
-}  // namespace traccc
+}  // namespace traccc::sycl

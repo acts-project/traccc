@@ -5,10 +5,20 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/sycl/seeding/doublet_counting.hpp"
+// SYCL library include(s).
+#include "doublet_counting.hpp"
 
-namespace traccc {
-namespace sycl {
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+#include "sycl_helper.hpp"
+
+// Project include(s).
+#include "traccc/seeding/doublet_finding_helper.hpp"
+
+// SYCL include(s).
+#include <CL/sycl.hpp>
+
+namespace traccc::sycl {
 
 // Kernel class for doublet counting
 class DupletCount {
@@ -133,7 +143,7 @@ class DupletCount {
 
 void doublet_counting(const seedfinder_config& config, sp_grid& internal_sp,
                       host_doublet_counter_container& doublet_counter_container,
-                      vecmem::memory_resource& resource, ::sycl::queue* q) {
+                      vecmem::memory_resource& resource, queue_wrapper queue) {
 
     auto doublet_counter_container_view =
         get_data(doublet_counter_container, &resource);
@@ -151,12 +161,13 @@ void doublet_counting(const seedfinder_config& config, sp_grid& internal_sp,
     // 1 dim ND Range for the kernel
     auto doubletCountNdRange = ::sycl::nd_range<1>{globalSize, localSize};
 
-    q->submit([&](::sycl::handler& h) {
-         DupletCount kernel(config, internal_sp_view,
-                            doublet_counter_container_view);
-         h.parallel_for<class doublet_count_kernel>(doubletCountNdRange,
-                                                    kernel);
-     }).wait_and_throw();
+    details::get_queue(queue)
+        .submit([&](::sycl::handler& h) {
+            DupletCount kernel(config, internal_sp_view,
+                               doublet_counter_container_view);
+            h.parallel_for<DupletCount>(doubletCountNdRange, kernel);
+        })
+        .wait_and_throw();
 }
-}  // namespace sycl
-}  // namespace traccc
+
+}  // namespace traccc::sycl

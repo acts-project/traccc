@@ -367,9 +367,19 @@ struct container_view {
 };
 
 /// Helper function for making a "simple" object out of the container
+/// (non-const)
 template <typename header_t, typename item_t>
 inline container_data<header_t, item_t> get_data(
     host_container<header_t, item_t>& cc,
+    vecmem::memory_resource* resource = nullptr) {
+    return {{vecmem::get_data(cc.get_headers())},
+            {vecmem::get_data(cc.get_items(), resource)}};
+}
+
+/// Helper function for making a "simple" object out of the container (const)
+template <typename header_t, typename item_t>
+inline container_data<const header_t, const item_t> get_data(
+    const host_container<header_t, item_t>& cc,
     vecmem::memory_resource* resource = nullptr) {
     return {{vecmem::get_data(cc.get_headers())},
             {vecmem::get_data(cc.get_items(), resource)}};
