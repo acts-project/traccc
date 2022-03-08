@@ -29,6 +29,13 @@ struct measurement {
     }
 };
 
+inline bool operator<(const measurement& lhs, const measurement& rhs) {
+    if (lhs.local[0] < rhs.local[0]) {
+        return true;
+    }
+    return false;
+}
+
 /// Container of measurements belonging to one detector module
 template <template <typename> class vector_t>
 using measurement_collection = vector_t<measurement>;

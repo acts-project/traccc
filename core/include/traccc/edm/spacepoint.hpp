@@ -43,6 +43,13 @@ struct spacepoint {
     }
 };
 
+inline bool operator<(const spacepoint& lhs, const spacepoint& rhs) {
+    if (lhs.global[0] < rhs.global[0]) {
+        return true;
+    }
+    return false;
+}
+
 inline bool operator==(const spacepoint& lhs, const spacepoint& rhs) {
     if (std::abs(lhs.global[0] - rhs.global[0]) < float_epsilon &&
         std::abs(lhs.global[1] - rhs.global[1]) < float_epsilon &&

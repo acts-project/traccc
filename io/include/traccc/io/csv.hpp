@@ -12,6 +12,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/particle.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/geometry.hpp"
@@ -73,6 +74,26 @@ struct csv_fatras_hit {
 };
 
 using fatras_hit_reader = dfe::NamedTupleCsvReader<csv_fatras_hit>;
+
+struct csv_particle {
+    uint64_t particle_id = 0;
+    int particle_type = 0;
+    int process = 0;
+    scalar vx;
+    scalar vy;
+    scalar vz;
+    scalar vt;
+    scalar px;
+    scalar py;
+    scalar pz;
+    scalar m;
+    scalar q;
+
+    DFE_NAMEDTUPLE(csv_particle, particle_id, particle_type, process, vx, vy,
+                   vz, vt, px, py, pz, m, q);
+};
+
+using fatras_particle_reader = dfe::NamedTupleCsvReader<csv_particle>;
 
 /// writer
 

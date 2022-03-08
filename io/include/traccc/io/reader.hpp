@@ -36,8 +36,7 @@ inline traccc::geometry read_geometry(const std::string &detector_file) {
 
 inline traccc::host_cell_container read_cells_from_event(
     size_t event, const std::string &cells_dir,
-    traccc::geometry surface_transforms,
-    vecmem::host_memory_resource &resource) {
+    traccc::geometry surface_transforms, vecmem::memory_resource &resource) {
     // Read the cells from the relevant event file
     std::string io_cells_file =
         data_directory() + cells_dir + get_event_filename(event, "-cells.csv");
