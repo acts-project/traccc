@@ -16,6 +16,9 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/track_finding/seeding_algorithm.hpp"
 
+// performance
+#include "traccc/efficiency/seeding_performance_writer.hpp"
+
 // Boost
 #include <boost/program_options.hpp>
 
@@ -26,7 +29,13 @@
 namespace po = boost::program_options;
 
 int seq_run(const std::string& detector_file, const std::string& cells_dir,
-            unsigned int events) {
+            unsigned int events, const std::string& hit_dir,
+            const std::string& particle_dir, const bool check_performance) {
+
+    // performance writer
+    traccc::seeding_performance_writer sd_performance_writer(
+        traccc::seeding_performance_writer::config{});
+    sd_performance_writer.add_cache("CPU");
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
@@ -88,11 +97,21 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
              Writer
           ------------*/
 
+        if (check_performance) {
+            traccc::event_map evt_map(event, detector_file, cells_dir, hit_dir,
+                                      particle_dir, host_mr);
+
+            sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
+                                        evt_map);
+        }
+
         traccc::write_measurements(event, measurements_per_event);
         traccc::write_spacepoints(event, spacepoints_per_event);
         traccc::write_seeds(event, spacepoints_per_event, seeds);
         traccc::write_estimated_track_parameters(event, params);
     }
+
+    sd_performance_writer.finalize();
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_cells << " cells from " << n_modules
@@ -102,6 +121,7 @@ int seq_run(const std::string& detector_file, const std::string& cells_dir,
     std::cout << "- created " << n_spacepoints << " space points. "
               << std::endl;
     std::cout << "- created " << n_seeds << " seeds" << std::endl;
+
     return 0;
 }
 
@@ -118,6 +138,12 @@ int main(int argc, char* argv[]) {
                        "specify the directory of cell files");
     desc.add_options()("events", po::value<int>()->required(),
                        "number of events");
+    desc.add_options()("hit_directory",
+                       po::value<std::string>()->default_value(""),
+                       "specify the directory of hit files");
+    desc.add_options()("particle_directory",
+                       po::value<std::string>()->default_value(""),
+                       "specify the directory of particle files");
 
     // Interpret the program options.
     po::variables_map vm;
@@ -142,9 +168,14 @@ int main(int argc, char* argv[]) {
     auto detector_file = vm["detector_file"].as<std::string>();
     auto cell_directory = vm["cell_directory"].as<std::string>();
     auto events = vm["events"].as<int>();
+    auto hit_directory = vm["hit_directory"].as<std::string>();
+    auto particle_directory = vm["particle_directory"].as<std::string>();
+    auto check_performance =
+        vm.count("hit_directory") && vm.count("particle_directory");
 
     std::cout << "Running " << argv[0] << " " << detector_file << " "
               << cell_directory << " " << events << std::endl;
 
-    return seq_run(detector_file, cell_directory, events);
+    return seq_run(detector_file, cell_directory, events, hit_directory,
+                   particle_directory, check_performance);
 }

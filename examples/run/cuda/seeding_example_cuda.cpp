@@ -16,6 +16,9 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/track_finding/seeding_algorithm.hpp"
 
+// performance
+#include "traccc/efficiency/seeding_performance_writer.hpp"
+
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -32,7 +35,8 @@
 namespace po = boost::program_options;
 
 int seq_run(const std::string& detector_file, const std::string& hits_dir,
-            unsigned int events, bool run_cpu) {
+            unsigned int events, const std::string& particle_dir,
+            const bool check_performance, bool run_cpu) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
@@ -60,6 +64,12 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
     traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
     traccc::cuda::track_params_estimation tp_cuda(mng_mr);
+
+    // performance writer
+    traccc::seeding_performance_writer sd_performance_writer(
+        traccc::seeding_performance_writer::config{});
+    sd_performance_writer.add_cache("CPU");
+    sd_performance_writer.add_cache("CUDA");
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
@@ -186,6 +196,17 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
           Writer
           ------------*/
 
+        if (check_performance) {
+            traccc::event_map evt_map(event, detector_file, hits_dir,
+                                      particle_dir, host_mr);
+            sd_performance_writer.write("CUDA", seeds_cuda,
+                                        spacepoints_per_event, evt_map);
+            if (run_cpu) {
+                sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
+                                            evt_map);
+            }
+        }
+
         if (run_cpu) {
             traccc::write_spacepoints(event, spacepoints_per_event);
             traccc::write_seeds(event, spacepoints_per_event, seeds);
@@ -198,6 +219,8 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
         end_wall_time - start_wall_time;
 
     /*time*/ wall_time += time_wall_time.count();
+
+    sd_performance_writer.finalize();
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
@@ -234,6 +257,9 @@ int main(int argc, char* argv[]) {
                        "specify the directory of hit files");
     desc.add_options()("events", po::value<int>()->required(),
                        "number of events");
+    desc.add_options()("particle_directory",
+                       po::value<std::string>()->default_value(""),
+                       "specify the directory of particle files");
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
@@ -260,10 +286,13 @@ int main(int argc, char* argv[]) {
     auto detector_file = vm["detector_file"].as<std::string>();
     auto hit_directory = vm["hit_directory"].as<std::string>();
     auto events = vm["events"].as<int>();
+    auto particle_directory = vm["particle_directory"].as<std::string>();
     auto run_cpu = vm["run_cpu"].as<bool>();
+    auto check_performance = vm.count("particle_directory");
 
     std::cout << "Running " << argv[0] << " " << detector_file << " "
               << hit_directory << " " << events << std::endl;
 
-    return seq_run(detector_file, hit_directory, events, run_cpu);
+    return seq_run(detector_file, hit_directory, events, particle_directory,
+                   check_performance, run_cpu);
 }

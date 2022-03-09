@@ -59,7 +59,8 @@ The `data` directory is a submodule hosted as `git lfs` on `https://gitlab.cern.
 
 ### Prerequisites
 
-- [Boost](https://www.boost.org/)
+- [Boost](https://www.boost.org/): program_options
+- [ROOT](https://root.cern/): RIO, Hist, Tree
 
 ## Getting started
 
