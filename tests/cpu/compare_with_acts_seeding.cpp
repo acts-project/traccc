@@ -297,7 +297,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Ensure that ACTS and traccc give the same result
     EXPECT_EQ(seeds.size(), seedVector.size());
-    EXPECT_FLOAT_EQ(seed_match_ratio > 0.999);
+    EXPECT_TRUE(seed_match_ratio > 0.999);
 
     /*--------------------------------
       ACTS track params estimation
