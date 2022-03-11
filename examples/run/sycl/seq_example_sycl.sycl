@@ -21,6 +21,9 @@
 #include "traccc/sycl/track_finding/seeding_algorithm.hpp"
 #include "traccc/track_finding/seeding_algorithm.hpp"
 
+// performance
+#include "traccc/efficiency/seeding_performance_writer.hpp"
+
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>

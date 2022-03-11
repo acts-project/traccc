@@ -19,6 +19,9 @@
 #include "traccc/io/reader.hpp"
 #include "traccc/io/writer.hpp"
 
+// performance
+#include "traccc/efficiency/seeding_performance_writer.hpp"
+
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
