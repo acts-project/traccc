@@ -25,7 +25,7 @@ jobs:
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2004_cuda:v16.1
           - name: SYCL
-            container: ghcr.io/acts-project/ubuntu2004_oneapi:v19
+            container: ghcr.io/acts-project/ubuntu2004_oneapi:v20
         build:
           - Release
           - Debug
