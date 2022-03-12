@@ -93,7 +93,6 @@ struct measurement_creation
 
                     mean = prev + (weight / totalWeight) * diff;
                     for (std::size_t i = 0; i < 2; ++i) {
-                        mean[i] = prev[i] + (weight / totalWeight) * (diff[i]);
                         var[i] = var[i] + weight * (diff[i]) *
                                               (cell_position[i] - mean[i]);
                     }
