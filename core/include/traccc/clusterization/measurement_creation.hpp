@@ -91,6 +91,7 @@ struct measurement_creation
                     const point2 prev = mean;
                     const point2 diff = cell_position - prev;
 
+                    mean = prev + (weight / totalWeight) * diff;
                     for (std::size_t i = 0; i < 2; ++i) {
                         mean[i] = prev[i] + (weight / totalWeight) * (diff[i]);
                         var[i] = var[i] + weight * (diff[i]) *
