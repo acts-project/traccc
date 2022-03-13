@@ -29,6 +29,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "include/traccc/cuda/seeding/doublet_finding.hpp"
   "include/traccc/cuda/seeding/triplet_finding.hpp"
   "include/traccc/cuda/seeding/seed_finding.hpp"
+  "include/traccc/cuda/seeding/seeding_algorithm.hpp"
   "include/traccc/cuda/seeding/spacepoint_binning.hpp"
   "src/seeding/doublet_counting.cu"
   "src/seeding/triplet_counting.cu"

@@ -13,8 +13,8 @@
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-#include "traccc/track_finding/seeding_algorithm.hpp"
 
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
