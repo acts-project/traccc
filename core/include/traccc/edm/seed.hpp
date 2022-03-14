@@ -45,6 +45,16 @@ struct seed {
         z_vertex = aSeed.z_vertex;
         return *this;
     }
+
+    TRACCC_HOST_DEVICE
+    std::vector<measurement> get_measurements(
+        const host_spacepoint_container& spacepoints) const {
+        std::vector<measurement> result;
+        result.push_back(spacepoints.at(spB_link).meas);
+        result.push_back(spacepoints.at(spM_link).meas);
+        result.push_back(spacepoints.at(spT_link).meas);
+        return result;
+    }
 };
 
 inline bool operator==(const seed& lhs, const seed& rhs) {

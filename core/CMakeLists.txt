@@ -8,7 +8,6 @@
 traccc_add_library( traccc_core core TYPE INTERFACE
   # Common definitions.
   "include/traccc/definitions/track_parametrization.hpp"
-  "include/traccc/definitions/unit_vectors.hpp"
   "include/traccc/definitions/primitives.hpp"
   "include/traccc/definitions/common.hpp"
   "include/traccc/definitions/qualifiers.hpp"
@@ -27,6 +26,7 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   "include/traccc/geometry/pixel_segmentation.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
+  "include/traccc/utils/unit_vectors.hpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/sparse_ccl.hpp"
   "include/traccc/clusterization/component_connection.hpp"

@@ -23,4 +23,16 @@ TRACCC_HOST_DEVICE inline vector3 make_direction_unit_from_phi_theta(
     };
 }
 
+TRACCC_HOST_DEVICE inline scalar phi(const vector3& v) {
+    return std::atan2(v[1], v[0]);
+}
+
+TRACCC_HOST_DEVICE inline scalar eta(const vector3& v) {
+    return std::atanh(v[2] / getter::norm(v));
+}
+
+TRACCC_HOST_DEVICE inline scalar theta(const vector3& v) {
+    return std::atan2(std::sqrt(v[0] * v[0] + v[1] * v[1]), v[2]);
+}
+
 }  // namespace traccc

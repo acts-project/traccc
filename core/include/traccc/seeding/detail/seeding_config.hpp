@@ -20,7 +20,7 @@ struct seedfinder_config {
     // m_config.zMax = 2800.;
     scalar zMin = -1186;
     scalar zMax = 1186;
-    scalar rMax = 250;
+    scalar rMax = 200;
     // WARNING: if rMin is smaller than impactMax, the bin size will be 2*pi,
     // which will make seeding very slow!
     scalar rMin = 33;
@@ -41,9 +41,9 @@ struct seedfinder_config {
     // equivalent to 2.7 eta (pseudorapidity)
     scalar cotThetaMax = 7.40627;
     // minimum distance in mm in r between two measurements within one seed
-    scalar deltaRMin = 5;
+    scalar deltaRMin = 1;
     // maximum distance in mm in r between two measurements within one seed
-    scalar deltaRMax = 200;
+    scalar deltaRMax = 60;
 
     // FIXME: this is not used yet
     //        scalar upperPtResolutionPerSeed = 20* Acts::GeV;
@@ -70,7 +70,7 @@ struct seedfinder_config {
     scalar bFieldInZ = 0.00199724;
     // location of beam in x,y plane.
     // used as offset for Space Points
-    vector2 beamPos{-.5, -.5};
+    vector2 beamPos{-.0, -.0};
 
     // average radiation lengths of material on the length of a seed. used for
     // scattering.

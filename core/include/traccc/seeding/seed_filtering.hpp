@@ -124,6 +124,8 @@ struct seed_filtering
         }
     }
 
+    seedfilter_config get_seedfilter_config() { return m_filter_config; }
+
     private:
     seedfilter_config m_filter_config;
 };
