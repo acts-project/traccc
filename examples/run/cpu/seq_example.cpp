@@ -19,9 +19,6 @@
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
-// performance
-#include "traccc/efficiency/seeding_performance_writer.hpp"
-
 // Boost
 #include <boost/program_options.hpp>
 

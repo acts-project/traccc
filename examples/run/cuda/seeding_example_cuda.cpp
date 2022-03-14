@@ -19,9 +19,6 @@
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
-// performance
-#include "traccc/efficiency/seeding_performance_writer.hpp"
-
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
