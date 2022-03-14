@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
     auto hit_directory = vm["hit_directory"].as<std::string>();
     auto events = vm["events"].as<int>();
     auto particle_directory = vm["particle_directory"].as<std::string>();
-    auto check_performance = vm.count("particle_directory");
+    auto check_performance = (particle_directory != "");
 
     std::cout << "Running " << argv[0] << " " << detector_file << " "
               << hit_directory << " " << events << std::endl;
