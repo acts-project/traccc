@@ -38,9 +38,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
 
-    // Do seeding validation check?
-    bool check_performance = (i_cfg.particle_directory != "");
-
     // Output stats
     uint64_t n_modules = 0;
     uint64_t n_spacepoints = 0;
@@ -84,7 +81,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
 
         // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
-            traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
+            traccc::read_spacepoints_from_event(event + i_cfg.skip,
+                                                i_cfg.hit_directory,
                                                 surface_transforms, mng_mr);
 
         /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
@@ -196,7 +194,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
           Writer
           ------------*/
 
-        if (check_performance) {
+        if (i_cfg.check_seeding_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       i_cfg.hit_directory,
                                       i_cfg.particle_directory, host_mr);

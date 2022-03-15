@@ -32,10 +32,6 @@ int seq_run(const traccc::seq_input_config& i_cfg) {
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
 
-    // Do seeding validation check?
-    bool check_performance =
-        (i_cfg.particle_directory != "") && (i_cfg.hit_directory != "");
-
     // Output stats
     uint64_t n_cells = 0;
     uint64_t n_modules = 0;
@@ -60,7 +56,8 @@ int seq_run(const traccc::seq_input_config& i_cfg) {
 
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
-            traccc::read_cells_from_event(event, i_cfg.cell_directory,
+            traccc::read_cells_from_event(event + i_cfg.skip,
+                                          i_cfg.cell_directory,
                                           surface_transforms, host_mr);
 
         /*-------------------
@@ -98,7 +95,7 @@ int seq_run(const traccc::seq_input_config& i_cfg) {
              Writer
           ------------*/
 
-        if (check_performance) {
+        if (i_cfg.check_seeding_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       i_cfg.cell_directory, i_cfg.hit_directory,
                                       i_cfg.particle_directory, host_mr);
