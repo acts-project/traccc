@@ -89,14 +89,14 @@ int seq_run(const traccc::seq_input_config& i_cfg, bool run_cpu) {
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
     // Loop over events
-    for (unsigned int event = 0; event < events; ++event) {
+    for (unsigned int event = i_cfg.skip; event < i_cfg.events + i_cfg.skip;
+         ++event) {
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
-            traccc::read_cells_from_event(event + i_cfg.skip,
-                                          i_cfg.cell_directory,
+            traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           surface_transforms, host_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();

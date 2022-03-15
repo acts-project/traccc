@@ -45,12 +45,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg) {
     sd_performance_writer.add_cache("CPU");
 
     // Loop over events
-    for (unsigned int event = 0; event < i_cfg.events; ++event) {
+    for (unsigned int event = i_cfg.skip; event < i_cfg.events + i_cfg.skip;
+         ++event) {
 
         // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
-            traccc::read_spacepoints_from_event(event + i_cfg.skip,
-                                                i_cfg.hit_directory,
+            traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
                                                 surface_transforms, host_mr);
 
         /*----------------

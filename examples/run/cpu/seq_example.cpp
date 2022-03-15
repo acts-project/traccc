@@ -52,12 +52,12 @@ int seq_run(const traccc::seq_input_config& i_cfg) {
     sd_performance_writer.add_cache("CPU");
 
     // Loop over events
-    for (unsigned int event = 0; event < i_cfg.events; ++event) {
+    for (unsigned int event = i_cfg.skip; event < i_cfg.events + i_cfg.skip;
+         ++event) {
 
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
-            traccc::read_cells_from_event(event + i_cfg.skip,
-                                          i_cfg.cell_directory,
+            traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           surface_transforms, host_mr);
 
         /*-------------------
