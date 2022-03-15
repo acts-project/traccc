@@ -19,12 +19,13 @@
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
+// options
+#include "traccc/seeding_input_options.hpp"
+#include "traccc/throw_exception.hpp"
+
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
-
-// Boost
-#include <boost/program_options.hpp>
 
 // System include(s).
 #include <chrono>
@@ -32,14 +33,13 @@
 #include <iomanip>
 #include <iostream>
 
-namespace po = boost::program_options;
-
-int seq_run(const std::string& detector_file, const std::string& hits_dir,
-            unsigned int events, const std::string& particle_dir,
-            const bool check_performance, bool run_cpu) {
+int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(detector_file);
+    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
+
+    // Do seeding validation check?
+    bool check_performance = (i_cfg.particle_directory != "");
 
     // Output stats
     uint64_t n_modules = 0;
@@ -74,7 +74,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
     // Loop over events
-    for (unsigned int event = 0; event < events; ++event) {
+    for (unsigned int event = 0; event < i_cfg.events; ++event) {
 
         /*-----------------
           hit file reading
@@ -84,7 +84,7 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 
         // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
-            traccc::read_spacepoints_from_event(event, hits_dir,
+            traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
                                                 surface_transforms, mng_mr);
 
         /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
@@ -197,8 +197,9 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
           ------------*/
 
         if (check_performance) {
-            traccc::event_map evt_map(event, detector_file, hits_dir,
-                                      particle_dir, host_mr);
+            traccc::event_map evt_map(event, i_cfg.detector_file,
+                                      i_cfg.hit_directory,
+                                      i_cfg.particle_directory, host_mr);
             sd_performance_writer.write("CUDA", seeds_cuda,
                                         spacepoints_per_event, evt_map);
             if (run_cpu) {
@@ -247,52 +248,31 @@ int seq_run(const std::string& detector_file, const std::string& hits_dir,
 // The main routine
 //
 int main(int argc, char* argv[]) {
-
-    // Set up the program options.
+    // Set up the program options
     po::options_description desc("Allowed options");
+
+    // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    desc.add_options()("detector_file", po::value<std::string>()->required(),
-                       "specify detector file");
-    desc.add_options()("hit_directory", po::value<std::string>()->required(),
-                       "specify the directory of hit files");
-    desc.add_options()("events", po::value<int>()->required(),
-                       "number of events");
-    desc.add_options()("particle_directory",
-                       po::value<std::string>()->default_value(""),
-                       "specify the directory of particle files");
+    traccc::add_seeding_input_options(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
-    // Interpret the program options.
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
-    // Print a help message if the user asked for it.
-    if (vm.count("help")) {
-        std::cout << desc << std::endl;
-        return 0;
-    }
-
-    // Handle any and all errors.
-    try {
-        po::notify(vm);
-    } catch (const std::exception& ex) {
-        std::cerr << "Couldn't interpret command line options because of:\n\n"
-                  << ex.what() << "\n\n"
-                  << desc << std::endl;
-        return 1;
-    }
-
-    auto detector_file = vm["detector_file"].as<std::string>();
-    auto hit_directory = vm["hit_directory"].as<std::string>();
-    auto events = vm["events"].as<int>();
-    auto particle_directory = vm["particle_directory"].as<std::string>();
+    // Read options
+    auto seeding_input_cfg = traccc::read_seeding_input_options(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
-    auto check_performance = vm.count("particle_directory");
 
-    std::cout << "Running " << argv[0] << " " << detector_file << " "
-              << hit_directory << " " << events << std::endl;
+    // Check exception
+    auto exception = traccc::throw_exception(desc, vm);
+    if (exception != traccc::no_exception) {
+        return exception;
+    }
 
-    return seq_run(detector_file, hit_directory, events, particle_directory,
-                   check_performance, run_cpu);
+    std::cout << "Running " << argv[0] << " " << seeding_input_cfg.detector_file
+              << " " << seeding_input_cfg.hit_directory << " "
+              << seeding_input_cfg.events << std::endl;
+
+    return seq_run(seeding_input_cfg, run_cpu);
 }
