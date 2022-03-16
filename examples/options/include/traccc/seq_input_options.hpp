@@ -28,11 +28,12 @@ void add_seq_input_options(po::options_description& desc) {
                        "specify detector file");
     desc.add_options()("cell_directory", po::value<std::string>()->required(),
                        "specify the directory of cell files");
-    desc.add_options()("hit_directory", po::value<std::string>()->required(),
-                       "specify the directory of hit files");
-    desc.add_options()("particle_directory",
-                       po::value<std::string>()->default_value(""),
-                       "specify the directory of particle files");
+    desc.add_options()(
+        "hit_directory", po::value<std::string>()->default_value(""),
+        "specify the directory of hit files used for performance writer");
+    desc.add_options()(
+        "particle_directory", po::value<std::string>()->default_value(""),
+        "specify the directory of particle files used for performance writer");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
     desc.add_options()("skip", po::value<int>()->default_value(0),
