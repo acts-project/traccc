@@ -18,8 +18,8 @@ enum exception : int {
     no_exception = 2,
 };
 
-int throw_exception(const po::options_description& desc,
-                    po::variables_map& vm) {
+int handle_argument_errors(const po::options_description& desc,
+                           po::variables_map& vm) {
 
     // Print a help message if the user asked for it.
     if (vm.count("help")) {

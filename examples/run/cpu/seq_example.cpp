@@ -20,8 +20,8 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
+#include "traccc/handle_argument_errors.hpp"
 #include "traccc/seq_input_options.hpp"
-#include "traccc/throw_exception.hpp"
 
 // System include(s).
 #include <exception>
@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
     auto seq_input_cfg = traccc::read_seq_input_options(vm);
 
     // Check exception
-    auto exception = traccc::throw_exception(desc, vm);
+    auto exception = traccc::handle_argument_errors(desc, vm);
     if (exception != traccc::no_exception) {
         return exception;
     }

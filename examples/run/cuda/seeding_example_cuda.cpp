@@ -20,8 +20,8 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
+#include "traccc/handle_argument_errors.hpp"
 #include "traccc/seeding_input_options.hpp"
-#include "traccc/throw_exception.hpp"
 
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
@@ -263,7 +263,7 @@ int main(int argc, char* argv[]) {
     auto run_cpu = vm["run_cpu"].as<bool>();
 
     // Check exception
-    auto exception = traccc::throw_exception(desc, vm);
+    auto exception = traccc::handle_argument_errors(desc, vm);
     if (exception != traccc::no_exception) {
         return exception;
     }
