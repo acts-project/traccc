@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
-              << full_tracking_input_cfg.hit_directory << " "
+              << full_tracking_input_cfg.cell_directory << " "
               << full_tracking_input_cfg.events << std::endl;
 
     return seq_run(full_tracking_input_cfg);
