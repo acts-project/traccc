@@ -20,14 +20,14 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
+#include "traccc/full_tracking_input_options.hpp"
 #include "traccc/handle_argument_errors.hpp"
-#include "traccc/seq_input_options.hpp"
 
 // System include(s).
 #include <exception>
 #include <iostream>
 
-int seq_run(const traccc::seq_input_config& i_cfg) {
+int seq_run(const traccc::full_tracking_input_config& i_cfg) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -132,13 +132,13 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::add_seq_input_options(desc);
+    traccc::add_full_tracking_input_options(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
     // Read options
-    auto seq_input_cfg = traccc::read_seq_input_options(vm);
+    auto full_tracking_input_cfg = traccc::read_full_tracking_input_options(vm);
 
     // Check exception
     auto exception = traccc::handle_argument_errors(desc, vm);
@@ -146,9 +146,10 @@ int main(int argc, char* argv[]) {
         return exception;
     }
 
-    std::cout << "Running " << argv[0] << " " << seq_input_cfg.detector_file
-              << " " << seq_input_cfg.hit_directory << " "
-              << seq_input_cfg.events << std::endl;
+    std::cout << "Running " << argv[0] << " "
+              << full_tracking_input_cfg.detector_file << " "
+              << full_tracking_input_cfg.hit_directory << " "
+              << full_tracking_input_cfg.events << std::endl;
 
-    return seq_run(seq_input_cfg);
+    return seq_run(full_tracking_input_cfg);
 }

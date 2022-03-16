@@ -10,7 +10,7 @@
 
 namespace traccc {
 
-struct seq_input_config {
+struct full_tracking_input_config {
     std::string detector_file;
     std::string cell_directory;
     std::string hit_directory;
@@ -22,7 +22,7 @@ struct seq_input_config {
 
 namespace po = boost::program_options;
 
-void add_seq_input_options(po::options_description& desc) {
+void add_full_tracking_input_options(po::options_description& desc) {
 
     desc.add_options()("detector_file", po::value<std::string>()->required(),
                        "specify detector file");
@@ -40,7 +40,8 @@ void add_seq_input_options(po::options_description& desc) {
                        "number of events to skip");
 }
 
-seq_input_config read_seq_input_options(const po::variables_map& vm) {
+full_tracking_input_config read_full_tracking_input_options(
+    const po::variables_map& vm) {
 
     auto detector_file = vm["detector_file"].as<std::string>();
     auto cell_directory = vm["cell_directory"].as<std::string>();

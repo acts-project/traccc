@@ -7,6 +7,6 @@
 # Set up the "build" of the traccc::option library.
 traccc_add_library( traccc_options options TYPE INTERFACE
   "include/traccc/handle_argument_errors.hpp"
-  "include/traccc/seeding_example_options.hpp"
-  "include/traccc/seq_example_options.hpp" )
+  "include/traccc/seeding_input_options.hpp"
+  "include/traccc/full_tracking_input_options.hpp" )
 target_link_libraries( traccc_options INTERFACE Boost::program_options)
