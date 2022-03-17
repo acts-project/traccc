@@ -165,8 +165,8 @@ TEST(mappper, cell_particle_map) {
 // Test generate_measurement_cell_map function
 TEST(mappper, measurement_cell_map) {
 
-    auto compare_cells = [](std::vector<traccc::cell>& cells1,
-                            std::vector<traccc::cell>& cells2) {
+    auto compare_cells = [](vecmem::vector<traccc::cell>& cells1,
+                            vecmem::vector<traccc::cell>& cells2) {
         std::sort(cells1.begin(), cells1.end());
         std::sort(cells2.begin(), cells2.end());
 
@@ -178,7 +178,7 @@ TEST(mappper, measurement_cell_map) {
     auto m_c_map = traccc::generate_measurement_cell_map(event, detector_file,
                                                          cells_dir, resource);
 
-    std::vector<traccc::cell> cells0;
+    vecmem::vector<traccc::cell> cells0;
     cells0.push_back({1, 0, 0.0041470062, 0});
     cells0.push_back({0, 1, 0.00306466641, 0});
     cells0.push_back({1, 1, 0.00868905429, 0});
@@ -187,7 +187,7 @@ TEST(mappper, measurement_cell_map) {
     cells0.push_back({2, 1, 0.0016894876, 0});
     cells0.push_back({2, 2, 0.00199076766, 0});
 
-    std::vector<traccc::cell> cells1;
+    vecmem::vector<traccc::cell> cells1;
     cells1.push_back({5, 5, 0.00632160669, 0});
     cells1.push_back({5, 6, 0.00911649223, 0});
     cells1.push_back({5, 7, 0.00518329488, 0});

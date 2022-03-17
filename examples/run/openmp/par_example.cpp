@@ -84,9 +84,10 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
                 traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
 
             // The algorithmic code part: start
-            traccc::cluster_collection clusters_per_module =
+            traccc::host_cluster_container clusters_per_module =
                 cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
-            clusters_per_module.position_from_cell = module.pixel;
+            for (auto& cl_id : clusters_per_module.get_headers())
+                cl_id.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
                 mt(clusters_per_module, module);
@@ -95,7 +96,7 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
             // The algorithmnic code part: end
 
             n_cells += cells_per_event.at(i).items.size();
-            n_clusters += clusters_per_module.items.size();
+            n_clusters += clusters_per_module.size();
             n_measurements += measurements_per_module.size();
             n_space_points += spacepoints_per_module.size();
 
