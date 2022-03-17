@@ -68,7 +68,7 @@ class clusterization_algorithm
             // The algorithmic code part: start
             traccc::host_cluster_container clusters_per_module = cc->operator()(
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
-            for(auto& cl_id : clusters_per_module.get_headers())
+            for (auto& cl_id : clusters_per_module.get_headers())
                 cl_id.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =

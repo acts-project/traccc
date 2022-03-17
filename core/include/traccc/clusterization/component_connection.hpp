@@ -26,9 +26,9 @@ namespace traccc {
 ///
 class component_connection
     : public algorithm<host_cluster_container(const host_cell_collection&,
-                                          const cell_module&)>,
+                                              const cell_module&)>,
       public algorithm<host_cluster_container(const device_cell_collection&,
-                                          const cell_module&)> {
+                                              const cell_module&)> {
     public:
     /// Constructor for component_connection
     ///
@@ -48,8 +48,9 @@ class component_connection
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    host_cluster_container operator()(const host_cell_collection& cells,
-                                  const cell_module& module) const override {
+    host_cluster_container operator()(
+        const host_cell_collection& cells,
+        const cell_module& module) const override {
         return this->operator()<vecmem::vector>(cells, module);
     }
 
@@ -70,8 +71,9 @@ class component_connection
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    host_cluster_container operator()(const device_cell_collection& cells,
-                                  const cell_module& module) const override {
+    host_cluster_container operator()(
+        const device_cell_collection& cells,
+        const cell_module& module) const override {
         return this->operator()<vecmem::device_vector>(cells, module);
     }
 
@@ -79,7 +81,7 @@ class component_connection
     /// Implementation for the public cell collection creation operators
     template <template <typename> class vector_type>
     host_cluster_container operator()(const cell_collection<vector_type>& cells,
-                                  const cell_module& module) const {
+                                      const cell_module& module) const {
         host_cluster_container clusters(&m_mr.get());
         this->operator()<vector_type>(cells, module, clusters);
         return clusters;
@@ -95,7 +97,7 @@ class component_connection
         auto connected_cells = detail::sparse_ccl<vector_type>(cells);
 
         clusters.resize(std::get<0>(connected_cells));
-        for (auto& cl_id : clusters.get_headers()){
+        for (auto& cl_id : clusters.get_headers()) {
             cl_id.module = module.module;
             cl_id.placement = module.placement;
         }

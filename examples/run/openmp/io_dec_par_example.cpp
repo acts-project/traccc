@@ -65,7 +65,7 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
             traccc::host_cluster_container clusters_per_module =
                 cc(cells_per_event.get_items()[i],
                    cells_per_event.get_headers()[i]);
-            for (auto& cl_id : clusters_per_module.get_headers())
+            for (auto &cl_id : clusters_per_module.get_headers())
                 cl_id.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =

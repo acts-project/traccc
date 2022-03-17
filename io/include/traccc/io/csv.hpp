@@ -276,23 +276,25 @@ inline host_cell_container read_cells(
 /// of truth clusters.
 ///
 /// @param creader The cellreader type
+/// @param resource The memory resource to use for the return value
 /// @param tfmap the (optional) transform map
 /// @param max_clusters the (optional) maximum number of cells to be read in
-inline std::vector<cluster_collection> read_truth_clusters(
-    cell_reader& creader, const std::map<geometry_id, transform3>& tfmap = {},
+inline std::vector<host_cluster_container> read_truth_clusters(
+    cell_reader& creader, vecmem::memory_resource& resource,
+    const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
     // Reference for switching the container
     uint64_t reference_id = 0;
-    std::vector<cluster_collection> clusters;
+    std::vector<host_cluster_container> clusters;
     // Reference for switching the cluster
     uint64_t truth_id = std::numeric_limits<uint64_t>::max();
 
     bool first_line_read = false;
     unsigned int read_cells = 0;
     csv_cell iocell;
-    cluster_collection truth_clusters;
-    std::vector<cell> truth_cells;
+    host_cluster_container truth_clusters(&resource);
+    vecmem::vector<cell> truth_cells;
 
     while (creader.read(iocell)) {
 
@@ -301,18 +303,19 @@ inline std::vector<cluster_collection> read_truth_clusters(
             if (not tfmap.empty()) {
                 auto tfentry = tfmap.find(iocell.geometry_id);
                 if (tfentry != tfmap.end()) {
-                    truth_clusters.placement = tfentry->second;
+                    for (auto& truth_cl_id : truth_clusters.get_headers())
+                        truth_cl_id.placement = tfentry->second;
                 }
             }
 
             // Sort in column major order
             clusters.push_back(truth_clusters);
             // Clear for next round
-            truth_clusters = cluster_collection();
+            truth_clusters = host_cluster_container(&resource);
         }
 
         if (first_line_read and truth_id != iocell.hit_id) {
-            truth_clusters.items.push_back({truth_cells});
+            truth_clusters.get_items().push_back({truth_cells});
             truth_cells.clear();
         }
         truth_cells.push_back(cell{iocell.channel0, iocell.channel1,
@@ -329,7 +332,6 @@ inline std::vector<cluster_collection> read_truth_clusters(
 
     return clusters;
 }
-
 /// Read the collection of measurements per module and fill into a collection
 ///
 /// @param hreader The measurement reader type

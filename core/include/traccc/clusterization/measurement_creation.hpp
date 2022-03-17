@@ -17,8 +17,8 @@ namespace traccc {
 
 /// Connected component labeling.
 struct measurement_creation
-    : public algorithm<host_measurement_collection(const host_cluster_container &,
-                                                   const cell_module &)> {
+    : public algorithm<host_measurement_collection(
+          const host_cluster_container &, const cell_module &)> {
     public:
     /// Constructor for measurement_creation
     ///
@@ -81,13 +81,13 @@ struct measurement_creation
                 continue;
             }
 
-            const auto& cl_id = clusters.at(0).header;
+            const auto &cl_id = clusters.at(0).header;
             for (const auto &cell : cluster) {
                 scalar weight = cl_id.signal(cell.activation);
                 if (weight > cl_id.threshold) {
                     totalWeight += cell.activation;
-                    const point2 cell_position = cl_id.position_from_cell(
-                        cell.channel0, cell.channel1);
+                    const point2 cell_position =
+                        cl_id.position_from_cell(cell.channel0, cell.channel1);
 
                     const point2 prev = mean;
                     const point2 diff = cell_position - prev;

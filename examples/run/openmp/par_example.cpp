@@ -86,7 +86,7 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
             // The algorithmic code part: start
             traccc::host_cluster_container clusters_per_module =
                 cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
-            for (auto& cl_id : clusters_per_module.get_headers())
+            for (auto &cl_id : clusters_per_module.get_headers())
                 cl_id.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
