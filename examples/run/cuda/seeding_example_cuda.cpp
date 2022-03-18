@@ -20,7 +20,6 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
-
 #include "traccc/options/seeding_input_options.hpp"
 
 // vecmem
