@@ -15,6 +15,7 @@ enable_language( SYCL )
 traccc_add_library( traccc_sycl sycl TYPE SHARED
   # header files
   "include/traccc/sycl/seeding/seed_finding.hpp"
+  "include/traccc/sycl/seeding/seeding_algorithm.hpp"
   "include/traccc/sycl/seeding/spacepoint_binning.hpp"
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
