@@ -185,16 +185,16 @@ measurement_cell_map generate_measurement_cell_map(
         auto module = cells_per_event.at(i).header;
 
         // The algorithmic code part: start
-        host_cluster_container clusters_per_module =
+        host_cluster_container clusters =
             cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
-        for (auto& cl_id : clusters_per_module.get_headers())
+        for (auto& cl_id : clusters.get_headers())
             cl_id.position_from_cell = module.pixel;
 
         host_measurement_collection measurements_per_module =
-            mt(clusters_per_module, module);
+            mt(clusters, module);
 
-        for (std::size_t j = 0; j < clusters_per_module.size(); j++) {
-            const auto& clus = clusters_per_module.at(j).items;
+        for (std::size_t j = 0; j < clusters.size(); j++) {
+            const auto& clus = clusters.at(j).items;
             const auto& meas = measurements_per_module[j];
 
             result[meas] = clus;

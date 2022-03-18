@@ -66,13 +66,13 @@ class clusterization_algorithm
             auto module = cells_per_event.at(i).header;
 
             // The algorithmic code part: start
-            traccc::host_cluster_container clusters_per_module = cc->operator()(
+            traccc::host_cluster_container clusters = cc->operator()(
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
-            for (auto& cl_id : clusters_per_module.get_headers())
+            for (auto& cl_id : clusters.get_headers())
                 cl_id.position_from_cell = module.pixel;
 
             traccc::host_measurement_collection measurements_per_module =
-                mt->operator()(clusters_per_module, module);
+                mt->operator()(clusters, module);
             traccc::host_spacepoint_collection spacepoints_per_module =
                 sp->operator()(module, measurements_per_module);
             // The algorithmnic code part: end
