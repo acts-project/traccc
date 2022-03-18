@@ -24,6 +24,8 @@
 // System include(s).
 #include <iostream>
 
+namespace po = boost::program_options;
+
 int seq_run(const traccc::seeding_input_config& i_cfg) {
 
     // Read the surface transforms

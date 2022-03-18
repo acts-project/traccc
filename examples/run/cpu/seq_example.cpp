@@ -26,6 +26,8 @@
 #include <exception>
 #include <iostream>
 
+namespace po = boost::program_options;
+
 int seq_run(const traccc::full_tracking_input_config& i_cfg) {
 
     // Read the surface transforms

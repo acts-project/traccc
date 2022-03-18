@@ -34,6 +34,8 @@
 #include <iomanip>
 #include <iostream>
 
+namespace po = boost::program_options;
+
 int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
 
     // Read the surface transforms
