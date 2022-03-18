@@ -20,8 +20,8 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
-#include "traccc/handle_argument_errors.hpp"
-#include "traccc/seeding_input_options.hpp"
+#include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/options/seeding_input_options.hpp"
 
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::add_seeding_input_options(desc);
+    traccc::seeding_input_config seeding_input_cfg(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
@@ -259,7 +259,7 @@ int main(int argc, char* argv[]) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
     // Read options
-    auto seeding_input_cfg = traccc::read_seeding_input_options(vm);
+    seeding_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
     // Check exception

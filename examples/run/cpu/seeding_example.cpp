@@ -18,8 +18,8 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
-#include "traccc/handle_argument_errors.hpp"
-#include "traccc/seeding_input_options.hpp"
+#include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/options/seeding_input_options.hpp"
 
 // System include(s).
 #include <iostream>
@@ -96,13 +96,13 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::add_seeding_input_options(desc);
+    traccc::seeding_input_config seeding_input_cfg(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
     // Read options
-    auto seeding_input_cfg = traccc::read_seeding_input_options(vm);
+    seeding_input_cfg.read(vm);
 
     // Check exception
     auto exception = traccc::handle_argument_errors(desc, vm);

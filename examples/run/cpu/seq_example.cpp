@@ -20,8 +20,8 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
-#include "traccc/full_tracking_input_options.hpp"
-#include "traccc/handle_argument_errors.hpp"
+#include "traccc/options/full_tracking_input_options.hpp"
+#include "traccc/options/handle_argument_errors.hpp"
 
 // System include(s).
 #include <exception>
@@ -132,13 +132,13 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::add_full_tracking_input_options(desc);
+    traccc::full_tracking_input_config full_tracking_input_cfg(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
     // Read options
-    auto full_tracking_input_cfg = traccc::read_full_tracking_input_options(vm);
+    full_tracking_input_cfg.read(vm);
 
     // Check exception
     auto exception = traccc::handle_argument_errors(desc, vm);
