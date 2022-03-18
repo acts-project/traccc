@@ -21,6 +21,7 @@
 
 // options
 #include "traccc/options/full_tracking_input_options.hpp"
+#include "traccc/options/handle_argument_errors.hpp"
 
 // System include(s).
 #include <exception>
@@ -141,21 +142,8 @@ int main(int argc, char* argv[]) {
     // Read options
     full_tracking_input_cfg.read(vm);
 
-    // Print a help message if the user asked for it.
-    if (vm.count("help")) {
-        std::cout << desc << std::endl;
-        return 0;
-    }
-
-    // Handle any and all errors.
-    try {
-        po::notify(vm);
-    } catch (const std::exception& ex) {
-        std::cerr << "Couldn't interpret command line options because of:\n\n"
-                  << ex.what() << "\n\n"
-                  << desc << std::endl;
-        return 1;
-    }
+    // Check errors
+    traccc::handle_argument_errors(vm, desc);
 
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "

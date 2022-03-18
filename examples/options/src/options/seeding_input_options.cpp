@@ -8,8 +8,6 @@
 // options
 #include "traccc/options/seeding_input_options.hpp"
 
-namespace traccc {
-
 traccc::seeding_input_config::seeding_input_config(
     po::options_description& desc) {
 
@@ -34,5 +32,3 @@ void traccc::seeding_input_config::read(const po::variables_map& vm) {
     skip = vm["skip"].as<int>();
     check_seeding_performance = (particle_directory != "");
 }
-
-}  // namespace traccc
