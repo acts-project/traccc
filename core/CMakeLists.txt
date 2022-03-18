@@ -30,6 +30,7 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/sparse_ccl.hpp"
   "include/traccc/clusterization/component_connection.hpp"
+  "include/traccc/clusterization/clusterization_algorithm.hpp"
   "include/traccc/clusterization/spacepoint_formation.hpp"
   "include/traccc/clusterization/measurement_creation.hpp"
   # Seed finding algorithmic code.
@@ -42,6 +43,7 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   "include/traccc/seeding/detail/bin_finder.hpp"
   "include/traccc/seeding/seed_selecting_helper.hpp"
   "include/traccc/seeding/seed_filtering.hpp"
+  "include/traccc/seeding/seeding_algorithm.hpp"
   "include/traccc/seeding/track_params_estimation_helper.hpp"
   "include/traccc/seeding/doublet_finding_helper.hpp"
   "include/traccc/seeding/spacepoint_binning_helper.hpp"

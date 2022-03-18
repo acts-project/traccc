@@ -9,10 +9,10 @@
 #include <CL/sycl.hpp>
 
 // algorithms
+#include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
-#include "traccc/sycl/track_finding/seeding_algorithm.hpp"
-#include "traccc/track_finding/seeding_algorithm.hpp"
 
 // io
 #include "traccc/io/csv.hpp"
