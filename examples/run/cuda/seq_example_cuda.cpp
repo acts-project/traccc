@@ -23,7 +23,6 @@
 
 // options
 #include "traccc/options/full_tracking_input_options.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
 
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
@@ -300,10 +299,20 @@ int main(int argc, char* argv[]) {
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    // Check exception
-    auto exception = traccc::handle_argument_errors(desc, vm);
-    if (exception != traccc::no_exception) {
-        return exception;
+    // Print a help message if the user asked for it.
+    if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        return 0;
+    }
+
+    // Handle any and all errors.
+    try {
+        po::notify(vm);
+    } catch (const std::exception& ex) {
+        std::cerr << "Couldn't interpret command line options because of:\n\n"
+                  << ex.what() << "\n\n"
+                  << desc << std::endl;
+        return 1;
     }
 
     std::cout << "Running " << argv[0] << " "
