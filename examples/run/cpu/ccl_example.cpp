@@ -80,7 +80,7 @@ void print_statistics(const traccc::host_cell_container& data) {
 void run_on_event(traccc::component_connection& cc,
                   traccc::host_cell_container& data) {
     for (std::size_t i = 0; i < data.size(); ++i) {
-        traccc::cluster_collection clusters_per_module =
+        traccc::host_cluster_container clusters =
             cc(data.at(i).items, data.at(i).header);
     }
 }

@@ -25,7 +25,7 @@ using hit_particle_map = std::map<spacepoint, particle>;
 using hit_map = std::map<hit_id, spacepoint>;
 using hit_cell_map = std::map<spacepoint, std::vector<cell>>;
 using cell_particle_map = std::map<cell, particle>;
-using measurement_cell_map = std::map<measurement, std::vector<cell>>;
+using measurement_cell_map = std::map<measurement, vecmem::vector<cell>>;
 using measurement_particle_map =
     std::map<measurement, std::map<particle, uint64_t>>;
 
@@ -185,18 +185,19 @@ measurement_cell_map generate_measurement_cell_map(
         auto module = cells_per_event.at(i).header;
 
         // The algorithmic code part: start
-        cluster_collection clusters_per_module =
+        host_cluster_container clusters =
             cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
-        clusters_per_module.position_from_cell = module.pixel;
+        for (auto& cl_id : clusters.get_headers())
+            cl_id.position_from_cell = module.pixel;
 
         host_measurement_collection measurements_per_module =
-            mt(clusters_per_module, module);
+            mt(clusters, module);
 
-        for (std::size_t j = 0; j < clusters_per_module.items.size(); j++) {
-            const auto& clus = clusters_per_module.items[j];
+        for (std::size_t j = 0; j < clusters.size(); j++) {
+            const auto& clus = clusters.at(j).items;
             const auto& meas = measurements_per_module[j];
 
-            result[meas] = clus.cells;
+            result[meas] = clus;
         }
     }
 

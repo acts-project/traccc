@@ -43,8 +43,7 @@ TEST(algorithms, seq_single_module) {
     module.pixel = traccc::pixel_segmentation{0., 0., 1., 1.};
     module.placement = traccc::transform3{};
 
-    traccc::cluster_collection clusters;
-    clusters.position_from_cell = module.pixel;
+    traccc::host_cluster_container clusters(&resource);
 
     traccc::host_measurement_collection measurements;
 
@@ -56,6 +55,8 @@ TEST(algorithms, seq_single_module) {
 
     // Algorithmic code: start
     clusters = cc(cells, module);
+    for (auto& cl_id : clusters.get_headers())
+        cl_id.position_from_cell = module.pixel;
     measurements = mt(clusters, module);
     spacepoints = sp(module, measurements);
 }
