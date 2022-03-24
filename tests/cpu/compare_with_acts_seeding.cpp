@@ -16,9 +16,11 @@
 #include "traccc/seeding/spacepoint_binning.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
-// Acts
-#include "../../Tests/UnitTests/Core/Seeding/ATLASCuts.hpp"
-#include "../../Tests/UnitTests/Core/Seeding/SpacePoint.hpp"
+// tests
+#include "tests/atlas_cuts.hpp"
+#include "tests/space_point.hpp"
+
+// acts
 #include "Acts/Geometry/GeometryContext.hpp"
 #include "Acts/MagneticField/ConstantBField.hpp"
 #include "Acts/Seeding/BinFinder.hpp"
