@@ -265,7 +265,7 @@ class module_map {
          */
         std::vector<K> keys;
         keys.reserve(input.size());
-        for (const std::pair<K, V>& i : input) {
+        for (const std::pair<const K, V>& i : input) {
             keys.push_back(i.first);
         }
 
