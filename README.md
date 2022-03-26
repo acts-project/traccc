@@ -4,8 +4,6 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-<img align="right" width="30%" src="doc/images/algorithms.svg">
-
 | Category           | Algorithms             | CPU | CUDA | SYCL |
 | ------------------ | ---------------------- | --- | ---- | ---- |
 | **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   |
@@ -19,13 +17,116 @@ Demonstrator tracking chain for accelerators.
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
-In addition, the relations between datatypes and algorithms is given in the
-(approximately commutative) diagram shown on the right. Black lines indicate
-CPU algorithms, green lines indicate CUDA algorithms, and blue lines indicate
-SYCL algorithms. Solid algorithms are ready for use, dashed algorithms are in
-development, and dotted algorithms are future goals. Data types for different
-heterogeneous platforms are contracted for legibility, and identities are
-hidden.
+The relations between datatypes and algorithms is given in the (approximately
+commutative) diagram shown below. Black lines indicate CPU algorithms, green
+lines indicate CUDA algorithms, and blue lines indicate SYCL algorithms. Solid
+algorithms are ready for use, dashed algorithms are in development or future
+goals. Data types for different heterogeneous platforms are contracted for
+legibility, and identities are hidden.
+
+```mermaid
+flowchart LR
+    subgraph clusterization [<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/clusterization/clusterization_algorithm.hpp'>Clusterization</a>]
+        direction TB
+        cell(Cells);
+        cluster(Clusters);
+        meas(Measurements);
+    end
+
+    subgraph trkfinding [Track Finding]
+        sp(Spacepoints);
+        bin(Bins);
+        seed(Seeds);
+        ptrack(Prototracks);
+    end
+
+    subgraph trkfitting [Track Fitting]
+        track(Track);
+    end
+
+    click cell href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/cell.hpp";
+    click cluster href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/cluster.hpp";
+    click meas href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/measurement.hpp";
+    click sp href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/spacepoint.hpp";
+    click seed href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/seed.hpp";
+    click ptrack href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/track_parameters.hpp";
+
+    %% CPU CCL algorithm
+    cell -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/clusterization/component_connection.hpp'>CCL</a>| cluster;
+    linkStyle 0 stroke: black;
+
+    %% SYCL CCL algorithm
+    cell -.->|CCL| cluster;
+    linkStyle 1 stroke: blue;
+
+    %% CPU clusterization
+    cluster -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/clusterization/measurement_creation.hpp'>Agg.</a>| meas;
+    linkStyle 2 stroke: black;
+
+    %% SYCL clusterization
+    cluster -.->|Agg.| meas;
+    linkStyle 3 stroke: blue;
+
+    %% CUDA CCA
+    cell -.->|CCA| meas;
+    linkStyle 4 stroke: green;
+
+    %% CPU local to global
+    meas -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/clusterization/spacepoint_formation.hpp'>L2G</a>| sp;
+    linkStyle 5 stroke: black;
+
+    %% SYCL local to global
+    meas -.->|L2G| sp;
+    linkStyle 6 stroke: blue;
+
+    %% CUDA local to global
+    meas -.->|L2G| sp;
+    linkStyle 7 stroke: green;
+
+    %% CPU binning
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/spacepoint_binning.hpp'>Binning</a>| bin;
+    linkStyle 8 stroke: black;
+
+    %% CUDA binning
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/spacepoint_binning.hpp'>Binning</a>| bin;
+    linkStyle 9 stroke: green;
+
+    %% CPU seeding
+    bin -.->|Seeding| seed;
+    linkStyle 10 stroke: black;
+
+    %% SYCL seeding
+    bin -.->|Seeding| seed;
+    linkStyle 11 stroke: blue;
+
+    %% CUDA seeding
+    bin -->|<a href='https://github.com/acts-project/traccc/tree/main/device/cuda/include/traccc/cuda/seeding'>Seeding</a>| seed;
+    linkStyle 12 stroke: green;
+
+    %% CUDA binless seeding
+    sp -.->|Seeding| seed;
+    linkStyle 13 stroke: green;
+
+    %% CPU param est.
+    seed -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
+    linkStyle 14 stroke: black;
+
+    %% CUDA param est.
+    seed -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
+    linkStyle 15 stroke: green;
+
+    %% CPU CKF
+    ptrack -.->|CKF| track;
+    linkStyle 16 stroke: black;
+
+    %% CPU Kalman filter
+    track -.->|Kalman filter| track;
+    linkStyle 17 stroke: black;
+
+    %% CUDA kalman filter
+    track -.->|Kalman filter| track;
+    linkStyle 18 stroke: green;
+```
 
 ## Requirements and dependencies 
 
