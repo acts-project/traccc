@@ -17,8 +17,8 @@ namespace traccc {
 
 /// Connected component labeling.
 struct measurement_creation
-    : public algorithm<host_measurement_collection(const cluster_collection &,
-                                                   const cell_module &)> {
+    : public algorithm<host_measurement_collection(
+          const host_cluster_container &, const cell_module &)> {
     public:
     /// Constructor for measurement_creation
     ///
@@ -37,7 +37,7 @@ struct measurement_creation
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
     host_measurement_collection operator()(
-        const cluster_collection &c, const cell_module &m) const override {
+        const host_cluster_container &c, const cell_module &m) const override {
         output_type measurements;
         this->operator()(c, m, measurements);
         return measurements;
@@ -54,15 +54,15 @@ struct measurement_creation
     ///
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
-    void operator()(const cluster_collection &clusters,
+    void operator()(const host_cluster_container &clusters,
                     const cell_module &module,
                     output_type &measurements) const {
 
         // Run the algorithm
         auto pitch = module.pixel.get_pitch();
 
-        measurements.reserve(clusters.items.size());
-        for (const auto &cluster : clusters.items) {
+        measurements.reserve(clusters.size());
+        for (const auto &cluster : clusters.get_items()) {
             scalar totalWeight = 0.;
 
             // To calculate the mean and variance with high numerical stability
@@ -77,16 +77,17 @@ struct measurement_creation
             point2 mean = {0., 0.}, var = {0., 0.};
 
             // Should not happen
-            if (cluster.cells.empty()) {
+            if (cluster.empty()) {
                 continue;
             }
 
-            for (const auto &cell : cluster.cells) {
-                scalar weight = clusters.signal(cell.activation);
-                if (weight > clusters.threshold) {
+            const auto &cl_id = clusters.at(0).header;
+            for (const auto &cell : cluster) {
+                scalar weight = cl_id.signal(cell.activation);
+                if (weight > cl_id.threshold) {
                     totalWeight += cell.activation;
-                    const point2 cell_position = clusters.position_from_cell(
-                        cell.channel0, cell.channel1);
+                    const point2 cell_position =
+                        cl_id.position_from_cell(cell.channel0, cell.channel1);
 
                     const point2 prev = mean;
                     const point2 diff = cell_position - prev;
