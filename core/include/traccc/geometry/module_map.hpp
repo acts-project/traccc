@@ -140,9 +140,9 @@ class module_map {
         module_map_node(K s, std::size_t n, std::size_t i)
             : start(s), size(n), index(i) {}
 
-        K start = 0;
-        std::size_t size = 0;
-        std::size_t index = 0;
+        K start;
+        std::size_t size;
+        std::size_t index;
     };
 
     /**
