@@ -49,6 +49,7 @@ jobs:
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           cmake --build build
       - name: Test
+        if: "matrix.platform.name != 'CUDA'"
         run: |
           cd build
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
