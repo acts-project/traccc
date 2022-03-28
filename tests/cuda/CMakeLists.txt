@@ -29,8 +29,14 @@ traccc_add_test(
     # Define the sources for the test.
     test_basic.cu
     test_cca.cpp
+    test_module_map.cu
 
     LINK_LIBRARIES
+    traccc::core
+    traccc::cuda
+    traccc::io
+    vecmem::core
+    vecmem::cuda
     GTest::gtest
     traccc::core
     traccc::cuda
