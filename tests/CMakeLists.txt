@@ -16,3 +16,7 @@ target_include_directories( traccc_tests_common
 add_subdirectory( core )
 add_subdirectory( cpu )
 add_subdirectory( io )
+
+if( TRACCC_BUILD_CUDA )
+    add_subdirectory( cuda )
+endif()
