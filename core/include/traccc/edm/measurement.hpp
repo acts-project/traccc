@@ -20,8 +20,8 @@ namespace traccc {
 /// A measurement definition:
 /// fix to two-dimensional here
 struct measurement {
-    point2 local = {0., 0.};
-    variance2 variance = {0., 0.};
+    point2 local;
+    variance2 variance;
 
     TRACCC_HOST_DEVICE
     static inline measurement invalid_value() {

@@ -41,7 +41,12 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/counting_grid_capacities.cu"
   "src/seeding/seed_selecting.cu"
   "src/seeding/triplet_finding.cu"
-  "src/seeding/doublet_finding.cu" )
+  "src/seeding/doublet_finding.cu"
+
+  # Spacepoint formation code.
+  "include/traccc/cuda/spacepoint_formation/flat.hpp"
+  "src/spacepoint_formation/flat.cu"
+)
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
