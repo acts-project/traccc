@@ -5,7 +5,7 @@
 # Mozilla Public License Version 2.0
 
 # FindCUDAToolkit needs at least CMake 3.17.
-cmake_minimum_required( VERSION 3.17 )
+cmake_minimum_required( VERSION 3.18 )
 
 # Include the helper function(s).
 include( traccc-functions )
