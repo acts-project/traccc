@@ -9,9 +9,9 @@ Demonstrator tracking chain for accelerators.
 | **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   |
 |                    | Measurement creation   | ✅  | 🟡   | 🟡   |
 |                    | Spacepoint formation   | ✅  | 🟡   | 🟡   |
-| **Track finding**  | Spacepoint binning     | ✅  | ✅   | 🟡   |
-|                    | Seed finding           | ✅  | ✅   | 🟡   |
-|                    | Track param estimation | ✅  | ✅   | 🟡   |
+| **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   |
+|                    | Seed finding           | ✅  | ✅   | ✅   |
+|                    | Track param estimation | ✅  | ✅   | ✅   |
 |                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   |
 | **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   |
 
@@ -96,7 +96,7 @@ flowchart LR
     linkStyle 10 stroke: black;
 
     %% SYCL seeding
-    bin -.->|Seeding| seed;
+    bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/seed_finding.hpp'>Seeding</a>| seed;
     linkStyle 11 stroke: blue;
 
     %% CUDA seeding
@@ -126,6 +126,14 @@ flowchart LR
     %% CUDA kalman filter
     track -.->|Kalman filter| track;
     linkStyle 18 stroke: green;
+
+    %% SYCL binning
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/spacepoint_binning.hpp'>Binning</a>| bin;
+    linkStyle 19 stroke: blue;
+
+    %% SYCL track parameter est.
+    seed -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
+    linkStyle 20 stroke: blue;
 ```
 
 ## Requirements and dependencies 
