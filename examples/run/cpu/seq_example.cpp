@@ -139,11 +139,11 @@ int main(int argc, char* argv[]) {
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
-    // Read options
-    full_tracking_input_cfg.read(vm);
-
     // Check errors
     traccc::handle_argument_errors(vm, desc);
+
+    // Read options
+    full_tracking_input_cfg.read(vm);
 
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
