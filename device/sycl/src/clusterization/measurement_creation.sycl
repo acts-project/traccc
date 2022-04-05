@@ -1,0 +1,131 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// SYCL library include(s)
+#include "traccc/sycl/clusterization/measurement_creation.hpp"
+#include "../utils/get_queue.hpp"
+
+// SYCL include(s)
+#include <CL/sycl.hpp>
+
+// Vecmem include(s)
+#include <vecmem/utils/sycl/copy.hpp>
+
+namespace traccc::sycl {
+
+measurement_creation::measurement_creation(vecmem::memory_resource &mr, queue_wrapper queue) : m_mr(mr), m_queue(queue) {}
+
+host_measurement_container measurement_creation::operator()(
+    const host_cluster_container &c,
+    const std::vector<std::size_t> &s,
+    const host_cell_container &l) const {
+    output_type measurements(&m_mr.get());
+    this->operator()(c, s, l, measurements);
+    return measurements;
+}
+
+void measurement_creation::operator()(const host_cluster_container &clusters,
+                const std::vector<std::size_t> &cluster_sizes,
+                const host_cell_container &cells_per_event,
+                output_type &measurements) const {
+
+    // Calculate the execution range for the kernel
+    // auto workGroupSize = 32;
+    // auto num = (clusters.size() + workGroupSize - 1) / workGroupSize;
+    // auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num*workGroupSize), ::sycl::range<1>(workGroupSize)};
+    auto range = ::sycl::range<1>{clusters.size()};
+
+    // Resizable buffer for the measurements that will later be copied to the host 
+    vecmem::sycl::copy copy{m_queue.queue()};
+    vecmem::data::jagged_vector_buffer<measurement> measurements_buffer(std::vector<std::size_t>(cluster_sizes.size(), 0), cluster_sizes, m_mr.get());
+    copy.setup(measurements_buffer);
+
+    // Vector views to move data to the device
+    vecmem::data::jagged_vector_view<measurement> measurements_view = vecmem::get_data(measurements_buffer);
+    auto clusters_data = get_data(clusters, &m_mr.get());
+
+    cluster_container_const_view clusters_view(clusters_data);
+    
+    // Run the kernel
+    details::get_queue(m_queue).submit([&](::sycl::handler& h){
+        h.parallel_for<class measurementCreation>(range, [clusters_view, measurements_view]
+                                                          (::sycl::id<1> idx){
+            // // get the thread index
+            // auto idx = item.get_global_linear_id();
+
+            // Initialize device vectors
+            device_cluster_const_container clusters_device({clusters_view.headers, clusters_view.items});
+            vecmem::jagged_device_vector<measurement> measurements_device(measurements_view);
+            // Ignore if idx out of range 
+            if (idx >= clusters_device.size()) return;
+
+            const auto& cluster = clusters_device.get_items().at(idx);
+            const auto& cluster_id = clusters_device.get_headers().at(idx);
+
+            const auto pitch = cluster_id.position_from_cell.get_pitch();
+            const auto module_idx = cluster_id.module_idx; 
+
+            scalar totalWeight = 0.;
+
+            // To calculate the mean and variance with high numerical stability
+            // we use a weighted variant of Welford's algorithm. This is a
+            // single-pass online algorithm that works well for large numbers
+            // of samples, as well as samples with very high values.
+            //
+            // To learn more about this algorithm please refer to:
+            // [1] https://doi.org/10.1080/00401706.1962.10490022
+            // [2] The Art of Computer Programming, Donald E. Knuth, second
+            //     edition, chapter 4.2.2.
+            point2 mean = {0., 0.}, var = {0., 0.};
+
+            // Should not happen
+            if (cluster.empty()) {
+                return;
+            }
+
+            for (const auto& cell : cluster) {
+                scalar weight = signal_cell_modelling(cell.activation);
+                if (weight > cluster_id.threshold) {
+                    totalWeight += cell.activation;
+                    const point2 cell_position =
+                            cluster_id.position_from_cell(cell.channel0, cell.channel1);
+                    const point2 prev = mean;
+                    const point2 diff = cell_position - prev;
+
+                    mean = prev + (weight / totalWeight) * diff;
+                    for (std::size_t i = 0; i < 2; ++i) {
+                        var[i] = var[i] + weight * (diff[i]) *
+                                                (cell_position[i] - mean[i]);
+                    }
+                }
+            }
+            if (totalWeight > 0.) {
+                measurement m;
+                // normalize the cell position
+                m.local = mean;
+                // normalize the variance
+                m.variance[0] = var[0] / totalWeight;
+                m.variance[1] = var[1] / totalWeight;
+                // plus pitch^2 / 12
+                m.variance = m.variance + point2{pitch[0] * pitch[0] / 12,
+                                                    pitch[1] * pitch[1] / 12};
+                // @todo add variance estimation
+                measurements_device.at(module_idx).push_back(m);
+            }
+        });
+    }).wait_and_throw();
+
+    vecmem::jagged_vector<measurement> measurements_jagged_vector(&m_mr.get());
+    copy(measurements_buffer, measurements_jagged_vector);
+
+    for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
+        auto module = cells_per_event.at(i).header;
+        measurements.push_back(module, std::move(measurements_jagged_vector[i]));
+    }
+}
+
+}  // namespace traccc::sycl

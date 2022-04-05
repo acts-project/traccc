@@ -83,7 +83,7 @@ struct measurement_creation
 
             const auto &cl_id = clusters.at(0).header;
             for (const auto &cell : cluster) {
-                scalar weight = cl_id.signal(cell.activation);
+                scalar weight = signal_cell_modelling(cell.activation);
                 if (weight > cl_id.threshold) {
                     totalWeight += cell.activation;
                     const point2 cell_position =
