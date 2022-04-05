@@ -112,22 +112,22 @@ struct internal_spacepoint {
     TRACCC_HOST_DEVICE const scalar& x() const { return m_x; }
 
     TRACCC_HOST_DEVICE
-    const scalar& y() const { return m_y; }
+    scalar y() const { return m_y; }
 
     TRACCC_HOST_DEVICE
-    const scalar& z() const { return m_z; }
+    scalar z() const { return m_z; }
 
     TRACCC_HOST_DEVICE
-    const scalar& radius() const { return m_r; }
+    scalar radius() const { return m_r; }
 
     TRACCC_HOST_DEVICE
     scalar phi() const { return algebra::math::atan2(m_y, m_x); }
 
     TRACCC_HOST_DEVICE
-    const scalar& varianceR() const { return m_varianceR; }
+    scalar varianceR() const { return m_varianceR; }
 
     TRACCC_HOST_DEVICE
-    const scalar& varianceZ() const { return m_varianceZ; }
+    scalar varianceZ() const { return m_varianceZ; }
 };
 
 template <typename spacepoint_t>
