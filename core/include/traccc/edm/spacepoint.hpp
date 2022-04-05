@@ -21,8 +21,8 @@ namespace traccc {
 
 /// A spacepoint definition: global position and errors
 struct spacepoint {
-    point3 global = {0., 0., 0.};
-    variance3 variance = {0., 0., 0.};
+    point3 global;
+    variance3 variance;
     measurement meas;
 
     TRACCC_HOST_DEVICE

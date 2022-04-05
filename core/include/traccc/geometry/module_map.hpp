@@ -15,6 +15,11 @@
 #include <iostream>
 
 namespace traccc {
+namespace cuda {
+template <typename, typename>
+class module_map;
+}
+
 /**
  * @brief A fast and GPU-friendly map for consecutive module IDs to values.
  *
@@ -140,9 +145,9 @@ class module_map {
         module_map_node(K s, std::size_t n, std::size_t i)
             : start(s), size(n), index(i) {}
 
-        K start = 0;
-        std::size_t size = 0;
-        std::size_t index = 0;
+        K start;
+        std::size_t size;
+        std::size_t index;
     };
 
     /**
@@ -397,5 +402,7 @@ class module_map {
      * keep indices in this array instead of pointers.
      */
     std::vector<V> m_values;
+
+    friend class cuda::module_map<K, V>;
 };
 }  // namespace traccc
