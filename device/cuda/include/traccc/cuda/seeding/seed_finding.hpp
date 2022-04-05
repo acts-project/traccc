@@ -30,7 +30,7 @@ namespace cuda {
 
 /// Seed finding for cuda
 struct seed_finding : public algorithm<host_seed_collection(
-                          host_spacepoint_container&&, sp_grid_buffer&&)> {
+                          host_spacepoint_container&&, sp_grid_view&&)> {
 
     /// Constructor for the cuda seed finding
     ///
@@ -44,14 +44,14 @@ struct seed_finding : public algorithm<host_seed_collection(
     ///
     /// @return seed_collection is the vector of seeds per event
     output_type operator()(host_spacepoint_container&& spacepoints,
-                           sp_grid_buffer&& g2_buffer) const override {
+                           sp_grid_view&& g2_view) const override {
         vecmem::cuda::copy copy;
-        unsigned int nbins = g2_buffer._buffer.m_size;
+        unsigned int nbins = g2_view._data_view.m_size;
 
         // Fill the size vector for double counter container
         std::vector<size_t> n_spm_per_bin;
         for (unsigned int i = 0; i < nbins; ++i) {
-            n_spm_per_bin.push_back(g2_buffer._buffer.m_ptr[i].size());
+            n_spm_per_bin.push_back(g2_view._data_view.m_ptr[i].size());
         }
 
         // Create doublet counter container buffer
@@ -60,8 +60,8 @@ struct seed_finding : public algorithm<host_seed_collection(
         copy.setup(dcc_buffer.headers);
 
         // Run doublet counting
-        traccc::cuda::doublet_counting(m_seedfinder_config, g2_buffer,
-                                       dcc_buffer, m_mr.get());
+        traccc::cuda::doublet_counting(m_seedfinder_config, g2_view, dcc_buffer,
+                                       m_mr.get());
 
         // Take header of the doublet counter container into host
         vecmem::vector<doublet_counter_per_bin> dcc_headers(&m_mr.get());
@@ -83,9 +83,9 @@ struct seed_finding : public algorithm<host_seed_collection(
         copy.setup(mbc_buffer.headers);
 
         // Run doublet finding
-        traccc::cuda::doublet_finding(m_seedfinder_config, dcc_headers,
-                                      g2_buffer, dcc_buffer, mbc_buffer,
-                                      mtc_buffer, m_mr.get());
+        traccc::cuda::doublet_finding(m_seedfinder_config, dcc_headers, g2_view,
+                                      dcc_buffer, mbc_buffer, mtc_buffer,
+                                      m_mr.get());
 
         // Take header of the middle-bottom doublet container buffer into host
         vecmem::vector<doublet_per_bin> mbc_headers(&m_mr.get());
@@ -98,7 +98,7 @@ struct seed_finding : public algorithm<host_seed_collection(
 
         // Run triplet counting
         traccc::cuda::triplet_counting(m_seedfinder_config, mbc_headers,
-                                       g2_buffer, dcc_buffer, mbc_buffer,
+                                       g2_view, dcc_buffer, mbc_buffer,
                                        mtc_buffer, tcc_buffer, m_mr.get());
 
         // Take header of the triplet counter container buffer into host
@@ -118,7 +118,7 @@ struct seed_finding : public algorithm<host_seed_collection(
 
         // Run triplet finding
         traccc::cuda::triplet_finding(m_seedfinder_config, m_seedfilter_config,
-                                      tcc_headers, g2_buffer, dcc_buffer,
+                                      tcc_headers, g2_view, dcc_buffer,
                                       mbc_buffer, mtc_buffer, tcc_buffer,
                                       tc_buffer, m_mr.get());
 
@@ -127,9 +127,8 @@ struct seed_finding : public algorithm<host_seed_collection(
         copy(tc_buffer.headers, tc_headers);
 
         // Run weight updating
-        traccc::cuda::weight_updating(m_seedfilter_config, tc_headers,
-                                      g2_buffer, tcc_buffer, tc_buffer,
-                                      m_mr.get());
+        traccc::cuda::weight_updating(m_seedfilter_config, tc_headers, g2_view,
+                                      tcc_buffer, tc_buffer, m_mr.get());
 
         // Get the number of seeds (triplets)
         auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
@@ -142,8 +141,8 @@ struct seed_finding : public algorithm<host_seed_collection(
 
         // Run seed selecting
         traccc::cuda::seed_selecting(
-            m_seedfilter_config, dcc_headers, spacepoints, g2_buffer,
-            dcc_buffer, tcc_buffer, tc_buffer, seed_buffer, m_mr.get());
+            m_seedfilter_config, dcc_headers, spacepoints, g2_view, dcc_buffer,
+            tcc_buffer, tc_buffer, seed_buffer, m_mr.get());
 
         // Take seed buffer into seed collection
         host_seed_collection seed_collection(&m_mr.get());
