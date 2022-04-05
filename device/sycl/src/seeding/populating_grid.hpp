@@ -39,7 +39,7 @@ namespace traccc::sycl {
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
 void populating_grid(
-    const seedfinder_config config, sp_grid_view grid_view,
+    const seedfinder_config config, sp_grid& grid,
     host_spacepoint_container& spacepoints,
     const vecmem::vector<std::pair<unsigned int, unsigned int>>&
         sp_container_indices,
