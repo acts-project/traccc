@@ -28,8 +28,13 @@ traccc_add_test(
 
     # Define the sources for the test.
     test_basic.cu
+    test_cca.cpp
 
     LINK_LIBRARIES
     GTest::gtest
+    traccc::core
+    traccc::cuda
+    traccc::io
     traccc_tests_cuda_main
+    traccc_tests_common
 )
