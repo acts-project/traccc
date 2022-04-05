@@ -38,10 +38,7 @@ struct spacepoint_binning
 
         int nbins = m_axes.first.n_bins * m_axes.second.n_bins;
 
-        // capacity for the bins of grid buffer
-        vecmem::vector<unsigned int> grid_capacities(nbins, 0, &m_mr.get());
-
-        // store the container id for spacepoints
+        // Store the container id for spacepoints
         vecmem::vector<std::pair<unsigned int, unsigned int>>
             sp_container_indices(spacepoints.total_size(), &m_mr.get());
 
@@ -53,22 +50,26 @@ struct spacepoint_binning
             }
         }
 
-        // count the grid capacities
+        // Capacity for the bins of grid buffer
+        vecmem::vector<unsigned int> grid_capacities(nbins, 0, &m_mr.get());
+
+        // Run counting grid capacities
         traccc::cuda::counting_grid_capacities(
             m_config, m_axes.first, m_axes.second, spacepoints,
             sp_container_indices, grid_capacities, m_mr.get());
 
-        // output object for grid of internal spacepoint
+        // Create size and capacity vector for grid buffer
         std::vector<std::size_t> sizes(nbins, 0);
         std::vector<std::size_t> capacities;
         for (const auto& c : grid_capacities) {
             capacities.push_back(c);
         }
 
+        // Create grid buffer
         output_type g2_buffer(m_axes.first, m_axes.second, sizes, capacities,
                               m_mr.get());
 
-        // populate the internal spacepoints into the grid
+        // Run populating grid
         traccc::cuda::populating_grid(m_config, g2_buffer, spacepoints,
                                       sp_container_indices, grid_capacities,
                                       m_mr.get());
