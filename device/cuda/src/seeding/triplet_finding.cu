@@ -49,6 +49,9 @@ void triplet_finding(
 
     // zero initialization
     set_zero_kernel<<<1, nbins>>>(tc_view);
+    // cuda error check
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet

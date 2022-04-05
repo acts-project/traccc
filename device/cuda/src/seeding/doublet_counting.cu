@@ -39,6 +39,9 @@ void doublet_counting(const seedfinder_config& config,
 
     // zero initialization
     set_zero_kernel<<<1, nbins>>>(dcc_view);
+    // cuda error check
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // The thread-block is desinged to make each thread count the number of
     // doublets per middle spacepoint

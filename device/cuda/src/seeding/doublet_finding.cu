@@ -49,6 +49,9 @@ void doublet_finding(const seedfinder_config& config,
 
     // zero initialization
     set_zero_kernel<<<1, nbins>>>(mbc_view, mtc_view);
+    // cuda error check
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // The thread-block is desinged to make each thread find doublets per
     // compatible middle spacepoints (comptible middle spacepoint means that the
