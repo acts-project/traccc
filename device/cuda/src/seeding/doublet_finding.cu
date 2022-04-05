@@ -59,7 +59,7 @@ void doublet_finding(const seedfinder_config& config,
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 1;
+    unsigned int num_threads = WARP_SIZE * 2;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:

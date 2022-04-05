@@ -32,7 +32,7 @@ void counting_grid_capacities(
     auto grid_capacities_view = vecmem::get_data(grid_capacities);
 
     // number of threads is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 4;
+    unsigned int num_threads = WARP_SIZE * 8;
     unsigned int num_blocks = spacepoints.total_size() / num_threads + 1;
 
     // run the kernel

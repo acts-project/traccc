@@ -62,6 +62,12 @@ struct spacepoint_binning
         std::vector<std::size_t> sizes(nbins, 0);
         std::vector<std::size_t> capacities;
         for (const auto& c : grid_capacities) {
+            /// Note: Need to investigate why populating_grid fails without this
+            /// when the data size is small.
+            if (c < 60) {
+                capacities.push_back(60);
+                continue;
+            }
             capacities.push_back(c);
         }
 
