@@ -84,7 +84,8 @@ class CountGridCapacities {
                 phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 
             /// increase the capacity for the grid bin
-            vecmem::atomic<uint32_t> obj(&grid_capacities_device[bin_index]);
+            vecmem::device_atomic_ref<uint32_t> obj(
+                grid_capacities_device[bin_index]);
             obj.fetch_add(1);
         }
     }

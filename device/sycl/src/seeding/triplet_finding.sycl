@@ -244,7 +244,7 @@ class TripletFind {
             }
             num_triplets_per_thread[0] = resultTriplets;
 
-            vecmem::atomic<uint32_t> obj(&num_triplets_per_bin);
+            vecmem::device_atomic_ref<uint32_t> obj(num_triplets_per_bin);
             obj.fetch_add(num_triplets_per_thread[0]);
         }
     }
