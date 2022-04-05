@@ -167,9 +167,9 @@ class TripletCount {
         // if the number of triplets per mb is larger than 0, write the triplet
         // counter into the container
         if (num_triplets_per_mb > 0) {
-            vecmem::atomic<uint32_t> obj(&num_compat_mb_per_bin);
+            vecmem::device_atomic_ref<uint32_t> obj(num_compat_mb_per_bin);
             auto pos = obj.fetch_add(1);
-            vecmem::atomic<uint32_t> objT(&num_triplets);
+            vecmem::device_atomic_ref<uint32_t> objT(num_triplets);
             objT.fetch_add(num_triplets_per_mb);
             triplet_counter_per_bin[pos] = {mid_bot_doublet,
                                             num_triplets_per_mb};

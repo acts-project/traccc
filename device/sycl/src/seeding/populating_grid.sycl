@@ -82,7 +82,7 @@ class PopulatingGrid {
                 phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 
             /// increase the size for the grid bin
-            vecmem::atomic<uint32_t> obj(&grid_sizes[bin_index]);
+            vecmem::device_atomic_ref<uint32_t> obj(grid_sizes[bin_index]);
             auto pos = obj.fetch_add(1);
 
             /// replace the value
