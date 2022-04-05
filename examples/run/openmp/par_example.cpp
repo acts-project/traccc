@@ -130,7 +130,7 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
 
             for (const auto &spacepoint : spacepoints_per_module) {
                 const auto &pos = spacepoint.global;
-                spwriter.append({module, pos[0], pos[1], pos[2], 0., 0., 0.});
+                spwriter.append({module, pos[0], pos[1], pos[2]});
             }
         }
     }

@@ -44,7 +44,7 @@ inline void write_spacepoints(
         auto module = spacepoints_per_event.get_headers()[i];
         for (const auto &spacepoint : spacepoints_per_module) {
             const auto &pos = spacepoint.global;
-            spwriter.append({module, pos[0], pos[1], pos[2], 0., 0., 0.});
+            spwriter.append({module, pos[0], pos[1], pos[2]});
         }
     }
 }

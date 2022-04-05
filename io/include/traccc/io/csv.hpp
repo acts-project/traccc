@@ -123,9 +123,8 @@ struct csv_spacepoint {
 
     uint64_t geometry_id = 0;
     scalar x, y, z;
-    scalar var_x, var_y, var_z;
 
-    DFE_NAMEDTUPLE(csv_spacepoint, geometry_id, x, y, z, var_x, var_y, var_z);
+    DFE_NAMEDTUPLE(csv_spacepoint, geometry_id, x, y, z);
 };
 
 using spacepoint_writer = dfe::NamedTupleCsvWriter<csv_spacepoint>;
@@ -405,10 +404,9 @@ inline host_spacepoint_container read_hits(
         auto placement = (*tfmap)[geom_id];
 
         point3 position({iohit.tx, iohit.ty, iohit.tz});
-        variance3 variance({0, 0, 0});
         auto local = placement.point_to_local(position);
         measurement m({point2({local[0], local[1]}), variance2({0., 0.})});
-        spacepoint sp({position, variance, m});
+        spacepoint sp({position, m});
 
         const host_spacepoint_container::header_vector& headers =
             result.get_headers();

@@ -22,13 +22,12 @@ namespace traccc {
 /// A spacepoint definition: global position and errors
 struct spacepoint {
     point3 global = {0., 0., 0.};
-    variance3 variance = {0., 0., 0.};
     measurement meas;
 
     TRACCC_HOST_DEVICE
     static inline spacepoint invalid_value() {
         measurement ms = measurement::invalid_value();
-        return spacepoint({{0., 0., 0.}, {0., 0., 0.}, ms});
+        return spacepoint({{0., 0., 0.}, ms});
     }
 
     TRACCC_HOST_DEVICE
