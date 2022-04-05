@@ -30,7 +30,8 @@ namespace cuda {
 /// @param sp_container_indices header and item index of spacepoints
 /// @param resource vecmem memory resource
 void counting_grid_capacities(
-    const seedfinder_config config, sp_grid& grid,
+    const seedfinder_config config, const sp_grid_buffer::axis_p0_type phi_axis,
+    const sp_grid_buffer::axis_p1_type z_axis,
     host_spacepoint_container& spacepoints,
     vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
     vecmem::vector<unsigned int>& grid_capacities,

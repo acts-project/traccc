@@ -26,8 +26,9 @@ namespace cuda {
 /// @param internal_sp_container vecmem container for internal spacepoint
 /// @param doublet_counter_container vecmem container for doublet_counter
 /// @param resource vecmem memory resource
-void doublet_counting(const seedfinder_config& config, sp_grid& internal_sp,
-                      host_doublet_counter_container& doublet_counter_container,
+void doublet_counting(const seedfinder_config& config,
+                      sp_grid_view internal_sp_view,
+                      doublet_counter_container_view dcc_view,
                       vecmem::memory_resource& resource);
 
 }  // namespace cuda

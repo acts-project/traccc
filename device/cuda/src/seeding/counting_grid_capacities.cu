@@ -12,20 +12,21 @@ namespace traccc {
 namespace cuda {
 
 __global__ void counting_grid_capacities_kernel(
-    const seedfinder_config config, sp_grid_view grid_view,
+    const seedfinder_config config, const sp_grid_buffer::axis_p0_type phi_axis,
+    const sp_grid_buffer::axis_p1_type z_axis,
     spacepoint_container_view spacepoints_view,
     vecmem::data::vector_view<std::pair<unsigned int, unsigned int>>
         sp_container_indices_view,
     vecmem::data::vector_view<unsigned int> grid_capacities_view);
 
 void counting_grid_capacities(
-    const seedfinder_config config, sp_grid& grid,
+    const seedfinder_config config, const sp_grid_buffer::axis_p0_type phi_axis,
+    const sp_grid_buffer::axis_p1_type z_axis,
     host_spacepoint_container& spacepoints,
     vecmem::vector<std::pair<unsigned int, unsigned int>>& sp_container_indices,
     vecmem::vector<unsigned int>& grid_capacities,
     vecmem::memory_resource& resource) {
 
-    auto grid_view = get_data(grid, resource);
     auto spacepoints_view = get_data(spacepoints, &resource);
     auto sp_container_indices_view = vecmem::get_data(sp_container_indices);
     auto grid_capacities_view = vecmem::get_data(grid_capacities);
@@ -36,7 +37,7 @@ void counting_grid_capacities(
 
     // run the kernel
     counting_grid_capacities_kernel<<<num_blocks, num_threads>>>(
-        config, grid_view, spacepoints_view, sp_container_indices_view,
+        config, phi_axis, z_axis, spacepoints_view, sp_container_indices_view,
         grid_capacities_view);
 
     // cuda error check
@@ -45,14 +46,14 @@ void counting_grid_capacities(
 }
 
 __global__ void counting_grid_capacities_kernel(
-    const seedfinder_config config, sp_grid_view grid_view,
+    const seedfinder_config config, const sp_grid_buffer::axis_p0_type phi_axis,
+    const sp_grid_buffer::axis_p1_type z_axis,
     spacepoint_container_view spacepoints_view,
     vecmem::data::vector_view<std::pair<unsigned int, unsigned int>>
         sp_container_indices_view,
     vecmem::data::vector_view<unsigned int> grid_capacities_view) {
 
     // Get device container for input parameters
-    sp_grid_device g2_device(grid_view);
     device_spacepoint_container spacepoints_device(
         {spacepoints_view.headers, spacepoints_view.items});
     vecmem::device_vector<std::pair<unsigned int, unsigned int>>
@@ -75,10 +76,6 @@ __global__ void counting_grid_capacities_kernel(
 
     /// Check out if the spacepoints can be used for seeding
     size_t r_index = is_valid_sp(config, sp);
-
-    /// Get axis information from grid
-    const auto& phi_axis = g2_device.axis_p0();
-    const auto& z_axis = g2_device.axis_p1();
 
     /// Ignore is radius index is invalid value
     if (r_index != detray::invalid_value<size_t>()) {

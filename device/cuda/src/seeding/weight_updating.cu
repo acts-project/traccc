@@ -26,14 +26,13 @@ __global__ void weight_updating_kernel(
     triplet_container_view triplet_view);
 
 void weight_updating(const seedfilter_config& filter_config,
-                     sp_grid& internal_sp,
-                     host_triplet_counter_container& triplet_counter_container,
-                     host_triplet_container& triplet_container,
+                     const vecmem::vector<triplet_per_bin>& tc_headers,
+                     sp_grid_view internal_sp_view,
+                     triplet_counter_container_view tcc_view,
+                     triplet_container_view tc_view,
                      vecmem::memory_resource& resource) {
 
-    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
-    auto triplet_view = get_data(triplet_container, &resource);
-    auto internal_sp_view = get_data(internal_sp, resource);
+    unsigned int nbins = internal_sp_view._data_view.m_size;
 
     // The thread-block is desinged to make each thread update the weight of eac
     // triplet
@@ -48,9 +47,8 @@ void weight_updating(const seedfilter_config& filter_config,
     // N_i is the number of blocks for i-th bin, defined as num_triplets_per_bin
     // / num_threads + 1
     unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp.nbins(); ++i) {
-        num_blocks +=
-            triplet_container.get_headers()[i].n_triplets / num_threads + 1;
+    for (size_t i = 0; i < nbins; ++i) {
+        num_blocks += tc_headers[i].n_triplets / num_threads + 1;
     }
 
     // shared memory assignment for the radius of the compatible top spacepoints
@@ -58,7 +56,7 @@ void weight_updating(const seedfilter_config& filter_config,
 
     // run the kernel
     weight_updating_kernel<<<num_blocks, num_threads, sh_mem>>>(
-        filter_config, internal_sp_view, triplet_counter_view, triplet_view);
+        filter_config, internal_sp_view, tcc_view, tc_view);
 
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());

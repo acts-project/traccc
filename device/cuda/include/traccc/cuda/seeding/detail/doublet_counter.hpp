@@ -35,7 +35,7 @@ struct doublet_counter_per_bin {
 /// item: the number of doublets per compatible middle spacepoint
 struct doublet_counter {
     /// index of a given middle spacepoint
-    sp_location spM;
+    sp_location spM{};
     /// number of compatible middle-bot doublets for a given middle spacepoint
     unsigned int n_mid_bot = 0;
     /// number of compatible middle-top doublets for a given middle spacepoint
