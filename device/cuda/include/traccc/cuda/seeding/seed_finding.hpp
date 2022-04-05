@@ -37,7 +37,7 @@ struct seed_finding : public algorithm<host_seed_collection(
     /// @param config is seed finder configuration parameters
     /// @param sp_grid spacepoint grid
     /// @param mr vecmem memory resource
-    seed_finding(seedfinder_config& config, vecmem::memory_resource& mr)
+    seed_finding(const seedfinder_config& config, vecmem::memory_resource& mr)
         : m_seedfinder_config(config), m_mr(mr) {}
 
     /// Callable operator for the seed finding
