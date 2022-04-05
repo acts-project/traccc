@@ -12,9 +12,16 @@ namespace traccc {
 namespace cuda {
 
 __global__ void set_zero_kernel(triplet_counter_container_view tcc_view) {
+
     device_triplet_counter_container tcc_device(
         {tcc_view.headers, tcc_view.items});
-    tcc_device.get_headers().at(threadIdx.x).zeros();
+
+    const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= tcc_device.get_headers().size()) {
+        return;
+    }
+
+    tcc_device.get_headers().at(gid).zeros();
 }
 
 /// Forward declaration of triplet counting kernel
@@ -46,8 +53,11 @@ void triplet_counting(const seedfinder_config& config,
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
+    unsigned int num_threads = WARP_SIZE * 2;
+    unsigned int num_blocks = nbins / num_threads + 1;
+
     // zero initialization
-    set_zero_kernel<<<1, nbins>>>(tcc_view);
+    set_zero_kernel<<<num_blocks, num_threads>>>(tcc_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
@@ -57,14 +67,14 @@ void triplet_counting(const seedfinder_config& config,
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 4;
+    num_threads = WARP_SIZE * 4;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:
     // i is the spacepoint bin index
     // N_i is the number of blocks for i-th bin, defined as
     // num_mid_bot_doublet_per_bin / num_threads + 1
-    unsigned int num_blocks = 0;
+    num_blocks = 0;
     for (size_t i = 0; i < nbins; ++i) {
         num_blocks += mbc_headers[i].n_doublets / num_threads + 1;
     }

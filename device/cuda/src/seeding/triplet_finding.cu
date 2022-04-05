@@ -12,8 +12,15 @@ namespace traccc {
 namespace cuda {
 
 __global__ void set_zero_kernel(triplet_container_view tc_view) {
+
     device_triplet_container tc_device({tc_view.headers, tc_view.items});
-    tc_device.get_headers().at(threadIdx.x).zeros();
+
+    const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= tc_device.get_headers().size()) {
+        return;
+    }
+
+    tc_device.get_headers().at(gid).zeros();
 }
 
 /// Forward declaration of triplet finding kernel
@@ -47,8 +54,11 @@ void triplet_finding(
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
+    unsigned int num_threads = WARP_SIZE * 2;
+    unsigned int num_blocks = nbins / num_threads + 1;
+
     // zero initialization
-    set_zero_kernel<<<1, nbins>>>(tc_view);
+    set_zero_kernel<<<num_blocks, num_threads>>>(tc_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
@@ -58,14 +68,14 @@ void triplet_finding(
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 1;
+    num_threads = WARP_SIZE * 1;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:
     // i is the spacepoint bin index
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_mid_bot_doublets_per_bin / num_threads + 1
-    unsigned int num_blocks = 0;
+    num_blocks = 0;
     for (size_t i = 0; i < nbins; ++i) {
         num_blocks += tcc_headers[i].n_mid_bot / num_threads + 1;
     }

@@ -14,11 +14,17 @@ namespace cuda {
 
 __global__ void set_zero_kernel(doublet_container_view mbc_view,
                                 doublet_container_view mtc_view) {
-    device_doublet_container mbc_device({mbc_view.headers, mbc_view.items});
-    mbc_device.get_headers().at(threadIdx.x).zeros();
 
+    device_doublet_container mbc_device({mbc_view.headers, mbc_view.items});
     device_doublet_container mtc_device({mtc_view.headers, mtc_view.items});
-    mtc_device.get_headers().at(threadIdx.x).zeros();
+
+    const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= mbc_device.get_headers().size()) {
+        return;
+    }
+
+    mbc_device.get_headers().at(gid).zeros();
+    mtc_device.get_headers().at(gid).zeros();
 }
 
 /// Forward declaration of doublet finding kernel
@@ -47,8 +53,11 @@ void doublet_finding(const seedfinder_config& config,
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
+    unsigned int num_threads = WARP_SIZE * 2;
+    unsigned int num_blocks = nbins / num_threads + 1;
+
     // zero initialization
-    set_zero_kernel<<<1, nbins>>>(mbc_view, mtc_view);
+    set_zero_kernel<<<num_blocks, num_threads>>>(mbc_view, mtc_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
@@ -59,14 +68,14 @@ void doublet_finding(const seedfinder_config& config,
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 2;
+    num_threads = WARP_SIZE * 2;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:
     // i is the spacepoint bin index
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_middle_sp_per_bin / num_threads + 1
-    unsigned int num_blocks = 0;
+    num_blocks = 0;
     for (unsigned int i = 0; i < nbins; ++i) {
         num_blocks += dcc_headers[i].n_spM / num_threads + 1;
     }
