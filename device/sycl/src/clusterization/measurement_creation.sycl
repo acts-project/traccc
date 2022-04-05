@@ -54,7 +54,7 @@ void measurement_creation::operator()(const host_cluster_container &clusters,
     details::get_queue(m_queue).submit([&](::sycl::handler& h){
         h.parallel_for<class measurementCreation>(range, [clusters_view, measurements_view]
                                                           (::sycl::id<1> idx){
-            // get the thread index
+            // // get the thread index
             // auto idx = item.get_global_linear_id();
 
             // Initialize device vectors
