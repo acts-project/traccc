@@ -237,10 +237,12 @@ class DupletFind {
             }
             num_mid_top_doublets_per_thread[0] = resultTop;
 
-            vecmem::atomic<uint32_t> objB(&num_mid_bot_doublets_per_bin);
+            vecmem::device_atomic_ref<uint32_t> objB(
+                num_mid_bot_doublets_per_bin);
             objB.fetch_add(num_mid_bot_doublets_per_thread[0]);
 
-            vecmem::atomic<uint32_t> objT(&num_mid_top_doublets_per_bin);
+            vecmem::device_atomic_ref<uint32_t> objT(
+                num_mid_top_doublets_per_bin);
             objT.fetch_add(num_mid_top_doublets_per_thread[0]);
         }
     }

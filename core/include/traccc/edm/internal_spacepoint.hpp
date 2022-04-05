@@ -40,8 +40,6 @@ struct internal_spacepoint {
     scalar m_y;
     scalar m_z;
     scalar m_r;
-    scalar m_varianceR;
-    scalar m_varianceZ;
 
     internal_spacepoint() = default;
 
@@ -55,10 +53,6 @@ struct internal_spacepoint {
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];
         m_r = std::sqrt(m_x * m_x + m_y * m_y);
-
-        // Need to fix this part
-        m_varianceR = sp.variance[0];
-        m_varianceZ = sp.variance[1];
     }
 
     TRACCC_HOST_DEVICE
@@ -68,8 +62,6 @@ struct internal_spacepoint {
         m_y = 0;
         m_z = 0;
         m_r = 0;
-        m_varianceR = 0;
-        m_varianceZ = 0;
     }
 
     TRACCC_HOST_DEVICE
@@ -80,8 +72,6 @@ struct internal_spacepoint {
         m_y = sp.m_y;
         m_z = sp.m_z;
         m_r = sp.m_r;
-        m_varianceR = sp.m_varianceR;
-        m_varianceZ = sp.m_varianceZ;
     }
 
     TRACCC_HOST_DEVICE
@@ -94,8 +84,6 @@ struct internal_spacepoint {
         m_y = sp.m_y;
         m_z = sp.m_z;
         m_r = sp.m_r;
-        m_varianceR = sp.m_varianceR;
-        m_varianceZ = sp.m_varianceZ;
 
         return *this;
     }
@@ -112,22 +100,22 @@ struct internal_spacepoint {
     TRACCC_HOST_DEVICE const scalar& x() const { return m_x; }
 
     TRACCC_HOST_DEVICE
-    const scalar& y() const { return m_y; }
+    scalar y() const { return m_y; }
 
     TRACCC_HOST_DEVICE
-    const scalar& z() const { return m_z; }
+    scalar z() const { return m_z; }
 
     TRACCC_HOST_DEVICE
-    const scalar& radius() const { return m_r; }
+    scalar radius() const { return m_r; }
 
     TRACCC_HOST_DEVICE
     scalar phi() const { return algebra::math::atan2(m_y, m_x); }
 
     TRACCC_HOST_DEVICE
-    const scalar& varianceR() const { return m_varianceR; }
+    scalar varianceR() const { return 0.; }
 
     TRACCC_HOST_DEVICE
-    const scalar& varianceZ() const { return m_varianceZ; }
+    scalar varianceZ() const { return 0.; }
 };
 
 template <typename spacepoint_t>
