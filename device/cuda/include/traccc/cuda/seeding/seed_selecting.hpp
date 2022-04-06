@@ -31,11 +31,12 @@ namespace cuda {
 /// @param seed_container vecmem container for seeds
 /// @param resource vecmem memory resource
 void seed_selecting(const seedfilter_config& filter_config,
+                    const vecmem::vector<doublet_counter_per_bin>& dcc_headers,
                     host_spacepoint_container& spacepoints,
-                    sp_grid& internal_sp,
-                    host_doublet_counter_container& doublet_counter_container,
-                    host_triplet_counter_container& triplet_counter_container,
-                    host_triplet_container& triplet_container,
+                    sp_grid_view internal_sp_view,
+                    doublet_counter_container_view dcc_view,
+                    triplet_counter_container_view tcc_view,
+                    triplet_container_view tc_view,
                     vecmem::data::vector_buffer<seed>& seed_buffer,
                     vecmem::memory_resource& resource);
 

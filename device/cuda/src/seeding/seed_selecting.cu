@@ -39,28 +39,25 @@ __global__ void seed_selecting_kernel(
     vecmem::data::vector_view<seed> seed_view);
 
 void seed_selecting(const seedfilter_config& filter_config,
+                    const vecmem::vector<doublet_counter_per_bin>& dcc_headers,
                     host_spacepoint_container& spacepoints,
-                    sp_grid& internal_sp,
-                    host_doublet_counter_container& doublet_counter_container,
-                    host_triplet_counter_container& triplet_counter_container,
-                    host_triplet_container& triplet_container,
+                    sp_grid_view internal_sp_view,
+                    doublet_counter_container_view dcc_view,
+                    triplet_counter_container_view tcc_view,
+                    triplet_container_view tc_view,
                     vecmem::data::vector_buffer<seed>& seed_buffer,
                     vecmem::memory_resource& resource) {
 
+    unsigned int nbins = internal_sp_view._data_view.m_size;
+
     auto spacepoints_view = get_data(spacepoints, &resource);
-    auto doublet_counter_container_view =
-        get_data(doublet_counter_container, &resource);
-    auto triplet_counter_container_view =
-        get_data(triplet_counter_container, &resource);
-    auto triplet_container_view = get_data(triplet_container, &resource);
-    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread investigate the
     // compatible middle spacepoint
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 2;
+    unsigned int num_threads = WARP_SIZE * 1;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:
@@ -68,9 +65,8 @@ void seed_selecting(const seedfilter_config& filter_config,
     // N_i is the number of blocks for i-th bin, defined as num_triplets_per_bin
     // / num_threads + 1
     unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp.nbins(); ++i) {
-        num_blocks +=
-            doublet_counter_container.get_headers()[i].n_spM / num_threads + 1;
+    for (size_t i = 0; i < nbins; ++i) {
+        num_blocks += dcc_headers[i].n_spM / num_threads + 1;
     }
 
     // shared memory assignment for the triplets of a compatible middle
@@ -80,9 +76,8 @@ void seed_selecting(const seedfilter_config& filter_config,
 
     // run the kernel
     seed_selecting_kernel<<<num_blocks, num_threads, sh_mem>>>(
-        filter_config, spacepoints_view, internal_sp_view,
-        doublet_counter_container_view, triplet_counter_container_view,
-        triplet_container_view, seed_buffer);
+        filter_config, spacepoints_view, internal_sp_view, dcc_view, tcc_view,
+        tc_view, seed_buffer);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());

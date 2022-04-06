@@ -24,112 +24,128 @@
 
 // System include(s).
 #include <algorithm>
-#include <iostream>
-#include <mutex>
 
 namespace traccc {
 namespace cuda {
 
 /// Seed finding for cuda
 struct seed_finding : public algorithm<host_seed_collection(
-                          host_spacepoint_container&&, sp_grid&&)> {
+                          host_spacepoint_container&&, sp_grid_view&&)> {
 
     /// Constructor for the cuda seed finding
     ///
     /// @param config is seed finder configuration parameters
     /// @param sp_grid spacepoint grid
     /// @param mr vecmem memory resource
-    seed_finding(seedfinder_config& config, unsigned int nbins,
-                 vecmem::memory_resource& mr)
-        : m_seedfinder_config(config),
-          m_mr(mr),
-          doublet_counter_container(nbins, &m_mr.get()),
-          mid_bot_container(nbins, &m_mr.get()),
-          mid_top_container(nbins, &m_mr.get()),
-          triplet_counter_container(nbins, &m_mr.get()),
-          triplet_container(nbins, &m_mr.get()),
-          seed_collection(&m_mr.get()) {}
+    seed_finding(const seedfinder_config& config, vecmem::memory_resource& mr)
+        : m_seedfinder_config(config), m_mr(mr) {}
 
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
     output_type operator()(host_spacepoint_container&& spacepoints,
-                           sp_grid&& g2) const override {
-        std::lock_guard<std::mutex> lock(*mutex);
-
-        // reinitialize the number of multiplets to zero
-        for (size_t i = 0; i < g2.nbins(); ++i) {
-            doublet_counter_container.get_headers()[i].zeros();
-            mid_bot_container.get_headers()[i].zeros();
-            mid_top_container.get_headers()[i].zeros();
-            triplet_counter_container.get_headers()[i].zeros();
-            triplet_container.get_headers()[i].zeros();
-        }
-
-        // resize the doublet counter container with the number of middle
-        // spacepoint
-        for (size_t i = 0; i < g2.nbins(); ++i) {
-            size_t n_spM = g2.bin(i).size();
-            doublet_counter_container.get_items()[i].resize(n_spM);
-        }
-
-        // doublet counting
-        traccc::cuda::doublet_counting(m_seedfinder_config, g2,
-                                       doublet_counter_container, m_mr.get());
-
-        // resize the doublet container with the number of doublets
-        for (size_t i = 0; i < g2.nbins(); ++i) {
-            mid_bot_container.get_items()[i].resize(
-                doublet_counter_container.get_headers()[i].n_mid_bot);
-            mid_top_container.get_items()[i].resize(
-                doublet_counter_container.get_headers()[i].n_mid_top);
-        }
-
-        // doublet finding
-        traccc::cuda::doublet_finding(
-            m_seedfinder_config, g2, doublet_counter_container,
-            mid_bot_container, mid_top_container, m_mr.get());
-
-        // resize the triplet_counter container with the number of doublets
-        for (size_t i = 0; i < g2.nbins(); ++i) {
-            triplet_counter_container.get_items()[i].resize(
-                doublet_counter_container.get_headers()[i].n_mid_bot);
-        }
-
-        // triplet counting
-        traccc::cuda::triplet_counting(m_seedfinder_config, g2,
-                                       doublet_counter_container,
-                                       mid_bot_container, mid_top_container,
-                                       triplet_counter_container, m_mr.get());
-
-        // resize the triplet container with the number of triplets
-        for (size_t i = 0; i < g2.nbins(); ++i) {
-            triplet_container.get_items()[i].resize(
-                triplet_counter_container.get_headers()[i].n_triplets);
-        }
-
-        // triplet finding
-        traccc::cuda::triplet_finding(
-            m_seedfinder_config, m_seedfilter_config, g2,
-            doublet_counter_container, mid_bot_container, mid_top_container,
-            triplet_counter_container, triplet_container, m_mr.get());
-
-        // weight updating
-        traccc::cuda::weight_updating(m_seedfilter_config, g2,
-                                      triplet_counter_container,
-                                      triplet_container, m_mr.get());
-
+                           sp_grid_view&& g2_view) const override {
         vecmem::cuda::copy copy;
-        vecmem::data::vector_buffer<seed> seed_buffer(
-            triplet_container.total_size(), 0, m_mr.get());
+        unsigned int nbins = g2_view._data_view.m_size;
+
+        // Fill the size vector for double counter container
+        std::vector<size_t> n_spm_per_bin;
+        for (unsigned int i = 0; i < nbins; ++i) {
+            n_spm_per_bin.push_back(g2_view._data_view.m_ptr[i].size());
+        }
+
+        // Create doublet counter container buffer
+        doublet_counter_container_buffer dcc_buffer{
+            {nbins, m_mr.get()}, {n_spm_per_bin, m_mr.get()}};
+        copy.setup(dcc_buffer.headers);
+
+        // Run doublet counting
+        traccc::cuda::doublet_counting(m_seedfinder_config, g2_view, dcc_buffer,
+                                       m_mr.get());
+
+        // Take header of the doublet counter container into host
+        vecmem::vector<doublet_counter_per_bin> dcc_headers(&m_mr.get());
+        copy(dcc_buffer.headers, dcc_headers);
+
+        // Fill the size vectors for doublet containers
+        std::vector<size_t> n_mid_bot_per_bin;
+        std::vector<size_t> n_mid_top_per_bin;
+        for (const auto& h : dcc_headers) {
+            n_mid_bot_per_bin.push_back(h.n_mid_bot);
+            n_mid_top_per_bin.push_back(h.n_mid_top);
+        }
+
+        // Create doublet container buffer
+        doublet_container_buffer mbc_buffer{{nbins, m_mr.get()},
+                                            {n_mid_bot_per_bin, m_mr.get()}};
+        doublet_container_buffer mtc_buffer{{nbins, m_mr.get()},
+                                            {n_mid_top_per_bin, m_mr.get()}};
+        copy.setup(mbc_buffer.headers);
+
+        // Run doublet finding
+        traccc::cuda::doublet_finding(m_seedfinder_config, dcc_headers, g2_view,
+                                      dcc_buffer, mbc_buffer, mtc_buffer,
+                                      m_mr.get());
+
+        // Take header of the middle-bottom doublet container buffer into host
+        vecmem::vector<doublet_per_bin> mbc_headers(&m_mr.get());
+        copy(mbc_buffer.headers, mbc_headers);
+
+        // Create triplet counter container buffer
+        triplet_counter_container_buffer tcc_buffer{
+            {nbins, m_mr.get()}, {n_mid_bot_per_bin, m_mr.get()}};
+        copy.setup(tcc_buffer.headers);
+
+        // Run triplet counting
+        traccc::cuda::triplet_counting(m_seedfinder_config, mbc_headers,
+                                       g2_view, dcc_buffer, mbc_buffer,
+                                       mtc_buffer, tcc_buffer, m_mr.get());
+
+        // Take header of the triplet counter container buffer into host
+        vecmem::vector<triplet_counter_per_bin> tcc_headers(&m_mr.get());
+        copy(tcc_buffer.headers, tcc_headers);
+
+        // Fill the size vector for triplet container
+        std::vector<size_t> n_triplets_per_bin;
+        for (const auto& h : tcc_headers) {
+            n_triplets_per_bin.push_back(h.n_triplets);
+        }
+
+        // Create triplet container buffer
+        triplet_container_buffer tc_buffer{{nbins, m_mr.get()},
+                                           {n_triplets_per_bin, m_mr.get()}};
+        copy.setup(tc_buffer.headers);
+
+        // Run triplet finding
+        traccc::cuda::triplet_finding(m_seedfinder_config, m_seedfilter_config,
+                                      tcc_headers, g2_view, dcc_buffer,
+                                      mbc_buffer, mtc_buffer, tcc_buffer,
+                                      tc_buffer, m_mr.get());
+
+        // Take header of the triplet container buffer into host
+        vecmem::vector<triplet_per_bin> tc_headers(&m_mr.get());
+        copy(tc_buffer.headers, tc_headers);
+
+        // Run weight updating
+        traccc::cuda::weight_updating(m_seedfilter_config, tc_headers, g2_view,
+                                      tcc_buffer, tc_buffer, m_mr.get());
+
+        // Get the number of seeds (triplets)
+        auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
+                                          n_triplets_per_bin.end(), 0);
+
+        // Create seed buffer
+        vecmem::data::vector_buffer<seed> seed_buffer(n_triplets, 0,
+                                                      m_mr.get());
         copy.setup(seed_buffer);
 
-        // seed selecting
+        // Run seed selecting
         traccc::cuda::seed_selecting(
-            m_seedfilter_config, spacepoints, g2, doublet_counter_container,
-            triplet_counter_container, triplet_container, seed_buffer,
-            m_mr.get());
+            m_seedfilter_config, dcc_headers, spacepoints, g2_view, dcc_buffer,
+            tcc_buffer, tc_buffer, seed_buffer, m_mr.get());
 
+        // Take seed buffer into seed collection
+        host_seed_collection seed_collection(&m_mr.get());
         copy(seed_buffer, seed_collection);
 
         return seed_collection;
@@ -140,15 +156,6 @@ struct seed_finding : public algorithm<host_seed_collection(
     const seedfilter_config m_seedfilter_config;
     seed_filtering m_seed_filtering;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
-    // mutable internal objects for multiplets
-    mutable std::unique_ptr<std::mutex> mutex{std::make_unique<std::mutex>()};
-    mutable host_doublet_counter_container doublet_counter_container;
-    mutable host_doublet_container mid_bot_container;
-    mutable host_doublet_container mid_top_container;
-    mutable host_triplet_counter_container triplet_counter_container;
-    mutable host_triplet_container triplet_container;
-    mutable host_seed_collection seed_collection;
 };
 
 }  // namespace cuda

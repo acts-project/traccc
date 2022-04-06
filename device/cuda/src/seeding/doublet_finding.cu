@@ -12,6 +12,21 @@
 namespace traccc {
 namespace cuda {
 
+__global__ void set_zero_kernel(doublet_container_view mbc_view,
+                                doublet_container_view mtc_view) {
+
+    device_doublet_container mbc_device({mbc_view.headers, mbc_view.items});
+    device_doublet_container mtc_device({mtc_view.headers, mtc_view.items});
+
+    const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= mbc_device.get_headers().size()) {
+        return;
+    }
+
+    mbc_device.get_headers().at(gid).zeros();
+    mtc_device.get_headers().at(gid).zeros();
+}
+
 /// Forward declaration of doublet finding kernel
 /// The mid-bot and mid-top doublets are found for the compatible middle
 /// spacepoints which were recorded during doublet_counting
@@ -28,16 +43,24 @@ __global__ void doublet_finding_kernel(
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view);
 
-void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
-                     host_doublet_counter_container& doublet_counter_container,
-                     host_doublet_container& mid_bot_doublet_container,
-                     host_doublet_container& mid_top_doublet_container,
+void doublet_finding(const seedfinder_config& config,
+                     const vecmem::vector<doublet_counter_per_bin>& dcc_headers,
+                     sp_grid_view internal_sp_view,
+                     doublet_counter_container_view dcc_view,
+                     doublet_container_view mbc_view,
+                     doublet_container_view mtc_view,
                      vecmem::memory_resource& resource) {
 
-    auto doublet_counter_view = get_data(doublet_counter_container, &resource);
-    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
-    auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
-    auto internal_sp_view = get_data(internal_sp, resource);
+    unsigned int nbins = internal_sp_view._data_view.m_size;
+
+    unsigned int num_threads = WARP_SIZE * 2;
+    unsigned int num_blocks = nbins / num_threads + 1;
+
+    // zero initialization
+    set_zero_kernel<<<num_blocks, num_threads>>>(mbc_view, mtc_view);
+    // cuda error check
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // The thread-block is desinged to make each thread find doublets per
     // compatible middle spacepoints (comptible middle spacepoint means that the
@@ -45,17 +68,16 @@ void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 2;
+    num_threads = WARP_SIZE * 2;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:
     // i is the spacepoint bin index
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_middle_sp_per_bin / num_threads + 1
-    unsigned int num_blocks = 0;
-    for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
-        num_blocks +=
-            doublet_counter_container.get_headers()[i].n_spM / num_threads + 1;
+    num_blocks = 0;
+    for (unsigned int i = 0; i < nbins; ++i) {
+        num_blocks += dcc_headers[i].n_spM / num_threads + 1;
     }
 
     // shared memory assignment for the number of and mid_top doublets per
@@ -64,8 +86,7 @@ void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
 
     // run the kernel
     doublet_finding_kernel<<<num_blocks, num_threads, sh_mem>>>(
-        config, internal_sp_view, doublet_counter_view, mid_bot_doublet_view,
-        mid_top_doublet_view);
+        config, internal_sp_view, dcc_view, mbc_view, mtc_view);
 
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());

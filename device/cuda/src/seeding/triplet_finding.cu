@@ -11,6 +11,18 @@
 namespace traccc {
 namespace cuda {
 
+__global__ void set_zero_kernel(triplet_container_view tc_view) {
+
+    device_triplet_container tc_device({tc_view.headers, tc_view.items});
+
+    const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= tc_device.get_headers().size()) {
+        return;
+    }
+
+    tc_device.get_headers().at(gid).zeros();
+}
+
 /// Forward declaration of triplet finding kernel
 /// The triplets per mid-bot doublets are found for the compatible mid-bot
 /// doublets which were recorded during triplet_counting
@@ -32,40 +44,40 @@ __global__ void triplet_finding_kernel(
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view);
 
-void triplet_finding(const seedfinder_config& config,
-                     const seedfilter_config& filter_config,
-                     sp_grid& internal_sp,
-                     host_doublet_counter_container& doublet_counter_container,
-                     host_doublet_container& mid_bot_doublet_container,
-                     host_doublet_container& mid_top_doublet_container,
-                     host_triplet_counter_container& triplet_counter_container,
-                     host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource) {
+void triplet_finding(
+    const seedfinder_config& config, const seedfilter_config& filter_config,
+    const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
+    sp_grid_view internal_sp_view, doublet_counter_container_view dcc_view,
+    doublet_container_view mbc_view, doublet_container_view mtc_view,
+    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
+    vecmem::memory_resource& resource) {
 
-    auto doublet_counter_view = get_data(doublet_counter_container, &resource);
-    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
-    auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
-    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
-    auto triplet_view = get_data(triplet_container, &resource);
-    auto internal_sp_view = get_data(internal_sp, resource);
+    unsigned int nbins = internal_sp_view._data_view.m_size;
+
+    unsigned int num_threads = WARP_SIZE * 2;
+    unsigned int num_blocks = nbins / num_threads + 1;
+
+    // zero initialization
+    set_zero_kernel<<<num_blocks, num_threads>>>(tc_view);
+    // cuda error check
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 2;
+    num_threads = WARP_SIZE * 1;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:
     // i is the spacepoint bin index
     // N_i is the number of blocks for i-th bin, defined as
     // num_compatible_mid_bot_doublets_per_bin / num_threads + 1
-    unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp.nbins(); ++i) {
-        num_blocks +=
-            triplet_counter_container.get_headers()[i].n_mid_bot / num_threads +
-            1;
+    num_blocks = 0;
+    for (size_t i = 0; i < nbins; ++i) {
+        num_blocks += tcc_headers[i].n_mid_bot / num_threads + 1;
     }
 
     // shared memory assignment for the number of triplets per thread
@@ -73,9 +85,8 @@ void triplet_finding(const seedfinder_config& config,
 
     // run the kernel
     triplet_finding_kernel<<<num_blocks, num_threads, sh_mem>>>(
-        config, filter_config, internal_sp_view, doublet_counter_view,
-        mid_bot_doublet_view, mid_top_doublet_view, triplet_counter_view,
-        triplet_view);
+        config, filter_config, internal_sp_view, dcc_view, mbc_view, mtc_view,
+        tcc_view, tc_view);
 
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());

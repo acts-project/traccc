@@ -24,7 +24,7 @@ namespace cuda {
 
 /// Spacepoing binning for cuda
 struct spacepoint_binning
-    : public algorithm<sp_grid(host_spacepoint_container&&)> {
+    : public algorithm<sp_grid_buffer(host_spacepoint_container&&)> {
 
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
@@ -33,22 +33,12 @@ struct spacepoint_binning
         m_axes = get_axes(grid_config, mr);
     }
 
-    unsigned int nbins() const {
-        return static_cast<unsigned int>(m_axes.first.bins() *
-                                         m_axes.second.bins());
-    }
-
     output_type operator()(
         host_spacepoint_container&& spacepoints) const override {
 
-        // output object for grid of internal spacepoint
-        output_type g2(m_axes.first, m_axes.second, m_mr.get());
+        int nbins = m_axes.first.n_bins * m_axes.second.n_bins;
 
-        // capacity for the bins of grid buffer
-        vecmem::vector<unsigned int> grid_capacities(g2.nbins(), 0,
-                                                     &m_mr.get());
-
-        // store the container id for spacepoints
+        // Store the container id for spacepoints
         vecmem::vector<std::pair<unsigned int, unsigned int>>
             sp_container_indices(spacepoints.total_size(), &m_mr.get());
 
@@ -60,32 +50,37 @@ struct spacepoint_binning
             }
         }
 
-        // count the grid capacities
-        traccc::cuda::counting_grid_capacities(m_config, g2, spacepoints,
-                                               sp_container_indices,
-                                               grid_capacities, m_mr.get());
+        // Capacity for the bins of grid buffer
+        vecmem::vector<unsigned int> grid_capacities(nbins, 0, &m_mr.get());
 
-        // populate the internal spacepoints into the grid
-        traccc::cuda::populating_grid(m_config, g2, spacepoints,
+        // Run counting grid capacities
+        traccc::cuda::counting_grid_capacities(
+            m_config, m_axes.first, m_axes.second, spacepoints,
+            sp_container_indices, grid_capacities, m_mr.get());
+
+        // Create size and capacity vector for grid buffer
+        std::vector<std::size_t> sizes(nbins, 0);
+        std::vector<std::size_t> capacities;
+        for (const auto& c : grid_capacities) {
+            /// Note: Need to investigate why populating_grid fails without this
+            /// when the data size is small.
+            if (c < 60) {
+                capacities.push_back(60);
+                continue;
+            }
+            capacities.push_back(c);
+        }
+
+        // Create grid buffer
+        output_type g2_buffer(m_axes.first, m_axes.second, sizes, capacities,
+                              m_mr.get());
+
+        // Run populating grid
+        traccc::cuda::populating_grid(m_config, g2_buffer, spacepoints,
                                       sp_container_indices, grid_capacities,
                                       m_mr.get());
 
-        /// It is OPTIONAL to do sorting with the radius of spacepoint,
-        /// since the sorting barely impacts seed matching ratio between cpu and
-        /// cuda
-        /*
-        for (unsigned int i = 0; i < g2.nbins(); i++){
-            auto& g2_bin = g2.data()[i];
-
-            // cpu sort
-            //std::sort(g2_bin.begin(), g2_bin.end());
-
-            // thrust sort
-            thrust::sort(g2_bin.begin(),g2_bin.end());
-        }
-        */
-
-        return g2;
+        return g2_buffer;
     }
 
     seedfinder_config m_config;

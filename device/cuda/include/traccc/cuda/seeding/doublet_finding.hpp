@@ -27,10 +27,12 @@ namespace cuda {
 /// @param mid_bot_doublet_container vecmem container for mid-bot doublets
 /// @param mid_top_doublet_container vecmem container for mid-top doublets
 /// @param resource vecmem memory resource
-void doublet_finding(const seedfinder_config& config, sp_grid& internal_sp,
-                     host_doublet_counter_container& doublet_counter_container,
-                     host_doublet_container& mid_bot_doublet_container,
-                     host_doublet_container& mid_top_doublet_container,
+void doublet_finding(const seedfinder_config& config,
+                     const vecmem::vector<doublet_counter_per_bin>& dcc_headers,
+                     sp_grid_view internal_sp_view,
+                     doublet_counter_container_view dcc_view,
+                     doublet_container_view mbc_view,
+                     doublet_container_view mtc_view,
                      vecmem::memory_resource& resource);
 
 }  // namespace cuda

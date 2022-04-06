@@ -26,9 +26,10 @@ namespace cuda {
 /// @param triplet_container vecmem container for triplets
 /// @param resource vecmem memory resource
 void weight_updating(const seedfilter_config& filter_config,
-                     sp_grid& internal_sp,
-                     host_triplet_counter_container& triplet_counter_container,
-                     host_triplet_container& triplet_container,
+                     const vecmem::vector<triplet_per_bin>& tc_headers,
+                     sp_grid_view internal_sp_view,
+                     triplet_counter_container_view tcc_view,
+                     triplet_container_view tc_view,
                      vecmem::memory_resource& resource);
 
 }  // namespace cuda

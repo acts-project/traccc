@@ -12,6 +12,19 @@
 namespace traccc {
 namespace cuda {
 
+__global__ void set_zero_kernel(doublet_counter_container_view dcc_view) {
+
+    device_doublet_counter_container dcc_device(
+        {dcc_view.headers, dcc_view.items});
+
+    const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= dcc_device.get_headers().size()) {
+        return;
+    }
+
+    dcc_device.get_headers().at(gid).zeros();
+}
+
 /// Forward declaration of doublet counting kernel
 /// The number of mid-bot and mid-top doublets are counted for all spacepoints
 /// and recorded into doublet counter container if the number of doublets are
@@ -24,34 +37,43 @@ __global__ void doublet_counting_kernel(
     const seedfinder_config config, sp_grid_view internal_sp_view,
     doublet_counter_container_view doublet_count_view);
 
-void doublet_counting(const seedfinder_config& config, sp_grid& internal_sp,
-                      host_doublet_counter_container& doublet_counter_container,
+void doublet_counting(const seedfinder_config& config,
+                      sp_grid_view internal_sp_view,
+                      doublet_counter_container_view dcc_view,
                       vecmem::memory_resource& resource) {
 
-    auto doublet_counter_container_view =
-        get_data(doublet_counter_container, &resource);
-    auto internal_sp_view = get_data(internal_sp, resource);
+    unsigned int nbins = internal_sp_view._data_view.m_size;
+
+    unsigned int num_threads = WARP_SIZE * 2;
+    unsigned int num_blocks = nbins / num_threads + 1;
+
+    // zero initialization
+    set_zero_kernel<<<num_blocks, num_threads>>>(dcc_view);
+    // cuda error check
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // The thread-block is desinged to make each thread count the number of
     // doublets per middle spacepoint
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 2;
+    num_threads = WARP_SIZE * 2;
 
     // -- Num blocks
     // The dimension of grid is = sum_i{N_i}, where:
     // i is the spacepoint bin index
     // N_i is the number of blocks for i-th bin, defined as
     // num_middle_sp_per_bin / num_threads + 1
-    unsigned int num_blocks = 0;
-    for (size_t i = 0; i < internal_sp.nbins(); ++i) {
-        num_blocks += internal_sp.bin(i).size() / num_threads + 1;
+    num_blocks = 0;
+    for (size_t i = 0; i < nbins; ++i) {
+        num_blocks +=
+            internal_sp_view._data_view.m_ptr[i].size() / num_threads + 1;
     }
 
     // run the kernel
     doublet_counting_kernel<<<num_blocks, num_threads>>>(
-        config, internal_sp_view, doublet_counter_container_view);
+        config, internal_sp_view, dcc_view);
 
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
@@ -87,7 +109,6 @@ __global__ void doublet_counting_kernel(
 
     auto doublet_counter_per_bin =
         doublet_counter_device.get_items().at(bin_idx);
-
     // kill the process before overflow
     if (sp_idx >= doublet_counter_per_bin.size()) {
         return;

@@ -51,7 +51,7 @@ class seeding_algorithm
         sb = std::make_shared<traccc::cuda::spacepoint_binning>(
             traccc::cuda::spacepoint_binning(m_config, m_grid_config, mr));
         sf = std::make_shared<traccc::cuda::seed_finding>(
-            traccc::cuda::seed_finding(m_config, sb->nbins(), mr));
+            traccc::cuda::seed_finding(m_config, mr));
     }
 
     output_type operator()(
@@ -59,8 +59,7 @@ class seeding_algorithm
 
         output_type seeds(&m_mr.get());
         auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
-        seeds =
-            sf->operator()(std::move(spacepoints), std::move(internal_sp_g2));
+        seeds = sf->operator()(std::move(spacepoints), internal_sp_g2);
 
         return seeds;
     }
