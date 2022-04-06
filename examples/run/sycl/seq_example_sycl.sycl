@@ -191,13 +191,28 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         if (run_cpu) {
             // seeding
             int n_match = 0;
+            // Extended comparison in case there are two spacepoint containers (from gpu nad cpu clusterization)
+            // If so, change the parameter spacepoints_per_event_sycl inside lambda capture
             for (auto& seed : seeds) {
-                if (std::find(seeds_sycl.begin(), seeds_sycl.end(), seed) !=
+                if (std::find_if(seeds_sycl.begin(), seeds_sycl.end(), [&seed, &spacepoints_per_event, 
+                                                                        spacepoints_per_event_sycl = 
+                                                                        spacepoints_per_event](auto& seed_sycl){
+                    auto spB = spacepoints_per_event.at(seed.spB_link);
+                    auto spM = spacepoints_per_event.at(seed.spM_link);
+                    auto spT = spacepoints_per_event.at(seed.spT_link);
+
+                    auto spB_sycl = spacepoints_per_event_sycl.at(seed_sycl.spB_link);
+                    auto spM_sycl = spacepoints_per_event_sycl.at(seed_sycl.spM_link);
+                    auto spT_sycl = spacepoints_per_event_sycl.at(seed_sycl.spT_link);
+
+                    return (spB == spB_sycl && spM == spM_sycl && spT == spT_sycl);
+                }) !=
                     seeds_sycl.end()) {
                     n_match++;
                 }
             }
             float matching_rate = float(n_match) / seeds.size();
+
             std::cout << "event " << std::to_string(event) << std::endl;
             std::cout << " number of seeds (cpu): " << seeds.size()
                       << std::endl;
