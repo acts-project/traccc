@@ -30,3 +30,11 @@ traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
 # Make CUDA generate debug symbols for the device code as well in a debug
 # build.
 traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G" )
+
+# More rigorous tests for the Debug builds.
+if( ( "${CUDAToolkit_VERSION}" VERSION_GREATER_EQUAL "10.2" ) AND
+    ( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" ) )
+   traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-Werror all-warnings" )
+elseif( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "Clang" )
+   traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-Werror" )
+endif()
