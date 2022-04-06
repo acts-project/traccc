@@ -161,24 +161,29 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
         if (run_cpu) {
             // seeding
             int n_match = 0;
-            // Extended comparison in case there are two spacepoint containers (from gpu nad cpu clusterization)
-            // If so, change the parameter spacepoints_per_event_cuda inside lambda capture
+            // Extended comparison in case there are two spacepoint containers
+            // (from gpu nad cpu clusterization) If so, change the parameter
+            // spacepoints_per_event_cuda inside lambda capture
             for (auto& seed : seeds) {
-                if (std::find_if(seeds_cuda.begin(), seeds_cuda.end(), [&seed, &spacepoints_per_event, 
-                                                                        spacepoints_per_event_cuda = 
-                                                                        spacepoints_per_event](auto& seed_cuda){
+                if (std::find_if(
+                        seeds_cuda.begin(), seeds_cuda.end(),
+                        [&seed, &spacepoints_per_event,
+                         spacepoints_per_event_cuda =
+                             spacepoints_per_event](auto& seed_cuda) {
+                            auto spB = spacepoints_per_event.at(seed.spB_link);
+                            auto spM = spacepoints_per_event.at(seed.spM_link);
+                            auto spT = spacepoints_per_event.at(seed.spT_link);
 
-                    auto spB = spacepoints_per_event.at(seed.spB_link);
-                    auto spM = spacepoints_per_event.at(seed.spM_link);
-                    auto spT = spacepoints_per_event.at(seed.spT_link);
+                            auto spB_cuda = spacepoints_per_event_cuda.at(
+                                seed_cuda.spB_link);
+                            auto spM_cuda = spacepoints_per_event_cuda.at(
+                                seed_cuda.spM_link);
+                            auto spT_cuda = spacepoints_per_event_cuda.at(
+                                seed_cuda.spT_link);
 
-                    auto spB_cuda = spacepoints_per_event_cuda.at(seed_cuda.spB_link);
-                    auto spM_cuda = spacepoints_per_event_cuda.at(seed_cuda.spM_link);
-                    auto spT_cuda = spacepoints_per_event_cuda.at(seed_cuda.spT_link);
-
-                    return (spB == spB_cuda && spM == spM_cuda && spT == spT_cuda);
-                }) !=
-                    seeds_cuda.end()) {
+                            return (spB == spB_cuda && spM == spM_cuda &&
+                                    spT == spT_cuda);
+                        }) != seeds_cuda.end()) {
                     n_match++;
                 }
             }
