@@ -62,6 +62,41 @@ inline bool operator==(const seed& lhs, const seed& rhs) {
             lhs.spT_link == rhs.spT_link);
 }
 
+template <typename spacepoint_container_t>
+bool is_same(const seed& seed1, const spacepoint_container_t& container1,
+             const seed& seed2, const spacepoint_container_t& container2) {
+
+    auto spB1 = container1.at(seed1.spB_link);
+    auto spM1 = container1.at(seed1.spM_link);
+    auto spT1 = container1.at(seed1.spT_link);
+
+    auto spB2 = container2.at(seed2.spB_link);
+    auto spM2 = container2.at(seed2.spM_link);
+    auto spT2 = container2.at(seed2.spT_link);
+
+    return (spB1 == spB2 && spM1 == spM2 && spT1 == spT2);
+}
+
+template <typename spacepoint_container_t>
+struct is_same_seed {
+
+    const seed m_ref_seed;
+    const spacepoint_container_t m_ref_spacepoints;
+    const spacepoint_container_t m_test_spacepoints;
+
+    is_same_seed(const seed& ref_seed,
+                 const spacepoint_container_t& ref_spacepoints,
+                 const spacepoint_container_t& test_spacepoints)
+        : m_ref_seed(ref_seed),
+          m_ref_spacepoints(ref_spacepoints),
+          m_test_spacepoints(test_spacepoints) {}
+
+    bool operator()(const seed& test_seed) {
+        return is_same<spacepoint_container_t>(m_ref_seed, m_ref_spacepoints,
+                                               test_seed, m_test_spacepoints);
+    }
+};
+
 /// Container of internal_spacepoint for an event
 template <template <typename> class vector_t>
 using seed_collection = vector_t<seed>;

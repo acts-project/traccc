@@ -172,10 +172,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
             // seeding
             int n_match = 0;
             for (auto& seed : seeds) {
-                if (std::find(seeds_sycl.begin(), seeds_sycl.end(), seed) !=
-                    seeds_sycl.end()) {
+                if (std::find_if(
+                        seeds_sycl.begin(), seeds_sycl.end(),
+                        traccc::is_same_seed<traccc::host_spacepoint_container>(
+                            seed, spacepoints_per_event,
+                            spacepoints_per_event)) != seeds_sycl.end())
                     n_match++;
-                }
             }
             float matching_rate = float(n_match) / seeds.size();
             std::cout << "event " << std::to_string(event) << std::endl;
