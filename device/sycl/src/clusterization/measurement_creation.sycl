@@ -45,7 +45,7 @@ void measurement_creation::operator()(const host_cluster_container &clusters,
     copy.setup(measurements_buffer);
 
     // Vector views to move data to the device
-    vecmem::data::jagged_vector_view<measurement> measurements_view = vecmem::get_data(measurements_buffer);
+    vecmem::data::jagged_vector_view<measurement> measurements_view(measurements_buffer);
     auto clusters_data = get_data(clusters, &m_mr.get());
 
     cluster_container_const_view clusters_view(clusters_data);
@@ -54,7 +54,7 @@ void measurement_creation::operator()(const host_cluster_container &clusters,
     details::get_queue(m_queue).submit([&](::sycl::handler& h){
         h.parallel_for<class measurementCreation>(range, [clusters_view, measurements_view]
                                                           (::sycl::id<1> idx){
-            // // get the thread index
+            // get the thread index
             // auto idx = item.get_global_linear_id();
 
             // Initialize device vectors
