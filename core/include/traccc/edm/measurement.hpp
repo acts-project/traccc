@@ -36,6 +36,13 @@ inline bool operator<(const measurement& lhs, const measurement& rhs) {
     return false;
 }
 
+inline bool operator==(const measurement& lhs, const measurement& rhs) {
+    return (lhs.local[0] == rhs.local[0] &&
+            lhs.local[1] == rhs.local[1] &&
+            lhs.variance[0] == rhs.variance[0] &&
+            lhs.variance[1] == rhs.variance[1]); 
+}
+
 /// Container of measurements belonging to one detector module
 template <template <typename> class vector_t>
 using measurement_collection = vector_t<measurement>;

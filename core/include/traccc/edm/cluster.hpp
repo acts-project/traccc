@@ -18,7 +18,7 @@
 namespace traccc {
 
 /// Function for signal modelling
-static scalar signal_cell_modelling(scalar signal_in) {
+static inline scalar signal_cell_modelling(scalar signal_in) {
     return signal_in; 
 }
 
