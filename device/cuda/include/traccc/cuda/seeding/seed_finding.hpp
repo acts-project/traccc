@@ -50,6 +50,7 @@ struct seed_finding : public algorithm<host_seed_collection(
 
         // Fill the size vector for double counter container
         std::vector<size_t> n_spm_per_bin;
+        n_spm_per_bin.reserve(nbins);
         for (unsigned int i = 0; i < nbins; ++i) {
             n_spm_per_bin.push_back(g2_view._data_view.m_ptr[i].size());
         }
@@ -70,6 +71,8 @@ struct seed_finding : public algorithm<host_seed_collection(
         // Fill the size vectors for doublet containers
         std::vector<size_t> n_mid_bot_per_bin;
         std::vector<size_t> n_mid_top_per_bin;
+        n_mid_bot_per_bin.reserve(nbins);
+        n_mid_top_per_bin.reserve(nbins);
         for (const auto& h : dcc_headers) {
             n_mid_bot_per_bin.push_back(h.n_mid_bot);
             n_mid_top_per_bin.push_back(h.n_mid_top);
@@ -107,6 +110,7 @@ struct seed_finding : public algorithm<host_seed_collection(
 
         // Fill the size vector for triplet container
         std::vector<size_t> n_triplets_per_bin;
+        n_triplets_per_bin.reserve(nbins);
         for (const auto& h : tcc_headers) {
             n_triplets_per_bin.push_back(h.n_triplets);
         }

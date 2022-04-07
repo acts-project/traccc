@@ -42,10 +42,11 @@ struct spacepoint_binning
         vecmem::vector<std::pair<unsigned int, unsigned int>>
             sp_container_indices(spacepoints.total_size(), &m_mr.get());
 
-        int k = 0;
-        for (unsigned int i = 0; i < spacepoints.size(); i++) {
-            for (unsigned int j = 0; j < spacepoints.get_items()[i].size();
-                 j++) {
+        std::size_t k = 0;
+        for (std::size_t i = 0; i < spacepoints.size(); i++) {
+            std::size_t n_items = spacepoints.get_items()[i].size();
+
+            for (std::size_t j = 0; j < n_items; j++) {
                 sp_container_indices[k++] = std::make_pair(i, j);
             }
         }
@@ -61,6 +62,7 @@ struct spacepoint_binning
         // Create size and capacity vector for grid buffer
         std::vector<std::size_t> sizes(nbins, 0);
         std::vector<std::size_t> capacities;
+        capacities.reserve(nbins);
         for (const auto& c : grid_capacities) {
             /// Note: Need to investigate why populating_grid fails without this
             /// when the data size is small.
