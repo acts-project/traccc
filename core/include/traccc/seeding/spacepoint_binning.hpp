@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
+#include "traccc/seeding/common/spacepoint_binning_helper.hpp"
 
 // System include(s).
 #include <algorithm>

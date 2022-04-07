@@ -7,36 +7,28 @@
 
 #pragma once
 
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
-#include "traccc/seeding/detail/lin_circle.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/seeding/common/doublet.hpp"
+#include "traccc/seeding/common/lin_circle.hpp"
+#include "traccc/seeding/common/triplet.hpp"
 
 namespace traccc {
 
-// helper function used for both cpu and gpu
-struct triplet_finding_helper {
-    /// Check if two doublets with common middle spacepoint can form a triplet
-    ///
-    /// @param spM is middle spacepoint
-    /// @param lb is transformed coordinate of middle-bottom doublet
-    /// @param lt is transformed coordinate of middle-bottom doublet
-    /// @param config is configuration parameter
-    /// @param iSinTheta2 is the square of sin of pitch angle
-    /// @param scatteringInRegion2 is the threshold for scattering angle for the
-    /// lower pT cut
-    /// @param curvature is curvature of triplet
-    /// @param impact_parameter is impact parameter of triplet
-    ///
-    /// @return boolean value for compatibility
-    static inline TRACCC_HOST_DEVICE bool isCompatible(
-        const internal_spacepoint<spacepoint>& spM, const lin_circle& lb,
-        const lin_circle& lt, const seedfinder_config& config,
-        const scalar& iSinTheta2, const scalar& scatteringInRegion2,
-        scalar& curvature, scalar& impact_parameter);
-};
-
-bool triplet_finding_helper::isCompatible(
+/// Check if two doublets with common middle spacepoint can form a triplet
+///
+/// @param spM is middle spacepoint
+/// @param lb is transformed coordinate of middle-bottom doublet
+/// @param lt is transformed coordinate of middle-bottom doublet
+/// @param config is configuration parameter
+/// @param iSinTheta2 is the square of sin of pitch angle
+/// @param scatteringInRegion2 is the threshold for scattering angle for the
+/// lower pT cut
+/// @param curvature is curvature of triplet
+/// @param impact_parameter is impact parameter of triplet
+///
+/// @return boolean value for compatibility
+inline TRACCC_HOST_DEVICE bool is_compatible_triplet(
     const internal_spacepoint<spacepoint>& spM, const lin_circle& lb,
     const lin_circle& lt, const seedfinder_config& config,
     const scalar& iSinTheta2, const scalar& scatteringInRegion2,

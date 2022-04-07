@@ -17,8 +17,8 @@
 #include "traccc/cuda/seeding/weight_updating.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/edm/seed.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
-#include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/seeding/common/seeding_config.hpp"
+#include "traccc/seeding/common/spacepoint_grid.hpp"
 #include "traccc/seeding/seed_filtering.hpp"
 #include "vecmem/utils/cuda/copy.hpp"
 

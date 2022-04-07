@@ -13,7 +13,7 @@
 #include "sycl_helper.hpp"
 
 // Project include(s).
-#include "traccc/seeding/doublet_finding_helper.hpp"
+#include "traccc/seeding/common/doublet_finding_helper.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
@@ -40,8 +40,8 @@ class DupletCount {
         // Get the bin index of spacepoint binning and reference block idx for
         // the bin index
         unsigned int bin_idx(0), sp_idx(0);
-        sycl_helper::find_idx_on_jagged_vector(internal_sp_device.data(),
-                                               bin_idx, sp_idx, item);
+        find_idx_on_jagged_vector(internal_sp_device.data(), bin_idx, sp_idx,
+                                  item);
 
         // get internal spacepoints for current bin
         auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
@@ -91,14 +91,12 @@ class DupletCount {
             for (auto& neigh_isp : neighbors) {
 
                 // Check if middle and bottom sp can form a doublet
-                if (doublet_finding_helper::isCompatible(isp, neigh_isp,
-                                                         m_config, true)) {
+                if (is_compatible_doublet(isp, neigh_isp, m_config, true)) {
                     n_mid_bot++;
                 }
 
                 // Check if middle and top sp can form a doublet
-                if (doublet_finding_helper::isCompatible(isp, neigh_isp,
-                                                         m_config, false)) {
+                if (is_compatible_doublet(isp, neigh_isp, m_config, false)) {
                     n_mid_top++;
                 }
             }

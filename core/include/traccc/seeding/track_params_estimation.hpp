@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "traccc/seeding/track_params_estimation_helper.hpp"
+#include "traccc/seeding/common/track_params_estimation_helper.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 namespace traccc {

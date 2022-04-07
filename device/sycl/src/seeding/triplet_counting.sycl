@@ -13,8 +13,8 @@
 #include "sycl_helper.hpp"
 
 // Project include(s).
-#include "traccc/seeding/doublet_finding_helper.hpp"
-#include "traccc/seeding/triplet_finding_helper.hpp"
+#include "traccc/seeding/common/doublet_finding_helper.hpp"
+#include "traccc/seeding/common/triplet_finding_helper.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
@@ -52,8 +52,7 @@ class TripletCount {
 
         // Get the bin and item index
         unsigned int bin_idx(0), mb_idx(0);
-        sycl_helper::find_idx_on_container(mid_bot_doublet_device, bin_idx,
-                                           mb_idx, item);
+        find_idx_on_container(mid_bot_doublet_device, bin_idx, mb_idx, item);
 
         // get internal spacepoints for current bin
         auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
@@ -105,7 +104,7 @@ class TripletCount {
         const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
 
         // Apply the conformal transformation to middle-bot doublet
-        auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
+        auto lb = transform_coordinates(spM, spB, true);
 
         // Calculate some physical quantities required for triplet compatibility
         // check
@@ -154,13 +153,12 @@ class TripletCount {
             const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
 
             // Apply the conformal transformation to middle-top doublet
-            auto lt =
-                doublet_finding_helper::transform_coordinates(spM, spT, false);
+            auto lt = transform_coordinates(spM, spT, false);
 
             // Check if mid-bot and mid-top doublets can form a triplet
-            if (triplet_finding_helper::isCompatible(
-                    spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2,
-                    curvature, impact_parameter)) {
+            if (is_compatible_triplet(spM, lb, lt, m_config, iSinTheta2,
+                                      scatteringInRegion2, curvature,
+                                      impact_parameter)) {
                 num_triplets_per_mb++;
             }
         }

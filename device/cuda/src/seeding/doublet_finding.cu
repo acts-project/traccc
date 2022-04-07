@@ -112,8 +112,7 @@ __global__ void doublet_finding_kernel(
 
     // Get the bin and item index
     unsigned int bin_idx(0), item_idx(0);
-    cuda_helper::find_idx_on_container(doublet_counter_device, bin_idx,
-                                       item_idx);
+    find_idx_on_container(doublet_counter_device, bin_idx, item_idx);
 
     // get internal spacepoints for current bin
     auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
@@ -194,8 +193,7 @@ __global__ void doublet_finding_kernel(
             const auto& neigh_isp = neighbors[spB_idx];
 
             // Check if middle and bottom sp can form a doublet
-            if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
-                                                     true)) {
+            if (is_compatible_doublet(isp, neigh_isp, config, true)) {
                 auto spB_loc = sp_location({neigh_bin, spB_idx});
 
                 // Check conditions
@@ -220,8 +218,7 @@ __global__ void doublet_finding_kernel(
             }
 
             // Check if middle and top sp can form a doublet
-            if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
-                                                     false)) {
+            if (is_compatible_doublet(isp, neigh_isp, config, false)) {
                 auto spT_loc = sp_location({neigh_bin, spB_idx});
 
                 // Check conditions
@@ -263,9 +260,9 @@ __global__ void doublet_finding_kernel(
 
     // Calculate the number doublets per "block" with reducing sum technique
     __syncthreads();
-    cuda_helper::reduce_sum<int>(num_mid_bot_doublets_per_thread);
+    reduce_sum<int>(num_mid_bot_doublets_per_thread);
     __syncthreads();
-    cuda_helper::reduce_sum<int>(num_mid_top_doublets_per_thread);
+    reduce_sum<int>(num_mid_top_doublets_per_thread);
 
     // Calculate the number doublets per bin by atomic-adding the number of
     // doublets per block

@@ -13,7 +13,7 @@
 #include "sycl_helper.hpp"
 
 // Project include(s).
-#include "traccc/seeding/seed_selecting_helper.hpp"
+#include "traccc/seeding/common/seed_selecting_helper.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
@@ -91,8 +91,7 @@ class SeedSelect {
 
         // Get the bin and item index
         unsigned int bin_idx(0), item_idx(0);
-        sycl_helper::find_idx_on_container(doublet_counter_device, bin_idx,
-                                           item_idx, item);
+        find_idx_on_container(doublet_counter_device, bin_idx, item_idx, item);
         // Header of internal spacepoint container : spacepoint bin information
         // Item of internal spacepoint container : internal spacepoint objects
         // per bin
@@ -141,12 +140,11 @@ class SeedSelect {
             if (spM_loc == aTriplet.sp2) {
 
                 // update weight of triplet
-                seed_selecting_helper::seed_weight(m_filter_config, spM, spB,
-                                                   spT, aTriplet.weight);
+                seed_weight(m_filter_config, spM, spB, spT, aTriplet.weight);
 
                 // check if it is a good triplet
-                if (!seed_selecting_helper::single_seed_cut(
-                        m_filter_config, spM, spB, spT, aTriplet.weight)) {
+                if (!single_seed_cut(m_filter_config, spM, spB, spT,
+                                     aTriplet.weight)) {
                     continue;
                 }
 
@@ -230,9 +228,8 @@ class SeedSelect {
                         aTriplet.z_vertex});
 
             // check if it is a good triplet
-            if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config, spacepoints_device, aSeed,
-                    aTriplet.weight) ||
+            if (cut_per_middle_sp(m_filter_config, spacepoints_device, aSeed,
+                                  aTriplet.weight) ||
                 n_seeds_per_spM == 0) {
 
                 n_seeds_per_spM++;

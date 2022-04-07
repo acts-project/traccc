@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"

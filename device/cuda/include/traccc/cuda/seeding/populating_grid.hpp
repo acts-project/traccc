@@ -8,10 +8,10 @@
 #pragma once
 
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
-#include "traccc/seeding/detail/singlet.hpp"
-#include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
+#include "traccc/seeding/common/seeding_config.hpp"
+#include "traccc/seeding/common/singlet.hpp"
+#include "traccc/seeding/common/spacepoint_binning_helper.hpp"
+#include "traccc/seeding/common/spacepoint_grid.hpp"
 
 namespace traccc {
 namespace cuda {

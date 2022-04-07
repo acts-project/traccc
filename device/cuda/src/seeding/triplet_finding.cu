@@ -119,8 +119,7 @@ __global__ void triplet_finding_kernel(
 
     // Get the bin and item index
     unsigned int bin_idx(0), item_idx(0);
-    cuda_helper::find_idx_on_container(triplet_counter_device, bin_idx,
-                                       item_idx);
+    find_idx_on_container(triplet_counter_device, bin_idx, item_idx);
 
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
@@ -185,7 +184,7 @@ __global__ void triplet_finding_kernel(
     const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
 
     // Apply the conformal transformation to middle-bot doublet
-    auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
+    auto lb = transform_coordinates(spM, spB, true);
 
     // Calculate some physical quantities required for triplet compatibility
     // check
@@ -251,13 +250,12 @@ __global__ void triplet_finding_kernel(
         const auto& spT_idx = mid_top_doublet.sp2.sp_idx;
         const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
         // Apply the conformal transformation to middle-top doublet
-        auto lt =
-            doublet_finding_helper::transform_coordinates(spM, spT, false);
+        auto lt = transform_coordinates(spM, spT, false);
 
         // Check if mid-bot and mid-top doublets can form a triplet
-        if (triplet_finding_helper::isCompatible(
-                spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
-                impact_parameter)) {
+        if (is_compatible_triplet(spM, lb, lt, config, iSinTheta2,
+                                  scatteringInRegion2, curvature,
+                                  impact_parameter)) {
             unsigned int pos = triplet_start_idx + n_triplets_per_mb;
             // prevent the overflow
             if (pos >= triplets_per_bin.size()) {
@@ -277,7 +275,7 @@ __global__ void triplet_finding_kernel(
 
     // Calculate the number of triplets per "block" with reducing sum technique
     __syncthreads();
-    cuda_helper::reduce_sum<int>(num_triplets_per_thread);
+    reduce_sum<int>(num_triplets_per_thread);
 
     // Calculate the number of triplets per bin by atomic-adding the number of
     // triplets per block

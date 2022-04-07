@@ -106,8 +106,7 @@ __global__ void seed_selecting_kernel(
 
     // Get the bin and item index
     unsigned int bin_idx(0), item_idx(0);
-    cuda_helper::find_idx_on_container(doublet_counter_device, bin_idx,
-                                       item_idx);
+    find_idx_on_container(doublet_counter_device, bin_idx, item_idx);
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per
     // bin
@@ -162,12 +161,11 @@ __global__ void seed_selecting_kernel(
         if (spM_loc == aTriplet.sp2) {
 
             // update weight of triplet
-            seed_selecting_helper::seed_weight(filter_config, spM, spB, spT,
-                                               aTriplet.weight);
+            seed_weight(filter_config, spM, spB, spT, aTriplet.weight);
 
             // check if it is a good triplet
-            if (!seed_selecting_helper::single_seed_cut(filter_config, spM, spB,
-                                                        spT, aTriplet.weight)) {
+            if (!single_seed_cut(filter_config, spM, spB, spT,
+                                 aTriplet.weight)) {
                 continue;
             }
 
@@ -282,8 +280,8 @@ __global__ void seed_selecting_kernel(
                    aTriplet.z_vertex};
 
         // check if it is a good triplet
-        if (seed_selecting_helper::cut_per_middle_sp(
-                filter_config, spacepoints_device, aSeed, aTriplet.weight) ||
+        if (cut_per_middle_sp(filter_config, spacepoints_device, aSeed,
+                              aTriplet.weight) ||
             n_seeds_per_spM == 0) {
 
             n_seeds_per_spM++;

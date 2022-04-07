@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/cuda/seeding/seed_finding.hpp"
 #include "traccc/cuda/seeding/spacepoint_binning.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/common/seeding_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>

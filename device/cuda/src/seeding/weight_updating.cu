@@ -78,7 +78,7 @@ __global__ void weight_updating_kernel(
 
     // Get the bin and item index
     unsigned int bin_idx(0), tr_idx(0);
-    cuda_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx);
+    find_idx_on_container(triplet_device, bin_idx, tr_idx);
 
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects per

@@ -92,8 +92,7 @@ __global__ void doublet_counting_kernel(
 
     // Get bin and spacepoint index
     unsigned int bin_idx(0), sp_idx(0);
-    cuda_helper::find_idx_on_jagged_vector(internal_sp_device.data(), bin_idx,
-                                           sp_idx);
+    find_idx_on_jagged_vector(internal_sp_device.data(), bin_idx, sp_idx);
 
     // get internal spacepoints for current bin
     auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
@@ -142,14 +141,12 @@ __global__ void doublet_counting_kernel(
         for (auto& neigh_isp : neighbors) {
 
             // Check if middle and bottom sp can form a doublet
-            if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
-                                                     true)) {
+            if (is_compatible_doublet(isp, neigh_isp, config, true)) {
                 n_mid_bot++;
             }
 
             // Check if middle and top sp can form a doublet
-            if (doublet_finding_helper::isCompatible(isp, neigh_isp, config,
-                                                     false)) {
+            if (is_compatible_doublet(isp, neigh_isp, config, false)) {
                 n_mid_top++;
             }
         }

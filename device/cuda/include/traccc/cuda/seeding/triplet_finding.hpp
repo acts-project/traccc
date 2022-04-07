@@ -10,12 +10,12 @@
 #include "traccc/cuda/seeding/detail/doublet_counter.hpp"
 #include "traccc/cuda/seeding/detail/triplet_counter.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
-#include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/doublet_finding_helper.hpp"
-#include "traccc/seeding/seed_selecting_helper.hpp"
-#include "traccc/seeding/triplet_finding_helper.hpp"
+#include "traccc/seeding/common/doublet.hpp"
+#include "traccc/seeding/common/doublet_finding_helper.hpp"
+#include "traccc/seeding/common/seed_selecting_helper.hpp"
+#include "traccc/seeding/common/seeding_config.hpp"
+#include "traccc/seeding/common/spacepoint_grid.hpp"
+#include "traccc/seeding/common/triplet_finding_helper.hpp"
 
 namespace traccc {
 namespace cuda {

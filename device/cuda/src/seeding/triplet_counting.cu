@@ -109,7 +109,7 @@ __global__ void triplet_counting_kernel(
 
     // Get the bin and item index
     unsigned int bin_idx(0), mb_idx(0);
-    cuda_helper::find_idx_on_container(mid_bot_doublet_device, bin_idx, mb_idx);
+    find_idx_on_container(mid_bot_doublet_device, bin_idx, mb_idx);
 
     // get internal spacepoints for current bin
     auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
@@ -164,7 +164,7 @@ __global__ void triplet_counting_kernel(
     const auto& spB = internal_sp_device.bin(spB_bin)[spB_idx];
 
     // Apply the conformal transformation to middle-bot doublet
-    auto lb = doublet_finding_helper::transform_coordinates(spM, spB, true);
+    auto lb = transform_coordinates(spM, spB, true);
 
     // Calculate some physical quantities required for triplet compatibility
     // check
@@ -211,13 +211,12 @@ __global__ void triplet_counting_kernel(
         const auto& spT = internal_sp_device.bin(spT_bin)[spT_idx];
 
         // Apply the conformal transformation to middle-top doublet
-        auto lt =
-            doublet_finding_helper::transform_coordinates(spM, spT, false);
+        auto lt = transform_coordinates(spM, spT, false);
 
         // Check if mid-bot and mid-top doublets can form a triplet
-        if (triplet_finding_helper::isCompatible(
-                spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
-                impact_parameter)) {
+        if (is_compatible_triplet(spM, lb, lt, config, iSinTheta2,
+                                  scatteringInRegion2, curvature,
+                                  impact_parameter)) {
             num_triplets_per_mb++;
         }
     }

@@ -13,9 +13,9 @@
 
 // Project include(s).
 #include "traccc/edm/seed.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
-#include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/seeding/common/seeding_config.hpp"
+#include "traccc/seeding/common/spacepoint_grid.hpp"
+#include "traccc/seeding/common/triplet.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>

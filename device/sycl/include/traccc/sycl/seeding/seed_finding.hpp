@@ -13,8 +13,8 @@
 // Project include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
-#include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/seeding/common/seeding_config.hpp"
+#include "traccc/seeding/common/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).

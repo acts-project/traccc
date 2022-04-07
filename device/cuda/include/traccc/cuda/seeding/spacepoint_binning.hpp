@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/cuda/seeding/counting_grid_capacities.hpp"
 #include "traccc/cuda/seeding/populating_grid.hpp"
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
+#include "traccc/seeding/common/spacepoint_binning_helper.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).

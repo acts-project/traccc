@@ -8,10 +8,10 @@
 #pragma once
 
 #include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
-#include "traccc/seeding/detail/singlet.hpp"
-#include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/doublet_finding_helper.hpp"
+#include "traccc/seeding/common/doublet.hpp"
+#include "traccc/seeding/common/doublet_finding_helper.hpp"
+#include "traccc/seeding/common/singlet.hpp"
+#include "traccc/seeding/common/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 namespace traccc {
@@ -74,14 +74,11 @@ struct doublet_finding
                      sp_idx++) {
                     const auto& sp_nb = neighbors[sp_idx];
 
-                    if (!doublet_finding_helper::isCompatible(
-                            spM, sp_nb, m_config, bottom)) {
+                    if (!is_compatible_doublet(spM, sp_nb, m_config, bottom)) {
                         continue;
                     }
 
-                    lin_circle lin =
-                        doublet_finding_helper::transform_coordinates(
-                            spM, sp_nb, bottom);
+                    lin_circle lin = transform_coordinates(spM, sp_nb, bottom);
                     sp_location sp_nb_location = {
                         static_cast<unsigned int>(bin_idx),
                         static_cast<unsigned int>(sp_idx)};

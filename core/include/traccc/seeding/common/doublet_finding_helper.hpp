@@ -7,41 +7,23 @@
 
 #pragma once
 
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
-#include "traccc/seeding/detail/lin_circle.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/common/doublet.hpp"
+#include "traccc/seeding/common/lin_circle.hpp"
+#include "traccc/seeding/common/seeding_config.hpp"
 
 namespace traccc {
 
-// helper functions used for both cpu and gpu
-struct doublet_finding_helper {
-    /// Check if two spacepoints form doublets
-    ///
-    /// @param sp1 is middle spacepoint
-    /// @param sp2 is bottom or top spacepoint
-    /// @param config is configuration parameter
-    /// @param bottom is whether it is for middle-bottom or middle-top doublet
-    ///
-    /// @return boolean value for compatibility
-    static inline TRACCC_HOST_DEVICE bool isCompatible(
-        const internal_spacepoint<spacepoint>& sp1,
-        const internal_spacepoint<spacepoint>& sp2,
-        const seedfinder_config& config, bool bottom);
-
-    /// Do the conformal transformation on doublet's coordinate
-    ///
-    /// @param sp1 is middle spacepoint
-    /// @param sp2 is bottom or top spacepoint
-    /// @param bottom is whether it is for middle-bottom or middle-top doublet
-    ///
-    /// @reutrn lin_circle which contains the transformed coordinate information
-    static inline TRACCC_HOST_DEVICE lin_circle transform_coordinates(
-        const internal_spacepoint<spacepoint>& sp1,
-        const internal_spacepoint<spacepoint>& sp2, bool bottom);
-};
-
-bool doublet_finding_helper::isCompatible(
+/// Check if two spacepoints form doublets
+///
+/// @param sp1 is middle spacepoint
+/// @param sp2 is bottom or top spacepoint
+/// @param config is configuration parameter
+/// @param bottom is whether it is for middle-bottom or middle-top doublet
+///
+/// @return boolean value for compatibility
+inline TRACCC_HOST_DEVICE bool is_compatible_doublet(
     const internal_spacepoint<spacepoint>& sp1,
     const internal_spacepoint<spacepoint>& sp2, const seedfinder_config& config,
     bool bottom) {
@@ -86,9 +68,16 @@ bool doublet_finding_helper::isCompatible(
     return true;
 }
 
-lin_circle doublet_finding_helper::transform_coordinates(
-    const internal_spacepoint<spacepoint>& sp1,
-    const internal_spacepoint<spacepoint>& sp2, bool bottom) {
+/// Do the conformal transformation on doublet's coordinate
+///
+/// @param sp1 is middle spacepoint
+/// @param sp2 is bottom or top spacepoint
+/// @param bottom is whether it is for middle-bottom or middle-top doublet
+///
+/// @reutrn lin_circle which contains the transformed coordinate information
+inline TRACCC_HOST_DEVICE lin_circle
+transform_coordinates(const internal_spacepoint<spacepoint>& sp1,
+                      const internal_spacepoint<spacepoint>& sp2, bool bottom) {
     const scalar& xM = sp1.x();
     const scalar& yM = sp1.y();
     const scalar& zM = sp1.z();

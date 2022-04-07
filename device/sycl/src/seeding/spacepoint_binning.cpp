@@ -12,7 +12,7 @@
 #include "populating_grid.hpp"
 
 // Project include(s).
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
+#include "traccc/seeding/common/spacepoint_binning_helper.hpp"
 
 namespace traccc::sycl {
 

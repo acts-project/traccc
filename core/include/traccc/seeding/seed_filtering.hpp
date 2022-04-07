@@ -8,8 +8,8 @@
 #pragma once
 
 #include "traccc/edm/seed.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
-#include "traccc/seeding/seed_selecting_helper.hpp"
+#include "traccc/seeding/common/seed_selecting_helper.hpp"
+#include "traccc/seeding/common/triplet.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 namespace traccc {
@@ -56,11 +56,10 @@ struct seed_filtering
             const auto& spT_idx = triplet.sp3;
             const auto& spT = g2.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
 
-            seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
-                                               triplet.weight);
+            seed_weight(m_filter_config, spM, spB, spT, triplet.weight);
 
-            if (!seed_selecting_helper::single_seed_cut(
-                    m_filter_config, spM, spB, spT, triplet.weight)) {
+            if (!single_seed_cut(m_filter_config, spM, spB, spT,
+                                 triplet.weight)) {
                 continue;
             }
 
@@ -98,9 +97,9 @@ struct seed_filtering
                                        m_filter_config.max_triplets_per_spM);
             // don't cut first element
             for (size_t i = 1; i < itLength; i++) {
-                if (seed_selecting_helper::cut_per_middle_sp(
-                        m_filter_config, sp_container, seeds_per_spM[i],
-                        seeds_per_spM[i].weight)) {
+                if (cut_per_middle_sp(m_filter_config, sp_container,
+                                      seeds_per_spM[i],
+                                      seeds_per_spM[i].weight)) {
                     new_seeds.push_back(std::move(seeds_per_spM[i]));
                 }
             }

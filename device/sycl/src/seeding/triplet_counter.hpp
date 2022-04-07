@@ -8,7 +8,7 @@
 #pragma once
 
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
+#include "traccc/seeding/common/doublet.hpp"
 
 namespace traccc {
 namespace sycl {

@@ -8,9 +8,9 @@
 #pragma once
 
 #include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
-#include "traccc/seeding/triplet_finding_helper.hpp"
+#include "traccc/seeding/common/doublet.hpp"
+#include "traccc/seeding/common/triplet.hpp"
+#include "traccc/seeding/common/triplet_finding_helper.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 namespace traccc {
@@ -80,9 +80,9 @@ struct triplet_finding
             auto& mid_top = doublets_mid_top[i];
             auto& lt = lin_circles_mid_top[i];
 
-            if (!triplet_finding_helper::isCompatible(
-                    spM, lb, lt, m_config, iSinTheta2, scatteringInRegion2,
-                    curvature, impact_parameter)) {
+            if (!is_compatible_triplet(spM, lb, lt, m_config, iSinTheta2,
+                                       scatteringInRegion2, curvature,
+                                       impact_parameter)) {
                 continue;
             }
 

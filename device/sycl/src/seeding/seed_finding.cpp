@@ -19,8 +19,8 @@
 #include "weight_updating.hpp"
 
 // Project include(s).
-#include "traccc/seeding/detail/doublet.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/seeding/common/doublet.hpp"
+#include "traccc/seeding/common/triplet.hpp"
 
 // VecMem include(s).
 #include "vecmem/utils/sycl/copy.hpp"

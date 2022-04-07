@@ -42,8 +42,7 @@ class WeightUpdate {
 
         // Get the bin and item index
         unsigned int bin_idx(0), tr_idx(0);
-        sycl_helper::find_idx_on_container(triplet_device, bin_idx, tr_idx,
-                                           item);
+        find_idx_on_container(triplet_device, bin_idx, tr_idx, item);
 
         // Header of triplet counter: number of compatible mid_top doublets per
         // bin Item of triplet counter: triplet counter objects per bin

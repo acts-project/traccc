@@ -12,7 +12,7 @@
 #include "../utils/get_queue.hpp"
 
 // Project include(s).
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
+#include "traccc/seeding/common/spacepoint_binning_helper.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
