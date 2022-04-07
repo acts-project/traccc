@@ -138,7 +138,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         
         /*time*/ auto start_clusterization_sycl = std::chrono::system_clock::now();
 
-        auto ca_result_sycl = ca_sycl(cells_per_event_sycl);
+        auto ca_result_sycl = ca_sycl(cells_per_event);
         auto& measurements_per_event_sycl = ca_result_sycl.first;
         auto& spacepoints_per_event_sycl = ca_result_sycl.second;
 
@@ -161,13 +161,32 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
-        /// Checking if the spacepoitns match from sycl and cpu measurement creation
+        /*---------------------------------
+          Compare CPU and SYCL measurements 
+          --------------------------------*/
+
+        uint64_t n_measurements_match = 0;
+        for (uint64_t i = 0; i < measurements_per_event.size(); ++i) {
+            for (auto& m : measurements_per_event.get_items().at(i)) {
+
+                if (std::find(measurements_per_event_sycl.get_items().at(i).begin(), 
+                            measurements_per_event_sycl.get_items().at(i).end(), m) 
+                            != 
+                            measurements_per_event_sycl.get_items().at(i).end()) {
+                    n_measurements_match++;
+                }
+            }
+        }
+        std::cout << "measurements_match: " << float(n_measurements_match) / measurements_per_event.total_size() << "\n";
+
+        /*---------------------------------
+          Compare CPU and SYCL spacepoints 
+          --------------------------------*/
+
         int n_spacepoint_match = 0;
-        int module_match = 0;
-        for (std::size_t i = 0; i < spacepoints_per_event.size(); ++i){
-            if (spacepoints_per_event.get_headers().at(i) == spacepoints_per_event_sycl.get_headers().at(i)) module_match++;
-        
+        for (uint64_t i = 0; i < spacepoints_per_event.size(); ++i){
             for (auto& spacepoint : spacepoints_per_event.get_items().at(i)) {
+
                 if (std::find(spacepoints_per_event_sycl.get_items().at(i).begin(), 
                               spacepoints_per_event_sycl.get_items().at(i).end(), spacepoint) 
                               !=
@@ -176,7 +195,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
                 }
             }
         }
-        std::cout << "Module id match: " << float(module_match) / spacepoints_per_event.size() << "\n";
         std::cout << "Spacepoints match: " << float(n_spacepoint_match) / spacepoints_per_event.total_size() << "\n";
 
         /*----------------------------
