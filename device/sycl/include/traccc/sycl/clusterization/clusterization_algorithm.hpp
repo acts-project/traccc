@@ -75,7 +75,7 @@ class clusterization_algorithm
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
 
             // Save the clusters per module size 
-            cluster_sizes[i] = clusters_per_module.size();
+            cluster_sizes[i] = clusters_per_module.size()+1;
 
             // Add module information to the cluster headers
             for (std::size_t j = 0; j < clusters_per_module.size(); ++j){

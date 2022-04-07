@@ -83,7 +83,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
     // Creating SYCL queue for the clusterization
-    // ::sycl::queue qM(::sycl::gpu_selector{}, handle_async_error);
+    // ::sycl::queue qM(::sycl::host_selector{}, handle_async_error);
     // std::cout << "Running Measurement creation on device: "
     //           << qM.get_device().get_info<::sycl::info::device::name>() << "\n";
 
@@ -115,10 +115,15 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
-        // Read the cells from the relevant event file
+        // Read the cells from the relevant event file for CPU algorithm 
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           surface_transforms, host_mr);
+
+        // Read the cells from the relevant event file for SYCL algorithm
+        traccc::host_cell_container cells_per_event_sycl =
+            traccc::read_cells_from_event(event, i_cfg.cell_directory,
+                                          surface_transforms, shared_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -133,7 +138,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         
         /*time*/ auto start_clusterization_sycl = std::chrono::system_clock::now();
 
-        auto ca_result_sycl = ca_sycl(cells_per_event);
+        auto ca_result_sycl = ca_sycl(cells_per_event_sycl);
         auto& measurements_per_event_sycl = ca_result_sycl.first;
         auto& spacepoints_per_event_sycl = ca_result_sycl.second;
 
@@ -182,7 +187,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
 
         /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
 
-        auto seeds_sycl = sa_sycl(std::move(spacepoints_per_event_sycl));
+        auto seeds_sycl = sa_sycl(spacepoints_per_event_sycl);
 
         /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_sycl =
@@ -228,7 +233,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
 
         traccc::track_params_estimation::output_type params;
         if (run_cpu) {
-            params = tp(spacepoints_per_event_sycl, seeds);
+            params = tp(spacepoints_per_event, seeds);
         }
 
         /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
@@ -243,6 +248,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         if (run_cpu) {
             // seeding
             int n_match = 0;
+            // Extended comparison in case there are two spacepoint containers
+            // (from gpu nad cpu clusterization) If so, change the parameter
+            // spacepoints_per_event_sycl inside lambda capture
             for (auto& seed : seeds) {
                 if (std::find_if(
                         seeds_sycl.begin(), seeds_sycl.end(),
