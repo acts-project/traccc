@@ -68,9 +68,9 @@ static void reduceInShared(
 /// @param header_idx the header idx
 /// @param ref_block_idx the reference block idx for a given header idx
 template <typename T>
-static void find_idx_on_jagged_vector(
-    const vecmem::jagged_device_vector<T>& jag_vec, unsigned int& header_idx,
-    unsigned int& item_idx, ::sycl::nd_item<1>& item) {
+void find_idx_on_jagged_vector(const vecmem::jagged_device_vector<T>& jag_vec,
+                               unsigned int& header_idx, unsigned int& item_idx,
+                               ::sycl::nd_item<1>& item) {
 
     // Equivalent to blockIdx.x in cuda
     auto groupIdx = item.get_group(0);
@@ -106,10 +106,9 @@ static void find_idx_on_jagged_vector(
 /// @param header_idx the header idx
 /// @param ref_block_idx the reference block idx for a given header idx
 template <typename header_t, typename item_t>
-static void find_idx_on_container(
-    const device_container<header_t, item_t>& container,
-    unsigned int& header_idx, unsigned int& item_idx,
-    ::sycl::nd_item<1>& item) {
+void find_idx_on_container(const device_container<header_t, item_t>& container,
+                           unsigned int& header_idx, unsigned int& item_idx,
+                           ::sycl::nd_item<1>& item) {
 
     // Equivalent to blockIdx.x in cuda
     auto groupIdx = item.get_group(0);
