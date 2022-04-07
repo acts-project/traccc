@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/common.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/container.hpp"
 
@@ -37,10 +38,10 @@ inline bool operator<(const measurement& lhs, const measurement& rhs) {
 }
 
 inline bool operator==(const measurement& lhs, const measurement& rhs) {
-    return (lhs.local[0] == rhs.local[0] &&
-            lhs.local[1] == rhs.local[1] &&
-            lhs.variance[0] == rhs.variance[0] &&
-            lhs.variance[1] == rhs.variance[1]); 
+    return (std::abs(lhs.local[0] - rhs.local[0]) < float_epsilon &&
+            std::abs(lhs.local[1] - rhs.local[1]) < float_epsilon &&
+            std::abs(lhs.variance[0] - rhs.variance[0]) < float_epsilon &&
+            std::abs(lhs.variance[1] - rhs.variance[1]) < float_epsilon);
 }
 
 /// Container of measurements belonging to one detector module
