@@ -160,6 +160,7 @@ add_definitions(-DALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
 
 # Build the traccc code.
 add_subdirectory( core )
+add_subdirectory( device/common )
 if( TRACCC_BUILD_CUDA )
    add_subdirectory( device/cuda )
 endif()
