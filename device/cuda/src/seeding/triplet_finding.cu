@@ -13,7 +13,7 @@ namespace cuda {
 
 __global__ void set_zero_kernel(triplet_container_view tc_view) {
 
-    device_triplet_container tc_device({tc_view.headers, tc_view.items});
+    device_triplet_container tc_device(tc_view);
 
     const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
     if (gid >= tc_device.get_headers().size()) {
@@ -106,16 +106,13 @@ __global__ void triplet_finding_kernel(
     sp_grid_device internal_sp_device(internal_sp_view);
 
     device_doublet_counter_container doublet_counter_device(
-        {doublet_counter_view.headers, doublet_counter_view.items});
-    device_doublet_container mid_bot_doublet_device(
-        {mid_bot_doublet_view.headers, mid_bot_doublet_view.items});
-    device_doublet_container mid_top_doublet_device(
-        {mid_top_doublet_view.headers, mid_top_doublet_view.items});
+        doublet_counter_view);
+    device_doublet_container mid_bot_doublet_device(mid_bot_doublet_view);
+    device_doublet_container mid_top_doublet_device(mid_top_doublet_view);
 
     device_triplet_counter_container triplet_counter_device(
-        {triplet_counter_view.headers, triplet_counter_view.items});
-    device_triplet_container triplet_device(
-        {triplet_view.headers, triplet_view.items});
+        triplet_counter_view);
+    device_triplet_container triplet_device(triplet_view);
 
     // Get the bin and item index
     unsigned int bin_idx(0), item_idx(0);

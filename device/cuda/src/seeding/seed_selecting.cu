@@ -92,16 +92,14 @@ __global__ void seed_selecting_kernel(
     vecmem::data::vector_view<seed> seed_view) {
 
     // Get device container for input parameters
-    device_spacepoint_container spacepoints_device(
-        {spacepoints_view.headers, spacepoints_view.items});
+    device_spacepoint_container spacepoints_device(spacepoints_view);
     sp_grid_device internal_sp_device(internal_sp_view);
 
     device_doublet_counter_container doublet_counter_device(
-        {doublet_counter_view.headers, doublet_counter_view.items});
+        doublet_counter_view);
     device_triplet_counter_container triplet_counter_device(
-        {triplet_counter_view.headers, triplet_counter_view.items});
-    device_triplet_container triplet_device(
-        {triplet_view.headers, triplet_view.items});
+        triplet_counter_view);
+    device_triplet_container triplet_device(triplet_view);
     device_seed_collection seed_device(seed_view);
 
     // Get the bin and item index

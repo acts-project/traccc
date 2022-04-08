@@ -54,8 +54,7 @@ __global__ void counting_grid_capacities_kernel(
     vecmem::data::vector_view<unsigned int> grid_capacities_view) {
 
     // Get device container for input parameters
-    device_spacepoint_container spacepoints_device(
-        {spacepoints_view.headers, spacepoints_view.items});
+    device_spacepoint_container spacepoints_device(spacepoints_view);
     vecmem::device_vector<std::pair<unsigned int, unsigned int>>
         sp_container_indices(sp_container_indices_view);
     vecmem::device_vector<unsigned int> grid_capacities_device(

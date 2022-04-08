@@ -36,9 +36,8 @@ class WeightUpdate {
         sp_grid_device internal_sp_device(m_internal_sp_view);
 
         device_triplet_counter_container triplet_counter_device(
-            {m_triplet_counter_view.headers, m_triplet_counter_view.items});
-        device_triplet_container triplet_device(
-            {m_triplet_view.headers, m_triplet_view.items});
+            m_triplet_counter_view);
+        device_triplet_container triplet_device(m_triplet_view);
 
         // Get the bin and item index
         unsigned int bin_idx(0), tr_idx(0);

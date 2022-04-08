@@ -72,9 +72,8 @@ __global__ void weight_updating_kernel(
     sp_grid_device internal_sp_device(internal_sp_view);
 
     device_triplet_counter_container triplet_counter_device(
-        {triplet_counter_view.headers, triplet_counter_view.items});
-    device_triplet_container triplet_device(
-        {triplet_view.headers, triplet_view.items});
+        triplet_counter_view);
+    device_triplet_container triplet_device(triplet_view);
 
     // Get the bin and item index
     unsigned int bin_idx(0), tr_idx(0);

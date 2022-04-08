@@ -44,8 +44,7 @@ class PopulatingGrid {
 
         // Get device container for input parameters
         sp_grid_device g2_device(m_grid_view);
-        device_spacepoint_container spacepoints_device(
-            {m_spacepoints_view.headers, m_spacepoints_view.items});
+        device_spacepoint_container spacepoints_device(m_spacepoints_view);
         vecmem::device_vector<unsigned int> grid_sizes(m_grid_sizes_view);
         vecmem::device_vector<const std::pair<unsigned int, unsigned int>>
             sp_container_indices(m_sp_container_indices_view);

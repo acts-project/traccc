@@ -34,6 +34,15 @@ class device_container
     /// Inherit all of the base class's constructors
     using base_type::base_type;
 
+    /// Constructor from a "view object"
+    ///
+    /// Note that it may also be a "data" or "buffer" object. It just needs to
+    /// look like a "view object".
+    ///
+    template <template <typename, typename> class view_t>
+    TRACCC_HOST_DEVICE device_container(const view_t<header_t, item_t>& view)
+        : base_type(view.headers, view.items) {}
+
     /**
      * @brief Bounds-checking mutable element accessor.
      */

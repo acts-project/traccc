@@ -35,7 +35,7 @@ class DupletCount {
         sp_grid_device internal_sp_device(m_internal_sp_view);
 
         device_doublet_counter_container doublet_counter_device(
-            {m_doublet_counter_view.headers, m_doublet_counter_view.items});
+            m_doublet_counter_view);
 
         // Get the bin index of spacepoint binning and reference block idx for
         // the bin index

@@ -14,8 +14,7 @@ namespace cuda {
 
 __global__ void set_zero_kernel(doublet_counter_container_view dcc_view) {
 
-    device_doublet_counter_container dcc_device(
-        {dcc_view.headers, dcc_view.items});
+    device_doublet_counter_container dcc_device(dcc_view);
 
     const std::size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
     if (gid >= dcc_device.get_headers().size()) {
@@ -88,7 +87,7 @@ __global__ void doublet_counting_kernel(
     sp_grid_device internal_sp_device(internal_sp_view);
 
     device_doublet_counter_container doublet_counter_device(
-        {doublet_counter_view.headers, doublet_counter_view.items});
+        doublet_counter_view);
 
     // Get bin and spacepoint index
     unsigned int bin_idx(0), sp_idx(0);
