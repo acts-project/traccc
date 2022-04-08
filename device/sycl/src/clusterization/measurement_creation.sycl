@@ -59,10 +59,9 @@ void measurement_creation::operator()(
             range,
             [clusters_view, measurement_view](auto idx) {
                 // Initialize device vectors
-                device_cluster_const_container clusters_device(
-                    {clusters_view.headers, clusters_view.items});
+                device_cluster_const_container clusters_device(clusters_view);
                 device_measurement_container measurement_device(
-                    {measurement_view.headers, measurement_view.items});
+                    measurement_view);
 
                 // Ignore if idx is out of range
                 if (idx >= clusters_device.size())
