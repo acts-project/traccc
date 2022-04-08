@@ -12,6 +12,10 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   "include/traccc/definitions/common.hpp"
   "include/traccc/definitions/qualifiers.hpp"
   # Event data model.
+  "include/traccc/edm/details/container_base.hpp"
+  "include/traccc/edm/details/container_element.hpp"
+  "include/traccc/edm/details/device_container.hpp"
+  "include/traccc/edm/details/host_container.hpp"
   "include/traccc/edm/cluster.hpp"
   "include/traccc/edm/spacepoint.hpp"
   "include/traccc/edm/measurement.hpp"
