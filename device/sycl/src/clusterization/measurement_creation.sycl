@@ -22,7 +22,7 @@ measurement_creation::measurement_creation(vecmem::memory_resource &mr, queue_wr
 host_measurement_container measurement_creation::operator()(
     const host_cluster_container &c,
     const std::vector<std::size_t> &s,
-    const host_cell_container &l) const {
+    const host_cell_module_collection &l) const {
     output_type measurements(&m_mr.get());
     this->operator()(c, s, l, measurements);
     return measurements;
@@ -30,39 +30,41 @@ host_measurement_container measurement_creation::operator()(
 
 void measurement_creation::operator()(const host_cluster_container &clusters,
                 const std::vector<std::size_t> &cluster_sizes,
-                const host_cell_container &cells_per_event,
+                const host_cell_module_collection &cell_modules_per_event,
                 output_type &measurements) const {
-
-    // Calculate the execution range for the kernel
-    // auto workGroupSize = 32;
-    // auto num = (clusters.size() + workGroupSize - 1) / workGroupSize;
-    // auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num*workGroupSize), ::sycl::range<1>(workGroupSize)};
-    auto range = ::sycl::range<1>{clusters.size()};
 
     // Resizable buffer for the measurements that will later be copied to the host 
     vecmem::sycl::copy copy{m_queue.queue()};
+    unsigned int size_buf = cell_modules_per_event.size();
+
     vecmem::data::jagged_vector_buffer<measurement> measurements_buffer(std::vector<std::size_t>(cluster_sizes.size(), 0), cluster_sizes, m_mr.get());
-    copy.setup(measurements_buffer);
+    measurement_container_buffer measurement_b{{size_buf, m_mr.get()},
+        {std::vector<std::size_t>(cluster_sizes.size(), 0), cluster_sizes, m_mr.get()}};
+    copy.setup(measurement_b.items);
 
     // Vector views to move data to the device
     vecmem::data::jagged_vector_view<measurement> measurements_view = vecmem::get_data(measurements_buffer);
+    measurement_container_view measurement_view(measurement_b);
     auto clusters_data = get_data(clusters, &m_mr.get());
 
     cluster_container_const_view clusters_view(clusters_data);
     
+    // range of kernel execution
+    auto range = clusters.size();
+
     // Run the kernel
-    details::get_queue(m_queue).submit([&](::sycl::handler& h){
-        h.parallel_for<class measurementCreation>(range, [clusters_view, measurements_view]
-                                                          (::sycl::id<1> idx){
-            // get the thread index
-            // auto idx = item.get_global_linear_id();
+    details::get_queue(m_queue).parallel_for(range, [clusters_view, measurements_view, measurement_view](auto idx) {
 
             // Initialize device vectors
             device_cluster_const_container clusters_device({clusters_view.headers, clusters_view.items});
             vecmem::jagged_device_vector<measurement> measurements_device(measurements_view);
+            device_measurement_container measurement_device({measurement_view.headers, measurement_view.items});
+
             // Ignore if idx out of range 
             if (idx >= clusters_device.size()) return;
 
+            // items: cluster of cells at current idx
+            // header: cluster_id object with the information about the cell module 
             const auto& cluster = clusters_device.get_items().at(idx);
             const auto& cluster_id = clusters_device.get_headers().at(idx);
 
@@ -115,16 +117,18 @@ void measurement_creation::operator()(const host_cluster_container &clusters,
                                                     pitch[1] * pitch[1] / 12};
                 // @todo add variance estimation
                 measurements_device.at(module_idx).push_back(m);
+                measurement_device.get_items().at(module_idx).push_back(m);
             }
-        });
     }).wait_and_throw();
 
     vecmem::jagged_vector<measurement> measurements_jagged_vector(&m_mr.get());
+    copy(measurement_b.items, measurements.get_items());
     copy(measurements_buffer, measurements_jagged_vector);
 
-    for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
-        auto module = cells_per_event.at(i).header;
-        measurements.push_back(module, std::move(measurements_jagged_vector[i]));
+    for (std::size_t i = 0; i < cell_modules_per_event.size(); ++i) {
+        auto module = cell_modules_per_event.at(i);
+        auto& m_header = measurements.get_headers().at(i);
+        m_header = module;
     }
 }
 

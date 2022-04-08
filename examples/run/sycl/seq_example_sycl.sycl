@@ -82,11 +82,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
     std::cout << "Running Seeding on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
-    // Creating SYCL queue for the clusterization
-    // ::sycl::queue qM(::sycl::host_selector{}, handle_async_error);
-    // std::cout << "Running Measurement creation on device: "
-    //           << qM.get_device().get_info<::sycl::info::device::name>() << "\n";
-
     // Memory resource used by the EDM.
     vecmem::sycl::shared_memory_resource shared_mr(&q);
 

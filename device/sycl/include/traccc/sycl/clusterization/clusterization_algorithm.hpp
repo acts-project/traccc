@@ -75,6 +75,10 @@ class clusterization_algorithm
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
 
             // Save the clusters per module size 
+            // NOTE: the +1 comes from a crash while running the code on the CUDA backend
+            // In that case, the jagged vector buffer used for measurments seems not to have enough capacity 
+            // which seems wrong because the number of measurments per module (the inner vector)
+            // cannot exceed the number of clusters per module
             cluster_sizes[i] = clusters_per_module.size()+1;
 
             // Add module information to the cluster headers
@@ -89,9 +93,9 @@ class clusterization_algorithm
             }
         }
 
-        // Perform measurements creation in parallel on a GPU
+        // Perform measurement creation across clusters  from all modules in parallel 
         measurements_per_event =
-            mt->operator()(clusters, cluster_sizes, cells_per_event);
+            mt->operator()(clusters, cluster_sizes, cells_per_event.get_headers());
 
         // Perform the spacepoint creation
         for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
