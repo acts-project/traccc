@@ -91,15 +91,17 @@ struct cell_module {
     pixel_segmentation pixel{-8.425, -36.025, 0.05, 0.05};
 };  // struct cell_module
 
-/// Container of cell modules 
+/// Container of cell modules
 template <template <typename> class vector_t>
-using cell_module_collection = vector_t <cell_module>;
+using cell_module_collection = vector_t<cell_module>;
 
-/// Convenience declaration for the cell module collection type to use in host code
+/// Convenience declaration for the cell module collection type to use in host
+/// code
 using host_cell_module_collection = cell_module_collection<vecmem::vector>;
-/// Convenience declaration for the cell module collection type to use in device code
-using device_cell_module_collection = cell_module_collection<vecmem::device_vector>;
-
+/// Convenience declaration for the cell module collection type to use in device
+/// code
+using device_cell_module_collection =
+    cell_module_collection<vecmem::device_vector>;
 
 /// Convenience declaration for the cell container type to use in host code
 using host_cell_container = host_container<cell_module, cell>;

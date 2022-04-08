@@ -16,8 +16,8 @@
 
 // clusterization
 #include "traccc/clusterization/component_connection.hpp"
-#include "traccc/sycl/clusterization/measurement_creation.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/sycl/clusterization/measurement_creation.hpp"
 
 #ifdef _OPENMP
 #include "omp.h"
@@ -34,7 +34,9 @@ class clusterization_algorithm
     /// Constructor for clusterization algorithm
     ///
     /// @param mr is the memory resource
-    clusterization_algorithm(vecmem::memory_resource& mr, ::sycl::queue* q = nullptr) : m_mr(mr) {
+    clusterization_algorithm(vecmem::memory_resource& mr,
+                             ::sycl::queue* q = nullptr)
+        : m_mr(mr) {
 
         cc = std::make_shared<traccc::component_connection>(
             traccc::component_connection(mr));
@@ -74,28 +76,31 @@ class clusterization_algorithm
             traccc::host_cluster_container clusters_per_module = cc->operator()(
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
 
-            // Save the clusters per module size 
-            // NOTE: the +1 comes from a crash while running the code on the CUDA backend
-            // In that case, the jagged vector buffer used for measurments seems not to have enough capacity 
-            // which seems wrong because the number of measurments per module (the inner vector)
+            // Save the clusters per module size
+            // NOTE: the +1 comes from a crash while running the code on the
+            // CUDA backend In that case, the jagged vector buffer used for
+            // measurments seems not to have enough capacity which seems wrong
+            // because the number of measurments per module (the inner vector)
             // cannot exceed the number of clusters per module
-            cluster_sizes[i] = clusters_per_module.size()+1;
+            cluster_sizes[i] = clusters_per_module.size() + 1;
 
             // Add module information to the cluster headers
-            for (std::size_t j = 0; j < clusters_per_module.size(); ++j){
+            for (std::size_t j = 0; j < clusters_per_module.size(); ++j) {
 
                 auto& cluster_id = clusters_per_module.at(j).header;
                 cluster_id.position_from_cell = module.pixel;
                 cluster_id.module_idx = i;
-                
+
                 // Push the clusters from module to the total cluster container
-                clusters.push_back(std::move(clusters_per_module.at(j).header), std::move(clusters_per_module.at(j).items));
+                clusters.push_back(std::move(clusters_per_module.at(j).header),
+                                   std::move(clusters_per_module.at(j).items));
             }
         }
 
-        // Perform measurement creation across clusters  from all modules in parallel 
-        measurements_per_event =
-            mt->operator()(clusters, cluster_sizes, cells_per_event.get_headers());
+        // Perform measurement creation across clusters from all modules in
+        // parallel
+        measurements_per_event = mt->operator()(clusters, cluster_sizes,
+                                                cells_per_event.get_headers());
 
         // Perform the spacepoint creation
         for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
@@ -105,7 +110,7 @@ class clusterization_algorithm
 
             spacepoints_per_event.push_back(module.module,
                                             std::move(spacepoints_per_module));
-        } 
+        }
         // The algorithmic code part: end
     }
 

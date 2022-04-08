@@ -15,10 +15,10 @@
 #include "traccc/io/writer.hpp"
 
 // algorithms
-#include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 
@@ -43,9 +43,10 @@ namespace po = boost::program_options;
 
 // Simple asynchronous handler function
 auto handle_async_error = [](::sycl::exception_list elist) {
-    for (auto &e : elist) {
-        try{ std::rethrow_exception(e); }
-        catch ( ::sycl::exception& e ) {
+    for (auto& e : elist) {
+        try {
+            std::rethrow_exception(e);
+        } catch (::sycl::exception& e) {
             std::cout << "ASYNC EXCEPTION!!\n";
             std::cout << e.what() << "\n";
         }
@@ -110,7 +111,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
-        // Read the cells from the relevant event file for CPU algorithm 
+        // Read the cells from the relevant event file for CPU algorithm
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           surface_transforms, host_mr);
@@ -121,19 +122,21 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
 
         /*-----------------------------
-            Clusterization algorithm 
+            Clusterization algorithm
           -----------------------------*/
-        
+
         // SYCL
-        
-        /*time*/ auto start_clusterization_sycl = std::chrono::system_clock::now();
+
+        /*time*/ auto start_clusterization_sycl =
+            std::chrono::system_clock::now();
 
         auto ca_result_sycl = ca_sycl(cells_per_event);
         auto& measurements_per_event_sycl = ca_result_sycl.first;
         auto& spacepoints_per_event_sycl = ca_result_sycl.second;
 
-        /*time*/ auto end_clusterization_sycl = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_clusterization_sycl = 
+        /*time*/ auto end_clusterization_sycl =
+            std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_clusterization_sycl =
             end_clusterization_sycl - start_clusterization_sycl;
         /*time*/ clusterization_sycl += time_clusterization_sycl.count();
 
@@ -190,8 +193,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         /*time*/ auto start_tp_estimating_sycl =
             std::chrono::system_clock::now();
 
-        auto params_sycl =
-            tp_sycl(std::move(spacepoints_per_event_sycl), std::move(seeds_sycl));
+        auto params_sycl = tp_sycl(std::move(spacepoints_per_event_sycl),
+                                   std::move(seeds_sycl));
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
@@ -226,23 +229,28 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
             std::cout << " number of seeds (sycl): " << seeds_sycl.size()
                       << std::endl;
 
-            // measurements
+            // measurement matching rate
             int n_measurements_match = 0;
             for (uint64_t i = 0; i < measurements_per_event.size(); ++i) {
                 for (auto& m : measurements_per_event.get_items().at(i)) {
 
-                    if (std::find(measurements_per_event_sycl.get_items().at(i).begin(), 
-                                measurements_per_event_sycl.get_items().at(i).end(), m) 
-                                != 
-                                measurements_per_event_sycl.get_items().at(i).end()) {
+                    if (std::find(
+                            measurements_per_event_sycl.get_items()
+                                .at(i)
+                                .begin(),
+                            measurements_per_event_sycl.get_items().at(i).end(),
+                            m) !=
+                        measurements_per_event_sycl.get_items().at(i).end()) {
                         n_measurements_match++;
                     }
                 }
             }
-            float matching_rate = float(n_measurements_match) / measurements_per_event.total_size();
-            std::cout << " measurements matching rate: " << matching_rate << std::endl;
+            float matching_rate = float(n_measurements_match) /
+                                  measurements_per_event.total_size();
+            std::cout << " measurements matching rate: " << matching_rate
+                      << std::endl;
 
-            // seeding
+            // seeding matching rate
             int n_match = 0;
             for (auto& seed : seeds) {
                 if (std::find_if(
@@ -255,7 +263,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
             matching_rate = float(n_match) / seeds.size();
             std::cout << " seed matching rate: " << matching_rate << std::endl;
 
-            // track parameter estimation
+            // track parameter estimation matching rate
             n_match = 0;
             for (auto& param : params) {
                 if (std::find(params_sycl.begin(), params_sycl.end(), param) !=
@@ -320,8 +328,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
               << std::endl;
     std::cout << "- created        " << n_measurements << " meaurements     "
               << std::endl;
-    std::cout << "- created (sycl) " << n_measurements_sycl << " measurements     "
-              << std::endl;
+    std::cout << "- created (sycl) " << n_measurements_sycl
+              << " measurements     " << std::endl;
     std::cout << "- created        " << n_spacepoints << " spacepoints     "
               << std::endl;
 

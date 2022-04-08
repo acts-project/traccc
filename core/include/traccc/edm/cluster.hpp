@@ -19,7 +19,7 @@ namespace traccc {
 
 /// Function for signal modelling
 static inline scalar signal_cell_modelling(scalar signal_in) {
-    return signal_in; 
+    return signal_in;
 }
 
 struct cluster_id {
@@ -31,7 +31,6 @@ struct cluster_id {
     scalar threshold = 0.;
 
     pixel_segmentation position_from_cell{};
-
 };
 
 /// Convenience declaration for the cluster container type to use in host code
@@ -40,8 +39,10 @@ using host_cluster_container = host_container<cluster_id, cell>;
 /// Convenience declaration for the cluster container type to use in device code
 using device_cluster_container = device_container<cluster_id, cell>;
 
-/// Convenience declaration for the cluster container type to use in device code (const)
-using device_cluster_const_container = device_container<const cluster_id, const cell>;
+/// Convenience declaration for the cluster container type to use in device code
+/// (const)
+using device_cluster_const_container =
+    device_container<const cluster_id, const cell>;
 
 /// Convenience declaration for the cluster container data type to use in host
 /// code
@@ -49,7 +50,8 @@ using cluster_container_data = container_data<cluster_id, cell>;
 
 /// Convenience declaration for the cluster container data type to use in host
 /// code (const)
-using cluster_container_const_data = container_data<const cluster_id, const cell>;
+using cluster_container_const_data =
+    container_data<const cluster_id, const cell>;
 
 /// Convenience declaration for the cluster container buffer type to use in host
 /// code
@@ -61,6 +63,7 @@ using cluster_container_view = container_view<cluster_id, cell>;
 
 /// Convenience declaration for the cluster container view type to use in host
 /// code (const)
-using cluster_container_const_view = container_view<const cluster_id, const cell>;
+using cluster_container_const_view =
+    container_view<const cluster_id, const cell>;
 
 }  // namespace traccc
