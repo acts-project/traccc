@@ -21,11 +21,17 @@ namespace traccc {
  * low-overhead access to the struct-of-arrays container class to emulate an
  * array-of-structs architecture.
  *
- * @tparam header_t The type of the header object.
- * @tparam vector_t The fully qualified vector type.
+ * @tparam header_reference_t The type of reference of the header object.
+ * @tparam vector_reference_t The fully qualified vector reference type.
  */
-template <typename header_t, typename vector_t>
+template <typename header_reference_t, typename vector_reference_t>
 struct container_element {
+
+    /// Header reference type
+    using header_reference = header_reference_t;
+    /// Vector reference type
+    using vector_reference = vector_reference_t;
+
     /**
      * @brief Construct a new container element view.
      *
@@ -37,10 +43,11 @@ struct container_element {
      * @param[in] v The vector object reference.
      */
     TRACCC_HOST_DEVICE
-    container_element(header_t& h, vector_t& v) : header(h), items(v) {}
+    container_element(header_reference h, vector_reference v)
+        : header(h), items(v) {}
 
-    header_t& header;
-    vector_t& items;
+    header_reference header;
+    vector_reference items;
 };  // struct container_element
 
 }  // namespace traccc

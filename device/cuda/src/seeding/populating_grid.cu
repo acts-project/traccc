@@ -48,8 +48,7 @@ __global__ void populating_grid_kernel(
 
     // Get device container for input parameters
     sp_grid_device g2_device(grid_view);
-    device_spacepoint_container spacepoints_device(
-        {spacepoints_view.headers, spacepoints_view.items});
+    device_spacepoint_container spacepoints_device(spacepoints_view);
     vecmem::device_vector<std::pair<unsigned int, unsigned int>>
         sp_container_indices(sp_container_indices_view);
 

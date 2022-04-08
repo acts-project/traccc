@@ -37,10 +37,9 @@ class TrackParamsEstimation {
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        device_spacepoint_container spacepoints_device(
-            {m_spacepoints_view.headers, m_spacepoints_view.items});
+        device_spacepoint_container spacepoints_device(m_spacepoints_view);
         device_seed_collection seeds_device(m_seeds_view);
-        device_bound_track_parameters_collection params_device({m_params_view});
+        device_bound_track_parameters_collection params_device(m_params_view);
 
         // vector index for threads
         unsigned int gid = workItemIdx + groupIdx * groupDim;

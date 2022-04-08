@@ -78,15 +78,13 @@ class SeedSelect {
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        device_spacepoint_container spacepoints_device(
-            {m_spacepoints_view.headers, m_spacepoints_view.items});
+        device_spacepoint_container spacepoints_device(m_spacepoints_view);
 
         sp_grid_device internal_sp_device(m_internal_sp_view);
 
         device_doublet_counter_container doublet_counter_device(
-            {m_doublet_counter_view.headers, m_doublet_counter_view.items});
-        device_triplet_container triplet_device(
-            {m_triplet_view.headers, m_triplet_view.items});
+            m_doublet_counter_view);
+        device_triplet_container triplet_device(m_triplet_view);
         device_seed_collection seed_device(m_seed_view);
 
         // Get the bin and item index

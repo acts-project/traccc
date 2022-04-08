@@ -77,16 +77,16 @@ class container_base {
      * @brief The type name of the element view which is returned by various
      * methods in this class.
      */
-    using element_view =
-        container_element<header_t, typename item_vector::value_type>;
+    using element_view = container_element<typename header_vector::reference,
+                                           typename item_vector::reference>;
 
     /**
      * @brief The type name of the constant element view which is returned
      * by various methods in this class.
      */
     using const_element_view =
-        container_element<const header_t,
-                          const typename item_vector::value_type>;
+        container_element<typename header_vector::const_reference,
+                          typename item_vector::const_reference>;
 
     /**
      * We need to assert that the header vector and the outer layer of the
@@ -98,8 +98,13 @@ class container_base {
                             typename item_vector::size_type>::value,
         "Size type for container header and item vectors must be the same.");
 
+    /// Default copy-constructor
+    container_base(const container_base&) = default;
+    /// Default move-constructor
+    container_base(container_base&&) = default;
+
     /**
-     * @brief Standard two-argument constructor.
+     * @brief (Copy) Constructor from a header and item vector
      *
      * To enforce the invariant that both vectors must be the same size, we
      * check this in the constructor. This is also checked in release
@@ -107,6 +112,21 @@ class container_base {
      */
     TRACCC_HOST
     container_base(const header_vector& hv, const item_vector& iv)
+        : m_headers(hv), m_items(iv) {
+        if (m_headers.size() != m_items.size()) {
+            throw std::logic_error("Header and item length not equal.");
+        }
+    }
+
+    /**
+     * @brief (Move) Constructor from a header and item vector
+     *
+     * To enforce the invariant that both vectors must be the same size, we
+     * check this in the constructor. This is also checked in release
+     * builds.
+     */
+    TRACCC_HOST
+    container_base(header_vector&& hv, item_vector&& iv)
         : m_headers(hv), m_items(iv) {
         if (m_headers.size() != m_items.size()) {
             throw std::logic_error("Header and item length not equal.");
@@ -147,6 +167,11 @@ class container_base {
      * @brief Default Constructor
      */
     container_base() = default;
+
+    /// Default (copy) assignment operator
+    container_base& operator=(const container_base&) = default;
+    /// Default (move) assignment operator
+    container_base& operator=(container_base&&) = default;
 
     /**
      * @brief Accessor method for the internal header vector.

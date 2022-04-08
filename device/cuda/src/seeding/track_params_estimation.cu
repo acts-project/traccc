@@ -57,10 +57,9 @@ __global__ void track_params_estimating_kernel(
     vecmem::data::vector_view<bound_track_parameters> params_view) {
 
     // Get device container for input parameters
-    device_spacepoint_container spacepoints_device(
-        {spacepoints_view.headers, spacepoints_view.items});
+    device_spacepoint_container spacepoints_device(spacepoints_view);
     device_seed_collection seeds_device(seeds_view);
-    device_bound_track_parameters_collection params_device({params_view});
+    device_bound_track_parameters_collection params_device(params_view);
 
     // vector index for threads
     unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;
