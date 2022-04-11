@@ -58,8 +58,7 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 #pragma omp parallel for
         for (size_t i = 0; i < cells_per_event.size(); ++i) {
             auto &module = cells_per_event.get_headers()[i];
-            module.pixel =
-                traccc::pixel_data{-8.425, -36.025, 0.05, 0.05};
+            module.pixel = traccc::pixel_data{-8.425, -36.025, 0.05, 0.05};
 
             // The algorithmic code part: start
             traccc::host_cluster_container clusters =
