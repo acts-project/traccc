@@ -59,8 +59,7 @@ struct measurement_creation
                     output_type &measurements) const {
 
         // Run the algorithm
-        const auto &cl_id = clusters.at(0).header;
-        auto pitch = get_pitch(cl_id.module_idx, cl_id.pixel);
+        auto pitch = module.pixel.get_pitch();
 
         measurements.reserve(clusters.size());
         for (const auto &cluster : clusters.get_items()) {
@@ -82,6 +81,7 @@ struct measurement_creation
                 continue;
             }
 
+            const auto &cl_id = clusters.at(0).header;
             for (const auto &cell : cluster) {
                 scalar weight = signal_cell_modelling(cell.activation);
                 if (weight > cl_id.threshold) {

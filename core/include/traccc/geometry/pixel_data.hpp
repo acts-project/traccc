@@ -21,6 +21,8 @@ struct pixel_data {
     scalar min_center_y;
     scalar pitch_x;
     scalar pitch_y;
+
+    vector2 get_pitch() const { return {pitch_x, pitch_y}; };
 };
 
 }  // namespace traccc

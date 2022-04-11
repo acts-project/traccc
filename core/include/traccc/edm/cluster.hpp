@@ -13,7 +13,6 @@
 
 // System include(s).
 #include <functional>
-#include <iostream>
 #include <vector>
 
 namespace traccc {
