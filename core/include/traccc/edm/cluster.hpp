@@ -9,11 +9,13 @@
 
 // Project include(s).
 #include "traccc/edm/cell.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 // System include(s).
 #include <functional>
 #include <vector>
+
+#include <iostream>
 
 namespace traccc {
 
@@ -22,6 +24,21 @@ inline scalar signal_cell_modelling(scalar signal_in) {
     return signal_in;
 }
 
+/// Function for pixel segmentation
+inline vector2 position_from_cell(scalar module_idx, cell c, pixel_data pixel, bool is_default) {
+    if (is_default) 
+        return {static_cast<scalar>(c.channel0), static_cast<scalar>(c.channel1)};
+    else
+        // Retrieve the specific values based on module idx (for now hard-coded)
+        return {pixel.min_center_x + c.channel0 * pixel.pitch_x, pixel.min_center_y + c.channel1 * pixel.pitch_y}; 
+}
+
+inline vector2 get_pitch(scalar module_idx, pixel_data pixel) {
+    // return the values based on the module idx (for now hard-coded)
+    return {pixel.pitch_x, pixel.pitch_y}; 
+}
+
+using position_estimation = std::function<vector2(channel_id, channel_id)>;
 struct cluster_id {
 
     event_id event = 0;
@@ -30,7 +47,8 @@ struct cluster_id {
     transform3 placement = transform3{};
     scalar threshold = 0.;
 
-    pixel_segmentation position_from_cell{};
+    pixel_data pixel;
+    bool is_default = true;
 };
 
 /// Convenience declaration for the cluster container type to use in host code

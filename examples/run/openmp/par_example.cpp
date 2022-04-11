@@ -13,7 +13,7 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
@@ -81,13 +81,15 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
         for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
             auto &module = cells_per_event.at(i).header;
             module.pixel =
-                traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
+                traccc::pixel_data{-8.425, -36.025, 0.05, 0.05};
 
             // The algorithmic code part: start
             traccc::host_cluster_container clusters =
                 cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
-            for (auto &cl_id : clusters.get_headers())
-                cl_id.position_from_cell = module.pixel;
+            for (auto &cl_id : clusters.get_headers()) {
+                cl_id.is_default = false;
+                cl_id.pixel = module.pixel;
+            }
 
             traccc::host_measurement_collection measurements_per_module =
                 mt(clusters, module);

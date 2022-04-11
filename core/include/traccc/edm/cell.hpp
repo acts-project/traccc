@@ -10,7 +10,7 @@
 // traccc include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
@@ -88,7 +88,7 @@ struct cell_module {
     channel_id range0[2] = {std::numeric_limits<channel_id>::max(), 0};
     channel_id range1[2] = {std::numeric_limits<channel_id>::max(), 0};
 
-    pixel_segmentation pixel{-8.425, -36.025, 0.05, 0.05};
+    pixel_data pixel{-8.425, -36.025, 0.05, 0.05};
 };  // struct cell_module
 
 /// Container of cell modules

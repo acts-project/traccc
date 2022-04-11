@@ -12,7 +12,7 @@
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 // clusterization
 #include "traccc/clusterization/component_connection.hpp"
@@ -68,8 +68,10 @@ class clusterization_algorithm
             // The algorithmic code part: start
             traccc::host_cluster_container clusters = cc->operator()(
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
-            for (auto& cl_id : clusters.get_headers())
-                cl_id.position_from_cell = module.pixel;
+            for (auto& cl_id : clusters.get_headers()){
+                cl_id.is_default = false;
+                cl_id.pixel = module.pixel;
+            }
 
             traccc::host_measurement_collection measurements_per_module =
                 mt->operator()(clusters, module);

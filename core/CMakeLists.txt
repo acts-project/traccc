@@ -27,7 +27,7 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   # Geometry description.
   "include/traccc/geometry/module_map.hpp"
   "include/traccc/geometry/geometry.hpp"
-  "include/traccc/geometry/pixel_segmentation.hpp"
+  "include/traccc/geometry/pixel_data.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
   "include/traccc/utils/unit_vectors.hpp"

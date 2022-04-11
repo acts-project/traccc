@@ -59,7 +59,8 @@ struct measurement_creation
                     output_type &measurements) const {
 
         // Run the algorithm
-        auto pitch = module.pixel.get_pitch();
+        const auto &cl_id = clusters.at(0).header;
+        auto pitch = get_pitch(cl_id.module_idx, cl_id.pixel);
 
         measurements.reserve(clusters.size());
         for (const auto &cluster : clusters.get_items()) {
@@ -81,13 +82,12 @@ struct measurement_creation
                 continue;
             }
 
-            const auto &cl_id = clusters.at(0).header;
             for (const auto &cell : cluster) {
                 scalar weight = signal_cell_modelling(cell.activation);
                 if (weight > cl_id.threshold) {
                     totalWeight += cell.activation;
                     const point2 cell_position =
-                        cl_id.position_from_cell(cell.channel0, cell.channel1);
+                        position_from_cell(cl_id.module_idx, cell, cl_id.pixel, cl_id.is_default);
 
                     const point2 prev = mean;
                     const point2 diff = cell_position - prev;

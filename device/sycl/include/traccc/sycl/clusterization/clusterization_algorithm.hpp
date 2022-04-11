@@ -12,7 +12,7 @@
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 // clusterization
 #include "traccc/clusterization/component_connection.hpp"
@@ -88,8 +88,9 @@ class clusterization_algorithm
             for (std::size_t j = 0; j < clusters_per_module.size(); ++j) {
 
                 auto& cluster_id = clusters_per_module.at(j).header;
-                cluster_id.position_from_cell = module.pixel;
+                cluster_id.is_default = false;
                 cluster_id.module_idx = i;
+                cluster_id.pixel = module.pixel;
 
                 // Push the clusters from module to the total cluster container
                 clusters.push_back(std::move(clusters_per_module.at(j).header),
