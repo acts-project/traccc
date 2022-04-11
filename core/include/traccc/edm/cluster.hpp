@@ -23,8 +23,7 @@ inline scalar signal_cell_modelling(scalar signal_in) {
 }
 
 /// Function for pixel segmentation
-inline vector2 position_from_cell(scalar module_idx, cell c, pixel_data pixel,
-                                  bool is_default) {
+inline vector2 position_from_cell(cell c, pixel_data pixel, bool is_default) {
     if (is_default)
         return {static_cast<scalar>(c.channel0),
                 static_cast<scalar>(c.channel1)};
@@ -34,7 +33,7 @@ inline vector2 position_from_cell(scalar module_idx, cell c, pixel_data pixel,
                 pixel.min_center_y + c.channel1 * pixel.pitch_y};
 }
 
-inline vector2 get_pitch(scalar module_idx, pixel_data pixel) {
+inline vector2 get_pitch(pixel_data pixel) {
     // return the values based on the module idx (for now hard-coded)
     return {pixel.pitch_x, pixel.pitch_y};
 }
