@@ -70,8 +70,22 @@ using cell_collection = vector_t<cell>;
 
 /// Convenience declaration for the cell collection type to use in host code
 using host_cell_collection = cell_collection<vecmem::vector>;
+
 /// Convenience declaration for the cell collection type to use in device code
 using device_cell_collection = cell_collection<vecmem::device_vector>;
+
+/// Container of cells belonging to one detector module (const)
+template <template <typename> class vector_t>
+using cell_const_collection = vector_t<const cell>;
+
+/// Convenience declaration for the cell collection type to use in host code
+/// (const)
+using host_cell_const_collection = cell_const_collection<vecmem::vector>;
+
+/// Convenience declaration for the cell collection type to use in device code
+/// (const)
+using device_cell_const_collection =
+    cell_const_collection<vecmem::device_vector>;
 
 /// Header information for all of the cells in a specific detector module
 ///

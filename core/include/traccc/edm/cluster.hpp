@@ -17,32 +17,10 @@
 
 namespace traccc {
 
-/// Function for signal modelling
-inline scalar signal_cell_modelling(scalar signal_in) {
-    return signal_in;
-}
-
-/// Function for pixel segmentation
-inline vector2 position_from_cell(cell c, pixel_data pixel, bool is_default) {
-    if (is_default)
-        return {static_cast<scalar>(c.channel0),
-                static_cast<scalar>(c.channel1)};
-    else
-        // Retrieve the specific values based on module idx (for now hard-coded)
-        return {pixel.min_center_x + c.channel0 * pixel.pitch_x,
-                pixel.min_center_y + c.channel1 * pixel.pitch_y};
-}
-
-inline vector2 get_pitch(pixel_data pixel) {
-    // return the values based on the module idx (for now hard-coded)
-    return {pixel.pitch_x, pixel.pitch_y};
-}
-
-using position_estimation = std::function<vector2(channel_id, channel_id)>;
 struct cluster_id {
 
     event_id event = 0;
-    scalar module_idx = 0;
+    std::size_t module_idx = 0;
     geometry_id module = 0;
     transform3 placement = transform3{};
     scalar threshold = 0.;
@@ -83,5 +61,28 @@ using cluster_container_view = container_view<cluster_id, cell>;
 /// code (const)
 using cluster_container_const_view =
     container_view<const cluster_id, const cell>;
+
+/// Function for signal modelling
+inline scalar signal_cell_modelling(scalar signal_in,
+                                    const cluster_id& /*cl_id*/) {
+    // Retrieve the signal based on the cl_id.module_idx
+    return signal_in;
+}
+
+/// Function for pixel segmentation
+inline vector2 position_from_cell(cell c, cluster_id cl_id) {
+    if (cl_id.is_default)
+        return {static_cast<scalar>(c.channel0),
+                static_cast<scalar>(c.channel1)};
+    else
+        // Retrieve the specific values based on module idx
+        return {cl_id.pixel.min_center_x + c.channel0 * cl_id.pixel.pitch_x,
+                cl_id.pixel.min_center_y + c.channel1 * cl_id.pixel.pitch_y};
+}
+
+inline vector2 get_pitch(cluster_id cl_id) {
+    // return the values based on the module idx
+    return {cl_id.pixel.pitch_x, cl_id.pixel.pitch_y};
+}
 
 }  // namespace traccc
