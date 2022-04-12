@@ -4,12 +4,12 @@
 #
 # Mozilla Public License Version 2.0
 
+# Enable CUDA as a language.
+enable_language( CUDA )
+
 # Project include(s).
 include( traccc-compiler-options-cpp )
 include( traccc-compiler-options-cuda )
-
-# Enable CUDA as a language.
-enable_language( CUDA )
 
 # Set up the build of the traccc::cuda library.
 traccc_add_library( traccc_cuda cuda TYPE SHARED

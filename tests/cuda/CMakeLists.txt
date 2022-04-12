@@ -4,9 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
-include(traccc-compiler-options-cuda)
-
 enable_language(CUDA)
+
+include(traccc-compiler-options-cuda)
 
 find_package(CUDAToolkit REQUIRED)
 
