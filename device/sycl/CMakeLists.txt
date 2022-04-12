@@ -20,19 +20,15 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
   # implementation files
-  "src/seeding/counting_grid_capacities.hpp"
-  "src/seeding/counting_grid_capacities.sycl"
   "src/seeding/doublet_counter.hpp"
   "src/seeding/doublet_counting.hpp"
   "src/seeding/doublet_counting.sycl"
   "src/seeding/doublet_finding.hpp"
   "src/seeding/doublet_finding.sycl"
-  "src/seeding/populating_grid.hpp"
-  "src/seeding/populating_grid.sycl"
   "src/seeding/seed_finding.cpp"
   "src/seeding/seed_selecting.hpp"
   "src/seeding/seed_selecting.sycl"
-  "src/seeding/spacepoint_binning.cpp"
+  "src/seeding/spacepoint_binning.sycl"
   "src/seeding/sycl_helper.hpp"
   "src/seeding/track_params_estimation.sycl"
   "src/seeding/triplet_counter.hpp"
@@ -47,7 +43,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/utils/queue_wrapper.cpp" )
 target_link_libraries( traccc_sycl
   PUBLIC vecmem::core traccc::core
-  PRIVATE vecmem::sycl )
+  PRIVATE traccc::device_common vecmem::sycl )
 
 # Prevent Eigen from getting confused when building code for a HIP backend.
 target_compile_definitions( traccc_sycl PRIVATE EIGEN_NO_CUDA )
