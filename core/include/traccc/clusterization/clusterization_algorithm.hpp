@@ -69,7 +69,6 @@ class clusterization_algorithm
             traccc::host_cluster_container clusters = cc->operator()(
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
             for (auto& cl_id : clusters.get_headers()) {
-                cl_id.is_default = false;
                 cl_id.pixel = module.pixel;
             }
 

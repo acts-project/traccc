@@ -65,7 +65,6 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                 cc(cells_per_event.get_items()[i],
                    cells_per_event.get_headers()[i]);
             for (auto &cl_id : clusters.get_headers()) {
-                cl_id.is_default = false;
                 cl_id.pixel = module.pixel;
             }
 

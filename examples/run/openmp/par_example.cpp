@@ -86,7 +86,6 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
             traccc::host_cluster_container clusters =
                 cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
             for (auto &cl_id : clusters.get_headers()) {
-                cl_id.is_default = false;
                 cl_id.pixel = module.pixel;
             }
 

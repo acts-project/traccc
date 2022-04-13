@@ -56,7 +56,6 @@ TEST(algorithms, seq_single_module) {
     // Algorithmic code: start
     clusters = cc(cells, module);
     for (auto& cl_id : clusters.get_headers()) {
-        cl_id.is_default = false;
         cl_id.pixel = module.pixel;
     }
     measurements = mt(clusters, module);

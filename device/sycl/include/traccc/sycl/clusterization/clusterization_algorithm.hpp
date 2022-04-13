@@ -79,7 +79,6 @@ class clusterization_algorithm
             for (std::size_t j = 0; j < clusters_per_module.size(); ++j) {
 
                 auto& cluster_id = clusters_per_module.at(j).header;
-                cluster_id.is_default = false;
                 cluster_id.module_idx = i;
                 cluster_id.pixel = module.pixel;
 
