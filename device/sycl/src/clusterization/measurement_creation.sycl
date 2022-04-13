@@ -80,7 +80,7 @@ void measurement_creation::operator()(
                 // items: cluster of cells at current idx
                 // header: cluster_id object with the information about the cell
                 // module
-                const device_cell_const_collection &cluster =
+                device_cell_const_collection &cluster =
                     clusters_device.get_items().at(idx);
                 const cluster_id &cl_id = clusters_device.get_headers().at(idx);
 
