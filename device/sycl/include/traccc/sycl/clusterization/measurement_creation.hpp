@@ -8,18 +8,21 @@
 #pragma once
 
 // SYCL library include(s).
+#include "traccc/sycl/utils/queue_wrapper.hpp"
+
+// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
+
 
 namespace traccc::sycl {
 
 struct measurement_creation
     : public algorithm<host_measurement_container(
-          const host_cluster_container &, const std::vector<std::size_t> &,
+          const host_cluster_container &,
           const host_cell_module_collection &)> {
     public:
     /// Constructor for measurement_creation
@@ -38,7 +41,7 @@ struct measurement_creation
     /// measurements as items - usually same size or sometime slightly smaller
     /// than the input (cluster sizes)
     host_measurement_container operator()(
-        const host_cluster_container &c, const std::vector<std::size_t> &s,
+        const host_cluster_container &c, 
         const host_cell_module_collection &l) const override;
 
     /// Callable operator for measurement creation for all the modules
@@ -51,7 +54,6 @@ struct measurement_creation
     /// measurements as items - usually same size or sometime slightly smaller
     /// than the input (cluster sizes)
     void operator()(const host_cluster_container &clusters,
-                    const std::vector<std::size_t> &cluster_sizes,
                     const host_cell_module_collection &cell_modules_per_event,
                     output_type &measurements) const;
 

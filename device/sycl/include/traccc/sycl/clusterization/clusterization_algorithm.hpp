@@ -63,9 +63,8 @@ class clusterization_algorithm
         // reserve the vector size
         spacepoints_per_event.reserve(cells_per_event.size());
 
-        // Container for all the clusters and the number of clusters per module
+        // Container for all the clusters 
         traccc::host_cluster_container clusters(&m_mr.get());
-        std::vector<std::size_t> cluster_sizes(cells_per_event.size());
 
         // The algorithmic code part: start
 
@@ -75,14 +74,6 @@ class clusterization_algorithm
 
             traccc::host_cluster_container clusters_per_module = cc->operator()(
                 cells_per_event.at(i).items, cells_per_event.at(i).header);
-
-            // Save the clusters per module size
-            // NOTE: the +1 comes from a crash while running the code on the
-            // CUDA backend In that case, the jagged vector buffer used for
-            // measurments seems not to have enough capacity which seems wrong
-            // because the number of measurments per module (the inner vector)
-            // cannot exceed the number of clusters per module
-            cluster_sizes[i] = clusters_per_module.size() + 1;
 
             // Add module information to the cluster headers
             for (std::size_t j = 0; j < clusters_per_module.size(); ++j) {
@@ -100,7 +91,7 @@ class clusterization_algorithm
 
         // Perform measurement creation across clusters from all modules in
         // parallel
-        measurements_per_event = mt->operator()(clusters, cluster_sizes,
+        measurements_per_event = mt->operator()(clusters,
                                                 cells_per_event.get_headers());
 
         // Perform the spacepoint creation

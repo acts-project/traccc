@@ -5,14 +5,14 @@
  * Mozilla Public License Version 2.0
  */
 
-// SYCL library include(s)
+// SYCL library include(s).
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/measurement_creation.hpp"
 
-// SYCL include(s)
+// SYCL include(s).
 #include <CL/sycl.hpp>
 
-// Vecmem include(s)
+// Vecmem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
 
 namespace traccc::sycl {
@@ -22,21 +22,31 @@ measurement_creation::measurement_creation(vecmem::memory_resource &mr,
     : m_mr(mr), m_queue(queue) {}
 
 host_measurement_container measurement_creation::operator()(
-    const host_cluster_container &c, const std::vector<std::size_t> &s,
+    const host_cluster_container &c,
     const host_cell_module_collection &l) const {
     output_type measurements(&m_mr.get());
-    this->operator()(c, s, l, measurements);
+    this->operator()(c, l, measurements);
     return measurements;
 }
 
 void measurement_creation::operator()(
     const host_cluster_container &clusters,
-    const std::vector<std::size_t> &cluster_sizes,
     const host_cell_module_collection &cell_modules_per_event,
     output_type &measurements) const {
 
     vecmem::sycl::copy copy{m_queue.queue()};
     unsigned int size_buf = cell_modules_per_event.size();
+
+    // Retrieve the number of clusters per each module
+    // NOTE: the +1 comes from a crash while running the code on the
+    // CUDA backend In that case, the jagged vector buffer used for
+    // measurments seems not to have enough capacity which seems wrong
+    // because the number of measurments per module (the inner vector)
+    // cannot exceed the number of clusters per module
+    std::vector<std::size_t> cluster_sizes(cell_modules_per_event.size(), 1);
+    for (const auto& cl_id : clusters.get_headers()){
+        cluster_sizes.at(cl_id.module_idx)++;
+    }
 
     // Resizable buffer for the measurements
     measurement_container_buffer measurement_buffer{
