@@ -17,13 +17,11 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-
 namespace traccc::sycl {
 
-struct measurement_creation
-    : public algorithm<host_measurement_container(
-          const host_cluster_container &,
-          const host_cell_module_collection &)> {
+struct measurement_creation : public algorithm<host_measurement_container(
+                                  const host_cluster_container &,
+                                  const host_cell_module_collection &)> {
     public:
     /// Constructor for measurement_creation
     ///
@@ -41,7 +39,7 @@ struct measurement_creation
     /// measurements as items - usually same size or sometime slightly smaller
     /// than the input (cluster sizes)
     host_measurement_container operator()(
-        const host_cluster_container &c, 
+        const host_cluster_container &c,
         const host_cell_module_collection &l) const override;
 
     /// Callable operator for measurement creation for all the modules

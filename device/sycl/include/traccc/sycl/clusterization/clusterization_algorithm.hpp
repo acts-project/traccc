@@ -63,7 +63,7 @@ class clusterization_algorithm
         // reserve the vector size
         spacepoints_per_event.reserve(cells_per_event.size());
 
-        // Container for all the clusters 
+        // Container for all the clusters
         traccc::host_cluster_container clusters(&m_mr.get());
 
         // The algorithmic code part: start
@@ -91,8 +91,8 @@ class clusterization_algorithm
 
         // Perform measurement creation across clusters from all modules in
         // parallel
-        measurements_per_event = mt->operator()(clusters,
-                                                cells_per_event.get_headers());
+        measurements_per_event =
+            mt->operator()(clusters, cells_per_event.get_headers());
 
         // Perform the spacepoint creation
         for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
