@@ -38,10 +38,10 @@ inline vector2 get_pitch(cluster_id cl_id) {
 
 /// Function used for calculating the properties of the cluster inside
 /// measurement creation
-template <template <typename> class vector_type>
+template <template <typename> class vector_type, typename cell_t>
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
-    const cell_collection<vector_type>& cluster, const cluster_id& cl_id,
-    point2& mean, point2& var, scalar& totalWeight) {
+    const vector_type<cell_t>& cluster, const cluster_id& cl_id, point2& mean,
+    point2& var, scalar& totalWeight) {
     for (const auto& cell : cluster) {
         scalar weight = signal_cell_modelling(cell.activation, cl_id);
         if (weight > cl_id.threshold) {

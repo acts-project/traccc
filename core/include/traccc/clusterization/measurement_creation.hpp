@@ -86,8 +86,8 @@ struct measurement_creation
             const auto &cl_id = clusters.at(0).header;
 
             // Calculate the cluster properties
-            calc_cluster_properties<vecmem::vector>(cluster, cl_id, mean, var,
-                                                    totalWeight);
+            calc_cluster_properties<vecmem::vector, cell>(cluster, cl_id, mean,
+                                                          var, totalWeight);
 
             if (totalWeight > 0.) {
                 measurement m;
