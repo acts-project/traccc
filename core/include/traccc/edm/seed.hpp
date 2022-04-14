@@ -46,13 +46,25 @@ struct seed {
         return *this;
     }
 
-    TRACCC_HOST_DEVICE
+    TRACCC_HOST
     std::vector<measurement> get_measurements(
         const host_spacepoint_container& spacepoints) const {
         std::vector<measurement> result;
+        result.reserve(3);
         result.push_back(spacepoints.at(spB_link).meas);
         result.push_back(spacepoints.at(spM_link).meas);
         result.push_back(spacepoints.at(spT_link).meas);
+        return result;
+    }
+
+    TRACCC_HOST
+    std::vector<spacepoint> get_spacepoints(
+        const host_spacepoint_container& spacepoints) const {
+        std::vector<spacepoint> result;
+        result.reserve(3);
+        result.push_back(spacepoints.at(spB_link));
+        result.push_back(spacepoints.at(spM_link));
+        result.push_back(spacepoints.at(spT_link));
         return result;
     }
 };
@@ -62,40 +74,32 @@ inline bool operator==(const seed& lhs, const seed& rhs) {
             lhs.spT_link == rhs.spT_link);
 }
 
-template <typename spacepoint_container_t>
-bool is_same(const seed& seed1, const spacepoint_container_t& container1,
-             const seed& seed2, const spacepoint_container_t& container2) {
+inline bool operator==(const std::vector<spacepoint>& lhs,
+                       const std::vector<spacepoint>& rhs) {
+    assert(lhs.size() == rhs.size());
 
-    auto spB1 = container1.at(seed1.spB_link);
-    auto spM1 = container1.at(seed1.spM_link);
-    auto spT1 = container1.at(seed1.spT_link);
+    for (std::size_t i = 0; i < lhs.size(); i++) {
+        if (!(lhs.at(i) == rhs.at(i))) {
+            return false;
+        }
+    }
 
-    auto spB2 = container2.at(seed2.spB_link);
-    auto spM2 = container2.at(seed2.spM_link);
-    auto spT2 = container2.at(seed2.spT_link);
-
-    return (spB1 == spB2 && spM1 == spM2 && spT1 == spT2);
+    return true;
 }
 
-template <typename spacepoint_container_t>
-struct is_same_seed {
+template <typename seed_collection_t, typename spacepoint_container_t>
+std::vector<std::vector<spacepoint>> get_spacepoint_vector(
+    const seed_collection_t& seeds, const spacepoint_container_t& container) {
 
-    const seed m_ref_seed;
-    const spacepoint_container_t m_ref_spacepoints;
-    const spacepoint_container_t m_test_spacepoints;
+    std::vector<std::vector<spacepoint>> result;
+    result.reserve(seeds.size());
 
-    is_same_seed(const seed& ref_seed,
-                 const spacepoint_container_t& ref_spacepoints,
-                 const spacepoint_container_t& test_spacepoints)
-        : m_ref_seed(ref_seed),
-          m_ref_spacepoints(ref_spacepoints),
-          m_test_spacepoints(test_spacepoints) {}
+    std::transform(
+        seeds.cbegin(), seeds.cend(), std::back_inserter(result),
+        [&](const seed& value) { return value.get_spacepoints(container); });
 
-    bool operator()(const seed& test_seed) {
-        return is_same<spacepoint_container_t>(m_ref_seed, m_ref_spacepoints,
-                                               test_seed, m_test_spacepoints);
-    }
-};
+    return result;
+}
 
 /// Container of internal_spacepoint for an event
 template <template <typename> class vector_t>

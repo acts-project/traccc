@@ -171,14 +171,21 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
         if (run_cpu) {
             // seeding
             int n_match = 0;
-            for (auto& seed : seeds) {
-                if (std::find_if(
-                        seeds_sycl.begin(), seeds_sycl.end(),
-                        traccc::is_same_seed<traccc::host_spacepoint_container>(
-                            seed, spacepoints_per_event,
-                            spacepoints_per_event)) != seeds_sycl.end())
+
+            std::vector<std::vector<traccc::spacepoint>> sp3_vector =
+                traccc::get_spacepoint_vector(seeds, spacepoints_per_event);
+
+            std::vector<std::vector<traccc::spacepoint>> sp3_vector_sycl =
+                traccc::get_spacepoint_vector(seeds_sycl,
+                                              spacepoints_per_event);
+
+            for (const auto& sp3 : sp3_vector) {
+                if (std::find(sp3_vector_sycl.cbegin(), sp3_vector_sycl.cend(),
+                              sp3) != sp3_vector_sycl.cend()) {
                     n_match++;
+                }
             }
+
             float matching_rate = float(n_match) / seeds.size();
             std::cout << "event " << std::to_string(event) << std::endl;
             std::cout << " seed matching rate: " << matching_rate << std::endl;
