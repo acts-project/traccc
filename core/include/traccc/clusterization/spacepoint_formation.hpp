@@ -14,9 +14,8 @@
 namespace traccc {
 
 /// Connected component labeling.
-struct spacepoint_formation
-    : public algorithm<host_spacepoint_collection(
-          const cell_module&, const host_measurement_collection&)> {
+struct spacepoint_formation : public algorithm<host_spacepoint_container(
+                                  const host_measurement_container&)> {
 
     public:
     /// Constructor for spacepoint_formation
@@ -35,37 +34,30 @@ struct spacepoint_formation
     ///
     /// @return a measurement collection - size of input/output container is
     /// identical
-    output_type operator()(
-        const cell_module& c,
-        const host_measurement_collection& m) const override {
-        output_type spacepoints;
-        this->operator()(c, m, spacepoints);
-        return spacepoints;
-    }
+    output_type operator()(const host_measurement_container&
+                               measurements_per_event) const override {
+        output_type spacepoints_per_event(measurements_per_event.size(),
+                                          &m_mr.get());
 
-    /// Callable operator for the space point formation, based on one single
-    /// module
-    ///
-    /// @param measurements are the input measurements, in this pixel
-    /// demonstrator it one space
-    ///    point per measurement
-    ///
-    /// void interface
-    ///
-    /// @return a measurement collection - size of input/output container is
-    /// identical
-    void operator()(const cell_module& module,
-                    const host_measurement_collection& measurements,
-                    output_type& spacepoints) const {
         // Run the algorithm
-        spacepoints.reserve(measurements.size());
-        for (const auto& m : measurements) {
-            point3 local_3d = {m.local[0], m.local[1], 0.};
-            point3 global = module.placement.point_to_global(local_3d);
-            spacepoint s({global, m});
+        for (std::size_t i = 0; i < measurements_per_event.size(); ++i) {
+            const auto& module = measurements_per_event.at(i).header;
+            const auto& measurements_per_module =
+                measurements_per_event.at(i).items;
+            auto& spacepoints_per_module = spacepoints_per_event.at(i).items;
+            spacepoints_per_module.reserve(measurements_per_module.size());
 
-            spacepoints.push_back(std::move(s));
+            for (const auto& m : measurements_per_module) {
+
+                point3 local_3d = {m.local[0], m.local[1], 0.};
+                point3 global = module.placement.point_to_global(local_3d);
+                spacepoint s({global, m});
+
+                spacepoints_per_module.push_back(std::move(s));
+            }
         }
+
+        return spacepoints_per_event;
     }
 
     private:

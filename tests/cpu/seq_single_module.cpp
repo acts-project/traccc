@@ -58,5 +58,4 @@ TEST(algorithms, seq_single_module) {
     for (auto& cl_id : clusters.get_headers())
         cl_id.position_from_cell = module.pixel;
     measurements = mt(clusters, module);
-    spacepoints = sp(module, measurements);
 }

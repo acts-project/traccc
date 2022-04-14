@@ -13,6 +13,7 @@
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -55,6 +56,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
     float wall_time(0);
     float file_reading_cpu(0);
     float clusterization_cpu(0);
+    float sp_formation_cpu(0);
     float seeding_cpu(0);
     // float clusterization_cuda(0);
     float seeding_cuda(0);
@@ -66,6 +68,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     traccc::clusterization_algorithm ca(mng_mr);
+    traccc::spacepoint_formation sf(mng_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
@@ -103,14 +106,25 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         /*time*/ auto start_clusterization_cpu =
             std::chrono::system_clock::now();
 
-        auto ca_result = ca(cells_per_event);
-        auto& measurements_per_event = ca_result.first;
-        auto& spacepoints_per_event = ca_result.second;
+        auto measurements_per_event = ca(cells_per_event);
 
         /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cpu =
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
+
+        /*---------------------------------
+               Spacepoint formation (cpu)
+          ---------------------------------*/
+
+        /*time*/ auto start_sp_formation_cpu = std::chrono::system_clock::now();
+
+        auto spacepoints_per_event = sf(measurements_per_event);
+
+        /*time*/ auto end_sp_formation_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
+            end_sp_formation_cpu - start_sp_formation_cpu;
+        /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
 
         /*----------------------------
              Seeding algorithm
@@ -273,6 +287,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
               << file_reading_cpu << std::endl;
     std::cout << "clusterization_time (cpu) " << std::setw(10) << std::left
               << clusterization_cpu << std::endl;
+    std::cout << "spacepoint_formation_time (cpu) " << std::setw(10)
+              << std::left << sp_formation_cpu << std::endl;
     std::cout << "seeding_time (cpu)        " << std::setw(10) << std::left
               << seeding_cpu << std::endl;
     std::cout << "seeding_time (cuda)       " << std::setw(10) << std::left

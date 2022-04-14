@@ -6,8 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
-#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -29,64 +28,36 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                                 vecmem::host_memory_resource resource) {
 
     // Algorithms
-    traccc::component_connection cc(resource);
-    traccc::measurement_creation mt(resource);
-    traccc::spacepoint_formation sp(resource);
-
-    auto startAlgorithms = std::chrono::system_clock::now();
+    traccc::clusterization_algorithm ca(resource);
+    traccc::spacepoint_formation sf(resource);
 
     // Output stats
-    int64_t n_modules = 0;
+    uint64_t n_modules = 0;
     uint64_t n_cells = 0;
-    uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
-    uint64_t n_space_points = 0;
+    uint64_t n_spacepoints = 0;
+
+    auto startAlgorithms = std::chrono::system_clock::now();
 
     traccc::demonstrator_result aggregated_results(input_data.size(),
                                                    &resource);
 
-#pragma omp parallel for reduction(+:n_modules, n_cells, n_clusters, n_measurements, n_space_points)
+#pragma omp parallel for reduction (+:n_modules, n_cells, n_measurements, n_spacepoints)
     for (size_t event = 0; event < input_data.size(); ++event) {
         traccc::host_cell_container cells_per_event =
             input_data.operator[](event);
 
-        traccc::host_measurement_container measurements_per_event;
-        traccc::host_spacepoint_container spacepoints_per_event;
-        measurements_per_event.reserve(cells_per_event.size());
-        spacepoints_per_event.reserve(cells_per_event.size());
+        /*-------------------
+            Clusterization
+          -------------------*/
 
-#pragma omp parallel for
-        for (size_t i = 0; i < cells_per_event.size(); ++i) {
-            auto &module = cells_per_event.get_headers()[i];
-            module.pixel =
-                traccc::pixel_segmentation{-8.425, -36.025, 0.05, 0.05};
+        auto measurements_per_event = ca(cells_per_event);
 
-            // The algorithmic code part: start
-            traccc::host_cluster_container clusters =
-                cc(cells_per_event.get_items()[i],
-                   cells_per_event.get_headers()[i]);
-            for (auto &cl_id : clusters.get_headers())
-                cl_id.position_from_cell = module.pixel;
+        /*------------------------
+            Spacepoint formation
+          ------------------------*/
 
-            traccc::host_measurement_collection measurements_per_module =
-                mt(clusters, module);
-            traccc::host_spacepoint_collection spacepoints_per_module =
-                sp(module, measurements_per_module);
-            // The algorithmnic code part: end
-
-            n_cells += cells_per_event.get_items()[i].size();
-            n_clusters += clusters.size();
-            n_measurements += measurements_per_module.size();
-            n_space_points += spacepoints_per_module.size();
-
-#pragma omp critical
-            {
-                measurements_per_event.push_back(
-                    module, std::move(measurements_per_module));
-                spacepoints_per_event.push_back(
-                    module.module, std::move(spacepoints_per_module));
-            }
-        }
+        auto spacepoints_per_event = sf(measurements_per_event);
 
         aggregated_results[event] =
             traccc::result({measurements_per_event, spacepoints_per_event});
@@ -100,11 +71,9 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_cells << " cells from " << n_modules
               << " modules" << std::endl;
-    std::cout << "- created " << n_clusters << " clusters. " << std::endl;
     std::cout << "- created " << n_measurements << " measurements. "
               << std::endl;
-    std::cout << "- created " << n_space_points << " space points. "
-              << std::endl;
+    std::cout << "- created " << n_spacepoints << " spacepoints. " << std::endl;
 
     return aggregated_results;
 }
