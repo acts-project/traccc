@@ -82,9 +82,12 @@ struct measurement_creation
                 continue;
             }
 
+            // Get the cluster id for this module
             const auto &cl_id = clusters.at(0).header;
-            for (const auto &cell : cluster)
-                calc_cluster_properties(cell, cl_id, mean, var, totalWeight);
+
+            // Calculate the cluster properties
+            calc_cluster_properties<vecmem::vector>(cluster, cl_id, mean, var,
+                                                    totalWeight);
 
             if (totalWeight > 0.) {
                 measurement m;

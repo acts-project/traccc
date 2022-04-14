@@ -56,8 +56,9 @@ void measurement_creation::operator()(
     copy.setup(measurement_buffer.items);
 
     // Vector views to move data to the device
-    auto clusters_data = get_data(clusters, &m_mr.get());
-    cluster_container_const_view clusters_view(clusters_data);
+    auto clusters_data =
+        get_data(const_cast<host_cluster_container &>(clusters), &m_mr.get());
+    cluster_container_view clusters_view(clusters_data);
     measurement_container_view measurement_view(measurement_buffer);
 
     // range of kernel execution
@@ -69,7 +70,7 @@ void measurement_creation::operator()(
             range,
             [clusters_view, measurement_view](auto idx) {
                 // Initialize device vectors
-                device_cluster_const_container clusters_device(clusters_view);
+                device_cluster_container clusters_device(clusters_view);
                 device_measurement_container measurement_device(
                     measurement_view);
 
@@ -80,7 +81,7 @@ void measurement_creation::operator()(
                 // items: cluster of cells at current idx
                 // header: cluster_id object with the information about the cell
                 // module
-                const device_cell_const_collection &cluster =
+                const device_cell_collection &cluster =
                     clusters_device.get_items().at(idx);
                 const cluster_id &cl_id = clusters_device.get_headers().at(idx);
 
@@ -106,9 +107,8 @@ void measurement_creation::operator()(
                     return;
                 }
 
-                for (const auto &cell : cluster)
-                    calc_cluster_properties(cell, cl_id, mean, var,
-                                            totalWeight);
+                calc_cluster_properties<vecmem::device_vector>(
+                    cluster, cl_id, mean, var, totalWeight);
 
                 if (totalWeight > 0.) {
                     measurement m;
