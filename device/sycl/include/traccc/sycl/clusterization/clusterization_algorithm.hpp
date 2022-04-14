@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
-#include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
@@ -18,10 +15,6 @@
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/sycl/clusterization/measurement_creation.hpp"
-
-#ifdef _OPENMP
-#include "omp.h"
-#endif
 
 namespace traccc::sycl {
 

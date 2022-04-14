@@ -60,23 +60,4 @@ using cluster_container_view = container_view<cluster_id, cell>;
 using cluster_container_const_view =
     container_view<const cluster_id, const cell>;
 
-/// Function for signal modelling
-inline scalar signal_cell_modelling(scalar signal_in,
-                                    const cluster_id& /*cl_id*/) {
-    // Retrieve the signal based on the cl_id.module_idx
-    return signal_in;
-}
-
-/// Function for pixel segmentation
-inline vector2 position_from_cell(cell c, cluster_id cl_id) {
-    // Retrieve the specific values based on module idx
-    return {cl_id.pixel.min_center_x + c.channel0 * cl_id.pixel.pitch_x,
-            cl_id.pixel.min_center_y + c.channel1 * cl_id.pixel.pitch_y};
-}
-
-inline vector2 get_pitch(cluster_id cl_id) {
-    // return the values based on the module idx
-    return {cl_id.pixel.pitch_x, cl_id.pixel.pitch_y};
-}
-
 }  // namespace traccc
