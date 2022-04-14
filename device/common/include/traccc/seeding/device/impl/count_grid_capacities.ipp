@@ -20,20 +20,19 @@ void count_grid_capacities(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
     const spacepoint_container_const_view& spacepoints_view,
-    const vecmem::data::vector_view<const get_spacepoint_prefix_sum_element_t>&
+    const vecmem::data::vector_view<const prefix_sum_element_t>&
         sp_prefix_sum_view,
     vecmem::data::vector_view<unsigned int> grid_capacities_view) {
 
     // Check if anything needs to be done.
-    vecmem::device_vector<const get_spacepoint_prefix_sum_element_t>
-        sp_prefix_sum(sp_prefix_sum_view);
+    vecmem::device_vector<const prefix_sum_element_t> sp_prefix_sum(
+        sp_prefix_sum_view);
     if (globalIndex >= sp_prefix_sum.size()) {
         return;
     }
 
     // Get the spacepoint that we need to look at.
-    const get_spacepoint_prefix_sum_element_t sp_idx =
-        sp_prefix_sum[globalIndex];
+    const prefix_sum_element_t sp_idx = sp_prefix_sum[globalIndex];
     device_spacepoint_const_container spacepoints(spacepoints_view);
     const spacepoint sp = spacepoints.at(sp_idx);
 
