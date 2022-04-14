@@ -25,24 +25,26 @@
 
 namespace traccc::sycl {
 
-/// Spacepoing binning for sycl
-struct spacepoint_binning
-    : public algorithm<sp_grid(const host_spacepoint_container&)> {
+/// Spacepoing binning executed on a SYCL device
+class spacepoint_binning
+    : public algorithm<sp_grid_buffer(const host_spacepoint_container&)> {
 
+    public:
+    /// Constructor for the algorithm
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
                        vecmem::memory_resource& mr, const queue_wrapper& queue);
 
-    unsigned int nbins() const;
-
-    output_type operator()(
+    /// Function executing the algorithm
+    sp_grid_buffer operator()(
         const host_spacepoint_container& spacepoints) const override;
 
+    private:
     seedfinder_config m_config;
-    spacepoint_grid_config m_grid_config;
-    std::pair<output_type::axis_p0_type, output_type::axis_p1_type> m_axes;
+    std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
     mutable queue_wrapper m_queue;
-};
+
+};  // class spacepoint_binning
 
 }  // namespace traccc::sycl

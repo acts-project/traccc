@@ -13,6 +13,9 @@
 #include "traccc/sycl/seeding/spacepoint_binning.hpp"
 #include "traccc/utils/algorithm.hpp"
 
+// VecMem include(s).
+#include <vecmem/utils/copy.hpp>
+
 // System include(s).
 #include <memory>
 
@@ -56,8 +59,12 @@ class seeding_algorithm
     output_type operator()(
         host_spacepoint_container&& spacepoints) const override {
         output_type seeds(&m_mr.get());
-        auto internal_sp_g2 = (*sb)(spacepoints);
-        seeds = (*sf)(spacepoints, internal_sp_g2);
+        sp_grid_buffer internal_sp_g2 = (*sb)(spacepoints);
+        sp_grid sp_g2(internal_sp_g2._axis_p0, internal_sp_g2._axis_p1,
+                      m_mr.get());
+        vecmem::copy copy;
+        copy(internal_sp_g2._buffer, sp_g2.data());
+        seeds = (*sf)(spacepoints, sp_g2);
         return seeds;
     }
 

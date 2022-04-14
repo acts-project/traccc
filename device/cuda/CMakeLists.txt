@@ -21,9 +21,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "include/traccc/cuda/seeding/detail/doublet_counter.hpp"
   "include/traccc/cuda/seeding/weight_updating.hpp"
   "include/traccc/cuda/seeding/doublet_counting.hpp"
-  "include/traccc/cuda/seeding/counting_grid_capacities.hpp"
   "include/traccc/cuda/seeding/triplet_counting.hpp"
-  "include/traccc/cuda/seeding/populating_grid.hpp"
   "include/traccc/cuda/seeding/seed_selecting.hpp"
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "include/traccc/cuda/seeding/doublet_finding.hpp"
@@ -36,10 +34,9 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/doublet_counting.cu"
   "src/seeding/triplet_counting.cu"
   "src/seeding/weight_updating.cu"
-  "src/seeding/populating_grid.cu"
   "src/seeding/track_params_estimation.cu"
-  "src/seeding/counting_grid_capacities.cu"
   "src/seeding/seed_selecting.cu"
+  "src/seeding/spacepoint_binning.cu"
   "src/seeding/triplet_finding.cu"
   "src/seeding/doublet_finding.cu"
   "src/cca/component_connection.cu"
@@ -47,4 +44,5 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
-  PUBLIC traccc::core vecmem::cuda )
+  PUBLIC traccc::core vecmem::core
+  PRIVATE traccc::device_common vecmem::cuda )
