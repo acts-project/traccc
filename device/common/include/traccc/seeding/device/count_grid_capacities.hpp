@@ -9,10 +9,10 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/device/get_spacepoint_prefix_sum.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -45,8 +45,7 @@ void count_grid_capacities(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
     const spacepoint_container_const_view& spacepoints,
-    const vecmem::data::vector_view<const get_spacepoint_prefix_sum_element_t>&
-        sp_prefix_sum,
+    const vecmem::data::vector_view<const prefix_sum_element_t>& sp_prefix_sum,
     vecmem::data::vector_view<unsigned int> grid_capacities);
 
 }  // namespace traccc::device

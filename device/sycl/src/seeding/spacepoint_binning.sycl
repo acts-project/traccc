@@ -12,12 +12,12 @@
 #include "../utils/get_queue.hpp"
 
 // Project include(s).
+#include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
-#include "traccc/seeding/device/get_spacepoint_prefix_sum.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
 // VecMem include(s).
-#include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
@@ -45,9 +45,17 @@ spacepoint_binning::spacepoint_binning(
 sp_grid_buffer spacepoint_binning::operator()(
     const host_spacepoint_container& spacepoints) const {
 
+    // Helper object for the data management.
+    vecmem::copy copy;
+
+    // Get the data/view for the spacepoints.
+    const spacepoint_container_const_data sp_data =
+        traccc::get_data(spacepoints);
+
     // Get the prefix sum for the spacepoints.
-    device::get_spacepoint_prefix_sum_result_t sp_prefix_sum =
-        device::get_spacepoint_prefix_sum(spacepoints, m_mr);
+    const device::prefix_sum_t sp_prefix_sum =
+        device::get_prefix_sum(sp_data.items, m_mr.get(), copy);
+    auto sp_prefix_sum_view = vecmem::get_data(sp_prefix_sum);
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
@@ -69,7 +77,7 @@ sp_grid_buffer spacepoint_binning::operator()(
             h.parallel_for<kernels::count_grid_capacities>(
                 range, [config = m_config, phi_axis = m_axes.first,
                         z_axis = m_axes.second, spacepoints = spacepoints_view,
-                        sp_prefix_sum = vecmem::get_data(sp_prefix_sum),
+                        sp_prefix_sum = sp_prefix_sum_view,
                         grid_capacities = vecmem::get_data(grid_capacities)](
                            ::sycl::nd_item<1> item) {
                     device::count_grid_capacities(
@@ -85,7 +93,6 @@ sp_grid_buffer spacepoint_binning::operator()(
                                std::vector<std::size_t>(grid_capacities.begin(),
                                                         grid_capacities.end()),
                                m_mr.get());
-    vecmem::sycl::copy copy(m_queue.queue());
     copy.setup(grid_buffer._buffer);
     sp_grid_view grid_view = grid_buffer;
 
@@ -94,7 +101,7 @@ sp_grid_buffer spacepoint_binning::operator()(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::populate_grid>(
                 range, [config = m_config, spacepoints = spacepoints_view,
-                        sp_prefix_sum = vecmem::get_data(sp_prefix_sum),
+                        sp_prefix_sum = sp_prefix_sum_view,
                         grid = grid_view](::sycl::nd_item<1> item) {
                     device::populate_grid(item.get_global_linear_id(), config,
                                           spacepoints, sp_prefix_sum, grid);
