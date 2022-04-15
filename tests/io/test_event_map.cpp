@@ -14,22 +14,37 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
-std::size_t event = 0;
+class EventMapTest : public testing::Test {
+    protected:
+    // You can define per-test set-up logic as usual.
+    virtual void SetUp() override {
 
-std::string detector_file = "/tml_detector/trackml-detector.csv";
-std::string hits_dir = "../tests/io/mock_data/";
-std::string cells_dir = "../tests/io/mock_data/";
-std::string particles_dir = "../tests/io/mock_data/";
+        // event map with clusterization
+        m_event_map1 = std::make_unique<traccc::event_map>(
+            event, detector_file, cells_dir, hits_dir, particles_dir, resource);
 
-vecmem::host_memory_resource resource;
+        // event map without clusterization
+        m_event_map2 = std::make_unique<traccc::event_map>(
+            event, detector_file, hits_dir, particles_dir, resource);
+    }
 
-// event map with clusterization
-traccc::event_map evt_map(event, detector_file, cells_dir, hits_dir,
-                          particles_dir, resource);
+    // You can define per-test tear-down logic as usual.
+    virtual void TearDown() override {
+        m_event_map1.reset();
+        m_event_map2.reset();
+    }
 
-// event map without clusterization
-traccc::event_map evt_map2(event, detector_file, hits_dir, particles_dir,
-                           resource);
+    std::size_t event = 0;
+    std::string detector_file = "/tml_detector/trackml-detector.csv";
+    std::string hits_dir = "../tests/io/mock_data/";
+    std::string cells_dir = "../tests/io/mock_data/";
+    std::string particles_dir = "../tests/io/mock_data/";
+
+    std::unique_ptr<traccc::event_map> m_event_map1;
+    std::unique_ptr<traccc::event_map> m_event_map2;
+
+    vecmem::host_memory_resource resource;
+};
 
 /***
  * Mock data test
@@ -58,8 +73,8 @@ traccc::event_map evt_map2(event, detector_file, hits_dir, particles_dir,
 
 // Test generate_particle_map function
 
-TEST(mappper, particle_map) {
-    auto& p_map = evt_map.get_particle_map();
+TEST_F(EventMapTest, particle_map) {
+    auto& p_map = m_event_map1->get_particle_map();
 
     EXPECT_EQ(p_map.size(), 3);
 
@@ -76,8 +91,8 @@ TEST(mappper, particle_map) {
 }
 
 // Test generate_hit_particle_map function
-TEST(mappper, hit_particle_map) {
-    auto& h_p_map = evt_map.get_hit_particle_map();
+TEST_F(EventMapTest, hit_particle_map) {
+    auto& h_p_map = m_event_map1->get_hit_particle_map();
 
     EXPECT_EQ(h_p_map.size(), 3);
 
@@ -96,8 +111,8 @@ TEST(mappper, hit_particle_map) {
 }
 
 // Test generate_hit_map function
-TEST(mappper, hit_map) {
-    auto& h_map = evt_map.get_hit_map();
+TEST_F(EventMapTest, hit_map) {
+    auto& h_map = m_event_map1->get_hit_map();
 
     EXPECT_EQ(h_map.size(), 3);
 
@@ -107,8 +122,8 @@ TEST(mappper, hit_map) {
 }
 
 // Test generate_hit_cell_map function
-TEST(mappper, hit_cell_map) {
-    auto& h_c_map = evt_map.get_hit_cell_map();
+TEST_F(EventMapTest, hit_cell_map) {
+    auto& h_c_map = m_event_map1->get_hit_cell_map();
 
     EXPECT_EQ(h_c_map.size(), 3);
 
@@ -143,9 +158,9 @@ TEST(mappper, hit_cell_map) {
 }
 
 // Test generate_cell_particle_map function
-TEST(mappper, cell_particle_map) {
+TEST_F(EventMapTest, cell_particle_map) {
 
-    auto& c_p_map = evt_map.get_cell_particle_map();
+    auto& c_p_map = m_event_map1->get_cell_particle_map();
 
     std::vector<traccc::cell> cells;
     traccc::cell cell0{1, 0, 0.0041470062, 0};
@@ -172,7 +187,7 @@ TEST(mappper, cell_particle_map) {
 }
 
 // Test generate_measurement_cell_map function
-TEST(mappper, measurement_cell_map) {
+TEST_F(EventMapTest, measurement_cell_map) {
 
     auto compare_cells = [](vecmem::vector<traccc::cell>& cells1,
                             vecmem::vector<traccc::cell>& cells2) {
@@ -182,7 +197,7 @@ TEST(mappper, measurement_cell_map) {
         EXPECT_EQ(cells1, cells2);
     };
 
-    auto& m_c_map = evt_map.get_measurement_cell_map();
+    auto& m_c_map = m_event_map1->get_measurement_cell_map();
 
     vecmem::vector<traccc::cell> cells0;
     cells0.push_back({1, 0, 0.0041470062, 0});
@@ -223,9 +238,9 @@ TEST(mappper, measurement_cell_map) {
 }
 
 // Test the first generate_measurement_particle_map function
-TEST(mappper, measurement_particle_map_with_clusterization) {
+TEST_F(EventMapTest, measurement_particle_map_with_clusterization) {
 
-    auto& m_p_map = evt_map.get_measurement_particle_map();
+    auto& m_p_map = m_event_map1->get_measurement_particle_map();
 
     // There are two measurements (or clusters)
     EXPECT_EQ(m_p_map.size(), 2);
@@ -279,9 +294,9 @@ TEST(mappper, measurement_particle_map_with_clusterization) {
 }
 
 // Test the second generate_measurement_particle_map function
-TEST(mappper, measurement_particle_map_without_clusterization) {
+TEST_F(EventMapTest, measurement_particle_map_without_clusterization) {
 
-    auto& m_p_map = evt_map2.get_measurement_particle_map();
+    auto& m_p_map = m_event_map2->get_measurement_particle_map();
 
     // Without clusterization, there are three measurements each of which is
     // from each particle
