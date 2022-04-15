@@ -13,7 +13,7 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -40,7 +40,7 @@ TEST(algorithms, seq_single_module) {
 
     traccc::cell_module module;
     module.module = 0;
-    module.pixel = traccc::pixel_segmentation{0., 0., 1., 1.};
+    module.pixel = traccc::pixel_data{0., 0., 1., 1.};
     module.placement = traccc::transform3{};
 
     traccc::host_cluster_container clusters(&resource);
@@ -55,8 +55,9 @@ TEST(algorithms, seq_single_module) {
 
     // Algorithmic code: start
     clusters = cc(cells, module);
-    for (auto& cl_id : clusters.get_headers())
-        cl_id.position_from_cell = module.pixel;
+    for (auto& cl_id : clusters.get_headers()) {
+        cl_id.pixel = module.pixel;
+    }
     measurements = mt(clusters, module);
     spacepoints = sp(module, measurements);
 }
