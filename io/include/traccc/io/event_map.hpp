@@ -239,7 +239,7 @@ class event_map {
             for (auto& cl_id : clusters.get_headers()) {
                 cl_id.pixel = module.pixel;
             }
-            
+
             host_measurement_collection measurements_per_module =
                 mt(clusters, module);
 
