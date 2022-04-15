@@ -47,51 +47,25 @@ struct seed {
     }
 
     TRACCC_HOST
-    std::vector<measurement> get_measurements(
+    std::array<measurement, 3> get_measurements(
         const host_spacepoint_container& spacepoints) const {
-        std::vector<measurement> result;
-        result.reserve(3);
-        result.push_back(spacepoints.at(spB_link).meas);
-        result.push_back(spacepoints.at(spM_link).meas);
-        result.push_back(spacepoints.at(spT_link).meas);
-        return result;
+        return {spacepoints.at(spB_link).meas, spacepoints.at(spM_link).meas,
+                spacepoints.at(spT_link).meas};
     }
 
     TRACCC_HOST
-    std::vector<spacepoint> get_spacepoints(
+    std::array<spacepoint, 3> get_spacepoints(
         const host_spacepoint_container& spacepoints) const {
-        std::vector<spacepoint> result;
-        result.reserve(3);
-        result.push_back(spacepoints.at(spB_link));
-        result.push_back(spacepoints.at(spM_link));
-        result.push_back(spacepoints.at(spT_link));
-        return result;
+        return {spacepoints.at(spB_link), spacepoints.at(spM_link),
+                spacepoints.at(spT_link)};
     }
 };
 
-inline bool operator==(const seed& lhs, const seed& rhs) {
-    return (lhs.spB_link == rhs.spB_link && lhs.spM_link == rhs.spM_link &&
-            lhs.spT_link == rhs.spT_link);
-}
-
-inline bool operator==(const std::vector<spacepoint>& lhs,
-                       const std::vector<spacepoint>& rhs) {
-    assert(lhs.size() == rhs.size());
-
-    for (std::size_t i = 0; i < lhs.size(); i++) {
-        if (!(lhs.at(i) == rhs.at(i))) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 template <typename seed_collection_t, typename spacepoint_container_t>
-std::vector<std::vector<spacepoint>> get_spacepoint_vector(
+TRACCC_HOST std::vector<std::array<spacepoint, 3>> get_spacepoint_vector(
     const seed_collection_t& seeds, const spacepoint_container_t& container) {
 
-    std::vector<std::vector<spacepoint>> result;
+    std::vector<std::array<spacepoint, 3>> result;
     result.reserve(seeds.size());
 
     std::transform(

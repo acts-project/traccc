@@ -162,10 +162,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
             // seeding
             int n_match = 0;
 
-            std::vector<std::vector<traccc::spacepoint>> sp3_vector =
+            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector =
                 traccc::get_spacepoint_vector(seeds, spacepoints_per_event);
 
-            std::vector<std::vector<traccc::spacepoint>> sp3_vector_cuda =
+            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_cuda =
                 traccc::get_spacepoint_vector(seeds_cuda,
                                               spacepoints_per_event);
 

@@ -33,8 +33,9 @@ inline bool operator<(const particle_hit_count& lhs,
     return false;
 }
 
+template <template <typename, std::size_t> class array_t, std::size_t N>
 std::vector<particle_hit_count> identify_contributing_particles(
-    const std::vector<measurement>& measurements,
+    const array_t<measurement, N>& measurements,
     measurement_particle_map& m_p_map) {
 
     std::vector<particle_hit_count> result;
