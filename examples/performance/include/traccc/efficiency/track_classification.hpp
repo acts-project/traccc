@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include "traccc/edm/particle.hpp"
-#include "traccc/edm/seed.hpp"
-#include "traccc/io/mapper.hpp"
+#include "traccc/io/event_map.hpp"
 
 namespace traccc {
 

@@ -27,7 +27,7 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   # Geometry description.
   "include/traccc/geometry/module_map.hpp"
   "include/traccc/geometry/geometry.hpp"
-  "include/traccc/geometry/pixel_segmentation.hpp"
+  "include/traccc/geometry/pixel_data.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
   "include/traccc/utils/unit_vectors.hpp"
@@ -37,6 +37,7 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "include/traccc/clusterization/spacepoint_formation.hpp"
   "include/traccc/clusterization/measurement_creation.hpp"
+  "include/traccc/clusterization/measurement_creation_helper.hpp"
   # Seed finding algorithmic code.
   "include/traccc/seeding/detail/lin_circle.hpp"
   "include/traccc/seeding/detail/doublet.hpp"

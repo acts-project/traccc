@@ -11,8 +11,7 @@
 #include "traccc/efficiency/duplication_plot_tool.hpp"
 #include "traccc/efficiency/eff_plot_tool.hpp"
 #include "traccc/efficiency/track_classification.hpp"
-#include "traccc/event/event_map.hpp"
-#include "traccc/io/mapper.hpp"
+#include "traccc/io/event_map.hpp"
 
 // ROOT
 #include <TFile.h>
@@ -79,8 +78,8 @@ class seeding_performance_writer {
                const host_spacepoint_container& spacepoints,
                event_map& evt_map) {
 
-        auto& p_map = evt_map.ptc_map;
-        auto& m_p_map = evt_map.meas_ptc_map;
+        auto& p_map = evt_map.get_particle_map();
+        auto& m_p_map = evt_map.get_measurement_particle_map();
 
         std::map<particle_id, std::size_t> match_counter;
 

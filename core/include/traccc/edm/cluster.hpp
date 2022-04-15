@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/cell.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 // System include(s).
 #include <functional>
@@ -16,24 +17,14 @@
 
 namespace traccc {
 
-using position_estimation = std::function<vector2(channel_id, channel_id)>;
-using signal_modeling = std::function<scalar(scalar)>;
-
 struct cluster_id {
 
     event_id event = 0;
+    std::size_t module_idx = 0;
     geometry_id module = 0;
     transform3 placement = transform3{};
-
-    position_estimation position_from_cell = [](channel_id ch0,
-                                                channel_id ch1) -> vector2 {
-        return {static_cast<scalar>(ch0), static_cast<scalar>(ch1)};
-    };
-
     scalar threshold = 0.;
-    signal_modeling signal = [](scalar signal_in) -> scalar {
-        return signal_in;
-    };
+    pixel_data pixel;
 };
 
 /// Convenience declaration for the cluster container type to use in host code
@@ -42,9 +33,19 @@ using host_cluster_container = host_container<cluster_id, cell>;
 /// Convenience declaration for the cluster container type to use in device code
 using device_cluster_container = device_container<cluster_id, cell>;
 
+/// Convenience declaration for the cluster container type to use in device code
+/// (const)
+using device_cluster_const_container =
+    device_container<const cluster_id, const cell>;
+
 /// Convenience declaration for the cluster container data type to use in host
 /// code
 using cluster_container_data = container_data<cluster_id, cell>;
+
+/// Convenience declaration for the cluster container data type to use in host
+/// code (const)
+using cluster_container_const_data =
+    container_data<const cluster_id, const cell>;
 
 /// Convenience declaration for the cluster container buffer type to use in host
 /// code
@@ -53,5 +54,10 @@ using cluster_container_buffer = container_buffer<cluster_id, cell>;
 /// Convenience declaration for the cluster container view type to use in host
 /// code
 using cluster_container_view = container_view<cluster_id, cell>;
+
+/// Convenience declaration for the cluster container view type to use in host
+/// code (const)
+using cluster_container_const_view =
+    container_view<const cluster_id, const cell>;
 
 }  // namespace traccc

@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/io/mapper.hpp"
+#include "traccc/io/event_map.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -20,6 +20,16 @@ std::string detector_file = "/tml_detector/trackml-detector.csv";
 std::string hits_dir = "../tests/io/mock_data/";
 std::string cells_dir = "../tests/io/mock_data/";
 std::string particles_dir = "../tests/io/mock_data/";
+
+vecmem::host_memory_resource resource;
+
+// event map with clusterization
+traccc::event_map evt_map(event, detector_file, cells_dir, hits_dir,
+                          particles_dir, resource);
+
+// event map without clusterization
+traccc::event_map evt_map2(event, detector_file, hits_dir, particles_dir,
+                           resource);
 
 /***
  * Mock data test
@@ -47,8 +57,9 @@ std::string particles_dir = "../tests/io/mock_data/";
  */
 
 // Test generate_particle_map function
+
 TEST(mappper, particle_map) {
-    auto p_map = traccc::generate_particle_map(event, particles_dir);
+    auto& p_map = evt_map.get_particle_map();
 
     EXPECT_EQ(p_map.size(), 3);
 
@@ -66,8 +77,7 @@ TEST(mappper, particle_map) {
 
 // Test generate_hit_particle_map function
 TEST(mappper, hit_particle_map) {
-    auto h_p_map =
-        traccc::generate_hit_particle_map(event, hits_dir, particles_dir);
+    auto& h_p_map = evt_map.get_hit_particle_map();
 
     EXPECT_EQ(h_p_map.size(), 3);
 
@@ -87,7 +97,7 @@ TEST(mappper, hit_particle_map) {
 
 // Test generate_hit_map function
 TEST(mappper, hit_map) {
-    auto h_map = traccc::generate_hit_map(event, hits_dir);
+    auto& h_map = evt_map.get_hit_map();
 
     EXPECT_EQ(h_map.size(), 3);
 
@@ -98,7 +108,7 @@ TEST(mappper, hit_map) {
 
 // Test generate_hit_cell_map function
 TEST(mappper, hit_cell_map) {
-    auto h_c_map = traccc::generate_hit_cell_map(event, cells_dir, hits_dir);
+    auto& h_c_map = evt_map.get_hit_cell_map();
 
     EXPECT_EQ(h_c_map.size(), 3);
 
@@ -135,8 +145,7 @@ TEST(mappper, hit_cell_map) {
 // Test generate_cell_particle_map function
 TEST(mappper, cell_particle_map) {
 
-    auto c_p_map = traccc::generate_cell_particle_map(event, cells_dir,
-                                                      hits_dir, particles_dir);
+    auto& c_p_map = evt_map.get_cell_particle_map();
 
     std::vector<traccc::cell> cells;
     traccc::cell cell0{1, 0, 0.0041470062, 0};
@@ -173,10 +182,7 @@ TEST(mappper, measurement_cell_map) {
         EXPECT_EQ(cells1, cells2);
     };
 
-    vecmem::host_memory_resource resource;
-
-    auto m_c_map = traccc::generate_measurement_cell_map(event, detector_file,
-                                                         cells_dir, resource);
+    auto& m_c_map = evt_map.get_measurement_cell_map();
 
     vecmem::vector<traccc::cell> cells0;
     cells0.push_back({1, 0, 0.0041470062, 0});
@@ -219,10 +225,7 @@ TEST(mappper, measurement_cell_map) {
 // Test the first generate_measurement_particle_map function
 TEST(mappper, measurement_particle_map_with_clusterization) {
 
-    vecmem::host_memory_resource mr;
-
-    auto m_p_map = traccc::generate_measurement_particle_map(
-        event, detector_file, cells_dir, hits_dir, particles_dir, mr);
+    auto& m_p_map = evt_map.get_measurement_particle_map();
 
     // There are two measurements (or clusters)
     EXPECT_EQ(m_p_map.size(), 2);
@@ -278,10 +281,7 @@ TEST(mappper, measurement_particle_map_with_clusterization) {
 // Test the second generate_measurement_particle_map function
 TEST(mappper, measurement_particle_map_without_clusterization) {
 
-    vecmem::host_memory_resource mr;
-
-    auto m_p_map = traccc::generate_measurement_particle_map(
-        event, detector_file, hits_dir, particles_dir, mr);
+    auto& m_p_map = evt_map2.get_measurement_particle_map();
 
     // Without clusterization, there are three measurements each of which is
     // from each particle
