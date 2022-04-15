@@ -9,9 +9,11 @@ include( traccc-compiler-options-cpp )
 
 # Declare the traccc::device_common library.
 traccc_add_library( traccc_device_common device_common TYPE SHARED
+   # General function(s).
+   "include/traccc/device/get_prefix_sum.hpp"
+   "include/traccc/device/impl/get_prefix_sum.ipp"
+   "src/get_prefix_sum.cpp"
    # Spacepoint binning function(s).
-   "include/traccc/seeding/device/get_spacepoint_prefix_sum.hpp"
-   "src/seeding/get_spacepoint_prefix_sum.cpp"
    "include/traccc/seeding/device/count_grid_capacities.hpp"
    "include/traccc/seeding/device/impl/count_grid_capacities.ipp"
    "include/traccc/seeding/device/populate_grid.hpp"

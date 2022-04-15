@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "traccc/clusterization/measurement_creation_helper.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
@@ -81,24 +82,13 @@ struct measurement_creation
                 continue;
             }
 
+            // Get the cluster id for this module
             const auto &cl_id = clusters.at(0).header;
-            for (const auto &cell : cluster) {
-                scalar weight = cl_id.signal(cell.activation);
-                if (weight > cl_id.threshold) {
-                    totalWeight += cell.activation;
-                    const point2 cell_position =
-                        cl_id.position_from_cell(cell.channel0, cell.channel1);
 
-                    const point2 prev = mean;
-                    const point2 diff = cell_position - prev;
+            // Calculate the cluster properties
+            calc_cluster_properties<vecmem::vector, cell>(cluster, cl_id, mean,
+                                                          var, totalWeight);
 
-                    mean = prev + (weight / totalWeight) * diff;
-                    for (std::size_t i = 0; i < 2; ++i) {
-                        var[i] = var[i] + weight * (diff[i]) *
-                                              (cell_position[i] - mean[i]);
-                    }
-                }
-            }
             if (totalWeight > 0.) {
                 measurement m;
                 // normalize the cell position
