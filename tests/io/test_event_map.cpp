@@ -16,7 +16,6 @@
 
 class EventMapTest : public testing::Test {
     protected:
-    // You can define per-test set-up logic as usual.
     virtual void SetUp() override {
 
         // event map with clusterization
@@ -28,7 +27,6 @@ class EventMapTest : public testing::Test {
             event, detector_file, hits_dir, particles_dir, resource);
     }
 
-    // You can define per-test tear-down logic as usual.
     virtual void TearDown() override {
         m_event_map1.reset();
         m_event_map2.reset();
