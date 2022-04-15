@@ -10,7 +10,7 @@
 // traccc include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
@@ -70,8 +70,22 @@ using cell_collection = vector_t<cell>;
 
 /// Convenience declaration for the cell collection type to use in host code
 using host_cell_collection = cell_collection<vecmem::vector>;
+
 /// Convenience declaration for the cell collection type to use in device code
 using device_cell_collection = cell_collection<vecmem::device_vector>;
+
+/// Container of cells belonging to one detector module (const)
+template <template <typename> class vector_t>
+using cell_const_collection = vector_t<const cell>;
+
+/// Convenience declaration for the cell collection type to use in host code
+/// (const)
+using host_cell_const_collection = cell_const_collection<vecmem::vector>;
+
+/// Convenience declaration for the cell collection type to use in device code
+/// (const)
+using device_cell_const_collection =
+    cell_const_collection<vecmem::device_vector>;
 
 /// Header information for all of the cells in a specific detector module
 ///
@@ -88,8 +102,20 @@ struct cell_module {
     channel_id range0[2] = {std::numeric_limits<channel_id>::max(), 0};
     channel_id range1[2] = {std::numeric_limits<channel_id>::max(), 0};
 
-    pixel_segmentation pixel{-8.425, -36.025, 0.05, 0.05};
+    pixel_data pixel{-8.425, -36.025, 0.05, 0.05};
 };  // struct cell_module
+
+/// Container of cell modules
+template <template <typename> class vector_t>
+using cell_module_collection = vector_t<cell_module>;
+
+/// Convenience declaration for the cell module collection type to use in host
+/// code
+using host_cell_module_collection = cell_module_collection<vecmem::vector>;
+/// Convenience declaration for the cell module collection type to use in device
+/// code
+using device_cell_module_collection =
+    cell_module_collection<vecmem::device_vector>;
 
 /// Convenience declaration for the cell container type to use in host code
 using host_cell_container = host_container<cell_module, cell>;

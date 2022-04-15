@@ -12,7 +12,7 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/pixel_segmentation.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"

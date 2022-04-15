@@ -187,8 +187,9 @@ measurement_cell_map generate_measurement_cell_map(
         // The algorithmic code part: start
         host_cluster_container clusters =
             cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
-        for (auto& cl_id : clusters.get_headers())
-            cl_id.position_from_cell = module.pixel;
+        for (auto& cl_id : clusters.get_headers()) {
+            cl_id.pixel = module.pixel;
+        }
 
         host_measurement_collection measurements_per_module =
             mt(clusters, module);
