@@ -109,30 +109,6 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
                     module.module, std::move(spacepoints_per_module));
             }
         }
-
-        traccc::measurement_writer mwriter{
-            traccc::get_event_filename(event, "-measurements.csv")};
-        for (size_t i = 0; i < measurements_per_event.size(); ++i) {
-            auto measurements_per_module = measurements_per_event.at(i).items;
-            auto module = measurements_per_event.at(i).header;
-            for (const auto &measurement : measurements_per_module) {
-                const auto &local = measurement.local;
-                mwriter.append({module.module, "", local[0], local[1], 0., 0.,
-                                0., 0., 0., 0., 0., 0.});
-            }
-        }
-
-        traccc::spacepoint_writer spwriter{
-            traccc::get_event_filename(event, "-spacepoints.csv")};
-        for (size_t i = 0; i < spacepoints_per_event.size(); ++i) {
-            auto spacepoints_per_module = spacepoints_per_event.at(i).items;
-            auto module = spacepoints_per_event.at(i).header;
-
-            for (const auto &spacepoint : spacepoints_per_module) {
-                const auto &pos = spacepoint.global;
-                spwriter.append({module, pos[0], pos[1], pos[2]});
-            }
-        }
     }
 
     std::cout << "==> Statistics ... " << std::endl;

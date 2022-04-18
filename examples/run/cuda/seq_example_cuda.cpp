@@ -89,7 +89,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
-                                          surface_transforms, host_mr);
+                                          i_cfg.data_format, surface_transforms,
+                                          host_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -236,13 +237,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
                 sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
                                             evt_map);
             }
-        }
-
-        if (run_cpu) {
-            traccc::write_measurements(event, measurements_per_event);
-            traccc::write_spacepoints(event, spacepoints_per_event);
-            traccc::write_seeds(event, spacepoints_per_event, seeds);
-            traccc::write_estimated_track_parameters(event, params);
         }
     }
 

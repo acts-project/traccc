@@ -53,6 +53,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg) {
         // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
             traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
+                                                i_cfg.data_format,
                                                 surface_transforms, host_mr);
 
         /*----------------

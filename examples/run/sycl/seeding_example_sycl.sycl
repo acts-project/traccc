@@ -95,6 +95,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
         // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
             traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
+                                                i_cfg.data_format,
                                                 surface_transforms, shared_mr);
 
         /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
@@ -218,12 +219,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg, bool run_cpu) {
                 sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
                                             evt_map);
             }
-        }
-
-        if (run_cpu) {
-            traccc::write_spacepoints(event, spacepoints_per_event);
-            traccc::write_seeds(event, spacepoints_per_event, seeds);
-            traccc::write_estimated_track_parameters(event, params);
         }
     }
 

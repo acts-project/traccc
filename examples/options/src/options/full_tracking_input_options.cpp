@@ -16,6 +16,9 @@ traccc::full_tracking_input_config::full_tracking_input_config(
     desc.add_options()("cell_directory", po::value<std::string>()->required(),
                        "specify the directory of cell files");
     desc.add_options()(
+        "data_format", po::value<std::string>()->default_value("csv"),
+        "specify the data format (csv, binary) of input cell file");
+    desc.add_options()(
         "hit_directory", po::value<std::string>()->default_value(""),
         "specify the directory of hit files used for performance writer");
     desc.add_options()(
@@ -30,6 +33,7 @@ traccc::full_tracking_input_config::full_tracking_input_config(
 void traccc::full_tracking_input_config::read(const po::variables_map& vm) {
     detector_file = vm["detector_file"].as<std::string>();
     cell_directory = vm["cell_directory"].as<std::string>();
+    data_format = vm["data_format"].as<std::string>();
     hit_directory = vm["hit_directory"].as<std::string>();
     particle_directory = vm["particle_directory"].as<std::string>();
     events = vm["events"].as<unsigned int>();

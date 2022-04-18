@@ -6,6 +6,7 @@
 
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE INTERFACE
+  "include/traccc/io/binary.hpp"
   "include/traccc/io/csv.hpp"
   "include/traccc/io/demonstrator_edm.hpp"
   "include/traccc/io/mapper.hpp"

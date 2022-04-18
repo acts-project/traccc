@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
 
     auto detector_file = vm["detector_file"].as<std::string>();
     auto cell_directory = vm["cell_directory"].as<std::string>();
+    auto data_format = vm["data_format"].as<std::string>();
     auto events = vm["events"].as<int>();
 
     std::cout << "Running " << argv[0] << " " << detector_file << " "
@@ -152,10 +153,6 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::system_clock::now();
     vecmem::host_memory_resource resource;
     set_default_resource(&resource);
-
-    traccc::write(
-        run(traccc::read(events, detector_file, cell_directory, resource),
-            resource));
 
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = end - start;

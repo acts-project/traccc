@@ -60,7 +60,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg) {
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
-                                          surface_transforms, host_mr);
+                                          i_cfg.data_format, surface_transforms,
+                                          host_mr);
 
         /*-------------------
             Clusterization
@@ -80,8 +81,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg) {
           Track params estimation
           ----------------------------*/
 
-        auto tp_output = tp(spacepoints_per_event, seeds);
-        auto& params = tp_output;
+        auto params = tp(spacepoints_per_event, seeds);
 
         /*----------------------------
           Statistics
@@ -105,11 +105,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg) {
             sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
                                         evt_map);
         }
-
-        traccc::write_measurements(event, measurements_per_event);
-        traccc::write_spacepoints(event, spacepoints_per_event);
-        traccc::write_seeds(event, spacepoints_per_event, seeds);
-        traccc::write_estimated_track_parameters(event, params);
     }
 
     sd_performance_writer.finalize();
