@@ -17,6 +17,10 @@
 // Boost
 #include <boost/program_options.hpp>
 
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
 // System include(s).
 #include <chrono>
 #include <exception>
@@ -59,6 +63,16 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 
         auto spacepoints_per_event = sf(measurements_per_event);
 
+        /*----------------------------
+          Statistics
+          ----------------------------*/
+
+        n_modules += cells_per_event.size();
+        n_cells += cells_per_event.total_size();
+        n_measurements += measurements_per_event.total_size();
+        n_spacepoints += spacepoints_per_event.total_size();
+
+#pragma omp critical
         aggregated_results[event] =
             traccc::result({measurements_per_event, spacepoints_per_event});
     }

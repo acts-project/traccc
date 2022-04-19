@@ -23,8 +23,10 @@
 // Boost
 #include <boost/program_options.hpp>
 
-// OpenMP include(s).
-#include <omp.h>
+// OpenMP
+#ifdef _OPENMP
+#include "omp.h"
+#endif
 
 // System include(s).
 #include <chrono>
@@ -82,6 +84,8 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
     }
+
+#pragma omp critical
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_cells << " cells from " << n_modules
