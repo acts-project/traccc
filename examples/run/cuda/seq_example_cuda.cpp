@@ -22,6 +22,7 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
+#include "traccc/options/common_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
@@ -37,7 +38,8 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
+int seq_run(const traccc::full_tracking_input_config& i_cfg,
+            const traccc::common_options& common_opts, bool run_cpu) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -81,7 +83,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
     // Loop over events
-    for (unsigned int event = i_cfg.skip; event < i_cfg.events + i_cfg.skip;
+    for (unsigned int event = common_opts.skip; event < common_opts.events + common_opts.skip;
          ++event) {
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
@@ -89,7 +91,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
-                                          i_cfg.data_format, surface_transforms,
+                                          common_opts.data_format, surface_transforms,
                                           host_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
@@ -287,6 +289,7 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
+    traccc::common_options common_opts(desc);
     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
@@ -298,13 +301,14 @@ int main(int argc, char* argv[]) {
     traccc::handle_argument_errors(vm, desc);
 
     // Read options
+    common_opts.read(vm);
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << full_tracking_input_cfg.cell_directory << " "
-              << full_tracking_input_cfg.events << std::endl;
+              << common_opts.events << std::endl;
 
-    return seq_run(full_tracking_input_cfg, run_cpu);
+    return seq_run(full_tracking_input_cfg, common_opts, run_cpu);
 }

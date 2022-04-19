@@ -20,6 +20,7 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
+#include "traccc/options/common_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
@@ -29,7 +30,8 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::full_tracking_input_config& i_cfg) {
+int seq_run(const traccc::full_tracking_input_config& i_cfg,
+            const traccc::common_options& common_opts) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -54,13 +56,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg) {
     sd_performance_writer.add_cache("CPU");
 
     // Loop over events
-    for (unsigned int event = i_cfg.skip; event < i_cfg.events + i_cfg.skip;
+    for (unsigned int event = common_opts.skip; event < common_opts.events + common_opts.skip;
          ++event) {
 
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
-                                          i_cfg.data_format, surface_transforms,
+                                          common_opts.data_format, surface_transforms,
                                           host_mr);
 
         /*-------------------
@@ -129,6 +131,7 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
+    traccc::common_options common_opts(desc);
     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
 
     po::variables_map vm;
@@ -138,12 +141,13 @@ int main(int argc, char* argv[]) {
     traccc::handle_argument_errors(vm, desc);
 
     // Read options
+    common_opts.read(vm);
     full_tracking_input_cfg.read(vm);
 
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << full_tracking_input_cfg.cell_directory << " "
-              << full_tracking_input_cfg.events << std::endl;
+              << common_opts.events << std::endl;
 
-    return seq_run(full_tracking_input_cfg);
+    return seq_run(full_tracking_input_cfg, common_opts);
 }
