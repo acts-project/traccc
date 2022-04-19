@@ -178,8 +178,9 @@ measurement_cell_map generate_measurement_cell_map(
     auto surface_transforms = read_geometry(detector_file);
 
     // Read the cells from the relevant event file
-    host_cell_container cells_per_event = read_cells_from_event(
-        event, cells_dir, "csv", surface_transforms, resource);
+    host_cell_container cells_per_event =
+        read_cells_from_event(event, cells_dir, traccc::data_format::csv,
+                              surface_transforms, resource);
 
     for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
         auto module = cells_per_event.at(i).header;
@@ -242,8 +243,8 @@ measurement_particle_map generate_measurement_particle_map(
 
     // Read the spacepoints from the relevant event file
     host_spacepoint_container spacepoints_per_event =
-        read_spacepoints_from_event(event, hits_dir, "csv", surface_transforms,
-                                    resource);
+        read_spacepoints_from_event(event, hits_dir, traccc::data_format::csv,
+                                    surface_transforms, resource);
 
     for (std::size_t i = 0; i < spacepoints_per_event.size(); ++i) {
         const auto& spacepoints_per_module = spacepoints_per_event.at(i).items;

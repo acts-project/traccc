@@ -130,7 +130,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Read the hits from the relevant event file
     traccc::host_spacepoint_container spacepoints_per_event =
-        traccc::read_spacepoints_from_event(event, hits_dir, "csv",
+        traccc::read_spacepoints_from_event(event, hits_dir,
+                                            traccc::data_format::csv,
                                             surface_transforms, host_mr);
 
     /*--------------------------------

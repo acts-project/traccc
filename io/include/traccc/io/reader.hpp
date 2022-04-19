@@ -15,6 +15,7 @@
 #include "traccc/geometry/geometry.hpp"
 #include "traccc/io/binary.hpp"
 #include "traccc/io/csv.hpp"
+#include "traccc/io/data_format.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
 #include "traccc/io/utils.hpp"
 
@@ -46,11 +47,11 @@ inline traccc::geometry read_geometry(const std::string &detector_file) {
 /// @param resource is the vecmem resource
 inline traccc::host_cell_container read_cells_from_event(
     size_t event, const std::string &cells_directory,
-    const std::string &data_format, traccc::geometry surface_transforms,
+    const traccc::data_format &data_format, traccc::geometry surface_transforms,
     vecmem::memory_resource &resource) {
 
     // Read the cells from the relevant event file
-    if (data_format == "csv") {
+    if (data_format == traccc::data_format::csv) {
         std::string io_cells_file = data_directory() + cells_directory +
                                     get_event_filename(event, "-cells.csv");
 
@@ -59,7 +60,7 @@ inline traccc::host_cell_container read_cells_from_event(
                             "activation", "time"});
         return traccc::read_cells(creader, resource, &surface_transforms);
 
-    } else if (data_format == "binary") {
+    } else if (data_format == traccc::data_format::binary) {
         std::string io_cells_file = data_directory() + cells_directory +
                                     get_event_filename(event, "-cells.dat");
 
@@ -81,11 +82,11 @@ inline traccc::host_cell_container read_cells_from_event(
 /// @param resource is the vecmem resource
 inline traccc::host_spacepoint_container read_spacepoints_from_event(
     size_t event, const std::string &hits_directory,
-    const std::string &data_format, traccc::geometry surface_transforms,
+    const traccc::data_format &data_format, traccc::geometry surface_transforms,
     vecmem::memory_resource &resource) {
 
     // Read the cells from the relevant event file
-    if (data_format == "csv") {
+    if (data_format == traccc::data_format::csv) {
         std::string io_hits_file = data_directory() + hits_directory +
                                    get_event_filename(event, "-hits.csv");
         traccc::fatras_hit_reader hreader(
@@ -93,7 +94,7 @@ inline traccc::host_spacepoint_container read_spacepoints_from_event(
             {"particle_id", "geometry_id", "tx", "ty", "tz", "tt", "tpx", "tpy",
              "tpz", "te", "deltapx", "deltapy", "deltapz", "deltae", "index"});
         return traccc::read_hits(hreader, resource, &surface_transforms);
-    } else if (data_format == "binary") {
+    } else if (data_format == traccc::data_format::binary) {
         std::string io_hits_file = data_directory() + hits_directory +
                                    get_event_filename(event, "-hits.dat");
 
@@ -109,7 +110,7 @@ inline traccc::host_spacepoint_container read_spacepoints_from_event(
 inline traccc::demonstrator_input read(size_t events,
                                        const std::string &detector_file,
                                        const std::string &cell_directory,
-                                       const std::string &data_format,
+                                       const traccc::data_format &data_format,
                                        vecmem::host_memory_resource &resource) {
     using namespace std::placeholders;
     auto geom = read_geometry(detector_file);

@@ -11,6 +11,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/binary.hpp"
+#include "traccc/io/data_format.hpp"
 #include "traccc/io/utils.hpp"
 
 namespace traccc {
@@ -22,10 +23,10 @@ namespace traccc {
 /// @param data_format is the data format (e.g. csv or binary) of output file
 /// @param cells_per_event is input cell container
 inline void write_cells(size_t event, const std::string &cells_directory,
-                        const std::string &data_format,
+                        const traccc::data_format &data_format,
                         const traccc::host_cell_container &cells_per_event) {
 
-    if (data_format == "binary") {
+    if (data_format == traccc::data_format::binary) {
 
         std::string io_cells_file = data_directory() + cells_directory +
                                     get_event_filename(event, "-cells.dat");
@@ -44,10 +45,10 @@ inline void write_cells(size_t event, const std::string &cells_directory,
 /// @param spacepoints_per_event is input spacepoint container
 inline void write_spacepoints(
     size_t event, const std::string &hits_directory,
-    const std::string &data_format,
+    const traccc::data_format &data_format,
     const traccc::host_spacepoint_container &spacepoints_per_event) {
 
-    if (data_format == "binary") {
+    if (data_format == traccc::data_format::binary) {
 
         std::string io_hits_file = data_directory() + hits_directory +
                                    get_event_filename(event, "-hits.dat");

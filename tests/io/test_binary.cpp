@@ -35,14 +35,17 @@ TEST(io_binary, cell) {
 
     // Read csv file
     traccc::host_cell_container cells_csv = traccc::read_cells_from_event(
-        event, cells_directory, "csv", surface_transforms, host_mr);
+        event, cells_directory, traccc::data_format::csv, surface_transforms,
+        host_mr);
 
     // Write binary file
-    traccc::write_cells(event, cells_directory, "binary", cells_csv);
+    traccc::write_cells(event, cells_directory, traccc::data_format::binary,
+                        cells_csv);
 
     // Read binary file
     traccc::host_cell_container cells_binary = traccc::read_cells_from_event(
-        event, cells_directory, "binary", surface_transforms, host_mr);
+        event, cells_directory, traccc::data_format::binary, surface_transforms,
+        host_mr);
 
     // Delete binary file
     std::string io_cells_file = traccc::data_directory() + cells_directory +
@@ -94,15 +97,18 @@ TEST(io_binary, spacepoint) {
 
     // Read csv file
     traccc::host_spacepoint_container spacepoints_csv =
-        traccc::read_spacepoints_from_event(event, hits_directory, "csv",
+        traccc::read_spacepoints_from_event(event, hits_directory,
+                                            traccc::data_format::csv,
                                             surface_transforms, host_mr);
 
     // Write binary file
-    traccc::write_spacepoints(event, hits_directory, "binary", spacepoints_csv);
+    traccc::write_spacepoints(event, hits_directory,
+                              traccc::data_format::binary, spacepoints_csv);
 
     // Read binary file
     traccc::host_spacepoint_container spacepoints_binary =
-        traccc::read_spacepoints_from_event(event, hits_directory, "binary",
+        traccc::read_spacepoints_from_event(event, hits_directory,
+                                            traccc::data_format::binary,
                                             surface_transforms, host_mr);
 
     // Delete binary file

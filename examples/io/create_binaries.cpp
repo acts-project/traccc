@@ -30,11 +30,13 @@ int create_binaries(const std::string& detector_file,
 
             // Read the cells from the relevant event file
             traccc::host_cell_container cells_csv =
-                traccc::read_cells_from_event(event, cell_directory, "csv",
+                traccc::read_cells_from_event(event, cell_directory,
+                                              traccc::data_format::csv,
                                               surface_transforms, host_mr);
 
             // Write binary file
-            traccc::write_cells(event, cell_directory, "binary", cells_csv);
+            traccc::write_cells(event, cell_directory,
+                                traccc::data_format::binary, cells_csv);
         }
 
         if (!hit_directory.empty()) {
@@ -42,10 +44,12 @@ int create_binaries(const std::string& detector_file,
             // Read the hits from the relevant event file
             traccc::host_spacepoint_container spacepoints_csv =
                 traccc::read_spacepoints_from_event(
-                    event, hit_directory, "csv", surface_transforms, host_mr);
+                    event, hit_directory, traccc::data_format::csv,
+                    surface_transforms, host_mr);
 
             // Write binary file
-            traccc::write_spacepoints(event, hit_directory, "binary",
+            traccc::write_spacepoints(event, hit_directory,
+                                      traccc::data_format::binary,
                                       spacepoints_csv);
         }
     }
