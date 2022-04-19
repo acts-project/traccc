@@ -116,7 +116,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // Read the cells from the relevant event file for CPU algorithm
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
-                                          common_opts.data_format,
+                                          common_opts.input_data_format,
                                           surface_transforms, host_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();

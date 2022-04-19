@@ -16,7 +16,7 @@ namespace traccc {
 namespace po = boost::program_options;
 
 struct common_options {
-    traccc::data_format data_format = traccc::data_format::csv;
+    traccc::data_format input_data_format = traccc::data_format::csv;
     unsigned int events;
     int skip;
 

@@ -56,14 +56,14 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     sd_performance_writer.add_cache("CPU");
 
     // Loop over events
-    for (unsigned int event = common_opts.skip; event < common_opts.events + common_opts.skip;
-         ++event) {
+    for (unsigned int event = common_opts.skip;
+         event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
-                                          common_opts.data_format, surface_transforms,
-                                          host_mr);
+                                          common_opts.input_data_format,
+                                          surface_transforms, host_mr);
 
         /*-------------------
             Clusterization

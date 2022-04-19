@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/io/reader.hpp"
 #include "traccc/io/writer.hpp"
+#include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
 namespace po = boost::program_options;
@@ -15,7 +16,7 @@ namespace po = boost::program_options;
 int create_binaries(const std::string& detector_file,
                     const std::string& cell_directory,
                     const std::string& hit_directory,
-                    const unsigned int n_events, const int skip) {
+                    const traccc::common_options& common_opts) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
@@ -24,14 +25,15 @@ int create_binaries(const std::string& detector_file,
     vecmem::host_memory_resource host_mr;
 
     // Loop over events
-    for (unsigned int event = skip; event < n_events + skip; ++event) {
+    for (unsigned int event = common_opts.skip;
+         event < common_opts.events + common_opts.skip; ++event) {
 
         if (!cell_directory.empty()) {
 
             // Read the cells from the relevant event file
             traccc::host_cell_container cells_csv =
                 traccc::read_cells_from_event(event, cell_directory,
-                                              traccc::data_format::csv,
+                                              common_opts.input_data_format,
                                               surface_transforms, host_mr);
 
             // Write binary file
@@ -44,7 +46,7 @@ int create_binaries(const std::string& detector_file,
             // Read the hits from the relevant event file
             traccc::host_spacepoint_container spacepoints_csv =
                 traccc::read_spacepoints_from_event(
-                    event, hit_directory, traccc::data_format::csv,
+                    event, hit_directory, common_opts.input_data_format,
                     surface_transforms, host_mr);
 
             // Write binary file
@@ -73,10 +75,7 @@ int main(int argc, char* argv[]) {
     desc.add_options()("hit_directory",
                        po::value<std::string>()->default_value(""),
                        "specify the directory of hit files");
-    desc.add_options()("events", po::value<unsigned int>()->required(),
-                       "number of events");
-    desc.add_options()("skip", po::value<int>()->default_value(0),
-                       "number of events to skip");
+    traccc::common_options common_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -88,9 +87,8 @@ int main(int argc, char* argv[]) {
     auto detector_file = vm["detector_file"].as<std::string>();
     auto cell_directory = vm["cell_directory"].as<std::string>();
     auto hit_directory = vm["hit_directory"].as<std::string>();
-    auto events = vm["events"].as<unsigned int>();
-    auto skip = vm["skip"].as<int>();
+    common_opts.read(vm);
 
-    return create_binaries(detector_file, cell_directory, hit_directory, events,
-                           skip);
+    return create_binaries(detector_file, cell_directory, hit_directory,
+                           common_opts);
 }

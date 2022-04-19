@@ -75,8 +75,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
     // Loop over events
-    for (unsigned int event = common_opts.skip; event < common_opts.events + common_opts.skip;
-         ++event) {
+    for (unsigned int event = common_opts.skip;
+         event < common_opts.events + common_opts.skip; ++event) {
 
         /*-----------------
           hit file reading
@@ -87,7 +87,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
             traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
-                                                common_opts.data_format,
+                                                common_opts.input_data_format,
                                                 surface_transforms, mng_mr);
 
         /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
