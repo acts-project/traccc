@@ -181,14 +181,21 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
         if (run_cpu) {
             // seeding
             int n_match = 0;
-            for (auto& seed : seeds) {
-                if (std::find_if(
-                        seeds_cuda.begin(), seeds_cuda.end(),
-                        traccc::is_same_seed<traccc::host_spacepoint_container>(
-                            seed, spacepoints_per_event,
-                            spacepoints_per_event)) != seeds_cuda.end())
+
+            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector =
+                traccc::get_spacepoint_vector(seeds, spacepoints_per_event);
+
+            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_cuda =
+                traccc::get_spacepoint_vector(seeds_cuda,
+                                              spacepoints_per_event);
+
+            for (const auto& sp3 : sp3_vector) {
+                if (std::find(sp3_vector_cuda.cbegin(), sp3_vector_cuda.cend(),
+                              sp3) != sp3_vector_cuda.cend()) {
                     n_match++;
+                }
             }
+
             float matching_rate = float(n_match) / seeds.size();
             std::cout << "event " << std::to_string(event) << std::endl;
             std::cout << " number of seeds (cpu): " << seeds.size()
