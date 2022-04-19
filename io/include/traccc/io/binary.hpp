@@ -16,6 +16,7 @@
 
 // System include(s).
 #include <fstream>
+#include <type_traits>
 
 namespace traccc {
 
@@ -25,6 +26,12 @@ namespace traccc {
 /// @param container is the input traccc container
 template <typename container_t>
 void write_binary(const std::string& out_name, const container_t& container) {
+
+    static_assert(std::is_standard_layout_v<typename container_t::header_type>,
+                  "Container header type must be standard layout.");
+    static_assert(std::is_standard_layout_v<typename container_t::item_type>,
+                  "Container item type must be standard layout.");
+
     std::ofstream out_file(out_name, std::ios::out | std::ios::binary);
 
     const auto& headers = container.get_headers();
@@ -64,6 +71,12 @@ void write_binary(const std::string& out_name, const container_t& container) {
 template <typename container_t>
 container_t read_binary(const std::string& in_name, vecmem::copy& copy,
                         vecmem::memory_resource& resource) {
+
+    static_assert(std::is_standard_layout_v<typename container_t::header_type>,
+                  "Container header type must be standard layout.");
+    static_assert(std::is_standard_layout_v<typename container_t::item_type>,
+                  "Container item type must be standard layout.");
+
     std::ifstream in_file(in_name, std::ios::binary);
 
     // Read size
