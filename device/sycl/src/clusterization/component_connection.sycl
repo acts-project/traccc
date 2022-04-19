@@ -1,0 +1,111 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// SYCL library include(s)
+#include "../utils/get_queue.hpp"
+
+//Project include(s).
+#include "traccc/sycl/clusterization/component_connection.hpp"
+
+// SYCL include(s).
+#include <CL/sycl.hpp>
+
+// Vecmem include(s).
+#include <vecmem/utils/sycl/copy.hpp>
+
+#include <iostream>
+
+namespace traccc::sycl {
+
+component_connection::component_connection(vecmem::memory_resource &mr,
+                                           queue_wrapper queue)
+        : m_mr(mr), m_queue(queue) {}
+
+host_cluster_container component_connection::operator()( 
+    const host_cell_container &c) const {
+    output_type clusters(&m_mr.get());
+    this->operator()(c, clusters);
+    return clusters;
+}
+
+void component_connection::operator()(
+    const host_cell_container &cells_per_event,
+    output_type &clusters) const {
+
+    vecmem::sycl::copy copy{m_queue.queue()};
+
+    // Find the largest cell collection
+    unsigned int max_size_cells = 0;
+    for (auto& cells : cells_per_event.get_items()){
+        if (cells.size() > max_size_cells) max_size_cells = cells.size();
+    }
+    unsigned int cells_total_size = cells_per_event.total_size();
+    // Resizable buffer the clusters
+    cluster_container_buffer clusters_buffer{{cells_total_size, 0, m_mr.get()},
+                                             {std::vector<std::size_t>(cells_per_event.total_size(), 0),
+                                              std::vector<std::size_t>(cells_per_event.total_size(), max_size_cells), m_mr.get()}};
+    copy.setup(clusters_buffer.headers);
+    copy.setup(clusters_buffer.items);
+    cluster_container_view clusters_view(clusters_buffer);
+
+    auto cells_data = get_data(const_cast<host_cell_container&>(cells_per_event), &m_mr.get());
+    cell_container_view cells_view(cells_data);
+
+    auto range = cells_per_event.size();
+
+    details::get_queue(m_queue).parallel_for(range,
+                                             [cells_view,
+                                              clusters_view](auto idx){
+
+        device_cell_container cells_device(cells_view);
+        device_cluster_container clusters_device(clusters_view);
+
+        // Ignore if idx is out of range
+        if (idx >= cells_device.size())
+            return;
+
+        // Get the cells from the current module
+        const device_cell_collection& cells = cells_device.get_items().at(idx);
+        const auto& module = cells_device.get_headers().at(idx);
+
+        // Run the sparse_ccl algorithm
+        auto connected_cells = detail::sparse_ccl<vecmem::device_vector>(cells);
+
+        // Number of clusters per module
+        auto num_clusters = std::get<0>(connected_cells);
+
+        // Create cluster id - same for all clusters in this module
+        cluster_id cl_id{};
+        cl_id.module = module.module;
+        cl_id.placement = module.placement;
+
+        // Push back the cluster id(s) to the header vector
+        for (uint32_t i = 0; i < num_clusters; ++i) {
+            clusters_device.get_headers().push_back(cl_id);
+        }
+
+        // Push back the cells to the correct item vector
+        unsigned int icell = 0;
+        for (auto cell_label : std::get<1>(connected_cells)) {
+            auto cindex = static_cast<unsigned int>(cell_label - 1);
+            if (cindex < num_clusters) {
+                clusters_device.get_items()[cindex].push_back(cells[icell++]);
+            }
+        }
+    }).wait_and_throw();
+
+    copy(clusters_buffer.headers, clusters.get_headers());
+    copy(clusters_buffer.items, clusters.get_items());
+
+    if (clusters.get_headers().empty()) std::cout << "header vector empty";
+
+
+}
+
+} // namespace traccc::sycl
+
+
