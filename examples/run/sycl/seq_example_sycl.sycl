@@ -84,6 +84,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
     ::sycl::queue q(::sycl::gpu_selector{}, handle_async_error);
     std::cout << "Running Seeding on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
+    // Creating SYCL queue object
+    ::sycl::queue qC(::sycl::host_selector{}, handle_async_error);
+    std::cout << "Running Clusterization on device: "
+              << qC.get_device().get_info<::sycl::info::device::name>() << "\n";
 
     // Memory resource used by the EDM.
     vecmem::sycl::shared_memory_resource shared_mr(&q);
@@ -96,7 +100,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::sycl::clusterization_algorithm ca_sycl(shared_mr, &q);
+    traccc::sycl::clusterization_algorithm ca_sycl(shared_mr, &qC);
     traccc::sycl::seeding_algorithm sa_sycl(shared_mr, &q);
     traccc::sycl::track_params_estimation tp_sycl(shared_mr, &q);
 
@@ -270,7 +274,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg, bool run_cpu) {
 
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_sycl =
                 traccc::get_spacepoint_vector(seeds_sycl,
-                                              spacepoints_per_event);
+                                              spacepoints_per_event_sycl);
 
             for (const auto& sp3 : sp3_vector) {
                 if (std::find(sp3_vector_sycl.cbegin(), sp3_vector_sycl.cend(),

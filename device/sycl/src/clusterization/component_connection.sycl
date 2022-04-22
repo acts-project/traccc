@@ -5,6 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
+#define VECMEM_DEBUG_MSG_LVL 1
+
 // SYCL library include(s)
 #include "../utils/get_queue.hpp"
 
@@ -16,6 +18,7 @@
 
 // Vecmem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/debug.hpp>
 
 #include <iostream>
 
@@ -36,6 +39,11 @@ void component_connection::operator()(
     const host_cell_container &cells_per_event,
     output_type &clusters) const {
 
+    // Calculate the execution NDrange for the kernel
+    // auto workGroupSize = 32;
+    // auto num = (cells_per_event.size() + workGroupSize - 1) / workGroupSize;
+    // auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num*workGroupSize), ::sycl::range<1>(workGroupSize)};
+
     vecmem::sycl::copy copy{m_queue.queue()};
 
     // Find the largest cell collection
@@ -44,65 +52,202 @@ void component_connection::operator()(
         if (cells.size() > max_size_cells) max_size_cells = cells.size();
     }
     unsigned int cells_total_size = cells_per_event.total_size();
+
     // Resizable buffer the clusters
+    // For now assuming the worst case where 1 cell = 1 cluster
+    // and max. number of cells per module is max. number of cells per cluster
     cluster_container_buffer clusters_buffer{{cells_total_size, 0, m_mr.get()},
-                                             {std::vector<std::size_t>(cells_per_event.total_size(), 0),
-                                              std::vector<std::size_t>(cells_per_event.total_size(), max_size_cells), m_mr.get()}};
+                                             {std::vector<std::size_t>(cells_total_size, 0),
+                                              std::vector<std::size_t>(cells_total_size, max_size_cells), m_mr.get()}};
+
+    vecmem::data::jagged_vector_buffer<cell> clusters_new{std::vector<std::size_t>(cells_total_size, 0),
+                                                    std::vector<std::size_t>(cells_total_size, max_size_cells), m_mr.get()};
+    copy.setup(clusters_new);
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
     cluster_container_view clusters_view(clusters_buffer);
 
-    auto cells_data = get_data(const_cast<host_cell_container&>(cells_per_event), &m_mr.get());
-    cell_container_view cells_view(cells_data);
+    vecmem::data::jagged_vector_view<cell> clusters_new_view(clusters_new);
 
-    auto range = cells_per_event.size();
+    // Cells per event view to pass to the device
+    auto cells_data = get_data(cells_per_event, &m_mr.get());
+    cell_const_container_view cells_view(cells_data);
 
-    details::get_queue(m_queue).parallel_for(range,
-                                             [cells_view,
-                                              clusters_view](auto idx){
+    std::vector<std::size_t> cell_sizes(cells_per_event.size(), 0);
+    for (unsigned long j = 0; j < cell_sizes.size(); ++j){
+        cell_sizes[j] = cells_per_event.get_items().at(j).size();
+    }
+    // Helper container for sparse CCL calculations
+    vecmem::data::jagged_vector_buffer<unsigned int> cluster_indices{cell_sizes, m_mr.get()};
+    // Setup for Debugging
+    // copy.setup(cluster_indices);
+    vecmem::data::jagged_vector_view<unsigned int> cluster_indices_view(cluster_indices);
 
-        device_cell_container cells_device(cells_view);
-        device_cluster_container clusters_device(clusters_view);
+    // Calculate the 1 dimensional range
+    auto range = ::sycl::range<1>(cells_per_event.size());
 
-        // Ignore if idx is out of range
-        if (idx >= cells_device.size())
-            return;
+    // Debugging counter 
+    // vecmem::vector<unsigned long> count_items(1, 0, &m_mr.get());
+    // auto count_it_view = vecmem::get_data(count_items);
 
-        // Get the cells from the current module
-        const device_cell_collection& cells = cells_device.get_items().at(idx);
-        const auto& module = cells_device.get_headers().at(idx);
+    details::get_queue(m_queue).submit([&cells_view, &clusters_new_view, &range, &clusters_view, &cluster_indices_view](::sycl::handler& h) {
 
-        // Run the sparse_ccl algorithm
-        auto connected_cells = detail::sparse_ccl<vecmem::device_vector>(cells);
 
-        // Number of clusters per module
-        auto num_clusters = std::get<0>(connected_cells);
+        // ::sycl::stream out(8192, 512, h);
 
-        // Create cluster id - same for all clusters in this module
-        cluster_id cl_id{};
-        cl_id.module = module.module;
-        cl_id.placement = module.placement;
+        h.parallel_for(range, [cells_view, clusters_new_view, 
+                                clusters_view, cluster_indices_view](::sycl::id<1> idx){
+            
+            // auto idx = item.get_global_linear_id();
+            // auto local_idx = item.get_local_linear_id();
 
-        // Push back the cluster id(s) to the header vector
-        for (uint32_t i = 0; i < num_clusters; ++i) {
-            clusters_device.get_headers().push_back(cl_id);
-        }
+            device_cell_const_container cells_device(cells_view);
+            device_cluster_container clusters_device(clusters_view);
+            vecmem::jagged_device_vector<cell> clusters_new_device(clusters_new_view);
 
-        // Push back the cells to the correct item vector
-        unsigned int icell = 0;
-        for (auto cell_label : std::get<1>(connected_cells)) {
-            auto cindex = static_cast<unsigned int>(cell_label - 1);
-            if (cindex < num_clusters) {
-                clusters_device.get_items()[cindex].push_back(cells[icell++]);
+            // Ignore if idx is out of range
+            if (idx >= cells_device.size())
+                return;
+
+            // Get the cells from the current module
+            const auto& cells = cells_device.get_items().at(idx);
+            const auto& module = cells_device.get_headers().at(idx);
+                        
+            // Number of clusters per module
+            unsigned int num_clusters = 0; 
+
+            // Vectors used for cluster indices found by sparse CCL
+            vecmem::jagged_device_vector<unsigned int> device_cluster_indices(cluster_indices_view);
+            auto cluster_indices = device_cluster_indices.at(idx);
+
+            // Run the sparse_ccl algorithm
+            // detail::sparse_ccl_device<vecmem::device_vector, const cell>(cells, cluster_indices, num_clusters, cells.size());
+
+            ///////////////////// SPARSE CCL //////////////////////////////////
+
+
+            // first scan: pixel association
+            unsigned int start_j = 0;
+            for (unsigned int i = 0; i < cells.size(); ++i) {
+
+                cluster_indices[i] = i;
+                unsigned int ai = i;
+                if (i > 0) {
+                    for (unsigned int j = start_j; j < i; ++j) {
+                        unsigned int chj0 = cells[j].channel0;
+                        unsigned int chj1 = cells[j].channel1;
+                        unsigned int chi1 = cells[i].channel1;
+                        unsigned int chi0 = cells[i].channel0;
+                        if ((chi0 - chj0) * (chi0 - chj0) <= 1 &&
+                            (chi1 - chj1) * (chi1 - chj1) <= 1 ) {
+
+                            /// Find a root
+                            unsigned int r = j;
+                            while (cluster_indices[r] != r ) {
+                                r = cluster_indices[r];
+                            }
+                            
+                            /// Make a Union`
+                            unsigned int e;
+                            if (ai < r) {
+                                e = ai;
+                                cluster_indices[r] = e;
+                            } else {
+                                e = r;
+                                cluster_indices[ai] = e;
+                            }
+                            ai = e;
+                        } else if ((cells[i].channel1 - cells[j].channel1) > 1) {
+                            ++start_j;
+                        }
+                    }
+                }
             }
-        }
+
+            // second scan: transitive closure
+            for (unsigned int i = 0; i < cells.size(); ++i) {
+                unsigned int l = 0;
+                if (cluster_indices[i] == i) {
+                    ++num_clusters;
+                    l = num_clusters;
+                } else {
+                    l = cluster_indices[cluster_indices[i]];
+                }
+                cluster_indices[i] = l;
+            }
+            ////////////////////////////// SPARSE CCL END /////////////////////////////////////
+
+            // Create cluster id - same for all clusters in this module
+            cluster_id cl_id{};
+            cl_id.module = module.module;
+            cl_id.placement = module.placement;
+            cl_id.module_idx = idx;
+            cl_id.pixel = module.pixel;
+
+            // Push back the cluster id(s) to the header vector
+            for (uint32_t i = 0; i < num_clusters; ++i) {
+                clusters_device.get_headers().push_back(cl_id);
+            }
+
+            // Push back the cells to the correct item vector
+            unsigned int cindex = 0;
+            unsigned int icell = 0;
+            for(std::size_t j = 0; j < cells.size(); ++j){
+                cindex = cluster_indices[j] - 1;
+                if (cindex < num_clusters) {
+                    // cell c{};
+                    // c.channel0 = cells[icell].channel0;
+                    // c.channel1 = cells[icell].channel1;
+                    // c.activation = cells[icell].activation;
+                    // c.time = cells[icell].time;
+                    // ++icell;
+                    // clusters_device.get_items()[cindex].push_back(cells[icell++]);
+                    clusters_new_device[cindex].push_back(cells[icell++]);
+
+                    // Debugging atomic counter
+                    // vecmem::device_vector<unsigned long> count_device(count_it_view);
+                    // vecmem::device_atomic_ref<unsigned long> obj(count_device[0]);
+                    // obj.fetch_add(1);
+                }
+            }
+        });
     }).wait_and_throw();
 
+    // Get the sizes of buffer items for debugging purposes
+    // int non_empty_sizes = 0;
+    // auto sizes = copy.get_sizes(clusters_buffer.items);
+    // for (auto s : sizes) if (s != 0 ) non_empty_sizes++;
+    // std::cout << "non empty buffer clusters: " << non_empty_sizes << "\n"; 
+
+    // Copy the data to host vector containers
     copy(clusters_buffer.headers, clusters.get_headers());
-    copy(clusters_buffer.items, clusters.get_items());
+    copy(clusters_new, clusters.get_items());
 
-    if (clusters.get_headers().empty()) std::cout << "header vector empty";
+    // Count and print how many non_empty clusters were found - should be 36907 
+    int non_empty = 0;
+    for (auto& items : clusters.get_items() ){
+        if (!items.empty()) non_empty++;
+    }
+    std::cout << "non empty host clusters: " << non_empty << "\n";
 
+    // Print the size of cluster headers that were added - this works correctly - prints 36907 
+    std::cout << "cluster headers: " << clusters.get_headers().size() << "\n";
+
+
+    //////////////////// Some more Debugging ///////////////////////////////////////////
+
+
+    // Print the vectors found through Sparse CCL
+    // vecmem::jagged_vector<unsigned int> cluster_indices_copy(&m_mr.get());
+    // copy(cluster_indices, cluster_indices_copy);
+    // for(auto item : cluster_indices_copy){
+    //     for (auto i : item) std::cout << i << " ";
+    //     std::cout << "\n";
+    // }
+    // std::cout << "indices: " << cluster_indices_copy.size() << " ";
+
+    // Debugging count 
+    // std::cout << "atomic count: " << count_items[0] << " ";
 
 }
 

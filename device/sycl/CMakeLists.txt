@@ -16,6 +16,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # header files
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
   "include/traccc/sycl/clusterization/component_connection.hpp"
+  "include/traccc/sycl/clusterization/detail/sparse_ccl_device.hpp"
   "include/traccc/sycl/clusterization/measurement_creation.hpp"
   "include/traccc/sycl/seeding/seeding_algorithm.hpp"
   "include/traccc/sycl/seeding/seed_finding.hpp"

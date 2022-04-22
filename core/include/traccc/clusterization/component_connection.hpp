@@ -12,6 +12,8 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/utils/algorithm.hpp"
 
+#include <iostream>
+
 namespace traccc {
 
 /// Connected component labelling
@@ -95,6 +97,10 @@ class component_connection
 
         // Run the algorithm
         auto connected_cells = detail::sparse_ccl<vector_type>(cells);
+        // for (auto i : std::get<1>(connected_cells)) {
+        //     std::cout << i << " ";
+        // }
+        // std::cout << std::endl;
 
         clusters.resize(std::get<0>(connected_cells));
         for (auto& cl_id : clusters.get_headers()) {

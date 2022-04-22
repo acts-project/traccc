@@ -11,7 +11,8 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/clusterization/detail/sparse_ccl.hpp"
+#include "traccc/sycl/clusterization/detail/sparse_ccl_device.hpp"
+// #include "traccc/clusterization/detail/sparse_ccl.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/utils/algorithm.hpp"
