@@ -13,15 +13,12 @@
 
 // clusterization
 #include "traccc/clusterization/component_connection.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/sycl/clusterization/measurement_creation.hpp"
 
 namespace traccc::sycl {
 
 class clusterization_algorithm
-    : public algorithm<
-          std::pair<host_measurement_container, host_spacepoint_container>(
-              const host_cell_container&)> {
+    : public algorithm<host_measurement_container(const host_cell_container&)> {
 
     public:
     /// Constructor for clusterization algorithm
@@ -35,26 +32,12 @@ class clusterization_algorithm
             traccc::component_connection(mr));
         mt = std::make_shared<traccc::sycl::measurement_creation>(
             traccc::sycl::measurement_creation(mr, q));
-        sp = std::make_shared<traccc::spacepoint_formation>(
-            traccc::spacepoint_formation(mr));
     }
 
     output_type operator()(
         const host_cell_container& cells_per_event) const override {
-        output_type o({host_measurement_container(&m_mr.get()),
-                       host_spacepoint_container(&m_mr.get())});
-        this->operator()(cells_per_event, o);
-        return o;
-    }
 
-    void operator()(const host_cell_container& cells_per_event,
-                    output_type& o) const {
-        // output containers
-        auto& measurements_per_event = o.first;
-        auto& spacepoints_per_event = o.second;
-
-        // reserve the vector size
-        spacepoints_per_event.reserve(cells_per_event.size());
+        output_type measurements_per_event(&m_mr.get());
 
         // Container for all the clusters
         traccc::host_cluster_container clusters(&m_mr.get());
@@ -86,23 +69,13 @@ class clusterization_algorithm
         measurements_per_event =
             mt->operator()(clusters, cells_per_event.get_headers());
 
-        // Perform the spacepoint creation
-        for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
-            auto module = cells_per_event.at(i).header;
-            traccc::host_spacepoint_collection spacepoints_per_module =
-                sp->operator()(module, measurements_per_event.at(i).items);
-
-            spacepoints_per_event.push_back(module.module,
-                                            std::move(spacepoints_per_module));
-        }
-        // The algorithmic code part: end
+        return measurements_per_event;
     }
 
     private:
     // algorithms
     std::shared_ptr<traccc::component_connection> cc;
     std::shared_ptr<traccc::sycl::measurement_creation> mt;
-    std::shared_ptr<traccc::spacepoint_formation> sp;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 };
 

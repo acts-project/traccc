@@ -59,5 +59,4 @@ TEST(algorithms, seq_single_module) {
         cl_id.pixel = module.pixel;
     }
     measurements = mt(clusters, module);
-    spacepoints = sp(module, measurements);
 }

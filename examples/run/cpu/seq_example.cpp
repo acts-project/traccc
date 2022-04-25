@@ -13,6 +13,7 @@
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -47,6 +48,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::host_memory_resource host_mr;
 
     traccc::clusterization_algorithm ca(host_mr);
+    traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
@@ -69,9 +71,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             Clusterization
           -------------------*/
 
-        auto ca_result = ca(cells_per_event);
-        auto& measurements_per_event = ca_result.first;
-        auto& spacepoints_per_event = ca_result.second;
+        auto measurements_per_event = ca(cells_per_event);
+
+        /*------------------------
+            Spacepoint formation
+          ------------------------*/
+
+        auto spacepoints_per_event = sf(measurements_per_event);
 
         /*-----------------------
           Seeding algorithm

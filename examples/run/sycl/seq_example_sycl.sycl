@@ -16,6 +16,7 @@
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
@@ -74,6 +75,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     float wall_time(0);
     float file_reading_cpu(0);
     float clusterization_cpu(0);
+    float sp_formation_cpu(0);
     float clusterization_sycl(0);
     float seeding_cpu(0);
     float seeding_sycl(0);
@@ -92,6 +94,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::host_memory_resource host_mr;
 
     traccc::clusterization_algorithm ca(host_mr);
+    traccc::spacepoint_formation sf(shared_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
@@ -133,9 +136,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_clusterization_sycl =
             std::chrono::system_clock::now();
 
-        auto ca_result_sycl = ca_sycl(cells_per_event);
-        auto& measurements_per_event_sycl = ca_result_sycl.first;
-        auto& spacepoints_per_event_sycl = ca_result_sycl.second;
+        auto measurements_per_event_sycl = ca_sycl(cells_per_event);
 
         /*time*/ auto end_clusterization_sycl =
             std::chrono::system_clock::now();
@@ -148,14 +149,25 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_clusterization_cpu =
             std::chrono::system_clock::now();
 
-        auto ca_result = ca(cells_per_event);
-        auto& measurements_per_event = ca_result.first;
-        auto& spacepoints_per_event = ca_result.second;
+        auto measurements_per_event = ca(cells_per_event);
 
         /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cpu =
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
+
+        /*---------------------------------
+               Spacepoint formation (cpu)
+          ---------------------------------*/
+
+        /*time*/ auto start_sp_formation_cpu = std::chrono::system_clock::now();
+
+        auto spacepoints_per_event = sf(measurements_per_event_sycl);
+
+        /*time*/ auto end_sp_formation_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
+            end_sp_formation_cpu - start_sp_formation_cpu;
+        /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
 
         /*----------------------------
              Seeding algorithm
@@ -165,7 +177,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
 
-        auto seeds_sycl = sa_sycl(spacepoints_per_event_sycl);
+        auto seeds_sycl = sa_sycl(spacepoints_per_event);
 
         /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_sycl =
@@ -196,8 +208,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_sycl =
             std::chrono::system_clock::now();
 
-        auto params_sycl = tp_sycl(std::move(spacepoints_per_event_sycl),
-                                   std::move(seeds_sycl));
+        auto params_sycl =
+            tp_sycl(std::move(spacepoints_per_event), std::move(seeds_sycl));
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
@@ -306,7 +318,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                       i_cfg.hit_directory,
                                       i_cfg.particle_directory, host_mr);
             sd_performance_writer.write("SYCL", seeds_sycl,
-                                        spacepoints_per_event_sycl, evt_map);
+                                        spacepoints_per_event, evt_map);
 
             if (run_cpu) {
                 sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
@@ -344,6 +356,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
               << file_reading_cpu << std::endl;
     std::cout << "clusterization_time (cpu) " << std::setw(10) << std::left
               << clusterization_cpu << std::endl;
+    std::cout << "spacepoint_formation_time (cpu) " << std::setw(10)
+              << std::left << sp_formation_cpu << std::endl;
     std::cout << "clusterization_time (sycl) " << std::setw(10) << std::left
               << clusterization_sycl << std::endl;
     std::cout << "seeding_time (cpu)        " << std::setw(10) << std::left
