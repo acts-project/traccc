@@ -8,6 +8,9 @@
 
 #pragma once
 
+// Detray include(s).
+#include "detray/plugins/algebra/eigen_definitions.hpp"
+
 // Algebra Plugins include(s).
 #include <algebra/eigen_eigen.hpp>
 
