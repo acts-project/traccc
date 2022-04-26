@@ -11,19 +11,17 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/sycl/clusterization/detail/sparse_ccl_device.hpp"
-// #include "traccc/clusterization/detail/sparse_ccl.hpp"
+#include "traccc/clusterization/detail/sparse_ccl.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-
 namespace traccc::sycl {
 
-struct component_connection 
-    : public algorithm<host_cluster_container(const host_cell_container&)> {
+struct component_connection
+    : public algorithm<host_cluster_container(const host_cell_container &)> {
 
-    public: 
+    public:
     /// Constructor for component_connection
     ///
     /// @param mr is memory resource
@@ -33,12 +31,14 @@ struct component_connection
     /// Callable operator for component connection for all the cells per event
     ///
     /// @param cells_per_event are the input cells grouped by module
-    host_cluster_container operator()(const host_cell_container &c) const override;
+    host_cluster_container operator()(
+        const host_cell_container &c) const override;
 
     /// Callable operator for component connection for all the cells per event
     ///
     /// @param cells_per_event are the input cells grouped by module
-    void operator()(const host_cell_container &cells_per_event, 
+    /// @return a container of clusters from all the modules
+    void operator()(const host_cell_container &cells_per_event,
                     output_type &clusters) const;
 
     private:
@@ -46,4 +46,4 @@ struct component_connection
     mutable queue_wrapper m_queue;
 };
 
-} // namespace traccc::sycl
+}  // namespace traccc::sycl

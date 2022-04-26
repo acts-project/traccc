@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 
@@ -23,8 +24,9 @@ namespace detail {
 /// @param L an equivalance table
 ///
 /// @return the root of @param e
-inline unsigned int find_root(const std::vector<unsigned int>& L,
-                              unsigned int e) {
+template <template <typename> class vector_t>
+TRACCC_HOST_DEVICE inline unsigned int find_root(
+    const vector_t<unsigned int>& L, const unsigned int& e) {
     unsigned int r = e;
     while (L[r] != r) {
         r = L[r];
@@ -37,8 +39,10 @@ inline unsigned int find_root(const std::vector<unsigned int>& L,
 /// @param L an equivalance table
 ///
 /// @return the rleast common ancestor of the entries
-inline unsigned int make_union(std::vector<unsigned int>& L, unsigned int e1,
-                               unsigned int e2) {
+template <template <typename> class vector_t>
+TRACCC_HOST_DEVICE inline unsigned int make_union(vector_t<unsigned int>& L,
+                                                  const unsigned int& e1,
+                                                  const unsigned int& e2) {
     int e;
     if (e1 < e2) {
         e = e1;
@@ -56,7 +60,8 @@ inline unsigned int make_union(std::vector<unsigned int>& L, unsigned int e1,
 /// @param b the second cell
 ///
 /// @return boolan to indicate 8-cell connectivity
-inline bool is_adjacent(cell a, cell b) {
+template <typename cell_t>
+TRACCC_HOST_DEVICE inline bool is_adjacent(cell_t a, cell_t b) {
     return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 and
            (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1;
 }
@@ -69,18 +74,19 @@ inline bool is_adjacent(cell a, cell b) {
 /// @param b the second cell
 ///
 /// @return boolan to indicate !8-cell connectivity
-inline bool is_far_enough(cell a, cell b) {
+template <typename cell_t>
+TRACCC_HOST_DEVICE inline bool is_far_enough(cell_t a, cell_t b) {
     return (a.channel1 - b.channel1) > 1;
 }
 
 /// Sparce CCL algorithm
 ///
-template <template <typename> class vector_type>
-inline std::tuple<unsigned int, std::vector<unsigned int>> sparse_ccl(
-    const cell_collection<vector_type>& cells) {
+template <template <typename> class vector_t, typename cell_t>
+TRACCC_HOST_DEVICE inline void sparse_ccl(const vector_t<cell_t>& cells,
+                                          vector_t<unsigned int>& L,
+                                          unsigned int& labels) {
 
     // Internal list linking
-    std::vector<unsigned int> L(cells.size(), 0);
 
     // first scan: pixel association
     unsigned int start_j = 0;
@@ -89,9 +95,9 @@ inline std::tuple<unsigned int, std::vector<unsigned int>> sparse_ccl(
         int ai = i;
         if (i > 0) {
             for (unsigned int j = start_j; j < i; ++j) {
-                if (is_adjacent(cells[i], cells[j])) {
-                    ai = make_union(L, ai, find_root(L, j));
-                } else if (is_far_enough(cells[i], cells[j])) {
+                if (is_adjacent<cell_t>(cells[i], cells[j])) {
+                    ai = make_union<vector_t>(L, ai, find_root<vector_t>(L, j));
+                } else if (is_far_enough<cell_t>(cells[i], cells[j])) {
                     ++start_j;
                 }
             }
@@ -99,7 +105,6 @@ inline std::tuple<unsigned int, std::vector<unsigned int>> sparse_ccl(
     }
 
     // second scan: transitive closure
-    unsigned int labels = 0;
     for (unsigned int i = 0; i < cells.size(); ++i) {
         unsigned int l = 0;
         if (L[i] == i) {
@@ -110,7 +115,6 @@ inline std::tuple<unsigned int, std::vector<unsigned int>> sparse_ccl(
         }
         L[i] = l;
     }
-    return {labels, L};
 }
 }  // namespace detail
 
