@@ -50,7 +50,6 @@ class clusterization_algorithm
             for (auto& cl_id : clusters.get_headers()) {
                 cl_id.pixel = module.pixel;
             }
-
             traccc::host_measurement_collection measurements_per_module =
                 mt->operator()(clusters, module);
 
