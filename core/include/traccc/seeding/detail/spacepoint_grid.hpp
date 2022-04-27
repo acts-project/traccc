@@ -11,11 +11,11 @@
 #include "traccc/edm/internal_spacepoint.hpp"
 
 // detray core
+#include <detray/definitions/indexing.hpp>
 #include <detray/grids/axis.hpp>
 #include <detray/grids/grid2.hpp>
 #include <detray/grids/populator.hpp>
 #include <detray/grids/serializer2.hpp>
-#include <detray/utils/indexing.hpp>
 
 namespace traccc {
 
