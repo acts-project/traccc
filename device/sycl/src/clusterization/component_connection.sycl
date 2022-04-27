@@ -40,8 +40,8 @@ void component_connection::operator()(
     vecmem::sycl::copy copy{m_queue.queue()};
 
     // Find the largest cell collection
-    // to estimate max size of cluster (assuming that this cell collection would
-    // constitute to the whole cluster)
+    // to estimate max. size of cluster (assuming that this cell collection
+    // would constitute to the whole cluster)
     unsigned int max_cluster_size =
         std::max_element(
             cells_per_event.get_items().begin(),
@@ -64,7 +64,7 @@ void component_connection::operator()(
     copy.setup(clusters_buffer.items);
     cluster_container_view clusters_view(clusters_buffer);
 
-    // Cells per event view to pass to the device
+    // Cells view to pass to the device
     auto cells_data = get_data(cells_per_event, &m_mr.get());
     cell_const_container_view cells_view(cells_data);
 
@@ -80,7 +80,7 @@ void component_connection::operator()(
     vecmem::data::jagged_vector_view<unsigned int> cluster_indices_view(
         cluster_indices);
 
-    // 1 item vector for the atomic count of number of clusters
+    // Single-item vector for the atomic count of number of clusters
     vecmem::vector<unsigned int> total_clusters(1, 0, &m_mr.get());
     auto total_clusters_view = vecmem::get_data(total_clusters);
 
@@ -101,7 +101,7 @@ void component_connection::operator()(
                 const auto& cells = cells_device.at(idx).items;
                 const auto& module = cells_device.at(idx).header;
 
-                // Number of clusters per module
+                // Number of clusters that sparce_ccl will find for this module
                 unsigned int num_clusters = 0;
 
                 // Vectors used for cluster indices found by sparse CCL
