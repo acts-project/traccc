@@ -24,14 +24,10 @@ component_connection::component_connection(vecmem::memory_resource& mr,
     : m_mr(mr), m_queue(queue) {}
 
 host_cluster_container component_connection::operator()(
-    const host_cell_container& c) const {
-    output_type clusters(&m_mr.get());
-    this->operator()(c, clusters);
-    return clusters;
-}
+    const host_cell_container& cells_per_event) const {
 
-void component_connection::operator()(
-    const host_cell_container& cells_per_event, output_type& clusters) const {
+    // Create the output container
+    output_type clusters(&m_mr.get());
 
     // Execution size of the algorithm
     unsigned int N = cells_per_event.size();
@@ -66,7 +62,7 @@ void component_connection::operator()(
 
     // Cells view to pass to the device
     auto cells_data = get_data(cells_per_event, &m_mr.get());
-    cell_const_container_view cells_view(cells_data);
+    cell_container_const_view cells_view(cells_data);
 
     // Get the sizes of the cells in each module
     std::vector<std::size_t> cell_sizes(N, 0);
@@ -143,6 +139,8 @@ void component_connection::operator()(
     // Copy the data to host vector containers
     copy(clusters_buffer.headers, clusters.get_headers());
     copy(clusters_buffer.items, clusters.get_items());
+
+    return clusters;
 }
 
 }  // namespace traccc::sycl

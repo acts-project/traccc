@@ -60,8 +60,7 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(vector_t<unsigned int>& L,
 /// @param b the second cell
 ///
 /// @return boolan to indicate 8-cell connectivity
-template <typename cell_t>
-TRACCC_HOST_DEVICE inline bool is_adjacent(cell_t a, cell_t b) {
+TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::cell a, traccc::cell b) {
     return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 and
            (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1;
 }
@@ -74,19 +73,20 @@ TRACCC_HOST_DEVICE inline bool is_adjacent(cell_t a, cell_t b) {
 /// @param b the second cell
 ///
 /// @return boolan to indicate !8-cell connectivity
-template <typename cell_t>
-TRACCC_HOST_DEVICE inline bool is_far_enough(cell_t a, cell_t b) {
+TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::cell a, traccc::cell b) {
     return (a.channel1 - b.channel1) > 1;
 }
 
 /// Sparce CCL algorithm
 ///
+/// @param cells is the cell collection
+/// @param L is the vector of the output indices (to which cluster a cell
+/// belongs to)
+/// @param labels is the number of clusters found
 template <template <typename> class vector_t, typename cell_t>
 TRACCC_HOST_DEVICE inline void sparse_ccl(const vector_t<cell_t>& cells,
                                           vector_t<unsigned int>& L,
                                           unsigned int& labels) {
-
-    // Internal list linking
 
     // first scan: pixel association
     unsigned int start_j = 0;
@@ -95,9 +95,9 @@ TRACCC_HOST_DEVICE inline void sparse_ccl(const vector_t<cell_t>& cells,
         int ai = i;
         if (i > 0) {
             for (unsigned int j = start_j; j < i; ++j) {
-                if (is_adjacent<cell_t>(cells[i], cells[j])) {
+                if (is_adjacent(cells[i], cells[j])) {
                     ai = make_union<vector_t>(L, ai, find_root<vector_t>(L, j));
-                } else if (is_far_enough<cell_t>(cells[i], cells[j])) {
+                } else if (is_far_enough(cells[i], cells[j])) {
                     ++start_j;
                 }
             }

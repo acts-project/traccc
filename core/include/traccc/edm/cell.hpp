@@ -133,11 +133,11 @@ using cell_container_data = container_data<cell_module, cell>;
 
 /// Convenience declaration for the cell container data type to use in host code
 /// (const)
-using cell_const_container_data = container_data<const cell_module, const cell>;
+using cell_container_const_data = container_data<const cell_module, const cell>;
 
 /// Convenience declaration for the cell container view type to use in host code
 /// (const)
-using cell_const_container_view = container_view<const cell_module, const cell>;
+using cell_container_const_view = container_view<const cell_module, const cell>;
 
 /// Convenience declaration for the cell container buffer type to use in host
 /// code

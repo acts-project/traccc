@@ -31,15 +31,9 @@ struct component_connection
     /// Callable operator for component connection for all the cells per event
     ///
     /// @param cells_per_event are the input cells grouped by module
-    host_cluster_container operator()(
-        const host_cell_container &c) const override;
-
-    /// Callable operator for component connection for all the cells per event
-    ///
-    /// @param cells_per_event are the input cells grouped by module
     /// @return a container of clusters from all the modules
-    void operator()(const host_cell_container &cells_per_event,
-                    output_type &clusters) const;
+    host_cluster_container operator()(
+        const host_cell_container &cells_per_event) const;
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
