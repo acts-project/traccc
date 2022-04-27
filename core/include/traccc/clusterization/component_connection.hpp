@@ -102,7 +102,6 @@ class component_connection
         for (auto& cl_id : clusters.get_headers()) {
             cl_id.module = module.module;
             cl_id.placement = module.placement;
-            cl_id.pixel = module.pixel;
         }
 
         auto& cluster_items = clusters.get_items();
