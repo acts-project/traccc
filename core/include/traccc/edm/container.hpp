@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/details/device_container.hpp"
 #include "traccc/edm/details/host_container.hpp"
+#include "traccc/utils/type_traits.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
@@ -18,6 +19,9 @@
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+
+// System include(s).
+#include <type_traits>
 
 namespace traccc {
 
@@ -54,12 +58,34 @@ template <typename header_t, typename item_t>
 struct container_view {
 
     /// Constructor from a @c container_data object
-    container_view(const container_data<header_t, item_t>& data)
+    template <
+        typename other_header_t, typename other_item_t,
+        std::enable_if_t<details::is_same_nc<header_t, other_header_t>::value,
+                         bool> = true,
+        std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
+                         bool> = true>
+    container_view(const container_data<other_header_t, other_item_t>& data)
         : headers(data.headers), items(data.items) {}
 
     /// Constructor from a @c container_buffer object
-    container_view(const container_buffer<header_t, item_t>& buffer)
+    template <
+        typename other_header_t, typename other_item_t,
+        std::enable_if_t<details::is_same_nc<header_t, other_header_t>::value,
+                         bool> = true,
+        std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
+                         bool> = true>
+    container_view(const container_buffer<other_header_t, other_item_t>& buffer)
         : headers(buffer.headers), items(buffer.items) {}
+
+    /// Constructor from a non-const view
+    template <
+        typename other_header_t, typename other_item_t,
+        std::enable_if_t<details::is_same_nc<header_t, other_header_t>::value,
+                         bool> = true,
+        std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
+                         bool> = true>
+    container_view(const container_view<other_header_t, other_item_t>& parent)
+        : headers(parent.headers), items(parent.items) {}
 
     /// View of the data describing the headers
     vecmem::data::vector_view<header_t> headers;

@@ -30,6 +30,7 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   "include/traccc/geometry/pixel_data.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
+  "include/traccc/utils/type_traits.hpp"
   "include/traccc/utils/unit_vectors.hpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/sparse_ccl.hpp"
