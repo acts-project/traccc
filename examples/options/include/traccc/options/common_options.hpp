@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s)
+#include "traccc/io/data_format.hpp"
+
 // Boost
 #include <boost/program_options.hpp>
 
@@ -12,14 +15,12 @@ namespace traccc {
 
 namespace po = boost::program_options;
 
-struct full_tracking_input_config {
-    std::string detector_file;
-    std::string cell_directory;
-    std::string hit_directory;
-    std::string particle_directory;
-    bool check_seeding_performance;
+struct common_options {
+    traccc::data_format input_data_format = traccc::data_format::csv;
+    unsigned int events;
+    int skip;
 
-    full_tracking_input_config(po::options_description& desc);
+    common_options(po::options_description& desc);
     void read(const po::variables_map& vm);
 };
 

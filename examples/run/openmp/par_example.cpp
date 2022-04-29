@@ -60,8 +60,9 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
 
         // Read the cells from the relevant event file
         traccc::host_cell_container cells_per_event =
-            traccc::read_cells_from_event(event, cells_dir, surface_transforms,
-                                          resource);
+            traccc::read_cells_from_event(event, cells_dir,
+                                          traccc::data_format::csv,
+                                          surface_transforms, resource);
 
         /*-------------------
             Clusterization

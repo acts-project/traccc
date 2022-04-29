@@ -7,12 +7,14 @@
 # Set up the "build" of the traccc::option library.
 traccc_add_library( traccc_options options TYPE SHARED
   # header files
+  "include/traccc/options/common_options.hpp"
   "include/traccc/options/handle_argument_errors.hpp"
   "include/traccc/options/seeding_input_options.hpp"
   "include/traccc/options/full_tracking_input_options.hpp" 
   # source files
+  "src/options/common_options.cpp"
   "src/options/handle_argument_errors.cpp"
   "src/options/seeding_input_options.cpp"
   "src/options/full_tracking_input_options.cpp"
   )
-target_link_libraries( traccc_options PUBLIC Boost::program_options)
+target_link_libraries( traccc_options PUBLIC traccc::io Boost::program_options)

@@ -21,10 +21,6 @@ traccc::full_tracking_input_config::full_tracking_input_config(
     desc.add_options()(
         "particle_directory", po::value<std::string>()->default_value(""),
         "specify the directory of particle files used for performance writer");
-    desc.add_options()("events", po::value<unsigned int>()->required(),
-                       "number of events");
-    desc.add_options()("skip", po::value<int>()->default_value(0),
-                       "number of events to skip");
 }
 
 void traccc::full_tracking_input_config::read(const po::variables_map& vm) {
@@ -32,8 +28,6 @@ void traccc::full_tracking_input_config::read(const po::variables_map& vm) {
     cell_directory = vm["cell_directory"].as<std::string>();
     hit_directory = vm["hit_directory"].as<std::string>();
     particle_directory = vm["particle_directory"].as<std::string>();
-    events = vm["events"].as<unsigned int>();
-    skip = vm["skip"].as<int>();
     check_seeding_performance =
-        (particle_directory != "") && (hit_directory != "");
+        (!particle_directory.empty()) && (!hit_directory.empty());
 }

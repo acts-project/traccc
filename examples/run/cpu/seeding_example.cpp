@@ -18,6 +18,7 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
+#include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 
@@ -26,7 +27,8 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_config& i_cfg) {
+int seq_run(const traccc::seeding_input_config& i_cfg,
+            const traccc::common_options& common_opts) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -47,12 +49,13 @@ int seq_run(const traccc::seeding_input_config& i_cfg) {
     sd_performance_writer.add_cache("CPU");
 
     // Loop over events
-    for (unsigned int event = i_cfg.skip; event < i_cfg.events + i_cfg.skip;
-         ++event) {
+    for (unsigned int event = common_opts.skip;
+         event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the hits from the relevant event file
         traccc::host_spacepoint_container spacepoints_per_event =
             traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
+                                                common_opts.input_data_format,
                                                 surface_transforms, host_mr);
 
         /*----------------
@@ -98,6 +101,7 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
+    traccc::common_options common_opts(desc);
     traccc::seeding_input_config seeding_input_cfg(desc);
 
     po::variables_map vm;
@@ -107,11 +111,12 @@ int main(int argc, char* argv[]) {
     traccc::handle_argument_errors(vm, desc);
 
     // Read options
+    common_opts.read(vm);
     seeding_input_cfg.read(vm);
 
     std::cout << "Running " << argv[0] << " " << seeding_input_cfg.detector_file
               << " " << seeding_input_cfg.hit_directory << " "
-              << seeding_input_cfg.events << std::endl;
+              << common_opts.events << std::endl;
 
-    return seq_run(seeding_input_cfg);
+    return seq_run(seeding_input_cfg, common_opts);
 }

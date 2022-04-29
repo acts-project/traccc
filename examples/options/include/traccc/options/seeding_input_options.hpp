@@ -17,8 +17,6 @@ struct seeding_input_config {
     std::string hit_directory;
     std::string particle_directory;
     bool check_seeding_performance;
-    unsigned int events;
-    int skip;
 
     seeding_input_config(po::options_description& desc);
     void read(const po::variables_map& vm);
