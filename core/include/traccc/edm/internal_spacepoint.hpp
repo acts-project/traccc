@@ -11,7 +11,7 @@
 #include "traccc/edm/spacepoint.hpp"
 
 // detray core
-#include <detray/definitions/invalid_values.hpp>
+#include <detray/utils/invalid_values.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>

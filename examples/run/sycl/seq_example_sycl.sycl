@@ -120,7 +120,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::host_cell_container cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           common_opts.input_data_format,
-                                          surface_transforms, host_mr);
+                                          surface_transforms, shared_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -162,12 +162,15 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_sp_formation_cpu = std::chrono::system_clock::now();
 
-        auto spacepoints_per_event = sf(measurements_per_event_sycl);
+        auto spacepoints_per_event = sf(measurements_per_event);
 
         /*time*/ auto end_sp_formation_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
             end_sp_formation_cpu - start_sp_formation_cpu;
         /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
+
+        // Spacepoint formation for SYCL algorithms
+        auto spacepoints_per_event_sycl = sf(measurements_per_event_sycl);
 
         /*----------------------------
              Seeding algorithm
@@ -177,7 +180,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
 
-        auto seeds_sycl = sa_sycl(spacepoints_per_event);
+        auto seeds_sycl = sa_sycl(spacepoints_per_event_sycl);
 
         /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_sycl =
@@ -208,8 +211,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_sycl =
             std::chrono::system_clock::now();
 
-        auto params_sycl =
-            tp_sycl(std::move(spacepoints_per_event), std::move(seeds_sycl));
+        auto params_sycl = tp_sycl(std::move(spacepoints_per_event_sycl),
+                                   std::move(seeds_sycl));
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
@@ -273,7 +276,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_sycl =
                 traccc::get_spacepoint_vector(seeds_sycl,
-                                              spacepoints_per_event);
+                                              spacepoints_per_event_sycl);
 
             for (const auto& sp3 : sp3_vector) {
                 if (std::find(sp3_vector_sycl.cbegin(), sp3_vector_sycl.cend(),
