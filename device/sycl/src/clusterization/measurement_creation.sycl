@@ -12,11 +12,11 @@
 #include <CL/sycl.hpp>
 
 // Project include(s).
-#include "measurement_computing.hpp"
+#include "measurement_creation.hpp"
 
 namespace traccc::sycl {
 
-void measurement_computing(measurement_container_view measurements_view,
+void measurement_creation(measurement_container_view measurements_view,
                            cluster_container_view clusters_view,
                            const unsigned int &range,
                            queue_wrapper queue) {

@@ -20,24 +20,21 @@
 
 namespace traccc::sycl {
 
-struct measurement_creation : public algorithm<host_measurement_container(
+struct cluster_finding : public algorithm<host_measurement_container(
                                   const host_cell_container &)> {
     public:
-    /// Constructor for measurement_creation
+    /// Constructor for cluster_finding
     ///
     /// @param mr is the memory resource
     /// @param queue is the sycl queue for kernel invocation
-    measurement_creation(vecmem::memory_resource &mr, queue_wrapper queue);
+    cluster_finding(vecmem::memory_resource &mr, queue_wrapper queue);
 
-    /// Callable operator for measurement creation for all the modules
+    /// Callable operator for cluster finding for cells from all the modules
     ///
-    /// @param clusters are the input cells into the connected component
-    /// form all the modules
-    /// @param cluster_sizes is a vector of number of clusters per each module
-    /// @param cell_modules_per_event is a collection of cell modules
+    /// @param cells_per_event is a container with cell modules as headers
+    /// and cells as the items jagged vector  
     /// @return a measurement container with cell modules for headers and
-    /// measurements as items - usually same size or sometime slightly smaller
-    /// than the input (cluster sizes)
+    /// measurements as items 
     output_type operator()(const host_cell_container &cells_per_event) const;
 
     private:

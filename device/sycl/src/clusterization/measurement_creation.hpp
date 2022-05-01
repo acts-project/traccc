@@ -20,8 +20,8 @@
 
 namespace traccc::sycl {
 
-// Decleration of measurement computing kernel
-void measurement_computing(measurement_container_view measurements_view,
+// Decleration of measurement creation kernel
+void measurement_creation(measurement_container_view measurements_view,
                            cluster_container_view clusters_view,
                            const unsigned int& range,
                            queue_wrapper queue);

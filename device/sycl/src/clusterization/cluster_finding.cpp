@@ -6,22 +6,22 @@
  */
 
 // SYCL library include(s).
-#include "traccc/sycl/clusterization/measurement_creation.hpp"
+#include "traccc/sycl/clusterization/cluster_finding.hpp"
 
 // SYCL library include(s).
 #include "component_connection.hpp"
-#include "measurement_computing.hpp"
+#include "measurement_creation.hpp"
 
 // Vecmem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
 
 namespace traccc::sycl {
 
-measurement_creation::measurement_creation(vecmem::memory_resource &mr,
+cluster_finding::cluster_finding(vecmem::memory_resource &mr,
                                            queue_wrapper queue)
     : m_mr(mr), m_queue(queue) {}
 
-host_measurement_container measurement_creation::operator()(
+host_measurement_container cluster_finding::operator()(
     const host_cell_container &cells_per_event) const {
     
     // Vecmem copy object for moving the data between host and device
@@ -77,7 +77,7 @@ host_measurement_container measurement_creation::operator()(
     // range of kernel execution
     unsigned int range = total_clusters[0]; 
 
-    traccc::sycl::measurement_computing(measurement_buffer, clusters_buffer,
+    traccc::sycl::measurement_creation(measurement_buffer, clusters_buffer,
                                         range, m_queue);
 
     host_measurement_container measurements(&m_mr.get());

@@ -8,7 +8,7 @@
 #pragma once
 
 // clusterization
-#include "traccc/sycl/clusterization/measurement_creation.hpp"
+#include "traccc/sycl/clusterization/cluster_finding.hpp"
 
 namespace traccc::sycl {
 
@@ -23,8 +23,8 @@ class clusterization_algorithm
                              ::sycl::queue* q = nullptr)
         : m_mr(mr) {
 
-        mt = std::make_shared<traccc::sycl::measurement_creation>(
-            traccc::sycl::measurement_creation(mr, q));
+        cf = std::make_shared<traccc::sycl::cluster_finding>(
+            traccc::sycl::cluster_finding(mr, q));
     }
 
     output_type operator()(
@@ -32,15 +32,15 @@ class clusterization_algorithm
 
         output_type measurements_per_event(&m_mr.get());
 
-        // Measurement creation
-        measurements_per_event = mt->operator()(cells_per_event);
+        // Cluster finding algorithm - returns the measurments
+        measurements_per_event = cf->operator()(cells_per_event);
 
         return measurements_per_event;
     }
 
     private:
     // algorithms
-    std::shared_ptr<traccc::sycl::measurement_creation> mt;
+    std::shared_ptr<traccc::sycl::cluster_finding> cf;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 };
 
