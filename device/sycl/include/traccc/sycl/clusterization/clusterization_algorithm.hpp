@@ -7,11 +7,7 @@
 
 #pragma once
 
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint.hpp"
-
 // clusterization
-#include "traccc/sycl/clusterization/component_connection.hpp"
 #include "traccc/sycl/clusterization/measurement_creation.hpp"
 
 namespace traccc::sycl {
@@ -27,8 +23,6 @@ class clusterization_algorithm
                              ::sycl::queue* q = nullptr)
         : m_mr(mr) {
 
-        cc_sycl = std::make_shared<traccc::sycl::component_connection>(
-            traccc::sycl::component_connection(mr, q));
         mt = std::make_shared<traccc::sycl::measurement_creation>(
             traccc::sycl::measurement_creation(mr, q));
     }
@@ -38,20 +32,14 @@ class clusterization_algorithm
 
         output_type measurements_per_event(&m_mr.get());
 
-        // Component connection
-        traccc::host_cluster_container clusters_per_event =
-            cc_sycl->operator()(cells_per_event);
-
         // Measurement creation
-        measurements_per_event =
-            mt->operator()(clusters_per_event, cells_per_event.get_headers());
+        measurements_per_event = mt->operator()(cells_per_event);
 
         return measurements_per_event;
     }
 
     private:
     // algorithms
-    std::shared_ptr<traccc::sycl::component_connection> cc_sycl;
     std::shared_ptr<traccc::sycl::measurement_creation> mt;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 };

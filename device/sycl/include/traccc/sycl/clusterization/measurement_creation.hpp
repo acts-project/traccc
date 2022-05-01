@@ -21,8 +21,7 @@
 namespace traccc::sycl {
 
 struct measurement_creation : public algorithm<host_measurement_container(
-                                  const host_cluster_container &,
-                                  const host_cell_module_collection &)> {
+                                  const host_cell_container &)> {
     public:
     /// Constructor for measurement_creation
     ///
@@ -39,22 +38,7 @@ struct measurement_creation : public algorithm<host_measurement_container(
     /// @return a measurement container with cell modules for headers and
     /// measurements as items - usually same size or sometime slightly smaller
     /// than the input (cluster sizes)
-    host_measurement_container operator()(
-        const host_cluster_container &c,
-        const host_cell_module_collection &l) const override;
-
-    /// Callable operator for measurement creation for all the modules
-    ///
-    /// @param clusters are the input cells into the connected component
-    /// form all the modules
-    /// @param cluster_sizes is a vector of number of clusters per each module
-    /// @param cell_modules_per_event is a collection of cell modules
-    /// @return a measurement container with cell modules for headers and
-    /// measurements as items - usually same size or sometime slightly smaller
-    /// than the input (cluster sizes)
-    void operator()(const host_cluster_container &clusters,
-                    const host_cell_module_collection &cell_modules_per_event,
-                    output_type &measurements) const;
+    output_type operator()(const host_cell_container &cells_per_event) const;
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
