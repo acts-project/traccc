@@ -15,9 +15,12 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/clusterization/measurement_creation_helper.hpp"
 
+// Vecmem include(s).
 #include <vecmem/memory/memory_resource.hpp>
+
 namespace traccc::sycl {
 
+// Decleration of measurement computing kernel
 void measurement_computing(measurement_container_view measurements_view,
                            cluster_container_view clusters_view,
                            const unsigned int& range,

@@ -20,6 +20,7 @@
 
 namespace traccc::sycl {
 
+// Declaration of component connection kernel
 void component_connection(cluster_container_view clusters_view,
                             cell_container_const_view cells_view,
                             const host_cell_container& cells_per_event,

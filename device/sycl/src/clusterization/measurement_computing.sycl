@@ -8,11 +8,10 @@
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
 
-// Project include(s).
+// SYCL include(s).
 #include <CL/sycl.hpp>
 
-#include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
+// Project include(s).
 #include "measurement_computing.hpp"
 
 namespace traccc::sycl {
