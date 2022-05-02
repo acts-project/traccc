@@ -17,18 +17,18 @@
 namespace traccc::sycl {
 
 void component_connection(
-    cluster_container_view clusters_view, cell_container_const_view cells_view,
+    cluster_container_view clusters_view,
     const host_cell_container& cells_per_event,
     vecmem::data::vector_view<unsigned int> clusters_count_view,
     vecmem::data::vector_view<unsigned int> total_clusters_view,
     vecmem::memory_resource& resource, queue_wrapper queue) {
 
     // Execution size of the algorithm
-    unsigned int N = cells_per_event.size();
+    std::size_t N = cells_per_event.size();
 
     // Get the sizes of the cells in each module
     std::vector<std::size_t> cell_sizes(N, 0);
-    for (unsigned long j = 0; j < N; ++j) {
+    for (std::size_t j = 0; j < N; ++j) {
         cell_sizes[j] = cells_per_event.get_items().at(j).size();
     }
 
@@ -37,6 +37,10 @@ void component_connection(
     auto num = (N + workGroupSize - 1) / workGroupSize;
     auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * workGroupSize),
                                        ::sycl::range<1>(workGroupSize)};
+
+    // Get the view of the cells container
+    auto cells_data = get_data(cells_per_event, &resource);
+    cell_container_const_view cells_view(cells_data);
 
     // Helper container for sparse CCL calculations
     vecmem::data::jagged_vector_buffer<unsigned int> cluster_indices{cell_sizes,

@@ -30,6 +30,9 @@ host_measurement_container cluster_finding::operator()(
     // Number of cells from all the modules
     unsigned int cells_total_size = cells_per_event.total_size();
 
+    // Vecmem copy object for moving the data between host and device
+    vecmem::sycl::copy copy{m_queue.queue()};
+
     // Find the largest cell collection
     // to estimate max. size of cluster (assuming that this cell collection
     // would constitute to the whole cluster)
@@ -48,6 +51,8 @@ host_measurement_container cluster_finding::operator()(
         {std::vector<std::size_t>(cells_total_size, 0),
          std::vector<std::size_t>(cells_total_size, max_cluster_size),
          m_mr.get()}};
+    copy.setup(clusters_buffer.headers);
+    copy.setup(clusters_buffer.items);
 
     // Vector for counts of clusters per each module
     vecmem::vector<unsigned int> cluster_sizes(num_modules, 1, &m_mr.get());
@@ -57,8 +62,7 @@ host_measurement_container cluster_finding::operator()(
     vecmem::vector<unsigned int> total_clusters(1, 0, &m_mr.get());
 
     traccc::sycl::component_connection(
-        clusters_buffer, get_data(cells_per_event, &m_mr.get()),
-        cells_per_event, vecmem::get_data(cluster_sizes),
+        clusters_buffer, cells_per_event, vecmem::get_data(cluster_sizes),
         vecmem::get_data(total_clusters), m_mr.get(), m_queue);
 
     // Copy the vecmem vector of cluster sizes to the std vector for measurement
@@ -67,9 +71,6 @@ host_measurement_container cluster_finding::operator()(
     for (std::size_t i = 0; i < num_modules; ++i) {
         cluster_sizes_host[i] = cluster_sizes[i];
     }
-
-    // Vecmem copy object for moving the data between host and device
-    vecmem::sycl::copy copy{m_queue.queue()};
 
     // Resizable buffer for the measurements
     measurement_container_buffer measurement_buffer{
@@ -87,9 +88,10 @@ host_measurement_container cluster_finding::operator()(
     host_measurement_container measurements(&m_mr.get());
     copy(measurement_buffer.items, measurements.get_items());
 
-    for (std::size_t i = 0; i < num_modules; ++i) {
-        auto module = cells_per_event.get_headers()[i];
-        measurements.get_headers().push_back(std::move(module));
+    assert(cells_per_event.get_headers().size() ==
+           measurements.get_items().size());
+    for (const cell_module &cm : cells_per_event.get_headers()) {
+        measurements.get_headers().push_back(cm);
     }
 
     return measurements;

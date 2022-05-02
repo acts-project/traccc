@@ -7,15 +7,13 @@
 
 #pragma once
 
-// SYCL library include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
 // Project include(s).
 #include "traccc/clusterization/detail/sparse_ccl.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 
 // Vecmem include(s).
+#include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 
 namespace traccc::sycl {
@@ -23,7 +21,7 @@ namespace traccc::sycl {
 /// Forward declaration of component connection function
 ///
 void component_connection(
-    cluster_container_view clusters_view, cell_container_const_view cells_view,
+    cluster_container_view clusters_view,
     const host_cell_container& cells_per_event,
     vecmem::data::vector_view<unsigned int> clusters_count_view,
     vecmem::data::vector_view<unsigned int> total_clusters_view,
