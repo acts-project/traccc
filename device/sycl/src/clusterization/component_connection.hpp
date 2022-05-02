@@ -15,6 +15,7 @@
 // Vecmem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/memory/unique_ptr.hpp>
 
 namespace traccc::sycl {
 
@@ -24,7 +25,7 @@ void component_connection(
     cluster_container_view clusters_view,
     const host_cell_container& cells_per_event,
     vecmem::data::vector_view<unsigned int> clusters_count_view,
-    vecmem::data::vector_view<unsigned int> total_clusters_view,
+    vecmem::unique_alloc_ptr<unsigned int>& total_clusters,
     vecmem::memory_resource& resource, queue_wrapper queue);
 
 }  // namespace traccc::sycl

@@ -59,11 +59,11 @@ host_measurement_container cluster_finding::operator()(
 
     // Atomic count of all clusters (needed inside component connection kernel
     // but also here)
-    vecmem::vector<unsigned int> total_clusters(1, 0, &m_mr.get());
+    auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
 
-    traccc::sycl::component_connection(
-        clusters_buffer, cells_per_event, vecmem::get_data(cluster_sizes),
-        vecmem::get_data(total_clusters), m_mr.get(), m_queue);
+    traccc::sycl::component_connection(clusters_buffer, cells_per_event,
+                                       vecmem::get_data(cluster_sizes),
+                                       total_clusters, m_mr.get(), m_queue);
 
     // Copy the vecmem vector of cluster sizes to the std vector for measurement
     // buffer initialization
@@ -80,7 +80,7 @@ host_measurement_container cluster_finding::operator()(
     copy.setup(measurement_buffer.items);
 
     // range of kernel execution
-    unsigned int range = total_clusters[0];
+    unsigned int range = *total_clusters;
 
     traccc::sycl::measurement_creation(measurement_buffer, clusters_buffer,
                                        range, m_queue);
