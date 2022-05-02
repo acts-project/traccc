@@ -17,9 +17,8 @@
 namespace traccc::sycl {
 
 void measurement_creation(measurement_container_view measurements_view,
-                           cluster_container_view clusters_view,
-                           const unsigned int &range,
-                           queue_wrapper queue) {
+                          cluster_container_view clusters_view,
+                          const unsigned int &range, queue_wrapper queue) {
 
     // Run the kernel
     details::get_queue(queue)

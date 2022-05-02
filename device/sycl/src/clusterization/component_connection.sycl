@@ -16,14 +16,13 @@
 
 namespace traccc::sycl {
 
-void component_connection(cluster_container_view clusters_view,
-                            cell_container_const_view cells_view,
-                            const host_cell_container& cells_per_event,
-                            vecmem::data::vector_view<unsigned int> clusters_count_view,
-                            vecmem::data::vector_view<unsigned int> total_clusters_view,
-                            vecmem::memory_resource& resource,
-                            queue_wrapper queue) {
-    
+void component_connection(
+    cluster_container_view clusters_view, cell_container_const_view cells_view,
+    const host_cell_container& cells_per_event,
+    vecmem::data::vector_view<unsigned int> clusters_count_view,
+    vecmem::data::vector_view<unsigned int> total_clusters_view,
+    vecmem::memory_resource& resource, queue_wrapper queue) {
+
     // Execution size of the algorithm
     unsigned int N = cells_per_event.size();
 
@@ -49,7 +48,8 @@ void component_connection(cluster_container_view clusters_view,
         .parallel_for<class ComponentConnection>(
             ndrange,
             [cells_view, total_clusters_view, clusters_view,
-             cluster_indices_view, clusters_count_view](::sycl::nd_item<1> item) {
+             cluster_indices_view,
+             clusters_count_view](::sycl::nd_item<1> item) {
                 // Get the global index
                 auto idx = item.get_global_linear_id();
 
@@ -76,9 +76,11 @@ void component_connection(cluster_container_view clusters_view,
                 // Run the sparse_ccl algorithm
                 detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
                     cells, cluster_indices, num_clusters);
-                
-                // Add the number of found clusers per module to the count vector
-                vecmem::device_vector<unsigned int> clusters_count_device(clusters_count_view);
+
+                // Add the number of found clusers per module to the count
+                // vector
+                vecmem::device_vector<unsigned int> clusters_count_device(
+                    clusters_count_view);
                 clusters_count_device[idx] += num_clusters;
 
                 // Create cluster id - same for all clusters in this module

@@ -32,7 +32,7 @@ class clusterization_algorithm
 
         output_type measurements_per_event(&m_mr.get());
 
-        // Cluster finding algorithm - returns the measurments
+        // 2 step cluster finding algorithm - returns the measurments
         measurements_per_event = cf->operator()(cells_per_event);
 
         return measurements_per_event;

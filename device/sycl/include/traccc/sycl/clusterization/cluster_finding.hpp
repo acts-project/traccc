@@ -21,7 +21,7 @@
 namespace traccc::sycl {
 
 struct cluster_finding : public algorithm<host_measurement_container(
-                                  const host_cell_container &)> {
+                             const host_cell_container &)> {
     public:
     /// Constructor for cluster_finding
     ///
@@ -32,9 +32,9 @@ struct cluster_finding : public algorithm<host_measurement_container(
     /// Callable operator for cluster finding for cells from all the modules
     ///
     /// @param cells_per_event is a container with cell modules as headers
-    /// and cells as the items jagged vector  
+    /// and cells as the items jagged vector
     /// @return a measurement container with cell modules for headers and
-    /// measurements as items 
+    /// measurements as items
     output_type operator()(const host_cell_container &cells_per_event) const;
 
     private:

@@ -20,13 +20,13 @@
 
 namespace traccc::sycl {
 
-// Declaration of component connection kernel
-void component_connection(cluster_container_view clusters_view,
-                            cell_container_const_view cells_view,
-                            const host_cell_container& cells_per_event,
-                            vecmem::data::vector_view<unsigned int> clusters_count_view,
-                            vecmem::data::vector_view<unsigned int> total_clusters_view,
-                            vecmem::memory_resource& resource,
-                            queue_wrapper queue);
+/// Forward declaration of component connection function
+///
+void component_connection(
+    cluster_container_view clusters_view, cell_container_const_view cells_view,
+    const host_cell_container& cells_per_event,
+    vecmem::data::vector_view<unsigned int> clusters_count_view,
+    vecmem::data::vector_view<unsigned int> total_clusters_view,
+    vecmem::memory_resource& resource, queue_wrapper queue);
 
 }  // namespace traccc::sycl
