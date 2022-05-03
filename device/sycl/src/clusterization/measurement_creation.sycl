@@ -7,71 +7,28 @@
 
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
-#include "traccc/sycl/clusterization/measurement_creation.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
 
-// Vecmem include(s).
-#include <vecmem/utils/sycl/copy.hpp>
+// Project include(s).
+#include "measurement_creation.hpp"
 
 namespace traccc::sycl {
 
-measurement_creation::measurement_creation(vecmem::memory_resource &mr,
-                                           queue_wrapper queue)
-    : m_mr(mr), m_queue(queue) {}
-
-host_measurement_container measurement_creation::operator()(
-    const host_cluster_container &c,
-    const host_cell_module_collection &l) const {
-    output_type measurements(&m_mr.get());
-    this->operator()(c, l, measurements);
-    return measurements;
-}
-
-void measurement_creation::operator()(
-    const host_cluster_container &clusters,
-    const host_cell_module_collection &cell_modules_per_event,
-    output_type &measurements) const {
-
-    vecmem::sycl::copy copy{m_queue.queue()};
-    unsigned int size_buf = cell_modules_per_event.size();
-
-    // Retrieve the number of clusters per each module
-    // NOTE: the +1 comes from a crash while running the code on the
-    // CUDA backend In that case, the jagged vector buffer used for
-    // measurments seems not to have enough capacity which seems wrong
-    // because the number of measurments per module (the inner vector)
-    // cannot exceed the number of clusters per module
-    std::vector<std::size_t> cluster_sizes(cell_modules_per_event.size(), 1);
-    for (const auto &cl_id : clusters.get_headers()) {
-        cluster_sizes.at(cl_id.module_idx)++;
-    }
-
-    // Resizable buffer for the measurements
-    measurement_container_buffer measurement_buffer{
-        {size_buf, m_mr.get()},
-        {std::vector<std::size_t>(cluster_sizes.size(), 0), cluster_sizes,
-         m_mr.get()}};
-    copy.setup(measurement_buffer.items);
-
-    // Vector views to move data to the device
-    auto clusters_data = get_data(clusters, &m_mr.get());
-    cluster_container_const_view clusters_view(clusters_data);
-    measurement_container_view measurement_view(measurement_buffer);
-
-    // range of kernel execution
-    auto range = clusters.size();
+void measurement_creation(measurement_container_view measurements_view,
+                          cluster_container_view clusters_view,
+                          const unsigned int &range, queue_wrapper queue) {
 
     // Run the kernel
-    details::get_queue(m_queue)
-        .parallel_for(
+    details::get_queue(queue)
+        .parallel_for<class MeasurementCreation>(
             range,
-            [clusters_view, measurement_view](auto idx) {
+            [clusters_view, measurements_view](auto idx) {
                 // Initialize device vectors
-                device_cluster_const_container clusters_device(clusters_view);
+                device_cluster_container clusters_device(clusters_view);
                 device_measurement_container measurement_device(
-                    measurement_view);
+                    measurements_view);
 
                 // Ignore if idx is out of range
                 if (idx >= clusters_device.size())
@@ -80,7 +37,7 @@ void measurement_creation::operator()(
                 // items: cluster of cells at current idx
                 // header: cluster_id object with the information about the cell
                 // module
-                const device_cell_const_collection &cluster =
+                const device_cell_collection &cluster =
                     clusters_device.get_items().at(idx);
                 const cluster_id &cl_id = clusters_device.get_headers().at(idx);
 
@@ -106,7 +63,7 @@ void measurement_creation::operator()(
                     return;
                 }
 
-                calc_cluster_properties<vecmem::device_vector, const cell>(
+                calc_cluster_properties<vecmem::device_vector, cell>(
                     cluster, cl_id, mean, var, totalWeight);
 
                 if (totalWeight > 0.) {
@@ -124,13 +81,6 @@ void measurement_creation::operator()(
                 }
             })
         .wait_and_throw();
-
-    copy(measurement_buffer.items, measurements.get_items());
-
-    for (std::size_t i = 0; i < cell_modules_per_event.size(); ++i) {
-        auto module = cell_modules_per_event.at(i);
-        measurements.get_headers().push_back(std::move(module));
-    }
 }
 
 }  // namespace traccc::sycl
