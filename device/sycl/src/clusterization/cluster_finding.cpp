@@ -60,6 +60,7 @@ host_measurement_container cluster_finding::operator()(
     // Atomic count of all clusters (needed inside component connection kernel
     // but also here)
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
+    *total_clusters = 0;
 
     traccc::sycl::component_connection(clusters_buffer, cells_per_event,
                                        vecmem::get_data(cluster_sizes),
