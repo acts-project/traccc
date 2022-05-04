@@ -1,0 +1,135 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+
+// SYCL include(s).
+#include <CL/sycl.hpp>
+
+// Project include(s).
+#include "cluster_counting.hpp"
+
+namespace traccc::sycl {
+
+void cluster_counting(
+    const host_cell_container& cells_per_event,
+    vecmem::unique_alloc_ptr<unsigned int>& cluster_sum,
+    vecmem::unique_alloc_ptr<unsigned int>& cluster_max,
+    vecmem::memory_resource& resource, queue_wrapper queue) {
+
+    // Execution size of the algorithm
+    unsigned int N = cells_per_event.size();
+
+    // Get the sizes of the cells in each module
+    std::vector<std::size_t> cell_sizes(N, 0);
+    for (unsigned long j = 0; j < N; ++j) {
+        cell_sizes[j] = cells_per_event.get_items().at(j).size();
+    }
+
+    // Calculate the execution NDrange for the kernel
+    auto workGroupSize = 64;
+    auto num = (N + workGroupSize - 1) / workGroupSize;
+    auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * workGroupSize),
+                                       ::sycl::range<1>(workGroupSize)};
+
+    // Get the view of the cells container
+    auto cells_data = get_data(cells_per_event, &resource);
+    cell_container_const_view cells_view(cells_data);
+
+    // Helper container for sparse CCL calculations
+    vecmem::data::jagged_vector_buffer<unsigned int> cluster_indices{cell_sizes,
+                                                                     resource};
+    vecmem::data::jagged_vector_view<unsigned int> cluster_indices_view(
+        cluster_indices);
+
+    // Get the raw pointers of the reduction variables
+    auto clusters_sum_ptr = cluster_sum.get();
+    auto clusters_max_ptr = cluster_max.get();
+
+    auto cluster_sum_kernel = details::get_queue(queue).submit([&ndrange, &cells_view, &cluster_indices_view, &clusters_sum_ptr](::sycl::handler& h) {
+        
+        // Create temporary object with sum reduction semantics 
+        auto sumReduction = ::sycl::reduction(clusters_sum_ptr, ::sycl::plus<>());
+
+        h.parallel_for<class ClusterSum>(ndrange, sumReduction, [cells_view,cluster_indices_view](::sycl::nd_item<1> item, auto& cl_sum) {
+
+                // // Get the global index
+                auto idx = item.get_global_linear_id();
+
+                // Initialize the data on the device
+                device_cell_const_container cells_device(cells_view);
+
+                // Ignore if idx is out of range
+                if (idx < cells_device.size()) {
+
+                    // Get the cells from the current module
+                    const auto& cells = cells_device.at(idx).items;
+
+                    // Number of clusters that sparce_ccl will find for this module
+                    unsigned int num_clusters = 0;
+
+                    // Vectors used for cluster indices found by sparse CCL
+                    vecmem::jagged_device_vector<unsigned int>
+                        device_cluster_indices(cluster_indices_view);
+                    auto cluster_indices = device_cluster_indices.at(idx);
+
+                    // Run the sparse_ccl algorithm
+                    detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
+                        cells, cluster_indices, num_clusters);
+
+                    // The reduction step
+                    cl_sum += num_clusters;
+
+                }
+        });
+    });
+
+    auto cluster_max_kernel = details::get_queue(queue).submit([&ndrange, &cells_view, &cluster_indices_view, &clusters_max_ptr](::sycl::handler& h) {
+        
+        // Create temporary object with maximum reduction semantics 
+        auto maxReduction = ::sycl::reduction(clusters_max_ptr, ::sycl::maximum<>());
+
+        h.parallel_for<class ClusterMax>(ndrange, maxReduction, [cells_view, cluster_indices_view](::sycl::nd_item<1> item, auto& cl_max) {
+
+                // // Get the global index
+                auto idx = item.get_global_linear_id();
+
+                // Initialize the data on the device
+                device_cell_const_container cells_device(cells_view);
+
+                // Ignore if idx is out of range
+                if (idx < cells_device.size()) {
+
+                    // Get the cells from the current module
+                    const auto& cells = cells_device.at(idx).items;
+
+                    // Number of clusters that sparce_ccl will find for this module
+                    unsigned int num_clusters = 0;
+
+                    // Vectors used for cluster indices found by sparse CCL
+                    vecmem::jagged_device_vector<unsigned int>
+                        device_cluster_indices(cluster_indices_view);
+                    auto cluster_indices = device_cluster_indices.at(idx);
+
+                    // Run the sparse_ccl algorithm
+                    detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
+                        cells, cluster_indices, num_clusters);
+
+                    // The reduction step
+                    cl_max.combine(num_clusters);
+
+                }
+        });
+    });
+
+    // Wait for results from asynchronous execution
+    cluster_sum_kernel.wait_and_throw();
+    cluster_max_kernel.wait_and_throw();
+}
+
+}  // namespace traccc::sycl

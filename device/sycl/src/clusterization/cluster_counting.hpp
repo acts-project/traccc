@@ -10,10 +10,8 @@
 // Project include(s).
 #include "traccc/clusterization/detail/sparse_ccl.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
 
 // Vecmem include(s).
-#include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
@@ -21,10 +19,10 @@ namespace traccc::sycl {
 
 /// Forward declaration of component connection function
 ///
-void component_connection(
-    cluster_container_types::view clusters_view,
-    const cell_container_types::host& cells_per_event,
-    vecmem::data::vector_view<unsigned int> clusters_count_view,
+void cluster_counting(
+    const host_cell_container& cells_per_event,
+    vecmem::unique_alloc_ptr<unsigned int>& cluster_sum,
+    vecmem::unique_alloc_ptr<unsigned int>& cluster_max,
     vecmem::memory_resource& resource, queue_wrapper queue);
 
 }  // namespace traccc::sycl

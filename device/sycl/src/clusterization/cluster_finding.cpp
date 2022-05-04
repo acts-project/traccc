@@ -11,6 +11,7 @@
 // SYCL library include(s).
 #include "component_connection.hpp"
 #include "measurement_creation.hpp"
+#include "cluster_counting.hpp"
 
 // Vecmem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
@@ -27,44 +28,32 @@ host_measurement_container cluster_finding::operator()(
     // Number of modules
     unsigned int num_modules = cells_per_event.size();
 
-    // Number of cells from all the modules
-    unsigned int cells_total_size = cells_per_event.total_size();
-
     // Vecmem copy object for moving the data between host and device
     vecmem::sycl::copy copy{m_queue.queue()};
 
-    // Find the largest cell collection
-    // to estimate max. size of cluster (assuming that this cell collection
-    // would constitute to the whole cluster)
-    unsigned int max_cluster_size =
-        std::max_element(
-            cells_per_event.get_items().begin(),
-            cells_per_event.get_items().end(),
-            [](auto &c1, auto &c2) { return c1.size() < c2.size(); })
-            ->size();
+    // Number of all clusters that will be found
+    auto cluster_sum = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
+    auto cluster_max = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
+    *cluster_sum = 0;
+    *cluster_max = 0;
+    traccc::sycl::cluster_counting(cells_per_event, cluster_sum, cluster_max, m_mr.get(), m_queue);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
-    // assuming the worst case where 1 cell = 1 cluster
-    // and max. number of cells per module is max. number of cells per cluster
-    cluster_container_types::buffer clusters_buffer{
-        {cells_total_size, m_mr.get()},
-        {std::vector<std::size_t>(cells_total_size, 0),
-         std::vector<std::size_t>(cells_total_size, max_cluster_size),
+    cluster_container_buffer clusters_buffer{
+        {*cluster_sum, m_mr.get()},
+        {std::vector<std::size_t>(*cluster_sum, 0), 
+        std::vector<std::size_t>(*cluster_sum, *cluster_max),
          m_mr.get()}};
+
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
 
     // Vector for counts of clusters per each module
     vecmem::vector<unsigned int> cluster_sizes(num_modules, 1, &m_mr.get());
 
-    // Atomic count of all clusters (needed inside component connection kernel
-    // but also here)
-    auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
-    *total_clusters = 0;
-
     traccc::sycl::component_connection(clusters_buffer, cells_per_event,
                                        vecmem::get_data(cluster_sizes),
-                                       total_clusters, m_mr.get(), m_queue);
+                                       m_mr.get(), m_queue);
 
     // Copy the vecmem vector of cluster sizes to the std vector for measurement
     // buffer initialization
@@ -81,7 +70,7 @@ host_measurement_container cluster_finding::operator()(
     copy.setup(measurement_buffer.items);
 
     // range of kernel execution
-    unsigned int range = *total_clusters;
+    unsigned int range = *cluster_sum;
 
     traccc::sycl::measurement_creation(measurement_buffer, clusters_buffer,
                                        range, m_queue);
