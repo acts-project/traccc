@@ -18,18 +18,14 @@ namespace traccc::sycl {
 
 void cluster_counting(
     const host_cell_container& cells_per_event,
+    vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
+    vecmem::data::vector_view<unsigned int> clusters_count_view,
     vecmem::unique_alloc_ptr<unsigned int>& cluster_sum,
     vecmem::unique_alloc_ptr<unsigned int>& cluster_max,
     vecmem::memory_resource& resource, queue_wrapper queue) {
 
     // Execution size of the algorithm
     unsigned int N = cells_per_event.size();
-
-    // Get the sizes of the cells in each module
-    std::vector<std::size_t> cell_sizes(N, 0);
-    for (unsigned long j = 0; j < N; ++j) {
-        cell_sizes[j] = cells_per_event.get_items().at(j).size();
-    }
 
     // Calculate the execution NDrange for the kernel
     auto workGroupSize = 64;
@@ -41,23 +37,17 @@ void cluster_counting(
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_const_view cells_view(cells_data);
 
-    // Helper container for sparse CCL calculations
-    vecmem::data::jagged_vector_buffer<unsigned int> cluster_indices{cell_sizes,
-                                                                     resource};
-    vecmem::data::jagged_vector_view<unsigned int> cluster_indices_view(
-        cluster_indices);
-
     // Get the raw pointers of the reduction variables
     auto clusters_sum_ptr = cluster_sum.get();
     auto clusters_max_ptr = cluster_max.get();
 
-    details::get_queue(queue).submit([&ndrange, &cells_view, &cluster_indices_view, &clusters_sum_ptr, &clusters_max_ptr](::sycl::handler& h) {
+    details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, &clusters_count_view, &clusters_sum_ptr, &clusters_max_ptr](::sycl::handler& h) {
         
-        // Create temporary object with sum reduction semantics 
+        // Create temporary objects with reduction semantics 
         auto sumReduction = ::sycl::reduction(clusters_sum_ptr, ::sycl::plus<>());
         auto maxReduction = ::sycl::reduction(clusters_max_ptr, ::sycl::maximum<>());
 
-        h.parallel_for<class ClusterSum>(ndrange, sumReduction, maxReduction, [cells_view,cluster_indices_view](::sycl::nd_item<1> item, auto& cl_sum, auto& cl_max) {
+        h.parallel_for<class ClusterCounting>(ndrange, sumReduction, maxReduction, [cells_view, sparse_ccl_indices_view, clusters_count_view](::sycl::nd_item<1> item, auto& cl_sum, auto& cl_max) {
 
                 // // Get the global index
                 auto idx = item.get_global_linear_id();
@@ -76,14 +66,23 @@ void cluster_counting(
 
                     // Vectors used for cluster indices found by sparse CCL
                     vecmem::jagged_device_vector<unsigned int>
-                        device_cluster_indices(cluster_indices_view);
-                    auto cluster_indices = device_cluster_indices.at(idx);
+                        device_sparse_ccl_indices(sparse_ccl_indices_view);
+                    auto cluster_indices = device_sparse_ccl_indices.at(idx);
 
                     // Run the sparse_ccl algorithm
                     detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
                         cells, cluster_indices, num_clusters);
 
-                    // The reduction step
+                    // Save the number of clusters found in this module at the last, extra place in the indices vector 
+                    cluster_indices.back() = num_clusters;
+
+                    // Add the number of found clusers per module to the count
+                    // vector
+                    vecmem::device_vector<unsigned int> clusters_count_device(
+                        clusters_count_view);
+                    clusters_count_device[idx] += num_clusters;
+
+                    // The reduction steps
                     cl_sum += num_clusters;
                     cl_max.combine(num_clusters);
 

@@ -25,12 +25,6 @@ void component_connection(
     // Execution size of the algorithm
     std::size_t N = cells_per_event.size();
 
-    // Get the sizes of the cells in each module
-    std::vector<std::size_t> cell_sizes(N, 0);
-    for (std::size_t j = 0; j < N; ++j) {
-        cell_sizes[j] = cells_per_event.get_items().at(j).size();
-    }
-
     // Calculate the execution NDrange for the kernel
     auto workGroupSize = 64;
     auto num = (N + workGroupSize - 1) / workGroupSize;
@@ -40,12 +34,6 @@ void component_connection(
     // Get the view of the cells container
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_types::const_view cells_view(cells_data);
-
-    // Helper container for sparse CCL calculations
-    vecmem::data::jagged_vector_buffer<unsigned int> cluster_indices{cell_sizes,
-                                                                     resource};
-    vecmem::data::jagged_vector_view<unsigned int> cluster_indices_view(
-        cluster_indices);
 
     // Atomic count of all clusters 
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(resource);
@@ -58,8 +46,7 @@ void component_connection(
         .parallel_for<class ComponentConnection>(
             ndrange,
             [cells_view, total_clusters_ptr, clusters_view,
-             cluster_indices_view,
-             clusters_count_view](::sycl::nd_item<1> item) {
+             sparse_ccl_indices_view](::sycl::nd_item<1> item) {
                 // Get the global index
                 auto idx = item.get_global_linear_id();
 
@@ -74,9 +61,6 @@ void component_connection(
                 // Get the cells from the current module
                 const auto& cells = cells_device.at(idx).items;
                 const auto& module = cells_device.at(idx).header;
-
-                // Number of clusters that sparce_ccl will find for this module
-                unsigned int num_clusters = 0;
 
                 // Vectors used for cluster indices found by sparse CCL
                 vecmem::jagged_device_vector<unsigned int>

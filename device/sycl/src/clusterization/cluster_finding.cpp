@@ -31,12 +31,26 @@ host_measurement_container cluster_finding::operator()(
     // Vecmem copy object for moving the data between host and device
     vecmem::sycl::copy copy{m_queue.queue()};
 
+    // Get the sizes of the cells in each module
+    std::vector<std::size_t> cell_sizes(num_modules, 0);
+    for (unsigned long j = 0; j < num_modules; ++j) {
+        cell_sizes[j] = cells_per_event.get_items().at(j).size() + 1;
+    }
+
+    // Helper container for sparse CCL calculations
+    vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices{cell_sizes,
+                                                                     m_mr.get()};
+    copy.setup(sparse_ccl_indices);
+
+    // Vector for counts of clusters per each module
+    vecmem::vector<unsigned int> cluster_sizes(num_modules, 1, &m_mr.get());
+
     // Number of all clusters that will be found
     auto cluster_sum = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     auto cluster_max = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     *cluster_sum = 0;
     *cluster_max = 0;
-    traccc::sycl::cluster_counting(cells_per_event, cluster_sum, cluster_max, m_mr.get(), m_queue);
+    traccc::sycl::cluster_counting(cells_per_event, sparse_ccl_indices, vecmem::get_data(cluster_sizes), cluster_sum, cluster_max, m_mr.get(), m_queue);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_buffer clusters_buffer{
@@ -48,11 +62,8 @@ host_measurement_container cluster_finding::operator()(
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
 
-    // Vector for counts of clusters per each module
-    vecmem::vector<unsigned int> cluster_sizes(num_modules, 1, &m_mr.get());
 
-    traccc::sycl::component_connection(clusters_buffer, cells_per_event,
-                                       vecmem::get_data(cluster_sizes),
+    traccc::sycl::component_connection(clusters_buffer, sparse_ccl_indices, cells_per_event,
                                        m_mr.get(), m_queue);
 
     // Copy the vecmem vector of cluster sizes to the std vector for measurement
