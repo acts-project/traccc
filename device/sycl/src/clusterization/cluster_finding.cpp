@@ -14,8 +14,6 @@
 #include "cluster_counting.hpp"
 #include "clusters_sum.hpp"
 
-#include <numeric>
-
 // Vecmem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
 
@@ -59,7 +57,10 @@ host_measurement_container cluster_finding::operator()(
     }
 
     // Create the prefix sums
-    std::inclusive_scan(cluster_prefix_sum.begin(), cluster_prefix_sum.end(), cluster_prefix_sum.begin());
+    // std::inclusive_scan(cluster_prefix_sum.begin(), cluster_prefix_sum.end(), cluster_prefix_sum.begin());
+    for (std::size_t i = 1; i < num_modules; ++i) {
+        cluster_prefix_sum[i] += cluster_prefix_sum[i-1];
+    }
     unsigned int total_clusters = cluster_prefix_sum.back();
 
     // Vector with cluster sizes
