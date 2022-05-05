@@ -35,17 +35,10 @@ void component_connection(
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_types::const_view cells_view(cells_data);
 
-    // Atomic count of all clusters 
-    auto total_clusters = vecmem::make_unique_alloc<unsigned int>(resource);
-    *total_clusters = 0;
-
-    // Get the raw pointer of the total clusters
-    auto total_clusters_ptr = total_clusters.get();
-
     details::get_queue(queue)
         .parallel_for<class ComponentConnection>(
             ndrange,
-            [cells_view, total_clusters_ptr, clusters_view,
+            [cells_view, cluster_prefix_sum_view, clusters_view,
              sparse_ccl_indices_view](::sycl::nd_item<1> item) {
                 // Get the global index
                 auto idx = item.get_global_linear_id();
@@ -83,19 +76,17 @@ void component_connection(
                 cl_id.module_idx = idx;
                 cl_id.pixel = module.pixel;
 
-                // Atomically add the number of created clusters
-                auto current_clusters =
-                    vecmem::device_atomic_ref<unsigned int>(*total_clusters_ptr)
-                        .fetch_add(num_clusters);
+                vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
+                auto prefix_sum = device_cluster_prefix_sum[idx] - num_clusters;
 
                 // Push back the cells to the correct item vector
                 unsigned int cindex;
                 for (std::size_t j = 0; j < cells.size(); ++j) {
                     cindex = cluster_indices[j] - 1;
                     if (cindex < num_clusters) {
-                        clusters_device[cindex + current_clusters].header =
+                        clusters_device[prefix_sum + cindex].header =
                             cl_id;
-                        clusters_device[cindex + current_clusters]
+                        clusters_device[prefix_sum + cindex]
                             .items.push_back(cells[j]);
                     }
                 }

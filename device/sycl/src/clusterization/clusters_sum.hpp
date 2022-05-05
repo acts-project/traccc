@@ -13,7 +13,6 @@
 
 // Vecmem include(s).
 #include <vecmem/memory/memory_resource.hpp>
-#include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
 
@@ -21,10 +20,9 @@ namespace traccc::sycl {
 
 /// Forward declaration of component connection function
 ///
-void cluster_counting(
+void clusters_sum(
     const host_cell_container& cells_per_event,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    vecmem::data::vector_view<std::size_t> cluster_sizes_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::memory_resource& resource, queue_wrapper queue);
 

@@ -12,14 +12,13 @@
 #include <CL/sycl.hpp>
 
 // Project include(s).
-#include "cluster_counting.hpp"
+#include "clusters_sum.hpp"
 
 namespace traccc::sycl {
 
-void cluster_counting(
+void clusters_sum(
     const host_cell_container& cells_per_event,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    vecmem::data::vector_view<std::size_t> cluster_sizes_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::memory_resource& resource, queue_wrapper queue) {
 
@@ -36,9 +35,9 @@ void cluster_counting(
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_const_view cells_view(cells_data);
 
-    details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view](::sycl::handler& h) {
+    details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, &cluster_prefix_sum_view](::sycl::handler& h) {
         
-        h.parallel_for<class ClusterCounting>(ndrange, [cells_view, sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view](::sycl::nd_item<1> item) {
+        h.parallel_for<class ClusterSum>(ndrange, [cells_view, sparse_ccl_indices_view, cluster_prefix_sum_view](::sycl::nd_item<1> item) {
 
                 // // Get the global index
                 auto idx = item.get_global_linear_id();
@@ -52,28 +51,23 @@ void cluster_counting(
                     // Get the cells from the current module
                     const auto& cells = cells_device.at(idx).items;
 
+                    // Number of clusters that sparce_ccl will find for this module
+                    unsigned int num_clusters = 0;
+
                     // Vectors used for cluster indices found by sparse CCL
                     vecmem::jagged_device_vector<unsigned int>
                         device_sparse_ccl_indices(sparse_ccl_indices_view);
                     auto cluster_indices = device_sparse_ccl_indices.at(idx);
 
-                    // Number of clusters that sparce_ccl will find for this module
-                    unsigned int num_clusters = cluster_indices.back();
+                    // Run the sparse_ccl algorithm
+                    detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
+                        cells, cluster_indices, num_clusters);
+
+                    // Save the number of clusters found in this module at the last, extra place in the indices vector 
+                    cluster_indices.back() = num_clusters;
 
                     vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
-
-                    auto prefix_sum = device_cluster_prefix_sum[idx] - num_clusters;
-
-                    vecmem::device_vector<std::size_t> device_cluster_sizes(cluster_sizes_view);
-
-                    // Push back the cells to the correct item vector
-                    unsigned int cindex;
-                    for (std::size_t j = 0; j < cells.size(); ++j) {
-                        cindex = cluster_indices[j] - 1;
-                        if (cindex < num_clusters) {
-                            device_cluster_sizes[prefix_sum + cindex]++;
-                        }
-                    }
+                    device_cluster_prefix_sum[idx] = num_clusters;
                 }
         });
     }).wait_and_throw();
