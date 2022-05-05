@@ -32,7 +32,7 @@ host_measurement_container cluster_finding::operator()(
     unsigned int num_modules = cells_per_event.size();
 
     // Vecmem copy object for moving the data between host and device
-    vecmem::sycl::copy copy{m_queue.queue()};
+    vecmem::copy copy;
 
     // Get the sizes of the cells in each module
     std::vector<std::size_t> cell_sizes(num_modules, 0);
@@ -55,7 +55,7 @@ host_measurement_container cluster_finding::operator()(
     // buffer initialization
     std::vector<std::size_t> clusters_per_module(num_modules);
     for (std::size_t i = 0; i < num_modules; ++i) {
-        clusters_per_module[i] = cluster_prefix_sum[i] + 1;
+        clusters_per_module[i] = cluster_prefix_sum[i];
     }
 
     // Create the prefix sums
