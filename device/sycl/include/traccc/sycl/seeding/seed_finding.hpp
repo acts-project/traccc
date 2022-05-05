@@ -26,8 +26,11 @@
 namespace traccc::sycl {
 
 // Sycl seeding function object
-struct seed_finding : public algorithm<host_seed_collection(
-                          const host_spacepoint_container&, const sp_grid&)> {
+class seed_finding
+    : public algorithm<host_seed_collection(const host_spacepoint_container&,
+                                            const sp_grid_const_view&)> {
+
+    public:
     /// Constructor for the sycl seed finding
     ///
     /// @param config is seed finder configuration parameters
@@ -42,7 +45,7 @@ struct seed_finding : public algorithm<host_seed_collection(
     ///
     /// @return seed_collection is the vector of seeds per event
     output_type operator()(const host_spacepoint_container& spacepoints,
-                           const sp_grid& g2) const override;
+                           const sp_grid_const_view& g2_view) const override;
 
     private:
     seedfinder_config m_seedfinder_config;

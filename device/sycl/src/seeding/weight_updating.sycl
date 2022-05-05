@@ -20,7 +20,7 @@ namespace traccc::sycl {
 class WeightUpdate {
     public:
     WeightUpdate(const seedfilter_config& filter_config,
-                 sp_grid_view internal_sp_view,
+                 sp_grid_const_view internal_sp_view,
                  triplet_counter_container_view triplet_counter_view,
                  triplet_container_view triplet_view,
                  local_accessor<scalar> localMem)
@@ -33,7 +33,7 @@ class WeightUpdate {
     void operator()(::sycl::nd_item<1> item) const {
 
         // Get device container for input parameters
-        sp_grid_device internal_sp_device(m_internal_sp_view);
+        const_sp_grid_device internal_sp_device(m_internal_sp_view);
 
         device_triplet_counter_container triplet_counter_device(
             m_triplet_counter_view);
@@ -167,21 +167,20 @@ class WeightUpdate {
 
     private:
     const seedfilter_config m_filter_config;
-    sp_grid_view m_internal_sp_view;
+    sp_grid_const_view m_internal_sp_view;
     triplet_counter_container_view m_triplet_counter_view;
     triplet_container_view m_triplet_view;
     local_accessor<scalar> m_localMem;
 };
 
 void weight_updating(const seedfilter_config& filter_config,
-                     sp_grid& internal_sp,
+                     const sp_grid_const_view& internal_sp,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
                      vecmem::memory_resource& resource, queue_wrapper queue) {
 
     auto triplet_counter_view = get_data(triplet_counter_container, &resource);
     auto triplet_view = get_data(triplet_container, &resource);
-    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -192,7 +191,7 @@ void weight_updating(const seedfilter_config& filter_config,
     unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
-    for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
+    for (unsigned int i = 0; i < internal_sp._data_view.m_size; ++i) {
         num_groups +=
             triplet_container.get_headers()[i].n_triplets / localSize + 1;
     }
@@ -206,7 +205,7 @@ void weight_updating(const seedfilter_config& filter_config,
             auto localMem = local_accessor<scalar>(
                 ::sycl::range<1>(filter_config.compatSeedLimit), h);
 
-            WeightUpdate kernel(filter_config, internal_sp_view,
+            WeightUpdate kernel(filter_config, internal_sp,
                                 triplet_counter_view, triplet_view, localMem);
 
             h.parallel_for<WeightUpdate>(weightUpdateNdRange, kernel);

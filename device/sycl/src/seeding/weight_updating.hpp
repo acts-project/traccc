@@ -32,7 +32,7 @@ namespace traccc::sycl {
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
 void weight_updating(const seedfilter_config& filter_config,
-                     sp_grid& internal_sp,
+                     const sp_grid_const_view& internal_sp,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
                      vecmem::memory_resource& resource, queue_wrapper queue);

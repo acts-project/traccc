@@ -7,11 +7,11 @@
 #pragma once
 
 // SYCL library include(s).
-#include "doublet_counter.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "triplet_counter.hpp"
 
 // Project include(s).
+#include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -27,6 +27,7 @@ namespace traccc::sycl {
 /// The good triplets are selected and recorded into seed container
 ///
 /// @param filter_config seed filter config
+/// @param dcc_headers The header vector for the doublet counts
 /// @param internal_sp_container vecmem container for internal spacepoint
 /// @param doublet_counter_container vecmem container for doublet_counter
 /// @param triplet_counter_container vecmem container for triplet counters
@@ -34,13 +35,16 @@ namespace traccc::sycl {
 /// @param seed_container vecmem container for seeds
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
-void seed_selecting(const seedfilter_config& filter_config,
-                    host_spacepoint_container& spacepoints,
-                    sp_grid& internal_sp,
-                    host_doublet_counter_container& doublet_counter_container,
-                    host_triplet_counter_container& triplet_counter_container,
-                    host_triplet_container& triplet_container,
-                    vecmem::data::vector_buffer<seed>& seed_buffer,
-                    vecmem::memory_resource& resource, queue_wrapper queue);
+void seed_selecting(
+    const seedfilter_config& filter_config,
+    const vecmem::vector<device::doublet_counter_header>& dcc_headers,
+    host_spacepoint_container& spacepoints,
+    const sp_grid_const_view& internal_sp,
+    const device::doublet_counter_container_const_view&
+        doublet_counter_container,
+    host_triplet_counter_container& triplet_counter_container,
+    host_triplet_container& triplet_container,
+    vecmem::data::vector_buffer<seed>& seed_buffer,
+    vecmem::memory_resource& resource, queue_wrapper queue);
 
 }  // namespace traccc::sycl

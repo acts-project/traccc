@@ -7,11 +7,11 @@
 #pragma once
 
 // SYCL library include(s).
-#include "doublet_counter.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "triplet_counter.hpp"
 
 // Project include(s).
+#include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -38,10 +38,11 @@ namespace traccc::sycl {
 /// @param q sycl queue for kernel scheduling
 void triplet_finding(const seedfinder_config& config,
                      const seedfilter_config& filter_config,
-                     sp_grid& internal_sp,
-                     host_doublet_counter_container& doublet_counter_container,
-                     host_doublet_container& mid_bot_doublet_container,
-                     host_doublet_container& mid_top_doublet_container,
+                     const sp_grid_const_view& internal_sp,
+                     const device::doublet_counter_container_const_view&
+                         doublet_counter_container,
+                     doublet_container_view mid_bot_doublet_container,
+                     doublet_container_view mid_top_doublet_container,
                      host_triplet_counter_container& triplet_counter_container,
                      host_triplet_container& triplet_container,
                      vecmem::memory_resource& resource, queue_wrapper queue);
