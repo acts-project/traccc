@@ -32,21 +32,22 @@ namespace cuda {
 /// @param seed_container vecmem container for seeds
 __global__ void seed_selecting_kernel(
     const seedfilter_config filter_config,
-    spacepoint_container_view spacepoints_view, sp_grid_view internal_sp_view,
-    doublet_counter_container_view doublet_counter_view,
+    spacepoint_container_const_view spacepoints_view,
+    sp_grid_const_view internal_sp_view,
+    device::doublet_counter_container_const_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view,
     vecmem::data::vector_view<seed> seed_view);
 
-void seed_selecting(const seedfilter_config& filter_config,
-                    const vecmem::vector<doublet_counter_per_bin>& dcc_headers,
-                    host_spacepoint_container& spacepoints,
-                    sp_grid_view internal_sp_view,
-                    doublet_counter_container_view dcc_view,
-                    triplet_counter_container_view tcc_view,
-                    triplet_container_view tc_view,
-                    vecmem::data::vector_buffer<seed>& seed_buffer,
-                    vecmem::memory_resource& resource) {
+void seed_selecting(
+    const seedfilter_config& filter_config,
+    const vecmem::vector<device::doublet_counter_header>& dcc_headers,
+    const host_spacepoint_container& spacepoints,
+    sp_grid_const_view internal_sp_view,
+    device::doublet_counter_container_const_view dcc_view,
+    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
+    vecmem::data::vector_buffer<seed>& seed_buffer,
+    vecmem::memory_resource& resource) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -66,7 +67,7 @@ void seed_selecting(const seedfilter_config& filter_config,
     // / num_threads + 1
     unsigned int num_blocks = 0;
     for (size_t i = 0; i < nbins; ++i) {
-        num_blocks += dcc_headers[i].n_spM / num_threads + 1;
+        num_blocks += dcc_headers[i].m_nSpM / num_threads + 1;
     }
 
     // shared memory assignment for the triplets of a compatible middle
@@ -85,17 +86,18 @@ void seed_selecting(const seedfilter_config& filter_config,
 
 __global__ void seed_selecting_kernel(
     const seedfilter_config filter_config,
-    spacepoint_container_view spacepoints_view, sp_grid_view internal_sp_view,
-    doublet_counter_container_view doublet_counter_view,
+    spacepoint_container_const_view spacepoints_view,
+    sp_grid_const_view internal_sp_view,
+    device::doublet_counter_container_const_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view,
     vecmem::data::vector_view<seed> seed_view) {
 
     // Get device container for input parameters
-    device_spacepoint_container spacepoints_device(spacepoints_view);
-    sp_grid_device internal_sp_device(internal_sp_view);
+    device_spacepoint_const_container spacepoints_device(spacepoints_view);
+    const_sp_grid_device internal_sp_device(internal_sp_view);
 
-    device_doublet_counter_container doublet_counter_device(
+    const device::device_doublet_counter_const_container doublet_counter_device(
         doublet_counter_view);
     device_triplet_counter_container triplet_counter_device(
         triplet_counter_view);
@@ -111,7 +113,7 @@ __global__ void seed_selecting_kernel(
     // bin
     auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
     auto& num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx).n_spM;
+        doublet_counter_device.get_headers().at(bin_idx).m_nSpM;
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
@@ -137,7 +139,7 @@ __global__ void seed_selecting_kernel(
     }
 
     // middle spacepoint index
-    auto& spM_loc = doublet_counter_per_bin[item_idx].spM;
+    auto& spM_loc = doublet_counter_per_bin[item_idx].m_spM;
     auto& spM_idx = spM_loc.sp_idx;
     // middle spacepoint
     auto& spM = internal_sp_per_bin[spM_idx];

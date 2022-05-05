@@ -35,16 +35,16 @@ __global__ void set_zero_kernel(triplet_counter_container_view tcc_view) {
 /// @param triplet_counter_container vecmem container for triplet counters
 /// @resource vecmem memory resource
 __global__ void triplet_counting_kernel(
-    const seedfinder_config config, sp_grid_view internal_sp_view,
-    doublet_counter_container_view doublet_counter_view,
+    const seedfinder_config config, sp_grid_const_view internal_sp_view,
+    device::doublet_counter_container_const_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
     triplet_counter_container_view triplet_counter_view);
 
 void triplet_counting(const seedfinder_config& config,
                       const vecmem::vector<doublet_per_bin>& mbc_headers,
-                      sp_grid_view internal_sp_view,
-                      doublet_counter_container_view dcc_view,
+                      sp_grid_const_view internal_sp_view,
+                      device::doublet_counter_container_const_view dcc_view,
                       doublet_container_view mbc_view,
                       doublet_container_view mtc_view,
                       triplet_counter_container_view tcc_view,
@@ -88,16 +88,16 @@ void triplet_counting(const seedfinder_config& config,
 }
 
 __global__ void triplet_counting_kernel(
-    const seedfinder_config config, sp_grid_view internal_sp_view,
-    doublet_counter_container_view doublet_counter_view,
+    const seedfinder_config config, sp_grid_const_view internal_sp_view,
+    device::doublet_counter_container_const_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
     triplet_counter_container_view triplet_counter_view) {
 
     // Get device container for input parameters
-    sp_grid_device internal_sp_device(internal_sp_view);
+    const_sp_grid_device internal_sp_device(internal_sp_view);
 
-    device_doublet_counter_container doublet_counter_device(
+    const device::device_doublet_counter_const_container doublet_counter_device(
         doublet_counter_view);
     device_doublet_container mid_bot_doublet_device(mid_bot_doublet_view);
     device_doublet_container mid_top_doublet_device(mid_top_doublet_view);
@@ -111,7 +111,7 @@ __global__ void triplet_counting_kernel(
     // get internal spacepoints for current bin
     auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
     auto& num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx).n_spM;
+        doublet_counter_device.get_headers().at(bin_idx).m_nSpM;
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
@@ -179,13 +179,13 @@ __global__ void triplet_counting_kernel(
     unsigned int mt_end_idx = 0;
 
     for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
-        mb_end_idx += doublet_counter_per_bin[i].n_mid_bot;
-        mt_end_idx += doublet_counter_per_bin[i].n_mid_top;
+        mb_end_idx += doublet_counter_per_bin[i].m_nMidBot;
+        mt_end_idx += doublet_counter_per_bin[i].m_nMidTop;
 
         if (mb_end_idx > mb_idx) {
             break;
         }
-        mt_start_idx += doublet_counter_per_bin[i].n_mid_top;
+        mt_start_idx += doublet_counter_per_bin[i].m_nMidTop;
     }
 
     if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
