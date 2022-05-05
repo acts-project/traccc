@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/details/device_container.hpp"
 #include "traccc/edm/details/host_container.hpp"
+#include "traccc/utils/type_traits.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
@@ -18,6 +19,9 @@
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+
+// System include(s).
+#include <type_traits>
 
 namespace traccc {
 
@@ -27,15 +31,19 @@ namespace traccc {
 /// Structure holding (some of the) data about the container in host code
 template <typename header_t, typename item_t>
 struct container_data {
-    vecmem::data::vector_view<header_t> headers;
-    vecmem::data::jagged_vector_data<item_t> items;
+    using header_vector = vecmem::data::vector_view<header_t>;
+    using item_vector = vecmem::data::jagged_vector_data<item_t>;
+    header_vector headers;
+    item_vector items;
 };
 
 /// Structure holding (all of the) data about the container in host code
 template <typename header_t, typename item_t>
 struct container_buffer {
-    vecmem::data::vector_buffer<header_t> headers;
-    vecmem::data::jagged_vector_buffer<item_t> items;
+    using header_vector = vecmem::data::vector_buffer<header_t>;
+    using item_vector = vecmem::data::jagged_vector_buffer<item_t>;
+    header_vector headers;
+    item_vector items;
 };
 
 /// Structure used to send the data about the container to device code
@@ -53,19 +61,46 @@ struct container_buffer {
 template <typename header_t, typename item_t>
 struct container_view {
 
+    /// Type for the header vector (view)
+    using header_vector = vecmem::data::vector_view<header_t>;
+    /// Type for the item vector (view)
+    using item_vector = vecmem::data::jagged_vector_view<item_t>;
+
     /// Constructor from a @c container_data object
-    container_view(const container_data<header_t, item_t>& data)
+    template <
+        typename other_header_t, typename other_item_t,
+        std::enable_if_t<details::is_same_nc<header_t, other_header_t>::value,
+                         bool> = true,
+        std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
+                         bool> = true>
+    container_view(const container_data<other_header_t, other_item_t>& data)
         : headers(data.headers), items(data.items) {}
 
     /// Constructor from a @c container_buffer object
-    container_view(const container_buffer<header_t, item_t>& buffer)
+    template <
+        typename other_header_t, typename other_item_t,
+        std::enable_if_t<details::is_same_nc<header_t, other_header_t>::value,
+                         bool> = true,
+        std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
+                         bool> = true>
+    container_view(const container_buffer<other_header_t, other_item_t>& buffer)
         : headers(buffer.headers), items(buffer.items) {}
 
+    /// Constructor from a non-const view
+    template <
+        typename other_header_t, typename other_item_t,
+        std::enable_if_t<details::is_same_nc<header_t, other_header_t>::value,
+                         bool> = true,
+        std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
+                         bool> = true>
+    container_view(const container_view<other_header_t, other_item_t>& parent)
+        : headers(parent.headers), items(parent.items) {}
+
     /// View of the data describing the headers
-    vecmem::data::vector_view<header_t> headers;
+    header_vector headers;
 
     /// View of the data describing the items
-    vecmem::data::jagged_vector_view<item_t> items;
+    item_vector items;
 };
 
 /// Helper function for making a "simple" object out of the container
