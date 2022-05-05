@@ -15,7 +15,6 @@
 #include "clusters_sum.hpp"
 
 #include <numeric>
-#include <iostream>
 
 // Vecmem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
@@ -47,31 +46,32 @@ host_measurement_container cluster_finding::operator()(
     copy.setup(sparse_ccl_indices);
 
     // Number of all clusters that will be found
+    // cluster_prefix_sum will contain just sizes of clusters per each module after this kernel
+    // prefix sum will be created on the host side
     vecmem::vector<std::size_t> cluster_prefix_sum(num_modules, &m_mr.get());
     traccc::sycl::clusters_sum(cells_per_event, sparse_ccl_indices, vecmem::get_data(cluster_prefix_sum), m_mr.get(), m_queue);
 
-    // Copy the vecmem vector of cluster sizes to the std vector for measurement
+    // save the sizes of clusters per each module found to the std vector for measurement
     // buffer initialization
     std::vector<std::size_t> clusters_per_module(num_modules);
     for (std::size_t i = 0; i < num_modules; ++i) {
-        clusters_per_module[i] = cluster_prefix_sum[i];
+        clusters_per_module[i] = cluster_prefix_sum[i] + 1;
     }
 
+    // Create the prefix sums
     std::inclusive_scan(cluster_prefix_sum.begin(), cluster_prefix_sum.end(), cluster_prefix_sum.begin());
-
     unsigned int total_clusters = cluster_prefix_sum.back();
 
     // Vector with cluster sizes
-    // Vector for counts of clusters per each module
     vecmem::vector<std::size_t> cluster_sizes(total_clusters, 0, &m_mr.get()); 
     traccc::sycl::cluster_counting(cells_per_event, sparse_ccl_indices, vecmem::get_data(cluster_sizes),
                                                                     vecmem::get_data(cluster_prefix_sum), m_mr.get(), m_queue);
-    
+
+    // copy the sizes tot he std::vector to construct the buffer for component connection
     std::vector<std::size_t> cluster_sizes_host(total_clusters);
     for (std::size_t i = 0; i < total_clusters; ++i){
         cluster_sizes_host[i] = cluster_sizes[i];
     }
-
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_buffer clusters_buffer{
         {total_clusters, m_mr.get()},
@@ -82,7 +82,7 @@ host_measurement_container cluster_finding::operator()(
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
 
-    traccc::sycl::component_connection(clusters_buffer, sparse_ccl_indices, cells_per_event,
+    traccc::sycl::component_connection(clusters_buffer, cells_per_event, sparse_ccl_indices, 
                                         vecmem::get_data(cluster_prefix_sum),
                                        m_mr.get(), m_queue);
 

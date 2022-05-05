@@ -39,7 +39,7 @@ void clusters_sum(
         
         h.parallel_for<class ClusterSum>(ndrange, [cells_view, sparse_ccl_indices_view, cluster_prefix_sum_view](::sycl::nd_item<1> item) {
 
-                // // Get the global index
+                // Get the global index
                 auto idx = item.get_global_linear_id();
 
                 // Initialize the data on the device
@@ -63,9 +63,10 @@ void clusters_sum(
                     detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
                         cells, cluster_indices, num_clusters);
 
-                    // Save the number of clusters found in this module at the last, extra place in the indices vector 
+                    // Save the number of clusters found in this module at the last, extra place in the cluster_indices vector 
                     cluster_indices.back() = num_clusters;
 
+                    // Fill the prefix sum vector (just with "clusters per module" numbers for now)
                     vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
                     device_cluster_prefix_sum[idx] = num_clusters;
                 }

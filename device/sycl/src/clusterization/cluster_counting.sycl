@@ -55,15 +55,17 @@ void cluster_counting(
                     // Vectors used for cluster indices found by sparse CCL
                     vecmem::jagged_device_vector<unsigned int>
                         device_sparse_ccl_indices(sparse_ccl_indices_view);
-                    auto cluster_indices = device_sparse_ccl_indices.at(idx);
+                    const auto& cluster_indices = device_sparse_ccl_indices.at(idx);
 
                     // Number of clusters that sparce_ccl will find for this module
-                    unsigned int num_clusters = cluster_indices.back();
+                    // stored at the back of cluster_indices vector
+                    const auto& num_clusters = cluster_indices.back();
 
+                    // The vector with prefix sums of clusters per each module for proper indexing
                     vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
+                    const auto prefix_sum = device_cluster_prefix_sum[idx] - num_clusters;
 
-                    auto prefix_sum = device_cluster_prefix_sum[idx] - num_clusters;
-
+                    // Vector to fill in with sizes of each cluster 
                     vecmem::device_vector<std::size_t> device_cluster_sizes(cluster_sizes_view);
 
                     // Push back the cells to the correct item vector

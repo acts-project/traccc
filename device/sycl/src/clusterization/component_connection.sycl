@@ -77,7 +77,7 @@ void component_connection(
                 cl_id.pixel = module.pixel;
 
                 vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
-                auto prefix_sum = device_cluster_prefix_sum[idx] - num_clusters;
+                const auto prefix_sum = device_cluster_prefix_sum[idx] - num_clusters;
 
                 // Push back the cells to the correct item vector
                 unsigned int cindex;

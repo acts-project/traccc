@@ -8,12 +8,10 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/clusterization/detail/sparse_ccl.hpp"
 #include "traccc/edm/cell.hpp"
 
 // Vecmem include(s).
 #include <vecmem/memory/memory_resource.hpp>
-#include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
 
