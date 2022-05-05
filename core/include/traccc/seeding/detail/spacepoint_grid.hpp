@@ -29,9 +29,19 @@ using sp_grid_device = detray::grid2<
     detray::attach_populator, detray::axis::circular, detray::axis::regular,
     detray::serializer2, vecmem::device_vector, vecmem::jagged_device_vector,
     detray::darray, detray::dtuple, internal_spacepoint<spacepoint>, false>;
+using const_sp_grid_device =
+    detray::grid2<detray::attach_populator, detray::axis::circular,
+                  detray::axis::regular, detray::serializer2,
+                  vecmem::device_vector, vecmem::jagged_device_vector,
+                  detray::darray, detray::dtuple,
+                  const internal_spacepoint<spacepoint>, false>;
 
 using sp_grid_data = detray::grid2_data<sp_grid>;
+using sp_grid_const_data = detray::const_grid2_data<sp_grid>;
+
 using sp_grid_view = detray::grid2_view<sp_grid>;
+using sp_grid_const_view = detray::const_grid2_view<sp_grid>;
+
 using sp_grid_buffer = detray::grid2_buffer<sp_grid>;
 
 }  // namespace traccc
