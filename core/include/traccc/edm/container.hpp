@@ -31,15 +31,19 @@ namespace traccc {
 /// Structure holding (some of the) data about the container in host code
 template <typename header_t, typename item_t>
 struct container_data {
-    vecmem::data::vector_view<header_t> headers;
-    vecmem::data::jagged_vector_data<item_t> items;
+    using header_vector = vecmem::data::vector_view<header_t>;
+    using item_vector = vecmem::data::jagged_vector_data<item_t>;
+    header_vector headers;
+    item_vector items;
 };
 
 /// Structure holding (all of the) data about the container in host code
 template <typename header_t, typename item_t>
 struct container_buffer {
-    vecmem::data::vector_buffer<header_t> headers;
-    vecmem::data::jagged_vector_buffer<item_t> items;
+    using header_vector = vecmem::data::vector_buffer<header_t>;
+    using item_vector = vecmem::data::jagged_vector_buffer<item_t>;
+    header_vector headers;
+    item_vector items;
 };
 
 /// Structure used to send the data about the container to device code
@@ -56,6 +60,11 @@ struct container_buffer {
 ///
 template <typename header_t, typename item_t>
 struct container_view {
+
+    /// Type for the header vector (view)
+    using header_vector = vecmem::data::vector_view<header_t>;
+    /// Type for the item vector (view)
+    using item_vector = vecmem::data::jagged_vector_view<item_t>;
 
     /// Constructor from a @c container_data object
     template <
@@ -88,10 +97,10 @@ struct container_view {
         : headers(parent.headers), items(parent.items) {}
 
     /// View of the data describing the headers
-    vecmem::data::vector_view<header_t> headers;
+    header_vector headers;
 
     /// View of the data describing the items
-    vecmem::data::jagged_vector_view<item_t> items;
+    item_vector items;
 };
 
 /// Helper function for making a "simple" object out of the container
