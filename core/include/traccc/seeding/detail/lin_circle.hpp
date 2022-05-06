@@ -7,12 +7,12 @@
 
 #pragma once
 
+// Library include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/container.hpp"
 
 namespace traccc {
-
-/// Header: unsigned int for the number of lin_circles per spacepoint bin
 
 /// Item: transformed coordinate of doublet of middle-bottom or middle-top
 struct lin_circle {
@@ -48,37 +48,7 @@ struct lin_circle {
     const scalar& V() const { return m_V; }
 };
 
-/// Container of lin_circle belonging to one detector module
-template <template <typename> class vector_t>
-using lin_circle_collection = vector_t<lin_circle>;
-
-/// Convenience declaration for the lin_circle collection type to use in host
-/// code
-using host_lin_circle_collection = lin_circle_collection<vecmem::vector>;
-
-/// Convenience declaration for the lin_circle collection type to use in device
-/// code
-using device_lin_circle_collection =
-    lin_circle_collection<vecmem::device_vector>;
-
-/// Convenience declaration for the lin_circle container type to use in host
-/// code
-using host_lin_circle_container = host_container<unsigned int, lin_circle>;
-
-/// Convenience declaration for the lin_circle container type to use in device
-/// code
-using device_lin_circle_container = device_container<unsigned int, lin_circle>;
-
-/// Convenience declaration for the lin_circle container data type to use in
-/// host code
-using lin_circle_container_data = container_data<unsigned int, lin_circle>;
-
-/// Convenience declaration for the lin_circle container buffer type to use in
-/// host code
-using lin_circle_container_buffer = container_buffer<unsigned int, lin_circle>;
-
-/// Convenience declaration for the lin_circle container view type to use in
-/// host code
-using lin_circle_container_view = container_view<unsigned int, lin_circle>;
+// Declare all lin_circle collection types
+TRACCC_DECLARE_COLLECTION_TYPES(lin_circle);
 
 }  // namespace traccc

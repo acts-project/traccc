@@ -7,10 +7,11 @@
 
 #pragma once
 
-// traccc include
+// Library include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
+#include "traccc/edm/container.hpp"
 #include "traccc/utils/unit_vectors.hpp"
 
 namespace traccc {
@@ -98,19 +99,8 @@ inline bool operator==(const bound_track_parameters& lhs,
     return false;
 }
 
-/// Collection of bound_track_parameters
-template <template <typename> class vector_t>
-using bound_track_parameters_collection = vector_t<bound_track_parameters>;
-
-/// Convenient declaration for the bound track parameters collection type to use
-/// in host code
-using host_bound_track_parameters_collection =
-    bound_track_parameters_collection<vecmem::vector>;
-
-/// Convenient declaration for the bound track parameters collection type to use
-/// in device code
-using device_bound_track_parameters_collection =
-    bound_track_parameters_collection<vecmem::device_vector>;
+// Declare all bound_track_parameters collection types
+TRACCC_DECLARE_COLLECTION_TYPES(bound_track_parameters);
 
 struct curvilinear_track_parameters {
     using vector_t = bound_vector;
@@ -126,6 +116,9 @@ struct curvilinear_track_parameters {
     TRACCC_HOST_DEVICE
     covariance_t& covariance() { return m_covariance; }
 };
+
+// Declare all curvilinear_track_parameters collection types
+TRACCC_DECLARE_COLLECTION_TYPES(curvilinear_track_parameters);
 
 struct free_track_parameters {
     using vector_t = free_vector;
@@ -175,5 +168,8 @@ struct free_track_parameters {
     TRACCC_HOST_DEVICE
     scalar& qop() { return m_vector[e_free_qoverp]; }
 };
+
+// Declare all free_track_parameters collection types
+TRACCC_DECLARE_COLLECTION_TYPES(free_track_parameters);
 
 }  // namespace traccc

@@ -7,8 +7,10 @@
 
 #pragma once
 
-// VecMem include(s).
-#include <vecmem/containers/vector.hpp>
+// Library include(s).
+#include "traccc/definitions/common.hpp"
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/container.hpp"
 
 namespace traccc {
 
@@ -24,19 +26,14 @@ struct particle {
     scalar charge;
 };
 
+/// Comparison / ordering operator for (truth) particles
+TRACCC_HOST_DEVICE
 inline bool operator<(const particle& lhs, const particle& rhs) {
-    if (lhs.particle_id < rhs.particle_id) {
-        return true;
-    }
-    return false;
+
+    return (lhs.particle_id < rhs.particle_id);
 }
 
-/// Container of particle for an event
-template <template <typename> class vector_t>
-using particle_collection = vector_t<particle>;
-
-/// Convenience declaration for the particle collection type to use
-/// in host code
-using host_particle_collection = particle_collection<vecmem::vector>;
+// Declare all (truth) particle collection types
+TRACCC_DECLARE_COLLECTION_TYPES(particle);
 
 }  // namespace traccc

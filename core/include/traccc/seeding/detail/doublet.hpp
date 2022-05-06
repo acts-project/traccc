@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Library include(s).
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/container.hpp"
 #include "traccc/seeding/detail/singlet.hpp"
 
 namespace traccc {
@@ -38,33 +41,8 @@ inline TRACCC_HOST_DEVICE bool operator==(const doublet& lhs,
             lhs.sp2.sp_idx == rhs.sp2.sp_idx);
 }
 
-/// Container of doublet belonging to one detector module
-template <template <typename> class vector_t>
-using doublet_collection = vector_t<doublet>;
-
-/// Convenience declaration for the doublet collection type to use in host code
-using host_doublet_collection = doublet_collection<vecmem::vector>;
-
-/// Convenience declaration for the doublet collection type to use in device
-/// code
-using device_doublet_collection = doublet_collection<vecmem::device_vector>;
-
-/// Convenience declaration for the doublet container type to use in host code
-using host_doublet_container = host_container<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container type to use in device code
-using device_doublet_container = device_container<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container data type to use in host
-/// code
-using doublet_container_data = container_data<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container buffer type to use in host
-/// code
-using doublet_container_buffer = container_buffer<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container view type to use in host
-/// code
-using doublet_container_view = container_view<doublet_per_bin, doublet>;
+// Declare all doublet collection/container types
+TRACCC_DECLARE_COLLECTION_TYPES(doublet);
+TRACCC_DECLARE_CONTAINER_TYPES(doublet, doublet_per_bin, doublet);
 
 }  // namespace traccc
