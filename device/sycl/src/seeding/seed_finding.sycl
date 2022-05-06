@@ -1,0 +1,186 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// SYCL library include(s).
+#include "traccc/sycl/seeding/seed_finding.hpp"
+
+// SYCL library include(s).
+#include "../utils/get_queue.hpp"
+#include "seed_selecting.hpp"
+#include "triplet_counter.hpp"
+#include "triplet_counting.hpp"
+#include "triplet_finding.hpp"
+#include "weight_updating.hpp"
+
+// Project include(s).
+#include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/seeding/detail/doublet.hpp"
+#include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/seeding/device/count_doublets.hpp"
+#include "traccc/seeding/device/find_doublets.hpp"
+#include "traccc/seeding/device/make_doublet_buffers.hpp"
+#include "traccc/seeding/device/make_doublet_counter_buffer.hpp"
+
+// VecMem include(s).
+#include "vecmem/utils/copy.hpp"
+
+namespace traccc::sycl {
+namespace kernels {
+
+/// Class identifying the kernel running @c traccc::device::count_doublets
+class count_doublets;
+
+/// Class identifying the kernel running @c traccc::device::find_doublets
+class find_doublets;
+
+}  // namespace kernels
+
+seed_finding::seed_finding(const seedfinder_config& config,
+                           vecmem::memory_resource& mr, queue_wrapper queue)
+    : m_seedfinder_config(config), m_mr(mr), m_queue(queue) {}
+
+seed_finding::output_type seed_finding::operator()(
+    const host_spacepoint_container& spacepoints,
+    const sp_grid_const_view& g2_view) const {
+
+    // Helper object for the data management.
+    vecmem::copy copy;
+
+    // Get the prefix sum for the spacepoint grid.
+    const device::prefix_sum_t sp_grid_prefix_sum =
+        device::get_prefix_sum(g2_view._data_view, m_mr.get(), copy);
+    auto sp_grid_prefix_sum_view = vecmem::get_data(sp_grid_prefix_sum);
+
+    // Set up the doublet counter buffer.
+    device::doublet_counter_container_buffer doublet_counter_buffer =
+        device::make_doublet_counter_buffer(g2_view, copy, m_mr.get());
+
+    // Calculate the range to run the doublet counting for.
+    static constexpr unsigned int doubletCountLocalSize = 32 * 2;
+    const unsigned int nDoubletCountGroups =
+        sp_grid_prefix_sum.size() / doubletCountLocalSize + 1;
+    const unsigned int doubletCountGlobalSize =
+        nDoubletCountGroups * doubletCountLocalSize;
+    ::sycl::nd_range<1> doubletCountRange(doubletCountGlobalSize,
+                                          doubletCountLocalSize);
+
+    // Count the number of doublets that we need to produce.
+    device::doublet_counter_container_view doublet_counter_view =
+        doublet_counter_buffer;
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
+            h.parallel_for<kernels::count_doublets>(
+                doubletCountRange,
+                [config = m_seedfinder_config, g2_view, sp_grid_prefix_sum_view,
+                 doublet_counter_view](::sycl::nd_item<1> item) {
+                    device::count_doublets(item.get_global_linear_id(), config,
+                                           g2_view, sp_grid_prefix_sum_view,
+                                           doublet_counter_view);
+                });
+        })
+        .wait_and_throw();
+
+    // Get the summary values per bin.
+    vecmem::vector<device::doublet_counter_header> doublet_counts(
+        &(m_mr.get()));
+    copy(doublet_counter_buffer.headers, doublet_counts);
+
+    // Set up the doublet buffers.
+    device::doublet_buffer_pair doublet_buffers =
+        device::make_doublet_buffers(doublet_counter_buffer, copy, m_mr.get());
+
+    // Get the prefix sum for the doublet counter buffer.
+    const device::prefix_sum_t doublet_prefix_sum =
+        device::get_prefix_sum(doublet_counter_buffer.items, m_mr.get(), copy);
+    auto doublet_prefix_sum_view = vecmem::get_data(doublet_prefix_sum);
+
+    // Calculate the range to run the doublet finding for.
+    static constexpr unsigned int doubletFindLocalSize = 32 * 2;
+    const unsigned int nFindFindGroups =
+        doublet_prefix_sum.size() / doubletFindLocalSize + 1;
+    const unsigned int doubletFindGlobalSize =
+        nFindFindGroups * doubletFindLocalSize;
+    ::sycl::nd_range<1> doubletFindRange(doubletFindGlobalSize,
+                                         doubletFindLocalSize);
+
+    // Find all of the spacepoint doublets.
+    doublet_container_view mb_view = doublet_buffers.middleBottom;
+    doublet_container_view mt_view = doublet_buffers.middleTop;
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
+            h.parallel_for<kernels::find_doublets>(
+                doubletFindRange,
+                [config = m_seedfinder_config, g2_view, doublet_counter_view,
+                 doublet_prefix_sum_view, mb_view,
+                 mt_view](::sycl::nd_item<1> item) {
+                    device::find_doublets(item.get_global_linear_id(), config,
+                                          g2_view, doublet_counter_view,
+                                          doublet_prefix_sum_view, mb_view,
+                                          mt_view);
+                });
+        })
+        .wait_and_throw();
+
+    // The number of bins.
+    const std::size_t nbins = g2_view._data_view.m_size;
+
+    vecmem::vector<doublet_per_bin> mb_headers(&m_mr.get());
+    copy(doublet_buffers.middleBottom.headers, mb_headers);
+
+    std::vector<std::size_t> mb_buffer_sizes(doublet_counts.size());
+    std::transform(
+        doublet_counts.begin(), doublet_counts.end(), mb_buffer_sizes.begin(),
+        [](const device::doublet_counter_header& dc) { return dc.m_nMidBot; });
+
+    // create the triplet_counter container with the number of doublets
+    host_triplet_counter_container triplet_counter_container(nbins,
+                                                             &m_mr.get());
+    for (std::size_t i = 0; i < nbins; ++i) {
+        triplet_counter_container.get_headers()[i].zeros();
+        triplet_counter_container.get_items()[i].resize(mb_buffer_sizes[i]);
+    }
+
+    // triplet counting
+    triplet_counting(m_seedfinder_config, mb_headers, g2_view,
+                     doublet_counter_view, mb_view, mt_view,
+                     triplet_counter_container, m_mr.get(), m_queue);
+
+    // create the triplet container with the number of triplets
+    host_triplet_container triplet_container(nbins, &m_mr.get());
+    for (size_t i = 0; i < nbins; ++i) {
+        triplet_container.get_headers()[i].zeros();
+        triplet_container.get_items()[i].resize(
+            triplet_counter_container.get_headers()[i].n_triplets);
+    }
+
+    // triplet finding
+    triplet_finding(m_seedfinder_config, m_seedfilter_config, g2_view,
+                    doublet_counter_view, mb_view, mt_view,
+                    triplet_counter_container, triplet_container, m_mr.get(),
+                    m_queue);
+
+    // weight updating
+    weight_updating(m_seedfilter_config, g2_view, triplet_counter_container,
+                    triplet_container, m_mr.get(), m_queue);
+
+    vecmem::data::vector_buffer<seed> seed_buffer(
+        triplet_container.total_size(), 0, m_mr.get());
+    copy.setup(seed_buffer);
+
+    // seed selecting
+    seed_selecting(m_seedfilter_config, doublet_counts,
+                   const_cast<host_spacepoint_container&>(spacepoints), g2_view,
+                   doublet_counter_view, triplet_counter_container,
+                   triplet_container, seed_buffer, m_mr.get(), m_queue);
+
+    host_seed_collection seed_collection(&m_mr.get());
+    copy(seed_buffer, seed_collection);
+
+    return seed_collection;
+}
+
+}  // namespace traccc::sycl

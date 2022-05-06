@@ -24,11 +24,12 @@ namespace traccc::sycl {
 // Kernel class for triplet counting
 class TripletCount {
     public:
-    TripletCount(const seedfinder_config config, sp_grid_view internal_sp_view,
-                 doublet_counter_container_view doublet_counter_view,
-                 doublet_container_view mid_bot_doublet_view,
-                 doublet_container_view mid_top_doublet_view,
-                 triplet_counter_container_view triplet_counter_view)
+    TripletCount(
+        const seedfinder_config config, sp_grid_const_view internal_sp_view,
+        device::doublet_counter_container_const_view doublet_counter_view,
+        doublet_container_view mid_bot_doublet_view,
+        doublet_container_view mid_top_doublet_view,
+        triplet_counter_container_view triplet_counter_view)
         : m_config(config),
           m_internal_sp_view(internal_sp_view),
           m_doublet_counter_view(doublet_counter_view),
@@ -39,9 +40,9 @@ class TripletCount {
     void operator()(::sycl::nd_item<1> item) const {
 
         // Get device container for input parameters
-        sp_grid_device internal_sp_device(m_internal_sp_view);
+        const_sp_grid_device internal_sp_device(m_internal_sp_view);
 
-        device_doublet_counter_container doublet_counter_device(
+        device::device_doublet_counter_const_container doublet_counter_device(
             m_doublet_counter_view);
         device_doublet_container mid_bot_doublet_device(m_mid_bot_doublet_view);
         device_doublet_container mid_top_doublet_device(m_mid_top_doublet_view);
@@ -56,7 +57,7 @@ class TripletCount {
         // get internal spacepoints for current bin
         auto internal_sp_per_bin = internal_sp_device.bin(bin_idx);
         auto& num_compat_spM_per_bin =
-            doublet_counter_device.get_headers().at(bin_idx).n_spM;
+            doublet_counter_device.get_headers().at(bin_idx).m_nSpM;
 
         // Header of doublet counter : number of compatible middle sp per bin
         // Item of doublet counter : doublet counter objects per bin
@@ -122,13 +123,13 @@ class TripletCount {
         unsigned int mt_end_idx = 0;
 
         for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
-            mb_end_idx += doublet_counter_per_bin[i].n_mid_bot;
-            mt_end_idx += doublet_counter_per_bin[i].n_mid_top;
+            mb_end_idx += doublet_counter_per_bin[i].m_nMidBot;
+            mt_end_idx += doublet_counter_per_bin[i].m_nMidTop;
 
             if (mb_end_idx > mb_idx) {
                 break;
             }
-            mt_start_idx += doublet_counter_per_bin[i].n_mid_top;
+            mt_start_idx += doublet_counter_per_bin[i].m_nMidTop;
         }
 
         if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
@@ -176,27 +177,25 @@ class TripletCount {
 
     private:
     const seedfinder_config m_config;
-    sp_grid_view m_internal_sp_view;
-    doublet_counter_container_view m_doublet_counter_view;
+    sp_grid_const_view m_internal_sp_view;
+    device::doublet_counter_container_const_view m_doublet_counter_view;
     doublet_container_view m_mid_bot_doublet_view;
     doublet_container_view m_mid_top_doublet_view;
     triplet_counter_container_view m_triplet_counter_view;
 };
 
-void triplet_counting(const seedfinder_config& config, sp_grid& internal_sp,
-                      host_doublet_counter_container& doublet_counter_container,
-                      host_doublet_container& mid_bot_doublet_container,
-                      host_doublet_container& mid_top_doublet_container,
+void triplet_counting(const seedfinder_config& config,
+                      const vecmem::vector<doublet_per_bin>& mbc_headers,
+                      const sp_grid_const_view& internal_sp,
+                      const device::doublet_counter_container_const_view&
+                          doublet_counter_container,
+                      doublet_container_view mid_bot_doublet_container,
+                      doublet_container_view mid_top_doublet_container,
                       host_triplet_counter_container& triplet_counter_container,
                       vecmem::memory_resource& resource, queue_wrapper queue) {
 
-    auto doublet_counter_container_view =
-        get_data(doublet_counter_container, &resource);
-    auto mid_bot_doublet_view = get_data(mid_bot_doublet_container, &resource);
-    auto mid_top_doublet_view = get_data(mid_top_doublet_container, &resource);
     auto triplet_counter_container_view =
         get_data(triplet_counter_container, &resource);
-    auto internal_sp_view = get_data(internal_sp, resource);
 
     // The thread-block is desinged to make each thread count triplets per
     // middle-bot doublet
@@ -207,10 +206,8 @@ void triplet_counting(const seedfinder_config& config, sp_grid& internal_sp,
     unsigned int localSize = 32 * 8;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
-    for (unsigned int i = 0; i < internal_sp.nbins(); ++i) {
-        num_groups +=
-            mid_bot_doublet_container.get_headers()[i].n_doublets / localSize +
-            1;
+    for (unsigned int i = 0; i < internal_sp._data_view.m_size; ++i) {
+        num_groups += mbc_headers[i].n_doublets / localSize + 1;
     }
 
     unsigned int globalSize = localSize * num_groups;
@@ -220,9 +217,9 @@ void triplet_counting(const seedfinder_config& config, sp_grid& internal_sp,
 
     details::get_queue(queue)
         .submit([&](::sycl::handler& h) {
-            TripletCount kernel(config, internal_sp_view,
-                                doublet_counter_container_view,
-                                mid_bot_doublet_view, mid_top_doublet_view,
+            TripletCount kernel(config, internal_sp, doublet_counter_container,
+                                mid_bot_doublet_container,
+                                mid_top_doublet_container,
                                 triplet_counter_container_view);
             h.parallel_for<TripletCount>(tripletCountNdRange, kernel);
         })

@@ -27,7 +27,7 @@ namespace cuda {
 /// @param resource vecmem memory resource
 void weight_updating(const seedfilter_config& filter_config,
                      const vecmem::vector<triplet_per_bin>& tc_headers,
-                     sp_grid_view internal_sp_view,
+                     sp_grid_const_view internal_sp_view,
                      triplet_counter_container_view tcc_view,
                      triplet_container_view tc_view,
                      vecmem::memory_resource& resource);

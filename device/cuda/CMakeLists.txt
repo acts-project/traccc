@@ -18,27 +18,23 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "include/traccc/cuda/utils/cuda_helper.cuh"
   # Seed finding code.
   "include/traccc/cuda/seeding/detail/triplet_counter.hpp"
-  "include/traccc/cuda/seeding/detail/doublet_counter.hpp"
   "include/traccc/cuda/seeding/weight_updating.hpp"
-  "include/traccc/cuda/seeding/doublet_counting.hpp"
   "include/traccc/cuda/seeding/triplet_counting.hpp"
   "include/traccc/cuda/seeding/seed_selecting.hpp"
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
-  "include/traccc/cuda/seeding/doublet_finding.hpp"
   "include/traccc/cuda/seeding/triplet_finding.hpp"
   "include/traccc/cuda/seeding/seed_finding.hpp"
   "include/traccc/cuda/seeding/seeding_algorithm.hpp"
   "include/traccc/cuda/seeding/spacepoint_binning.hpp"
   # CCL code.
   "include/traccc/cuda/cca/component_connection.hpp"
-  "src/seeding/doublet_counting.cu"
   "src/seeding/triplet_counting.cu"
   "src/seeding/weight_updating.cu"
   "src/seeding/track_params_estimation.cu"
+  "src/seeding/seed_finding.cu"
   "src/seeding/seed_selecting.cu"
   "src/seeding/spacepoint_binning.cu"
   "src/seeding/triplet_finding.cu"
-  "src/seeding/doublet_finding.cu"
   "src/cca/component_connection.cu"
 )
 target_compile_options( traccc_cuda

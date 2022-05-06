@@ -21,13 +21,13 @@ namespace cuda {
 /// @param triplet_counter_container vecmem container for triplet counters
 /// @param triplet_container vecmem container for triplets
 __global__ void weight_updating_kernel(
-    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
+    const seedfilter_config filter_config, sp_grid_const_view internal_sp_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view);
 
 void weight_updating(const seedfilter_config& filter_config,
                      const vecmem::vector<triplet_per_bin>& tc_headers,
-                     sp_grid_view internal_sp_view,
+                     sp_grid_const_view internal_sp_view,
                      triplet_counter_container_view tcc_view,
                      triplet_container_view tc_view,
                      vecmem::memory_resource& resource) {
@@ -64,12 +64,12 @@ void weight_updating(const seedfilter_config& filter_config,
 }
 
 __global__ void weight_updating_kernel(
-    const seedfilter_config filter_config, sp_grid_view internal_sp_view,
+    const seedfilter_config filter_config, sp_grid_const_view internal_sp_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view) {
 
     // Get device container for input parameters
-    sp_grid_device internal_sp_device(internal_sp_view);
+    const_sp_grid_device internal_sp_device(internal_sp_view);
 
     device_triplet_counter_container triplet_counter_device(
         triplet_counter_view);
