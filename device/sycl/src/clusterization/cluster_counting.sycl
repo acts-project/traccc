@@ -39,56 +39,69 @@ void cluster_counting(
 
     auto prefix_sum = vecmem::make_unique_alloc<unsigned int>(resource);
     *prefix_sum = 0;
-    auto prefix_sum_ptr = prefix_sum.get(); 
+    auto prefix_sum_ptr = prefix_sum.get();
 
-    details::get_queue(queue).submit([&ndrange, &cells_view, &prefix_sum_ptr, &sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view, clusters_per_module_view](::sycl::handler& h) {
-        
-        h.parallel_for<class ClusterCounting>(ndrange, [cells_view, prefix_sum_ptr, sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view, clusters_per_module_view](::sycl::nd_item<1> item) {
+    details::get_queue(queue)
+        .submit([&ndrange, &cells_view, &prefix_sum_ptr,
+                 &sparse_ccl_indices_view, cluster_sizes_view,
+                 cluster_prefix_sum_view,
+                 clusters_per_module_view](::sycl::handler& h) {
+            h.parallel_for<class ClusterCounting>(
+                ndrange, [cells_view, prefix_sum_ptr, sparse_ccl_indices_view,
+                          cluster_sizes_view, cluster_prefix_sum_view,
+                          clusters_per_module_view](::sycl::nd_item<1> item) {
+                    // // Get the global index
+                    auto idx = item.get_global_linear_id();
 
-                // // Get the global index
-                auto idx = item.get_global_linear_id();
+                    // Initialize the data on the device
+                    device_cell_const_container cells_device(cells_view);
 
-                // Initialize the data on the device
-                device_cell_const_container cells_device(cells_view);
+                    // Ignore if idx is out of range
+                    if (idx >= cells_device.size())
+                        return;
 
-                // Ignore if idx is out of range
-                if (idx >= cells_device.size()) 
-                    return;
+                    // Get the cells from the current module
+                    const auto& cells = cells_device.at(idx).items;
 
-                // Get the cells from the current module
-                const auto& cells = cells_device.at(idx).items;
+                    // Vectors used for cluster indices found by sparse CCL
+                    vecmem::jagged_device_vector<unsigned int>
+                        device_sparse_ccl_indices(sparse_ccl_indices_view);
+                    const auto& cluster_indices =
+                        device_sparse_ccl_indices.at(idx);
 
-                // Vectors used for cluster indices found by sparse CCL
-                vecmem::jagged_device_vector<unsigned int>
-                    device_sparse_ccl_indices(sparse_ccl_indices_view);
-                const auto& cluster_indices = device_sparse_ccl_indices.at(idx);
+                    // Number of clusters that sparce_ccl found for this module
+                    // and the prefix sum at this thread idx
+                    const auto& num_clusters = cluster_indices.back();
+                    auto prefix_sum =
+                        vecmem::device_atomic_ref<unsigned int>(*prefix_sum_ptr)
+                            .fetch_add(num_clusters);
 
-                // Number of clusters that sparce_ccl found for this module
-                // and the prefix sum at this thread idx
-                const auto& num_clusters = cluster_indices.back();
-                auto prefix_sum = vecmem::device_atomic_ref<unsigned int>(*prefix_sum_ptr).fetch_add(num_clusters);
+                    // Save the current prefix sum at a correct index in a
+                    // vector
+                    vecmem::device_vector<std::size_t>
+                        device_cluster_prefix_sum(cluster_prefix_sum_view);
+                    device_cluster_prefix_sum[idx] = prefix_sum;
 
-                // Save the current prefix sum at a correct index in a vector
-                vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
-                device_cluster_prefix_sum[idx] = prefix_sum;
+                    // Vector to fill in with sizes of each cluster
+                    vecmem::device_vector<std::size_t> device_cluster_sizes(
+                        cluster_sizes_view);
 
-                // Vector to fill in with sizes of each cluster 
-                vecmem::device_vector<std::size_t> device_cluster_sizes(cluster_sizes_view);
-
-                // Count the cluster sizes for each position 
-                unsigned int cindex;
-                for (std::size_t j = 0; j < cells.size(); ++j) {
-                    cindex = cluster_indices[j] - 1;
-                    if (cindex < num_clusters) {
-                        device_cluster_sizes[prefix_sum + cindex]++;
+                    // Count the cluster sizes for each position
+                    unsigned int cindex;
+                    for (std::size_t j = 0; j < cells.size(); ++j) {
+                        cindex = cluster_indices[j] - 1;
+                        if (cindex < num_clusters) {
+                            device_cluster_sizes[prefix_sum + cindex]++;
+                        }
                     }
-                }
-                // At last, fill also the "number of clusters per module" vector
-                // for measurement creation buffer initialization
-                vecmem::device_vector<std::size_t> device_clusters_per_module(clusters_per_module_view);
-                device_clusters_per_module[idx] = num_clusters;
-        });
-    }).wait_and_throw();
+                    // At last, fill also the "number of clusters per module"
+                    // vector for measurement creation buffer initialization
+                    vecmem::device_vector<std::size_t>
+                        device_clusters_per_module(clusters_per_module_view);
+                    device_clusters_per_module[idx] = num_clusters;
+                });
+        })
+        .wait_and_throw();
 }
 
 }  // namespace traccc::sycl

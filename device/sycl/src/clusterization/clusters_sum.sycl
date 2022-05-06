@@ -38,45 +38,54 @@ void clusters_sum(
     // Get the raw pointer of the reduction variable
     auto clusters_sum_ptr = cluster_sum.get();
 
-    details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, &clusters_sum_ptr](::sycl::handler& h) {
-        
-        // Create temporary object with reduction semantics 
-        auto sumReduction = ::sycl::reduction(clusters_sum_ptr, ::sycl::plus<>());
+    details::get_queue(queue)
+        .submit([&ndrange, &cells_view, &sparse_ccl_indices_view,
+                 &clusters_sum_ptr](::sycl::handler& h) {
+            // Create temporary object with reduction semantics
+            auto sumReduction =
+                ::sycl::reduction(clusters_sum_ptr, ::sycl::plus<>());
 
-        h.parallel_for<class ClusterSum>(ndrange, sumReduction, [cells_view, sparse_ccl_indices_view](::sycl::nd_item<1> item, auto& cl_sum) {
+            h.parallel_for<class ClusterSum>(
+                ndrange, sumReduction,
+                [cells_view, sparse_ccl_indices_view](::sycl::nd_item<1> item,
+                                                      auto& cl_sum) {
+                    // Get the global index
+                    auto idx = item.get_global_linear_id();
 
-                // Get the global index
-                auto idx = item.get_global_linear_id();
+                    // Initialize the data on the device
+                    device_cell_const_container cells_device(cells_view);
 
-                // Initialize the data on the device
-                device_cell_const_container cells_device(cells_view);
+                    // Ignore if idx is out of range
+                    if (idx < cells_device.size()) {
 
-                // Ignore if idx is out of range
-                if (idx < cells_device.size()) {
+                        // Get the cells from the current module
+                        const auto& cells = cells_device.at(idx).items;
 
-                    // Get the cells from the current module
-                    const auto& cells = cells_device.at(idx).items;
+                        // Number of clusters that sparce_ccl will find for this
+                        // module
+                        unsigned int num_clusters = 0;
 
-                    // Number of clusters that sparce_ccl will find for this module
-                    unsigned int num_clusters = 0;
+                        // Vectors used for cluster indices found by sparse CCL
+                        vecmem::jagged_device_vector<unsigned int>
+                            device_sparse_ccl_indices(sparse_ccl_indices_view);
+                        auto cluster_indices =
+                            device_sparse_ccl_indices.at(idx);
 
-                    // Vectors used for cluster indices found by sparse CCL
-                    vecmem::jagged_device_vector<unsigned int>
-                        device_sparse_ccl_indices(sparse_ccl_indices_view);
-                    auto cluster_indices = device_sparse_ccl_indices.at(idx);
+                        // Run the sparse_ccl algorithm
+                        detail::sparse_ccl<vecmem::device_vector,
+                                           const traccc::cell>(
+                            cells, cluster_indices, num_clusters);
 
-                    // Run the sparse_ccl algorithm
-                    detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
-                        cells, cluster_indices, num_clusters);
+                        // Save the number of clusters found in this module at
+                        // the last, extra place in the indices vectors
+                        cluster_indices.back() = num_clusters;
 
-                    // Save the number of clusters found in this module at the last, extra place in the indices vectors 
-                    cluster_indices.back() = num_clusters;
-
-                    // The reduction step
-                    cl_sum += num_clusters;
-                }
-        });
-    }).wait_and_throw();
+                        // The reduction step
+                        cl_sum += num_clusters;
+                    }
+                });
+        })
+        .wait_and_throw();
 }
 
 }  // namespace traccc::sycl

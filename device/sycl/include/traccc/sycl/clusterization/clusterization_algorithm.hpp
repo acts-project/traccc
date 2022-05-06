@@ -28,13 +28,12 @@ class clusterization_algorithm : public algorithm<host_measurement_container(
     ///
     /// @param mr is the memory resource
     /// @param queue is the sycl queue for kernel invocation
-    clusterization_algorithm(vecmem::memory_resource& mr,
-                            queue_wrapper queue);
+    clusterization_algorithm(vecmem::memory_resource& mr, queue_wrapper queue);
 
     /// Callable operator for clusterization algorithm
     ///
     /// @param cells_per_event is a container with cell modules as headers
-    /// and cells as the items 
+    /// and cells as the items
     /// @return a measurement container with cell modules as headers and
     /// measurements as items
     output_type operator()(

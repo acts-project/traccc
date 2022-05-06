@@ -9,10 +9,10 @@
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
 // SYCL library include(s).
-#include "component_connection.hpp"
-#include "measurement_creation.hpp"
 #include "cluster_counting.hpp"
 #include "clusters_sum.hpp"
+#include "component_connection.hpp"
+#include "measurement_creation.hpp"
 
 // Vecmem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -20,7 +20,7 @@
 namespace traccc::sycl {
 
 clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr,
-                                 queue_wrapper queue)
+                                                   queue_wrapper queue)
     : m_mr(mr), m_queue(queue) {}
 
 host_measurement_container cluster_finding::operator()(
@@ -39,49 +39,56 @@ host_measurement_container cluster_finding::operator()(
     }
 
     // Helper container for sparse CCL calculations
-    vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices(cell_sizes,
-                                                                     m_mr.get());
+    vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices(
+        cell_sizes, m_mr.get());
     copy.setup(sparse_ccl_indices);
 
-    // Invoke the reduction kernel that gives the total number of clusters which will be found
+    // Invoke the reduction kernel that gives the total number of clusters which
+    // will be found
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     *total_clusters = 0;
-    traccc::sycl::clusters_sum(cells_per_event, sparse_ccl_indices, total_clusters, m_mr.get(), m_queue);
+    traccc::sycl::clusters_sum(cells_per_event, sparse_ccl_indices,
+                               total_clusters, m_mr.get(), m_queue);
 
     // Vector buffer for prefix sums for proper indexing, used only on device.
-    // Vector with "clusters per module" is needed for measurement creation buffer
-    vecmem::data::vector_buffer<std::size_t> cluster_prefix_sum(num_modules, m_mr.get());
-    vecmem::data::vector_buffer<std::size_t> clusters_per_module(num_modules, m_mr.get());
+    // Vector with "clusters per module" is needed for measurement creation
+    // buffer
+    vecmem::data::vector_buffer<std::size_t> cluster_prefix_sum(num_modules,
+                                                                m_mr.get());
+    vecmem::data::vector_buffer<std::size_t> clusters_per_module(num_modules,
+                                                                 m_mr.get());
     copy.setup(cluster_prefix_sum);
     copy.setup(clusters_per_module);
 
-    // Vector of the exact cluster sizes, will be filled in cluster_counting kernel
-    vecmem::vector<std::size_t> cluster_sizes(*total_clusters, 0, &m_mr.get()); 
-    traccc::sycl::cluster_counting(cells_per_event, sparse_ccl_indices, vecmem::get_data(cluster_sizes), cluster_prefix_sum,
-                                                                clusters_per_module, m_mr.get(), m_queue);
+    // Vector of the exact cluster sizes, will be filled in cluster_counting
+    // kernel
+    vecmem::vector<std::size_t> cluster_sizes(*total_clusters, 0, &m_mr.get());
+    traccc::sycl::cluster_counting(
+        cells_per_event, sparse_ccl_indices, vecmem::get_data(cluster_sizes),
+        cluster_prefix_sum, clusters_per_module, m_mr.get(), m_queue);
 
-    // copy the sizes to the std::vector to construct the buffer for component connection
+    // copy the sizes to the std::vector to construct the buffer for component
+    // connection
     std::vector<std::size_t> cluster_sizes_host(*total_clusters);
-    for (std::size_t i = 0; i < *total_clusters; ++i){
+    for (std::size_t i = 0; i < *total_clusters; ++i) {
         cluster_sizes_host[i] = cluster_sizes[i];
     }
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
-        {std::vector<std::size_t>(*total_clusters, 0), 
-        cluster_sizes_host,
+        {std::vector<std::size_t>(*total_clusters, 0), cluster_sizes_host,
          m_mr.get()}};
 
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
 
     // Component connection kernel
-    traccc::sycl::component_connection(clusters_buffer, cells_per_event, sparse_ccl_indices, 
-                                       cluster_prefix_sum,
+    traccc::sycl::component_connection(clusters_buffer, cells_per_event,
+                                       sparse_ccl_indices, cluster_prefix_sum,
                                        m_mr.get(), m_queue);
 
-    // Copy the sizes of clusters per each module to the std vector for measurement
-    // buffer initialization
+    // Copy the sizes of clusters per each module to the std vector for
+    // measurement buffer initialization
     std::vector<std::size_t> clusters_per_module_host;
     copy(clusters_per_module, clusters_per_module_host);
 

@@ -76,7 +76,8 @@ void component_connection(
                 cl_id.module_idx = idx;
                 cl_id.pixel = module.pixel;
 
-                vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
+                vecmem::device_vector<std::size_t> device_cluster_prefix_sum(
+                    cluster_prefix_sum_view);
                 const auto prefix_sum = device_cluster_prefix_sum[idx];
 
                 // Push back the cells to the correct item vector
@@ -84,10 +85,9 @@ void component_connection(
                 for (std::size_t j = 0; j < cells.size(); ++j) {
                     cindex = cluster_indices[j] - 1;
                     if (cindex < num_clusters) {
-                        clusters_device[prefix_sum + cindex].header =
-                            cl_id;
-                        clusters_device[prefix_sum + cindex]
-                            .items.push_back(cells[j]);
+                        clusters_device[prefix_sum + cindex].header = cl_id;
+                        clusters_device[prefix_sum + cindex].items.push_back(
+                            cells[j]);
                     }
                 }
             })
