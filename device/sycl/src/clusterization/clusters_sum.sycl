@@ -23,7 +23,7 @@ void clusters_sum(
     vecmem::memory_resource& resource, queue_wrapper queue) {
 
     // Execution size of the algorithm
-    unsigned int N = cells_per_event.size();
+    std::size_t N = cells_per_event.size();
 
     // Calculate the execution NDrange for the kernel
     auto workGroupSize = 64;
@@ -35,12 +35,12 @@ void clusters_sum(
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_const_view cells_view(cells_data);
 
-    // Get the raw pointers of the reduction variables
+    // Get the raw pointer of the reduction variable
     auto clusters_sum_ptr = cluster_sum.get();
 
     details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, &clusters_sum_ptr](::sycl::handler& h) {
         
-        // Create temporary objects with reduction semantics 
+        // Create temporary object with reduction semantics 
         auto sumReduction = ::sycl::reduction(clusters_sum_ptr, ::sycl::plus<>());
 
         h.parallel_for<class ClusterSum>(ndrange, sumReduction, [cells_view, sparse_ccl_indices_view](::sycl::nd_item<1> item, auto& cl_sum) {
@@ -69,7 +69,7 @@ void clusters_sum(
                     detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
                         cells, cluster_indices, num_clusters);
 
-                    // Save the number of clusters found in this module at the last, extra place in the indices vector 
+                    // Save the number of clusters found in this module at the last, extra place in the indices vectors 
                     cluster_indices.back() = num_clusters;
 
                     // The reduction step

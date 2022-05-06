@@ -31,11 +31,11 @@ class clusterization_algorithm : public algorithm<host_measurement_container(
     clusterization_algorithm(vecmem::memory_resource& mr,
                             queue_wrapper queue);
 
-    /// Callable operator for cluster finding for cells from all the modules
+    /// Callable operator for clusterization algorithm
     ///
     /// @param cells_per_event is a container with cell modules as headers
-    /// and cells as the items jagged vector
-    /// @return a measurement container with cell modules for headers and
+    /// and cells as the items 
+    /// @return a measurement container with cell modules as headers and
     /// measurements as items
     output_type operator()(
         const cell_container_types::host& cells_per_event) const override {

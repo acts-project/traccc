@@ -18,7 +18,7 @@
 
 namespace traccc::sycl {
 
-/// Forward declaration of component connection function
+/// Forward declaration of clusters sum function
 ///
 void clusters_sum(
     const host_cell_container& cells_per_event,
