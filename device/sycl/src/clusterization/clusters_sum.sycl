@@ -19,7 +19,7 @@ namespace traccc::sycl {
 void clusters_sum(
     const host_cell_container& cells_per_event,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
+    vecmem::unique_alloc_ptr<unsigned int>& cluster_sum,
     vecmem::memory_resource& resource, queue_wrapper queue) {
 
     // Execution size of the algorithm
@@ -35,9 +35,15 @@ void clusters_sum(
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_const_view cells_view(cells_data);
 
-    details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, &cluster_prefix_sum_view](::sycl::handler& h) {
+    // Get the raw pointers of the reduction variables
+    auto clusters_sum_ptr = cluster_sum.get();
+
+    details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, &clusters_sum_ptr](::sycl::handler& h) {
         
-        h.parallel_for<class ClusterSum>(ndrange, [cells_view, sparse_ccl_indices_view, cluster_prefix_sum_view](::sycl::nd_item<1> item) {
+        // Create temporary objects with reduction semantics 
+        auto sumReduction = ::sycl::reduction(clusters_sum_ptr, ::sycl::plus<>());
+
+        h.parallel_for<class ClusterSum>(ndrange, sumReduction, [cells_view, sparse_ccl_indices_view](::sycl::nd_item<1> item, auto& cl_sum) {
 
                 // Get the global index
                 auto idx = item.get_global_linear_id();
@@ -63,12 +69,11 @@ void clusters_sum(
                     detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
                         cells, cluster_indices, num_clusters);
 
-                    // Save the number of clusters found in this module at the last, extra place in the cluster_indices vector 
+                    // Save the number of clusters found in this module at the last, extra place in the indices vector 
                     cluster_indices.back() = num_clusters;
 
-                    // Fill the prefix sum vector (just with "clusters per module" numbers for now)
-                    vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
-                    device_cluster_prefix_sum[idx] = num_clusters;
+                    // The reduction step
+                    cl_sum += num_clusters;
                 }
         });
     }).wait_and_throw();

@@ -21,11 +21,19 @@ void measurement_creation(measurement_container_view measurements_view,
                           cluster_container_types::const_view clusters_view,
                           const unsigned int &range, queue_wrapper queue) {
 
+    // Calculate the execution NDrange for the kernel
+    auto workGroupSize = 64;
+    auto num = (N + workGroupSize - 1) / workGroupSize;
+    auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * workGroupSize),
+                                       ::sycl::range<1>(workGroupSize)};
     // Run the kernel
     details::get_queue(queue)
         .parallel_for<class MeasurementCreation>(
-            range,
-            [clusters_view, measurements_view](auto idx) {
+            ndrange,
+            [clusters_view, measurements_view](::sycl::nd_item<1> item) {
+                // Get the global index
+                auto idx = item.get_global_linear_id();
+
                 // Initialize device vectors
                 const cluster_container_types::const_device clusters_device(
                     clusters_view);

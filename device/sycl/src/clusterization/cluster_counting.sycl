@@ -21,6 +21,7 @@ void cluster_counting(
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<std::size_t> cluster_sizes_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
+    vecmem::data::vector_view<std::size_t> clusters_per_module_view,
     vecmem::memory_resource& resource, queue_wrapper queue) {
 
     // Execution size of the algorithm
@@ -36,9 +37,13 @@ void cluster_counting(
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_const_view cells_view(cells_data);
 
-    details::get_queue(queue).submit([&ndrange, &cells_view, &sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view](::sycl::handler& h) {
+    auto prefix_sum = vecmem::make_unique_alloc<unsigned int>(resource);
+    *prefix_sum = 0;
+    auto prefix_sum_ptr = prefix_sum.get(); 
+
+    details::get_queue(queue).submit([&ndrange, &cells_view, &prefix_sum_ptr, &sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view, clusters_per_module_view](::sycl::handler& h) {
         
-        h.parallel_for<class ClusterCounting>(ndrange, [cells_view, sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view](::sycl::nd_item<1> item) {
+        h.parallel_for<class ClusterCounting>(ndrange, [cells_view, prefix_sum_ptr, sparse_ccl_indices_view, cluster_sizes_view, cluster_prefix_sum_view, clusters_per_module_view](::sycl::nd_item<1> item) {
 
                 // // Get the global index
                 auto idx = item.get_global_linear_id();
@@ -57,13 +62,14 @@ void cluster_counting(
                         device_sparse_ccl_indices(sparse_ccl_indices_view);
                     const auto& cluster_indices = device_sparse_ccl_indices.at(idx);
 
-                    // Number of clusters that sparce_ccl will find for this module
-                    // stored at the back of cluster_indices vector
+                    // Number of clusters that sparce_ccl found for this module
+                    // and the prefix sum at this thread idx
                     const auto& num_clusters = cluster_indices.back();
+                    auto prefix_sum = vecmem::device_atomic_ref<unsigned int>(*prefix_sum_ptr).fetch_add(num_clusters);
 
-                    // The vector with prefix sums of clusters per each module for proper indexing
+                    // Save the current prefix sum at a proper index in a vector
                     vecmem::device_vector<std::size_t> device_cluster_prefix_sum(cluster_prefix_sum_view);
-                    const auto prefix_sum = device_cluster_prefix_sum[idx] - num_clusters;
+                    device_cluster_prefix_sum[idx] = prefix_sum;
 
                     // Vector to fill in with sizes of each cluster 
                     vecmem::device_vector<std::size_t> device_cluster_sizes(cluster_sizes_view);
@@ -76,6 +82,10 @@ void cluster_counting(
                             device_cluster_sizes[prefix_sum + cindex]++;
                         }
                     }
+                    // At last, fill also the "num of clusters per module" vector
+                    // for measurement creation buffer initialization
+                    vecmem::device_vector<std::size_t> device_clusters_per_module(clusters_per_module_view);
+                    device_clusters_per_module[idx] = num_clusters;
                 }
         });
     }).wait_and_throw();

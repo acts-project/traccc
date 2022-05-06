@@ -15,14 +15,13 @@ enable_language( SYCL )
 traccc_add_library( traccc_sycl sycl TYPE SHARED
   # header files
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
-  "include/traccc/sycl/clusterization/cluster_finding.hpp"
   "include/traccc/sycl/seeding/seeding_algorithm.hpp"
   "include/traccc/sycl/seeding/seed_finding.hpp"
   "include/traccc/sycl/seeding/spacepoint_binning.hpp"
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
   # implementation files
-  "src/clusterization/cluster_finding.cpp"
+  "src/clusterization/clusterization_algorithm.cpp"
   "src/clusterization/clusters_sum.hpp"
   "src/clusterization/clusters_sum.sycl"
   "src/clusterization/cluster_counting.hpp"
