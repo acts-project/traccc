@@ -19,6 +19,8 @@
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/vector.hpp>
 
 // System include(s).
 #include <type_traits>
@@ -73,7 +75,8 @@ struct container_view {
                          bool> = true,
         std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
                          bool> = true>
-    container_view(const container_data<other_header_t, other_item_t>& data)
+    TRACCC_HOST_DEVICE container_view(
+        const container_data<other_header_t, other_item_t>& data)
         : headers(data.headers), items(data.items) {}
 
     /// Constructor from a @c container_buffer object
@@ -83,7 +86,8 @@ struct container_view {
                          bool> = true,
         std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
                          bool> = true>
-    container_view(const container_buffer<other_header_t, other_item_t>& buffer)
+    TRACCC_HOST_DEVICE container_view(
+        const container_buffer<other_header_t, other_item_t>& buffer)
         : headers(buffer.headers), items(buffer.items) {}
 
     /// Constructor from a non-const view
@@ -93,7 +97,8 @@ struct container_view {
                          bool> = true,
         std::enable_if_t<details::is_same_nc<item_t, other_item_t>::value,
                          bool> = true>
-    container_view(const container_view<other_header_t, other_item_t>& parent)
+    TRACCC_HOST_DEVICE container_view(
+        const container_view<other_header_t, other_item_t>& parent)
         : headers(parent.headers), items(parent.items) {}
 
     /// View of the data describing the headers
@@ -123,3 +128,73 @@ inline container_data<const header_t, const item_t> get_data(
 }
 
 }  // namespace traccc
+
+/// Helper macro declaring all "collection types" for a given type
+///
+/// Usage:
+///
+///  namespace foo {
+///     struct bar {};
+///     TRACCC_DECLARE_COLLECTION_TYPES(bar);
+///  }
+///
+/// In this example this would create all of the following types:
+///   - foo::bar_collection<T>
+///   - foo::bar_const_collection<T>
+///   - foo::host_bar_collection
+///   - foo::device_bar_collection
+///   - foo::device_bar_const_collection
+///
+#define TRACCC_DECLARE_COLLECTION_TYPES(TYPE)                           \
+    template <template <typename> class vector_t>                       \
+    using TYPE##_collection = vector_t<TYPE>;                           \
+    using host_##TYPE##_collection = TYPE##_collection<vecmem::vector>; \
+    using device_##TYPE##_collection =                                  \
+        TYPE##_collection<vecmem::device_vector>;                       \
+    template <template <typename> class vector_t>                       \
+    using TYPE##_const_collection = vector_t<const TYPE>;               \
+    using device_##TYPE##_const_collection =                            \
+        TYPE##_const_collection<vecmem::device_vector>
+
+/// Helper macro declaring all container types for a header and item definition
+///
+/// Usage:
+///
+///  namespace foo {
+///     struct bar_header {};
+///     struct bar {};
+///     TRACCC_DECLARE_CONTAINER_TYPES(bar, bar_header, bar);
+///  }
+///
+/// In this example it would create all of the following types:
+///   - foo::bar_collection<T>
+///   - foo::bar_const_collection<T>
+///   - foo::host_bar_collection
+///   - foo::device_bar_collection
+///   - foo::device_bar_const_collection
+///   - foo::host_bar_container
+///   - foo::device_bar_container
+///   - foo::device_bar_const_container
+///   - foo::bar_container_view
+///   - foo::bar_container_const_view
+///   - foo::bar_container_data
+///   - foo::bar_container_const_data
+///   - foo::bar_container_buffer
+///
+#define TRACCC_DECLARE_CONTAINER_TYPES(NAME, HEADER_TYPE, ITEM_TYPE)  \
+    using host_##NAME##_container =                                   \
+        traccc::host_container<HEADER_TYPE, ITEM_TYPE>;               \
+    using device_##NAME##_container =                                 \
+        traccc::device_container<HEADER_TYPE, ITEM_TYPE>;             \
+    using device_##NAME##_const_container =                           \
+        traccc::device_container<const HEADER_TYPE, const ITEM_TYPE>; \
+    using NAME##_container_view =                                     \
+        traccc::container_view<HEADER_TYPE, ITEM_TYPE>;               \
+    using NAME##_container_const_view =                               \
+        traccc::container_view<const HEADER_TYPE, const ITEM_TYPE>;   \
+    using NAME##_container_data =                                     \
+        traccc::container_data<HEADER_TYPE, ITEM_TYPE>;               \
+    using NAME##_container_const_data =                               \
+        traccc::container_data<const HEADER_TYPE, const ITEM_TYPE>;   \
+    using NAME##_container_buffer =                                   \
+        traccc::container_buffer<HEADER_TYPE, ITEM_TYPE>
