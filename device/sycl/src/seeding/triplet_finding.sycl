@@ -23,14 +23,16 @@ namespace traccc::sycl {
 
 class TripletFind {
     public:
-    TripletFind(
-        const seedfinder_config config, const seedfilter_config filter_config,
-        sp_grid_const_view internal_sp_view,
-        device::doublet_counter_container_const_view doublet_counter_view,
-        doublet_container_view mid_bot_doublet_view,
-        doublet_container_view mid_top_doublet_view,
-        triplet_counter_container_view triplet_counter_view,
-        triplet_container_view triplet_view, local_accessor<int> localMem)
+    TripletFind(const seedfinder_config config,
+                const seedfilter_config filter_config,
+                sp_grid_const_view internal_sp_view,
+                device::doublet_counter_container_types::const_view
+                    doublet_counter_view,
+                doublet_container_view mid_bot_doublet_view,
+                doublet_container_view mid_top_doublet_view,
+                triplet_counter_container_view triplet_counter_view,
+                triplet_container_view triplet_view,
+                local_accessor<int> localMem)
         : m_config(config),
           m_filter_config(filter_config),
           m_internal_sp_view(internal_sp_view),
@@ -51,8 +53,8 @@ class TripletFind {
         // Get device container for input parameters
         const_sp_grid_device internal_sp_device(m_internal_sp_view);
 
-        device::device_doublet_counter_const_container doublet_counter_device(
-            m_doublet_counter_view);
+        device::doublet_counter_container_types::const_device
+            doublet_counter_device(m_doublet_counter_view);
         device_doublet_container mid_bot_doublet_device(m_mid_bot_doublet_view);
         device_doublet_container mid_top_doublet_device(m_mid_top_doublet_view);
 
@@ -249,7 +251,7 @@ class TripletFind {
     const seedfinder_config m_config;
     const seedfilter_config m_filter_config;
     sp_grid_const_view m_internal_sp_view;
-    device::doublet_counter_container_const_view m_doublet_counter_view;
+    device::doublet_counter_container_types::const_view m_doublet_counter_view;
     doublet_container_view m_mid_bot_doublet_view;
     doublet_container_view m_mid_top_doublet_view;
     triplet_counter_container_view m_triplet_counter_view;
@@ -260,7 +262,7 @@ class TripletFind {
 void triplet_finding(const seedfinder_config& config,
                      const seedfilter_config& filter_config,
                      const sp_grid_const_view& internal_sp,
-                     const device::doublet_counter_container_const_view&
+                     const device::doublet_counter_container_types::const_view&
                          doublet_counter_container,
                      doublet_container_view mid_bot_doublet_container,
                      doublet_container_view mid_top_doublet_container,

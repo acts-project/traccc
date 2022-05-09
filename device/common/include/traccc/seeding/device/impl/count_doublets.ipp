@@ -23,7 +23,7 @@ void count_doublets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& sp_ps_view,
-    doublet_counter_container_view doublet_view) {
+    doublet_counter_container_types::view doublet_view) {
 
     // Check if anything needs to be done.
     vecmem::device_vector<const prefix_sum_element_t> sp_prefix_sum(sp_ps_view);
@@ -36,7 +36,7 @@ void count_doublets(
 
     // Set up the device containers.
     const const_sp_grid_device sp_grid(sp_view);
-    device_doublet_counter_container doublet_counter(doublet_view);
+    doublet_counter_container_types::device doublet_counter(doublet_view);
 
     // Get the spacepoint that we're evaluating in this thread, and treat that
     // as the "middle" spacepoint.

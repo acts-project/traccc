@@ -35,7 +35,7 @@ void count_doublets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& sp_ps_view,
-    doublet_counter_container_view doublet_view);
+    doublet_counter_container_types::view doublet_view);
 
 }  // namespace traccc::device
 

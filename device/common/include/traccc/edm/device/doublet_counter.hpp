@@ -57,58 +57,10 @@ struct doublet_counter {
 
 };  // struct doublet_counter
 
-/// Convenience declaration for the doublet_counter collection type to use in
-/// host code
-using host_doublet_counter_collection = vecmem::vector<doublet_counter>;
-
-/// Convenience declaration for the doublet_counter collection type to use in
-/// device code (non-const)
-using device_doublet_counter_collection =
-    vecmem::device_vector<doublet_counter>;
-
-/// Convenience declaration for the doublet_counter collection type to use in
-/// device code (const)
-using device_doublet_counter_const_collection =
-    vecmem::device_vector<const doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container type to use in
-/// host code
-using host_doublet_counter_container =
-    host_container<doublet_counter_header, doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container type to use in
-/// device code (non-const)
-using device_doublet_counter_container =
-    device_container<doublet_counter_header, doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container type to use in
-/// device code (const)
-using device_doublet_counter_const_container =
-    device_container<const doublet_counter_header, const doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container data type to use
-/// in host code (non-const)
-using doublet_counter_container_data =
-    container_data<doublet_counter_header, doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container data type to use
-/// in host code (const)
-using doublet_counter_container_const_data =
-    container_data<const doublet_counter_header, const doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container buffer type to use
-/// in host code
-using doublet_counter_container_buffer =
-    container_buffer<doublet_counter_header, doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container view type to use
-/// in host code (non-const)
-using doublet_counter_container_view =
-    container_view<doublet_counter_header, doublet_counter>;
-
-/// Convenience declaration for the doublet_counter container view type to use
-/// in host code (const)
-using doublet_counter_container_const_view =
-    container_view<const doublet_counter_header, const doublet_counter>;
+/// Declare all doublet counter collection types
+using doublet_counter_collection_types = collection_types<doublet_counter>;
+/// Declare all doublet counter container types
+using doublet_counter_container_types =
+    container_types<doublet_counter_header, doublet_counter>;
 
 }  // namespace traccc::device

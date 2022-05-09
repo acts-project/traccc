@@ -22,7 +22,7 @@ TRACCC_HOST_DEVICE
 void find_doublets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
-    const device::doublet_counter_container_const_view& doublet_view,
+    const device::doublet_counter_container_types::const_view& doublet_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         doublet_ps_view,
     doublet_container_view mb_doublets_view,
@@ -37,9 +37,9 @@ void find_doublets(
 
     // Get the middle spacepoint that we need to be looking at.
     const prefix_sum_element_t middle_sp_idx = doublet_prefix_sum[globalIndex];
-    const device::device_doublet_counter_const_container doublet_counts(
+    const device::doublet_counter_container_types::const_device doublet_counts(
         doublet_view);
-    const device::device_doublet_counter_const_collection
+    const device::doublet_counter_collection_types::const_device
         doublet_counts_in_bin =
             doublet_counts.get_items().at(middle_sp_idx.first);
     const device::doublet_counter middle_sp_counter =
