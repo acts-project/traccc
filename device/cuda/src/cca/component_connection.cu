@@ -24,11 +24,19 @@ using index_t = unsigned short;
 
 namespace traccc::cuda {
 namespace details {
+
+/*
+ * Structure that defines the start point of a partition and its size.
+ */
 struct ccl_partition {
     std::size_t start;
     std::size_t size;
 };
 
+/*
+ * Convenience structure to work with flattened data arrays instead of 
+ * an array/vector of cells.
+ */
 struct cell_container {
     std::size_t size = 0;
     channel_id* channel0 = nullptr;
@@ -38,6 +46,10 @@ struct cell_container {
     geometry_id* module_id = nullptr;
 };
 
+/*
+ * Convenience structure to work with flattened data arrays instead of 
+ * an array/vector of measures.
+ */
 struct measurement_container {
     unsigned int size = 0;
     scalar* channel0 = nullptr;
@@ -47,6 +59,9 @@ struct measurement_container {
     geometry_id* module_id = nullptr;
 };
 
+/*
+ * Check if two cells are considered close enough to be part of the same cluster.
+ */
 __device__ bool is_adjacent(channel_id ac0, channel_id ac1, channel_id bc0,
                             channel_id bc1) {
     unsigned int p0 = (ac0 - bc0);
@@ -113,6 +128,12 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
     }
 }
 
+/*
+ * Implementation of a simplified SV algorithm. 
+ *
+ * The implementation corresponds to Algorithm 1 of the following paper:
+ * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
+ */
 __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
     /*
@@ -192,6 +213,12 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
     } while (__syncthreads_or(gfc));
 }
 
+/*
+ * Implementation of the FastSV algorithm. 
+ *
+ * The implementation corresponds to Algorithm 2 of the following paper:
+ * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
+ */
 __device__ void fast_sv_2(index_t* f, index_t* gf, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
     bool gfc;
@@ -458,10 +485,25 @@ vecmem::vector<details::ccl_partition> partition(
     std::size_t index = 0;
     std::size_t size = 0;
 
+    /*
+     * Iterate over every cell module in the current data set.
+     */
     for (std::size_t i = 0; i < data.size(); ++i) {
+        /*
+         * We start at 0 since this is the origin of the local coordinate 
+         * system within a cell module.
+         */
         channel_id last_mid = 0;
 
         for (const cell& c : data.at(i).items) {
+            /*
+             * Create a new partition if an "empty" row is detected. A row 
+             * is considered "empty" if the channel1 value between two 
+             * consecutive cells have a difference > 1.
+             * To prevent creating many small partitions, the current partition
+             * must have at least twice the size of threads per block. This 
+             * guarantees that each thread handles later at least two cells.
+             */
             if (c.channel1 > last_mid + 1 && size >= 2 * THREADS_PER_BLOCK) {
                 partitions.push_back(
                     details::ccl_partition{.start = index, .size = size});
@@ -474,6 +516,13 @@ vecmem::vector<details::ccl_partition> partition(
             size += 1;
         }
 
+        /*
+         * If a cell module has many activations and therefore no empty rows, 
+         * it is possible that partitions reach a considerable size. To prevent
+         * very big partitions, we check at the end of each module if the 
+         * current partition is not above a threshold, and end the current 
+         * partition if necessary here.
+         */
         if (size >= 2 * THREADS_PER_BLOCK) {
             partitions.push_back(
                 details::ccl_partition{.start = index, .size = size});
@@ -483,6 +532,10 @@ vecmem::vector<details::ccl_partition> partition(
         }
     }
 
+    /*
+     * Create the very last partition after having iterated over all cell 
+     * modules and cells.
+     */
     if (size > 0) {
         partitions.push_back(
             details::ccl_partition{.start = index, .size = size});
@@ -503,8 +556,11 @@ host_measurement_container component_connection::operator()(
         total_cells += data.at(i).items.size();
     }
 
-    details::cell_container container;
-
+    /*
+     * Flatten the data to handle memory access (fetch and cache)
+     * more efficiently. This removes the hierarchy level that 
+     * references to the cell module.
+     */
     vecmem::vector<channel_id> channel0(&mem);
     channel0.reserve(total_cells);
     vecmem::vector<channel_id> channel1(&mem);
@@ -526,6 +582,10 @@ host_measurement_container component_connection::operator()(
         }
     }
 
+    /*
+     * Store the flattened arrays in a convenience data container.
+     */
+    details::cell_container container;
     container.size = total_cells;
     container.channel0 = channel0.data();
     container.channel1 = channel1.data();
@@ -533,9 +593,22 @@ host_measurement_container component_connection::operator()(
     container.time = time.data();
     container.module_id = module_id.data();
 
+    /*
+     * Separate the problem into various subproblems (partitions).
+     * We know that the input data is sorted primarily on channel1 (y-axis), 
+     * and secondarily on channel0 (x-axis). This allows the cheap creation 
+     * of partitions based on the distance of the y-value between two
+     * consecutive cells. If this distance is above a threshold, we have the
+     * guarantee that the two cells belong not to the same cluster.
+     */
     vecmem::vector<details::ccl_partition> partitions =
         details::partition(data, mem);
 
+    /*
+     * Reserve space for the result of the algorithm. Currently, there is 
+     * enough space allocated that (in theory) each cell could be a single
+     * cluster, but this should not be the case with real experiment data.
+     */
     vecmem::allocator alloc(mem);
 
     details::measurement_container* mctnr =
@@ -552,11 +625,19 @@ host_measurement_container component_connection::operator()(
     mctnr->module_id = static_cast<geometry_id*>(
         alloc.allocate_bytes(total_cells * sizeof(geometry_id)));
 
+    /*
+     * Run the connected component labeling algorithm to retrieve the clusters.
+     * 
+     * This step includes the measurement (hit) creation for each cluster.
+     */
     sparse_ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
         container, partitions.data(), *mctnr);
 
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
+    /*
+     * Copy back the data from our flattened data structure into the traccc EDM.
+     */
     host_measurement_container out;
 
     for (std::size_t i = 0; i < data.size(); ++i) {
