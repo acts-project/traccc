@@ -22,9 +22,10 @@ namespace traccc {
 /// @param cells_directory is the directory of cell file
 /// @param data_format is the data format (e.g. csv or binary) of output file
 /// @param cells_per_event is input cell container
-inline void write_cells(size_t event, const std::string &cells_directory,
-                        const traccc::data_format &data_format,
-                        const traccc::host_cell_container &cells_per_event) {
+inline void write_cells(
+    size_t event, const std::string &cells_directory,
+    const traccc::data_format &data_format,
+    const traccc::cell_container_types::host &cells_per_event) {
 
     if (data_format == traccc::data_format::binary) {
 

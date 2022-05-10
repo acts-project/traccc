@@ -453,7 +453,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
 }
 
 vecmem::vector<details::ccl_partition> partition(
-    const host_cell_container& data, vecmem::memory_resource& mem) {
+    const cell_container_types::host& data, vecmem::memory_resource& mem) {
     vecmem::vector<details::ccl_partition> partitions(&mem);
     std::size_t index = 0;
     std::size_t size = 0;
@@ -493,7 +493,7 @@ vecmem::vector<details::ccl_partition> partition(
 }  // namespace details
 
 host_measurement_container component_connection::operator()(
-    const host_cell_container& data) const {
+    const cell_container_types::host& data) const {
     vecmem::cuda::managed_memory_resource upstream;
     vecmem::binary_page_memory_resource mem(upstream);
 

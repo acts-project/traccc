@@ -7,9 +7,15 @@
 
 #pragma once
 
+// Library include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
+
+// VecMem include(s).
+#include <vecmem/containers/device_vector.hpp>
+
+// System include(s).
+#include <cassert>
 
 namespace traccc {
 
@@ -24,12 +30,14 @@ namespace detail {
 /// @param L an equivalance table
 ///
 /// @return the root of @param e
-template <template <typename> class vector_t>
 TRACCC_HOST_DEVICE inline unsigned int find_root(
-    const vector_t<unsigned int>& L, const unsigned int& e) {
+    const vecmem::device_vector<unsigned int>& L, unsigned int e) {
+
     unsigned int r = e;
+    assert(r < L.size());
     while (L[r] != r) {
         r = L[r];
+        assert(r < L.size());
     }
     return r;
 }
@@ -39,16 +47,17 @@ TRACCC_HOST_DEVICE inline unsigned int find_root(
 /// @param L an equivalance table
 ///
 /// @return the rleast common ancestor of the entries
-template <template <typename> class vector_t>
-TRACCC_HOST_DEVICE inline unsigned int make_union(vector_t<unsigned int>& L,
-                                                  const unsigned int& e1,
-                                                  const unsigned int& e2) {
+TRACCC_HOST_DEVICE inline unsigned int make_union(
+    vecmem::device_vector<unsigned int>& L, unsigned int e1, unsigned int e2) {
+
     int e;
     if (e1 < e2) {
         e = e1;
+        assert(e2 < L.size());
         L[e2] = e;
     } else {
         e = e2;
+        assert(e1 < L.size());
         L[e1] = e;
     }
     return e;
@@ -83,20 +92,22 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::cell a, traccc::cell b) {
 /// @param L is the vector of the output indices (to which cluster a cell
 /// belongs to)
 /// @param labels is the number of clusters found
-template <template <typename> class vector_t, typename cell_t>
-TRACCC_HOST_DEVICE inline void sparse_ccl(const vector_t<cell_t>& cells,
-                                          vector_t<unsigned int>& L,
-                                          unsigned int& labels) {
+TRACCC_HOST_DEVICE inline void sparse_ccl(
+    const cell_collection_types::const_device& cells,
+    vecmem::device_vector<unsigned int>& L, unsigned int& labels) {
+
+    // The number of cells.
+    const unsigned int n_cells = cells.size();
 
     // first scan: pixel association
     unsigned int start_j = 0;
-    for (unsigned int i = 0; i < cells.size(); ++i) {
+    for (unsigned int i = 0; i < n_cells; ++i) {
         L[i] = i;
         int ai = i;
         if (i > 0) {
             for (unsigned int j = start_j; j < i; ++j) {
                 if (is_adjacent(cells[i], cells[j])) {
-                    ai = make_union<vector_t>(L, ai, find_root<vector_t>(L, j));
+                    ai = make_union(L, ai, find_root(L, j));
                 } else if (is_far_enough(cells[i], cells[j])) {
                     ++start_j;
                 }
@@ -105,7 +116,7 @@ TRACCC_HOST_DEVICE inline void sparse_ccl(const vector_t<cell_t>& cells,
     }
 
     // second scan: transitive closure
-    for (unsigned int i = 0; i < cells.size(); ++i) {
+    for (unsigned int i = 0; i < n_cells; ++i) {
         unsigned int l = 0;
         if (L[i] == i) {
             ++labels;

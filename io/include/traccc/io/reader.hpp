@@ -45,7 +45,7 @@ inline traccc::geometry read_geometry(const std::string &detector_file) {
 /// @param data_format is the data format (e.g. csv or binary) of output file
 /// @param surface_transforms is the input geometry data
 /// @param resource is the vecmem resource
-inline traccc::host_cell_container read_cells_from_event(
+inline traccc::cell_container_types::host read_cells_from_event(
     size_t event, const std::string &cells_directory,
     const traccc::data_format &data_format, traccc::geometry surface_transforms,
     vecmem::memory_resource &resource) {
@@ -66,8 +66,8 @@ inline traccc::host_cell_container read_cells_from_event(
 
         vecmem::copy copy;
 
-        return traccc::read_binary<traccc::host_cell_container>(io_cells_file,
-                                                                copy, resource);
+        return traccc::read_binary<traccc::cell_container_types::host>(
+            io_cells_file, copy, resource);
     } else {
         throw std::invalid_argument("Allowed data format is csv or binary");
     }
@@ -122,7 +122,7 @@ inline traccc::demonstrator_input read(size_t events,
 #pragma omp parallel for
 #endif
     for (size_t event = 0; event < events; ++event) {
-        traccc::host_cell_container cells_per_event = readFn(event);
+        traccc::cell_container_types::host cells_per_event = readFn(event);
 
 #if defined(_OPENMP)
 #pragma omp critical

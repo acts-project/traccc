@@ -34,18 +34,20 @@ TEST(io_binary, cell) {
         traccc::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read csv file
-    traccc::host_cell_container cells_csv = traccc::read_cells_from_event(
-        event, cells_directory, traccc::data_format::csv, surface_transforms,
-        host_mr);
+    traccc::cell_container_types::host cells_csv =
+        traccc::read_cells_from_event(event, cells_directory,
+                                      traccc::data_format::csv,
+                                      surface_transforms, host_mr);
 
     // Write binary file
     traccc::write_cells(event, cells_directory, traccc::data_format::binary,
                         cells_csv);
 
     // Read binary file
-    traccc::host_cell_container cells_binary = traccc::read_cells_from_event(
-        event, cells_directory, traccc::data_format::binary, surface_transforms,
-        host_mr);
+    traccc::cell_container_types::host cells_binary =
+        traccc::read_cells_from_event(event, cells_directory,
+                                      traccc::data_format::binary,
+                                      surface_transforms, host_mr);
 
     // Delete binary file
     std::string io_cells_file = traccc::data_directory() + cells_directory +

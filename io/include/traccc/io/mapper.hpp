@@ -178,7 +178,7 @@ measurement_cell_map generate_measurement_cell_map(
     auto surface_transforms = read_geometry(detector_file);
 
     // Read the cells from the relevant event file
-    host_cell_container cells_per_event =
+    cell_container_types::host cells_per_event =
         read_cells_from_event(event, cells_dir, traccc::data_format::csv,
                               surface_transforms, resource);
 

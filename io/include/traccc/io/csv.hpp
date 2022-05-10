@@ -212,18 +212,18 @@ inline std::map<geometry_id, transform3> read_surfaces(
 /// @param resource The memory resource to use for the return value
 /// @param tfmap the (optional) transform map
 /// @param max_cells the (optional) maximum number of cells to be read in
-inline host_cell_container read_cells(
+inline cell_container_types::host read_cells(
     cell_reader& creader, vecmem::memory_resource& resource,
     const traccc::geometry* tfmap = nullptr,
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
     uint64_t reference_id = 0;
-    host_cell_container result(&resource);
+    cell_container_types::host result(&resource);
 
     bool first_line_read = false;
     unsigned int read_cells = 0;
     csv_cell iocell;
-    host_cell_collection cells(&resource);
+    cell_collection_types::host cells(&resource);
     cell_module module;
     while (creader.read(iocell)) {
 
@@ -241,7 +241,7 @@ inline host_cell_container read_cells(
                       });
             result.push_back(std::move(module), std::move(cells));
             // Clear for next round
-            cells = host_cell_collection(&resource);
+            cells = cell_collection_types::host(&resource);
             module = cell_module();
         }
         first_line_read = true;

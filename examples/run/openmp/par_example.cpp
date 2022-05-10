@@ -59,7 +59,7 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
     for (unsigned int event = 0; event < events; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::host_cell_container cells_per_event =
+        traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, cells_dir,
                                           traccc::data_format::csv,
                                           surface_transforms, resource);
