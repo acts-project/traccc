@@ -37,7 +37,7 @@ namespace kernels {
 __global__ void count_doublets(
     seedfinder_config config, sp_grid_const_view sp_grid,
     vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
-    device::doublet_counter_container_view doublet_counter) {
+    device::doublet_counter_container_types::view doublet_counter) {
 
     device::count_doublets(threadIdx.x + blockIdx.x * blockDim.x, config,
                            sp_grid, sp_prefix_sum, doublet_counter);
@@ -46,7 +46,7 @@ __global__ void count_doublets(
 /// CUDA kernel for running @c traccc::device::find_doublets
 __global__ void find_doublets(
     seedfinder_config config, sp_grid_const_view sp_grid,
-    device::doublet_counter_container_const_view doublet_counter,
+    device::doublet_counter_container_types::const_view doublet_counter,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         doublet_prefix_sum,
     doublet_container_view mb_doublets, doublet_container_view mt_doublets) {
@@ -74,7 +74,7 @@ seed_finding::output_type seed_finding::operator()(
         device::get_prefix_sum(g2_view._data_view, m_mr.get(), copy);
 
     // Set up the doublet counter buffer.
-    device::doublet_counter_container_buffer doublet_counter_buffer =
+    device::doublet_counter_container_types::buffer doublet_counter_buffer =
         device::make_doublet_counter_buffer(g2_view, copy, m_mr.get());
 
     // Calculate the number of threads and thread blocks to run the doublet

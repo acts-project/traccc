@@ -17,7 +17,7 @@
 namespace traccc::device {
 
 doublet_buffer_pair make_doublet_buffers(
-    const doublet_counter_container_const_view& doublet_counter,
+    const doublet_counter_container_types::const_view& doublet_counter,
     vecmem::copy& copy, vecmem::memory_resource& mr,
     vecmem::memory_resource* mr_host) {
 

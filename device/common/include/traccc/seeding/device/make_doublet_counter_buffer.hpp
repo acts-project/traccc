@@ -31,7 +31,7 @@ namespace traccc::device {
 ///                buffer, in case @c mr is not host-accessible
 /// @return A buffer usable by @c traccc::device::count_doublets
 ///
-device::doublet_counter_container_buffer make_doublet_counter_buffer(
+doublet_counter_container_types::buffer make_doublet_counter_buffer(
     const sp_grid_const_view& spacepoint_grid, vecmem::copy& copy,
     vecmem::memory_resource& mr, vecmem::memory_resource* mr_host = nullptr);
 

@@ -35,7 +35,7 @@ void seed_selecting(
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
     const host_spacepoint_container& spacepoints,
     sp_grid_const_view internal_sp_view,
-    device::doublet_counter_container_const_view dcc_view,
+    device::doublet_counter_container_types::const_view dcc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
     vecmem::memory_resource& resource);

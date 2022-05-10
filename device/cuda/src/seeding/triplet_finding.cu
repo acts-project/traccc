@@ -38,22 +38,20 @@ __global__ void set_zero_kernel(triplet_container_view tc_view) {
 __global__ void triplet_finding_kernel(
     const seedfinder_config config, const seedfilter_config filter_config,
     sp_grid_const_view internal_sp_view,
-    device::doublet_counter_container_const_view doublet_counter_view,
+    device::doublet_counter_container_types::const_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view);
 
-void triplet_finding(const seedfinder_config& config,
-                     const seedfilter_config& filter_config,
-                     const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
-                     sp_grid_const_view internal_sp_view,
-                     device::doublet_counter_container_const_view dcc_view,
-                     doublet_container_view mbc_view,
-                     doublet_container_view mtc_view,
-                     triplet_counter_container_view tcc_view,
-                     triplet_container_view tc_view,
-                     vecmem::memory_resource& resource) {
+void triplet_finding(
+    const seedfinder_config& config, const seedfilter_config& filter_config,
+    const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
+    sp_grid_const_view internal_sp_view,
+    device::doublet_counter_container_types::const_view dcc_view,
+    doublet_container_view mbc_view, doublet_container_view mtc_view,
+    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
+    vecmem::memory_resource& resource) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -99,7 +97,7 @@ void triplet_finding(const seedfinder_config& config,
 __global__ void triplet_finding_kernel(
     const seedfinder_config config, const seedfilter_config filter_config,
     sp_grid_const_view internal_sp_view,
-    device::doublet_counter_container_const_view doublet_counter_view,
+    device::doublet_counter_container_types::const_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
     triplet_counter_container_view triplet_counter_view,
@@ -108,8 +106,8 @@ __global__ void triplet_finding_kernel(
     // Get device container for input parameters
     const_sp_grid_device internal_sp_device(internal_sp_view);
 
-    const device::device_doublet_counter_const_container doublet_counter_device(
-        doublet_counter_view);
+    const device::doublet_counter_container_types::const_device
+        doublet_counter_device(doublet_counter_view);
     device_doublet_container mid_bot_doublet_device(mid_bot_doublet_view);
     device_doublet_container mid_top_doublet_device(mid_top_doublet_view);
 

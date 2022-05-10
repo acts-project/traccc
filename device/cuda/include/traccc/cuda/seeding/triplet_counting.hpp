@@ -31,14 +31,13 @@ namespace cuda {
 /// @param mid_top_doublet_container vecmem container for mid-top doublets
 /// @param triplet_counter_container vecmem container for triplet counters
 /// @resource vecmem memory resource
-void triplet_counting(const seedfinder_config& config,
-                      const vecmem::vector<doublet_per_bin>& mbc_headers,
-                      sp_grid_const_view internal_sp_view,
-                      device::doublet_counter_container_const_view dcc_view,
-                      doublet_container_view mbc_view,
-                      doublet_container_view mtc_view,
-                      triplet_counter_container_view tcc_view,
-                      vecmem::memory_resource& resource);
+void triplet_counting(
+    const seedfinder_config& config,
+    const vecmem::vector<doublet_per_bin>& mbc_headers,
+    sp_grid_const_view internal_sp_view,
+    device::doublet_counter_container_types::const_view dcc_view,
+    doublet_container_view mbc_view, doublet_container_view mtc_view,
+    triplet_counter_container_view tcc_view, vecmem::memory_resource& resource);
 
 }  // namespace cuda
 }  // namespace traccc

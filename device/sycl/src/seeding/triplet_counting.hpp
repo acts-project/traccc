@@ -37,7 +37,7 @@ namespace traccc::sycl {
 void triplet_counting(const seedfinder_config& config,
                       const vecmem::vector<doublet_per_bin>& mbc_headers,
                       const sp_grid_const_view& internal_sp,
-                      const device::doublet_counter_container_const_view&
+                      const device::doublet_counter_container_types::const_view&
                           doublet_counter_container,
                       doublet_container_view mid_bot_doublet_container,
                       doublet_container_view mid_top_doublet_container,

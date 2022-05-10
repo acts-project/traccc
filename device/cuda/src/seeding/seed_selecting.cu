@@ -34,7 +34,7 @@ __global__ void seed_selecting_kernel(
     const seedfilter_config filter_config,
     spacepoint_container_const_view spacepoints_view,
     sp_grid_const_view internal_sp_view,
-    device::doublet_counter_container_const_view doublet_counter_view,
+    device::doublet_counter_container_types::const_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view,
     vecmem::data::vector_view<seed> seed_view);
@@ -44,7 +44,7 @@ void seed_selecting(
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
     const host_spacepoint_container& spacepoints,
     sp_grid_const_view internal_sp_view,
-    device::doublet_counter_container_const_view dcc_view,
+    device::doublet_counter_container_types::const_view dcc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
     vecmem::memory_resource& resource) {
@@ -88,7 +88,7 @@ __global__ void seed_selecting_kernel(
     const seedfilter_config filter_config,
     spacepoint_container_const_view spacepoints_view,
     sp_grid_const_view internal_sp_view,
-    device::doublet_counter_container_const_view doublet_counter_view,
+    device::doublet_counter_container_types::const_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
     triplet_container_view triplet_view,
     vecmem::data::vector_view<seed> seed_view) {
@@ -97,8 +97,8 @@ __global__ void seed_selecting_kernel(
     device_spacepoint_const_container spacepoints_device(spacepoints_view);
     const_sp_grid_device internal_sp_device(internal_sp_view);
 
-    const device::device_doublet_counter_const_container doublet_counter_device(
-        doublet_counter_view);
+    const device::doublet_counter_container_types::const_device
+        doublet_counter_device(doublet_counter_view);
     device_triplet_counter_container triplet_counter_device(
         triplet_counter_view);
     device_triplet_container triplet_device(triplet_view);

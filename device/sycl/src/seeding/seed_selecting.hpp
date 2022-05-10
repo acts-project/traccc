@@ -40,7 +40,7 @@ void seed_selecting(
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
     host_spacepoint_container& spacepoints,
     const sp_grid_const_view& internal_sp,
-    const device::doublet_counter_container_const_view&
+    const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
     host_triplet_counter_container& triplet_counter_container,
     host_triplet_container& triplet_container,

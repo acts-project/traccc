@@ -19,6 +19,8 @@
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/vector.hpp>
 
 // System include(s).
 #include <type_traits>
@@ -121,5 +123,63 @@ inline container_data<const header_t, const item_t> get_data(
     return {{vecmem::get_data(cc.get_headers())},
             {vecmem::get_data(cc.get_items(), resource)}};
 }
+
+/// Type trait defining all "collection types" for an EDM class
+template <typename item_t>
+struct collection_types {
+
+    /// @c item_t must not be a constant type
+    static_assert(std::is_const<item_t>::value == false,
+                  "The template parameter must not be a constant type");
+
+    /// Host collection for @c item_t
+    using host = vecmem::vector<item_t>;
+    /// Non-const device collection for @c item_t
+    using device = vecmem::device_vector<item_t>;
+    /// Constant device collection for @c item_t
+    using const_device = vecmem::device_vector<const item_t>;
+
+    /// Non-constant view of an @c item_t collection
+    using view = vecmem::data::vector_view<item_t>;
+    /// Constant view of an @c item_t collection
+    using const_view = vecmem::data::vector_view<const item_t>;
+
+    /// Buffer for an @c item_t collection
+    using buffer = vecmem::data::vector_buffer<item_t>;
+
+};  // struct collection_types
+
+/// Type trait defining all "container types" for an EDM class pair
+template <typename header_t, typename item_t>
+struct container_types {
+
+    /// @c header_t must not be a constant type
+    static_assert(std::is_const<header_t>::value == false,
+                  "The header type must not be constant");
+    /// @c item_t must not be a constant type
+    static_assert(std::is_const<item_t>::value == false,
+                  "The item type must not be constant");
+
+    /// Host container for @c header_t and @c item_t
+    using host = host_container<header_t, item_t>;
+    /// Non-const device container for @c header_t and @c item_t
+    using device = device_container<header_t, item_t>;
+    /// Constant device container for @c header_t and @c item_t
+    using const_device = device_container<const header_t, const item_t>;
+
+    /// Non-constant view of an @c header_t / @c item_t container
+    using view = container_view<header_t, item_t>;
+    /// Constant view of an @c header_t / @c item_t container
+    using const_view = container_view<const header_t, const item_t>;
+
+    /// Non-constant data for an @c header_t / @c item_t container
+    using data = container_data<header_t, item_t>;
+    /// Constant data for an @c header_t / @c item_t container
+    using const_data = container_data<const header_t, const item_t>;
+
+    /// Buffer for an @c header_t / @c item_t container
+    using buffer = container_buffer<header_t, item_t>;
+
+};  // struct container_types
 
 }  // namespace traccc

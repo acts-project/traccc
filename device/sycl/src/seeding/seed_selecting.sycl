@@ -55,15 +55,15 @@ static int min_elem(const local_accessor<triplet>& arr, const int& begin_idx,
 // Kernel class for seed selecting
 class SeedSelect {
     public:
-    SeedSelect(
-        const seedfilter_config filter_config,
-        spacepoint_container_view spacepoints_view,
-        sp_grid_const_view internal_sp_view,
-        device::doublet_counter_container_const_view doublet_counter_view,
-        triplet_counter_container_view triplet_counter_view,
-        triplet_container_view triplet_view,
-        vecmem::data::vector_buffer<seed>& seed_buffer,
-        local_accessor<triplet> localMem)
+    SeedSelect(const seedfilter_config filter_config,
+               spacepoint_container_view spacepoints_view,
+               sp_grid_const_view internal_sp_view,
+               device::doublet_counter_container_types::const_view
+                   doublet_counter_view,
+               triplet_counter_container_view triplet_counter_view,
+               triplet_container_view triplet_view,
+               vecmem::data::vector_buffer<seed>& seed_buffer,
+               local_accessor<triplet> localMem)
         : m_filter_config(filter_config),
           m_spacepoints_view(spacepoints_view),
           m_internal_sp_view(internal_sp_view),
@@ -83,8 +83,8 @@ class SeedSelect {
 
         const_sp_grid_device internal_sp_device(m_internal_sp_view);
 
-        device::device_doublet_counter_const_container doublet_counter_device(
-            m_doublet_counter_view);
+        device::doublet_counter_container_types::const_device
+            doublet_counter_device(m_doublet_counter_view);
         device_triplet_container triplet_device(m_triplet_view);
         device_seed_collection seed_device(m_seed_view);
 
@@ -245,7 +245,7 @@ class SeedSelect {
     const seedfilter_config m_filter_config;
     spacepoint_container_view m_spacepoints_view;
     sp_grid_const_view m_internal_sp_view;
-    device::doublet_counter_container_const_view m_doublet_counter_view;
+    device::doublet_counter_container_types::const_view m_doublet_counter_view;
     triplet_counter_container_view m_triplet_counter_view;
     triplet_container_view m_triplet_view;
     vecmem::data::vector_view<seed> m_seed_view;
@@ -257,7 +257,7 @@ void seed_selecting(
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
     host_spacepoint_container& spacepoints,
     const sp_grid_const_view& internal_sp,
-    const device::doublet_counter_container_const_view&
+    const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
     host_triplet_counter_container& triplet_counter_container,
     host_triplet_container& triplet_container,

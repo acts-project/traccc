@@ -56,7 +56,7 @@ seed_finding::output_type seed_finding::operator()(
     auto sp_grid_prefix_sum_view = vecmem::get_data(sp_grid_prefix_sum);
 
     // Set up the doublet counter buffer.
-    device::doublet_counter_container_buffer doublet_counter_buffer =
+    device::doublet_counter_container_types::buffer doublet_counter_buffer =
         device::make_doublet_counter_buffer(g2_view, copy, m_mr.get());
 
     // Calculate the range to run the doublet counting for.
@@ -69,7 +69,7 @@ seed_finding::output_type seed_finding::operator()(
                                           doubletCountLocalSize);
 
     // Count the number of doublets that we need to produce.
-    device::doublet_counter_container_view doublet_counter_view =
+    device::doublet_counter_container_types::view doublet_counter_view =
         doublet_counter_buffer;
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
