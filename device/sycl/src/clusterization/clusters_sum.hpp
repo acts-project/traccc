@@ -21,9 +21,11 @@ namespace traccc::sycl {
 /// Forward declaration of clusters sum function
 ///
 void clusters_sum(
-    const host_cell_container& cells_per_event,
+    const cell_container_types::host& cells_per_event,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    vecmem::unique_alloc_ptr<unsigned int>& cluster_sum,
+    vecmem::unique_alloc_ptr<unsigned int>& total_clusters,
+    vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
+    vecmem::data::vector_view<std::size_t> clusters_per_module_view,
     vecmem::memory_resource& resource, queue_wrapper queue);
 
 }  // namespace traccc::sycl

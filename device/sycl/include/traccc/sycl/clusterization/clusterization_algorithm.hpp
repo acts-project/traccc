@@ -37,15 +37,7 @@ class clusterization_algorithm : public algorithm<host_measurement_container(
     /// @return a measurement container with cell modules as headers and
     /// measurements as items
     output_type operator()(
-        const cell_container_types::host& cells_per_event) const override {
-
-        output_type measurements_per_event(&m_mr.get());
-
-        // 2 step cluster finding algorithm - returns the measurments
-        measurements_per_event = cf->operator()(cells_per_event);
-
-        return measurements_per_event;
-    }
+        const cell_container_types::host& cells_per_event) const override;
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;

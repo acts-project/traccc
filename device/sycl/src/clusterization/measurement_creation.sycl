@@ -23,7 +23,7 @@ void measurement_creation(measurement_container_view measurements_view,
 
     // Calculate the execution NDrange for the kernel
     auto workGroupSize = 64;
-    auto num = (N + workGroupSize - 1) / workGroupSize;
+    auto num = (n_clusters + workGroupSize - 1) / workGroupSize;
     auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * workGroupSize),
                                        ::sycl::range<1>(workGroupSize)};
     // Run the kernel
@@ -47,10 +47,8 @@ void measurement_creation(measurement_container_view measurements_view,
                 // items: cluster of cells at current idx
                 // header: cluster_id object with the information about the cell
                 // module
-                cluster_container_types::const_device::item_vector::
-                    const_reference cluster =
-                        clusters_device.get_items().at(idx);
-                const cluster_id &cl_id = clusters_device.get_headers().at(idx);
+                const auto& cluster = clusters_device.get_items().at(idx);
+                const cluster_id& cl_id = clusters_device.get_headers().at(idx);
 
                 const vector2 pitch = detail::get_pitch(cl_id);
                 const auto module_idx = cl_id.module_idx;
