@@ -22,7 +22,7 @@ cluster_finding::cluster_finding(vecmem::memory_resource &mr,
     : m_mr(mr), m_queue(queue) {}
 
 host_measurement_container cluster_finding::operator()(
-    const host_cell_container &cells_per_event) const {
+    const cell_container_types::host &cells_per_event) const {
 
     // Number of modules
     unsigned int num_modules = cells_per_event.size();

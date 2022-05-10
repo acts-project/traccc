@@ -48,7 +48,7 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 
 #pragma omp parallel for reduction (+:n_modules, n_cells, n_measurements, n_spacepoints)
     for (size_t event = 0; event < input_data.size(); ++event) {
-        traccc::host_cell_container cells_per_event =
+        traccc::cell_container_types::host cells_per_event =
             input_data.operator[](event);
 
         /*-------------------

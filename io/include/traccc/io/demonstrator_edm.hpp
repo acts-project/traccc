@@ -17,6 +17,6 @@ struct result {
     traccc::host_spacepoint_container spacepoints;
 };
 
-using demonstrator_input = vecmem::vector<traccc::host_cell_container>;
+using demonstrator_input = vecmem::vector<cell_container_types::host>;
 using demonstrator_result = vecmem::vector<traccc::result>;
 }  // namespace traccc

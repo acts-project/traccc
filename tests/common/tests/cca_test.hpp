@@ -23,7 +23,7 @@
 
 using cca_function_t = std::function<
     std::map<traccc::geometry_id, std::vector<traccc::measurement>>(
-        const traccc::host_cell_container &)>;
+        const traccc::cell_container_types::host &)>;
 
 class ConnectedComponentAnalysisTests
     : public traccc::tests::data_test,
@@ -85,7 +85,7 @@ class ConnectedComponentAnalysisTests
         traccc::cell_reader creader(file_hits);
 
         vecmem::host_memory_resource resource;
-        traccc::host_cell_container data =
+        traccc::cell_container_types::host data =
             traccc::read_cells(creader, resource);
 
         std::map<traccc::geometry_id, std::vector<traccc::measurement>> result =
