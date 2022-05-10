@@ -18,7 +18,7 @@ namespace traccc::sycl {
 
 void component_connection(
     cluster_container_view clusters_view,
-    const host_cell_container& cells_per_event,
+    const cell_container_types::host& cells_per_event,
     vecmem::data::vector_view<unsigned int> clusters_count_view,
     vecmem::unique_alloc_ptr<unsigned int>& total_clusters,
     vecmem::memory_resource& resource, queue_wrapper queue) {
@@ -40,7 +40,7 @@ void component_connection(
 
     // Get the view of the cells container
     auto cells_data = get_data(cells_per_event, &resource);
-    cell_container_const_view cells_view(cells_data);
+    cell_container_types::const_view cells_view(cells_data);
 
     // Helper container for sparse CCL calculations
     vecmem::data::jagged_vector_buffer<unsigned int> cluster_indices{cell_sizes,
@@ -61,7 +61,7 @@ void component_connection(
                 auto idx = item.get_global_linear_id();
 
                 // Initialize the data on the device
-                device_cell_const_container cells_device(cells_view);
+                cell_container_types::const_device cells_device(cells_view);
                 device_cluster_container clusters_device(clusters_view);
 
                 // Ignore if idx is out of range
@@ -81,8 +81,7 @@ void component_connection(
                 auto cluster_indices = device_cluster_indices.at(idx);
 
                 // Run the sparse_ccl algorithm
-                detail::sparse_ccl<vecmem::device_vector, const traccc::cell>(
-                    cells, cluster_indices, num_clusters);
+                detail::sparse_ccl(cells, cluster_indices, num_clusters);
 
                 // Add the number of found clusers per module to the count
                 // vector

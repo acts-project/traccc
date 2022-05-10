@@ -5,7 +5,7 @@
 # Mozilla Public License Version 2.0
 
 # Set up the "build" of the traccc::core library.
-traccc_add_library( traccc_core core TYPE INTERFACE
+traccc_add_library( traccc_core core TYPE SHARED
   # Common definitions.
   "include/traccc/definitions/track_parametrization.hpp"
   "include/traccc/definitions/primitives.hpp"
@@ -35,7 +35,9 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/sparse_ccl.hpp"
   "include/traccc/clusterization/component_connection.hpp"
+  "src/clusterization/component_connection.cpp"
   "include/traccc/clusterization/clusterization_algorithm.hpp"
+  "src/clusterization/clusterization_algorithm.cpp"
   "include/traccc/clusterization/spacepoint_formation.hpp"
   "include/traccc/clusterization/measurement_creation.hpp"
   "include/traccc/clusterization/measurement_creation_helper.hpp"
@@ -60,4 +62,4 @@ traccc_add_library( traccc_core core TYPE INTERFACE
   "include/traccc/seeding/seed_finding.hpp"
   "include/traccc/seeding/spacepoint_binning.hpp" )
 target_link_libraries( traccc_core
-  INTERFACE Eigen3::Eigen vecmem::core detray::core ActsCore traccc::algebra )
+  PUBLIC Eigen3::Eigen vecmem::core detray::core ActsCore traccc::algebra )

@@ -12,8 +12,8 @@
 
 namespace traccc::sycl {
 
-class clusterization_algorithm
-    : public algorithm<host_measurement_container(const host_cell_container&)> {
+class clusterization_algorithm : public algorithm<host_measurement_container(
+                                     const cell_container_types::host&)> {
 
     public:
     /// Constructor for clusterization algorithm
@@ -28,7 +28,7 @@ class clusterization_algorithm
     }
 
     output_type operator()(
-        const host_cell_container& cells_per_event) const override {
+        const cell_container_types::host& cells_per_event) const override {
 
         output_type measurements_per_event(&m_mr.get());
 
