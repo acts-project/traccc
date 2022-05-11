@@ -448,12 +448,19 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      */
     __shared__ unsigned int outi;
 
+    /*
+     * Initialize the counter of clusters per thread block
+     */
     if (threadIdx.x == 0) {
         outi = 0;
     }
 
     __syncthreads();
 
+    /*
+     * Count the number of clusters by checking how many nodes have 
+     * themself assigned as a parent.
+     */
     for (index_t tst = 0, tid;
          (tid = tst * blockDim.x + threadIdx.x) < cells.size; ++tst) {
         if (f[tid] == tid) {
@@ -463,6 +470,14 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
 
     __syncthreads();
 
+    /*
+     * Add the number of clusters of each thread block to the total 
+     * number of clusters. At the same time, a cluster id is retrieved
+     * for the next data processing step. 
+     * Note that this might be not the same cluster as has been treated 
+     * previously. However, since each thread block spawns a the maximum 
+     * amount of threads per block, this has no sever implications.
+     */
     if (threadIdx.x == 0) {
         outi = atomicAdd(&_out_ctnr.size, outi);
     }
