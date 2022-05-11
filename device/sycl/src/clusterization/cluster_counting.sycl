@@ -32,7 +32,7 @@ void cluster_counting(
     // For now only size 32 and smaller is possible (for higher, there is
     // problem with non-uniform work groups in x and y dimensions)
     // For Intel the size should be changed to 16
-    auto wGroupSize = 32;
+    auto wGroupSize = 16;
     auto numGroupsX = (*n_modules + wGroupSize - 1) / wGroupSize;
     auto numGroupsY = (cells_max + wGroupSize - 1) / wGroupSize;
     auto ndrange = ::sycl::nd_range<2>{

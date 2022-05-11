@@ -30,7 +30,7 @@ void component_connection(
     // Calculate the 2-dim NDrange for the kernel
     // For now only size 32 and smaller is possible (for higher, there is
     // problem with non-uniform work groups in x and y dimensions)
-    auto wGroupSize = 32;
+    auto wGroupSize = 16;
     auto numGroupsX = (n_modules + wGroupSize - 1) / wGroupSize;
     auto numGroupsY = (cells_max + wGroupSize - 1) / wGroupSize;
     auto ndrange = ::sycl::nd_range<2>{
