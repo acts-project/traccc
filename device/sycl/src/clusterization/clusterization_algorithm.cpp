@@ -73,16 +73,11 @@ host_measurement_container clusterization_algorithm::operator()(
         num_modules, sparse_ccl_indices, vecmem::get_data(cluster_sizes),
         cluster_prefix_sum, cells_max, m_mr.get(), m_queue);
 
-    // copy the sizes to the std::vector to construct the buffer for component
-    // connection
-    std::vector<std::size_t> cluster_sizes_host(*total_clusters);
-    for (std::size_t i = 0; i < *total_clusters; ++i) {
-        cluster_sizes_host[i] = cluster_sizes[i];
-    }
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_types::buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
-        {std::vector<std::size_t>(*total_clusters, 0), cluster_sizes_host,
+        {std::vector<std::size_t>(*total_clusters, 0),
+         std::vector<std::size_t>(cluster_sizes.begin(), cluster_sizes.end()),
          m_mr.get()}};
 
     copy.setup(clusters_buffer.headers);
