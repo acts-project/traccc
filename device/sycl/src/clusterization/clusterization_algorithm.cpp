@@ -80,7 +80,7 @@ host_measurement_container clusterization_algorithm::operator()(
         cluster_sizes_host[i] = cluster_sizes[i];
     }
     // Cluster container buffer for the clusters and headers (cluster ids)
-    cluster_container_buffer clusters_buffer{
+    cluster_container_types::buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
         {std::vector<std::size_t>(*total_clusters, 0), cluster_sizes_host,
          m_mr.get()}};

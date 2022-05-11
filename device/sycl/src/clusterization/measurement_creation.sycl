@@ -7,13 +7,12 @@
 
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
-#include "measurement_creation.hpp"
-
-// Project include(s).
-#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
+
+// Project include(s).
+#include "measurement_creation.hpp"
 
 namespace traccc::sycl {
 

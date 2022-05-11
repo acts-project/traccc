@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Library include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
 // Project include(s).
+#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 
