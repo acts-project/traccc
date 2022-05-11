@@ -186,7 +186,7 @@ measurement_cell_map generate_measurement_cell_map(
         auto module = cells_per_event.at(i).header;
 
         // The algorithmic code part: start
-        host_cluster_container clusters =
+        cluster_container_types::host clusters =
             cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
         for (auto& cl_id : clusters.get_headers()) {
             cl_id.pixel = module.pixel;
