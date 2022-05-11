@@ -7,25 +7,35 @@
 
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
-#include "measurement_creation.hpp"
-
-// Project include(s).
-#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
+
+// Project include(s).
+#include "measurement_creation.hpp"
 
 namespace traccc::sycl {
 
 void measurement_creation(measurement_container_view measurements_view,
                           cluster_container_types::const_view clusters_view,
-                          const unsigned int &range, queue_wrapper queue) {
+                          queue_wrapper queue) {
 
+    // The kernel execution range
+    auto n_clusters = clusters_view.headers.size();
+
+    // Calculate the execution NDrange for the kernel
+    auto workGroupSize = 64;
+    auto num = (n_clusters + workGroupSize - 1) / workGroupSize;
+    auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * workGroupSize),
+                                       ::sycl::range<1>(workGroupSize)};
     // Run the kernel
     details::get_queue(queue)
         .parallel_for<class MeasurementCreation>(
-            range,
-            [clusters_view, measurements_view](auto idx) {
+            ndrange,
+            [clusters_view, measurements_view](::sycl::nd_item<1> item) {
+                // Get the global index
+                auto idx = item.get_global_linear_id();
+
                 // Initialize device vectors
                 const cluster_container_types::const_device clusters_device(
                     clusters_view);
@@ -39,10 +49,8 @@ void measurement_creation(measurement_container_view measurements_view,
                 // items: cluster of cells at current idx
                 // header: cluster_id object with the information about the cell
                 // module
-                cluster_container_types::const_device::item_vector::
-                    const_reference cluster =
-                        clusters_device.get_items().at(idx);
-                const cluster_id &cl_id = clusters_device.get_headers().at(idx);
+                const auto& cluster = clusters_device.get_items().at(idx);
+                const cluster_id& cl_id = clusters_device.get_headers().at(idx);
 
                 const vector2 pitch = detail::get_pitch(cl_id);
                 const auto module_idx = cl_id.module_idx;

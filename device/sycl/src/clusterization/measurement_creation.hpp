@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Library include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
 // Project include(s).
+#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 
@@ -20,6 +18,6 @@ namespace traccc::sycl {
 ///
 void measurement_creation(measurement_container_view measurements_view,
                           cluster_container_types::const_view clusters_view,
-                          const unsigned int& range, queue_wrapper queue);
+                          queue_wrapper queue);
 
 }  // namespace traccc::sycl
