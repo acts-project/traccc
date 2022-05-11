@@ -33,6 +33,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/utils/type_traits.hpp"
   "include/traccc/utils/unit_vectors.hpp"
   # Clusterization algorithmic code.
+  "include/traccc/clusterization/detail/measurement_creation_helper.hpp"
   "include/traccc/clusterization/detail/sparse_ccl.hpp"
   "include/traccc/clusterization/component_connection.hpp"
   "src/clusterization/component_connection.cpp"
@@ -40,7 +41,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/clusterization_algorithm.cpp"
   "include/traccc/clusterization/spacepoint_formation.hpp"
   "include/traccc/clusterization/measurement_creation.hpp"
-  "include/traccc/clusterization/measurement_creation_helper.hpp"
+  "src/clusterization/measurement_creation.cpp"
   # Seed finding algorithmic code.
   "include/traccc/seeding/detail/lin_circle.hpp"
   "include/traccc/seeding/detail/doublet.hpp"

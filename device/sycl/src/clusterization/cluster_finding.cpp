@@ -46,7 +46,7 @@ host_measurement_container cluster_finding::operator()(
     // Cluster container buffer for the clusters and headers (cluster ids)
     // assuming the worst case where 1 cell = 1 cluster
     // and max. number of cells per module is max. number of cells per cluster
-    cluster_container_buffer clusters_buffer{
+    cluster_container_types::buffer clusters_buffer{
         {cells_total_size, m_mr.get()},
         {std::vector<std::size_t>(cells_total_size, 0),
          std::vector<std::size_t>(cells_total_size, max_cluster_size),

@@ -22,7 +22,7 @@ namespace traccc::sycl {
 /// Forward declaration of component connection function
 ///
 void component_connection(
-    cluster_container_view clusters_view,
+    cluster_container_types::view clusters_view,
     const cell_container_types::host& cells_per_event,
     vecmem::data::vector_view<unsigned int> clusters_count_view,
     vecmem::unique_alloc_ptr<unsigned int>& total_clusters,

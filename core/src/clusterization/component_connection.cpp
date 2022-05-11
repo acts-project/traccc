@@ -16,11 +16,11 @@
 
 namespace traccc {
 
-host_cluster_container component_connection::operator()(
+component_connection::output_type component_connection::operator()(
     const cell_collection_types::host& cells, const cell_module& module) const {
 
     // Create the result container.
-    host_cluster_container result(&(m_mr.get()));
+    output_type result(&(m_mr.get()));
 
     // Set up a device collection on top of the host collection.
     const cell_collection_types::const_view cells_view =
