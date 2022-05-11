@@ -7,16 +7,23 @@
 
 #pragma once
 
-// Project include(s).
+// Library include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
+#include "traccc/edm/container.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 
 // System include(s).
-#include <functional>
-#include <vector>
+#include <cstddef>
 
 namespace traccc {
 
+/// Cluster identifier
+///
+/// It associates the vector of cells (that make up the cluster) with
+/// the detector module, and additional necessary parameters, necessary
+/// for making use of the cluster.
+///
 struct cluster_id {
 
     event_id event = 0;
@@ -27,37 +34,7 @@ struct cluster_id {
     pixel_data pixel;
 };
 
-/// Convenience declaration for the cluster container type to use in host code
-using host_cluster_container = host_container<cluster_id, cell>;
-
-/// Convenience declaration for the cluster container type to use in device code
-using device_cluster_container = device_container<cluster_id, cell>;
-
-/// Convenience declaration for the cluster container type to use in device code
-/// (const)
-using device_cluster_const_container =
-    device_container<const cluster_id, const cell>;
-
-/// Convenience declaration for the cluster container data type to use in host
-/// code
-using cluster_container_data = container_data<cluster_id, cell>;
-
-/// Convenience declaration for the cluster container data type to use in host
-/// code (const)
-using cluster_container_const_data =
-    container_data<const cluster_id, const cell>;
-
-/// Convenience declaration for the cluster container buffer type to use in host
-/// code
-using cluster_container_buffer = container_buffer<cluster_id, cell>;
-
-/// Convenience declaration for the cluster container view type to use in host
-/// code
-using cluster_container_view = container_view<cluster_id, cell>;
-
-/// Convenience declaration for the cluster container view type to use in host
-/// code (const)
-using cluster_container_const_view =
-    container_view<const cluster_id, const cell>;
+/// Declare all cluster container types
+using cluster_container_types = container_types<cluster_id, cell>;
 
 }  // namespace traccc
