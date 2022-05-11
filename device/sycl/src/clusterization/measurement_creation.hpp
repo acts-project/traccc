@@ -20,6 +20,6 @@ namespace traccc::sycl {
 ///
 void measurement_creation(measurement_container_view measurements_view,
                           cluster_container_types::const_view clusters_view,
-                          const unsigned int& range, queue_wrapper queue);
+                          queue_wrapper queue);
 
 }  // namespace traccc::sycl

@@ -63,7 +63,7 @@ host_measurement_container clusterization_algorithm::operator()(
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     *total_clusters = 0;
     traccc::sycl::clusters_sum(cells_per_event, sparse_ccl_indices,
-                               total_clusters, cluster_prefix_sum,
+                               *total_clusters, cluster_prefix_sum,
                                clusters_per_module, m_mr.get(), m_queue);
 
     // Vector of the exact cluster sizes, will be filled in cluster_counting
@@ -107,7 +107,7 @@ host_measurement_container clusterization_algorithm::operator()(
 
     // Measurement creation kernel
     traccc::sycl::measurement_creation(measurement_buffer, clusters_buffer,
-                                       *total_clusters, m_queue);
+                                       m_queue);
 
     // Copy the results back to the host
     host_measurement_container measurements(&m_mr.get());

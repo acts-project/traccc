@@ -19,7 +19,10 @@ namespace traccc::sycl {
 
 void measurement_creation(measurement_container_view measurements_view,
                           cluster_container_types::const_view clusters_view,
-                          const unsigned int &range, queue_wrapper queue) {
+                          queue_wrapper queue) {
+
+    // The kernel execution range
+    auto n_clusters = clusters_view.headers.size();
 
     // Calculate the execution NDrange for the kernel
     auto workGroupSize = 64;
