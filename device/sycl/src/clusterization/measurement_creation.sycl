@@ -7,17 +7,18 @@
 
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
+#include "measurement_creation.hpp"
+
+// Project include(s).
+#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
 
-// Project include(s).
-#include "measurement_creation.hpp"
-
 namespace traccc::sycl {
 
 void measurement_creation(measurement_container_view measurements_view,
-                          cluster_container_view clusters_view,
+                          cluster_container_types::const_view clusters_view,
                           const unsigned int &range, queue_wrapper queue) {
 
     // Run the kernel
@@ -26,7 +27,8 @@ void measurement_creation(measurement_container_view measurements_view,
             range,
             [clusters_view, measurements_view](auto idx) {
                 // Initialize device vectors
-                device_cluster_container clusters_device(clusters_view);
+                const cluster_container_types::const_device clusters_device(
+                    clusters_view);
                 device_measurement_container measurement_device(
                     measurements_view);
 
@@ -37,11 +39,12 @@ void measurement_creation(measurement_container_view measurements_view,
                 // items: cluster of cells at current idx
                 // header: cluster_id object with the information about the cell
                 // module
-                device_cluster_container::item_vector::reference cluster =
-                    clusters_device.get_items().at(idx);
+                cluster_container_types::const_device::item_vector::
+                    const_reference cluster =
+                        clusters_device.get_items().at(idx);
                 const cluster_id &cl_id = clusters_device.get_headers().at(idx);
 
-                const vector2 pitch = get_pitch(cl_id);
+                const vector2 pitch = detail::get_pitch(cl_id);
                 const auto module_idx = cl_id.module_idx;
 
                 scalar totalWeight = 0.;
@@ -59,12 +62,10 @@ void measurement_creation(measurement_container_view measurements_view,
                 point2 mean = {0., 0.}, var = {0., 0.};
 
                 // Should not happen
-                if (cluster.empty()) {
-                    return;
-                }
+                assert(cluster.empty() == false);
 
-                calc_cluster_properties<vecmem::device_vector, cell>(
-                    cluster, cl_id, mean, var, totalWeight);
+                detail::calc_cluster_properties(cluster, cl_id, mean, var,
+                                                totalWeight);
 
                 if (totalWeight > 0.) {
                     measurement m;

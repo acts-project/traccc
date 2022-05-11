@@ -11,17 +11,17 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/clusterization/measurement_creation_helper.hpp"
-#include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
 namespace traccc::sycl {
 
-struct cluster_finding : public algorithm<host_measurement_container(
-                             const cell_container_types::host &)> {
+class cluster_finding : public algorithm<host_measurement_container(
+                            const cell_container_types::host &)> {
     public:
     /// Constructor for cluster_finding
     ///

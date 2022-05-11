@@ -17,7 +17,7 @@
 namespace traccc::sycl {
 
 void component_connection(
-    cluster_container_view clusters_view,
+    cluster_container_types::view clusters_view,
     const cell_container_types::host& cells_per_event,
     vecmem::data::vector_view<unsigned int> clusters_count_view,
     vecmem::unique_alloc_ptr<unsigned int>& total_clusters,
@@ -62,7 +62,7 @@ void component_connection(
 
                 // Initialize the data on the device
                 cell_container_types::const_device cells_device(cells_view);
-                device_cluster_container clusters_device(clusters_view);
+                cluster_container_types::device clusters_device(clusters_view);
 
                 // Ignore if idx is out of range
                 if (idx >= cells_device.size())
