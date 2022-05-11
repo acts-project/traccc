@@ -28,8 +28,6 @@ void component_connection(
     std::size_t n_modules = cells_per_event.size();
 
     // Calculate the 2-dim NDrange for the kernel
-    // For now only size 32 and smaller is possible (for higher, there is
-    // problem with non-uniform work groups in x and y dimensions)
     auto wGroupSize = 16;
     auto numGroupsX = (n_modules + wGroupSize - 1) / wGroupSize;
     auto numGroupsY = (cells_max + wGroupSize - 1) / wGroupSize;
