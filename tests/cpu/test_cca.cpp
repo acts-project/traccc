@@ -32,11 +32,11 @@ traccc::cell_module module;
 
 std::function<traccc::host_measurement_collection(
     const traccc::cell_collection_types::host &)>
-    fp = traccc::compose(std::function<traccc::host_cluster_container(
+    fp = traccc::compose(std::function<traccc::cluster_container_types::host(
                              const traccc::cell_collection_types::host &)>(
                              std::bind(cc, std::placeholders::_1, module)),
                          std::function<traccc::host_measurement_collection(
-                             const traccc::host_cluster_container &)>(
+                             const traccc::cluster_container_types::host &)>(
                              std::bind(mc, std::placeholders::_1, module)));
 
 cca_function_t f = [](const traccc::cell_container_types::host &data) {

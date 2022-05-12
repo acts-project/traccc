@@ -43,7 +43,7 @@ TEST(algorithms, seq_single_module) {
     module.pixel = traccc::pixel_data{0., 0., 1., 1.};
     module.placement = traccc::transform3{};
 
-    traccc::host_cluster_container clusters(&resource);
+    traccc::cluster_container_types::host clusters(&resource);
 
     traccc::host_measurement_collection measurements;
 

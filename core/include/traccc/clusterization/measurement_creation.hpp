@@ -7,24 +7,36 @@
 
 #pragma once
 
-#include "traccc/clusterization/measurement_creation_helper.hpp"
-#include "traccc/definitions/primitives.hpp"
+// Library include(s).
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
+
 namespace traccc {
 
-/// Connected component labeling.
-struct measurement_creation
+/// Measurement creation out of clusters
+///
+/// This algorithm can create measurements for a single detector module
+/// for all of the clusters that were identified in that one detector
+/// module.
+///
+class measurement_creation
     : public algorithm<host_measurement_collection(
-          const host_cluster_container &, const cell_module &)> {
+          const cluster_container_types::host &, const cell_module &)> {
+
     public:
-    /// Constructor for measurement_creation
+    /// Measurement_creation algorithm constructor
     ///
-    /// @param mr is the memory resource
-    measurement_creation(vecmem::memory_resource &mr) : m_mr(mr) {}
+    /// @param mr The memory resource to use in the algorithm
+    ///
+    measurement_creation(vecmem::memory_resource &mr);
 
     /// Callable operator for the connected component, based on one single
     /// module
@@ -37,76 +49,13 @@ struct measurement_creation
     ///
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
-    host_measurement_collection operator()(
-        const host_cluster_container &c, const cell_module &m) const override {
-        output_type measurements;
-        this->operator()(c, m, measurements);
-        return measurements;
-    }
-
-    /// Callable operator for the connected component, based on one single
-    /// module
-    ///
-    /// @param clusters are the input cells into the connected component, they
-    /// are
-    ///              per module and unordered
-    ///
-    /// void interface
-    ///
-    /// @return a measurement collection - usually same size or sometime
-    /// slightly smaller than the input
-    void operator()(const host_cluster_container &clusters,
-                    const cell_module &module,
-                    output_type &measurements) const {
-
-        // Run the algorithm
-        auto pitch = module.pixel.get_pitch();
-
-        measurements.reserve(clusters.size());
-        for (const auto &cluster : clusters.get_items()) {
-            scalar totalWeight = 0.;
-
-            // To calculate the mean and variance with high numerical stability
-            // we use a weighted variant of Welford's algorithm. This is a
-            // single-pass online algorithm that works well for large numbers
-            // of samples, as well as samples with very high values.
-            //
-            // To learn more about this algorithm please refer to:
-            // [1] https://doi.org/10.1080/00401706.1962.10490022
-            // [2] The Art of Computer Programming, Donald E. Knuth, second
-            //     edition, chapter 4.2.2.
-            point2 mean = {0., 0.}, var = {0., 0.};
-
-            // Should not happen
-            if (cluster.empty()) {
-                continue;
-            }
-
-            // Get the cluster id for this module
-            const auto &cl_id = clusters.at(0).header;
-
-            // Calculate the cluster properties
-            calc_cluster_properties<vecmem::vector, cell>(cluster, cl_id, mean,
-                                                          var, totalWeight);
-
-            if (totalWeight > 0.) {
-                measurement m;
-                // normalize the cell position
-                m.local = mean;
-                // normalize the variance
-                m.variance[0] = var[0] / totalWeight;
-                m.variance[1] = var[1] / totalWeight;
-                // plus pitch^2 / 12
-                m.variance = m.variance + point2{pitch[0] * pitch[0] / 12,
-                                                 pitch[1] * pitch[1] / 12};
-                // @todo add variance estimation
-                measurements.push_back(std::move(m));
-            }
-        }
-    }
+    output_type operator()(const cluster_container_types::host &c,
+                           const cell_module &m) const override;
 
     private:
+    /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-};
+
+};  // class measurement_creation
 
 }  // namespace traccc
