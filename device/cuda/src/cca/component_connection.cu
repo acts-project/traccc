@@ -34,7 +34,7 @@ struct ccl_partition {
 };
 
 /*
- * Convenience structure to work with flattened data arrays instead of 
+ * Convenience structure to work with flattened data arrays instead of
  * an array/vector of cells.
  */
 struct cell_container {
@@ -47,7 +47,7 @@ struct cell_container {
 };
 
 /*
- * Convenience structure to work with flattened data arrays instead of 
+ * Convenience structure to work with flattened data arrays instead of
  * an array/vector of measures.
  */
 struct measurement_container {
@@ -60,7 +60,8 @@ struct measurement_container {
 };
 
 /*
- * Check if two cells are considered close enough to be part of the same cluster.
+ * Check if two cells are considered close enough to be part of the same
+ * cluster.
  */
 __device__ bool is_adjacent(channel_id ac0, channel_id ac1, channel_id bc0,
                             channel_id bc1) {
@@ -129,7 +130,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
 }
 
 /*
- * Implementation of a simplified SV algorithm. 
+ * Implementation of a simplified SV algorithm.
  *
  * The implementation corresponds to Algorithm 1 of the following paper:
  * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
@@ -214,7 +215,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
 }
 
 /*
- * Implementation of the FastSV algorithm. 
+ * Implementation of the FastSV algorithm.
  *
  * The implementation corresponds to Algorithm 2 of the following paper:
  * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
@@ -458,7 +459,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
     __syncthreads();
 
     /*
-     * Count the number of clusters by checking how many nodes have 
+     * Count the number of clusters by checking how many nodes have
      * themself assigned as a parent.
      */
     for (index_t tst = 0, tid;
@@ -471,11 +472,11 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
     __syncthreads();
 
     /*
-     * Add the number of clusters of each thread block to the total 
+     * Add the number of clusters of each thread block to the total
      * number of clusters. At the same time, a cluster id is retrieved
-     * for the next data processing step. 
-     * Note that this might be not the same cluster as has been treated 
-     * previously. However, since each thread block spawns a the maximum 
+     * for the next data processing step.
+     * Note that this might be not the same cluster as has been treated
+     * previously. However, since each thread block spawns a the maximum
      * amount of threads per block, this has no sever implications.
      */
     if (threadIdx.x == 0) {
@@ -505,18 +506,18 @@ vecmem::vector<details::ccl_partition> partition(
      */
     for (std::size_t i = 0; i < data.size(); ++i) {
         /*
-         * We start at 0 since this is the origin of the local coordinate 
+         * We start at 0 since this is the origin of the local coordinate
          * system within a cell module.
          */
         channel_id last_mid = 0;
 
         for (const cell& c : data.at(i).items) {
             /*
-             * Create a new partition if an "empty" row is detected. A row 
-             * is considered "empty" if the channel1 value between two 
+             * Create a new partition if an "empty" row is detected. A row
+             * is considered "empty" if the channel1 value between two
              * consecutive cells have a difference > 1.
              * To prevent creating many small partitions, the current partition
-             * must have at least twice the size of threads per block. This 
+             * must have at least twice the size of threads per block. This
              * guarantees that each thread handles later at least two cells.
              */
             if (c.channel1 > last_mid + 1 && size >= 2 * THREADS_PER_BLOCK) {
@@ -532,10 +533,10 @@ vecmem::vector<details::ccl_partition> partition(
         }
 
         /*
-         * If a cell module has many activations and therefore no empty rows, 
+         * If a cell module has many activations and therefore no empty rows,
          * it is possible that partitions reach a considerable size. To prevent
-         * very big partitions, we check at the end of each module if the 
-         * current partition is not above a threshold, and end the current 
+         * very big partitions, we check at the end of each module if the
+         * current partition is not above a threshold, and end the current
          * partition if necessary here.
          */
         if (size >= 2 * THREADS_PER_BLOCK) {
@@ -548,7 +549,7 @@ vecmem::vector<details::ccl_partition> partition(
     }
 
     /*
-     * Create the very last partition after having iterated over all cell 
+     * Create the very last partition after having iterated over all cell
      * modules and cells.
      */
     if (size > 0) {
@@ -573,7 +574,7 @@ host_measurement_container component_connection::operator()(
 
     /*
      * Flatten the data to handle memory access (fetch and cache)
-     * more efficiently. This removes the hierarchy level that 
+     * more efficiently. This removes the hierarchy level that
      * references to the cell module.
      */
     vecmem::vector<channel_id> channel0(&mem);
@@ -610,8 +611,8 @@ host_measurement_container component_connection::operator()(
 
     /*
      * Separate the problem into various subproblems (partitions).
-     * We know that the input data is sorted primarily on channel1 (y-axis), 
-     * and secondarily on channel0 (x-axis). This allows the cheap creation 
+     * We know that the input data is sorted primarily on channel1 (y-axis),
+     * and secondarily on channel0 (x-axis). This allows the cheap creation
      * of partitions based on the distance of the y-value between two
      * consecutive cells. If this distance is above a threshold, we have the
      * guarantee that the two cells belong not to the same cluster.
@@ -620,7 +621,7 @@ host_measurement_container component_connection::operator()(
         details::partition(data, mem);
 
     /*
-     * Reserve space for the result of the algorithm. Currently, there is 
+     * Reserve space for the result of the algorithm. Currently, there is
      * enough space allocated that (in theory) each cell could be a single
      * cluster, but this should not be the case with real experiment data.
      */
@@ -642,7 +643,7 @@ host_measurement_container component_connection::operator()(
 
     /*
      * Run the connected component labeling algorithm to retrieve the clusters.
-     * 
+     *
      * This step includes the measurement (hit) creation for each cluster.
      */
     sparse_ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
