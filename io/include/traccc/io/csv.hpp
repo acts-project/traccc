@@ -278,21 +278,21 @@ inline cell_container_types::host read_cells(
 /// @param resource The memory resource to use for the return value
 /// @param tfmap the (optional) transform map
 /// @param max_clusters the (optional) maximum number of cells to be read in
-inline std::vector<host_cluster_container> read_truth_clusters(
+inline std::vector<cluster_container_types::host> read_truth_clusters(
     cell_reader& creader, vecmem::memory_resource& resource,
     const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
     // Reference for switching the container
     uint64_t reference_id = 0;
-    std::vector<host_cluster_container> clusters;
+    std::vector<cluster_container_types::host> clusters;
     // Reference for switching the cluster
     uint64_t truth_id = std::numeric_limits<uint64_t>::max();
 
     bool first_line_read = false;
     unsigned int read_cells = 0;
     csv_cell iocell;
-    host_cluster_container truth_clusters(&resource);
+    cluster_container_types::host truth_clusters(&resource);
     vecmem::vector<cell> truth_cells;
 
     while (creader.read(iocell)) {
@@ -310,7 +310,7 @@ inline std::vector<host_cluster_container> read_truth_clusters(
             // Sort in column major order
             clusters.push_back(truth_clusters);
             // Clear for next round
-            truth_clusters = host_cluster_container(&resource);
+            truth_clusters = cluster_container_types::host(&resource);
         }
 
         if (first_line_read and truth_id != iocell.hit_id) {

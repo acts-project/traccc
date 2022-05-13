@@ -29,7 +29,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
             cells_per_module = cells.at(i).items;
 
         // Reconstruct all measurements for the current module.
-        traccc::host_cluster_container clusters =
+        traccc::cluster_container_types::host clusters =
             m_cc(cells_per_module, module);
         for (cluster_id& cl_id : clusters.get_headers()) {
             cl_id.pixel = module.pixel;

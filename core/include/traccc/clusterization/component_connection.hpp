@@ -12,6 +12,12 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/utils/algorithm.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
+
 namespace traccc {
 
 /// Connected component labelling
@@ -25,7 +31,7 @@ namespace traccc {
 /// implementation internally.
 ///
 class component_connection
-    : public algorithm<host_cluster_container(
+    : public algorithm<cluster_container_types::host(
           const cell_collection_types::host&, const cell_module&)> {
 
     public:
@@ -47,12 +53,13 @@ class component_connection
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    host_cluster_container operator()(const cell_collection_types::host& cells,
-                                      const cell_module& module) const override;
+    output_type operator()(const cell_collection_types::host& cells,
+                           const cell_module& module) const override;
 
     /// @}
 
     private:
+    /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
 };  // class component_connection
