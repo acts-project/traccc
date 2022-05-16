@@ -10,23 +10,22 @@
 // Project include(s).
 #include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/spacepoint.hpp"
 
 // Vecmem include(s).
-#include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/memory/memory_resource.hpp>
 
 namespace traccc::sycl {
 
-/// Forward declaration of component connection function
+/// Forward decleration of spacepoint formation kernel
 ///
-void component_connection(
-    cluster_container_types::view clusters_view,
-    const cell_container_types::const_view& cells_view,
-    vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
+void spacepoint_formation(
+    spacepoint_container_view spacepoints_view,
+    measurement_container_view measurements_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
-        cells_prefix_sum_view,
+        measurements_prefix_sum_view,
     queue_wrapper queue);
 
 }  // namespace traccc::sycl

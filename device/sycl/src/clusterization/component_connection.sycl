@@ -18,83 +18,85 @@ namespace traccc::sycl {
 
 void component_connection(
     cluster_container_types::view clusters_view,
-    const cell_container_types::host& cells_per_event,
+    const cell_container_types::const_view& cells_view,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
-    std::size_t cells_max, vecmem::memory_resource& resource,
+    vecmem::data::vector_view<const device::prefix_sum_element_t>
+        cells_prefix_sum_view,
     queue_wrapper queue) {
 
-    // Execution size of the algorithm
-    std::size_t n_modules = cells_per_event.size();
+    // The execution range of the kernel
+    auto n_cells = cells_prefix_sum_view.size();
 
-    // Calculate the 2-dim NDrange for the kernel
-    auto wGroupSize = 16;
-    auto numGroupsX = (n_modules + wGroupSize - 1) / wGroupSize;
-    auto numGroupsY = (cells_max + wGroupSize - 1) / wGroupSize;
-    auto ndrange = ::sycl::nd_range<2>{
-        ::sycl::range<2>(numGroupsX * wGroupSize, numGroupsY * wGroupSize),
-        ::sycl::range<2>(wGroupSize, wGroupSize)};
-
-    // Get the view of the cells container
-    auto cells_data = get_data(cells_per_event, &resource);
-    cell_container_types::const_view cells_view(cells_data);
+    // Calculate the execution NDrange for the kernel
+    auto wGroupSize = 64;
+    auto num = (n_cells + wGroupSize - 1) / wGroupSize;
+    auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * wGroupSize),
+                                       ::sycl::range<1>(wGroupSize)};
 
     details::get_queue(queue)
-        .parallel_for<class ComponentConnection>(
-            ndrange,
-            [cells_view, cluster_prefix_sum_view, clusters_view,
-             sparse_ccl_indices_view](::sycl::nd_item<2> item) {
-                // Get the current module id_x and current cell in this module
-                // id_y
-                auto id_x = item.get_global_id(0);
-                auto id_y = item.get_global_id(1);
+        .submit([&ndrange, &cells_view, &cluster_prefix_sum_view,
+                 &clusters_view, &sparse_ccl_indices_view,
+                 &cells_prefix_sum_view](::sycl::handler& h) {
+            h.parallel_for<class ComponentConnection>(
+                ndrange, [=](::sycl::nd_item<1> item) {
+                    // Get the current idx
+                    auto idx = item.get_global_linear_id();
 
-                // Initialize the data on the device
-                cell_container_types::const_device cells_device(cells_view);
-                cluster_container_types::device clusters_device(clusters_view);
+                    // Get device vector of the cells prefix sum
+                    vecmem::device_vector<const device::prefix_sum_element_t>
+                        cells_prefix_sum(cells_prefix_sum_view);
 
-                // Ignore if id_x is out of range
-                if (id_x >= cells_device.size())
-                    return;
+                    if (idx >= cells_prefix_sum.size())
+                        return;
 
-                // Get the cells from the current module
-                const auto& cells = cells_device.at(id_x).items;
-                const auto module = cells_device.at(id_x).header;
+                    // Get the indices for the module idx and the cell idx
+                    auto module_idx = cells_prefix_sum[idx].first;
+                    auto cell_idx = cells_prefix_sum[idx].second;
 
-                // Ignore if id_y is out of range
-                if (id_y >= cells.size())
-                    return;
+                    // Initialize the device containers for cells and clusters
+                    cell_container_types::const_device cells_device(cells_view);
+                    cluster_container_types::device clusters_device(
+                        clusters_view);
 
-                // Vectors used for cluster indices found by sparse CCL
-                vecmem::jagged_device_vector<unsigned int>
-                    device_sparse_ccl_indices(sparse_ccl_indices_view);
-                const auto& cluster_indices =
-                    device_sparse_ccl_indices.at(id_x);
+                    // Get the cells for the current module idx
+                    const auto& cells = cells_device.at(module_idx).items;
+                    const auto module = cells_device.at(module_idx).header;
 
-                // Number of clusters found for this module
-                const auto num_clusters = cluster_indices.back();
+                    // Vectors used for cluster indices found by sparse CCL
+                    vecmem::jagged_device_vector<unsigned int>
+                        device_sparse_ccl_indices(sparse_ccl_indices_view);
+                    const auto& cluster_indices =
+                        device_sparse_ccl_indices.at(module_idx);
 
-                // Get the prefix sum for this id_x
-                vecmem::device_vector<std::size_t> device_cluster_prefix_sum(
-                    cluster_prefix_sum_view);
-                const auto prefix_sum = device_cluster_prefix_sum[id_x];
+                    // Number of clusters found for this module
+                    const auto num_clusters = cluster_indices.back();
 
-                // Push back the cells to the correct item vector
-                unsigned int cindex = cluster_indices[id_y] - 1;
-                if (cindex < num_clusters) {
-                    // Create cluster id - same for all clusters in this module
-                    cluster_id cl_id{};
-                    cl_id.module = module.module;
-                    cl_id.placement = module.placement;
-                    cl_id.module_idx = id_x;
-                    cl_id.pixel = module.pixel;
+                    // Get the cluster prefix sum for this module idx
+                    vecmem::device_vector<std::size_t>
+                        device_cluster_prefix_sum(cluster_prefix_sum_view);
+                    const auto prefix_sum =
+                        device_cluster_prefix_sum[module_idx];
 
-                    // Push back the header and items
-                    clusters_device[prefix_sum + cindex].header = cl_id;
-                    clusters_device[prefix_sum + cindex].items.push_back(
-                        cells[id_y]);
-                }
-            })
+                    // Push back the cells to the correct item vector indicated
+                    // by the cluster prefix sum
+                    unsigned int cindex = cluster_indices[cell_idx] - 1;
+                    if (cindex < num_clusters) {
+                        // Create cluster id - same for all clusters in this
+                        // module
+                        cluster_id cl_id{};
+                        cl_id.module = module.module;
+                        cl_id.placement = module.placement;
+                        cl_id.module_idx = module_idx;
+                        cl_id.pixel = module.pixel;
+
+                        // Push back the header and items
+                        clusters_device[prefix_sum + cindex].header = cl_id;
+                        clusters_device[prefix_sum + cindex].items.push_back(
+                            cells[cell_idx]);
+                    }
+                });
+        })
         .wait_and_throw();
 }
 

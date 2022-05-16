@@ -14,6 +14,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -21,7 +22,7 @@
 
 namespace traccc::sycl {
 
-class clusterization_algorithm : public algorithm<host_measurement_container(
+class clusterization_algorithm : public algorithm<host_spacepoint_container(
                                      const cell_container_types::host&)> {
 
     public:
@@ -35,8 +36,7 @@ class clusterization_algorithm : public algorithm<host_measurement_container(
     ///
     /// @param cells_per_event is a container with cell modules as headers
     /// and cells as the items
-    /// @return a measurement container with cell modules as headers and
-    /// measurements as items
+    /// @return a measurement collection - vector of measurements
     output_type operator()(
         const cell_container_types::host& cells_per_event) const override;
 

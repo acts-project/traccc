@@ -18,77 +18,87 @@ namespace traccc::sycl {
 
 void measurement_creation(measurement_container_view measurements_view,
                           cluster_container_types::const_view clusters_view,
+                          const cell_container_types::const_view& cells_view,
                           queue_wrapper queue) {
 
-    // The kernel execution range
+    // The execution range of the kernel
     auto n_clusters = clusters_view.headers.size();
 
     // Calculate the execution NDrange for the kernel
-    auto workGroupSize = 64;
-    auto num = (n_clusters + workGroupSize - 1) / workGroupSize;
-    auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * workGroupSize),
-                                       ::sycl::range<1>(workGroupSize)};
-    // Run the kernel
+    auto wGroupSize = 64;
+    auto num = (n_clusters + wGroupSize - 1) / wGroupSize;
+    auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * wGroupSize),
+                                       ::sycl::range<1>(wGroupSize)};
+
     details::get_queue(queue)
-        .parallel_for<class MeasurementCreation>(
-            ndrange,
-            [clusters_view, measurements_view](::sycl::nd_item<1> item) {
-                // Get the global index
-                auto idx = item.get_global_linear_id();
+        .submit([&ndrange, &clusters_view, &measurements_view,
+                 &cells_view](::sycl::handler& h) {
+            h.parallel_for<class MeasurementCreation>(
+                ndrange, [=](::sycl::nd_item<1> item) {
+                    // Get the current index
+                    auto idx = item.get_global_linear_id();
 
-                // Initialize device vectors
-                const cluster_container_types::const_device clusters_device(
-                    clusters_view);
-                device_measurement_container measurement_device(
-                    measurements_view);
+                    // Initialize device vectors
+                    const cluster_container_types::const_device clusters_device(
+                        clusters_view);
+                    device_measurement_container measurements_device(
+                        measurements_view);
+                    cell_container_types::const_device cells_device(cells_view);
 
-                // Ignore if idx is out of range
-                if (idx >= clusters_device.size())
-                    return;
+                    // Ignore if idx is out of range
+                    if (idx >= clusters_device.size())
+                        return;
 
-                // items: cluster of cells at current idx
-                // header: cluster_id object with the information about the cell
-                // module
-                const auto& cluster = clusters_device.get_items().at(idx);
-                const cluster_id& cl_id = clusters_device.get_headers().at(idx);
+                    // items: cluster of cells at current idx
+                    // header: cluster_id object with the information about the
+                    // cell module
+                    const auto& cluster = clusters_device[idx].items;
+                    const cluster_id& cl_id = clusters_device[idx].header;
 
-                const vector2 pitch = detail::get_pitch(cl_id);
-                const auto module_idx = cl_id.module_idx;
+                    const vector2 pitch = detail::get_pitch(cl_id);
+                    const auto module_idx = cl_id.module_idx;
 
-                scalar totalWeight = 0.;
+                    scalar totalWeight = 0.;
 
-                // To calculate the mean and variance with high numerical
-                // stability we use a weighted variant of Welford's algorithm.
-                // This is a single-pass online algorithm that works well for
-                // large numbers of samples, as well as samples with very high
-                // values.
-                //
-                // To learn more about this algorithm please refer to:
-                // [1] https://doi.org/10.1080/00401706.1962.10490022
-                // [2] The Art of Computer Programming, Donald E. Knuth, second
-                //     edition, chapter 4.2.2.
-                point2 mean = {0., 0.}, var = {0., 0.};
+                    // Get the cell module for this module idx
+                    const auto& module = cells_device[module_idx].header;
 
-                // Should not happen
-                assert(cluster.empty() == false);
+                    // To calculate the mean and variance with high numerical
+                    // stability we use a weighted variant of Welford's
+                    // algorithm. This is a single-pass online algorithm that
+                    // works well for large numbers of samples, as well as
+                    // samples with very high values.
+                    //
+                    // To learn more about this algorithm please refer to:
+                    // [1] https://doi.org/10.1080/00401706.1962.10490022
+                    // [2] The Art of Computer Programming, Donald E. Knuth,
+                    // second
+                    //     edition, chapter 4.2.2.
+                    point2 mean = {0., 0.}, var = {0., 0.};
 
-                detail::calc_cluster_properties(cluster, cl_id, mean, var,
-                                                totalWeight);
+                    // Should not happen
+                    assert(cluster.empty() == false);
 
-                if (totalWeight > 0.) {
-                    measurement m;
-                    // normalize the cell position
-                    m.local = mean;
-                    // normalize the variance
-                    m.variance[0] = var[0] / totalWeight;
-                    m.variance[1] = var[1] / totalWeight;
-                    // plus pitch^2 / 12
-                    m.variance = m.variance + point2{pitch[0] * pitch[0] / 12,
-                                                     pitch[1] * pitch[1] / 12};
-                    // @todo add variance estimation
-                    measurement_device.get_items().at(module_idx).push_back(m);
-                }
-            })
+                    detail::calc_cluster_properties(cluster, cl_id, mean, var,
+                                                    totalWeight);
+
+                    if (totalWeight > 0.) {
+                        measurement m;
+                        // normalize the cell position
+                        m.local = mean;
+                        // normalize the variance
+                        m.variance[0] = var[0] / totalWeight;
+                        m.variance[1] = var[1] / totalWeight;
+                        // plus pitch^2 / 12
+                        m.variance =
+                            m.variance + point2{pitch[0] * pitch[0] / 12,
+                                                pitch[1] * pitch[1] / 12};
+                        // @todo add variance estimation
+                        measurements_device[module_idx].header = module;
+                        measurements_device[module_idx].items.push_back(m);
+                    }
+                });
+        })
         .wait_and_throw();
 }
 

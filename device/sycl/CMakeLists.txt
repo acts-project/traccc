@@ -30,6 +30,8 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/clusterization/measurement_creation.hpp"
   "src/clusterization/component_connection.hpp"
   "src/clusterization/component_connection.sycl"
+  "src/clusterization/spacepoint_formation.hpp"
+  "src/clusterization/spacepoint_formation.sycl"
   "src/seeding/seed_finding.sycl"
   "src/seeding/seed_selecting.hpp"
   "src/seeding/seed_selecting.sycl"
