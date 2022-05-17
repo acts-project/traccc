@@ -43,18 +43,14 @@ spacepoint_binning::spacepoint_binning(
       m_queue(queue) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
-    const host_spacepoint_container& spacepoints) const {
+    const spacepoint_container_const_view& spacepoints_view) const {
 
     // Helper object for the data management.
     vecmem::copy copy;
 
-    // Get the data/view for the spacepoints.
-    const spacepoint_container_const_data sp_data =
-        traccc::get_data(spacepoints);
-
     // Get the prefix sum for the spacepoints.
     const device::prefix_sum_t sp_prefix_sum =
-        device::get_prefix_sum(sp_data.items, m_mr.get(), copy);
+        device::get_prefix_sum(spacepoints_view.items, m_mr.get(), copy);
     auto sp_prefix_sum_view = vecmem::get_data(sp_prefix_sum);
 
     // Set up the container that will be filled with the required capacities for
@@ -69,9 +65,6 @@ sp_grid_buffer spacepoint_binning::operator()(
     ::sycl::nd_range<1> range(globalSize, localSize);
 
     // Fill the grid capacity container.
-    spacepoint_container_const_data spacepoints_data =
-        traccc::get_data(spacepoints);
-    spacepoint_container_const_view spacepoints_view = spacepoints_data;
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::count_grid_capacities>(

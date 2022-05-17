@@ -16,6 +16,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/containers/data/vector_buffer.hpp>
 
 // System include(s).
 #include <functional>

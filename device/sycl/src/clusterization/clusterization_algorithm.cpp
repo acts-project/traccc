@@ -29,7 +29,7 @@ clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr,
                                                    queue_wrapper queue)
     : m_mr(mr), m_queue(queue) {}
 
-host_spacepoint_container clusterization_algorithm::operator()(
+spacepoint_container_buffer clusterization_algorithm::operator()(
     const cell_container_types::host &cells_per_event) const {
 
     // Number of modules
@@ -139,11 +139,11 @@ host_spacepoint_container clusterization_algorithm::operator()(
         vecmem::get_data(measurements_prefix_sum), m_queue);
 
     // Copy the results back to the host
-    host_spacepoint_container spacepoints_per_event(&m_mr.get());
-    copy(spacepoints_buffer.headers, spacepoints_per_event.get_headers());
-    copy(spacepoints_buffer.items, spacepoints_per_event.get_items());
+    // host_spacepoint_container spacepoints_per_event(&m_mr.get());
+    // copy(spacepoints_buffer.headers, spacepoints_per_event.get_headers());
+    // copy(spacepoints_buffer.items, spacepoints_per_event.get_items());
 
-    return spacepoints_per_event;
+    return spacepoints_buffer;
 }
 
 }  // namespace traccc::sycl

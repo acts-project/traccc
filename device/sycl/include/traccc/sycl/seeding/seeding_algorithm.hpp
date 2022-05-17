@@ -15,6 +15,7 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
+#include <vecmem/containers/data/vector_buffer.hpp>
 
 // System include(s).
 #include <memory>
@@ -23,7 +24,7 @@ namespace traccc {
 namespace sycl {
 
 class seeding_algorithm
-    : public algorithm<host_seed_collection(const host_spacepoint_container&)> {
+    : public algorithm<vecmem::data::vector_buffer<seed>(const spacepoint_container_const_view&)> {
 
     public:
     seeding_algorithm(vecmem::memory_resource& mr, ::sycl::queue* q = nullptr)
@@ -57,10 +58,9 @@ class seeding_algorithm
     }
 
     output_type operator()(
-        const host_spacepoint_container& spacepoints) const override {
-        output_type seeds(&m_mr.get());
-        sp_grid_buffer internal_sp_g2 = (*sb)(spacepoints);
-        seeds = (*sf)(spacepoints, internal_sp_g2);
+        const spacepoint_container_const_view& spacepoints_view) const override {
+        sp_grid_buffer internal_sp_g2 = (*sb)(spacepoints_view);
+        output_type seeds = (*sf)(spacepoints_view, internal_sp_g2);
         return seeds;
     }
 
