@@ -84,7 +84,7 @@ seed_finding::output_type seed_finding::operator()(
         sp_grid_prefix_sum.size() / nDoubletCountThreads + 1;
 
     // Count the number of doublets that we need to produce.
-    kernels::count_doublets<<<nDoubletCountThreads, nDoubletCountBlocks>>>(
+    kernels::count_doublets<<<nDoubletCountBlocks, nDoubletCountThreads>>>(
         m_seedfinder_config, g2_view, vecmem::get_data(sp_grid_prefix_sum),
         doublet_counter_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
@@ -110,7 +110,7 @@ seed_finding::output_type seed_finding::operator()(
         doublet_prefix_sum.size() / nDoubletFindThreads + 1;
 
     // Find all of the spacepoint doublets.
-    kernels::find_doublets<<<nDoubletFindThreads, nDoubletFindBlocks>>>(
+    kernels::find_doublets<<<nDoubletFindBlocks, nDoubletFindThreads>>>(
         m_seedfinder_config, g2_view, doublet_counter_buffer,
         vecmem::get_data(doublet_prefix_sum), doublet_buffers.middleBottom,
         doublet_buffers.middleTop);
