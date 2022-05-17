@@ -261,36 +261,49 @@ class TripletFind {
 
 void triplet_finding(const seedfinder_config& config,
                      const seedfilter_config& filter_config,
+                     const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
                      const sp_grid_const_view& internal_sp,
                      const device::doublet_counter_container_types::const_view&
                          doublet_counter_container,
                      doublet_container_view mid_bot_doublet_container,
                      doublet_container_view mid_top_doublet_container,
-                     host_triplet_counter_container& triplet_counter_container,
-                     host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource, queue_wrapper queue) {
-
-    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
-    auto triplet_view = get_data(triplet_container, &resource);
+                     triplet_counter_container_view tcc_view,
+                     triplet_container_view tc_view,
+                     queue_wrapper queue) {
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
 
+    unsigned int nbins = internal_sp._data_view.m_size;
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
     // (=32)
     unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
-    for (unsigned int i = 0; i < internal_sp._data_view.m_size; ++i) {
+    for (unsigned int i = 0; i < nbins; ++i) {
         num_groups +=
-            triplet_counter_container.get_headers()[i].n_mid_bot / localSize +
+            tcc_headers[i].n_mid_bot / localSize +
             1;
     }
     unsigned int globalSize = localSize * num_groups;
 
     // 1 dim ND Range for the kernel
     auto tripletFindNdRange = ::sycl::nd_range<1>{globalSize, localSize};
+
+    // Set zero kernel
+    details::get_queue(queue).submit([&](::sycl::handler& h){
+        h.parallel_for<class SetZeroTripletFind>(tripletFindNdRange, [tc_view](::sycl::nd_item<1> item){
+            auto idx = item.get_global_linear_id();
+            
+            device_triplet_container tc_device(tc_view);
+            if (idx >= tc_device.size())
+                return;
+
+            tc_device.get_headers().at(idx).zeros();
+        });
+    }).wait_and_throw();
+
     details::get_queue(queue)
         .submit([&](::sycl::handler& h) {
             // local memory initialization (equivalent to shared memory in CUDA)
@@ -299,7 +312,7 @@ void triplet_finding(const seedfinder_config& config,
             TripletFind kernel(
                 config, filter_config, internal_sp, doublet_counter_container,
                 mid_bot_doublet_container, mid_top_doublet_container,
-                triplet_counter_view, triplet_view, localMem);
+                tcc_view, tc_view, localMem);
 
             h.parallel_for<TripletFind>(tripletFindNdRange, kernel);
         })

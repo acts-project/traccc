@@ -42,9 +42,9 @@ void seed_selecting(
     const sp_grid_const_view& internal_sp,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
-    host_triplet_counter_container& triplet_counter_container,
-    host_triplet_container& triplet_container,
+    triplet_counter_container_view tcc_view,
+    triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
-    vecmem::memory_resource& resource, queue_wrapper queue);
+    queue_wrapper queue);
 
 }  // namespace traccc::sycl

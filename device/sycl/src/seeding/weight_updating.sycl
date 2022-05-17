@@ -174,16 +174,16 @@ class WeightUpdate {
 };
 
 void weight_updating(const seedfilter_config& filter_config,
-                     const sp_grid_const_view& internal_sp,
-                     host_triplet_counter_container& triplet_counter_container,
-                     host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource, queue_wrapper queue) {
-
-    auto triplet_counter_view = get_data(triplet_counter_container, &resource);
-    auto triplet_view = get_data(triplet_container, &resource);
+                     const vecmem::vector<triplet_per_bin>& tc_headers,
+                     const sp_grid_const_view& internal_sp_view,
+                     triplet_counter_container_view tcc_view, 
+                     triplet_container_view tc_view,
+                     queue_wrapper queue) {
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
+
+    unsigned int nbins = internal_sp_view._data_view.m_size;
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
@@ -191,9 +191,9 @@ void weight_updating(const seedfilter_config& filter_config,
     unsigned int localSize = 64;
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
-    for (unsigned int i = 0; i < internal_sp._data_view.m_size; ++i) {
+    for (unsigned int i = 0; i < nbins; ++i) {
         num_groups +=
-            triplet_container.get_headers()[i].n_triplets / localSize + 1;
+            tc_headers[i].n_triplets / localSize + 1;
     }
     unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
@@ -205,8 +205,8 @@ void weight_updating(const seedfilter_config& filter_config,
             auto localMem = local_accessor<scalar>(
                 ::sycl::range<1>(filter_config.compatSeedLimit), h);
 
-            WeightUpdate kernel(filter_config, internal_sp,
-                                triplet_counter_view, triplet_view, localMem);
+            WeightUpdate kernel(filter_config, internal_sp_view,
+                                tcc_view, tc_view, localMem);
 
             h.parallel_for<WeightUpdate>(weightUpdateNdRange, kernel);
         })

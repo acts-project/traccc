@@ -259,14 +259,10 @@ void seed_selecting(
     const sp_grid_const_view& internal_sp,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
-    host_triplet_counter_container& triplet_counter_container,
-    host_triplet_container& triplet_container,
+    triplet_counter_container_view tcc_view,
+    triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
-    vecmem::memory_resource& resource, queue_wrapper queue) {
-
-    auto triplet_counter_container_view =
-        get_data(triplet_counter_container, &resource);
-    auto triplet_container_view = get_data(triplet_container, &resource);
+    queue_wrapper queue) {
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -295,8 +291,8 @@ void seed_selecting(
 
             SeedSelect kernel(filter_config, spacepoints_view, internal_sp,
                               doublet_counter_container,
-                              triplet_counter_container_view,
-                              triplet_container_view, seed_buffer, localMem);
+                              tcc_view,
+                              tc_view, seed_buffer, localMem);
 
             h.parallel_for<SeedSelect>(seedSelectNdRange, kernel);
         })
