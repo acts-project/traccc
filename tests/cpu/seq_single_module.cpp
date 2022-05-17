@@ -45,7 +45,7 @@ TEST(algorithms, seq_single_module) {
 
     traccc::cluster_container_types::host clusters(&resource);
 
-    traccc::host_measurement_collection measurements;
+    traccc::measurement_collection_types::host measurements;
 
     traccc::host_spacepoint_collection spacepoints;
 

@@ -23,7 +23,7 @@ namespace traccc::sycl {
 ///
 void spacepoint_formation(
     spacepoint_container_view spacepoints_view,
-    measurement_container_view measurements_view,
+    measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         measurements_prefix_sum_view,
     queue_wrapper queue);

@@ -335,20 +335,20 @@ inline std::vector<cluster_container_types::host> read_truth_clusters(
 ///
 /// @param hreader The measurement reader type
 /// @param resource The memory resource to use for the return value
-inline host_measurement_container read_measurements(
+inline measurement_container_types::host read_measurements(
     measurement_reader& mreader, vecmem::memory_resource& resource,
     const std::map<geometry_id, transform3>& tfmap = {},
     unsigned int max_measurements = std::numeric_limits<unsigned int>::max()) {
 
     uint64_t reference_id = 0;
-    host_measurement_container result = {
-        host_measurement_container::header_vector(&resource),
-        host_measurement_container::item_vector(&resource)};
+    measurement_container_types::host result = {
+        measurement_container_types::host::header_vector(&resource),
+        measurement_container_types::host::item_vector(&resource)};
 
     bool first_line_read = false;
     unsigned int read_measurements = 0;
     csv_measurement iomeasurement;
-    host_measurement_collection measurements(&resource);
+    measurement_collection_types::host measurements(&resource);
     cell_module module;
     while (mreader.read(iomeasurement)) {
         if (first_line_read and iomeasurement.geometry_id != reference_id) {
@@ -363,7 +363,7 @@ inline host_measurement_container read_measurements(
             result.push_back(std::move(module), std::move(measurements));
 
             // Clear for next round
-            measurements = host_measurement_collection(&resource);
+            measurements.clear();
             module = cell_module();
         }
         first_line_read = true;

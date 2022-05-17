@@ -27,8 +27,9 @@ namespace traccc {
 /// This algorithm creates local/2D measurements separately for each detector
 /// module from the cells of the modules.
 ///
-class clusterization_algorithm : public algorithm<host_measurement_container(
-                                     const cell_container_types::host&)> {
+class clusterization_algorithm
+    : public algorithm<measurement_container_types::host(
+          const cell_container_types::host&)> {
 
     public:
     /// Clusterization algorithm constructor

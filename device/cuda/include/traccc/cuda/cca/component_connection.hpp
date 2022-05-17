@@ -13,9 +13,8 @@
 #include "traccc/utils/algorithm.hpp"
 
 namespace traccc::cuda {
-struct component_connection : algorithm<host_measurement_container(
+struct component_connection : algorithm<measurement_container_types::host(
                                   const cell_container_types::host& cells)> {
-    host_measurement_container operator()(
-        const cell_container_types::host& cells) const;
+    output_type operator()(const cell_container_types::host& cells) const;
 };
 }  // namespace traccc::cuda

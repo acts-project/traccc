@@ -18,7 +18,7 @@ traccc::cuda::component_connection cc;
 cca_function_t f = [](const traccc::cell_container_types::host &data) {
     std::map<traccc::geometry_id, std::vector<traccc::measurement>> result;
 
-    traccc::host_measurement_container mss = cc(data);
+    traccc::measurement_container_types::host mss = cc(data);
 
     for (std::size_t i = 0; i < mss.size(); ++i) {
         std::vector<traccc::measurement> msv;

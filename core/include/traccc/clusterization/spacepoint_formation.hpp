@@ -7,58 +7,43 @@
 
 #pragma once
 
+// Library include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
+
 namespace traccc {
 
-/// Connected component labeling.
-struct spacepoint_formation : public algorithm<host_spacepoint_container(
-                                  const host_measurement_container&)> {
+/// Algorithm forming space points out of measurements
+///
+/// This algorithm performs the local-to-global transformation of the 2D
+/// measurements made on every detector module, into 3D spacepoint coordinates.
+///
+class spacepoint_formation : public algorithm<host_spacepoint_container(
+                                 const measurement_container_types::host&)> {
 
     public:
     /// Constructor for spacepoint_formation
     ///
     /// @param mr is the memory resource
-    spacepoint_formation(vecmem::memory_resource& mr) : m_mr(mr) {}
+    ///
+    spacepoint_formation(vecmem::memory_resource& mr);
 
     /// Callable operator for the space point formation, based on one single
     /// module
     ///
-    /// @param measurements are the input measurements, in this pixel
-    /// demonstrator it one space
-    ///    point per measurement
+    /// @param measurements are the input measurements
+    /// @return A spacepoint container, with one spacepoint for every
+    ///         measurement
     ///
-    /// C++20 piping interface
-    ///
-    /// @return a measurement collection - size of input/output container is
-    /// identical
-    output_type operator()(const host_measurement_container&
-                               measurements_per_event) const override {
-        output_type spacepoints_per_event(measurements_per_event.size(),
-                                          &m_mr.get());
-
-        // Run the algorithm
-        for (std::size_t i = 0; i < measurements_per_event.size(); ++i) {
-            const auto& module = measurements_per_event.at(i).header;
-            const auto& measurements_per_module =
-                measurements_per_event.at(i).items;
-            auto& spacepoints_per_module = spacepoints_per_event.at(i).items;
-            spacepoints_per_module.reserve(measurements_per_module.size());
-
-            for (const auto& m : measurements_per_module) {
-
-                point3 local_3d = {m.local[0], m.local[1], 0.};
-                point3 global = module.placement.point_to_global(local_3d);
-                spacepoint s({global, m});
-
-                spacepoints_per_module.push_back(std::move(s));
-            }
-        }
-
-        return spacepoints_per_event;
-    }
+    output_type operator()(
+        const measurement_container_types::host& measurements) const override;
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;

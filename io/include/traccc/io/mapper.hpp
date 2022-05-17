@@ -192,7 +192,7 @@ measurement_cell_map generate_measurement_cell_map(
             cl_id.pixel = module.pixel;
         }
 
-        host_measurement_collection measurements_per_module =
+        measurement_collection_types::host measurements_per_module =
             mt(clusters, module);
 
         for (std::size_t j = 0; j < clusters.size(); j++) {
