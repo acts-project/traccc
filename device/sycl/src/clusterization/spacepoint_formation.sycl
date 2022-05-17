@@ -18,7 +18,7 @@ namespace traccc::sycl {
 
 void spacepoint_formation(
     spacepoint_container_view spacepoints_view,
-    measurement_container_view measurements_view,
+    measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         measurements_prefix_sum_view,
     queue_wrapper queue) {
@@ -41,8 +41,8 @@ void spacepoint_formation(
                     auto idx = item.get_global_linear_id();
 
                     // Initialize device containers
-                    device_measurement_container measurements_device(
-                        measurements_view);
+                    measurement_container_types::const_device
+                        measurements_device(measurements_view);
                     device_spacepoint_container spacepoints_device(
                         spacepoints_view);
                     vecmem::device_vector<const device::prefix_sum_element_t>

@@ -40,6 +40,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
   "include/traccc/clusterization/spacepoint_formation.hpp"
+  "src/clusterization/spacepoint_formation.cpp"
   "include/traccc/clusterization/measurement_creation.hpp"
   "src/clusterization/measurement_creation.cpp"
   # Seed finding algorithmic code.

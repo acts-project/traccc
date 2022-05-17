@@ -110,7 +110,7 @@ host_spacepoint_container clusterization_algorithm::operator()(
     copy(clusters_per_module, clusters_per_module_host);
 
     // Resizable buffer for the measurements
-    measurement_container_buffer measurements_buffer{
+    measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.get()},
         {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
          m_mr.get()}};

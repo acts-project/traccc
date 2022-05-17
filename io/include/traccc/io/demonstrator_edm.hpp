@@ -13,10 +13,10 @@
 
 namespace traccc {
 struct result {
-    traccc::host_measurement_container measurements;
+    measurement_container_types::host measurements;
     traccc::host_spacepoint_container spacepoints;
 };
 
 using demonstrator_input = vecmem::vector<cell_container_types::host>;
-using demonstrator_result = vecmem::vector<traccc::result>;
+using demonstrator_result = vecmem::vector<result>;
 }  // namespace traccc

@@ -30,20 +30,22 @@ traccc::component_connection cc(resource);
 traccc::measurement_creation mc(resource);
 traccc::cell_module module;
 
-std::function<traccc::host_measurement_collection(
+std::function<traccc::measurement_collection_types::host(
     const traccc::cell_collection_types::host &)>
-    fp = traccc::compose(std::function<traccc::cluster_container_types::host(
-                             const traccc::cell_collection_types::host &)>(
-                             std::bind(cc, std::placeholders::_1, module)),
-                         std::function<traccc::host_measurement_collection(
-                             const traccc::cluster_container_types::host &)>(
-                             std::bind(mc, std::placeholders::_1, module)));
+    fp = traccc::compose(
+        std::function<traccc::cluster_container_types::host(
+            const traccc::cell_collection_types::host &)>(
+            std::bind(cc, std::placeholders::_1, module)),
+        std::function<traccc::measurement_collection_types::host(
+            const traccc::cluster_container_types::host &)>(
+            std::bind(mc, std::placeholders::_1, module)));
 
 cca_function_t f = [](const traccc::cell_container_types::host &data) {
     std::map<traccc::geometry_id, std::vector<traccc::measurement>> result;
 
     for (std::size_t i = 0; i < data.size(); ++i) {
-        traccc::host_measurement_collection measurements = fp(data.at(i).items);
+        traccc::measurement_collection_types::host measurements =
+            fp(data.at(i).items);
         std::vector<traccc::measurement> out(measurements.begin(),
                                              measurements.end());
         result.emplace(data.at(i).header.module, std::move(out));

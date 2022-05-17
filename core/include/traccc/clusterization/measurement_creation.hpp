@@ -28,7 +28,7 @@ namespace traccc {
 /// module.
 ///
 class measurement_creation
-    : public algorithm<host_measurement_collection(
+    : public algorithm<measurement_collection_types::host(
           const cluster_container_types::host &, const cell_module &)> {
 
     public:
