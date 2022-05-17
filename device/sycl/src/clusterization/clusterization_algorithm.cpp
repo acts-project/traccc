@@ -73,28 +73,32 @@ spacepoint_container_buffer clusterization_algorithm::operator()(
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     *total_clusters = 0;
 
+    // Get the prefix sum of the cells
+    const device::prefix_sum_t cells_prefix_sum =
+        device::get_prefix_sum(cell_sizes, m_mr.get());
+
     // Clusters sum kernel
     traccc::sycl::clusters_sum(cells_view, sparse_ccl_indices, *total_clusters,
                                cluster_prefix_sum, clusters_per_module,
                                m_queue);
 
-    // Get the prefix sum of the cells
-    const device::prefix_sum_t cells_prefix_sum =
-        device::get_prefix_sum(cell_sizes, m_mr.get());
-
     // Vector of the exact cluster sizes, will be filled in cluster counting
-    vecmem::vector<unsigned int> cluster_sizes(*total_clusters, 0, &m_mr.get());
+    vecmem::data::vector_buffer<std::size_t> cluster_sizes_buffer(*total_clusters, m_mr.get());
+    copy.setup(cluster_sizes_buffer);
 
     // Cluster counting kernel
     traccc::sycl::cluster_counting(
-        sparse_ccl_indices, vecmem::get_data(cluster_sizes), cluster_prefix_sum,
+        sparse_ccl_indices, cluster_sizes_buffer, cluster_prefix_sum,
         vecmem::get_data(cells_prefix_sum), m_queue);
+    
+    std::vector<std::size_t> cluster_sizes;
+    copy(cluster_sizes_buffer, cluster_sizes);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_types::buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
         {std::vector<std::size_t>(*total_clusters, 0),
-         std::vector<std::size_t>(cluster_sizes.begin(), cluster_sizes.end()),
+        cluster_sizes,
          m_mr.get()}};
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
