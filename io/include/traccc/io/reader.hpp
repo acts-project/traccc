@@ -80,7 +80,7 @@ inline traccc::cell_container_types::host read_cells_from_event(
 /// @param data_format is the data format (e.g. csv or binary) of output file
 /// @param surface_transforms is the input geometry data
 /// @param resource is the vecmem resource
-inline traccc::host_spacepoint_container read_spacepoints_from_event(
+inline spacepoint_container_types::host read_spacepoints_from_event(
     size_t event, const std::string &hits_directory,
     const traccc::data_format &data_format, traccc::geometry surface_transforms,
     vecmem::memory_resource &resource) {
@@ -100,7 +100,7 @@ inline traccc::host_spacepoint_container read_spacepoints_from_event(
 
         vecmem::copy copy;
 
-        return traccc::read_binary<traccc::host_spacepoint_container>(
+        return traccc::read_binary<spacepoint_container_types::host>(
             io_hits_file, copy, resource);
     } else {
         throw std::invalid_argument("Allowed data format is csv or binary");

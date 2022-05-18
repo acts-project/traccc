@@ -29,7 +29,7 @@ clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr,
                                                    queue_wrapper queue)
     : m_mr(mr), m_queue(queue) {}
 
-spacepoint_container_buffer clusterization_algorithm::operator()(
+clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::host &cells_per_event) const {
 
     // Number of modules
@@ -127,7 +127,7 @@ spacepoint_container_buffer clusterization_algorithm::operator()(
                                        cells_view, m_queue);
 
     // Spacepoint container buffer to fill in spacepoint formation
-    spacepoint_container_buffer spacepoints_buffer{
+    spacepoint_container_types::buffer spacepoints_buffer{
         {num_modules, m_mr.get()},
         {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
          m_mr.get()}};

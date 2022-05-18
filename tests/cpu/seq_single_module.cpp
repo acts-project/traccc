@@ -47,7 +47,7 @@ TEST(algorithms, seq_single_module) {
 
     traccc::measurement_collection_types::host measurements;
 
-    traccc::host_spacepoint_collection spacepoints;
+    traccc::spacepoint_collection_types::host spacepoints;
 
     traccc::component_connection cc(resource);
     traccc::measurement_creation mt(resource);

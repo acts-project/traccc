@@ -242,7 +242,7 @@ measurement_particle_map generate_measurement_particle_map(
     auto surface_transforms = read_geometry(detector_file);
 
     // Read the spacepoints from the relevant event file
-    host_spacepoint_container spacepoints_per_event =
+    spacepoint_container_types::host spacepoints_per_event =
         read_spacepoints_from_event(event, hits_dir, traccc::data_format::csv,
                                     surface_transforms, resource);
 

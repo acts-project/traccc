@@ -233,7 +233,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         // Copy the seeds and spacepoints to the host for comparisons
         vecmem::copy copy;
-        traccc::host_spacepoint_container spacepoints_per_event_sycl;
+        traccc::spacepoint_container_types::host spacepoints_per_event_sycl;
         copy(spacepoints_sycl_buffer.headers,
              spacepoints_per_event_sycl.get_headers());
         copy(spacepoints_sycl_buffer.items,

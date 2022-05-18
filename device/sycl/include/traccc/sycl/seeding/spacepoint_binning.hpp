@@ -26,8 +26,8 @@
 namespace traccc::sycl {
 
 /// Spacepoing binning executed on a SYCL device
-class spacepoint_binning
-    : public algorithm<sp_grid_buffer(const spacepoint_container_const_view&)> {
+class spacepoint_binning : public algorithm<sp_grid_buffer(
+                               const spacepoint_container_types::const_view&)> {
 
     public:
     /// Constructor for the algorithm
@@ -36,8 +36,8 @@ class spacepoint_binning
                        vecmem::memory_resource& mr, const queue_wrapper& queue);
 
     /// Function executing the algorithm
-    sp_grid_buffer operator()(
-        const spacepoint_container_const_view& spacepoints_view) const override;
+    sp_grid_buffer operator()(const spacepoint_container_types::const_view&
+                                  spacepoints_view) const override;
 
     private:
     seedfinder_config m_config;

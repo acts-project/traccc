@@ -76,7 +76,7 @@ class seeding_performance_writer {
     }
 
     void write(std::string name, const host_seed_collection& seeds,
-               const host_spacepoint_container& spacepoints,
+               const spacepoint_container_types::host& spacepoints,
                event_map& evt_map) {
 
         auto& p_map = evt_map.ptc_map;
@@ -87,7 +87,7 @@ class seeding_performance_writer {
         std::size_t n_matched_seeds = 0;
 
         for (const auto& sd : seeds) {
-            auto measurements = sd.get_measurements(spacepoints);
+            auto measurements = sd.get_measurements(get_data(spacepoints));
 
             std::vector<particle_hit_count> particle_hit_counts =
                 identify_contributing_particles(measurements, m_p_map);

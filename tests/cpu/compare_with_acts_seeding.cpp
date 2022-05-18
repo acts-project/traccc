@@ -122,14 +122,14 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Declare algorithms
     traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
-    traccc::seed_finding sf(traccc_config);
+    traccc::seed_finding sf(traccc_config, traccc::seedfilter_config());
     traccc::track_params_estimation tp(host_mr);
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
 
     // Read the hits from the relevant event file
-    traccc::host_spacepoint_container spacepoints_per_event =
+    traccc::spacepoint_container_types::host spacepoints_per_event =
         traccc::read_spacepoints_from_event(event, hits_dir,
                                             traccc::data_format::csv,
                                             surface_transforms, host_mr);

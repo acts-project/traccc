@@ -14,7 +14,7 @@
 namespace traccc {
 struct result {
     measurement_container_types::host measurements;
-    traccc::host_spacepoint_container spacepoints;
+    spacepoint_container_types::host spacepoints;
 };
 
 using demonstrator_input = vecmem::vector<cell_container_types::host>;

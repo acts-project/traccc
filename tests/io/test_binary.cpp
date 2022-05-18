@@ -98,7 +98,7 @@ TEST(io_binary, spacepoint) {
         traccc::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read csv file
-    traccc::host_spacepoint_container spacepoints_csv =
+    traccc::spacepoint_container_types::host spacepoints_csv =
         traccc::read_spacepoints_from_event(event, hits_directory,
                                             traccc::data_format::csv,
                                             surface_transforms, host_mr);
@@ -108,7 +108,7 @@ TEST(io_binary, spacepoint) {
                               traccc::data_format::binary, spacepoints_csv);
 
     // Read binary file
-    traccc::host_spacepoint_container spacepoints_binary =
+    traccc::spacepoint_container_types::host spacepoints_binary =
         traccc::read_spacepoints_from_event(event, hits_directory,
                                             traccc::data_format::binary,
                                             surface_transforms, host_mr);

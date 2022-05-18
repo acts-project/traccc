@@ -44,7 +44,7 @@ int create_binaries(const std::string& detector_file,
         if (!hit_directory.empty()) {
 
             // Read the hits from the relevant event file
-            traccc::host_spacepoint_container spacepoints_csv =
+            traccc::spacepoint_container_types::host spacepoints_csv =
                 traccc::read_spacepoints_from_event(
                     event, hit_directory, common_opts.input_data_format,
                     surface_transforms, host_mr);

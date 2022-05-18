@@ -38,7 +38,7 @@ namespace traccc::sycl {
 void seed_selecting(
     const seedfilter_config& filter_config,
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
-    const spacepoint_container_const_view& spacepoints_view,
+    const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,

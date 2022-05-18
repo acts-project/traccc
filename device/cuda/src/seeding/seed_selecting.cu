@@ -32,7 +32,7 @@ namespace cuda {
 /// @param seed_container vecmem container for seeds
 __global__ void seed_selecting_kernel(
     const seedfilter_config filter_config,
-    spacepoint_container_const_view spacepoints_view,
+    spacepoint_container_types::const_view spacepoints_view,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
@@ -42,7 +42,7 @@ __global__ void seed_selecting_kernel(
 void seed_selecting(
     const seedfilter_config& filter_config,
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
-    const host_spacepoint_container& spacepoints,
+    const spacepoint_container_types::host& spacepoints,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view dcc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
@@ -51,7 +51,8 @@ void seed_selecting(
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
-    auto spacepoints_view = get_data(spacepoints, &resource);
+    spacepoint_container_types::const_view spacepoints_view =
+        get_data(spacepoints, &resource);
 
     // The thread-block is desinged to make each thread investigate the
     // compatible middle spacepoint
@@ -86,7 +87,7 @@ void seed_selecting(
 
 __global__ void seed_selecting_kernel(
     const seedfilter_config filter_config,
-    spacepoint_container_const_view spacepoints_view,
+    spacepoint_container_types::const_view spacepoints_view,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view doublet_counter_view,
     triplet_counter_container_view triplet_counter_view,
@@ -94,7 +95,8 @@ __global__ void seed_selecting_kernel(
     vecmem::data::vector_view<seed> seed_view) {
 
     // Get device container for input parameters
-    device_spacepoint_const_container spacepoints_device(spacepoints_view);
+    const spacepoint_container_types::const_device spacepoints_device(
+        spacepoints_view);
     const_sp_grid_device internal_sp_device(internal_sp_view);
 
     const device::doublet_counter_container_types::const_device

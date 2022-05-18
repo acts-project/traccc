@@ -23,7 +23,8 @@ namespace kernels {
 /// CUDA kernel for running @c traccc::device::count_grid_capacities
 __global__ void count_grid_capacities(
     seedfinder_config config, sp_grid::axis_p0_type phi_axis,
-    sp_grid::axis_p1_type z_axis, spacepoint_container_const_view spacepoints,
+    sp_grid::axis_p1_type z_axis,
+    spacepoint_container_types::const_view spacepoints,
     vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
     vecmem::data::vector_view<unsigned int> grid_capacities) {
 
@@ -34,7 +35,8 @@ __global__ void count_grid_capacities(
 
 /// CUDA kernel for running @c traccc::device::populate_grid
 __global__ void populate_grid(
-    seedfinder_config config, spacepoint_container_const_view spacepoints,
+    seedfinder_config config,
+    spacepoint_container_types::const_view spacepoints,
     vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
     sp_grid_view grid) {
 
@@ -50,13 +52,13 @@ spacepoint_binning::spacepoint_binning(
     : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
-    const host_spacepoint_container& spacepoints) const {
+    const spacepoint_container_types::host& spacepoints) const {
 
     // Helper object for the data management.
     vecmem::copy copy;
 
     // Get the data/view for the spacepoints.
-    const spacepoint_container_const_data sp_data =
+    const spacepoint_container_types::const_data sp_data =
         traccc::get_data(spacepoints);
 
     // Get the prefix sum for the spacepoints.

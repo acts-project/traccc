@@ -43,7 +43,7 @@ spacepoint_binning::spacepoint_binning(
       m_queue(queue) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_const_view& spacepoints_view) const {
+    const spacepoint_container_types::const_view& spacepoints_view) const {
 
     // Helper object for the data management.
     vecmem::copy copy;
