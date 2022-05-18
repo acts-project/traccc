@@ -114,7 +114,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
 
-        auto seeds_sycl_buffer = sa_sycl(traccc::get_data(spacepoints_per_event, &shared_mr));
+        auto seeds_sycl_buffer =
+            sa_sycl(traccc::get_data(spacepoints_per_event, &shared_mr));
 
         /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_sycl =
@@ -146,7 +147,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             std::chrono::system_clock::now();
 
         auto params_sycl =
-            tp_sycl(traccc::get_data(spacepoints_per_event, &shared_mr), seeds_sycl_buffer);
+            tp_sycl(traccc::get_data(spacepoints_per_event, &shared_mr),
+                    seeds_sycl_buffer);
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =

@@ -45,7 +45,6 @@ void triplet_finding(const seedfinder_config& config,
                      doublet_container_view mid_bot_doublet_container,
                      doublet_container_view mid_top_doublet_container,
                      triplet_counter_container_view tcc_view,
-                     triplet_container_view tc_view,
-                     queue_wrapper queue);
+                     triplet_container_view tc_view, queue_wrapper queue);
 
 }  // namespace traccc::sycl

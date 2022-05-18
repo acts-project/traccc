@@ -15,8 +15,8 @@
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/memory/memory_resource.hpp>
 
 // System include(s).
 #include <functional>

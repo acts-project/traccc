@@ -176,9 +176,8 @@ class WeightUpdate {
 void weight_updating(const seedfilter_config& filter_config,
                      const vecmem::vector<triplet_per_bin>& tc_headers,
                      const sp_grid_const_view& internal_sp_view,
-                     triplet_counter_container_view tcc_view, 
-                     triplet_container_view tc_view,
-                     queue_wrapper queue) {
+                     triplet_counter_container_view tcc_view,
+                     triplet_container_view tc_view, queue_wrapper queue) {
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -192,8 +191,7 @@ void weight_updating(const seedfilter_config& filter_config,
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < nbins; ++i) {
-        num_groups +=
-            tc_headers[i].n_triplets / localSize + 1;
+        num_groups += tc_headers[i].n_triplets / localSize + 1;
     }
     unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
@@ -205,8 +203,8 @@ void weight_updating(const seedfilter_config& filter_config,
             auto localMem = local_accessor<scalar>(
                 ::sycl::range<1>(filter_config.compatSeedLimit), h);
 
-            WeightUpdate kernel(filter_config, internal_sp_view,
-                                tcc_view, tc_view, localMem);
+            WeightUpdate kernel(filter_config, internal_sp_view, tcc_view,
+                                tc_view, localMem);
 
             h.parallel_for<WeightUpdate>(weightUpdateNdRange, kernel);
         })

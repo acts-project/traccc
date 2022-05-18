@@ -83,22 +83,22 @@ spacepoint_container_buffer clusterization_algorithm::operator()(
                                m_queue);
 
     // Vector of the exact cluster sizes, will be filled in cluster counting
-    vecmem::data::vector_buffer<std::size_t> cluster_sizes_buffer(*total_clusters, m_mr.get());
+    vecmem::data::vector_buffer<std::size_t> cluster_sizes_buffer(
+        *total_clusters, m_mr.get());
     copy.setup(cluster_sizes_buffer);
 
     // Cluster counting kernel
-    traccc::sycl::cluster_counting(
-        sparse_ccl_indices, cluster_sizes_buffer, cluster_prefix_sum,
-        vecmem::get_data(cells_prefix_sum), m_queue);
-    
+    traccc::sycl::cluster_counting(sparse_ccl_indices, cluster_sizes_buffer,
+                                   cluster_prefix_sum,
+                                   vecmem::get_data(cells_prefix_sum), m_queue);
+
     std::vector<std::size_t> cluster_sizes;
     copy(cluster_sizes_buffer, cluster_sizes);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_types::buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
-        {std::vector<std::size_t>(*total_clusters, 0),
-        cluster_sizes,
+        {std::vector<std::size_t>(*total_clusters, 0), cluster_sizes,
          m_mr.get()}};
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);

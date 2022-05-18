@@ -209,8 +209,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_sycl =
             std::chrono::system_clock::now();
 
-        auto params_sycl = tp_sycl(spacepoints_sycl_buffer,
-                                   seeds_sycl_buffer);
+        auto params_sycl = tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
@@ -235,8 +234,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // Copy the seeds and spacepoints to the host for comparisons
         vecmem::copy copy;
         traccc::host_spacepoint_container spacepoints_per_event_sycl;
-        copy(spacepoints_sycl_buffer.headers, spacepoints_per_event_sycl.get_headers());
-        copy(spacepoints_sycl_buffer.items, spacepoints_per_event_sycl.get_items());
+        copy(spacepoints_sycl_buffer.headers,
+             spacepoints_per_event_sycl.get_headers());
+        copy(spacepoints_sycl_buffer.items,
+             spacepoints_per_event_sycl.get_items());
         traccc::host_seed_collection seeds_sycl;
         copy(seeds_sycl_buffer, seeds_sycl);
 
@@ -245,7 +246,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           ----------------------------------*/
 
         if (run_cpu) {
-
 
             // Initial information about number of seeds found
             std::cout << "event " << std::to_string(event) << std::endl;

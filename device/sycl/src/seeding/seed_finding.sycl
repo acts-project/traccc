@@ -137,15 +137,15 @@ seed_finding::output_type seed_finding::operator()(
         [](const device::doublet_counter_header& dc) { return dc.m_nMidBot; });
 
     // create the triplet_counter container with the number of doublets
-    triplet_counter_container_buffer tcc_buffer{{nbins, m_mr.get()}, 
+    triplet_counter_container_buffer tcc_buffer{{nbins, m_mr.get()},
                                                 {mb_buffer_sizes, m_mr.get()}};
     copy.setup(tcc_buffer.headers);
     copy.setup(tcc_buffer.items);
 
     // triplet counting
     triplet_counting(m_seedfinder_config, mb_headers, g2_view,
-                     doublet_counter_view, mb_view, mt_view,
-                     tcc_buffer, m_queue);
+                     doublet_counter_view, mb_view, mt_view, tcc_buffer,
+                     m_queue);
 
     // Take header of the triplet counter container buffer into host
     vecmem::vector<triplet_counter_per_bin> tcc_headers(&m_mr.get());
@@ -165,10 +165,9 @@ seed_finding::output_type seed_finding::operator()(
     copy.setup(tc_buffer.items);
 
     // triplet finding
-    triplet_finding(m_seedfinder_config, m_seedfilter_config, tcc_headers, g2_view,
-                    doublet_counter_view, mb_view, mt_view,
-                    tcc_buffer, tc_buffer,
-                    m_queue);
+    triplet_finding(m_seedfinder_config, m_seedfilter_config, tcc_headers,
+                    g2_view, doublet_counter_view, mb_view, mt_view, tcc_buffer,
+                    tc_buffer, m_queue);
 
     // Take header of the triplet container buffer into host
     vecmem::vector<triplet_per_bin> tc_headers(&m_mr.get());
@@ -182,15 +181,13 @@ seed_finding::output_type seed_finding::operator()(
     auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
                                       n_triplets_per_bin.end(), 0);
 
-    vecmem::data::vector_buffer<seed> seed_buffer(
-        n_triplets, 0, m_mr.get());
+    vecmem::data::vector_buffer<seed> seed_buffer(n_triplets, 0, m_mr.get());
     copy.setup(seed_buffer);
 
     // seed selecting
-    seed_selecting(m_seedfilter_config, doublet_counts,
-                   spacepoints_view, g2_view,
-                   doublet_counter_view, tcc_buffer,
-                   tc_buffer, seed_buffer, m_queue);
+    seed_selecting(m_seedfilter_config, doublet_counts, spacepoints_view,
+                   g2_view, doublet_counter_view, tcc_buffer, tc_buffer,
+                   seed_buffer, m_queue);
 
     return seed_buffer;
 }

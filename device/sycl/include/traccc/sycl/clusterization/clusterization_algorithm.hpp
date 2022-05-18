@@ -36,7 +36,8 @@ class clusterization_algorithm : public algorithm<spacepoint_container_buffer(
     ///
     /// @param cells_per_event is a container with cell modules as headers
     /// and cells as the items
-    /// @return a measurement collection - vector of measurements
+    /// @return a spacepoint container (buffer) - jagged vector of spacepoints
+    /// per module.
     output_type operator()(
         const cell_container_types::host& cells_per_event) const override;
 

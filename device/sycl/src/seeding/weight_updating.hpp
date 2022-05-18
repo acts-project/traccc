@@ -34,8 +34,7 @@ namespace traccc::sycl {
 void weight_updating(const seedfilter_config& filter_config,
                      const vecmem::vector<triplet_per_bin>& tc_headers,
                      const sp_grid_const_view& internal_sp,
-                     triplet_counter_container_view tcc_view, 
-                     triplet_container_view tc_view,
-                     queue_wrapper queue);
+                     triplet_counter_container_view tcc_view,
+                     triplet_container_view tc_view, queue_wrapper queue);
 
 }  // namespace traccc::sycl

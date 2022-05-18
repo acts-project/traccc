@@ -34,18 +34,22 @@ void cluster_counting(
                                        ::sycl::range<1>(wGroupSize)};
 
     // Set zero kernel
-    details::get_queue(queue).submit([&ndrange, &cluster_sizes_view](::sycl::handler& h){
-        h.parallel_for<class SetZeroClusterCounting>(ndrange, [=](::sycl::nd_item<1> item){
-            auto idx = item.get_global_linear_id();
+    details::get_queue(queue)
+        .submit([&ndrange, &cluster_sizes_view](::sycl::handler& h) {
+            h.parallel_for<class SetZeroClusterCounting>(
+                ndrange, [=](::sycl::nd_item<1> item) {
+                    auto idx = item.get_global_linear_id();
 
-            vecmem::device_vector<std::size_t> device_cluster_sizes(cluster_sizes_view);
+                    vecmem::device_vector<std::size_t> device_cluster_sizes(
+                        cluster_sizes_view);
 
-            if (idx >= device_cluster_sizes.size())
-                return;
-            
-            device_cluster_sizes[idx] = 0;
-        });
-    }).wait_and_throw();
+                    if (idx >= device_cluster_sizes.size())
+                        return;
+
+                    device_cluster_sizes[idx] = 0;
+                });
+        })
+        .wait_and_throw();
 
     // Cluster Counting kernel
     details::get_queue(queue)
