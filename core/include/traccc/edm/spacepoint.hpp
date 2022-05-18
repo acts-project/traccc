@@ -15,13 +15,20 @@
 #include "traccc/edm/measurement.hpp"
 
 // System include(s).
-#include <vector>
+#include <cmath>
 
 namespace traccc {
 
-/// A spacepoint definition: global position and errors
+/// A spacepoint expressed in global coordinates
+///
+/// It describes the 3D position of the spacepoint, and the 2D measurement that
+/// the spacepoint was created from.
+///
 struct spacepoint {
-    point3 global = {0., 0., 0.};
+
+    /// The global position of the spacepoint in 3D space
+    point3 global{0., 0., 0.};
+    /// The local measurement of the spacepoint on the detector surface
     measurement meas;
 
     TRACCC_HOST_DEVICE
@@ -36,77 +43,32 @@ struct spacepoint {
     }
 };
 
+/// Comparison / ordering operator for spacepoints
+TRACCC_HOST_DEVICE
 inline bool operator<(const spacepoint& lhs, const spacepoint& rhs) {
-    if (lhs.global[0] < rhs.global[0]) {
-        return true;
+
+    if (std::abs(lhs.x() - rhs.x()) > float_epsilon) {
+        return (lhs.x() < rhs.x());
+    } else if (std::abs(lhs.y() - rhs.y()) > float_epsilon) {
+        return (lhs.y() < rhs.y());
+    } else {
+        return (lhs.z() < rhs.z());
     }
-    return false;
 }
 
+/// Equality operator for spacepoints
+TRACCC_HOST_DEVICE
 inline bool operator==(const spacepoint& lhs, const spacepoint& rhs) {
-    if (std::abs(lhs.global[0] - rhs.global[0]) < float_epsilon &&
-        std::abs(lhs.global[1] - rhs.global[1]) < float_epsilon &&
-        std::abs(lhs.global[2] - rhs.global[2]) < float_epsilon) {
-        return true;
-    }
-    return false;
+
+    return ((std::abs(lhs.x() - rhs.x()) < float_epsilon) &&
+            (std::abs(lhs.y() - rhs.y()) < float_epsilon) &&
+            (std::abs(lhs.z() - rhs.z()) < float_epsilon) &&
+            (lhs.meas == rhs.meas));
 }
 
-/// (Non-const) Container of spacepoints belonging to one detector module
-template <template <typename> class vector_t>
-using spacepoint_collection = vector_t<spacepoint>;
-
-/// (Const) Container of spacepoints belonging to one detector module
-template <template <typename> class vector_t>
-using spacepoint_const_collection = vector_t<const spacepoint>;
-
-/// Convenience declaration for the spacepoint collection type to use in host
-/// code
-using host_spacepoint_collection = spacepoint_collection<vecmem::vector>;
-
-/// Convenience declaration for the spacepoint collection type to use in device
-/// code (non-const)
-using device_spacepoint_collection =
-    spacepoint_collection<vecmem::device_vector>;
-
-/// Convenience declaration for the spacepoint collection type to use in device
-/// code (const)
-using device_spacepoint_const_collection =
-    spacepoint_const_collection<vecmem::device_vector>;
-
-/// Convenience declaration for the spacepoint container type to use in host
-/// code
-using host_spacepoint_container = host_container<geometry_id, spacepoint>;
-
-/// Convenience declaration for the spacepoint container type to use in device
-/// code (non-const)
-using device_spacepoint_container = device_container<geometry_id, spacepoint>;
-
-/// Convenience declaration for the spacepoint container type to use in device
-/// code (const)
-using device_spacepoint_const_container =
-    device_container<const geometry_id, const spacepoint>;
-
-/// Convenience declaration for the spacepoint container data type to use in
-/// host code (non-const)
-using spacepoint_container_data = container_data<geometry_id, spacepoint>;
-
-/// Convenience declaration for the spacepoint container data type to use in
-/// host code (const)
-using spacepoint_container_const_data =
-    container_data<const geometry_id, const spacepoint>;
-
-/// Convenience declaration for the spacepoint container buffer type to use in
-/// host code
-using spacepoint_container_buffer = container_buffer<geometry_id, spacepoint>;
-
-/// Convenience declaration for the spacepoint container view type to use in
-/// host code (non-const)
-using spacepoint_container_view = container_view<geometry_id, spacepoint>;
-
-/// Convenience declaration for the spacepoint container view type to use in
-/// host code (const)
-using spacepoint_container_const_view =
-    container_view<const geometry_id, const spacepoint>;
+/// Declare all spacepoint collection types
+using spacepoint_collection_types = collection_types<spacepoint>;
+/// Declare all spacepoint container types
+using spacepoint_container_types = container_types<geometry_id, spacepoint>;
 
 }  // namespace traccc
