@@ -29,7 +29,7 @@ clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr,
                                                    queue_wrapper queue)
     : m_mr(mr), m_queue(queue) {}
 
-host_spacepoint_container clusterization_algorithm::operator()(
+spacepoint_container_buffer clusterization_algorithm::operator()(
     const cell_container_types::host &cells_per_event) const {
 
     // Number of modules
@@ -73,22 +73,27 @@ host_spacepoint_container clusterization_algorithm::operator()(
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     *total_clusters = 0;
 
+    // Get the prefix sum of the cells
+    const device::prefix_sum_t cells_prefix_sum =
+        device::get_prefix_sum(cell_sizes, m_mr.get());
+
     // Clusters sum kernel
     traccc::sycl::clusters_sum(cells_view, sparse_ccl_indices, *total_clusters,
                                cluster_prefix_sum, clusters_per_module,
                                m_queue);
 
-    // Get the prefix sum of the cells
-    const device::prefix_sum_t cells_prefix_sum =
-        device::get_prefix_sum(cell_sizes, m_mr.get());
-
     // Vector of the exact cluster sizes, will be filled in cluster counting
-    vecmem::vector<unsigned int> cluster_sizes(*total_clusters, 0, &m_mr.get());
+    vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
+        *total_clusters, m_mr.get());
+    copy.setup(cluster_sizes_buffer);
 
     // Cluster counting kernel
-    traccc::sycl::cluster_counting(
-        sparse_ccl_indices, vecmem::get_data(cluster_sizes), cluster_prefix_sum,
-        vecmem::get_data(cells_prefix_sum), m_queue);
+    traccc::sycl::cluster_counting(sparse_ccl_indices, cluster_sizes_buffer,
+                                   cluster_prefix_sum,
+                                   vecmem::get_data(cells_prefix_sum), m_queue);
+
+    std::vector<unsigned int> cluster_sizes;
+    copy(cluster_sizes_buffer, cluster_sizes);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_types::buffer clusters_buffer{
@@ -138,12 +143,7 @@ host_spacepoint_container clusterization_algorithm::operator()(
         spacepoints_buffer, measurements_buffer,
         vecmem::get_data(measurements_prefix_sum), m_queue);
 
-    // Copy the results back to the host
-    host_spacepoint_container spacepoints_per_event(&m_mr.get());
-    copy(spacepoints_buffer.headers, spacepoints_per_event.get_headers());
-    copy(spacepoints_buffer.items, spacepoints_per_event.get_items());
-
-    return spacepoints_per_event;
+    return spacepoints_buffer;
 }
 
 }  // namespace traccc::sycl

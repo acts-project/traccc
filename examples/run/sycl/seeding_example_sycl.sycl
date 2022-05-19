@@ -30,6 +30,7 @@
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <chrono>
@@ -113,7 +114,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
 
-        auto seeds_sycl = sa_sycl(std::move(spacepoints_per_event));
+        auto seeds_sycl_buffer =
+            sa_sycl(traccc::get_data(spacepoints_per_event, &shared_mr));
 
         /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_sycl =
@@ -145,7 +147,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             std::chrono::system_clock::now();
 
         auto params_sycl =
-            tp_sycl(std::move(spacepoints_per_event), std::move(seeds_sycl));
+            tp_sycl(traccc::get_data(spacepoints_per_event, &shared_mr),
+                    seeds_sycl_buffer);
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
@@ -170,6 +173,11 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         /*----------------------------------
           compare seeds from cpu and sycl
           ----------------------------------*/
+
+        // Copy the seeds to the host for comparisons
+        vecmem::copy copy;
+        traccc::host_seed_collection seeds_sycl;
+        copy(seeds_sycl_buffer, seeds_sycl);
 
         if (run_cpu) {
             // seeding

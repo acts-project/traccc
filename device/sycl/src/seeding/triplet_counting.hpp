@@ -41,7 +41,7 @@ void triplet_counting(const seedfinder_config& config,
                           doublet_counter_container,
                       doublet_container_view mid_bot_doublet_container,
                       doublet_container_view mid_top_doublet_container,
-                      host_triplet_counter_container& triplet_counter_container,
-                      vecmem::memory_resource& resource, queue_wrapper queue);
+                      triplet_counter_container_view tcc_view,
+                      queue_wrapper queue);
 
 }  // namespace traccc::sycl

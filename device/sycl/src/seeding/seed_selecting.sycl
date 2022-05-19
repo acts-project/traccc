@@ -56,7 +56,7 @@ static int min_elem(const local_accessor<triplet>& arr, const int& begin_idx,
 class SeedSelect {
     public:
     SeedSelect(const seedfilter_config filter_config,
-               spacepoint_container_view spacepoints_view,
+               spacepoint_container_const_view spacepoints_view,
                sp_grid_const_view internal_sp_view,
                device::doublet_counter_container_types::const_view
                    doublet_counter_view,
@@ -79,7 +79,8 @@ class SeedSelect {
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        device_spacepoint_container spacepoints_device(m_spacepoints_view);
+        device_spacepoint_const_container spacepoints_device(
+            m_spacepoints_view);
 
         const_sp_grid_device internal_sp_device(m_internal_sp_view);
 
@@ -243,7 +244,7 @@ class SeedSelect {
 
     private:
     const seedfilter_config m_filter_config;
-    spacepoint_container_view m_spacepoints_view;
+    spacepoint_container_const_view m_spacepoints_view;
     sp_grid_const_view m_internal_sp_view;
     device::doublet_counter_container_types::const_view m_doublet_counter_view;
     triplet_counter_container_view m_triplet_counter_view;
@@ -255,19 +256,12 @@ class SeedSelect {
 void seed_selecting(
     const seedfilter_config& filter_config,
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
-    host_spacepoint_container& spacepoints,
+    const spacepoint_container_const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
-    host_triplet_counter_container& triplet_counter_container,
-    host_triplet_container& triplet_container,
-    vecmem::data::vector_buffer<seed>& seed_buffer,
-    vecmem::memory_resource& resource, queue_wrapper queue) {
-
-    auto spacepoints_view = get_data(spacepoints, &resource);
-    auto triplet_counter_container_view =
-        get_data(triplet_counter_container, &resource);
-    auto triplet_container_view = get_data(triplet_container, &resource);
+    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
+    vecmem::data::vector_buffer<seed>& seed_buffer, queue_wrapper queue) {
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -295,9 +289,8 @@ void seed_selecting(
                 h);
 
             SeedSelect kernel(filter_config, spacepoints_view, internal_sp,
-                              doublet_counter_container,
-                              triplet_counter_container_view,
-                              triplet_container_view, seed_buffer, localMem);
+                              doublet_counter_container, tcc_view, tc_view,
+                              seed_buffer, localMem);
 
             h.parallel_for<SeedSelect>(seedSelectNdRange, kernel);
         })

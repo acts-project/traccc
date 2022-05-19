@@ -38,13 +38,13 @@ namespace traccc::sycl {
 /// @param q sycl queue for kernel scheduling
 void triplet_finding(const seedfinder_config& config,
                      const seedfilter_config& filter_config,
+                     const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
                      const sp_grid_const_view& internal_sp,
                      const device::doublet_counter_container_types::const_view&
                          doublet_counter_container,
                      doublet_container_view mid_bot_doublet_container,
                      doublet_container_view mid_top_doublet_container,
-                     host_triplet_counter_container& triplet_counter_container,
-                     host_triplet_container& triplet_container,
-                     vecmem::memory_resource& resource, queue_wrapper queue);
+                     triplet_counter_container_view tcc_view,
+                     triplet_container_view tc_view, queue_wrapper queue);
 
 }  // namespace traccc::sycl

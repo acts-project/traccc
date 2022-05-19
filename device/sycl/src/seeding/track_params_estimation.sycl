@@ -20,8 +20,8 @@ namespace traccc::sycl {
 class TrackParamsEstimation {
     public:
     TrackParamsEstimation(
-        spacepoint_container_view spacepoints_view,
-        vecmem::data::vector_view<seed> seeds_view,
+        spacepoint_container_const_view spacepoints_view,
+        vecmem::data::vector_view<const seed> seeds_view,
         vecmem::data::vector_view<bound_track_parameters> params_view)
         : m_spacepoints_view(spacepoints_view),
           m_seeds_view(seeds_view),
@@ -37,8 +37,9 @@ class TrackParamsEstimation {
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        device_spacepoint_container spacepoints_device(m_spacepoints_view);
-        device_seed_collection seeds_device(m_seeds_view);
+        device_spacepoint_const_container spacepoints_device(
+            m_spacepoints_view);
+        vecmem::device_vector<const seed> seeds_device(m_seeds_view);
         device_bound_track_parameters_collection params_device(m_params_view);
 
         // vector index for threads
@@ -61,8 +62,8 @@ class TrackParamsEstimation {
     }
 
     private:
-    spacepoint_container_view m_spacepoints_view;
-    vecmem::data::vector_view<seed> m_seeds_view;
+    spacepoint_container_const_view m_spacepoints_view;
+    vecmem::data::vector_view<const seed> m_seeds_view;
     vecmem::data::vector_view<bound_track_parameters> m_params_view;
 };
 
@@ -71,18 +72,16 @@ track_params_estimation::track_params_estimation(vecmem::memory_resource& mr,
     : m_mr(mr), m_queue(queue) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    host_spacepoint_container&& spacepoints,
-    host_seed_collection&& seeds) const {
+    const spacepoint_container_const_view& spacepoints_view,
+    const vecmem::data::vector_view<const seed>& seeds_view) const {
 
-    output_type params(seeds.size(), &m_mr.get());
+    output_type params(seeds_view.size(), &m_mr.get());
 
     // Check if anything needs to be done.
-    if (seeds.size() == 0) {
+    if (seeds_view.size() == 0) {
         return params;
     }
 
-    auto spacepoints_view = get_data(spacepoints, &m_mr.get());
-    auto seeds_view = vecmem::get_data(seeds);
     auto params_view = vecmem::get_data(params);
 
     // -- localSize
@@ -92,7 +91,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // -- Num groups
     // The dimension of grid is number_of_seeds / localSize + 1
-    unsigned int num_groups = (seeds.size() + localSize - 1) / localSize;
+    unsigned int num_groups = (seeds_view.size() + localSize - 1) / localSize;
 
     unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
