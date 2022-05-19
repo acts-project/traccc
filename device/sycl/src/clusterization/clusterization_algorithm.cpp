@@ -83,7 +83,7 @@ spacepoint_container_buffer clusterization_algorithm::operator()(
                                m_queue);
 
     // Vector of the exact cluster sizes, will be filled in cluster counting
-    vecmem::data::vector_buffer<std::size_t> cluster_sizes_buffer(
+    vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
         *total_clusters, m_mr.get());
     copy.setup(cluster_sizes_buffer);
 
@@ -92,13 +92,14 @@ spacepoint_container_buffer clusterization_algorithm::operator()(
                                    cluster_prefix_sum,
                                    vecmem::get_data(cells_prefix_sum), m_queue);
 
-    std::vector<std::size_t> cluster_sizes;
+    std::vector<unsigned int> cluster_sizes;
     copy(cluster_sizes_buffer, cluster_sizes);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_types::buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
-        {std::vector<std::size_t>(*total_clusters, 0), cluster_sizes,
+        {std::vector<std::size_t>(*total_clusters, 0),
+         std::vector<std::size_t>(cluster_sizes.begin(), cluster_sizes.end()),
          m_mr.get()}};
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
@@ -141,11 +142,6 @@ spacepoint_container_buffer clusterization_algorithm::operator()(
     traccc::sycl::spacepoint_formation(
         spacepoints_buffer, measurements_buffer,
         vecmem::get_data(measurements_prefix_sum), m_queue);
-
-    // Copy the results back to the host
-    // host_spacepoint_container spacepoints_per_event(&m_mr.get());
-    // copy(spacepoints_buffer.headers, spacepoints_per_event.get_headers());
-    // copy(spacepoints_buffer.items, spacepoints_per_event.get_items());
 
     return spacepoints_buffer;
 }
