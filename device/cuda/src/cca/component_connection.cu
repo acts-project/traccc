@@ -162,11 +162,11 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
             __builtin_assume(adjc[tst] <= 8);
 
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t q = gf[adjv[tst][k]];
+                index_t q = adjv[tst][k];
 
-                if (gf[tid] > q) {
-                    f[f[tid]] = q;
-                    f[tid] = q;
+                if (gf[tid] > gf[q]) {
+                    f[f[tid]] = gf[q];
+                    f[tid] = gf[q];
                 }
             }
         }
