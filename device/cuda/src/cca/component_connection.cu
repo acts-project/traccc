@@ -130,10 +130,15 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
 }
 
 /*
- * Implementation of a simplified SV algorithm.
+ * Implementation of a SV algorithm with the following steps:
+ *   1) stochastic hooking to parent cell in new cluster
+ *   2) shortcutting
  *
- * The implementation corresponds to Algorithm 1 of the following paper:
+ * The implementation corresponds to an adapted versiion of Algorithm 1 of the following paper:
  * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
+ *
+ * f      = array holding the parent cell ID for the current iteration.
+ * f_next = buffer array holding updated information for the next iteration.
  */
 __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
@@ -153,9 +158,9 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
 
         /*
          * The algorithm executes in a loop of three distinct parallel
-         * stages. In this first one, we examine adjacent cells and copy
-         * their cluster ID if it is lower than our, essentially merging
-         * the two together.
+         * stages. In this first one, stochastic hooking, we examine adjacent 
+         * cells and copy their cluster ID if it is lower than our, 
+         * essentially merging the two together.
          */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
@@ -165,8 +170,13 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
                 index_t q = adjv[tst][k];
 
                 if (f[tid] > f[q]) {
+                    /*
+                     * The following updates have possible concurrent accesses,
+                     * but it does not matter, since the algorithm converges
+                     * eventually.
+                     */
                     f_next[f_next[tid]] = f[q];
-                    f_next[tid] = f[q];
+                    f_next[tid] = f[q]; // a form of short-cutting
                 }
             }
         }
@@ -211,7 +221,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
          * will return a true value and go to the next iteration. Only if
          * all threads return false will the loop exit.
          */
-    } while (__syncthreads_or(gfc));
+    } while (__syncthreads_or(f_changed));
 }
 
 /*
