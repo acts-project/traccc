@@ -149,7 +149,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
          * Reset the end-parameter to false, so we can set it to true if we
          * make a change to our arrays.
          */
-        gfc = false;
+        f_changed = false;
 
         /*
          * The algorithm executes in a loop of three distinct parallel
@@ -164,9 +164,9 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
                 index_t q = adjv[tst][k];
 
-                if (gf[tid] > gf[q]) {
-                    f[f[tid]] = gf[q];
-                    f[tid] = gf[q];
+                if (f[tid] > f[q]) {
+                    f_next[f_next[tid]] = f[q];
+                    f_next[tid] = f[q];
                 }
             }
         }
@@ -183,8 +183,8 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
          * can merge without adjacency information.
          */
         for (index_t tid = threadIdx.x; tid < size; tid += blockDim.x) {
-            if (f[tid] > gf[tid]) {
-                f[tid] = gf[tid];
+            if (f_next[tid] > f[tid]) {
+                f_next[tid] = f[tid];
             }
         }
 
@@ -198,9 +198,9 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
          * changes we make.
          */
         for (index_t tid = threadIdx.x; tid < size; tid += blockDim.x) {
-            if (gf[tid] != f[f[tid]]) {
-                gf[tid] = f[f[tid]];
-                gfc = true;
+            if (f[tid] != f_next[f_next[tid]]) {
+                f[tid] = f_next[f_next[tid]];
+                f_changed = true;
             }
         }
 
