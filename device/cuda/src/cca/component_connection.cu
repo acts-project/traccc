@@ -170,13 +170,8 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
                 index_t q = adjv[tst][k];
 
                 if (f[tid] > f[q]) {
-                    /*
-                     * The following updates have possible concurrent accesses,
-                     * but it does not matter, since the algorithm converges
-                     * eventually.
-                     */
-                    f_next[f_next[tid]] = f[q]; // update parent of current cell's parent
-                    f_next[tid] = f[q]; // update parent of current cell
+                    f_next[f_next[tid]] = f[q]; // update grandparent of current cell
+                    f_next[tid] = f[q]; // update parent of current cell, kind of shortcutting
                 }
             }
         }
