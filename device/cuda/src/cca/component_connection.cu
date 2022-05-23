@@ -719,7 +719,7 @@ component_connection::output_type component_connection::operator()(
     /*
      * Copy back the data from our flattened data structure into the traccc EDM.
      */
-    host_measurement_container out;
+    output_type out;
 
     for (std::size_t i = 0; i < data.size(); ++i) {
         vecmem::vector<measurement> v(&mem);
