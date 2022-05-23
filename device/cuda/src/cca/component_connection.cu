@@ -140,7 +140,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
  * f      = array holding the parent cell ID for the current iteration.
  * f_next = buffer array holding updated information for the next iteration.
  */
-__device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
+__device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
