@@ -34,7 +34,7 @@ struct ccl_partition {
 };
 
 /*
- * Convenience structure to work with flattened data arrays instead of 
+ * Convenience structure to work with flattened data arrays instead of
  * an array/vector of cells.
  */
 struct cell_container {
@@ -47,7 +47,7 @@ struct cell_container {
 };
 
 /*
- * Convenience structure to work with flattened data arrays instead of 
+ * Convenience structure to work with flattened data arrays instead of
  * an array/vector of measures.
  */
 struct measurement_container {
@@ -570,18 +570,18 @@ vecmem::vector<details::ccl_partition> partition(
      */
     for (std::size_t i = 0; i < data.size(); ++i) {
         /*
-         * We start at 0 since this is the origin of the local coordinate 
+         * We start at 0 since this is the origin of the local coordinate
          * system within a cell module.
          */
         channel_id last_mid = 0;
 
         for (const cell& c : data.at(i).items) {
             /*
-             * Create a new partition if an "empty" row is detected. A row 
-             * is considered "empty" if the channel1 value between two 
+             * Create a new partition if an "empty" row is detected. A row
+             * is considered "empty" if the channel1 value between two
              * consecutive cells have a difference > 1.
              * To prevent creating many small partitions, the current partition
-             * must have at least twice the size of threads per block. This 
+             * must have at least twice the size of threads per block. This
              * guarantees that each thread handles later at least two cells.
              */
             if (c.channel1 > last_mid + 1 && size >= 2 * THREADS_PER_BLOCK) {
@@ -613,7 +613,7 @@ vecmem::vector<details::ccl_partition> partition(
     }
 
     /*
-     * Create the very last partition after having iterated over all cell 
+     * Create the very last partition after having iterated over all cell
      * modules and cells.
      */
     if (size > 0) {
@@ -638,7 +638,7 @@ component_connection::output_type component_connection::operator()(
 
     /*
      * Flatten the data to handle memory access (fetch and cache)
-     * more efficiently. This removes the hierarchy level that 
+     * more efficiently. This removes the hierarchy level that
      * references to the cell module.
      */
     vecmem::vector<channel_id> channel0(&mem);
@@ -675,8 +675,8 @@ component_connection::output_type component_connection::operator()(
 
     /*
      * Separate the problem into various subproblems (partitions).
-     * We know that the input data is sorted primarily on channel1 (y-axis), 
-     * and secondarily on channel0 (x-axis). This allows the cheap creation 
+     * We know that the input data is sorted primarily on channel1 (y-axis),
+     * and secondarily on channel0 (x-axis). This allows the cheap creation
      * of partitions based on the distance of the y-value between two
      * consecutive cells. If this distance is above a threshold, we have the
      * guarantee that the two cells belong not to the same cluster.
@@ -685,7 +685,7 @@ component_connection::output_type component_connection::operator()(
         details::partition(data, mem);
 
     /*
-     * Reserve space for the result of the algorithm. Currently, there is 
+     * Reserve space for the result of the algorithm. Currently, there is
      * enough space allocated that (in theory) each cell could be a single
      * cluster, but this should not be the case with real experiment data.
      */
@@ -707,7 +707,7 @@ component_connection::output_type component_connection::operator()(
 
     /*
      * Run the connected component labeling algorithm to retrieve the clusters.
-     * 
+     *
      * This step includes the measurement (hit) creation for each cluster.
      */
     sparse_ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
