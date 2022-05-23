@@ -152,7 +152,7 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
     do {
         /*
          * Reset the end-parameter to false, so we can set it to true if we
-         * make a change to our arrays.
+         * make a change to the f array.
          */
         f_changed = false;
 
