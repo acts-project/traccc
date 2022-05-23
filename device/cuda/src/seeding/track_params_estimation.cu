@@ -18,17 +18,18 @@ namespace cuda {
 /// @param params_view vector of bound track parameters at the bottom
 /// spacepoints
 __global__ void track_params_estimating_kernel(
-    spacepoint_container_view spacepoints_view,
+    spacepoint_container_types::const_view spacepoints_view,
     vecmem::data::vector_view<seed> seeds_view,
     vecmem::data::vector_view<bound_track_parameters> params_view);
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    host_spacepoint_container&& spacepoints,
+    const spacepoint_container_types::host& spacepoints,
     host_seed_collection&& seeds) const {
 
     output_type params(seeds.size(), &m_mr.get());
 
-    auto spacepoints_view = get_data(spacepoints, &m_mr.get());
+    spacepoint_container_types::const_view spacepoints_view =
+        get_data(spacepoints, &m_mr.get());
     auto seeds_view = vecmem::get_data(seeds);
     auto params_view = vecmem::get_data(params);
 
@@ -52,12 +53,13 @@ track_params_estimation::output_type track_params_estimation::operator()(
 }
 
 __global__ void track_params_estimating_kernel(
-    spacepoint_container_view spacepoints_view,
+    spacepoint_container_types::const_view spacepoints_view,
     vecmem::data::vector_view<seed> seeds_view,
     vecmem::data::vector_view<bound_track_parameters> params_view) {
 
     // Get device container for input parameters
-    device_spacepoint_container spacepoints_device(spacepoints_view);
+    const spacepoint_container_types::const_device spacepoints_device(
+        spacepoints_view);
     device_seed_collection seeds_device(seeds_view);
     device_bound_track_parameters_collection params_device(params_view);
 

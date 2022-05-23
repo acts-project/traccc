@@ -22,8 +22,9 @@
 
 namespace traccc::sycl {
 
-class clusterization_algorithm : public algorithm<spacepoint_container_buffer(
-                                     const cell_container_types::host&)> {
+class clusterization_algorithm
+    : public algorithm<spacepoint_container_types::buffer(
+          const cell_container_types::host&)> {
 
     public:
     /// Constructor for clusterization algorithm

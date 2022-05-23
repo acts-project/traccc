@@ -7,71 +7,45 @@
 
 #pragma once
 
-// Project include(s).
+// Library include(s).
 #include "traccc/cuda/seeding/seed_finding.hpp"
 #include "traccc/cuda/seeding/spacepoint_binning.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
+
+// Project include(s).
+#include "traccc/edm/seed.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
-#include <cmath>
+namespace traccc::cuda {
 
-namespace traccc {
-namespace cuda {
-
-class seeding_algorithm
-    : public algorithm<host_seed_collection(host_spacepoint_container&&)> {
+/// Main algorithm for performing the track seeding on an NVIDIA GPU
+class seeding_algorithm : public algorithm<host_seed_collection(
+                              const spacepoint_container_types::host&)> {
 
     public:
-    seeding_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
+    /// Constructor for the seed finding algorithm
+    ///
+    /// @param mr The memory resource to use
+    ///
+    seeding_algorithm(vecmem::memory_resource& mr);
 
-        m_config.highland = 13.6 * std::sqrt(m_config.radLengthPerSeed) *
-                            (1 + 0.038 * std::log(m_config.radLengthPerSeed));
-        float maxScatteringAngle = m_config.highland / m_config.minPt;
-        m_config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
-        // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
-        // and millimeter
-        // TODO: change using ACTS units
-        m_config.pTPerHelixRadius = 300. * m_config.bFieldInZ;
-        m_config.minHelixDiameter2 =
-            std::pow(m_config.minPt * 2 / m_config.pTPerHelixRadius, 2);
-        m_config.pT2perRadius =
-            std::pow(m_config.highland / m_config.pTPerHelixRadius, 2);
-
-        m_grid_config.bFieldInZ = m_config.bFieldInZ;
-        m_grid_config.minPt = m_config.minPt;
-        m_grid_config.rMax = m_config.rMax;
-        m_grid_config.zMax = m_config.zMax;
-        m_grid_config.zMin = m_config.zMin;
-        m_grid_config.deltaRMax = m_config.deltaRMax;
-        m_grid_config.cotThetaMax = m_config.cotThetaMax;
-
-        sb = std::make_shared<traccc::cuda::spacepoint_binning>(
-            traccc::cuda::spacepoint_binning(m_config, m_grid_config, mr));
-        sf = std::make_shared<traccc::cuda::seed_finding>(
-            traccc::cuda::seed_finding(m_config, mr));
-    }
-
+    /// Operator executing the algorithm.
+    ///
+    /// @param spacepoint All spacepoints in the event
+    /// @return The track seeds reconstructed from the spacepoints
+    ///
     output_type operator()(
-        host_spacepoint_container&& spacepoints) const override {
-
-        output_type seeds(&m_mr.get());
-        auto internal_sp_g2 = sb->operator()(std::move(spacepoints));
-        seeds =
-            sf->operator()(std::move(spacepoints), std::move(internal_sp_g2));
-
-        return seeds;
-    }
+        const spacepoint_container_types::host& spacepoints) const override;
 
     private:
-    seedfinder_config m_config;
-    spacepoint_grid_config m_grid_config;
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
-    std::shared_ptr<traccc::cuda::spacepoint_binning> sb;
-    std::shared_ptr<traccc::cuda::seed_finding> sf;
-};
+    /// Sub-algorithm performing the spacepoint binning
+    spacepoint_binning m_spacepoint_binning;
+    /// Sub-algorithm performing the seed finding
+    seed_finding m_seed_finding;
 
-}  // namespace cuda
-}  // namespace traccc
+};  // class seeding_algorithm
+
+}  // namespace traccc::cuda

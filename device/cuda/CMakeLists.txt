@@ -35,6 +35,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/seed_selecting.cu"
   "src/seeding/spacepoint_binning.cu"
   "src/seeding/triplet_finding.cu"
+  "src/seeding/seeding_algorithm.cpp"
   "src/cca/component_connection.cu"
 )
 target_compile_options( traccc_cuda

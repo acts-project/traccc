@@ -27,8 +27,9 @@ namespace traccc::sycl {
 /// track parameter estimation for sycl
 struct track_params_estimation
     : public algorithm<host_bound_track_parameters_collection(
-          const spacepoint_container_const_view&,
+          const spacepoint_container_types::const_view&,
           const vecmem::data::vector_view<const seed>&)> {
+
     public:
     /// Constructor for track_params_estimation
     ///
@@ -42,7 +43,7 @@ struct track_params_estimation
     ///
     /// @return vector of bound track parameters
     output_type operator()(
-        const spacepoint_container_const_view& spacepoints_view,
+        const spacepoint_container_types::const_view& spacepoints_view,
         const vecmem::data::vector_view<const seed>& seeds_view) const override;
 
     private:

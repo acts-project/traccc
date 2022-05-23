@@ -22,7 +22,7 @@ namespace traccc::sycl {
 /// Forward decleration of spacepoint formation kernel
 ///
 void spacepoint_formation(
-    spacepoint_container_view spacepoints_view,
+    spacepoint_container_types::view spacepoints_view,
     measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         measurements_prefix_sum_view,

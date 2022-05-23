@@ -7,63 +7,41 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/seeding/spacepoint_binning_helper.hpp"
+// Library include(s).
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/utils/algorithm.hpp"
 
 // System include(s).
-#include <algorithm>
+#include <functional>
 
 namespace traccc {
 
 /// spacepoint binning
-struct spacepoint_binning
-    : public algorithm<sp_grid(const host_spacepoint_container&)> {
+class spacepoint_binning
+    : public algorithm<sp_grid(const spacepoint_container_types::host&)> {
 
+    public:
     /// Constructor for the spacepoint binning
     ///
     /// @param config is seed finder configuration parameters
     /// @param grid_config is for spacepoint grid parameter
     /// @param mr is the vecmem memory resource
+    ///
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
-                       vecmem::memory_resource& mr)
-        : m_config(config), m_grid_config(grid_config), m_mr(mr) {
+                       vecmem::memory_resource& mr);
 
-        m_axes = get_axes(grid_config, mr);
-    }
-
+    /// Operator executing the algorithm
+    ///
+    /// @param sp_container All of the spacepoints of the event
+    /// @return The spacepoints arranged in a Phi-Z grid
+    ///
     output_type operator()(
-        const host_spacepoint_container& sp_container) const override {
-        output_type g2(m_axes.first, m_axes.second, m_mr.get());
+        const spacepoint_container_types::host& sp_container) const override;
 
-        djagged_vector<sp_location> rbins(m_config.get_num_rbins());
-
-        for (unsigned int i = 0; i < sp_container.size(); i++) {
-            for (unsigned int j = 0; j < sp_container.get_items()[i].size();
-                 j++) {
-                sp_location sp_loc{i, j};
-                fill_radius_bins<host_spacepoint_container, djagged_vector>(
-                    m_config, sp_container, sp_loc, rbins);
-            }
-        }
-
-        // fill rbins into grid such that each grid bin is sorted in r
-        // space points with delta r < rbin size can be out of order
-        for (auto& rbin : rbins) {
-            for (auto& sp_loc : rbin) {
-
-                auto isp = internal_spacepoint<spacepoint>(
-                    sp_container, {sp_loc.bin_idx, sp_loc.sp_idx},
-                    m_config.beamPos);
-
-                point2 sp_position = {isp.phi(), isp.z()};
-                g2.populate(sp_position, std::move(isp));
-            }
-        }
-
-        return g2;
-    }
-
+    private:
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
     std::pair<output_type::axis_p0_type, output_type::axis_p1_type> m_axes;

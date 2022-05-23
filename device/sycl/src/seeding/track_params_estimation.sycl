@@ -20,7 +20,7 @@ namespace traccc::sycl {
 class TrackParamsEstimation {
     public:
     TrackParamsEstimation(
-        spacepoint_container_const_view spacepoints_view,
+        spacepoint_container_types::const_view spacepoints_view,
         vecmem::data::vector_view<const seed> seeds_view,
         vecmem::data::vector_view<bound_track_parameters> params_view)
         : m_spacepoints_view(spacepoints_view),
@@ -37,7 +37,7 @@ class TrackParamsEstimation {
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        device_spacepoint_const_container spacepoints_device(
+        const spacepoint_container_types::const_device spacepoints_device(
             m_spacepoints_view);
         vecmem::device_vector<const seed> seeds_device(m_seeds_view);
         device_bound_track_parameters_collection params_device(m_params_view);
@@ -62,7 +62,7 @@ class TrackParamsEstimation {
     }
 
     private:
-    spacepoint_container_const_view m_spacepoints_view;
+    spacepoint_container_types::const_view m_spacepoints_view;
     vecmem::data::vector_view<const seed> m_seeds_view;
     vecmem::data::vector_view<bound_track_parameters> m_params_view;
 };
@@ -72,7 +72,7 @@ track_params_estimation::track_params_estimation(vecmem::memory_resource& mr,
     : m_mr(mr), m_queue(queue) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const spacepoint_container_const_view& spacepoints_view,
+    const spacepoint_container_types::const_view& spacepoints_view,
     const vecmem::data::vector_view<const seed>& seeds_view) const {
 
     output_type params(seeds_view.size(), &m_mr.get());

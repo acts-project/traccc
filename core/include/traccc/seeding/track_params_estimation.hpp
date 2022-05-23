@@ -7,49 +7,48 @@
 
 #pragma once
 
-#include "traccc/seeding/track_params_estimation_helper.hpp"
+// Library include(s).
+#include "traccc/edm/seed.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
 
 namespace traccc {
 
-/// track parameters estimation
-/// Originated from Acts/Seeding/EstimateTrackParamsFromSeed.hpp
-
-struct track_params_estimation
+/// Track parameter estimation algorithm
+///
+/// Transcribed from Acts/Seeding/EstimateTrackParamsFromSeed.hpp.
+///
+class track_params_estimation
     : public algorithm<host_bound_track_parameters_collection(
-          const host_spacepoint_container&, const host_seed_collection&)> {
+          const spacepoint_container_types::host&,
+          const host_seed_collection&)> {
+
     public:
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
-    track_params_estimation(vecmem::memory_resource& mr) : m_mr(mr) {}
+    track_params_estimation(vecmem::memory_resource& mr);
 
     /// Callable operator for track_params_esitmation
     ///
-    /// @param input_type is the seed container
+    /// @param spacepoints All spacepoints of the event
+    /// @param seeds The reconstructed track seeds of the event
+    /// @return A vector of bound track parameters
     ///
-    /// @return vector of bound track parameters
-    output_type operator()(const host_spacepoint_container& sp_container,
-                           const host_seed_collection& seeds) const override {
-        output_type result(&m_mr.get());
-
-        // convenient assumption on bfield and mass
-        // TODO: Make use of bfield extenstion in the future
-        vector3 bfield = {0, 0, 2};
-
-        for (const auto& seed : seeds) {
-            bound_track_parameters track_params;
-            track_params.vector() =
-                seed_to_bound_vector(sp_container, seed, bfield, PION_MASS_MEV);
-
-            result.push_back(track_params);
-        }
-
-        return result;
-    }
+    output_type operator()(const spacepoint_container_types::host& spacepoints,
+                           const host_seed_collection& seeds) const override;
 
     private:
+    /// The memory resource to use in the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-};
+
+};  // class track_params_estimation
 
 }  // namespace traccc

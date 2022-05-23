@@ -27,8 +27,12 @@ spacepoint_formation::output_type spacepoint_formation::operator()(
         const measurement_collection_types::host& measurements_per_module =
             measurements.get_items()[i];
 
+        // Set the geometry ID for this collection of spacepoints.
+        result[i].header = module.module;
+
         // Access the spacepoint collection for the module.
-        host_spacepoint_collection& spacepoints_per_module = result[i].items;
+        spacepoint_collection_types::host& spacepoints_per_module =
+            result[i].items;
         spacepoints_per_module.reserve(measurements_per_module.size());
 
         // Construct the spacepoints.

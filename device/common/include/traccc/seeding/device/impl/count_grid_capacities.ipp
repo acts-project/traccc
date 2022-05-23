@@ -19,7 +19,7 @@ TRACCC_HOST_DEVICE
 void count_grid_capacities(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
-    const spacepoint_container_const_view& spacepoints_view,
+    const spacepoint_container_types::const_view& spacepoints_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         sp_prefix_sum_view,
     vecmem::data::vector_view<unsigned int> grid_capacities_view) {
@@ -33,7 +33,8 @@ void count_grid_capacities(
 
     // Get the spacepoint that we need to look at.
     const prefix_sum_element_t sp_idx = sp_prefix_sum[globalIndex];
-    device_spacepoint_const_container spacepoints(spacepoints_view);
+    const spacepoint_container_types::const_device spacepoints(
+        spacepoints_view);
     const spacepoint sp = spacepoints.at(sp_idx);
 
     /// Check out if the spacepoint can be used for seeding.

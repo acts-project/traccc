@@ -56,7 +56,7 @@ static int min_elem(const local_accessor<triplet>& arr, const int& begin_idx,
 class SeedSelect {
     public:
     SeedSelect(const seedfilter_config filter_config,
-               spacepoint_container_const_view spacepoints_view,
+               spacepoint_container_types::const_view spacepoints_view,
                sp_grid_const_view internal_sp_view,
                device::doublet_counter_container_types::const_view
                    doublet_counter_view,
@@ -79,7 +79,7 @@ class SeedSelect {
         auto workItemIdx = item.get_local_id(0);
 
         // Get device container for input parameters
-        device_spacepoint_const_container spacepoints_device(
+        const spacepoint_container_types::const_device spacepoints_device(
             m_spacepoints_view);
 
         const_sp_grid_device internal_sp_device(m_internal_sp_view);
@@ -244,7 +244,7 @@ class SeedSelect {
 
     private:
     const seedfilter_config m_filter_config;
-    spacepoint_container_const_view m_spacepoints_view;
+    spacepoint_container_types::const_view m_spacepoints_view;
     sp_grid_const_view m_internal_sp_view;
     device::doublet_counter_container_types::const_view m_doublet_counter_view;
     triplet_counter_container_view m_triplet_counter_view;
@@ -256,7 +256,7 @@ class SeedSelect {
 void seed_selecting(
     const seedfilter_config& filter_config,
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
-    const spacepoint_container_const_view& spacepoints_view,
+    const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,

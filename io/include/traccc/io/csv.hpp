@@ -388,16 +388,16 @@ inline measurement_container_types::host read_measurements(
 ///
 /// @param hreader The hit reader type
 /// @param resource The memory resource to use for the return value
-inline host_spacepoint_container read_hits(
+inline spacepoint_container_types::host read_hits(
     fatras_hit_reader& hreader, vecmem::memory_resource& resource,
     const traccc::geometry* tfmap = nullptr,
     unsigned int max_hits = std::numeric_limits<unsigned int>::max()) {
-    host_spacepoint_container result(&resource);
+    spacepoint_container_types::host result(&resource);
 
     unsigned int read_hits = 0;
     csv_fatras_hit iohit;
 
-    host_spacepoint_collection spacepoints(&resource);
+    spacepoint_collection_types::host spacepoints(&resource);
 
     while (hreader.read(iohit)) {
         geometry_id geom_id = iohit.geometry_id;
@@ -408,7 +408,7 @@ inline host_spacepoint_container read_hits(
         measurement m({point2({local[0], local[1]}), variance2({0., 0.})});
         spacepoint sp({position, m});
 
-        const host_spacepoint_container::header_vector& headers =
+        const spacepoint_container_types::host::header_vector& headers =
             result.get_headers();
 
         auto it = std::find(headers.begin(), headers.end(), geom_id);

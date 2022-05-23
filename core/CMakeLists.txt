@@ -53,15 +53,20 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/detail/bin_finder.hpp"
   "include/traccc/seeding/seed_selecting_helper.hpp"
   "include/traccc/seeding/seed_filtering.hpp"
+  "src/seeding/seed_filtering.cpp"
   "include/traccc/seeding/seeding_algorithm.hpp"
+  "src/seeding/seeding_algorithm.cpp"
   "include/traccc/seeding/track_params_estimation_helper.hpp"
   "include/traccc/seeding/doublet_finding_helper.hpp"
   "include/traccc/seeding/spacepoint_binning_helper.hpp"
   "include/traccc/seeding/track_params_estimation.hpp"
+  "src/seeding/track_params_estimation.cpp"
   "include/traccc/seeding/triplet_finding_helper.hpp"
   "include/traccc/seeding/doublet_finding.hpp"
   "include/traccc/seeding/triplet_finding.hpp"
   "include/traccc/seeding/seed_finding.hpp"
-  "include/traccc/seeding/spacepoint_binning.hpp" )
+  "src/seeding/seed_finding.cpp"
+  "include/traccc/seeding/spacepoint_binning.hpp"
+  "src/seeding/spacepoint_binning.cpp" )
 target_link_libraries( traccc_core
   PUBLIC Eigen3::Eigen vecmem::core detray::core ActsCore traccc::algebra )

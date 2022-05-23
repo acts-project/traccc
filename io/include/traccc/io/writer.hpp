@@ -47,7 +47,7 @@ inline void write_cells(
 inline void write_spacepoints(
     size_t event, const std::string &hits_directory,
     const traccc::data_format &data_format,
-    const traccc::host_spacepoint_container &spacepoints_per_event) {
+    const spacepoint_container_types::host &spacepoints_per_event) {
 
     if (data_format == traccc::data_format::binary) {
 

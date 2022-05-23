@@ -13,11 +13,12 @@
 namespace traccc::device {
 
 TRACCC_DEVICE
-void populate_grid(std::size_t globalIndex, const seedfinder_config& config,
-                   const spacepoint_container_const_view& spacepoints_view,
-                   const vecmem::data::vector_view<const prefix_sum_element_t>&
-                       sp_prefix_sum_view,
-                   sp_grid_view grid_view) {
+void populate_grid(
+    std::size_t globalIndex, const seedfinder_config& config,
+    const spacepoint_container_types::const_view& spacepoints_view,
+    const vecmem::data::vector_view<const prefix_sum_element_t>&
+        sp_prefix_sum_view,
+    sp_grid_view grid_view) {
 
     // Check if anything needs to be done.
     vecmem::device_vector<const prefix_sum_element_t> sp_prefix_sum(
@@ -28,7 +29,8 @@ void populate_grid(std::size_t globalIndex, const seedfinder_config& config,
 
     // Get the spacepoint that we need to look at.
     const prefix_sum_element_t sp_idx = sp_prefix_sum[globalIndex];
-    device_spacepoint_const_container spacepoints(spacepoints_view);
+    const spacepoint_container_types::const_device spacepoints(
+        spacepoints_view);
     const spacepoint sp = spacepoints.at(sp_idx);
 
     /// Check out if the spacepoint can be used for seeding.

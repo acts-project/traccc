@@ -12,12 +12,10 @@
 
 namespace traccc {
 
-/// Header: unsigned int for number of seeds
-
 /// Item: seed consisting of three spacepoints, z origin and weight
 struct seed {
 
-    using link_type = typename host_spacepoint_container::link_type;
+    using link_type = typename spacepoint_container_types::host::link_type;
 
     link_type spB_link;
     link_type spM_link;
@@ -46,16 +44,20 @@ struct seed {
         return *this;
     }
 
-    TRACCC_HOST
+    TRACCC_HOST_DEVICE
     std::array<measurement, 3> get_measurements(
-        const host_spacepoint_container& spacepoints) const {
+        const spacepoint_container_types::const_view& spacepoints_view) const {
+        const spacepoint_container_types::const_device spacepoints(
+            spacepoints_view);
         return {spacepoints.at(spB_link).meas, spacepoints.at(spM_link).meas,
                 spacepoints.at(spT_link).meas};
     }
 
-    TRACCC_HOST
+    TRACCC_HOST_DEVICE
     std::array<spacepoint, 3> get_spacepoints(
-        const host_spacepoint_container& spacepoints) const {
+        const spacepoint_container_types::const_view& spacepoints_view) const {
+        const spacepoint_container_types::const_device spacepoints(
+            spacepoints_view);
         return {spacepoints.at(spB_link), spacepoints.at(spM_link),
                 spacepoints.at(spT_link)};
     }
@@ -68,9 +70,10 @@ TRACCC_HOST std::vector<std::array<spacepoint, 3>> get_spacepoint_vector(
     std::vector<std::array<spacepoint, 3>> result;
     result.reserve(seeds.size());
 
-    std::transform(
-        seeds.cbegin(), seeds.cend(), std::back_inserter(result),
-        [&](const seed& value) { return value.get_spacepoints(container); });
+    std::transform(seeds.cbegin(), seeds.cend(), std::back_inserter(result),
+                   [&](const seed& value) {
+                       return value.get_spacepoints(get_data(container));
+                   });
 
     return result;
 }

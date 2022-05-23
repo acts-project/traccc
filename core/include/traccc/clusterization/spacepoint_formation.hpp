@@ -25,7 +25,7 @@ namespace traccc {
 /// This algorithm performs the local-to-global transformation of the 2D
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
-class spacepoint_formation : public algorithm<host_spacepoint_container(
+class spacepoint_formation : public algorithm<spacepoint_container_types::host(
                                  const measurement_container_types::host&)> {
 
     public:
