@@ -282,10 +282,10 @@ __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t q = adjv[tst][k];
+                index_t q = f[f[adjv[tst][k]]];
 
-                if (f[f[q]] < f_next[tid]) {
-                    f_next[tid] = f[f[q]];
+                if (q < f_next[tid]) {
+                    f_next[tid] = q;
                     f_next_changed = true;
                 }
             }
