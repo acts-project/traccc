@@ -315,8 +315,7 @@ __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
         __syncthreads();
 
         /*
-         * Update the array for the next generation, keeping track of any
-         * changes we make.
+         * Update the array for the next generation.
          */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
