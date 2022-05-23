@@ -134,7 +134,8 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
  *   1) stochastic hooking to parent cell in new cluster
  *   2) shortcutting
  *
- * The implementation corresponds to an adapted versiion of Algorithm 1 of the following paper:
+ * The implementation corresponds to an adapted versiion of Algorithm 1 of
+ * the following paper:
  * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
  *
  * f      = array holding the parent cell ID for the current iteration.
@@ -158,8 +159,8 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
 
         /*
          * The algorithm executes in a loop of three distinct parallel
-         * stages. In this first one, stochastic hooking, we examine adjacent 
-         * cells and copy their cluster ID if it is lower than our, 
+         * stages. In this first one, stochastic hooking, we examine
+         * adjacent cells and copy their cluster ID if it is lower than our,
          * essentially merging the two together.
          */
         for (index_t tst = 0, tid;
@@ -170,8 +171,10 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
                 index_t q = adjv[tst][k];
 
                 if (f[tid] > f[q]) {
-                    f_next[f_next[tid]] = f[q]; // update grandparent of current cell
-                    f_next[tid] = f[q]; // update parent of current cell, kind of shortcutting
+                    // update grandparent of current cell
+                    f_next[f_next[tid]] = f[q];
+                    // update parent of current cell, kind of shortcutting
+                    f_next[tid] = f[q];
                 }
             }
         }
@@ -234,7 +237,8 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
 __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
     /*
-     * The algorithm finishes if an iteration leaves the array for the next iteration unchanged.
+     * The algorithm finishes if an iteration leaves the array for the next
+     * iteration unchanged.
      * This varible will be set if a change is made, and dictates if another
      * loop is necessary.
      */
@@ -247,10 +251,10 @@ __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
          */
         f_next_changed = false;
 
-
         /*
          * The algorithm executes in a loop of four distinct parallel
-         * stages. In this first one, stochastic hooking, we examine the grandparents of adjacent cells and copy cluster ID if it 
+         * stages. In this first one, stochastic hooking, we examine the
+         * grandparents of adjacent cells and copy cluster ID if it
          * is lower than our, essentially merging the two together.
          */
         for (index_t tst = 0, tid;
@@ -259,7 +263,8 @@ __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
                 index_t q = adjv[tst][k];
 
                 if (f[f[q]] < f_next[f[tid]]) {
-                    f_next[f[tid]] = f[f[q]]; // hook to grandparent of adjacent cell
+                    // hook to grandparent of adjacent cell
+                    f_next[f[tid]] = f[f[q]];
                     f_next_changed = true;
                 }
             }
@@ -271,7 +276,8 @@ __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
         __syncthreads();
 
         /*
-         * The second stage performs aggressive hooking, during which each cell might be hooked to the grand parent of an adjacent cell.
+         * The second stage performs aggressive hooking, during which each
+         * cell might be hooked to the grand parent of an adjacent cell.
          */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
@@ -482,13 +488,14 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      * memory is limited. These could always be moved to global memory, but
      * the algorithm would be decidedly slower in that case.
      */
-    __shared__ index_t f[MAX_CELLS_PER_PARTITION], f_next[MAX_CELLS_PER_PARTITION];
+    __shared__ index_t f[MAX_CELLS_PER_PARTITION],
+        f_next[MAX_CELLS_PER_PARTITION];
 
     for (index_t tst = 0, tid;
          (tid = tst * blockDim.x + threadIdx.x) < cells.size; ++tst) {
         /*
-         * At the start, the values of f and f_next should be equal to the ID of
-         * the cell.
+         * At the start, the values of f and f_next should be equal to the
+         * ID of the cell.
          */
         f[tid] = tid;
         f_next[tid] = tid;
@@ -574,9 +581,10 @@ vecmem::vector<details::ccl_partition> partition(
              * Create a new partition if an "empty" row is detected. A row
              * is considered "empty" if the channel1 value between two
              * consecutive cells have a difference > 1.
-             * To prevent creating many small partitions, the current partition
-             * must have at least twice the size of threads per block. This
-             * guarantees that each thread handles later at least two cells.
+             * To prevent creating many small partitions, the current
+             * partition must have at least twice the size of threads per
+             * block. This guarantees that each thread handles later at least
+             * two cells.
              */
             if (c.channel1 > last_mid + 1 && size >= 2 * THREADS_PER_BLOCK) {
                 partitions.push_back(
@@ -591,11 +599,11 @@ vecmem::vector<details::ccl_partition> partition(
         }
 
         /*
-         * If a cell module has many activations and therefore no empty rows,
-         * it is possible that partitions reach a considerable size. To prevent
-         * very big partitions, we check at the end of each module if the
-         * current partition is not above a threshold, and end the current
-         * partition if necessary here.
+         * If a cell module has many activations and therefore no empty
+         * rows, it is possible that partitions reach a considerable
+         * size. To prevent very big partitions, we check at the end of each
+         * module if the current partition is not above a threshold, and end the
+         * current partition if necessary here.
          */
         if (size >= 2 * THREADS_PER_BLOCK) {
             partitions.push_back(
@@ -700,7 +708,8 @@ component_connection::output_type component_connection::operator()(
         alloc.allocate_bytes(total_cells * sizeof(geometry_id)));
 
     /*
-     * Run the connected component labeling algorithm to retrieve the clusters.
+     * Run the connected component labeling algorithm to retrieve the
+     * clusters.
      *
      * This step includes the measurement (hit) creation for each cluster.
      */
@@ -710,7 +719,8 @@ component_connection::output_type component_connection::operator()(
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     /*
-     * Copy back the data from our flattened data structure into the traccc EDM.
+     * Copy back the data from our flattened data structure into the traccc
+     * EDM.
      */
     output_type out;
 
