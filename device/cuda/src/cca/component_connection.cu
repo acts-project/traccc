@@ -220,61 +220,111 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
 }
 
 /*
- * Implementation of the FastSV algorithm.
+ * Implementation of a SV algorithm with the following steps:
+ *   1) stochastic hooking to parent cell in new cluster
+ *   2) aggressive hooking
+ *   3) shortcutting
  *
  * The implementation corresponds to Algorithm 2 of the following paper:
  * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
+ *
+ * f      = array holding the parent cell ID for the current iteration.
+ * f_next = buffer array holding updated information for the next iteration.
  */
-__device__ void fast_sv_2(index_t* f, index_t* gf, unsigned char adjc[],
+__device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
-    bool gfc;
+    /*
+     * The algorithm finishes if an iteration leaves the array for the next iteration unchanged.
+     * This varible will be set if a change is made, and dictates if another
+     * loop is necessary.
+     */
+    bool f_next_changed;
 
     do {
-        gfc = false;
+        /*
+         * Reset the end-parameter to false, so we can set it to true if we
+         * make a change to the f_next array.
+         */
+        f_next_changed = false;
 
+
+        /*
+         * The algorithm executes in a loop of four distinct parallel
+         * stages. In this first one, stochastic hooking, we examine the grandparents of adjacent cells and copy cluster ID if it 
+         * is lower than our, essentially merging the two together.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t j = adjv[tst][k];
+                index_t q = adjv[tst][k];
 
-                if (f[f[j]] < gf[f[tid]]) {
-                    gf[f[tid]] = f[f[j]];
-                    gfc = true;
+                if (f[f[q]] < f_next[f[tid]]) {
+                    f_next[f[tid]] = f[f[q]]; // hook to grandparent of adjacent cell
+                    f_next_changed = true;
                 }
             }
         }
 
+        /*
+         * Synchronize before the next stage.
+         */
         __syncthreads();
 
+        /*
+         * The second stage performs aggressive hooking, during which each cell might be hooked to the grand parent of an adjacent cell.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t j = adjv[tst][k];
+                index_t q = adjv[tst][k];
 
-                if (f[f[j]] < gf[tid]) {
-                    gf[tid] = f[f[j]];
-                    gfc = true;
+                if (f[f[q]] < f_next[tid]) {
+                    f_next[tid] = f[f[q]];
+                    f_next_changed = true;
                 }
             }
         }
 
+        /*
+         * Synchronize before the next stage.
+         */
         __syncthreads();
 
+        /*
+         * The third stage is shortcutting, which is an optimisation that
+         * allows us to look at any shortcuts in the cluster IDs that we
+         * can merge without adjacency information.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
-            if (f[f[tid]] < gf[tid]) {
-                gf[tid] = f[f[tid]];
-                gfc = true;
+            if (f[f[tid]] < f_next[tid]) {
+                f_next[tid] = f[f[tid]];
+                f_next_changed = true;
             }
         }
 
+        /*
+         * Synchronize before the final stage.
+         */
         __syncthreads();
 
+        /*
+         * Update the array for the next generation, keeping track of any
+         * changes we make.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
-            f[tid] = gf[tid];
+            f[tid] = f_next[tid];
         }
-    } while (__syncthreads_or(gfc));
+
+        /*
+         * To determine whether we need another iteration, we use block
+         * voting mechanics. Each thread checks if it has made any changes
+         * to the arrays, and votes. If any thread votes true, all threads
+         * will return a true value and go to the next iteration. Only if
+         * all threads return false will the loop exit.
+         */
+    } while (__syncthreads_or(f_next_changed));
 }
 
 __device__ void aggregate_clusters(const cell_container& cells,
