@@ -398,6 +398,9 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      * hit the thread is processing. This number is never larger than
      * the max number of activations per module divided by the threads per
      * block.
+     *
+     * adjc = adjecency count
+     * adjv = adjecency vector
      */
     index_t adjv[MAX_CELLS_PER_PARTITION / THREADS_PER_BLOCK][8];
     unsigned char adjc[MAX_CELLS_PER_PARTITION / THREADS_PER_BLOCK];
