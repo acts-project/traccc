@@ -168,13 +168,13 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
             __builtin_assume(adjc[tst] <= 8);
 
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t q = adjv[tst][k];
+                index_t q = f[adjv[tst][k]];
 
-                if (f[tid] > f[q]) {
+                if (f[tid] > q) {
                     // update grandparent of current cell
-                    f_next[f_next[tid]] = f[q];
+                    f_next[f_next[tid]] = q;
                     // update parent of current cell, kind of shortcutting
-                    f_next[tid] = f[q];
+                    f_next[tid] = q;
                 }
             }
         }
