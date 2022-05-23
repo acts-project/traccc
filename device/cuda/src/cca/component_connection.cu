@@ -260,11 +260,11 @@ __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t q = adjv[tst][k];
+                index_t q = f[f[adjv[tst][k]]];
 
-                if (f[f[q]] < f_next[f[tid]]) {
+                if (q < f_next[f[tid]]) {
                     // hook to grandparent of adjacent cell
-                    f_next[f[tid]] = f[f[q]];
+                    f_next[f[tid]] = q;
                     f_next_changed = true;
                 }
             }
