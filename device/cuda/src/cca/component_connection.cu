@@ -175,8 +175,8 @@ __device__ void fast_sv_1(index_t* f, index_t* f_next, unsigned char adjc[],
                      * but it does not matter, since the algorithm converges
                      * eventually.
                      */
-                    f_next[f_next[tid]] = f[q];
-                    f_next[tid] = f[q]; // a form of short-cutting
+                    f_next[f_next[tid]] = f[q]; // update parent of current cell's parent
+                    f_next[tid] = f[q]; // update parent of current cell
                 }
             }
         }
