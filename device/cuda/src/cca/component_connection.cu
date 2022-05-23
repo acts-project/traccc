@@ -147,7 +147,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
      * This varible will be set if a change is made, and dictates if another
      * loop is necessary.
      */
-    bool gfc;
+    bool f_changed;
 
     do {
         /*
