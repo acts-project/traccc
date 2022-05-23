@@ -434,16 +434,16 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      * memory is limited. These could always be moved to global memory, but
      * the algorithm would be decidedly slower in that case.
      */
-    __shared__ index_t f[MAX_CELLS_PER_PARTITION], gf[MAX_CELLS_PER_PARTITION];
+    __shared__ index_t f[MAX_CELLS_PER_PARTITION], f_next[MAX_CELLS_PER_PARTITION];
 
     for (index_t tst = 0, tid;
          (tid = tst * blockDim.x + threadIdx.x) < cells.size; ++tst) {
         /*
-         * At the start, the values of f and gf should be equal to the ID of
+         * At the start, the values of f and f_next should be equal to the ID of
          * the cell.
          */
         f[tid] = tid;
-        gf[tid] = tid;
+        f_next[tid] = tid;
     }
 
     /*
@@ -452,7 +452,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      */
     __syncthreads();
 
-    fast_sv_1(f, gf, adjc, adjv, cells.size);
+    fast_sv_1(f, f_next, adjc, adjv, cells.size);
 
     /*
      * This variable will be used to write to the output later.
