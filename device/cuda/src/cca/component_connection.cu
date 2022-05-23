@@ -472,7 +472,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
     __syncthreads();
 
     /*
-     * Count the number of clusters by checking how many nodes have
+     * Count the number of clusters by checking how many cells have
      * themself assigned as a parent.
      */
     for (index_t tst = 0, tid;
