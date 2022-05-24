@@ -51,7 +51,7 @@ void seed_selecting(
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
-    spacepoint_container_types::const_view spacepoints_view =
+    spacepoint_container_types::const_data spacepoints_view =
         get_data(spacepoints, &resource);
 
     // The thread-block is desinged to make each thread investigate the

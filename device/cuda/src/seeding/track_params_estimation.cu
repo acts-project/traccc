@@ -28,7 +28,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     output_type params(seeds.size(), &m_mr.get());
 
-    spacepoint_container_types::const_view spacepoints_view =
+    spacepoint_container_types::const_data spacepoints_view =
         get_data(spacepoints, &m_mr.get());
     auto seeds_view = vecmem::get_data(seeds);
     auto params_view = vecmem::get_data(params);
