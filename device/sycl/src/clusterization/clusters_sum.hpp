@@ -25,7 +25,6 @@ void clusters_sum(
     unsigned int& total_clusters,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view,
-    vecmem::memory_resource& device_mr,
-    queue_wrapper queue);
+    vecmem::memory_resource& device_mr, queue_wrapper queue);
 
 }  // namespace traccc::sycl

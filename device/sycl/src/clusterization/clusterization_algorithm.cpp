@@ -7,6 +7,7 @@
 
 // Project include(s)
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+
 #include "traccc/device/get_prefix_sum.hpp"
 
 // SYCL library include(s).
@@ -24,9 +25,9 @@
 
 namespace traccc::sycl {
 
-clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr,
-                                                   vecmem::memory_resource &device_mr,
-                                                   queue_wrapper queue)
+clusterization_algorithm::clusterization_algorithm(
+    vecmem::memory_resource &mr, vecmem::memory_resource &device_mr,
+    queue_wrapper queue)
     : m_mr(mr), m_device_mr(device_mr), m_queue(queue) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
@@ -60,10 +61,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Vector buffer for prefix sums for proper indexing, used only on device.
     // Vector with "clusters per module" is needed for measurement creation
     // buffer
-    vecmem::data::vector_buffer<std::size_t> cluster_prefix_sum(num_modules,
-                                                                m_device_mr.get());
-    vecmem::data::vector_buffer<std::size_t> clusters_per_module(num_modules,
-                                                                 m_device_mr.get());
+    vecmem::data::vector_buffer<std::size_t> cluster_prefix_sum(
+        num_modules, m_device_mr.get());
+    vecmem::data::vector_buffer<std::size_t> clusters_per_module(
+        num_modules, m_device_mr.get());
     copy.setup(cluster_prefix_sum);
     copy.setup(clusters_per_module);
 
@@ -75,14 +76,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum =
         device::get_prefix_sum(cell_sizes, m_mr.get());
-    vecmem::data::vector_buffer<device::prefix_sum_element_t> cells_prefix_sum_buff(cells_prefix_sum.size(), m_device_mr.get());
+    vecmem::data::vector_buffer<device::prefix_sum_element_t>
+        cells_prefix_sum_buff(cells_prefix_sum.size(), m_device_mr.get());
     copy.setup(cells_prefix_sum_buff);
     copy(vecmem::get_data(cells_prefix_sum), cells_prefix_sum_buff);
 
     // Clusters sum kernel
     traccc::sycl::clusters_sum(cells_data, sparse_ccl_indices, *total_clusters,
-                               cluster_prefix_sum, clusters_per_module, m_device_mr.get(),
-                               m_queue);
+                               cluster_prefix_sum, clusters_per_module,
+                               m_device_mr.get(), m_queue);
 
     // Vector of the exact cluster sizes, will be filled in cluster counting
     vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
@@ -91,8 +93,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Cluster counting kernel
     traccc::sycl::cluster_counting(sparse_ccl_indices, cluster_sizes_buffer,
-                                   cluster_prefix_sum,
-                                   cells_prefix_sum_buff, m_queue);
+                                   cluster_prefix_sum, cells_prefix_sum_buff,
+                                   m_queue);
 
     std::vector<unsigned int> cluster_sizes;
     copy(cluster_sizes_buffer, cluster_sizes);
@@ -107,9 +109,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(clusters_buffer.items);
 
     // Component connection kernel
-    traccc::sycl::component_connection(
-        clusters_buffer, cells_data, sparse_ccl_indices, cluster_prefix_sum,
-        cells_prefix_sum_buff, m_queue);
+    traccc::sycl::component_connection(clusters_buffer, cells_data,
+                                       sparse_ccl_indices, cluster_prefix_sum,
+                                       cells_prefix_sum_buff, m_queue);
 
     // Copy the sizes of clusters per each module to the std vector for
     // initialization of measurements buffer
@@ -139,15 +141,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Get the prefix sum of the measurements and copy it to the device buffer
     const device::prefix_sum_t meas_prefix_sum = device::get_prefix_sum(
         copy.get_sizes(measurements_buffer.items), m_mr.get());
-    vecmem::data::vector_buffer<device::prefix_sum_element_t> meas_prefix_sum_buff(meas_prefix_sum.size(), m_device_mr.get());
+    vecmem::data::vector_buffer<device::prefix_sum_element_t>
+        meas_prefix_sum_buff(meas_prefix_sum.size(), m_device_mr.get());
     copy.setup(meas_prefix_sum_buff);
     copy(vecmem::get_data(meas_prefix_sum), meas_prefix_sum_buff);
 
     // Spacepoint formation kernel
-    traccc::sycl::spacepoint_formation(
-        spacepoints_buffer, measurements_buffer,
-        meas_prefix_sum_buff, m_queue);
-    
+    traccc::sycl::spacepoint_formation(spacepoints_buffer, measurements_buffer,
+                                       meas_prefix_sum_buff, m_queue);
+
     return spacepoints_buffer;
 }
 

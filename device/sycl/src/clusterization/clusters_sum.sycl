@@ -22,8 +22,7 @@ void clusters_sum(
     unsigned int& total_clusters,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view,
-    vecmem::memory_resource& device_mr,
-    queue_wrapper queue) {
+    vecmem::memory_resource& device_mr, queue_wrapper queue) {
 
     // The execution range of the kernel
     auto n_modules = cells_view.headers.size();
@@ -34,66 +33,76 @@ void clusters_sum(
     auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * wGroupSize),
                                        ::sycl::range<1>(wGroupSize)};
 
-    // Copy total clusters ptr to the device 
-    auto total_clusters_device = vecmem::make_unique_alloc<unsigned int>(device_mr);
-    details::get_queue(queue).memcpy(total_clusters_device.get(), &total_clusters, 1 * sizeof(unsigned int)).wait_and_throw();
+    // Copy total clusters ptr to the device
+    auto total_clusters_device =
+        vecmem::make_unique_alloc<unsigned int>(device_mr);
+    details::get_queue(queue)
+        .memcpy(total_clusters_device.get(), &total_clusters,
+                1 * sizeof(unsigned int))
+        .wait_and_throw();
 
     details::get_queue(queue)
         .submit([&ndrange, &cells_view, &sparse_ccl_indices_view,
                  &total_clusters_device, &cluster_prefix_sum_view,
                  &clusters_per_module_view](::sycl::handler& h) {
-            h.parallel_for<class ClusterSum>(ndrange, [=, total_clusters =
-                                                              total_clusters_device.get()](
-                                                          ::sycl::nd_item<1>
-                                                              item) {
-                // Get the current index
-                auto idx = item.get_global_linear_id();
+            h.parallel_for<class ClusterSum>(
+                ndrange, [=, total_clusters = total_clusters_device.get()](
+                             ::sycl::nd_item<1> item) {
+                    // Get the current index
+                    auto idx = item.get_global_linear_id();
 
-                // Initialize the data on the device
-                cell_container_types::const_device cells_device(cells_view);
+                    // Initialize the data on the device
+                    cell_container_types::const_device cells_device(cells_view);
 
-                // Ignore if idx is out of range
-                if (idx >= cells_device.size())
-                    return;
+                    // Ignore if idx is out of range
+                    if (idx >= cells_device.size())
+                        return;
 
-                // Get the cells for the current module
-                const auto& cells = cells_device.at(idx).items;
+                    // Get the cells for the current module
+                    const auto& cells = cells_device.at(idx).items;
 
-                // Vectors used for cluster indices found by sparse CCL
-                vecmem::jagged_device_vector<unsigned int>
-                    device_sparse_ccl_indices(sparse_ccl_indices_view);
-                auto cluster_indices = device_sparse_ccl_indices.at(idx);
+                    // Number of clusters that sparce CCL will find for this
+                    // module
+                    unsigned int n_clusters = 0;
 
-                // Run the sparse CCL algorithm
-                unsigned int n_clusters =
-                    detail::sparse_ccl(cells, cluster_indices);
+                    // Vectors used for cluster indices found by sparse CCL
+                    vecmem::jagged_device_vector<unsigned int>
+                        device_sparse_ccl_indices(sparse_ccl_indices_view);
+                    auto cluster_indices = device_sparse_ccl_indices.at(idx);
 
-                // Save the number of clusters found in this module at
-                // the last, extra place in the indices vectors
-                cluster_indices.back() = n_clusters;
+                    // Run the sparse CCL algorithm
+                    unsigned int n_clusters =
+                        detail::sparse_ccl(cells, cluster_indices);
 
-                // Calculate the cluster prefix sum for this module idx
-                auto prefix_sum =
-                    vecmem::device_atomic_ref<unsigned int>(*total_clusters)
-                        .fetch_add(n_clusters);
+                    // Save the number of clusters found in this module at
+                    // the last, extra place in the indices vectors
+                    cluster_indices.back() = n_clusters;
 
-                // Save the current prefix sum at the current idx in a
-                // vector
-                vecmem::device_vector<std::size_t> device_cluster_prefix_sum(
-                    cluster_prefix_sum_view);
-                device_cluster_prefix_sum[idx] = prefix_sum;
+                    // Calculate the cluster prefix sum for this module idx
+                    auto prefix_sum =
+                        vecmem::device_atomic_ref<unsigned int>(*total_clusters)
+                            .fetch_add(n_clusters);
 
-                // At last, fill also the "number of clusters per
-                // module" for measurement creation buffer
-                vecmem::device_vector<std::size_t> device_clusters_per_module(
-                    clusters_per_module_view);
-                device_clusters_per_module[idx] = n_clusters;
-            });
+                    // Save the current prefix sum at the current idx in a
+                    // vector
+                    vecmem::device_vector<std::size_t>
+                        device_cluster_prefix_sum(cluster_prefix_sum_view);
+                    device_cluster_prefix_sum[idx] = prefix_sum;
+
+                    // At last, fill also the "number of clusters per
+                    // module" for measurement creation buffer
+                    vecmem::device_vector<std::size_t>
+                        device_clusters_per_module(clusters_per_module_view);
+                    device_clusters_per_module[idx] = n_clusters;
+                });
         })
         .wait_and_throw();
 
     // Copy the total clusters number back to the host
-    details::get_queue(queue).memcpy(&total_clusters, total_clusters_device.get(), 1 * sizeof(unsigned int)).wait_and_throw();
+    details::get_queue(queue)
+        .memcpy(&total_clusters, total_clusters_device.get(),
+                1 * sizeof(unsigned int))
+        .wait_and_throw();
 }
 
 }  // namespace traccc::sycl

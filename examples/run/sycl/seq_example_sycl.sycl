@@ -33,9 +33,9 @@
 
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/memory/sycl/shared_memory_resource.hpp>
-#include <vecmem/memory/sycl/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
+#include <vecmem/memory/sycl/host_memory_resource.hpp>
+#include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
 
 // System include(s).
@@ -108,7 +108,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::sycl::clusterization_algorithm ca_sycl(sycl_host_mr, sycl_device_mr, &q);
+    traccc::sycl::clusterization_algorithm ca_sycl(sycl_host_mr, sycl_device_mr,
+                                                   &q);
     // traccc::sycl::seeding_algorithm sa_sycl(shared_mr, &q);
     // traccc::sycl::track_params_estimation tp_sycl(shared_mr, &q);
 

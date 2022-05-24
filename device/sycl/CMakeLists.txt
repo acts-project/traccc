@@ -51,7 +51,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/utils/queue_wrapper.cpp" )
 target_link_libraries( traccc_sycl
   PUBLIC vecmem::core traccc::core
-  PRIVATE traccc::device_common )
+  PRIVATE traccc::device_common vecmem::sycl )
 
 # Prevent Eigen from getting confused when building code for a HIP backend.
 target_compile_definitions( traccc_sycl PRIVATE EIGEN_NO_CUDA )
