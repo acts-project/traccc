@@ -104,13 +104,30 @@ hit_map generate_hit_map(size_t event, const std::string& hits_dir) {
 
     csv_fatras_hit iohit;
 
+    // Read the hits from the relevant event file
+    std::string io_meas_hit_id_file =
+        data_directory() + hits_dir +
+        get_event_filename(event, "-measurement-simhit-map.csv");
+
+    meas_hit_id_reader mhid_reader(io_meas_hit_id_file,
+                                   {"measurement_id", "hit_id"});
+
+    csv_meas_hit_id mh_id;
+
+    std::map<uint64_t, uint64_t> mh_id_map;
+
+    while (mhid_reader.read(mh_id)) {
+        mh_id_map[mh_id.hit_id] = mh_id.measurement_id;
+    }
+
     hit_id hid = 0;
     while (hreader.read(iohit)) {
 
         spacepoint sp;
         sp.global = {iohit.tx, iohit.ty, iohit.tz};
 
-        result[hid] = sp;
+        // result[hid] = sp;
+        result[mh_id_map[hid]] = sp;
 
         hid++;
     }
@@ -166,7 +183,8 @@ cell_particle_map generate_cell_particle_map(size_t event,
 
 measurement_cell_map generate_measurement_cell_map(
     size_t event, const std::string& detector_file,
-    const std::string& cells_dir, vecmem::memory_resource& resource) {
+    const std::string& digi_config_file, const std::string& cells_dir,
+    vecmem::memory_resource& resource) {
 
     measurement_cell_map result;
 
@@ -177,10 +195,13 @@ measurement_cell_map generate_measurement_cell_map(
     // Read the surface transforms
     auto surface_transforms = read_geometry(detector_file);
 
+    // Read the digitization configuration file
+    auto digi_cfg = traccc::read_digitization_config(digi_config_file);
+
     // Read the cells from the relevant event file
     cell_container_types::host cells_per_event =
         read_cells_from_event(event, cells_dir, traccc::data_format::csv,
-                              surface_transforms, resource);
+                              surface_transforms, digi_cfg, resource);
 
     auto clusters_per_event = cc(cells_per_event);
     auto measurements_per_event = mc(cells_per_event, clusters_per_event);
@@ -201,8 +222,9 @@ measurement_cell_map generate_measurement_cell_map(
 
 measurement_particle_map generate_measurement_particle_map(
     size_t event, const std::string& detector_file,
-    const std::string& cells_dir, const std::string& hits_dir,
-    const std::string& particle_dir, vecmem::memory_resource& resource) {
+    const std::string& digi_config_file, const std::string& cells_dir,
+    const std::string& hits_dir, const std::string& particle_dir,
+    vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
 
@@ -211,8 +233,8 @@ measurement_particle_map generate_measurement_particle_map(
         generate_cell_particle_map(event, cells_dir, hits_dir, particle_dir);
 
     // generate measurement cell map
-    auto m_c_map = generate_measurement_cell_map(event, detector_file,
-                                                 cells_dir, resource);
+    auto m_c_map = generate_measurement_cell_map(
+        event, detector_file, digi_config_file, cells_dir, resource);
 
     for (auto const& [meas, cells] : m_c_map) {
         for (const auto& c : cells) {

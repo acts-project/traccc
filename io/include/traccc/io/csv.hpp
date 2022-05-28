@@ -16,6 +16,10 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/geometry.hpp"
+#include "traccc/io/detail/json_digitization_config.hpp"
+
+// Acts include(s)
+#include "Acts/Geometry/GeometryHierarchyMap.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -51,6 +55,17 @@ struct csv_cell {
 };
 
 using cell_reader = dfe::NamedTupleCsvReader<csv_cell>;
+
+struct csv_meas_hit_id {
+
+    uint64_t measurement_id = 0;
+    uint64_t hit_id = 0;
+
+    // geometry_id,hit_id,channel0,channel1,timestamp,value
+    DFE_NAMEDTUPLE(csv_meas_hit_id, measurement_id, hit_id);
+};
+
+using meas_hit_id_reader = dfe::NamedTupleCsvReader<csv_meas_hit_id>;
 
 struct csv_fatras_hit {
     uint64_t particle_id = 0;
@@ -211,62 +226,87 @@ inline std::map<geometry_id, transform3> read_surfaces(
 /// @param creader The cellreader type
 /// @param resource The memory resource to use for the return value
 /// @param tfmap the (optional) transform map
+/// @param digi_cfg the (optional) digitization configuration
 /// @param max_cells the (optional) maximum number of cells to be read in
 inline cell_container_types::host read_cells(
     cell_reader& creader, vecmem::memory_resource& resource,
     const traccc::geometry* tfmap = nullptr,
+    const Acts::GeometryHierarchyMap<digitization_config>* digi_cfg = nullptr,
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
-    uint64_t reference_id = 0;
     cell_container_types::host result(&resource);
 
-    bool first_line_read = false;
     unsigned int read_cells = 0;
     csv_cell iocell;
-    cell_collection_types::host cells(&resource);
-    cell_module module;
-    while (creader.read(iocell)) {
 
-        if (first_line_read and iocell.geometry_id != reference_id) {
-            // Complete the information
+    while (creader.read(iocell)) {
+        cell_module module;
+
+        cell c = cell{iocell.channel0, iocell.channel1, iocell.value,
+                      iocell.timestamp};
+
+        module.module = iocell.geometry_id;
+
+        const cell_container_types::host::header_vector& headers =
+            result.get_headers();
+
+        auto it = std::find(headers.begin(), headers.end(), module);
+
+        if (it == headers.end()) {
+
+            // TODO: Need to handle the case that transform3 or digitization
+            // config is not found
             if (tfmap != nullptr) {
-                if (tfmap->contains(iocell.geometry_id)) {
-                    module.placement = (*tfmap)[iocell.geometry_id];
+                if (tfmap->contains(module.module)) {
+                    module.placement = (*tfmap)[module.module];
                 }
             }
-            // Sort in column major order
-            std::sort(cells.begin(), cells.end(),
-                      [](const auto& a, const auto& b) {
-                          return a.channel1 < b.channel1;
-                      });
-            result.push_back(std::move(module), std::move(cells));
-            // Clear for next round
-            cells = cell_collection_types::host(&resource);
-            module = cell_module();
+
+            if (digi_cfg != nullptr) {
+                Acts::GeometryIdentifier id(module.module);
+
+                auto geo_it = digi_cfg->find(id);
+                if (geo_it != digi_cfg->end()) {
+
+                    const auto& binning_data =
+                        geo_it->segmentation.binningData();
+
+                    module.pixel =
+                        pixel_data{binning_data[0].min, binning_data[1].min,
+                                   binning_data[0].step, binning_data[1].step};
+                }
+            }
+
+            module.range0[0] = std::min(module.range0[0], iocell.channel0);
+            module.range0[1] = std::max(module.range0[1], iocell.channel0);
+            module.range1[0] = std::min(module.range1[0], iocell.channel1);
+            module.range1[1] = std::max(module.range1[1], iocell.channel1);
+
+            result.push_back(module, vecmem::vector<cell>({c}));
+        } else {
+            auto idx = it - headers.begin();
+            result.at(idx).items.push_back(c);
+
+            module = result.at(idx).header;
+            module.range0[0] = std::min(module.range0[0], iocell.channel0);
+            module.range0[1] = std::max(module.range0[1], iocell.channel0);
+            module.range1[0] = std::min(module.range1[0], iocell.channel1);
+            module.range1[1] = std::max(module.range1[1], iocell.channel1);
+
+            result.at(idx).header = module;
         }
-        first_line_read = true;
-        reference_id = static_cast<uint64_t>(iocell.geometry_id);
 
-        module.module = reference_id;
-        module.range0[0] = std::min(module.range0[0], iocell.channel0);
-        module.range0[1] = std::max(module.range0[1], iocell.channel0);
-        module.range1[0] = std::min(module.range1[0], iocell.channel1);
-        module.range1[1] = std::max(module.range1[1], iocell.channel1);
-
-        cells.push_back(cell{iocell.channel0, iocell.channel1, iocell.value,
-                             iocell.timestamp});
         if (++read_cells >= max_cells) {
             break;
         }
     }
 
-    // Clean up after loop
-    // Sort in column major order
-    std::sort(cells.begin(), cells.end(), [](const auto& a, const auto& b) {
-        return a.channel1 < b.channel1;
-    });
-
-    result.push_back(std::move(module), std::move(cells));
+    for (size_t i = 0; i < result.size(); i++) {
+        auto& cells = result.get_items()[i];
+        std::sort(cells.begin(), cells.end(), [](const auto& a, const auto& b) {
+            return a.channel1 < b.channel1;
+        });
+    }
 
     return result;
 }
@@ -283,8 +323,6 @@ inline spacepoint_container_types::host read_hits(
 
     unsigned int read_hits = 0;
     csv_fatras_hit iohit;
-
-    spacepoint_collection_types::host spacepoints(&resource);
 
     while (hreader.read(iohit)) {
         geometry_id geom_id = iohit.geometry_id;

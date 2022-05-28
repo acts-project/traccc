@@ -15,6 +15,7 @@ namespace po = boost::program_options;
 struct full_tracking_input_config {
     std::string detector_file;
     std::string cell_directory;
+    std::string digitization_config_file;
     std::string hit_directory;
     std::string particle_directory;
     bool check_seeding_performance;

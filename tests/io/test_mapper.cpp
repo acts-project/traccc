@@ -17,6 +17,8 @@
 std::size_t event = 0;
 
 std::string detector_file = "/tml_detector/trackml-detector.csv";
+std::string digi_config_file =
+    "/tml_detector/default-geometric-config-generic.json";
 std::string hits_dir = "../tests/io/mock_data/";
 std::string cells_dir = "../tests/io/mock_data/";
 std::string particles_dir = "../tests/io/mock_data/";
@@ -175,8 +177,8 @@ TEST(mappper, measurement_cell_map) {
 
     vecmem::host_memory_resource resource;
 
-    auto m_c_map = traccc::generate_measurement_cell_map(event, detector_file,
-                                                         cells_dir, resource);
+    auto m_c_map = traccc::generate_measurement_cell_map(
+        event, detector_file, digi_config_file, cells_dir, resource);
 
     vecmem::vector<traccc::cell> cells0;
     cells0.push_back({1, 0, 0.0041470062, 0});
@@ -222,7 +224,8 @@ TEST(mappper, measurement_particle_map_with_clusterization) {
     vecmem::host_memory_resource mr;
 
     auto m_p_map = traccc::generate_measurement_particle_map(
-        event, detector_file, cells_dir, hits_dir, particles_dir, mr);
+        event, detector_file, digi_config_file, cells_dir, hits_dir,
+        particles_dir, mr);
 
     // There are two measurements (or clusters)
     EXPECT_EQ(m_p_map.size(), 2);

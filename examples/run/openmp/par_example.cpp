@@ -35,11 +35,15 @@
 
 namespace po = boost::program_options;
 
-int par_run(const std::string &detector_file, const std::string &cells_dir,
+int par_run(const std::string &detector_file,
+            const std::string &digi_config_file, const std::string &cells_dir,
             unsigned int events) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
+
+    // Read the digitization configuration file
+    auto digi_cfg = traccc::read_digitization_config(digi_config_file);
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource resource;
@@ -60,9 +64,9 @@ int par_run(const std::string &detector_file, const std::string &cells_dir,
 
         // Read the cells from the relevant event file
         traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(event, cells_dir,
-                                          traccc::data_format::csv,
-                                          surface_transforms, resource);
+            traccc::read_cells_from_event(
+                event, cells_dir, traccc::data_format::csv, surface_transforms,
+                digi_cfg, resource);
 
         /*-------------------
             Clusterization
@@ -107,6 +111,9 @@ int main(int argc, char *argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     desc.add_options()("detector_file", po::value<std::string>()->required(),
                        "specify detector file");
+    desc.add_options()("digitization_config_file",
+                       po::value<std::string>()->required(),
+                       "specify digitization configuration file");
     desc.add_options()("cell_directory", po::value<std::string>()->required(),
                        "specify the directory of cell files");
     desc.add_options()("events", po::value<int>()->required(),
@@ -133,6 +140,7 @@ int main(int argc, char *argv[]) {
     }
 
     auto detector_file = vm["detector_file"].as<std::string>();
+    auto digi_config_file = vm["digitization_config_file"].as<std::string>();
     auto cell_directory = vm["cell_directory"].as<std::string>();
     auto events = vm["events"].as<int>();
 
@@ -140,7 +148,8 @@ int main(int argc, char *argv[]) {
               << cell_directory << " " << events << std::endl;
 
     auto start = std::chrono::system_clock::now();
-    auto result = par_run(detector_file, cell_directory, events);
+    auto result =
+        par_run(detector_file, digi_config_file, cell_directory, events);
     auto end = std::chrono::system_clock::now();
 
     std::chrono::duration<double> diff = end - start;
