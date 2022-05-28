@@ -21,6 +21,8 @@ FetchContent_Declare( Acts ${TRACCC_ACTS_SOURCE} )
 # Options used in the build of Acts.
 set( ACTS_SETUP_EIGEN3 FALSE CACHE BOOL
    "Do not set up Eigen in the Acts code, we do it in this project" )
+set( ACTS_BUILD_PLUGIN_JSON TRUE CACHE BOOL
+   "Build JSON plugin in Acts" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Acts )

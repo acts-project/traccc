@@ -40,6 +40,7 @@ component_connection::output_type component_connection::operator()(
     for (auto& cl_id : result.get_headers()) {
         cl_id.module = module.module;
         cl_id.placement = module.placement;
+        cl_id.pixel = module.pixel;
     }
 
     auto& cluster_items = result.get_items();

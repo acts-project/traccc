@@ -15,6 +15,9 @@ traccc::full_tracking_input_config::full_tracking_input_config(
                        "specify detector file");
     desc.add_options()("cell_directory", po::value<std::string>()->required(),
                        "specify the directory of cell files");
+    desc.add_options()("digitization_config_file",
+                       po::value<std::string>()->required(),
+                       "specify the digitization configuration file");
     desc.add_options()(
         "hit_directory", po::value<std::string>()->default_value(""),
         "specify the directory of hit files used for performance writer");
@@ -26,6 +29,7 @@ traccc::full_tracking_input_config::full_tracking_input_config(
 void traccc::full_tracking_input_config::read(const po::variables_map& vm) {
     detector_file = vm["detector_file"].as<std::string>();
     cell_directory = vm["cell_directory"].as<std::string>();
+    digitization_config_file = vm["digitization_config_file"].as<std::string>();
     hit_directory = vm["hit_directory"].as<std::string>();
     particle_directory = vm["particle_directory"].as<std::string>();
     check_seeding_performance =

@@ -6,6 +6,7 @@
 
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE INTERFACE
+  "include/traccc/detail/json_digitization_config.hpp"
   "include/traccc/io/binary.hpp"
   "include/traccc/io/csv.hpp"
   "include/traccc/io/data_format.hpp"
@@ -15,4 +16,4 @@ traccc_add_library( traccc_io io TYPE INTERFACE
   "include/traccc/io/utils.hpp"
   "include/traccc/io/reader.hpp" )
 target_link_libraries( traccc_io
-  INTERFACE dfelibs::dfelibs vecmem::core traccc::core )
+  INTERFACE dfelibs::dfelibs vecmem::core traccc::core ActsPluginJson ActsCore)

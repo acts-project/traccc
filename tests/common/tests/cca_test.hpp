@@ -107,7 +107,7 @@ class ConnectedComponentAnalysisTests
                 result.at(io_truth.geometry_id);
 
             traccc::scalar tol = std::max(
-                0.01, 0.0001 * std::max(io_truth.channel0, io_truth.channel1));
+                0.1, 0.0001 * std::max(io_truth.channel0, io_truth.channel1));
 
             auto match = std::find_if(
                 meas.begin(), meas.end(),
