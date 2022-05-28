@@ -22,7 +22,7 @@
 #include <functional>
 
 using cca_function_t = std::function<
-    std::map<traccc::geometry_id, std::vector<traccc::measurement>>(
+    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
         const traccc::cell_container_types::host &)>;
 
 class ConnectedComponentAnalysisTests
@@ -88,8 +88,12 @@ class ConnectedComponentAnalysisTests
         traccc::cell_container_types::host data =
             traccc::read_cells(creader, resource);
 
-        std::map<traccc::geometry_id, std::vector<traccc::measurement>> result =
-            f(data);
+        for (std::size_t i = 0; i < data.size(); i++) {
+            data.at(i).header.pixel = traccc::pixel_data{0, 0, 1, 1};
+        }
+
+        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
+            result = f(data);
 
         std::size_t total_truth = 0, total_found = 0;
 
@@ -103,11 +107,11 @@ class ConnectedComponentAnalysisTests
         while (truth_reader.read(io_truth)) {
             ASSERT_TRUE(result.find(io_truth.geometry_id) != result.end());
 
-            const std::vector<traccc::measurement> &meas =
+            const vecmem::vector<traccc::measurement> &meas =
                 result.at(io_truth.geometry_id);
 
             traccc::scalar tol = std::max(
-                0.01, 0.0001 * std::max(io_truth.channel0, io_truth.channel1));
+                0.1, 0.0001 * std::max(io_truth.channel0, io_truth.channel1));
 
             auto match = std::find_if(
                 meas.begin(), meas.end(),

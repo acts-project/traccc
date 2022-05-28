@@ -18,23 +18,7 @@
 
 namespace traccc {
 
-/// Cluster identifier
-///
-/// It associates the vector of cells (that make up the cluster) with
-/// the detector module, and additional necessary parameters, necessary
-/// for making use of the cluster.
-///
-struct cluster_id {
-
-    event_id event = 0;
-    std::size_t module_idx = 0;
-    geometry_id module = 0;
-    transform3 placement = transform3{};
-    scalar threshold = 0.;
-    pixel_data pixel;
-};
-
 /// Declare all cluster container types
-using cluster_container_types = container_types<cluster_id, cell>;
+using cluster_container_types = container_types<std::size_t, cell>;
 
 }  // namespace traccc

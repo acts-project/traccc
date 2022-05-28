@@ -6,8 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
-#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
@@ -26,29 +25,14 @@
 
 namespace {
 vecmem::host_memory_resource resource;
-traccc::component_connection cc(resource);
-traccc::measurement_creation mc(resource);
-traccc::cell_module module;
-
-std::function<traccc::measurement_collection_types::host(
-    const traccc::cell_collection_types::host &)>
-    fp = traccc::compose(
-        std::function<traccc::cluster_container_types::host(
-            const traccc::cell_collection_types::host &)>(
-            std::bind(cc, std::placeholders::_1, module)),
-        std::function<traccc::measurement_collection_types::host(
-            const traccc::cluster_container_types::host &)>(
-            std::bind(mc, std::placeholders::_1, module)));
+traccc::clusterization_algorithm ca(resource);
 
 cca_function_t f = [](const traccc::cell_container_types::host &data) {
-    std::map<traccc::geometry_id, std::vector<traccc::measurement>> result;
+    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        traccc::measurement_collection_types::host measurements =
-            fp(data.at(i).items);
-        std::vector<traccc::measurement> out(measurements.begin(),
-                                             measurements.end());
-        result.emplace(data.at(i).header.module, std::move(out));
+    auto measurements = ca(data);
+    for (std::size_t i = 0; i < measurements.size(); i++) {
+        result[measurements.at(i).header.module] = measurements.at(i).items;
     }
 
     return result;

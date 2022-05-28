@@ -172,7 +172,7 @@ measurement_cell_map generate_measurement_cell_map(
 
     // CCA algorithms
     component_connection cc(resource);
-    measurement_creation mt(resource);
+    measurement_creation mc(resource);
 
     // Read the surface transforms
     auto surface_transforms = read_geometry(detector_file);
@@ -182,22 +182,15 @@ measurement_cell_map generate_measurement_cell_map(
         read_cells_from_event(event, cells_dir, traccc::data_format::csv,
                               surface_transforms, resource);
 
-    for (std::size_t i = 0; i < cells_per_event.size(); ++i) {
-        auto module = cells_per_event.at(i).header;
+    auto clusters_per_event = cc(cells_per_event);
+    auto measurements_per_event = mc(cells_per_event, clusters_per_event);
 
-        // The algorithmic code part: start
-        cluster_container_types::host clusters =
-            cc(cells_per_event.at(i).items, cells_per_event.at(i).header);
-        for (auto& cl_id : clusters.get_headers()) {
-            cl_id.pixel = module.pixel;
-        }
+    for (std::size_t i = 0; i < measurements_per_event.size(); ++i) {
+        const auto& measurements = measurements_per_event.get_items()[i];
 
-        measurement_collection_types::host measurements_per_module =
-            mt(clusters, module);
-
-        for (std::size_t j = 0; j < clusters.size(); j++) {
-            const auto& clus = clusters.at(j).items;
-            const auto& meas = measurements_per_module[j];
+        for (const auto& meas : measurements) {
+            const auto& clus =
+                clusters_per_event.get_items()[meas.cluster_link];
 
             result[meas] = clus;
         }

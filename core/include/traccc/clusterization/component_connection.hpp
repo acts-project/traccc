@@ -30,9 +30,8 @@ namespace traccc {
 /// the host- and device versions of the EDM, making use of a single
 /// implementation internally.
 ///
-class component_connection
-    : public algorithm<cluster_container_types::host(
-          const cell_collection_types::host&, const cell_module&)> {
+class component_connection : public algorithm<cluster_container_types::host(
+                                 const cell_container_types::host&)> {
 
     public:
     /// Constructor for component_connection
@@ -53,8 +52,8 @@ class component_connection
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
-    output_type operator()(const cell_collection_types::host& cells,
-                           const cell_module& module) const override;
+    output_type operator()(
+        const cell_container_types::host& cells) const override;
 
     /// @}
 
