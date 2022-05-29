@@ -33,11 +33,15 @@ TEST(io_binary, cell) {
     auto surface_transforms =
         traccc::read_geometry("tml_detector/trackml-detector.csv");
 
+    // Read the digitization configuration file
+    auto digi_cfg = traccc::read_digitization_config(
+        "tml_detector/default-geometric-config-generic.json");
+
     // Read csv file
     traccc::cell_container_types::host cells_csv =
         traccc::read_cells_from_event(event, cells_directory,
                                       traccc::data_format::csv,
-                                      surface_transforms, host_mr);
+                                      surface_transforms, digi_cfg, host_mr);
 
     // Write binary file
     traccc::write_cells(event, cells_directory, traccc::data_format::binary,
@@ -47,7 +51,7 @@ TEST(io_binary, cell) {
     traccc::cell_container_types::host cells_binary =
         traccc::read_cells_from_event(event, cells_directory,
                                       traccc::data_format::binary,
-                                      surface_transforms, host_mr);
+                                      surface_transforms, digi_cfg, host_mr);
 
     // Delete binary file
     std::string io_cells_file = traccc::data_directory() + cells_directory +

@@ -81,7 +81,7 @@ TEST_F(io, csv_read_tml_transforms) {
                "rot_zu", "rot_zv", "rot_zw"});
     auto tml_barrel_transforms = traccc::read_surfaces(sreader);
 
-    ASSERT_EQ(tml_barrel_transforms.size(), 18751u);
+    ASSERT_EQ(tml_barrel_transforms.size(), 18791u);
 }
 
 // This reads in the tml pixel barrel first event

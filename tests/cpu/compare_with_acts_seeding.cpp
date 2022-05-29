@@ -39,9 +39,6 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
-#include <iostream>
-
 inline bool operator==(const SpacePoint* acts_sp,
                        const traccc::spacepoint& traccc_sp) {
     if (abs(acts_sp->x() - traccc_sp.global[0]) < traccc::float_epsilon &&

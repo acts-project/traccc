@@ -69,9 +69,15 @@ struct cell_module {
     channel_id range0[2] = {std::numeric_limits<channel_id>::max(), 0};
     channel_id range1[2] = {std::numeric_limits<channel_id>::max(), 0};
 
-    pixel_data pixel{-8.425, -36.025, 0.05, 0.05};
+    pixel_data pixel;
 
 };  // struct cell_module
+
+/// Equality operator for cell module
+TRACCC_HOST_DEVICE
+inline bool operator==(const cell_module& lhs, const cell_module& rhs) {
+    return lhs.module == rhs.module;
+}
 
 /// Declare all cell collection types
 using cell_collection_types = collection_types<cell>;

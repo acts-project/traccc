@@ -14,12 +14,16 @@
 namespace po = boost::program_options;
 
 int create_binaries(const std::string& detector_file,
+                    const std::string& digi_config_file,
                     const std::string& cell_directory,
                     const std::string& hit_directory,
                     const traccc::common_options& common_opts) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(detector_file);
+
+    // Read the digitization configuration file
+    auto digi_cfg = traccc::read_digitization_config(digi_config_file);
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -32,9 +36,9 @@ int create_binaries(const std::string& detector_file,
 
             // Read the cells from the relevant event file
             traccc::cell_container_types::host cells_csv =
-                traccc::read_cells_from_event(event, cell_directory,
-                                              common_opts.input_data_format,
-                                              surface_transforms, host_mr);
+                traccc::read_cells_from_event(
+                    event, cell_directory, common_opts.input_data_format,
+                    surface_transforms, digi_cfg, host_mr);
 
             // Write binary file
             traccc::write_cells(event, cell_directory,
@@ -69,6 +73,9 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     desc.add_options()("detector_file", po::value<std::string>()->required(),
                        "specify detector file");
+    desc.add_options()("digitization_config_file",
+                       po::value<std::string>()->required(),
+                       "specify digitization configuration file");
     desc.add_options()("cell_directory",
                        po::value<std::string>()->default_value(""),
                        "specify the directory of cell files");
@@ -85,10 +92,11 @@ int main(int argc, char* argv[]) {
 
     // Read options
     auto detector_file = vm["detector_file"].as<std::string>();
+    auto digi_config_file = vm["digitization_config_file"].as<std::string>();
     auto cell_directory = vm["cell_directory"].as<std::string>();
     auto hit_directory = vm["hit_directory"].as<std::string>();
     common_opts.read(vm);
 
-    return create_binaries(detector_file, cell_directory, hit_directory,
-                           common_opts);
+    return create_binaries(detector_file, digi_config_file, cell_directory,
+                           hit_directory, common_opts);
 }
