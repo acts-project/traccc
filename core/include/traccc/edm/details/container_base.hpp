@@ -41,10 +41,6 @@ class container_base {
     /// @name Type definitions
     /// @{
 
-    /// base type
-    using base_type =
-        container_base<header_t, item_t, vector_t, jagged_vector_t, pair_t>;
-
     /// Header type
     using header_type = header_t;
 
