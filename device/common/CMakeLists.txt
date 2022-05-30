@@ -9,7 +9,7 @@ include( traccc-compiler-options-cpp )
 
 # Declare the traccc::device_common library.
 traccc_add_library( traccc_device_common device_common TYPE SHARED
-   # General function(s).
+   # General function(s) and class(es).
    "include/traccc/device/get_prefix_sum.hpp"
    "include/traccc/device/impl/get_prefix_sum.ipp"
    "src/get_prefix_sum.cpp"

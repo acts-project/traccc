@@ -10,13 +10,12 @@
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-namespace traccc::sycl {
+namespace traccc {
 
-// Simple struct for different sycl memory resources
+// Simple struct for combining multiple memory resources
 struct memory_resource {
-
-    vecmem::memory_resource* host = nullptr;
+    vecmem::memory_resource& host;
     vecmem::memory_resource* device = nullptr;
 };
 
-}  // namespace traccc::sycl
+}  // namespace traccc

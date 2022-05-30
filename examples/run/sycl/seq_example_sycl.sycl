@@ -23,9 +23,6 @@
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 
-// Sycl library include(s)
-#include "traccc/sycl/utils/memory_resource.hpp"
-
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
@@ -40,6 +37,9 @@
 #include <vecmem/memory/sycl/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
+
+// tracc library include(s).
+#include "traccc/utils/memory_resource.hpp"
 
 // System include(s).
 #include <chrono>
@@ -102,8 +102,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::sycl::host_memory_resource sycl_host_mr(&q);
     vecmem::sycl::device_memory_resource device_mr(&q);
 
-    // Memory resource collection to pass to SYCL algorithms
-    traccc::sycl::memory_resource mr{&shared_mr};
+    // Struct with memory resources to pass to SYCL algorithms
+    traccc::memory_resource mr{shared_mr};
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;

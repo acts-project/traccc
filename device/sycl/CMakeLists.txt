@@ -20,7 +20,6 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/seeding/spacepoint_binning.hpp"
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
-  "include/traccc/sycl/utils/memory_resource.hpp"
   # implementation files
   "src/clusterization/clusterization_algorithm.cpp"
   "src/clusterization/clusters_sum.hpp"
