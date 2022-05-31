@@ -15,6 +15,7 @@
 #include "traccc/edm/container.hpp"
 
 // System include(s).
+#include <climits>
 #include <cmath>
 
 namespace traccc {
@@ -29,6 +30,8 @@ struct measurement {
     point2 local{0., 0.};
     /// Variance on the 2D coordinates of the measurement
     variance2 variance{0., 0.};
+    /// Cluster link
+    std::size_t cluster_link = std::numeric_limits<std::size_t>::infinity();
 };
 
 /// Comparison / ordering operator for measurements

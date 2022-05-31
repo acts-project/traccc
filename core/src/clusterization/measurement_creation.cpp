@@ -17,27 +17,15 @@ measurement_creation::measurement_creation(vecmem::memory_resource &mr)
     : m_mr(mr) {}
 
 measurement_creation::output_type measurement_creation::operator()(
-    const cluster_container_types::host &clusters,
-    const cell_module &module) const {
+    const cell_container_types::host &cells,
+    const cluster_container_types::host &clusters) const {
 
     // Create the result object.
     output_type result(&(m_mr.get()));
-
-    // If there are no clusters for this detector module, exit early.
-    if (clusters.size() == 0) {
-        return result;
-    }
-
-    // Reserve memory for one measurement per cluster.
-    result.reserve(clusters.size());
-
-    // Get values used for every cluster's processing.
-    const vector2 pitch = module.pixel.get_pitch();
-    const cluster_id &cl_id = clusters[0].header;
+    result.reserve(cells.size());
 
     // Process the clusters one-by-one.
     for (std::size_t i = 0; i < clusters.size(); ++i) {
-
         // To calculate the mean and variance with high numerical stability
         // we use a weighted variant of Welford's algorithm. This is a
         // single-pass online algorithm that works well for large numbers
@@ -48,38 +36,27 @@ measurement_creation::output_type measurement_creation::operator()(
         // [2] The Art of Computer Programming, Donald E. Knuth, second
         //     edition, chapter 4.2.2.
 
+        // Get the cell module
+        const auto &module_link = clusters.at(i).header;
+        const auto &module = cells.at(module_link).header;
+
+        if (result.size() == 0 ||
+            result.get_headers().back().module != module.module) {
+            result.push_back(cell_module(module),
+                             measurement_collection_types::host(&(m_mr.get())));
+        }
+
         // Get the cluster.
-        const cluster_id &cl_id = clusters.at(i).header;
         cluster_container_types::host::item_vector::const_reference cluster =
             clusters.at(i).items;
-        cluster_container_types::const_device::item_vector::value_type
-            cluster_device(vecmem::get_data(cluster));
 
         // A security check.
         assert(cluster.empty() == false);
 
-        // Calculate the cluster properties
-        point2 mean{0., 0.}, var{0., 0.};
-        scalar totalWeight = 0.;
-        detail::calc_cluster_properties(cluster_device, cl_id, mean, var,
-                                        totalWeight);
-
-        if (totalWeight > 0.) {
-            measurement m;
-            // normalize the cell position
-            m.local = mean;
-            // normalize the variance
-            m.variance[0] = var[0] / totalWeight;
-            m.variance[1] = var[1] / totalWeight;
-            // plus pitch^2 / 12
-            m.variance = m.variance + point2{pitch[0] * pitch[0] / 12,
-                                             pitch[1] * pitch[1] / 12};
-            // @todo add variance estimation
-            result.push_back(std::move(m));
-        }
+        // Fill measurement from cluster
+        detail::fill_measurement(result, cluster, module, module_link, i);
     }
 
-    // Return the measurements.
     return result;
 }
 

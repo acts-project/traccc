@@ -16,32 +16,7 @@ clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr)
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::host& cells) const {
 
-    // Create the result container.
-    output_type result(&(m_mr.get()));
-    result.reserve(cells.size());
-
-    // Loop over all of the detector modules.
-    for (std::size_t i = 0; i < cells.size(); ++i) {
-
-        // Get the cells for the current module.
-        cell_module module = cells.at(i).header;
-        cell_container_types::host::item_vector::const_reference
-            cells_per_module = cells.at(i).items;
-
-        // Reconstruct all measurements for the current module.
-        cluster_container_types::host clusters = m_cc(cells_per_module, module);
-        for (cluster_id& cl_id : clusters.get_headers()) {
-            cl_id.pixel = module.pixel;
-        }
-        measurement_collection_types::host measurements =
-            m_mc(clusters, module);
-
-        // Save the measurements into the event-wide container.
-        result.push_back(module, std::move(measurements));
-    }
-
-    // Return the measurements for all detector modules.
-    return result;
+    return m_mc(cells, m_cc(cells));
 }
 
 }  // namespace traccc

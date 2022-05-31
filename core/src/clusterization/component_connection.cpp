@@ -17,42 +17,47 @@
 namespace traccc {
 
 component_connection::output_type component_connection::operator()(
-    const cell_collection_types::host& cells, const cell_module& module) const {
+    const cell_container_types::host& cells) const {
+
+    std::vector<std::size_t> num_clusters(cells.size(), 0);
+    std::vector<std::vector<unsigned int>> CCL_indices(cells.size());
+
+    for (std::size_t i = 0; i < cells.size(); i++) {
+        const auto& cells_per_module = cells.get_items()[i];
+
+        CCL_indices[i] = std::vector<unsigned int>(cells_per_module.size());
+
+        // Run SparseCCL to fill CCL indices
+        num_clusters[i] = detail::sparse_ccl(cells_per_module, CCL_indices[i]);
+    }
+
+    // Get total number of clusters
+    const std::size_t N =
+        std::accumulate(num_clusters.begin(), num_clusters.end(), 0);
 
     // Create the result container.
-    output_type result(&(m_mr.get()));
+    output_type result(N, &(m_mr.get()));
 
-    // Set up a device collection on top of the host collection.
-    const cell_collection_types::const_view cells_view =
-        vecmem::get_data(cells);
-    const cell_collection_types::const_device cells_device(cells_view);
+    std::size_t stack = 0;
+    for (std::size_t i = 0; i < cells.size(); i++) {
 
-    // Set up the index vector.
-    vecmem::vector<unsigned int> connected_cells(cells.size(), &(m_mr.get()));
-    vecmem::device_vector<unsigned int> connected_cells_device(
-        vecmem::get_data(connected_cells));
+        auto& cells_per_module = cells.get_items()[i];
 
-    // Run the algorithm
-    unsigned int num_clusters = 0;
-    detail::sparse_ccl(cells_device, connected_cells_device, num_clusters);
+        // Fill the module link
+        std::fill(result.get_headers().begin() + stack,
+                  result.get_headers().begin() + stack + num_clusters[i], i);
 
-    result.resize(num_clusters);
-    for (auto& cl_id : result.get_headers()) {
-        cl_id.module = module.module;
-        cl_id.placement = module.placement;
-        cl_id.pixel = module.pixel;
-    }
+        // Full the cluster cells
+        for (std::size_t j = 0; j < CCL_indices[i].size(); j++) {
 
-    auto& cluster_items = result.get_items();
-    unsigned int icell = 0;
-    for (auto cell_label : connected_cells) {
-        auto cindex = static_cast<unsigned int>(cell_label - 1);
-        if (cindex < cluster_items.size()) {
-            cluster_items[cindex].push_back(cells[icell++]);
+            auto cindex = static_cast<unsigned int>(CCL_indices[i][j] - 1);
+
+            result.get_items()[stack + cindex].push_back(cells_per_module[j]);
         }
+
+        stack += num_clusters[i];
     }
 
-    // Return the cluster container.
     return result;
 }
 

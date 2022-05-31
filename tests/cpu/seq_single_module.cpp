@@ -26,37 +26,29 @@ TEST(algorithms, seq_single_module) {
     // Memory resource used in the test.
     vecmem::host_memory_resource resource;
 
-    /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
-    traccc::cell_collection_types::host cells = {{{1, 0, 1., 0.},
-                                                  {8, 4, 2., 0.},
-                                                  {10, 4, 3., 0.},
-                                                  {9, 5, 4., 0.},
-                                                  {10, 5, 5., 0},
-                                                  {12, 12, 6, 0},
-                                                  {3, 13, 7, 0},
-                                                  {11, 13, 8, 0},
-                                                  {4, 14, 9, 0}},
-                                                 &resource};
-
-    traccc::cell_module module;
-    module.module = 0;
-    module.pixel = traccc::pixel_data{0., 0., 1., 1.};
-    module.placement = traccc::transform3{};
-
-    traccc::cluster_container_types::host clusters(&resource);
-
-    traccc::measurement_collection_types::host measurements;
-
-    traccc::spacepoint_collection_types::host spacepoints;
-
     traccc::component_connection cc(resource);
-    traccc::measurement_creation mt(resource);
-    traccc::spacepoint_formation sp(resource);
+    traccc::measurement_creation mc(resource);
 
-    // Algorithmic code: start
-    clusters = cc(cells, module);
-    for (auto& cl_id : clusters.get_headers()) {
-        cl_id.pixel = module.pixel;
-    }
-    measurements = mt(clusters, module);
+    /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
+    traccc::cell_collection_types::host cells_per_module = {{{1, 0, 1., 0.},
+                                                             {8, 4, 2., 0.},
+                                                             {10, 4, 3., 0.},
+                                                             {9, 5, 4., 0.},
+                                                             {10, 5, 5., 0},
+                                                             {12, 12, 6, 0},
+                                                             {3, 13, 7, 0},
+                                                             {11, 13, 8, 0},
+                                                             {4, 14, 9, 0}},
+                                                            &resource};
+    traccc::cell_module module;
+
+    traccc::cell_container_types::host cells;
+    cells.push_back(module, cells_per_module);
+
+    auto clusters = cc(cells);
+    EXPECT_EQ(clusters.size(), 4u);
+
+    auto measurements = mc(cells, clusters);
+
+    EXPECT_EQ(measurements.at(0).items.size(), 4u);
 }

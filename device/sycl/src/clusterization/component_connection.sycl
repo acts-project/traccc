@@ -61,7 +61,6 @@ void component_connection(
 
                     // Get the cells for the current module idx
                     const auto& cells = cells_device.at(module_idx).items;
-                    const auto module = cells_device.at(module_idx).header;
 
                     // Vectors used for cluster indices found by sparse CCL
                     vecmem::jagged_device_vector<unsigned int>
@@ -82,16 +81,9 @@ void component_connection(
                     // by the cluster prefix sum
                     unsigned int cindex = cluster_indices[cell_idx] - 1;
                     if (cindex < num_clusters) {
-                        // Create cluster id - same for all clusters in this
-                        // module
-                        cluster_id cl_id{};
-                        cl_id.module = module.module;
-                        cl_id.placement = module.placement;
-                        cl_id.module_idx = module_idx;
-                        cl_id.pixel = module.pixel;
-
                         // Push back the header and items
-                        clusters_device[prefix_sum + cindex].header = cl_id;
+                        clusters_device[prefix_sum + cindex].header =
+                            module_idx;
                         clusters_device[prefix_sum + cindex].items.push_back(
                             cells[cell_idx]);
                     }

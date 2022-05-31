@@ -16,12 +16,12 @@ namespace {
 traccc::cuda::component_connection cc;
 
 cca_function_t f = [](const traccc::cell_container_types::host &data) {
-    std::map<traccc::geometry_id, std::vector<traccc::measurement>> result;
+    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
     traccc::measurement_container_types::host mss = cc(data);
 
     for (std::size_t i = 0; i < mss.size(); ++i) {
-        std::vector<traccc::measurement> msv;
+        vecmem::vector<traccc::measurement> msv;
 
         for (std::size_t j = 0; j < mss.at(i).items.size(); ++j) {
             msv.push_back(mss.at(i).items.at(j));
