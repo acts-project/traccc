@@ -19,10 +19,8 @@ namespace traccc::sycl {
 void clusters_sum(
     const cell_container_types::const_view& cells_view,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    unsigned int& total_clusters,
-    vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view,
-    vecmem::memory_resource& device_mr, queue_wrapper queue) {
+    queue_wrapper queue) {
 
     // The execution range of the kernel
     auto n_modules = cells_view.headers.size();
@@ -33,21 +31,11 @@ void clusters_sum(
     auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * wGroupSize),
                                        ::sycl::range<1>(wGroupSize)};
 
-    // Copy total clusters ptr to the device
-    auto total_clusters_device =
-        vecmem::make_unique_alloc<unsigned int>(device_mr);
-    details::get_queue(queue)
-        .memcpy(total_clusters_device.get(), &total_clusters,
-                1 * sizeof(unsigned int))
-        .wait_and_throw();
-
     details::get_queue(queue)
         .submit([&ndrange, &cells_view, &sparse_ccl_indices_view,
-                 &total_clusters_device, &cluster_prefix_sum_view,
                  &clusters_per_module_view](::sycl::handler& h) {
             h.parallel_for<class ClusterSum>(
-                ndrange, [=, total_clusters = total_clusters_device.get()](
-                             ::sycl::nd_item<1> item) {
+                ndrange, [=](::sycl::nd_item<1> item) {
                     // Get the current index
                     auto idx = item.get_global_linear_id();
 
@@ -78,30 +66,13 @@ void clusters_sum(
                     // the last, extra place in the indices vectors
                     cluster_indices.back() = n_clusters;
 
-                    // Calculate the cluster prefix sum for this module idx
-                    auto prefix_sum =
-                        vecmem::device_atomic_ref<unsigned int>(*total_clusters)
-                            .fetch_add(n_clusters);
-
-                    // Save the current prefix sum at the current idx in a
-                    // vector
-                    vecmem::device_vector<std::size_t>
-                        device_cluster_prefix_sum(cluster_prefix_sum_view);
-                    device_cluster_prefix_sum[idx] = prefix_sum;
-
-                    // At last, fill also the "number of clusters per
-                    // module" for measurement creation buffer
+                    // Fill also the "number of clusters per
+                    // module"
                     vecmem::device_vector<std::size_t>
                         device_clusters_per_module(clusters_per_module_view);
                     device_clusters_per_module[idx] = n_clusters;
                 });
         })
-        .wait_and_throw();
-
-    // Copy the total clusters number back to the host
-    details::get_queue(queue)
-        .memcpy(&total_clusters, total_clusters_device.get(),
-                1 * sizeof(unsigned int))
         .wait_and_throw();
 }
 
