@@ -49,10 +49,6 @@ void clusters_sum(
                     // Get the cells for the current module
                     const auto& cells = cells_device.at(idx).items;
 
-                    // Number of clusters that sparce CCL will find for this
-                    // module
-                    unsigned int n_clusters = 0;
-
                     // Vectors used for cluster indices found by sparse CCL
                     vecmem::jagged_device_vector<unsigned int>
                         device_sparse_ccl_indices(sparse_ccl_indices_view);
