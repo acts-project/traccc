@@ -43,7 +43,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Number of modules
     unsigned int num_modules = cells_per_event.size();
 
-    // Vecmem copy object for moving the data between host and device
     // Get the view of the cells container
     auto cells_data = get_data(cells_per_event, &(m_mr.main));
 
