@@ -44,7 +44,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     unsigned int num_modules = cells_per_event.size();
 
     // Get the view of the cells container
-    auto cells_data = get_data(cells_per_event, &(m_mr.main));
+    auto cells_data =
+        get_data(cells_per_event, (m_mr.host ? m_mr.host : &(m_mr.main)));
 
     // Get the sizes of the cells in each module
     auto cell_sizes = m_copy->get_sizes(cells_data.items);
@@ -81,7 +82,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                                clusters_per_module_prefix, m_queue);
 
     // Copy the sizes of clusters per each module to the host
-    vecmem::vector<std::size_t> clusters_per_module_host(&(m_mr.main));
+    vecmem::vector<std::size_t> clusters_per_module_host(
+        m_mr.host ? m_mr.host : &(m_mr.main));
     (*m_copy)(clusters_per_module_prefix, clusters_per_module_host);
 
     // Create the measurements and spacepoints buffer already here
