@@ -176,7 +176,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_clusterization_sycl =
             std::chrono::system_clock::now();
 
-        auto spacepoints_sycl_buff = ca_sycl(cells_per_event);
+        auto spacepoints_sycl_buffer = ca_sycl(cells_per_event);
 
         /*time*/ auto end_clusterization_sycl =
             std::chrono::system_clock::now();
@@ -192,7 +192,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
 
-        auto seeds_sycl_buff = sa_sycl(spacepoints_sycl_buff);
+        auto seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
 
         /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_sycl =
@@ -223,7 +223,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_sycl =
             std::chrono::system_clock::now();
 
-        auto params_sycl = tp_sycl(spacepoints_sycl_buff, seeds_sycl_buff);
+        auto params_sycl = tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
@@ -249,11 +249,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         vecmem::sycl::copy copy(&q);
         traccc::spacepoint_container_types::host spacepoints_per_event_sycl;
         traccc::host_seed_collection seeds_sycl;
-        copy(spacepoints_sycl_buff.headers,
+        copy(spacepoints_sycl_buffer.headers,
              spacepoints_per_event_sycl.get_headers());
-        copy(spacepoints_sycl_buff.items,
+        copy(spacepoints_sycl_buffer.items,
              spacepoints_per_event_sycl.get_items());
-        copy(seeds_sycl_buff, seeds_sycl);
+        copy(seeds_sycl_buffer, seeds_sycl);
 
         /*----------------------------------
           compare cpu and sycl result
