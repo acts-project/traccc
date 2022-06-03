@@ -1,0 +1,23 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+#pragma once
+
+// Project include(s).
+#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
+#include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
+
+namespace traccc::cuda {
+
+/// Forward decleration of measurement creation kernel
+///
+void measurement_creation(measurement_container_types::view measurements_view,
+                          cluster_container_types::const_view clusters_view,
+                          const cell_container_types::const_view& cells_view);
+
+}  // namespace traccc::cuda
