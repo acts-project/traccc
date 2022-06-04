@@ -19,6 +19,10 @@
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
+
+// traccc library include(s).
+#include "traccc/utils/memory_resource.hpp"
 
 namespace traccc::sycl {
 
@@ -29,9 +33,10 @@ class clusterization_algorithm
     public:
     /// Constructor for clusterization algorithm
     ///
-    /// @param mr is the memory resource
+    /// @param mr is a struct of memory resources (shared or host & device)
     /// @param queue is the sycl queue for kernel invocation
-    clusterization_algorithm(vecmem::memory_resource& mr, queue_wrapper queue);
+    clusterization_algorithm(const traccc::memory_resource& mr,
+                             queue_wrapper queue);
 
     /// Callable operator for clusterization algorithm
     ///
@@ -43,8 +48,9 @@ class clusterization_algorithm
         const cell_container_types::host& cells_per_event) const override;
 
     private:
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
+    traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;
+    std::unique_ptr<vecmem::copy> m_copy;
 };
 
 }  // namespace traccc::sycl
