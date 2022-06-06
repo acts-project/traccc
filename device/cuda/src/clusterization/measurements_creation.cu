@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "measurements_creation.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 
 namespace traccc::cuda {
 
@@ -50,15 +51,17 @@ void measurement_creation(measurement_container_types::view measurements_view,
 
     // The kernel execution range
     auto n_clusters = clusters_view.headers.size();
-
     // Calculate the execution NDrange for the kernel
     auto nMeasurementCreationThreads = 64;
-    auto nMeasurementCreationBlocks = (n_clusters + nMeasurementCreationThreads - 1) / nMeasurementCreationThreads;
+    auto nMeasurementCreationBlocks = (n_clusters + nMeasurementCreationThreads - 1)
+                                        / nMeasurementCreationThreads;
+    printf("n_clusters:%d\n",n_clusters);                                        
     // Run the kernel
     kernel::measurement_creation<<<nMeasurementCreationBlocks,nMeasurementCreationThreads>>>(
         clusters_view,measurements_view,cells_view);
-    cudaDeviceSynchronize();  
-
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    printf("measurements view headers size %d\n",measurements_view.headers.size());
 }
 
 }  // namespace traccc::cuda

@@ -32,13 +32,10 @@ __global__ void clusters_sum(
             device_sparse_ccl_indices(sparse_ccl_indices_view);
         auto cluster_indices =
             device_sparse_ccl_indices.at(idx);
-
-        //CudaAssert(idx<0);
         // Run the sparse_ccl algorithm
         unsigned int n_clusters = detail::sparse_ccl(cells, cluster_indices);
         // Save the number of clusters found in this module at
         // the last, extra place in the indices vectors
-        CudaAssert(idx<0);
         cluster_indices.back() = n_clusters;
         
         auto prefix_sum =
@@ -73,19 +70,18 @@ void clusters_sum(
 
     // Execution range of the kernel
     auto n_modules = cells_view.headers.size();
-    // Calculate the execution NDrange for the kernel
+    // Calculate the execution range for the kernel
     const unsigned int nClustersSumThreads = 64;
     const unsigned int nDClustersSumBlocks = (n_modules + nClustersSumThreads - 1) / nClustersSumThreads;
-
+    //const unsigned int nDClustersSumBlocks = 1;
 
     // Launch clusters_sum kernel
-    printf("4\n");  
+
     kernels::clusters_sum<<<nDClustersSumBlocks,nClustersSumThreads>>>
         (cells_view,sparse_ccl_indices_view,total_clusters,
-        cluster_prefix_sum_view,clusters_per_module_view);  
-    //CUDA_ERROR_CHECK(cudaPeekAtLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());     
-    printf("5\n");           
+        cluster_prefix_sum_view,clusters_per_module_view);    
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize()); 
     }
     
 } //namespace traccc::cuda

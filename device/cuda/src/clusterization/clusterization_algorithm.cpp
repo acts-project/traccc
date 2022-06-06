@@ -21,6 +21,7 @@
 #include <vecmem/utils/copy.hpp>
 #include <algorithm>
 
+#include <iostream>
 namespace traccc::cuda {
 
 clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr)
@@ -89,6 +90,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy(cluster_sizes_buffer, cluster_sizes);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
+    printf("total clusters : %d\n",*total_clusters);
     cluster_container_types::buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
         {std::vector<std::size_t>(*total_clusters, 0),
@@ -115,9 +117,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(measurements_buffer.headers);
     copy.setup(measurements_buffer.items);
     // Measurement creation kernel
-    traccc::cuda::measurement_creation(measurements_buffer, clusters_buffer
-        ,cells_view);
-
+    traccc::cuda::measurement_creation(measurements_buffer, clusters_buffer,
+                                        cells_view);
+    
     // Spacepoint container buffer to fill in spacepoint formation
     spacepoint_container_types::buffer spacepoints_buffer{
         {num_modules, m_mr.get()},
@@ -126,10 +128,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(spacepoints_buffer.headers);
     copy.setup(spacepoints_buffer.items);
 
+    printf("Measurements Buffer items m_size %d \n",measurements_buffer.items.m_size);
     // Get the prefix sum of the measurements.
     const device::prefix_sum_t measurements_prefix_sum = device::get_prefix_sum(
-        copy.get_sizes(measurements_buffer.items), m_mr.get());
-
+        copy.get_sizes(measurements_buffer.items), m_mr.get(),&copy);
+    printf("get_sizes(measurements_b.items) %d\n",copy.get_sizes(measurements_buffer.items).size());
+    printf("prefix sum measurements %d\n",measurements_prefix_sum.size());
     // Spacepoint formation kernel
     traccc::cuda::spacepoint_formation(
         spacepoints_buffer, measurements_buffer,

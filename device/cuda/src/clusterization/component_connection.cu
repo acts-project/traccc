@@ -8,6 +8,7 @@
 
 // Project include(s).
 #include "component_connection.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 
 namespace traccc::cuda {
 
@@ -89,7 +90,8 @@ void component_connection(
     kernel::component_connection<<<nComponentConBlocks,nComponentConThreads>>>(
         cells_view,cluster_prefix_sum_view,
         clusters_view,sparse_ccl_indices_view,cells_prefix_sum_view);
-    cudaDeviceSynchronize();  
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize()); 
 }
 
 }  // namespace traccc::cuda

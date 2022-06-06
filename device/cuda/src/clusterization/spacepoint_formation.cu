@@ -8,7 +8,7 @@
 
 // Spacepoint formation include(s).
 #include "spacepoint_formation.hpp"
-
+#include "traccc/cuda/utils/definitions.hpp"
 
 
 namespace traccc::cuda {
@@ -64,17 +64,17 @@ void spacepoint_formation(
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         measurements_prefix_sum_view) {
 
-    // The execution range of the kernel
     auto n_measurements = measurements_prefix_sum_view.size();
 
     // Calculate the execution NDrange for the kernel
     auto nSpaceptFormThreads = 64;
     auto nSpaceptFormBlocks = (n_measurements + nSpaceptFormThreads - 1) / nSpaceptFormThreads;
+    printf("N_measurements: %d, Threads: %d , Blocks:%d \n",n_measurements,nSpaceptFormThreads,nSpaceptFormBlocks);
     kernel::spacepoint_formation<<<nSpaceptFormBlocks,nSpaceptFormThreads>>>(
         spacepoints_view, measurements_view, measurements_prefix_sum_view
     );
-    cudaDeviceSynchronize();  
-
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
 }
 

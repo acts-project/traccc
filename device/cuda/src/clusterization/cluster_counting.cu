@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "cluster_counting.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 
 namespace traccc::cuda {
 namespace kernels {
@@ -94,12 +95,14 @@ void cluster_counting(
     kernels::set_zero<<<nClusterCountingBlocks,nClusterCountingThreads>>>(
         cluster_sizes_view
     );
-    cudaDeviceSynchronize();  
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());  
 
     kernels::cluster_counting<<<nClusterCountingBlocks,nClusterCountingThreads>>>(
         sparse_ccl_indices_view,cluster_sizes_view,cluster_prefix_sum_view,
         cells_prefix_sum_view);
-    cudaDeviceSynchronize();        
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());      
 }
 
 }  // namespace traccc::cuda
