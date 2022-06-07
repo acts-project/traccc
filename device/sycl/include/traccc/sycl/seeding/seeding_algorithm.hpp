@@ -25,7 +25,9 @@ namespace traccc::sycl {
 
 /// Main algorithm for performing the track seeding using oneAPI/SYCL
 class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
-                              const spacepoint_container_types::const_view&)> {
+                              const spacepoint_container_types::const_view&)>,
+                          public algorithm<vecmem::data::vector_buffer<seed>(
+                              const spacepoint_container_types::buffer&)> {
 
     public:
     /// Constructor for the seed finding algorithm
@@ -41,13 +43,23 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     /// @return The track seeds reconstructed from the spacepoints
     ///
     output_type operator()(const spacepoint_container_types::const_view&
-                               spacepoints) const override;
+                               spacepoints_view) const override;
+
+    /// Operator executing the algorithm.
+    ///
+    /// @param spacepoints_buffer A buffer with all spacepoints in the event
+    /// @return The track seeds reconstructed from the spacepoints
+    ///
+    output_type operator()(const spacepoint_container_types::buffer&
+                               spacepoints_buffer) const override;
 
     private:
     /// Sub-algorithm performing the spacepoint binning
     spacepoint_binning m_spacepoint_binning;
     /// Sub-algorithm performing the seed finding
     seed_finding m_seed_finding;
+    /// Implementation for the public seed finding operators
+
 
 };  // class seeding_algorithm
 

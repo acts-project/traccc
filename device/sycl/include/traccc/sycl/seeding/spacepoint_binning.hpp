@@ -27,7 +27,9 @@ namespace traccc::sycl {
 
 /// Spacepoing binning executed on a SYCL device
 class spacepoint_binning : public algorithm<sp_grid_buffer(
-                               const spacepoint_container_types::const_view&)> {
+                               const spacepoint_container_types::const_view&)>,
+                           public algorithm<sp_grid_buffer(
+                               const spacepoint_container_types::buffer&)> {
 
     public:
     /// Constructor for the algorithm
