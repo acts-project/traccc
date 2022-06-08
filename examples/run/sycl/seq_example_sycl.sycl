@@ -38,7 +38,7 @@
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
 
-// tracc library include(s).
+// Project include(s).
 #include "traccc/utils/memory_resource.hpp"
 
 // System include(s).
@@ -103,7 +103,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::sycl::device_memory_resource device_mr(&q);
 
     // Struct with memory resources to pass to SYCL algorithms
-    traccc::memory_resource mr{shared_mr};
+    traccc::memory_resource mr{device_mr, &sycl_host_mr};
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -114,8 +114,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::track_params_estimation tp(host_mr);
 
     traccc::sycl::clusterization_algorithm ca_sycl(mr, &q);
-    traccc::sycl::seeding_algorithm sa_sycl(shared_mr, &q);
-    traccc::sycl::track_params_estimation tp_sycl(shared_mr, &q);
+    traccc::sycl::seeding_algorithm sa_sycl(mr, &q);
+    traccc::sycl::track_params_estimation tp_sycl(mr, &q);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -136,6 +136,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
                 surface_transforms, digi_cfg, shared_mr);
+
+        traccc::cell_container_types::host cells_per_event_sycl =
+            traccc::read_cells_from_event(event, i_cfg.cell_directory,
+                                          common_opts.input_data_format,
+                                          surface_transforms, digi_cfg,
+                                          (mr.host ?: *(mr.host)
+                                           : mr.main));
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -176,7 +183,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_clusterization_sycl =
             std::chrono::system_clock::now();
 
-        auto spacepoints_sycl_buffer = ca_sycl(cells_per_event);
+        auto spacepoints_sycl_buffer = ca_sycl(cells_per_event_sycl);
 
         /*time*/ auto end_clusterization_sycl =
             std::chrono::system_clock::now();
