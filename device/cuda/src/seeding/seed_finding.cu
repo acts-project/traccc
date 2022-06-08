@@ -69,13 +69,16 @@ seed_finding::output_type seed_finding::operator()(
     // Helper object for the data management.
     vecmem::copy copy;
 
+    // Get the sizes of the grid
+    auto grid_sizes = copy.get_sizes(g2_view._data_view);
+
     // Get the prefix sum for the spacepoint grid.
     const device::prefix_sum_t sp_grid_prefix_sum =
-        device::get_prefix_sum(g2_view._data_view, m_mr.get(), copy);
+        device::get_prefix_sum(grid_sizes, m_mr.get());
 
     // Set up the doublet counter buffer.
     device::doublet_counter_container_types::buffer doublet_counter_buffer =
-        device::make_doublet_counter_buffer(g2_view, copy, m_mr.get());
+        device::make_doublet_counter_buffer(grid_sizes, copy, m_mr.get());
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.

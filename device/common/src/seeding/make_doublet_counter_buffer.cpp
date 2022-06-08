@@ -11,11 +11,10 @@
 namespace traccc::device {
 
 device::doublet_counter_container_types::buffer make_doublet_counter_buffer(
-    const sp_grid_const_view& spacepoint_grid, vecmem::copy& copy,
+    const std::vector<unsigned int>& grid_sizes, vecmem::copy& copy,
     vecmem::memory_resource& mr, vecmem::memory_resource* mr_host) {
 
     // Calculate the capacities for the buffer.
-    auto grid_sizes = copy.get_sizes(spacepoint_grid._data_view);
     const device::doublet_counter_container_types::buffer::header_vector::
         size_type buffer_size = grid_sizes.size();
 

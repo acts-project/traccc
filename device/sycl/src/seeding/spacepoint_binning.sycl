@@ -12,12 +12,12 @@
 #include "../utils/get_queue.hpp"
 
 // Project include(s).
-#include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
+#include "traccc/device/get_prefix_sum.hpp"
 
 // VecMem include(s).
-#include <vecmem/utils/copy.hpp>
+#include <vecmem/utils/sycl/copy.hpp>
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
@@ -36,27 +36,55 @@ class populate_grid;
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    vecmem::memory_resource& mr, const queue_wrapper& queue)
+    const traccc::memory_resource& mr, queue_wrapper queue)
     : m_config(config),
-      m_axes(get_axes(grid_config, mr)),
+      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
-      m_queue(queue) {}
+      m_queue(queue) {
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
+}
 
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_container_types::const_view& spacepoints_view) const {
 
-    // Helper object for the data management.
-    vecmem::copy copy;
+    // Get the spacepoint sizes from the view
+    auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
 
-    // Get the prefix sum for the spacepoints.
-    const device::prefix_sum_t sp_prefix_sum =
-        device::get_prefix_sum(spacepoints_view.items, m_mr.get(), copy);
+    return this->operator()(spacepoints_view, sp_sizes);
+}
+
+sp_grid_buffer spacepoint_binning::operator()(
+    const spacepoint_container_types::buffer& spacepoints_buffer) const {
+    
+    // Get the spacepoint sizes from the buffer
+    auto sp_sizes = m_copy->get_sizes(spacepoints_buffer.items);
+
+    return this->operator()(spacepoints_buffer, sp_sizes);
+}
+
+sp_grid_buffer spacepoint_binning::operator()(
+    const spacepoint_container_types::const_view& spacepoints_view,
+    const std::vector<unsigned int>& sp_sizes) const {
+
+    // Get the prefix sum for the spacepoints using buffer.
+    const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
+        sp_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
     auto sp_prefix_sum_view = vecmem::get_data(sp_prefix_sum);
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
-    vecmem::vector<unsigned int> grid_capacities(grid_bins, 0, &m_mr.get());
+    vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
+                                                                   m_mr.main);
+    m_copy->setup(grid_capacities_buff);
+    vecmem::data::vector_view<unsigned int> grid_capacities_view =
+        grid_capacities_buff;
 
     // Calculate the range to run the kernels for.
     static constexpr unsigned int localSize = 32 * 4;
@@ -71,8 +99,8 @@ sp_grid_buffer spacepoint_binning::operator()(
                 range, [config = m_config, phi_axis = m_axes.first,
                         z_axis = m_axes.second, spacepoints = spacepoints_view,
                         sp_prefix_sum = sp_prefix_sum_view,
-                        grid_capacities = vecmem::get_data(grid_capacities)](
-                           ::sycl::nd_item<1> item) {
+                        grid_capacities =
+                            grid_capacities_view](::sycl::nd_item<1> item) {
                     device::count_grid_capacities(
                         item.get_global_linear_id(), config, phi_axis, z_axis,
                         spacepoints, sp_prefix_sum, grid_capacities);
@@ -80,13 +108,17 @@ sp_grid_buffer spacepoint_binning::operator()(
         })
         .wait_and_throw();
 
+    // Copy grid capacities back to the host
+    vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host : &(m_mr.main));
+    (*m_copy)(grid_capacities_buff, grid_capacities_host);
+
     // Create the grid buffer.
-    sp_grid_buffer grid_buffer(m_axes.first, m_axes.second,
-                               std::vector<std::size_t>(grid_bins, 0),
-                               std::vector<std::size_t>(grid_capacities.begin(),
-                                                        grid_capacities.end()),
-                               m_mr.get());
-    copy.setup(grid_buffer._buffer);
+    sp_grid_buffer grid_buffer(
+        m_axes.first, m_axes.second, std::vector<std::size_t>(grid_bins, 0),
+        std::vector<std::size_t>(grid_capacities_host.begin(),
+                                 grid_capacities_host.end()),
+        m_mr.main, m_mr.host);
+    m_copy->setup(grid_buffer._buffer);
     sp_grid_view grid_view = grid_buffer;
 
     // Populate the grid.

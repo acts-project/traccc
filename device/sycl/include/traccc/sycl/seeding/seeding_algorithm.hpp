@@ -19,7 +19,9 @@
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
-#include <vecmem/memory/memory_resource.hpp>
+
+// traccc library include(s).
+#include "traccc/utils/memory_resource.hpp"
 
 namespace traccc::sycl {
 
@@ -32,17 +34,18 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     public:
     /// Constructor for the seed finding algorithm
     ///
-    /// @param mr The memory resource to use
+    /// @param mr is a struct of memory resources (shared or host & device)
     /// @param queue The SYCL queue to work with
     ///
-    seeding_algorithm(vecmem::memory_resource& mr, queue_wrapper queue);
+    seeding_algorithm(const traccc::memory_resource& mr,
+                      const queue_wrapper& queue);
 
     /// Operator executing the algorithm.
     ///
-    /// @param spacepoints_view A view of all spacepoints in the event
-    /// @return The track seeds reconstructed from the spacepoints
+    /// @param spacepoints_view is a view of all spacepoints in the event
+    /// @return the track seeds reconstructed from the spacepoints
     ///
-    output_type operator()(const spacepoint_container_types::const_view&
+    vecmem::data::vector_buffer<seed> operator()(const spacepoint_container_types::const_view&
                                spacepoints_view) const override;
 
     /// Operator executing the algorithm.
@@ -50,7 +53,7 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     /// @param spacepoints_buffer A buffer with all spacepoints in the event
     /// @return The track seeds reconstructed from the spacepoints
     ///
-    output_type operator()(const spacepoint_container_types::buffer&
+    vecmem::data::vector_buffer<seed> operator()(const spacepoint_container_types::buffer&
                                spacepoints_buffer) const override;
 
     private:
@@ -58,8 +61,6 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     spacepoint_binning m_spacepoint_binning;
     /// Sub-algorithm performing the seed finding
     seed_finding m_seed_finding;
-    /// Implementation for the public seed finding operators
-
 
 };  // class seeding_algorithm
 
