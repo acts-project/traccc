@@ -45,16 +45,18 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     /// @param spacepoints_view is a view of all spacepoints in the event
     /// @return the track seeds reconstructed from the spacepoints
     ///
-    vecmem::data::vector_buffer<seed> operator()(const spacepoint_container_types::const_view&
-                               spacepoints_view) const override;
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::const_view& spacepoints_view)
+        const override;
 
     /// Operator executing the algorithm.
     ///
     /// @param spacepoints_buffer A buffer with all spacepoints in the event
     /// @return The track seeds reconstructed from the spacepoints
     ///
-    vecmem::data::vector_buffer<seed> operator()(const spacepoint_container_types::buffer&
-                               spacepoints_buffer) const override;
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::buffer& spacepoints_buffer)
+        const override;
 
     private:
     /// Sub-algorithm performing the spacepoint binning

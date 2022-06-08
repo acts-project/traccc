@@ -14,6 +14,10 @@
 // Project include(s).
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 
+// VecMem include(s).
+#include <iostream>
+#include <vecmem/utils/sycl/copy.hpp>
+
 namespace traccc::sycl {
 
 // kernel class
@@ -67,22 +71,58 @@ class TrackParamsEstimation {
     vecmem::data::vector_view<bound_track_parameters> m_params_view;
 };
 
-track_params_estimation::track_params_estimation(vecmem::memory_resource& mr,
-                                                 queue_wrapper queue)
-    : m_mr(mr), m_queue(queue) {}
+track_params_estimation::track_params_estimation(
+    const traccc::memory_resource& mr, queue_wrapper queue)
+    : m_mr(mr), m_queue(queue) {
 
-track_params_estimation::output_type track_params_estimation::operator()(
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
+}
+
+host_bound_track_parameters_collection track_params_estimation::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const vecmem::data::vector_view<const seed>& seeds_view) const {
 
-    output_type params(seeds_view.size(), &m_mr.get());
+    // Get the size of the seeds view
+    auto seeds_size = m_copy->get_size(seeds_view);
+
+    return this->operator()(spacepoints_view, seeds_view, seeds_size);
+}
+
+host_bound_track_parameters_collection track_params_estimation::operator()(
+    const spacepoint_container_types::buffer& spacepoints_buffer,
+    const vecmem::data::vector_buffer<seed>& seeds_buffer) const {
+
+    // Get the size of the seeds buffer
+    auto seeds_size = m_copy->get_size(seeds_buffer);
+
+    return this->operator()(spacepoints_buffer, seeds_buffer, seeds_size);
+}
+
+host_bound_track_parameters_collection track_params_estimation::operator()(
+    const spacepoint_container_types::const_view& spacepoints_view,
+    const vecmem::data::vector_view<const seed>& seeds_view,
+    std::size_t seeds_size) const {
+
+    // Create output host container
+    host_bound_track_parameters_collection params(
+        seeds_size, (m_mr.host ? m_mr.host : &(m_mr.main)));
 
     // Check if anything needs to be done.
-    if (seeds_view.size() == 0) {
+    if (seeds_size == 0) {
         return params;
     }
 
-    auto params_view = vecmem::get_data(params);
+    // Create device buffer for the parameters
+    vecmem::data::vector_buffer<traccc::bound_track_parameters> params_buffer(
+        seeds_size, m_mr.main);
+    m_copy->setup(params_buffer);
+
+    vecmem::data::vector_view params_view = params_buffer;
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
@@ -91,19 +131,23 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // -- Num groups
     // The dimension of grid is number_of_seeds / localSize + 1
-    unsigned int num_groups = (seeds_view.size() + localSize - 1) / localSize;
+    unsigned int num_groups = (seeds_size + localSize - 1) / localSize;
 
     unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
     auto trackParamsNdRange = ::sycl::nd_range<1>{globalSize, localSize};
     details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
+        .submit([&trackParamsNdRange, &spacepoints_view, &seeds_view,
+                 &params_view](::sycl::handler& h) {
             TrackParamsEstimation kernel(spacepoints_view, seeds_view,
                                          params_view);
 
             h.parallel_for<TrackParamsEstimation>(trackParamsNdRange, kernel);
         })
         .wait_and_throw();
+
+    // Copy the results back to the host
+    (*m_copy)(params_buffer, params);
 
     return params;
 }

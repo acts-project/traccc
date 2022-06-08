@@ -19,8 +19,8 @@
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include <vecmem/utils/copy.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
@@ -43,8 +43,8 @@ class seed_finding
     /// host & device)
     /// @param queue    is a wrapper for the sycl queue for kernel
     /// invocation
-    seed_finding(const seedfinder_config& config, const traccc::memory_resource& mr,
-                 queue_wrapper queue);
+    seed_finding(const seedfinder_config& config,
+                 const traccc::memory_resource& mr, queue_wrapper queue);
 
     /// Callable operator for the seed finding
     ///
@@ -73,7 +73,7 @@ class seed_finding
         const sp_grid_const_view& g2_view,
         const std::vector<unsigned int>& grid_sizes) const;
 
-    /// Member variables
+    /// Private member variables
     seedfinder_config m_seedfinder_config;
     seedfilter_config m_seedfilter_config;
     traccc::memory_resource m_mr;

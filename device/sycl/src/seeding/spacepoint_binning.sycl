@@ -12,9 +12,9 @@
 #include "../utils/get_queue.hpp"
 
 // Project include(s).
+#include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
@@ -61,7 +61,7 @@ sp_grid_buffer spacepoint_binning::operator()(
 
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_container_types::buffer& spacepoints_buffer) const {
-    
+
     // Get the spacepoint sizes from the buffer
     auto sp_sizes = m_copy->get_sizes(spacepoints_buffer.items);
 
@@ -109,7 +109,8 @@ sp_grid_buffer spacepoint_binning::operator()(
         .wait_and_throw();
 
     // Copy grid capacities back to the host
-    vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host : &(m_mr.main));
+    vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
+                                                                : &(m_mr.main));
     (*m_copy)(grid_capacities_buff, grid_capacities_host);
 
     // Create the grid buffer.
