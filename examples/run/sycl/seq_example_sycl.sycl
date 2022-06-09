@@ -109,7 +109,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::host_memory_resource host_mr;
 
     traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(shared_mr);
+    traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
@@ -135,7 +135,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, shared_mr);
+                surface_transforms, digi_cfg, host_mr);
 
         traccc::cell_container_types::host cells_per_event_sycl =
             traccc::read_cells_from_event(
