@@ -27,6 +27,8 @@
 #include "traccc/seeding/device/make_doublet_counter_buffer.hpp"
 
 // VecMem include(s).
+#include <iostream>
+
 #include "vecmem/utils/sycl/copy.hpp"
 
 namespace traccc::sycl {
@@ -85,8 +87,13 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         device::make_doublet_counter_buffer(grid_sizes, *m_copy, m_mr.main,
                                             m_mr.host);
 
-    // Set up the view of the prefix sum
-    auto sp_grid_prefix_sum_view = vecmem::get_data(sp_grid_prefix_sum);
+    // Set up the buffer of the prefix sum and its view
+    vecmem::data::vector_buffer<device::prefix_sum_element_t>
+        sp_grid_prefix_sum_buff(sp_grid_prefix_sum.size(), m_mr.main);
+    m_copy->setup(sp_grid_prefix_sum_buff);
+    (*m_copy)(vecmem::get_data(sp_grid_prefix_sum), sp_grid_prefix_sum_buff);
+    vecmem::data::vector_view<device::prefix_sum_element_t>
+        sp_grid_prefix_sum_view = sp_grid_prefix_sum_buff;
 
     // Calculate the range to run the doublet counting for.
     static constexpr unsigned int doubletCountLocalSize = 32 * 2;
@@ -126,7 +133,14 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     const device::prefix_sum_t doublet_prefix_sum =
         device::get_prefix_sum(doublet_counter_buffer.items,
                                (m_mr.host ? *(m_mr.host) : m_mr.main), *m_copy);
-    auto doublet_prefix_sum_view = vecmem::get_data(doublet_prefix_sum);
+
+    // Set up the buffer of the prefix sum and its view
+    vecmem::data::vector_buffer<device::prefix_sum_element_t>
+        doublet_prefix_sum_buff(doublet_prefix_sum.size(), m_mr.main);
+    m_copy->setup(doublet_prefix_sum_buff);
+    (*m_copy)(vecmem::get_data(doublet_prefix_sum), doublet_prefix_sum_buff);
+    vecmem::data::vector_view<device::prefix_sum_element_t>
+        doublet_prefix_sum_view = doublet_prefix_sum_buff;
 
     // Calculate the range to run the doublet finding for.
     static constexpr unsigned int doubletFindLocalSize = 32 * 2;

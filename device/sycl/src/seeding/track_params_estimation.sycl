@@ -24,9 +24,9 @@ namespace traccc::sycl {
 class TrackParamsEstimation {
     public:
     TrackParamsEstimation(
-        spacepoint_container_types::const_view spacepoints_view,
-        vecmem::data::vector_view<const seed> seeds_view,
-        vecmem::data::vector_view<bound_track_parameters> params_view)
+        const spacepoint_container_types::const_view& spacepoints_view,
+        const vecmem::data::vector_view<const seed>& seeds_view,
+        const vecmem::data::vector_view<bound_track_parameters>& params_view)
         : m_spacepoints_view(spacepoints_view),
           m_seeds_view(seeds_view),
           m_params_view(params_view) {}
@@ -118,11 +118,9 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     }
 
     // Create device buffer for the parameters
-    vecmem::data::vector_buffer<traccc::bound_track_parameters> params_buffer(
+    vecmem::data::vector_buffer<bound_track_parameters> params_buffer(
         seeds_size, m_mr.main);
     m_copy->setup(params_buffer);
-
-    vecmem::data::vector_view params_view = params_buffer;
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
@@ -138,9 +136,9 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     auto trackParamsNdRange = ::sycl::nd_range<1>{globalSize, localSize};
     details::get_queue(m_queue)
         .submit([&trackParamsNdRange, &spacepoints_view, &seeds_view,
-                 &params_view](::sycl::handler& h) {
+                 &params_buffer](::sycl::handler& h) {
             TrackParamsEstimation kernel(spacepoints_view, seeds_view,
-                                         params_view);
+                                         params_buffer);
 
             h.parallel_for<TrackParamsEstimation>(trackParamsNdRange, kernel);
         })
