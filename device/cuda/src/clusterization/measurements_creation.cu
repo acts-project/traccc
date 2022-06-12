@@ -14,7 +14,7 @@ namespace traccc::cuda {
 namespace kernel{
 __global__ void measurement_creation(cluster_container_types::const_view clusters_view,
                         measurement_container_types::view measurements_view,
-                        const cell_container_types::const_view& cells_view)
+                        const cell_container_types::const_view cells_view)
 {
     auto idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -54,14 +54,12 @@ void measurement_creation(measurement_container_types::view measurements_view,
     // Calculate the execution NDrange for the kernel
     auto nMeasurementCreationThreads = 64;
     auto nMeasurementCreationBlocks = (n_clusters + nMeasurementCreationThreads - 1)
-                                        / nMeasurementCreationThreads;
-    printf("n_clusters:%d\n",n_clusters);                                        
+                                        / nMeasurementCreationThreads;                               
     // Run the kernel
     kernel::measurement_creation<<<nMeasurementCreationBlocks,nMeasurementCreationThreads>>>(
         clusters_view,measurements_view,cells_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-    printf("measurements view headers size %d\n",measurements_view.headers.size());
 }
 
 }  // namespace traccc::cuda

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
 
 namespace traccc {
 
@@ -22,6 +23,7 @@ struct pixel_data {
     scalar pitch_x = 1.;
     scalar pitch_y = 1.;
 
+    TRACCC_HOST_DEVICE
     vector2 get_pitch() const { return {pitch_x, pitch_y}; };
 };
 
