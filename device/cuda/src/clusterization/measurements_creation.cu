@@ -49,17 +49,13 @@ void measurement_creation(measurement_container_types::view measurements_view,
                           const cell_container_types::const_view& cells_view)
 {
 
-    // The kernel execution range
     auto n_clusters = clusters_view.headers.size();
-    // Calculate the execution NDrange for the kernel
     auto nMeasurementCreationThreads = 64;
     auto nMeasurementCreationBlocks = (n_clusters + nMeasurementCreationThreads - 1)
                                         / nMeasurementCreationThreads;                               
-    // Run the kernel
     kernel::measurement_creation<<<nMeasurementCreationBlocks,nMeasurementCreationThreads>>>(
         clusters_view,measurements_view,cells_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 }
-
 }  // namespace traccc::cuda

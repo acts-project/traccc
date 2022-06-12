@@ -80,10 +80,7 @@ void component_connection(
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         cells_prefix_sum_view) {
 
-    // The execution range of the kernel
     auto n_cells = cells_prefix_sum_view.size();
-
-    // Calculate the 2-dim NDrange for the kernel
     auto nComponentConThreads = 64;
     auto nComponentConBlocks = (n_cells + nComponentConThreads - 1) / nComponentConThreads;
 

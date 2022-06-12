@@ -83,21 +83,15 @@ void cluster_counting(
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         cells_prefix_sum_view)
     {
-    
     auto n_cells = cells_prefix_sum_view.size();
-
-
-
-    //CUDA kernel dementions
     auto nClusterCountingThreads = 64;
     auto nClusterCountingBlocks = (n_cells + nClusterCountingThreads - 1) / nClusterCountingThreads;
     
     kernels::set_zero<<<nClusterCountingBlocks,nClusterCountingThreads>>>(
-        cluster_sizes_view
-    );
+        cluster_sizes_view);
+
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());  
-
     kernels::cluster_counting<<<nClusterCountingBlocks,nClusterCountingThreads>>>(
         sparse_ccl_indices_view,cluster_sizes_view,cluster_prefix_sum_view,
         cells_prefix_sum_view);
@@ -106,3 +100,4 @@ void cluster_counting(
 }
 
 }  // namespace traccc::cuda
+

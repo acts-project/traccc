@@ -67,16 +67,11 @@ void clusters_sum(
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view) {
 
-
-    // Execution range of the kernel
     auto n_modules = cells_view.headers.size();
-    // Calculate the execution range for the kernel
     const unsigned int nClustersSumThreads = 64;
     const unsigned int nDClustersSumBlocks = (n_modules + nClustersSumThreads - 1) / nClustersSumThreads;
-    //const unsigned int nDClustersSumBlocks = 1;
 
     // Launch clusters_sum kernel
-
     kernels::clusters_sum<<<nDClustersSumBlocks,nClustersSumThreads>>>
         (cells_view,sparse_ccl_indices_view,total_clusters,
         cluster_prefix_sum_view,clusters_per_module_view);    

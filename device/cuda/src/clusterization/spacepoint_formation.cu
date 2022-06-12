@@ -65,8 +65,6 @@ void spacepoint_formation(
         measurements_prefix_sum_view) {
 
     auto n_measurements = measurements_prefix_sum_view.size();
-
-    // Calculate the execution NDrange for the kernel
     auto nSpaceptFormThreads = 64;
     auto nSpaceptFormBlocks = (n_measurements + nSpaceptFormThreads - 1) / nSpaceptFormThreads;
     printf("N_measurements: %d, Threads: %d , Blocks:%d \n",n_measurements,nSpaceptFormThreads,nSpaceptFormBlocks);
@@ -75,9 +73,6 @@ void spacepoint_formation(
     );
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
 }
-
-
 
 }  // namespace traccc::cuda
