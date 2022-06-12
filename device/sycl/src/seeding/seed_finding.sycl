@@ -27,8 +27,6 @@
 #include "traccc/seeding/device/make_doublet_counter_buffer.hpp"
 
 // VecMem include(s).
-#include <iostream>
-
 #include "vecmem/utils/sycl/copy.hpp"
 
 namespace traccc::sycl {

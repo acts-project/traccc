@@ -75,7 +75,15 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Get the prefix sum for the spacepoints using buffer.
     const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
         sp_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
-    auto sp_prefix_sum_view = vecmem::get_data(sp_prefix_sum);
+
+    // Set up the buffer of the prefix sum and its view
+    vecmem::data::vector_buffer<device::prefix_sum_element_t>
+        sp_prefix_sum_buff(sp_prefix_sum.size(), m_mr.main);
+    m_copy->setup(sp_prefix_sum_buff);
+    (*m_copy)(vecmem::get_data(sp_prefix_sum), sp_prefix_sum_buff,
+              vecmem::copy::type::copy_type::host_to_device);
+    vecmem::data::vector_view<device::prefix_sum_element_t> sp_prefix_sum_view =
+        sp_prefix_sum_buff;
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
@@ -83,6 +91,7 @@ sp_grid_buffer spacepoint_binning::operator()(
     vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
                                                                    m_mr.main);
     m_copy->setup(grid_capacities_buff);
+    m_copy->memset(grid_capacities_buff, 0);
     vecmem::data::vector_view<unsigned int> grid_capacities_view =
         grid_capacities_buff;
 
@@ -113,7 +122,7 @@ sp_grid_buffer spacepoint_binning::operator()(
                                                                 : &(m_mr.main));
     (*m_copy)(grid_capacities_buff, grid_capacities_host);
 
-    // Create the grid buffer.
+    // Create the grid buffer and its view
     sp_grid_buffer grid_buffer(
         m_axes.first, m_axes.second, std::vector<std::size_t>(grid_bins, 0),
         std::vector<std::size_t>(grid_capacities_host.begin(),

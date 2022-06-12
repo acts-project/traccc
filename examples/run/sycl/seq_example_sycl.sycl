@@ -137,6 +137,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 event, i_cfg.cell_directory, common_opts.input_data_format,
                 surface_transforms, digi_cfg, host_mr);
 
+        // Read the cells from the relevant event file for SYCL algorithm
         traccc::cell_container_types::host cells_per_event_sycl =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
