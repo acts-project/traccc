@@ -27,7 +27,7 @@
 namespace traccc::cuda {
 
 class clusterization_algorithm
-    : public algorithm<spacepoint_container_types::buffer(
+    : public algorithm<spacepoint_container_types::host(
           const cell_container_types::host&)> {
 
     public:

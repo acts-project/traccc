@@ -135,7 +135,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         spacepoints_buffer, measurements_buffer,
         vecmem::get_data(measurements_prefix_sum));
 
-    return spacepoints_buffer;
+    traccc::spacepoint_container_types::host  spacepoints_cuda;
+    copy(spacepoints_buffer.headers,
+            spacepoints_cuda.get_headers());
+    copy(spacepoints_buffer.items,
+            spacepoints_cuda.get_items());
+
+    return spacepoints_cuda;
 }
 
 }  // namespace traccc::cuda

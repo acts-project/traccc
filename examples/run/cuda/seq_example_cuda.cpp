@@ -67,7 +67,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     float clusterization_cpu(0);
     float sp_formation_cpu(0);
     float seeding_cpu(0);
-    // float clusterization_cuda(0);
+    float clusterization_cuda(0);
     float seeding_cuda(0);
     float tp_estimating_cpu(0);
     float tp_estimating_cuda(0);
@@ -112,10 +112,19 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             end_file_reading_cpu - start_file_reading_cpu;
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
 
+        /*----------------------------
+             Clusterization and Spacepoint formation algorithm (cuda)
+          ----------------------------*/
 
-        //new
+        /*time*/ auto start_spacepoints_cuda =
+            std::chrono::system_clock::now();
+
         auto spacepoints_per_event_cuda = ca_cuda(cells_per_event);
-        //end new
+
+        /*time*/ auto end_spacepoints_cuda = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_clusterization_cuda =
+            end_spacepoints_cuda - start_spacepoints_cuda;
+        /*time*/ clusterization_cuda += time_clusterization_cuda.count();
 
         /*-----------------------------
               Clusterization (cpu)
@@ -155,7 +164,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 
-        auto seeds_cuda = sa_cuda(std::move(spacepoints_per_event));
+        auto seeds_cuda = sa_cuda(std::move(spacepoints_per_event_cuda));
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
