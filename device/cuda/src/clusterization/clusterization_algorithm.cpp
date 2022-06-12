@@ -90,7 +90,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy(cluster_sizes_buffer, cluster_sizes);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
-    printf("total clusters : %d\n",*total_clusters);
+    //printf("total clusters : %d\n",*total_clusters);
     cluster_container_types::buffer clusters_buffer{
         {*total_clusters, m_mr.get()},
         {std::vector<std::size_t>(*total_clusters, 0),
@@ -128,12 +128,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(spacepoints_buffer.headers);
     copy.setup(spacepoints_buffer.items);
 
-    printf("Measurements Buffer items m_size %d \n",measurements_buffer.items.m_size);
+    //printf("Measurements Buffer items m_size %d \n",measurements_buffer.items.m_size);
     // Get the prefix sum of the measurements.
     const device::prefix_sum_t measurements_prefix_sum = device::get_prefix_sum(
-        copy.get_sizes(measurements_buffer.items), m_mr.get(),&copy);
-    printf("get_sizes(measurements_b.items) %d\n",copy.get_sizes(measurements_buffer.items).size());
-    printf("prefix sum measurements %d\n",measurements_prefix_sum.size());
+        copy.get_sizes(measurements_buffer.items), m_mr.get());
+    //printf("get_sizes(measurements_b.items) %d\n",copy.get_sizes(measurements_buffer.items).size());
+    //printf("prefix sum measurements %d\n",measurements_prefix_sum.size());
     // Spacepoint formation kernel
     traccc::cuda::spacepoint_formation(
         spacepoints_buffer, measurements_buffer,
