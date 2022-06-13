@@ -11,6 +11,7 @@
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
 #include "seed_selecting.hpp"
+#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 #include "triplet_counter.hpp"
 #include "triplet_counting.hpp"
 #include "triplet_finding.hpp"
@@ -95,12 +96,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
 
     // Calculate the range to run the doublet counting for.
     static constexpr unsigned int doubletCountLocalSize = 32 * 2;
-    const unsigned int nDoubletCountGroups =
-        sp_grid_prefix_sum.size() / doubletCountLocalSize + 1;
-    const unsigned int doubletCountGlobalSize =
-        nDoubletCountGroups * doubletCountLocalSize;
-    ::sycl::nd_range<1> doubletCountRange(doubletCountGlobalSize,
-                                          doubletCountLocalSize);
+    auto doubletCountRange = traccc::sycl::calculate1DimNdRange(
+        sp_grid_prefix_sum.size(), doubletCountLocalSize);
 
     // Count the number of doublets that we need to produce.
     device::doublet_counter_container_types::view doublet_counter_view =
@@ -142,12 +139,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
 
     // Calculate the range to run the doublet finding for.
     static constexpr unsigned int doubletFindLocalSize = 32 * 2;
-    const unsigned int nFindFindGroups =
-        doublet_prefix_sum.size() / doubletFindLocalSize + 1;
-    const unsigned int doubletFindGlobalSize =
-        nFindFindGroups * doubletFindLocalSize;
-    ::sycl::nd_range<1> doubletFindRange(doubletFindGlobalSize,
-                                         doubletFindLocalSize);
+    auto doubletFindRange = traccc::sycl::calculate1DimNdRange(
+        doublet_prefix_sum.size(), doubletFindLocalSize);
 
     // Find all of the spacepoint doublets.
     doublet_container_view mb_view = doublet_buffers.middleBottom;

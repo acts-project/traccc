@@ -20,18 +20,9 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/seeding/spacepoint_binning.hpp"
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
+  "include/traccc/sycl/utils/calculate1DimNdRange.hpp"
   # implementation files
-  "src/clusterization/clusterization_algorithm.cpp"
-  "src/clusterization/clusters_sum.hpp"
-  "src/clusterization/clusters_sum.sycl"
-  "src/clusterization/cluster_counting.hpp"
-  "src/clusterization/cluster_counting.sycl"
-  "src/clusterization/measurement_creation.sycl"
-  "src/clusterization/measurement_creation.hpp"
-  "src/clusterization/component_connection.hpp"
-  "src/clusterization/component_connection.sycl"
-  "src/clusterization/spacepoint_formation.hpp"
-  "src/clusterization/spacepoint_formation.sycl"
+  "src/clusterization/clusterization_algorithm.sycl"
   "src/seeding/seed_finding.sycl"
   "src/seeding/seed_selecting.hpp"
   "src/seeding/seed_selecting.sycl"
@@ -48,7 +39,8 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/seeding/weight_updating.sycl"
   "src/utils/get_queue.hpp"
   "src/utils/get_queue.sycl"
-  "src/utils/queue_wrapper.cpp" )
+  "src/utils/queue_wrapper.cpp" 
+  "src/utils/calculate1DimNdRange.sycl" )
 target_link_libraries( traccc_sycl
   PUBLIC vecmem::core traccc::core
   PRIVATE traccc::device_common vecmem::sycl )
