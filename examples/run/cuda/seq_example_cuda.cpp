@@ -195,7 +195,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             std::chrono::system_clock::now();
 
         auto params_cuda =
-            tp_cuda(std::move(spacepoints_per_event), std::move(seeds_cuda));
+            tp_cuda(std::move(spacepoints_per_event_cuda), std::move(seeds_cuda));
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
