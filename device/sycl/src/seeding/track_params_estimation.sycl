@@ -6,8 +6,8 @@
  */
 
 // SYCL library include(s).
-#include "traccc/sycl/seeding/track_params_estimation.hpp"
 #include "../utils/get_queue.hpp"
+#include "traccc/sycl/seeding/track_params_estimation.hpp"
 
 // Project include(s).
 #include "traccc/seeding/track_params_estimation_helper.hpp"

@@ -50,7 +50,7 @@ class seed_finding
     ///
     /// @param spacepoints_view     is a view of all spacepoints in the event
     /// @param g2_view              is a view of the spacepoint grid
-    /// @return                     a vector buffer of seeds                    
+    /// @return                     a vector buffer of seeds
     ///
     vecmem::data::vector_buffer<seed> operator()(
         const spacepoint_container_types::const_view& spacepoints_view,
@@ -60,7 +60,7 @@ class seed_finding
     ///
     /// @param spacepoints_buffer   is a buffer of all spacepoints in the event
     /// @param g2_buffer            is a buffer of the spacepoint grid
-    /// @return                     a vector buffer of seeds                    
+    /// @return                     a vector buffer of seeds
     ///
     vecmem::data::vector_buffer<seed> operator()(
         const spacepoint_container_types::buffer& spacepoints_buffer,
