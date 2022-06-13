@@ -22,8 +22,6 @@ namespace traccc::sycl {
 void clusters_sum(
     const cell_container_types::const_view& cells_view,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    unsigned int& total_clusters,
-    vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view,
     queue_wrapper queue);
 
