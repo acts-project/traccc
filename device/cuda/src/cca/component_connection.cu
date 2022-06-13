@@ -130,17 +130,17 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
 }
 
 /*
- * Implementation of a SV algorithm with the following steps:
- *   1) stochastic hooking to parent cell in new cluster
- *   2) aggressive hooking to grand parent cell in new cluster
- *   3) shortcutting to grand parent cell in same cluster
+ * Implementation of a FastSV algorithm with the following steps:
+ *   1) mix of stochastic and aggressive hooking
+ *   2) shortcutting
  *
  * The implementation corresponds to an adapted versiion of Algorithm 3 of
  * the following paper:
  * https://www.sciencedirect.com/science/article/pii/S0743731520302689
  *
  * f      = array holding the parent cell ID for the current iteration.
- * gf     = buffer array holding updated information for the next iteration.
+ * gf     = array holding grandparent cell ID from the previous iteration. 
+            This array only gets updated at the end of the iteration to prevent race conditions.
  */
 __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
@@ -154,15 +154,15 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
     do {
         /*
          * Reset the end-parameter to false, so we can set it to true if we
-         * make a change to the f array.
+         * make a change to the gf array.
          */
         gf_changed = false;
 
         /*
          * The algorithm executes in a loop of three distinct parallel
-         * stages. In this first one, stochastic hooking, we examine
-         * adjacent cells and copy their parents cluster ID if it is 
-         * lower than our, essentially merging the two together.
+         * stages. In this first one, a mix of stochastic and aggressive hooking, we examine
+         * adjacent cells and copy their grand parents cluster ID if it is 
+         * lower than ours, essentially merging the two together.
          */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
@@ -172,9 +172,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
                 index_t q = gf[adjv[tst][k]];
 
                 if (gf[tid] > q) {
-                    // update grandparent of current cell
                     f[f[tid]] = q;
-                    // update parent of current cell, kind of shortcutting
                     f[tid] = q;
                 }
             }
@@ -192,7 +190,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
          * can merge without adjacency information.
          */
         for (index_t tid = threadIdx.x; tid < size; tid += blockDim.x) {
-            if (f[tid] > gf[tid]) { // TODO: why even bothering the branch?
+            if (f[tid] > gf[tid]) {
                 f[tid] = gf[tid];
             }
         }
@@ -225,7 +223,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
 
 /*
  * Implementation of a SV algorithm with the following steps:
- *   1) stochastic hooking to parent cell in new cluster
+ *   1) stochastic hooking
  *   2) aggressive hooking
  *   3) shortcutting
  *
