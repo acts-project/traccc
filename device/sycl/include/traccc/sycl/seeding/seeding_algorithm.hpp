@@ -43,7 +43,7 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     /// Operator executing the algorithm.
     ///
     /// @param spacepoints_view is a view of all spacepoints in the event
-    /// @return the track seeds reconstructed from the spacepoints
+    /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
     vecmem::data::vector_buffer<seed> operator()(
         const spacepoint_container_types::const_view& spacepoints_view)
@@ -51,8 +51,8 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
 
     /// Operator executing the algorithm.
     ///
-    /// @param spacepoints_buffer A buffer with all spacepoints in the event
-    /// @return The track seeds reconstructed from the spacepoints
+    /// @param spacepoints_buffer is a buffer of all spacepoints in the event
+    /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
     vecmem::data::vector_buffer<seed> operator()(
         const spacepoint_container_types::buffer& spacepoints_buffer)

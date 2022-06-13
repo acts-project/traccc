@@ -7,15 +7,12 @@
 
 // SYCL library include(s).
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
-
-// SYCL library include(s).
 #include "../utils/get_queue.hpp"
 
 // Project include(s).
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 
 // VecMem include(s).
-#include <iostream>
 #include <vecmem/utils/sycl/copy.hpp>
 
 namespace traccc::sycl {
@@ -26,7 +23,7 @@ class TrackParamsEstimation {
     TrackParamsEstimation(
         const spacepoint_container_types::const_view& spacepoints_view,
         const vecmem::data::vector_view<const seed>& seeds_view,
-        const vecmem::data::vector_view<bound_track_parameters>& params_view)
+        vecmem::data::vector_view<bound_track_parameters>& params_view)
         : m_spacepoints_view(spacepoints_view),
           m_seeds_view(seeds_view),
           m_params_view(params_view) {}

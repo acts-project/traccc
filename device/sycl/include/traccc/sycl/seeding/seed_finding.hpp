@@ -48,20 +48,20 @@ class seed_finding
 
     /// Callable operator for the seed finding
     ///
-    /// @param spacepoints_view is a view of all spacepoints in the event
-    /// @param g2_view          is a view of the spacepoint grid
-    /// @return                 seed_collection is the vector of seeds per
-    /// event
+    /// @param spacepoints_view     is a view of all spacepoints in the event
+    /// @param g2_view              is a view of the spacepoint grid
+    /// @return                     a vector buffer of seeds                    
+    ///
     vecmem::data::vector_buffer<seed> operator()(
         const spacepoint_container_types::const_view& spacepoints_view,
         const sp_grid_const_view& g2_view) const override;
 
     /// Callable operator for the seed finding
     ///
-    /// @param spacepoints_buffer   is a view of all spacepoints in the event
-    /// @param g2_buffer            is a view of the spacepoint grid
-    /// @return                     seed_collection is the vector of seeds per
-    /// event
+    /// @param spacepoints_buffer   is a buffer of all spacepoints in the event
+    /// @param g2_buffer            is a buffer of the spacepoint grid
+    /// @return                     a vector buffer of seeds                    
+    ///
     vecmem::data::vector_buffer<seed> operator()(
         const spacepoint_container_types::buffer& spacepoints_buffer,
         const sp_grid_buffer& g2_buffer) const override;
