@@ -67,7 +67,6 @@ void spacepoint_formation(
     auto n_measurements = measurements_prefix_sum_view.size();
     auto nSpaceptFormThreads = 64;
     auto nSpaceptFormBlocks = (n_measurements + nSpaceptFormThreads - 1) / nSpaceptFormThreads;
-    printf("N_measurements: %d, Threads: %d , Blocks:%d \n",n_measurements,nSpaceptFormThreads,nSpaceptFormBlocks);
     kernel::spacepoint_formation<<<nSpaceptFormBlocks,nSpaceptFormThreads>>>(
         spacepoints_view, measurements_view, measurements_prefix_sum_view
     );

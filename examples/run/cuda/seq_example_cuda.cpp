@@ -60,6 +60,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
+    uint64_t n_spacepoints_cuda =0;
 
     // Elapsed time
     float wall_time(0);
@@ -126,6 +127,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             end_spacepoints_cuda - start_spacepoints_cuda;
         /*time*/ clusterization_cuda += time_clusterization_cuda.count();
 
+        
         /*-----------------------------
               Clusterization (cpu)
           -----------------------------*/
@@ -152,9 +154,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
             end_sp_formation_cpu - start_sp_formation_cpu;
         /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
-
-
-        
 
         /*----------------------------
              Seeding algorithm
@@ -231,7 +230,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_cuda =
                 traccc::get_spacepoint_vector(seeds_cuda,
-                                              spacepoints_per_event);
+                                              spacepoints_per_event_cuda);
 
             for (const auto& sp3 : sp3_vector) {
                 if (std::find(sp3_vector_cuda.cbegin(), sp3_vector_cuda.cend(),
@@ -271,7 +270,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_spacepoints += spacepoints_per_event.total_size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
-
+        n_spacepoints_cuda += spacepoints_per_event_cuda.total_size();
         /*------------
              Writer
           ------------*/
@@ -311,11 +310,15 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (cuda) " << n_seeds_cuda << " seeds" << std::endl;
+    std::cout << "- created (cuda) " << n_spacepoints_cuda << " spacepoints" << std::endl;
+
     std::cout << "==> Elpased time ... " << std::endl;
     std::cout << "wall time           " << std::setw(10) << std::left
               << wall_time << std::endl;
     std::cout << "file reading (cpu)        " << std::setw(10) << std::left
               << file_reading_cpu << std::endl;
+    std::cout << "clusterization and spacepoint formation (cuda) " << std::left
+              << clusterization_cuda << std::endl;
     std::cout << "clusterization_time (cpu) " << std::setw(10) << std::left
               << clusterization_cpu << std::endl;
     std::cout << "spacepoint_formation_time (cpu) " << std::setw(10)
