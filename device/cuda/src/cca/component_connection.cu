@@ -139,8 +139,9 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
  * https://www.sciencedirect.com/science/article/pii/S0743731520302689
  *
  * f      = array holding the parent cell ID for the current iteration.
- * gf     = array holding grandparent cell ID from the previous iteration. 
-            This array only gets updated at the end of the iteration to prevent race conditions.
+ * gf     = array holding grandparent cell ID from the previous iteration.
+            This array only gets updated at the end of the iteration to prevent
+            race conditions.
  */
 __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
@@ -160,9 +161,10 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
 
         /*
          * The algorithm executes in a loop of three distinct parallel
-         * stages. In this first one, a mix of stochastic and aggressive hooking, we examine
-         * adjacent cells and copy their grand parents cluster ID if it is 
-         * lower than ours, essentially merging the two together.
+         * stages. In this first one, a mix of stochastic and aggressive
+         * hooking, we examine adjacent cells and copy their grand parents
+         * cluster ID if it is lower than ours, essentially merging the two
+         * together.
          */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
@@ -343,7 +345,7 @@ __device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
  * f_next = buffer array holding updated information for the next iteration.
  */
 __device__ void simplified_sv(index_t* f, index_t* f_next, unsigned char adjc[],
-                          index_t adjv[][8], unsigned int size) {
+                              index_t adjv[][8], unsigned int size) {
     /*
      * The algorithm finishes if an iteration leaves the array for the next
      * iteration unchanged.
@@ -361,16 +363,16 @@ __device__ void simplified_sv(index_t* f, index_t* f_next, unsigned char adjc[],
 
         /*
          * The algorithm executes in a loop of four distinct parallel
-         * stages. In this first one, tree hooking, we examine adjacent cells of cluster roots and copy their cluster ID if it
-         * is lower than our, essentially merging the two together.
+         * stages. In this first one, tree hooking, we examine adjacent cells of
+         * cluster roots and copy their cluster ID if it is lower than our,
+         * essentially merging the two together.
          */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
-            if (f[tid] == f[f[tid]]){ // only perform for roots of clusters
+            if (f[tid] == f[f[tid]]) {  // only perform for roots of clusters
                 for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                    index_t q = f[f[adjv[tst][k]]];
-                    if (q < f_next[f[tid]]) {
-                        // hook to grandparent of adjacent cell
+                    index_t q = f[adjv[tst][k]];
+                    if (q < f[tid]) {
                         f_next[f[tid]] = q;
                         f_changed = true;
                     }
@@ -382,7 +384,6 @@ __device__ void simplified_sv(index_t* f, index_t* f_next, unsigned char adjc[],
          * Synchronize before the next stage.
          */
         __syncthreads();
-
 
         /*
          * Update the array for the next stage of the iteration.
