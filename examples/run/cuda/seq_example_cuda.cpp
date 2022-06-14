@@ -14,11 +14,11 @@
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-#include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"

@@ -3,8 +3,6 @@
 #include "clusters_sum.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 
-
-
 namespace traccc::cuda {
 namespace kernels {
 __global__ void clusters_sum(
