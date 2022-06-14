@@ -18,10 +18,9 @@
 #include "spacepoint_formation.hpp"
 
 // Vecmem include(s).
-#include <vecmem/utils/copy.hpp>
 #include <algorithm>
-
 #include <iostream>
+#include <vecmem/utils/copy.hpp>
 namespace traccc::cuda {
 
 clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr)
@@ -71,20 +70,19 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     *total_clusters = 0;
     // Get the prefix sum of the cells
-    const device::prefix_sum_t cells_prefix_sum = 
-        device::get_prefix_sum(cell_sizes, m_mr.get()); 
-    traccc::cuda::clusters_sum(cells_view, sparse_ccl_indices,
-                               *total_clusters, cluster_prefix_sum,
-                               clusters_per_module);
-    
+    const device::prefix_sum_t cells_prefix_sum =
+        device::get_prefix_sum(cell_sizes, m_mr.get());
+    traccc::cuda::clusters_sum(cells_view, sparse_ccl_indices, *total_clusters,
+                               cluster_prefix_sum, clusters_per_module);
+
     // Vector of the exact cluster sizes, will be filled in cluster counting
     vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
         *total_clusters, m_mr.get());
     copy.setup(cluster_sizes_buffer);
 
     traccc::cuda::cluster_counting(sparse_ccl_indices, cluster_sizes_buffer,
-                        cluster_prefix_sum,
-                        vecmem::get_data(cells_prefix_sum));
+                                   cluster_prefix_sum,
+                                   vecmem::get_data(cells_prefix_sum));
 
     std::vector<unsigned int> cluster_sizes;
     copy(cluster_sizes_buffer, cluster_sizes);
@@ -100,8 +98,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(clusters_buffer.items);
 
     // Component connection kernel
-    traccc::cuda::component_connection(clusters_buffer, cells_view, sparse_ccl_indices, cluster_prefix_sum,
-        vecmem::get_data(cells_prefix_sum));
+    traccc::cuda::component_connection(clusters_buffer, cells_view,
+                                       sparse_ccl_indices, cluster_prefix_sum,
+                                       vecmem::get_data(cells_prefix_sum));
 
     // Copy the sizes of clusters per each module to the std vector for
     // measurement buffer initialization
@@ -117,8 +116,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(measurements_buffer.items);
     // Measurement creation kernel
     traccc::cuda::measurement_creation(measurements_buffer, clusters_buffer,
-                                        cells_view);
-    
+                                       cells_view);
+
     // Spacepoint container buffer to fill in spacepoint formation
     spacepoint_container_types::buffer spacepoints_buffer{
         {num_modules, m_mr.get()},
@@ -135,12 +134,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         spacepoints_buffer, measurements_buffer,
         vecmem::get_data(measurements_prefix_sum));
 
-    spacepoint_container_types::host  spacepoints_cuda(num_modules,
-        &m_mr.get());
-    copy(spacepoints_buffer.headers,
-            spacepoints_cuda.get_headers());
-    copy(spacepoints_buffer.items,
-            spacepoints_cuda.get_items());
+    spacepoint_container_types::host spacepoints_cuda(num_modules, &m_mr.get());
+    copy(spacepoints_buffer.headers, spacepoints_cuda.get_headers());
+    copy(spacepoints_buffer.items, spacepoints_cuda.get_items());
     return spacepoints_cuda;
 }
 

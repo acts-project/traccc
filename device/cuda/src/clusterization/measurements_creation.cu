@@ -11,18 +11,16 @@
 
 namespace traccc::cuda {
 
-namespace kernel{
-__global__ void measurement_creation(cluster_container_types::const_view clusters_view,
-                        measurement_container_types::view measurements_view,
-                        const cell_container_types::const_view cells_view)
-{
+namespace kernel {
+__global__ void measurement_creation(
+    cluster_container_types::const_view clusters_view,
+    measurement_container_types::view measurements_view,
+    const cell_container_types::const_view cells_view) {
     auto idx = threadIdx.x + blockIdx.x * blockDim.x;
 
     // Initialize device vectors
-    const cluster_container_types::const_device clusters_device(
-        clusters_view);
-    measurement_container_types::device measurements_device(
-        measurements_view);
+    const cluster_container_types::const_device clusters_device(clusters_view);
+    measurement_container_types::device measurements_device(measurements_view);
     cell_container_types::const_device cells_device(cells_view);
 
     // Ignore if idx is out of range
@@ -40,21 +38,22 @@ __global__ void measurement_creation(cluster_container_types::const_view cluster
     assert(cluster.empty() == false);
 
     // Fill measurement from cluster
-    detail::fill_measurement(measurements_device, cluster,
-                                module, module_link, idx);
+    detail::fill_measurement(measurements_device, cluster, module, module_link,
+                             idx);
 }
-}
+}  // namespace kernel
 void measurement_creation(measurement_container_types::view measurements_view,
                           cluster_container_types::const_view clusters_view,
-                          const cell_container_types::const_view& cells_view)
-{
+                          const cell_container_types::const_view& cells_view) {
 
     auto n_clusters = clusters_view.headers.size();
     auto nMeasurementCreationThreads = 64;
-    auto nMeasurementCreationBlocks = (n_clusters + nMeasurementCreationThreads - 1)
-                                        / nMeasurementCreationThreads;                               
-    kernel::measurement_creation<<<nMeasurementCreationBlocks,nMeasurementCreationThreads>>>(
-        clusters_view,measurements_view,cells_view);
+    auto nMeasurementCreationBlocks =
+        (n_clusters + nMeasurementCreationThreads - 1) /
+        nMeasurementCreationThreads;
+    kernel::measurement_creation<<<nMeasurementCreationBlocks,
+                                   nMeasurementCreationThreads>>>(
+        clusters_view, measurements_view, cells_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 }

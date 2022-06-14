@@ -5,27 +5,25 @@
  * Mozilla Public License Version 2.0
  */
 
-
 // Spacepoint formation include(s).
 #include "spacepoint_formation.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 
-
 namespace traccc::cuda {
-namespace kernel{
-__global__ void spacepoint_formation(spacepoint_container_types::view spacepoints_view,
+namespace kernel {
+__global__ void spacepoint_formation(
+    spacepoint_container_types::view spacepoints_view,
     measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
-        measurements_prefix_sum_view){
-    
+        measurements_prefix_sum_view) {
+
     // Get the global idx
     auto idx = threadIdx.x + blockIdx.x * blockDim.x;
 
     // Initialize device containers
-    measurement_container_types::const_device
-        measurements_device(measurements_view);
-    spacepoint_container_types::device spacepoints_device(
-        spacepoints_view);
+    measurement_container_types::const_device measurements_device(
+        measurements_view);
+    spacepoint_container_types::device spacepoints_device(spacepoints_view);
     vecmem::device_vector<const device::prefix_sum_element_t>
         measurements_prefix_sum(measurements_prefix_sum_view);
 
@@ -35,12 +33,10 @@ __global__ void spacepoint_formation(spacepoint_container_types::view spacepoint
 
     // Get the indices from the prefix sum vector
     const auto module_idx = measurements_prefix_sum[idx].first;
-    const auto measurement_idx =
-        measurements_prefix_sum[idx].second;
+    const auto measurement_idx = measurements_prefix_sum[idx].second;
 
     // Get the measurement for this idx
-    const auto& m = measurements_device[module_idx].items.at(
-        measurement_idx);
+    const auto& m = measurements_device[module_idx].items.at(measurement_idx);
 
     // Get the current cell module
     const auto& module = measurements_device[module_idx].header;
@@ -54,9 +50,8 @@ __global__ void spacepoint_formation(spacepoint_container_types::view spacepoint
     // module idx
     spacepoints_device[module_idx].header = module.module;
     spacepoints_device[module_idx].items.push_back(s);
-
 }
-}// namespace kernel
+}  // namespace kernel
 
 void spacepoint_formation(
     spacepoint_container_types::view spacepoints_view,
@@ -66,10 +61,10 @@ void spacepoint_formation(
 
     auto n_measurements = measurements_prefix_sum_view.size();
     auto nSpaceptFormThreads = 64;
-    auto nSpaceptFormBlocks = (n_measurements + nSpaceptFormThreads - 1) / nSpaceptFormThreads;
-    kernel::spacepoint_formation<<<nSpaceptFormBlocks,nSpaceptFormThreads>>>(
-        spacepoints_view, measurements_view, measurements_prefix_sum_view
-    );
+    auto nSpaceptFormBlocks =
+        (n_measurements + nSpaceptFormThreads - 1) / nSpaceptFormThreads;
+    kernel::spacepoint_formation<<<nSpaceptFormBlocks, nSpaceptFormThreads>>>(
+        spacepoints_view, measurements_view, measurements_prefix_sum_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 }

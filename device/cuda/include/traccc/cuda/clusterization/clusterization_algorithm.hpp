@@ -13,7 +13,6 @@
 
 #pragma once
 
-
 // Project include(s).
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"

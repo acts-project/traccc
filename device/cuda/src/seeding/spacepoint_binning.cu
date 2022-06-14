@@ -56,7 +56,6 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Helper object for the data management.
     vecmem::copy copy;
-
     // Get the data/view for the spacepoints.
     const spacepoint_container_types::const_data sp_data =
         traccc::get_data(spacepoints);
@@ -65,7 +64,6 @@ sp_grid_buffer spacepoint_binning::operator()(
     const device::prefix_sum_t sp_prefix_sum =
         device::get_prefix_sum(sp_data.items, m_mr.get(), copy);
     auto sp_prefix_sum_view = vecmem::get_data(sp_prefix_sum);
-
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;

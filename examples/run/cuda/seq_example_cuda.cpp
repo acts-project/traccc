@@ -60,7 +60,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
-    uint64_t n_spacepoints_cuda =0;
+    uint64_t n_spacepoints_cuda = 0;
 
     // Elapsed time
     float wall_time(0);
@@ -84,7 +84,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
     traccc::cuda::track_params_estimation tp_cuda(mng_mr);
-    traccc::cuda::clusterization_algorithm ca_cuda(mng_mr); 
+    traccc::cuda::clusterization_algorithm ca_cuda(mng_mr);
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
@@ -100,14 +100,15 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
         // Read the cells from the relevant event file
-/*         traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(
-                event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, host_mr); */
+        /*         traccc::cell_container_types::host cells_per_event =
+                    traccc::read_cells_from_event(
+                        event, i_cfg.cell_directory,
+           common_opts.input_data_format, surface_transforms, digi_cfg,
+           host_mr); */
         traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(
-                event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, mng_mr);
+            traccc::read_cells_from_event(event, i_cfg.cell_directory,
+                                          common_opts.input_data_format,
+                                          surface_transforms, digi_cfg, mng_mr);
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
             end_file_reading_cpu - start_file_reading_cpu;
@@ -117,8 +118,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
              Clusterization and Spacepoint formation algorithm (cuda)
           ----------------------------*/
 
-        /*time*/ auto start_spacepoints_cuda =
-            std::chrono::system_clock::now();
+        /*time*/ auto start_spacepoints_cuda = std::chrono::system_clock::now();
 
         auto spacepoints_per_event_cuda = ca_cuda(cells_per_event);
 
@@ -127,7 +127,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             end_spacepoints_cuda - start_spacepoints_cuda;
         /*time*/ clusterization_cuda += time_clusterization_cuda.count();
 
-        
         /*-----------------------------
               Clusterization (cpu)
           -----------------------------*/
@@ -194,8 +193,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_cuda =
             std::chrono::system_clock::now();
 
-        auto params_cuda =
-            tp_cuda(std::move(spacepoints_per_event_cuda), std::move(seeds_cuda));
+        auto params_cuda = tp_cuda(std::move(spacepoints_per_event_cuda),
+                                   std::move(seeds_cuda));
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
@@ -310,7 +309,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (cuda) " << n_seeds_cuda << " seeds" << std::endl;
-    std::cout << "- created (cuda) " << n_spacepoints_cuda << " spacepoints" << std::endl;
+    std::cout << "- created (cuda) " << n_spacepoints_cuda << " spacepoints"
+              << std::endl;
 
     std::cout << "==> Elpased time ... " << std::endl;
     std::cout << "wall time           " << std::setw(10) << std::left

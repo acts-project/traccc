@@ -23,6 +23,7 @@ void cluster_counting(
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<unsigned int> cluster_sizes_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
-    vecmem::data::vector_view<const device::prefix_sum_element_t> cells_prefix_sum_view);
+    vecmem::data::vector_view<const device::prefix_sum_element_t>
+        cells_prefix_sum_view);
 
 }  // namespace traccc::cuda
