@@ -61,18 +61,6 @@ __global__ void cluster_counting(
     }
 }
 
-__global__ void set_zero(
-    vecmem::data::vector_view<unsigned int> cluster_sizes_view) {
-
-    std::size_t idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    vecmem::device_vector<unsigned int> device_cluster_sizes(
-        cluster_sizes_view);
-
-    if (idx >= device_cluster_sizes.size())
-        return;
-    device_cluster_sizes[idx] = 0;
-}
 }  // namespace kernels
 void cluster_counting(
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
@@ -85,11 +73,6 @@ void cluster_counting(
     auto nClusterCountingBlocks =
         (n_cells + nClusterCountingThreads - 1) / nClusterCountingThreads;
 
-    kernels::set_zero<<<nClusterCountingBlocks, nClusterCountingThreads>>>(
-        cluster_sizes_view);
-
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     kernels::
         cluster_counting<<<nClusterCountingBlocks, nClusterCountingThreads>>>(
             sparse_ccl_indices_view, cluster_sizes_view,

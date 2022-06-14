@@ -19,8 +19,8 @@
 
 // Vecmem include(s).
 #include <algorithm>
-#include <iostream>
 #include <vecmem/utils/copy.hpp>
+
 namespace traccc::cuda {
 
 clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource &mr)
@@ -79,7 +79,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
         *total_clusters, m_mr.get());
     copy.setup(cluster_sizes_buffer);
-
+    copy.memset(cluster_sizes_buffer, 0);
     traccc::cuda::cluster_counting(sparse_ccl_indices, cluster_sizes_buffer,
                                    cluster_prefix_sum,
                                    vecmem::get_data(cells_prefix_sum));
