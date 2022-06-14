@@ -130,10 +130,18 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
 }
 
 /*
- * Implementation of a simplified SV algorithm.
+ * Implementation of a FastSV algorithm with the following steps:
+ *   1) mix of stochastic and aggressive hooking
+ *   2) shortcutting
  *
- * The implementation corresponds to Algorithm 1 of the following paper:
- * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
+ * The implementation corresponds to an adapted versiion of Algorithm 3 of
+ * the following paper:
+ * https://www.sciencedirect.com/science/article/pii/S0743731520302689
+ *
+ * f      = array holding the parent cell ID for the current iteration.
+ * gf     = array holding grandparent cell ID from the previous iteration.
+            This array only gets updated at the end of the iteration to prevent
+            race conditions.
  */
 __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
@@ -142,20 +150,21 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
      * This varible will be set if a change is made, and dictates if another
      * loop is necessary.
      */
-    bool gfc;
+    bool gf_changed;
 
     do {
         /*
          * Reset the end-parameter to false, so we can set it to true if we
-         * make a change to our arrays.
+         * make a change to the gf array.
          */
-        gfc = false;
+        gf_changed = false;
 
         /*
          * The algorithm executes in a loop of three distinct parallel
-         * stages. In this first one, we examine adjacent cells and copy
-         * their cluster ID if it is lower than our, essentially merging
-         * the two together.
+         * stages. In this first one, a mix of stochastic and aggressive
+         * hooking, we examine adjacent cells and copy their grand parents
+         * cluster ID if it is lower than ours, essentially merging the two
+         * together.
          */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
@@ -200,7 +209,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
         for (index_t tid = threadIdx.x; tid < size; tid += blockDim.x) {
             if (gf[tid] != f[f[tid]]) {
                 gf[tid] = f[f[tid]];
-                gfc = true;
+                gf_changed = true;
             }
         }
 
@@ -211,65 +220,218 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[],
          * will return a true value and go to the next iteration. Only if
          * all threads return false will the loop exit.
          */
-    } while (__syncthreads_or(gfc));
+    } while (__syncthreads_or(gf_changed));
 }
 
 /*
- * Implementation of the FastSV algorithm.
+ * Implementation of a FastSV algorithm with the following steps:
+ *   1) stochastic hooking
+ *   2) aggressive hooking
+ *   3) shortcutting
  *
  * The implementation corresponds to Algorithm 2 of the following paper:
  * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
+ *
+ * f      = array holding the parent cell ID for the current iteration.
+ * f_next = buffer array holding updated information for the next iteration.
  */
-__device__ void fast_sv_2(index_t* f, index_t* gf, unsigned char adjc[],
+__device__ void fast_sv_2(index_t* f, index_t* f_next, unsigned char adjc[],
                           index_t adjv[][8], unsigned int size) {
-    bool gfc;
+    /*
+     * The algorithm finishes if an iteration leaves the array for the next
+     * iteration unchanged.
+     * This varible will be set if a change is made, and dictates if another
+     * loop is necessary.
+     */
+    bool f_next_changed;
 
     do {
-        gfc = false;
+        /*
+         * Reset the end-parameter to false, so we can set it to true if we
+         * make a change to the f_next array.
+         */
+        f_next_changed = false;
 
+        /*
+         * The algorithm executes in a loop of four distinct parallel
+         * stages. In this first one, stochastic hooking, we examine the
+         * grandparents of adjacent cells and copy cluster ID if it
+         * is lower than our, essentially merging the two together.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t j = adjv[tst][k];
+                index_t q = f[f[adjv[tst][k]]];
 
-                if (f[f[j]] < gf[f[tid]]) {
-                    gf[f[tid]] = f[f[j]];
-                    gfc = true;
+                if (q < f_next[f[tid]]) {
+                    // hook to grandparent of adjacent cell
+                    f_next[f[tid]] = q;
+                    f_next_changed = true;
                 }
             }
         }
 
+        /*
+         * Synchronize before the next stage.
+         */
         __syncthreads();
 
+        /*
+         * The second stage performs aggressive hooking, during which each
+         * cell might be hooked to the grand parent of an adjacent cell.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t j = adjv[tst][k];
+                index_t q = f[f[adjv[tst][k]]];
 
-                if (f[f[j]] < gf[tid]) {
-                    gf[tid] = f[f[j]];
-                    gfc = true;
+                if (q < f_next[tid]) {
+                    f_next[tid] = q;
+                    f_next_changed = true;
                 }
             }
         }
 
+        /*
+         * Synchronize before the next stage.
+         */
         __syncthreads();
 
+        /*
+         * The third stage is shortcutting, which is an optimisation that
+         * allows us to look at any shortcuts in the cluster IDs that we
+         * can merge without adjacency information.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
-            if (f[f[tid]] < gf[tid]) {
-                gf[tid] = f[f[tid]];
-                gfc = true;
+            if (f[f[tid]] < f_next[tid]) {
+                f_next[tid] = f[f[tid]];
+                f_next_changed = true;
             }
         }
 
+        /*
+         * Synchronize before the final stage.
+         */
         __syncthreads();
 
+        /*
+         * Update the array for the next generation.
+         */
         for (index_t tst = 0, tid;
              (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
-            f[tid] = gf[tid];
+            f[tid] = f_next[tid];
         }
-    } while (__syncthreads_or(gfc));
+
+        /*
+         * To determine whether we need another iteration, we use block
+         * voting mechanics. Each thread checks if it has made any changes
+         * to the arrays, and votes. If any thread votes true, all threads
+         * will return a true value and go to the next iteration. Only if
+         * all threads return false will the loop exit.
+         */
+    } while (__syncthreads_or(f_next_changed));
+}
+
+/*
+ * Implementation of a simplified SV algorithm with the following steps:
+ *   1) tree hooking
+ *   2) shortcutting
+ *
+ * The implementation corresponds to Algorithm 1 of the following paper:
+ * https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.5
+ *
+ * f      = array holding the parent cell ID for the current iteration.
+ * f_next = buffer array holding updated information for the next iteration.
+ */
+__device__ void simplified_sv(index_t* f, index_t* f_next, unsigned char adjc[],
+                              index_t adjv[][8], unsigned int size) {
+    /*
+     * The algorithm finishes if an iteration leaves the array for the next
+     * iteration unchanged.
+     * This varible will be set if a change is made, and dictates if another
+     * loop is necessary.
+     */
+    bool f_changed;
+
+    do {
+        /*
+         * Reset the end-parameter to false, so we can set it to true if we
+         * make a change to the f_next array.
+         */
+        f_changed = false;
+
+        /*
+         * The algorithm executes in a loop of four distinct parallel
+         * stages. In this first one, tree hooking, we examine adjacent cells of
+         * cluster roots and copy their cluster ID if it is lower than our,
+         * essentially merging the two together.
+         */
+        for (index_t tst = 0, tid;
+             (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
+            if (f[tid] == f[f[tid]]) {  // only perform for roots of clusters
+                for (unsigned char k = 0; k < adjc[tst]; ++k) {
+                    index_t q = f[adjv[tst][k]];
+                    if (q < f[tid]) {
+                        f_next[f[tid]] = q;
+                        f_changed = true;
+                    }
+                }
+            }
+        }
+
+        /*
+         * Synchronize before the next stage.
+         */
+        __syncthreads();
+
+        /*
+         * Update the array for the next stage of the iteration.
+         */
+        for (index_t tst = 0, tid;
+             (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
+            f[tid] = f_next[tid];
+        }
+
+        /*
+         * Synchronize before the next stage.
+         */
+        __syncthreads();
+
+        /*
+         * The third stage is shortcutting, which is an optimisation that
+         * allows us to look at any shortcuts in the cluster IDs that we
+         * can merge without adjacency information.
+         */
+        for (index_t tst = 0, tid;
+             (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
+            if (f[f[tid]] < f[tid]) {
+                f_next[tid] = f[f[tid]];
+                f_changed = true;
+            }
+        }
+
+        /*
+         * Synchronize before the final stage.
+         */
+        __syncthreads();
+
+        /*
+         * Update the array for the next generation.
+         */
+        for (index_t tst = 0, tid;
+             (tid = tst * blockDim.x + threadIdx.x) < size; ++tst) {
+            f[tid] = f_next[tid];
+        }
+
+        /*
+         * To determine whether we need another iteration, we use block
+         * voting mechanics. Each thread checks if it has made any changes
+         * to the arrays, and votes. If any thread votes true, all threads
+         * will return a true value and go to the next iteration. Only if
+         * all threads return false will the loop exit.
+         */
+    } while (__syncthreads_or(f_changed));
 }
 
 __device__ void aggregate_clusters(const cell_container& cells,
@@ -354,7 +516,7 @@ __device__ void aggregate_clusters(const cell_container& cells,
     }
 }
 
-__global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
+__global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     const cell_container container, const ccl_partition* partitions,
     measurement_container& _out_ctnr) {
     const ccl_partition& partition = partitions[blockIdx.x];
@@ -388,6 +550,9 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      * hit the thread is processing. This number is never larger than
      * the max number of activations per module divided by the threads per
      * block.
+     *
+     * adjc = adjecency count
+     * adjv = adjecency vector
      */
     index_t adjv[MAX_CELLS_PER_PARTITION / THREADS_PER_BLOCK][8];
     unsigned char adjc[MAX_CELLS_PER_PARTITION / THREADS_PER_BLOCK];
@@ -424,16 +589,17 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      * memory is limited. These could always be moved to global memory, but
      * the algorithm would be decidedly slower in that case.
      */
-    __shared__ index_t f[MAX_CELLS_PER_PARTITION], gf[MAX_CELLS_PER_PARTITION];
+    __shared__ index_t f[MAX_CELLS_PER_PARTITION],
+        f_next[MAX_CELLS_PER_PARTITION];
 
     for (index_t tst = 0, tid;
          (tid = tst * blockDim.x + threadIdx.x) < cells.size; ++tst) {
         /*
-         * At the start, the values of f and gf should be equal to the ID of
-         * the cell.
+         * At the start, the values of f and f_next should be equal to the
+         * ID of the cell.
          */
         f[tid] = tid;
-        gf[tid] = tid;
+        f_next[tid] = tid;
     }
 
     /*
@@ -442,7 +608,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
      */
     __syncthreads();
 
-    fast_sv_1(f, gf, adjc, adjv, cells.size);
+    fast_sv_1(f, f_next, adjc, adjv, cells.size);
 
     /*
      * This variable will be used to write to the output later.
@@ -459,7 +625,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void sparse_ccl_kernel(
     __syncthreads();
 
     /*
-     * Count the number of clusters by checking how many nodes have
+     * Count the number of clusters by checking how many cells have
      * themself assigned as a parent.
      */
     for (index_t tst = 0, tid;
@@ -533,11 +699,11 @@ vecmem::vector<details::ccl_partition> partition(
         }
 
         /*
-         * If a cell module has many activations and therefore no empty rows,
-         * it is possible that partitions reach a considerable size. To prevent
-         * very big partitions, we check at the end of each module if the
-         * current partition is not above a threshold, and end the current
-         * partition if necessary here.
+         * If a cell module has many activations and therefore no empty
+         * rows, it is possible that partitions reach a considerable
+         * size. To prevent very big partitions, we check at the end of each
+         * module if the current partition is not above a threshold, and end the
+         * current partition if necessary here.
          */
         if (size >= 2 * THREADS_PER_BLOCK) {
             partitions.push_back(
@@ -646,7 +812,7 @@ component_connection::output_type component_connection::operator()(
      *
      * This step includes the measurement (hit) creation for each cluster.
      */
-    sparse_ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
+    ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
         container, partitions.data(), *mctnr);
 
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
