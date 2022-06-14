@@ -71,21 +71,54 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Get the sizes of the cells in each module
     auto cell_sizes = m_copy->get_sizes(cells_data.items);
 
-    // Get the cell sizes with +1 in each entry for sparse ccl indices buffer
-    // The +1 is needed to store the number of found clusters at the end of
-    // the vector in each module
+    /*
+     * Get the cell sizes with +1 in each entry for sparse ccl indices buffer
+     * The +1 is needed to store the number of found clusters at the end of
+     * the vector in each module
+     */
     std::vector<std::size_t> cell_sizes_plus(num_modules);
     std::transform(cell_sizes.begin(), cell_sizes.end(),
                    cell_sizes_plus.begin(),
                    [](std::size_t x) { return x + 1; });
 
-    // Helper container for sparse CCL calculations
+    /*
+     * Helper container for sparse CCL calculations.
+     * Each inner vector corresponds to 1 module.
+     * The indices in a particular inner vector will be filled by sparse ccl
+     * and will tell you to which cluster each cell in the module belongs to.
+     */
     vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices_buff(
         cell_sizes_plus, m_mr.main, m_mr.host);
     m_copy->setup(sparse_ccl_indices_buff);
 
-    // Vector with numbers of found clusters in each module, later transformed
-    // into prefix sum vector
+    /*
+     * Vector buffer with numbers of found clusters in each module, later
+     * transformed into prefix sum vector. The logic is the following After
+     * cluster_finding_kernel, the buffer will contain cluster sizes e.i.
+     *
+     * cluster sizes: | 1 | 12 | 5 | 102 | 42 | ... - cl_per_module_prefix_buff
+     * module index:  | 0 |  1 | 2 |  3  |  4 | ...
+     *
+     * Now, we copy those cluster sizes to the host and make a duplicate vector
+     * of them So, we are left with cl_per_module_prefix_host, and
+     * clusters_per_module_host - which are the same. Now, we procede to
+     * modifying the cl_per_module_prefix_host to actually resemble its name
+     * i.e.
+     *
+     * We do std::exclusive_scan on it, which will result in a prefix sum
+     * vector, starting from 0:
+     *
+     * cluster prefix sum sizes: | 0 | 1 | 13 | 18 | 120 | ... -
+     * cl_per_module_prefix_buff
+     *
+     * Now, this will allow us to insert the clusters at correct positions in
+     * the clusters buffer. Note, that we don't get the total sum at the end
+     * with exclusive scan, since its exclusive... And as a result, the
+     * total_clusters number we will get by taking last entries from
+     * clusters_per_module_host - that's 42 and
+     * cl_per_module_prefix_buff (after scan) - that's 120, so in this example,
+     * total_clusters = 120 + 42 = 162
+     */
     vecmem::data::vector_buffer<std::size_t> cl_per_module_prefix_buff(
         num_modules, m_mr.main);
     m_copy->setup(cl_per_module_prefix_buff);
@@ -125,8 +158,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     cluster_finding_kernel.wait_and_throw();
 
     // Copy the sizes of clusters per each module to the host
-    // and create a copy of this "clusters per module" vector for other
-    // operations in the future
+    // and create a copy of "clusters per module" vector
     vecmem::vector<std::size_t> cl_per_module_prefix_host(
         m_mr.host ? m_mr.host : &(m_mr.main));
     (*m_copy)(cl_per_module_prefix_buff, cl_per_module_prefix_host,
@@ -134,15 +166,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     std::vector<std::size_t> clusters_per_module_host(
         cl_per_module_prefix_host.begin(), cl_per_module_prefix_host.end());
 
-    // Perform the exclusive scan operation. It will results with a vector of
-    // prefix sums, starting with 0, until the second to last sum. The total
-    // number of clusters in this case will be the last prefix sum + the
-    // clusters in the last idx
-    unsigned int total_clusters = cl_per_module_prefix_host.back();
+    // Perform the exclusive scan operation
     std::exclusive_scan(cl_per_module_prefix_host.begin(),
                         cl_per_module_prefix_host.end(),
                         cl_per_module_prefix_host.begin(), 0);
-    total_clusters += cl_per_module_prefix_host.back();
+
+    // Calculate the total clusters
+    unsigned int total_clusters =
+        clusters_per_module_host.back() + cl_per_module_prefix_host.back();
 
     // Copy the prefix sum back to its device container
     (*m_copy)(vecmem::get_data(cl_per_module_prefix_host),

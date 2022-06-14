@@ -222,8 +222,6 @@ class TripletFind {
         }
         // Calculate the number of triplets per "block" with reducing sum
         // technique
-        // Warp shuffle reduction algorithm
-        // sycl_helper::reduceInShared(num_triplets_per_thread, item);
         item.barrier();
 
         // SYCL group reduction algorithm - from dpcpp 2022
