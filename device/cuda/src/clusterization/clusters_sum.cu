@@ -1,15 +1,9 @@
 
-#include <assert.h>
 
 #include "clusters_sum.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 
-#define CudaAssert(X)                                              \
-    if (!(X)) {                                                    \
-        printf("Thread %d:%d failed assert at %s:%d!", blockIdx.x, \
-               threadIdx.x, __FILE__, __LINE__);                   \
-        return;                                                    \
-    }
+
 
 namespace traccc::cuda {
 namespace kernels {

@@ -53,8 +53,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/clusterization/spacepoint_formation.cu"
 )
 target_compile_options( traccc_cuda
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr
-  --generate-line-info> )
+  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
   PUBLIC traccc::core vecmem::core
   PRIVATE traccc::device_common vecmem::cuda )

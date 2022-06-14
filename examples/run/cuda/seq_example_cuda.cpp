@@ -18,8 +18,6 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-
-// new
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 
 // performance
@@ -100,11 +98,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
         // Read the cells from the relevant event file
-        /*         traccc::cell_container_types::host cells_per_event =
-                    traccc::read_cells_from_event(
-                        event, i_cfg.cell_directory,
-           common_opts.input_data_format, surface_transforms, digi_cfg,
-           host_mr); */
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           common_opts.input_data_format,
