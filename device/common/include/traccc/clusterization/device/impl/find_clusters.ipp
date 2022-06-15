@@ -28,14 +28,10 @@ void find_clusters(
     // Vectors used for cluster indices found by sparse CCL
     vecmem::jagged_device_vector<unsigned int> device_sparse_ccl_indices(
         sparse_ccl_indices_view);
-    auto cluster_indices = device_sparse_ccl_indices.at(globalIndex);
+    auto cluster_indices = device_sparse_ccl_indices[globalIndex];
 
     // Run the sparse CCL algorithm
     unsigned int n_clusters = detail::sparse_ccl(cells, cluster_indices);
-
-    // Save the number of clusters found in this module at
-    // the last, extra place in the indices vectors
-    cluster_indices.back() = n_clusters;
 
     // Fill the "number of clusters per
     // module" vector

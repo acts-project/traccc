@@ -39,15 +39,20 @@ void count_cluster_cells(
         sparse_ccl_indices_view);
     const auto& cluster_indices = device_sparse_ccl_indices[module_idx];
 
-    // Number of clusters that sparce_ccl found for this module
-    const unsigned int n_clusters = cluster_indices.back();
-
     // Get the cluster prefix sum at this module_idx to know
     // where to write current clusters in the
     // cluster container
     vecmem::device_vector<std::size_t> device_cluster_prefix_sum(
         cluster_prefix_sum_view);
-    const std::size_t prefix_sum = device_cluster_prefix_sum[module_idx];
+    const std::size_t prefix_sum =
+        (module_idx == 0 ? 0 : device_cluster_prefix_sum[module_idx - 1]);
+
+    // Calculate the number of clusters found for this module from the prefix
+    // sums
+    const unsigned int n_clusters =
+        (module_idx == 0 ? device_cluster_prefix_sum[module_idx]
+                         : device_cluster_prefix_sum[module_idx] -
+                               device_cluster_prefix_sum[module_idx - 1]);
 
     // Vector to fill in with the sizes of each cluster
     vecmem::device_vector<unsigned int> device_cluster_sizes(

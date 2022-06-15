@@ -23,7 +23,6 @@ void connect_components(
         cells_prefix_sum_view);
 
     if (globalIndex >= cells_prefix_sum.size())
-
         return;
 
     // Get the indices for the module idx and the cell idx
@@ -42,18 +41,23 @@ void connect_components(
         sparse_ccl_indices_view);
     const auto& cluster_indices = device_sparse_ccl_indices.at(module_idx);
 
-    // Number of clusters found for this module
-    const auto num_clusters = cluster_indices.back();
-
     // Get the cluster prefix sum for this module idx
     vecmem::device_vector<std::size_t> device_cluster_prefix_sum(
         cluster_prefix_sum_view);
-    const auto prefix_sum = device_cluster_prefix_sum[module_idx];
+    const std::size_t prefix_sum =
+        (module_idx == 0 ? 0 : device_cluster_prefix_sum[module_idx - 1]);
+
+    // Calculate the number of clusters found for this module from the prefix
+    // sums
+    const unsigned int n_clusters =
+        (module_idx == 0 ? device_cluster_prefix_sum[module_idx]
+                         : device_cluster_prefix_sum[module_idx] -
+                               device_cluster_prefix_sum[module_idx - 1]);
 
     // Push back the cells to the correct item vector indicated
     // by the cluster prefix sum
     unsigned int cindex = cluster_indices[cell_idx] - 1;
-    if (cindex < num_clusters) {
+    if (cindex < n_clusters) {
         // Push back the header and items
         clusters_device[prefix_sum + cindex].header = module_idx;
         clusters_device[prefix_sum + cindex].items.push_back(cells[cell_idx]);
