@@ -50,9 +50,8 @@ void count_cluster_cells(
     // Calculate the number of clusters found for this module from the prefix
     // sums
     const unsigned int n_clusters =
-        (module_idx == 0 ? device_cluster_prefix_sum[module_idx]
-                         : device_cluster_prefix_sum[module_idx] -
-                               device_cluster_prefix_sum[module_idx - 1]);
+        (module_idx == 0 ? device_cluster_prefix_sum[0]
+                         : device_cluster_prefix_sum[module_idx] - prefix_sum);
 
     // Vector to fill in with the sizes of each cluster
     vecmem::device_vector<unsigned int> device_cluster_sizes(

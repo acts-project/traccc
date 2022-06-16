@@ -75,7 +75,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
      * Helper container for sparse CCL calculations.
      * Each inner vector corresponds to 1 module.
      * The indices in a particular inner vector will be filled by sparse ccl
-     * and will tell you to which cluster each cell in the module belongs to.
+     * and will indicate to which cluster, a particular cell in the module
+     * belongs to.
      */
     vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices_buff(
         std::vector<std::size_t>(cell_sizes.begin(), cell_sizes.end()),
@@ -83,27 +84,32 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(sparse_ccl_indices_buff);
 
     /*
-     * Vector buffer with numbers of found clusters in each module, later
-     * transformed into prefix sum vector. The logic is the following After
+     * cl_per_module_prefix_buff is a vector buffer with numbers of found
+     * clusters in each module. Later it will be transformed into prefix sum
+     * vector (hence the name). The logic is the following. After
      * cluster_finding_kernel, the buffer will contain cluster sizes e.i.
      *
      * cluster sizes: | 1 | 12 | 5 | 102 | 42 | ... - cl_per_module_prefix_buff
      * module index:  | 0 |  1 | 2 |  3  |  4 | ...
      *
      * Now, we copy those cluster sizes to the host and make a duplicate vector
-     * of them So, we are left with cl_per_module_prefix_host, and
+     * of them. So, we are left with cl_per_module_prefix_host, and
      * clusters_per_module_host - which are the same. Now, we procede to
      * modifying the cl_per_module_prefix_host to actually resemble its name
      * i.e.
      *
-     * We do std::exclusive_scan on it, which will result in a prefix sum
-     * vector, starting from 0:
+     * We do std::inclusive_scan on it, which will result in a prefix sum
+     * vector:
      *
-     * cluster prefix sum sizes: | 1 | 13 | 18 | 120 | 162 | ... -
-     * cl_per_module_prefix_buff
+     * cl_per_module_prefix_host: | 1 | 13 | 18 | 120 | 162 | ...
      *
-     * Now, this will allow us to insert the clusters at correct positions in
-     * the clusters buffer.
+     * Then, we copy this vector into the previous cl_per_module_prefix_buff.
+     * In this way, we don't need to allocate the memory on the device twice.
+     *
+     * Now, the monotonic prefix sum buffer - cl_per_module_prefix_buff, will
+     * allow us to insert the clusters at the correct position inside the
+     * kernel. The remaining host vector - clusters_per_module_host, will be
+     * needed to allocate memory for other buffers later in the code.
      */
     vecmem::data::vector_buffer<std::size_t> cl_per_module_prefix_buff(
         num_modules, m_mr.main);
@@ -143,7 +149,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Wait here for the cluster_finding kernel to finish
     cluster_finding_kernel.wait_and_throw();
 
-    // Copy the sizes of clusters per each module to the host
+    // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
     vecmem::vector<std::size_t> cl_per_module_prefix_host(
         m_mr.host ? m_mr.host : &(m_mr.main));
@@ -235,7 +241,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(measurements_buffer.headers);
     m_copy->setup(measurements_buffer.items);
 
-    // Spacepoint container buffer to fill in spacepoint formation
+    // Spacepoint container buffer to fill inside the spacepoint formation
+    // kernel
     spacepoint_container_types::buffer spacepoints_buffer{
         {num_modules, m_mr.main},
         {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,

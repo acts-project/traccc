@@ -58,7 +58,6 @@ void connect_components(
     // by the cluster prefix sum
     unsigned int cindex = cluster_indices[cell_idx] - 1;
     if (cindex < n_clusters) {
-        // Push back the header and items
         clusters_device[prefix_sum + cindex].header = module_idx;
         clusters_device[prefix_sum + cindex].items.push_back(cells[cell_idx]);
     }
