@@ -44,16 +44,7 @@ class seeding_performance_writer {
     seeding_performance_writer(config cfg)
         : m_cfg(std::move(cfg)),
           m_eff_plot_tool(m_cfg.eff_plot_tool_config),
-          m_duplication_plot_tool(m_cfg.duplication_plot_tool_config) {
-
-        auto path = m_cfg.file_path;
-
-        m_output_file = TFile::Open(path.c_str(), m_cfg.file_mode.c_str());
-
-        if (not m_output_file) {
-            throw std::invalid_argument("Could not open '" + path + "'");
-        }
-    };
+          m_duplication_plot_tool(m_cfg.duplication_plot_tool_config){};
 
     ~seeding_performance_writer() {
 
@@ -67,6 +58,16 @@ class seeding_performance_writer {
 
         if (m_output_file) {
             m_output_file->Close();
+        }
+    }
+
+    void init() {
+        auto path = m_cfg.file_path;
+
+        m_output_file = TFile::Open(path.c_str(), m_cfg.file_mode.c_str());
+
+        if (not m_output_file) {
+            throw std::invalid_argument("Could not open '" + path + "'");
         }
     }
 

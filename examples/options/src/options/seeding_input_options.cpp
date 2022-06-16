@@ -13,16 +13,12 @@ traccc::seeding_input_config::seeding_input_config(
 
     desc.add_options()("detector_file", po::value<std::string>()->required(),
                        "specify detector file");
-    desc.add_options()("hit_directory", po::value<std::string>()->required(),
-                       "specify the directory of hit files");
-    desc.add_options()(
-        "particle_directory", po::value<std::string>()->default_value(""),
-        "specify the directory of particle files used for performance writer");
+    desc.add_options()("check-performance",
+                       po::value<bool>()->default_value(false),
+                       "generate performance result");
 }
 
 void traccc::seeding_input_config::read(const po::variables_map& vm) {
     detector_file = vm["detector_file"].as<std::string>();
-    hit_directory = vm["hit_directory"].as<std::string>();
-    particle_directory = vm["particle_directory"].as<std::string>();
-    check_seeding_performance = (!particle_directory.empty());
+    check_performance = vm["check-performance"].as<bool>();
 }

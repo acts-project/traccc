@@ -12,6 +12,8 @@ traccc::common_options::common_options(po::options_description& desc) {
 
     desc.add_options()("input-csv", "Use csv input file");
     desc.add_options()("input-binary", "Use binary input file");
+    desc.add_options()("input_directory", po::value<std::string>()->required(),
+                       "specify the directory of input data");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
     desc.add_options()("skip", po::value<int>()->default_value(0),
@@ -25,6 +27,7 @@ void traccc::common_options::read(const po::variables_map& vm) {
     } else if (vm.count("input-binary")) {
         input_data_format = traccc::data_format::binary;
     }
+    input_directory = vm["input_directory"].as<std::string>();
     events = vm["events"].as<unsigned int>();
     skip = vm["skip"].as<int>();
 }
