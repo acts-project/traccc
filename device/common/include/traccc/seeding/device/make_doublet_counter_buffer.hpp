@@ -24,7 +24,7 @@ namespace traccc::device {
 /// This is a helper function to use for setting up the buffer that
 /// @c traccc::device::count_doublets would be able to fill.
 ///
-/// @param spacepoint_grid The spacepoint grid that seed-finding is using
+/// @param grid_sizes vector of grid sizes
 /// @param copy The object to use for accessing @c spacepoint_grid
 /// @param mr The memory resource for the buffer
 /// @param mr_host The (optional) host-accessible memory resource for the
@@ -32,7 +32,7 @@ namespace traccc::device {
 /// @return A buffer usable by @c traccc::device::count_doublets
 ///
 doublet_counter_container_types::buffer make_doublet_counter_buffer(
-    const sp_grid_const_view& spacepoint_grid, vecmem::copy& copy,
+    const std::vector<unsigned int>& grid_sizes, vecmem::copy& copy,
     vecmem::memory_resource& mr, vecmem::memory_resource* mr_host = nullptr);
 
 }  // namespace traccc::device

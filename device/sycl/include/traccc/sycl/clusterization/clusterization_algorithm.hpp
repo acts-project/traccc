@@ -16,13 +16,13 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// traccc library include(s).
-#include "traccc/utils/memory_resource.hpp"
+// System include(s).
+#include <memory>
 
 namespace traccc::sycl {
 
@@ -34,7 +34,8 @@ class clusterization_algorithm
     /// Constructor for clusterization algorithm
     ///
     /// @param mr is a struct of memory resources (shared or host & device)
-    /// @param queue is the sycl queue for kernel invocation
+    /// @param queue is a wrapper for the for the sycl queue for kernel
+    /// invocation
     clusterization_algorithm(const traccc::memory_resource& mr,
                              queue_wrapper queue);
 
