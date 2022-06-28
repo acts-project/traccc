@@ -202,10 +202,15 @@ class SeedSelect {
                     const auto& spB2 = spacepoints_device.at(ispB2.m_link);
                     const auto& spT2 = spacepoints_device.at(ispT2.m_link);
 
-                    seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
-                    seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
-                    seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
-                    seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
+                    constexpr scalar exp = 2;
+                    seed1_sum +=
+                        ::sycl::pow(spB1.y(), exp) + ::sycl::pow(spB1.z(), exp);
+                    seed1_sum +=
+                        ::sycl::pow(spT1.y(), exp) + ::sycl::pow(spT1.z(), exp);
+                    seed2_sum +=
+                        ::sycl::pow(spB2.y(), exp) + ::sycl::pow(spB2.z(), exp);
+                    seed2_sum +=
+                        ::sycl::pow(spT2.y(), exp) + ::sycl::pow(spT2.z(), exp);
 
                     return seed1_sum > seed2_sum;
                 }
