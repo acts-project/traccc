@@ -15,6 +15,17 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "src/get_prefix_sum.cpp"
    # EDM class(es).
    "include/traccc/edm/device/doublet_counter.hpp"
+   # Clusterization function(s).
+   "include/traccc/clusterization/device/find_clusters.hpp"
+   "include/traccc/clusterization/device/impl/find_clusters.ipp"
+   "include/traccc/clusterization/device/count_cluster_cells.hpp"
+   "include/traccc/clusterization/device/impl/count_cluster_cells.ipp"
+   "include/traccc/clusterization/device/connect_components.hpp"
+   "include/traccc/clusterization/device/impl/connect_components.ipp"
+   "include/traccc/clusterization/device/create_measurements.hpp"
+   "include/traccc/clusterization/device/impl/create_measurements.ipp"
+   "include/traccc/clusterization/device/form_spacepoints.hpp"
+   "include/traccc/clusterization/device/impl/form_spacepoints.ipp"
    # Spacepoint binning function(s).
    "include/traccc/seeding/device/count_grid_capacities.hpp"
    "include/traccc/seeding/device/impl/count_grid_capacities.ipp"
