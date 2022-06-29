@@ -13,9 +13,9 @@ namespace traccc::sycl {
 ::sycl::nd_range<1> calculate1DimNdRange(const std::size_t globalSize,
                                          const std::size_t localSize) {
 
-    auto num = (globalSize + localSize - 1) / localSize;
-    auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * localSize),
-                                       ::sycl::range<1>(localSize)};
+    const auto num = (globalSize + localSize - 1) / localSize;
+    const auto ndrange = ::sycl::nd_range<1>{::sycl::range<1>(num * localSize),
+                                             ::sycl::range<1>(localSize)};
 
     return ndrange;
 }
