@@ -7,9 +7,13 @@
 
 #pragma once
 
+// Library include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
+
+// System include(s).
+#include <cmath>
 
 namespace traccc {
 
@@ -78,12 +82,13 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     scalar B = uv2[1] - A * uv2[0];
 
     // Curvature (with a sign) estimate
-    scalar rho = -2.0 * B / getter::perp(vector2{1., A});
+    scalar rho = -2.0f * B / getter::perp(vector2{1., A});
     // The projection of the top space point on the transverse plane of
     // the new frame
     scalar rn = local2[0] * local2[0] + local2[1] * local2[1];
     // The (1/tanTheta) of momentum in the new frame,
-    scalar invTanTheta = local2[2] * std::sqrt(1. / rn) / (1. + rho * rho * rn);
+    scalar invTanTheta =
+        local2[2] * std::sqrt(1.f / rn) / (1.f + rho * rho * rn);
 
     // The momentum direction in the new frame (the center of the circle
     // has the coordinate (-1.*A/(2*B), 1./(2*B)))
@@ -104,16 +109,16 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
 
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)
-    scalar qOverPt =
-        rho * (Acts::UnitConstants::m) / (0.3 * getter::norm(bfield));
+    scalar qOverPt = rho * (static_cast<scalar>(Acts::UnitConstants::m)) /
+                     (0.3f * getter::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
     params[e_bound_qoverp] = qOverPt / getter::perp(vector2{1., invTanTheta});
 
     // The estimated momentum, and its projection along the magnetic
     // field diretion
-    scalar pInGeV = std::abs(1.0 / params[e_bound_qoverp]);
-    scalar pzInGeV = 1.0 / std::abs(qOverPt) * invTanTheta;
-    scalar massInGeV = mass / Acts::UnitConstants::GeV;
+    scalar pInGeV = std::abs(1.0f / params[e_bound_qoverp]);
+    scalar pzInGeV = 1.0f / std::abs(qOverPt) * invTanTheta;
+    scalar massInGeV = mass / static_cast<scalar>(Acts::UnitConstants::GeV);
 
     // The estimated velocity, and its projection along the magnetic
     // field diretion

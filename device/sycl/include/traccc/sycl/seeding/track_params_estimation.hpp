@@ -15,9 +15,11 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
@@ -28,27 +30,52 @@ namespace traccc::sycl {
 struct track_params_estimation
     : public algorithm<host_bound_track_parameters_collection(
           const spacepoint_container_types::const_view&,
-          const vecmem::data::vector_view<const seed>&)> {
+          const vecmem::data::vector_view<const seed>&)>,
+      public algorithm<host_bound_track_parameters_collection(
+          const spacepoint_container_types::buffer&,
+          const vecmem::data::vector_buffer<seed>&)> {
 
     public:
     /// Constructor for track_params_estimation
     ///
-    /// @param mr is the memory resource
-    /// @param q sycl queue for kernel scheduling
-    track_params_estimation(vecmem::memory_resource& mr, queue_wrapper queue);
+    /// @param mr       is a struct of memory resources (shared or
+    /// host & device)
+    /// @param queue    is a wrapper for the sycl queue for kernel
+    /// invocation
+    track_params_estimation(const traccc::memory_resource& mr,
+                            queue_wrapper queue);
 
     /// Callable operator for track_params_esitmation
     ///
-    /// @param input_type is the seed container
+    /// @param spaepoints_view   is the view of the spacepoint container
+    /// @param seeds_view        is the view of the seed container
+    /// @return                  vector of bound track parameters
     ///
-    /// @return vector of bound track parameters
-    output_type operator()(
+    host_bound_track_parameters_collection operator()(
         const spacepoint_container_types::const_view& spacepoints_view,
         const vecmem::data::vector_view<const seed>& seeds_view) const override;
 
+    /// Callable operator for track_params_esitmation
+    ///
+    /// @param spaepoints_buffer   is the buffer of the spacepoint container
+    /// @param seeds_buffer        is the buffer of the seed container
+    /// @return                    vector of bound track parameters
+    ///
+    host_bound_track_parameters_collection operator()(
+        const spacepoint_container_types::buffer& spacepoints_buffer,
+        const vecmem::data::vector_buffer<seed>& seeds_buffer) const override;
+
     private:
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
+    /// Implementation for the public track params estimation operators
+    host_bound_track_parameters_collection operator()(
+        const spacepoint_container_types::const_view& spacepoints_view,
+        const vecmem::data::vector_view<const seed>& seeds_view,
+        std::size_t seeds_size) const;
+
+    // Private member variables
+    traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;
+    std::unique_ptr<vecmem::copy> m_copy;
 };
 
 }  // namespace traccc::sycl

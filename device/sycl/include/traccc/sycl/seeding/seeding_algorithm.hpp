@@ -19,29 +19,44 @@
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
-#include <vecmem/memory/memory_resource.hpp>
+
+// traccc library include(s).
+#include "traccc/utils/memory_resource.hpp"
 
 namespace traccc::sycl {
 
 /// Main algorithm for performing the track seeding using oneAPI/SYCL
 class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
-                              const spacepoint_container_types::const_view&)> {
+                              const spacepoint_container_types::const_view&)>,
+                          public algorithm<vecmem::data::vector_buffer<seed>(
+                              const spacepoint_container_types::buffer&)> {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
-    /// @param mr The memory resource to use
+    /// @param mr is a struct of memory resources (shared or host & device)
     /// @param queue The SYCL queue to work with
     ///
-    seeding_algorithm(vecmem::memory_resource& mr, queue_wrapper queue);
+    seeding_algorithm(const traccc::memory_resource& mr,
+                      const queue_wrapper& queue);
 
     /// Operator executing the algorithm.
     ///
-    /// @param spacepoints_view A view of all spacepoints in the event
-    /// @return The track seeds reconstructed from the spacepoints
+    /// @param spacepoints_view is a view of all spacepoints in the event
+    /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
-    output_type operator()(const spacepoint_container_types::const_view&
-                               spacepoints) const override;
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::const_view& spacepoints_view)
+        const override;
+
+    /// Operator executing the algorithm.
+    ///
+    /// @param spacepoints_buffer is a buffer of all spacepoints in the event
+    /// @return the buffer of track seeds reconstructed from the spacepoints
+    ///
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::buffer& spacepoints_buffer)
+        const override;
 
     private:
     /// Sub-algorithm performing the spacepoint binning

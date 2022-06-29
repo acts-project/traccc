@@ -74,8 +74,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::sycl::seeding_algorithm sa_sycl(shared_mr, &q);
-    traccc::sycl::track_params_estimation tp_sycl(shared_mr, &q);
+    traccc::sycl::seeding_algorithm sa_sycl({shared_mr}, &q);
+    traccc::sycl::track_params_estimation tp_sycl({shared_mr}, &q);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
