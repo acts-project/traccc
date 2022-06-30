@@ -23,7 +23,7 @@ namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
 class seeding_algorithm : public algorithm<host_seed_collection(
-                              const spacepoint_container_types::host&)> {
+                              const spacepoint_container_types::view&)> {
 
     public:
     /// Constructor for the seed finding algorithm
@@ -38,7 +38,7 @@ class seeding_algorithm : public algorithm<host_seed_collection(
     /// @return The track seeds reconstructed from the spacepoints
     ///
     output_type operator()(
-        const spacepoint_container_types::host& spacepoints) const override;
+        const spacepoint_container_types::view& spacepoints) const override;
 
     private:
     /// Sub-algorithm performing the spacepoint binning
