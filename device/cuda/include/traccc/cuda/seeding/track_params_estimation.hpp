@@ -28,8 +28,9 @@ struct track_params_estimation
     /// @param input_type is the seed container
     ///
     /// @return vector of bound track parameters
-    output_type operator()(const spacepoint_container_types::view& spacepoints_view,
-                           host_seed_collection&& seeds) const override;
+    output_type operator()(
+        const spacepoint_container_types::view& spacepoints_view,
+        host_seed_collection&& seeds) const override;
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;

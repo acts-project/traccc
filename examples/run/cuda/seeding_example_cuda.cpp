@@ -95,9 +95,11 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             end_hit_reading_cpu - start_hit_reading_cpu;
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
 
-        // Get spacepoint container view. 
-        // This is required as seeding cuda now expected a spacepoint container view 
-        traccc::spacepoint_container_types::view sp_view_per_event = get_data(spacepoints_per_event,&mng_mr);
+        // Get spacepoint container view.
+        // This is required as seeding cuda now expected a spacepoint container
+        // view
+        traccc::spacepoint_container_types::view sp_view_per_event =
+            get_data(spacepoints_per_event, &mng_mr);
 
         /*----------------------------
              Seeding algorithm
