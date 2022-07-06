@@ -62,9 +62,10 @@ class seeding_performance_writer {
     }
 
     void init() {
-        auto path = m_cfg.file_path;
+        const std::string& path = m_cfg.file_path;
 
-        m_output_file = TFile::Open(path.c_str(), m_cfg.file_mode.c_str());
+        m_output_file = std::unique_ptr<TFile>{
+            TFile::Open(path.c_str(), m_cfg.file_mode.c_str())};
 
         if (not m_output_file) {
             throw std::invalid_argument("Could not open '" + path + "'");
@@ -155,7 +156,7 @@ class seeding_performance_writer {
     private:
     config m_cfg;
 
-    TFile* m_output_file{nullptr};
+    std::unique_ptr<TFile> m_output_file{nullptr};
     /// Plot tool for efficiency
     eff_plot_tool m_eff_plot_tool;
     std::map<std::string, eff_plot_tool::eff_plot_cache> m_eff_plot_caches;
