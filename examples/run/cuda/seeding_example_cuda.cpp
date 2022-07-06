@@ -70,7 +70,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
     if (i_cfg.check_performance) {
-        sd_performance_writer.init();
         sd_performance_writer.add_cache("CPU");
         sd_performance_writer.add_cache("CUDA");
     }
