@@ -211,11 +211,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Calclating grid size for cluster counting kernel (block size 64)
     blocksPerGrid =
         (cells_prefix_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
-    // Invoke cluster counting will call count clusters kernel
+    // Invoke cluster counting will call count cluster cells kernel
     kernels::invoke_cluster_counting<<<blocksPerGrid, threadsPerBlock>>>(
         sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, cluster_sizes_view);
-    // Wait here for the cluster_counting kernel to finish
+    // Wait for the cluster_counting kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -293,12 +293,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     spacepoint_container_types::view spacepoints_view = spacepoints_buffer;
 
     // Using the same grid size as before
-    // Invoke measurements creation will call create measurements kernel
+    // Invoke spacepoint formation will call form_spacepoints kernel
     kernels::invoke_spacepoint_formation<<<blocksPerGrid, threadsPerBlock>>>(
         measurements_view, meas_prefix_sum_view, spacepoints_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    // Wait for the spacepoint formation kernel to finish
     return spacepoints_buffer;
 }
 
