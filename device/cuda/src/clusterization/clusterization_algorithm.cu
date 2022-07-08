@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
+// CUDA Library include(s).
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 
 // Project include(s)
@@ -28,7 +28,7 @@
 namespace traccc::cuda {
 namespace kernels {
 
-__global__ void invoke_find_clusters_kernel(
+__global__ void find_clusters(
     const cell_container_types::const_view cells_view,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view) {
@@ -37,7 +37,7 @@ __global__ void invoke_find_clusters_kernel(
                           sparse_ccl_indices_view, clusters_per_module_view);
 }
 
-__global__ void invoke_cluster_counting(
+__global__ void count_cluster_cells(
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
@@ -49,7 +49,7 @@ __global__ void invoke_cluster_counting(
         cluster_prefix_sum_view, cells_prefix_sum_view, cluster_sizes_view);
 }
 
-__global__ void invoke_connect_components(
+__global__ void connect_components(
     const cell_container_types::const_view cells_view,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
@@ -62,7 +62,7 @@ __global__ void invoke_connect_components(
                                cluster_prefix_sum_view, cells_prefix_sum_view,
                                clusters_view);
 }
-__global__ void invoke_measurements_creation(
+__global__ void create_measurements(
     const cell_container_types::const_view cells_view,
     cluster_container_types::const_view clusters_view,
     measurement_container_types::view measurements_view) {
@@ -71,7 +71,7 @@ __global__ void invoke_measurements_creation(
                                 clusters_view, cells_view, measurements_view);
 }
 
-__global__ void invoke_spacepoint_formation(
+__global__ void form_spacepoints(
     measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         measurements_prefix_sum_view,
@@ -161,7 +161,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
 
     // Invoke find clusters that will call cluster finding kernel
-    kernels::invoke_find_clusters_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
 
     // Get the prefix sum of the cells and copy it to the device buffer
@@ -212,7 +212,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     blocksPerGrid =
         (cells_prefix_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
     // Invoke cluster counting will call count cluster cells kernel
-    kernels::invoke_cluster_counting<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock>>>(
         sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, cluster_sizes_view);
     // Wait for the cluster_counting kernel to finish
@@ -238,7 +238,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Using previous block size and thread size (64)
     // Invoke connect components will call connect components kernel
-    kernels::invoke_connect_components<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::connect_components<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, clusters_view);
 
@@ -271,7 +271,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         (clusters_view.headers.size() - 1 + threadsPerBlock) / threadsPerBlock;
 
     // Invoke measurements creation will call create measurements kernel
-    kernels::invoke_measurements_creation<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, clusters_view, measurements_view);
 
     // Wait here for the measurements creation kernel to finish
@@ -294,7 +294,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Using the same grid size as before
     // Invoke spacepoint formation will call form_spacepoints kernel
-    kernels::invoke_spacepoint_formation<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock>>>(
         measurements_view, meas_prefix_sum_view, spacepoints_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());

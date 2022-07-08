@@ -18,8 +18,8 @@
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// Traccc library include(s).
-#include "traccc/utils/memory_resource.hpp"
+//// Traccc library include(s).
+//#include "traccc/utils/memory_resource.hpp"
 
 namespace traccc::cuda {
 
