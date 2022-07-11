@@ -216,7 +216,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock>>>(
         sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, cluster_sizes_view);
-    // Check for kernel launch errors and Wait for the cluster_counting kernel to finish
+    // Check for kernel launch errors and Wait for the cluster_counting kernel
+    // to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -275,7 +276,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, clusters_view, measurements_view);
 
-    // Check for kernel launch errors and Wait here for the measurements creation kernel to finish
+    // Check for kernel launch errors and Wait here for the measurements
+    // creation kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -297,7 +299,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Invoke spacepoint formation will call form_spacepoints kernel
     kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock>>>(
         measurements_view, meas_prefix_sum_view, spacepoints_view);
-    // Check for kernel launch errors and Wait for the spacepoint formation kernel to finish
+    // Check for kernel launch errors and Wait for the spacepoint formation
+    // kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     return spacepoints_buffer;
