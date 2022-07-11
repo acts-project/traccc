@@ -163,6 +163,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Invoke find clusters that will call cluster finding kernel
     kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
+    // Check for kernel launch errors
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum =
@@ -174,7 +176,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
          vecmem::copy::type::copy_type::host_to_device);
 
     // Wait here for the cluster_finding kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Copy the sizes of clusters per module to the host
@@ -215,7 +216,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock>>>(
         sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, cluster_sizes_view);
-    // Wait for the cluster_counting kernel to finish
+    // Check for kernel launch errors and Wait for the cluster_counting kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -241,7 +242,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     kernels::connect_components<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, clusters_view);
-
+    // Check for kernel launch errors
+    CUDA_ERROR_CHECK(cudaGetLastError());
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.get()},
@@ -260,7 +262,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(spacepoints_buffer.items);
 
     // Wait here for the component connection kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Create views to pass to measurement creation kernel
@@ -274,7 +275,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, clusters_view, measurements_view);
 
-    // Wait here for the measurements creation kernel to finish
+    // Check for kernel launch errors and Wait here for the measurements creation kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -296,9 +297,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Invoke spacepoint formation will call form_spacepoints kernel
     kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock>>>(
         measurements_view, meas_prefix_sum_view, spacepoints_view);
+    // Check for kernel launch errors and Wait for the spacepoint formation kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-    // Wait for the spacepoint formation kernel to finish
     return spacepoints_buffer;
 }
 
