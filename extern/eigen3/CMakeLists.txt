@@ -18,11 +18,15 @@ set( TRACCC_EIGEN_SOURCE
 mark_as_advanced( TRACCC_EIGEN_SOURCE )
 FetchContent_Declare( Eigen3 ${TRACCC_EIGEN_SOURCE} )
 
-# Turn off the unit tests for Eigen3.
+# Configure the Eigen build.
 if( DEFINED CACHE{BUILD_TESTING} )
    set( _buildTestingValue ${BUILD_TESTING} )
 endif()
 set( BUILD_TESTING FALSE CACHE INTERNAL "Forceful setting of BUILD_TESTING" )
+set( EIGEN_BUILD_DOC FALSE CACHE BOOL
+   "Turn off the Eigen documentation build" )
+set( EIGEN_TEST_NOQT TRUE CACHE BOOL
+   "Don't set up Qt based Eigen tests/demos" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Eigen3 )
