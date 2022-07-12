@@ -52,14 +52,10 @@ spacepoint_binning::spacepoint_binning(
     : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::host& spacepoints) const {
+    const spacepoint_container_types::view& sp_data) const {
 
     // Helper object for the data management.
     vecmem::copy copy;
-
-    // Get the data/view for the spacepoints.
-    const spacepoint_container_types::const_data sp_data =
-        traccc::get_data(spacepoints);
 
     // Get the prefix sum for the spacepoints.
     const device::prefix_sum_t sp_prefix_sum =

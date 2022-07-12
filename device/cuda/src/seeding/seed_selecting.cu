@@ -42,7 +42,7 @@ __global__ void seed_selecting_kernel(
 void seed_selecting(
     const seedfilter_config& filter_config,
     const vecmem::vector<device::doublet_counter_header>& dcc_headers,
-    const spacepoint_container_types::host& spacepoints,
+    const spacepoint_container_types::view& spacepoints_view,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view dcc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
@@ -50,9 +50,6 @@ void seed_selecting(
     vecmem::memory_resource& resource) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
-
-    spacepoint_container_types::const_data spacepoints_view =
-        get_data(spacepoints, &resource);
 
     // The thread-block is desinged to make each thread investigate the
     // compatible middle spacepoint

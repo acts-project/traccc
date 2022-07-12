@@ -60,7 +60,7 @@ seeding_algorithm::seeding_algorithm(vecmem::memory_resource& mr)
       m_seed_finding(default_seedfinder_config(), mr) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
-    const spacepoint_container_types::host& spacepoints) const {
+    const spacepoint_container_types::view& spacepoints) const {
 
     return m_seed_finding(spacepoints, m_spacepoint_binning(spacepoints));
 }
