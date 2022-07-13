@@ -8,10 +8,10 @@
 
 // SYCL library include(s).
 #include "traccc/sycl/utils/queue_wrapper.hpp"
-#include "triplet_counter.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/triplet_counter.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -42,7 +42,8 @@ void seed_selecting(
     const sp_grid_const_view& internal_sp,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
-    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
+    traccc::device::triplet_counter_container_types::view tcc_view,
+    triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer, queue_wrapper queue);
 
 }  // namespace traccc::sycl

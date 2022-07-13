@@ -23,16 +23,15 @@ namespace traccc::sycl {
 
 class TripletFind {
     public:
-    TripletFind(const seedfinder_config config,
-                const seedfilter_config filter_config,
-                sp_grid_const_view internal_sp_view,
-                device::doublet_counter_container_types::const_view
-                    doublet_counter_view,
-                doublet_container_view mid_bot_doublet_view,
-                doublet_container_view mid_top_doublet_view,
-                triplet_counter_container_view triplet_counter_view,
-                triplet_container_view triplet_view,
-                local_accessor<int> localMem)
+    TripletFind(
+        const seedfinder_config config, const seedfilter_config filter_config,
+        sp_grid_const_view internal_sp_view,
+        device::doublet_counter_container_types::const_view
+            doublet_counter_view,
+        doublet_container_view mid_bot_doublet_view,
+        doublet_container_view mid_top_doublet_view,
+        device::triplet_counter_container_types::view triplet_counter_view,
+        triplet_container_view triplet_view, local_accessor<int> localMem)
         : m_config(config),
           m_filter_config(filter_config),
           m_internal_sp_view(internal_sp_view),
@@ -58,7 +57,7 @@ class TripletFind {
         device_doublet_container mid_bot_doublet_device(m_mid_bot_doublet_view);
         device_doublet_container mid_top_doublet_device(m_mid_top_doublet_view);
 
-        device_triplet_counter_container triplet_counter_device(
+        device::triplet_counter_container_types::device triplet_counter_device(
             m_triplet_counter_view);
         device_triplet_container triplet_device(m_triplet_view);
 
@@ -94,7 +93,7 @@ class TripletFind {
         // Header of triplet counter: number of compatible mid_top doublets per
         // bin Item of triplet counter: triplet counter objects per bin
         auto& num_compat_mb_per_bin =
-            triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
+            triplet_counter_device.get_headers().at(bin_idx).m_nMidBot;
         auto triplet_counter_per_bin =
             triplet_counter_device.get_items().at(bin_idx);
 
@@ -109,9 +108,8 @@ class TripletFind {
 
         // prevent the tail threads referring the null triplet counter
         if (item_idx < num_compat_mb_per_bin) {
-
-            // middle-bot doublet
-            const auto& mid_bot_doublet =
+            // middle bottom doublet
+            const doublet& mid_bot_doublet =
                 triplet_counter_per_bin[item_idx].mid_bot_doublet;
             // middle spacepoint index
             const auto& spM_idx = mid_bot_doublet.sp1.sp_idx;
@@ -182,7 +180,7 @@ class TripletFind {
                 // The start index is calculated by accumulating the number of
                 // triplets of all previous compatible middle-bottom doublets
                 for (unsigned int i = 0; i < item_idx; i++) {
-                    triplet_start_idx += triplet_counter_per_bin[i].n_triplets;
+                    triplet_start_idx += triplet_counter_per_bin[i].m_nTriplets;
                 }
 
                 // iterate over mid-top doublets
@@ -252,21 +250,21 @@ class TripletFind {
     device::doublet_counter_container_types::const_view m_doublet_counter_view;
     doublet_container_view m_mid_bot_doublet_view;
     doublet_container_view m_mid_top_doublet_view;
-    triplet_counter_container_view m_triplet_counter_view;
+    device::triplet_counter_container_types::view m_triplet_counter_view;
     triplet_container_view m_triplet_view;
     local_accessor<int> m_localMem;
 };
 
-void triplet_finding(const seedfinder_config& config,
-                     const seedfilter_config& filter_config,
-                     const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
-                     const sp_grid_const_view& internal_sp,
-                     const device::doublet_counter_container_types::const_view&
-                         doublet_counter_container,
-                     doublet_container_view mid_bot_doublet_container,
-                     doublet_container_view mid_top_doublet_container,
-                     triplet_counter_container_view tcc_view,
-                     triplet_container_view tc_view, queue_wrapper queue) {
+void triplet_finding(
+    const seedfinder_config& config, const seedfilter_config& filter_config,
+    const vecmem::vector<traccc::device::triplet_counter_header>& tcc_headers,
+    const sp_grid_const_view& internal_sp,
+    const device::doublet_counter_container_types::const_view&
+        doublet_counter_container,
+    doublet_container_view mid_bot_doublet_container,
+    doublet_container_view mid_top_doublet_container,
+    device::triplet_counter_container_types::view tcc_view,
+    triplet_container_view tc_view, queue_wrapper queue) {
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -279,7 +277,7 @@ void triplet_finding(const seedfinder_config& config,
     // Calculate the global number of threads to run in kernel
     unsigned int num_groups = 0;
     for (unsigned int i = 0; i < nbins; ++i) {
-        num_groups += tcc_headers[i].n_mid_bot / localSize + 1;
+        num_groups += tcc_headers[i].m_nMidBot / localSize + 1;
     }
     unsigned int globalSize = localSize * num_groups;
 

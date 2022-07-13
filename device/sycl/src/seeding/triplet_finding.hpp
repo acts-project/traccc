@@ -8,10 +8,10 @@
 
 // SYCL library include(s).
 #include "traccc/sycl/utils/queue_wrapper.hpp"
-#include "triplet_counter.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/triplet_counter.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -36,15 +36,15 @@ namespace traccc::sycl {
 /// @param triplet_container vecmem container for triplets
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
-void triplet_finding(const seedfinder_config& config,
-                     const seedfilter_config& filter_config,
-                     const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
-                     const sp_grid_const_view& internal_sp,
-                     const device::doublet_counter_container_types::const_view&
-                         doublet_counter_container,
-                     doublet_container_view mid_bot_doublet_container,
-                     doublet_container_view mid_top_doublet_container,
-                     triplet_counter_container_view tcc_view,
-                     triplet_container_view tc_view, queue_wrapper queue);
+void triplet_finding(
+    const seedfinder_config& config, const seedfilter_config& filter_config,
+    const vecmem::vector<traccc::device::triplet_counter_header>& tcc_headers,
+    const sp_grid_const_view& internal_sp,
+    const device::doublet_counter_container_types::const_view&
+        doublet_counter_container,
+    doublet_container_view mid_bot_doublet_container,
+    doublet_container_view mid_top_doublet_container,
+    device::triplet_counter_container_types::view tcc_view,
+    triplet_container_view tc_view, queue_wrapper queue);
 
 }  // namespace traccc::sycl

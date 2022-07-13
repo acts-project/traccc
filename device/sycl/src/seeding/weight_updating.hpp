@@ -9,9 +9,9 @@
 
 // SYCL library include(s).
 #include "traccc/sycl/utils/queue_wrapper.hpp"
-#include "triplet_counter.hpp"
 
 // Project include(s).
+#include "traccc/edm/device/triplet_counter.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
@@ -31,10 +31,11 @@ namespace traccc::sycl {
 /// @param triplet_container vecmem container for triplets
 /// @param resource vecmem memory resource
 /// @param q sycl queue for kernel scheduling
-void weight_updating(const seedfilter_config& filter_config,
-                     const vecmem::vector<triplet_per_bin>& tc_headers,
-                     const sp_grid_const_view& internal_sp,
-                     triplet_counter_container_view tcc_view,
-                     triplet_container_view tc_view, queue_wrapper queue);
+void weight_updating(
+    const seedfilter_config& filter_config,
+    const vecmem::vector<triplet_per_bin>& tc_headers,
+    const sp_grid_const_view& internal_sp,
+    traccc::device::triplet_counter_container_types::view tcc_view,
+    triplet_container_view tc_view, queue_wrapper queue);
 
 }  // namespace traccc::sycl
