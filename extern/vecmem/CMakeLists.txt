@@ -13,7 +13,7 @@ message( STATUS "Building VecMem as part of the TRACCC project" )
 
 # Declare where to get VecMem from.
 set( TRACCC_VECMEM_SOURCE
-   "URL;https://github.com/acts-project/vecmem/archive/refs/tags/v0.15.0.tar.gz;URL_MD5;714c7557ca79a7749d8b161cad8783b0"
+   "URL;https://github.com/acts-project/vecmem/archive/refs/tags/v0.16.0.tar.gz;URL_MD5;32ecea8471026080c65b14808175ddfa"
    CACHE STRING "Source for VecMem, when built as part of this project" )
 mark_as_advanced( TRACCC_VECMEM_SOURCE )
 FetchContent_Declare( VecMem ${TRACCC_VECMEM_SOURCE} )
