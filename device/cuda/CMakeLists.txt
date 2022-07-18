@@ -37,6 +37,9 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/triplet_finding.cu"
   "src/seeding/seeding_algorithm.cpp"
   "src/cca/component_connection.cu"
+  # Clusterization
+  "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
+  "src/clusterization/clusterization_algorithm.cu"
 )
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )

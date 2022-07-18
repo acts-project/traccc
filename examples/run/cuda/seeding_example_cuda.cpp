@@ -97,6 +97,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             end_hit_reading_cpu - start_hit_reading_cpu;
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
 
+        // Get spacepoint container view.
+        // This is required as seeding cuda now expected a spacepoint container
+        // view
+        traccc::spacepoint_container_types::view sp_view_per_event =
+            get_data(spacepoints_per_event, &mng_mr);
+
         /*----------------------------
              Seeding algorithm
           ----------------------------*/
@@ -105,7 +111,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 
-        auto seeds_cuda = sa_cuda(std::move(spacepoints_per_event));
+        auto seeds_cuda = sa_cuda(std::move(sp_view_per_event));
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -137,7 +143,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             std::chrono::system_clock::now();
 
         auto params_cuda =
-            tp_cuda(std::move(spacepoints_per_event), std::move(seeds_cuda));
+            tp_cuda(std::move(sp_view_per_event), std::move(seeds_cuda));
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =

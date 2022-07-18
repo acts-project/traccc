@@ -23,13 +23,11 @@ __global__ void track_params_estimating_kernel(
     vecmem::data::vector_view<bound_track_parameters> params_view);
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const spacepoint_container_types::host& spacepoints,
+    const spacepoint_container_types::view& spacepoints_view,
     host_seed_collection&& seeds) const {
 
     output_type params(seeds.size(), &m_mr.get());
 
-    spacepoint_container_types::const_data spacepoints_view =
-        get_data(spacepoints, &m_mr.get());
     auto seeds_view = vecmem::get_data(seeds);
     auto params_view = vecmem::get_data(params);
 

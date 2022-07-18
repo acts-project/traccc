@@ -63,7 +63,7 @@ seed_finding::seed_finding(const seedfinder_config& config,
     : m_seedfinder_config(config), m_mr(mr) {}
 
 seed_finding::output_type seed_finding::operator()(
-    const spacepoint_container_types::host& spacepoints,
+    const spacepoint_container_types::view& spacepoints,
     const sp_grid_const_view& g2_view) const {
 
     // Helper object for the data management.
