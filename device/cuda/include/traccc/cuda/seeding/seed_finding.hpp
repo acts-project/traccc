@@ -13,10 +13,11 @@
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
-#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
@@ -34,7 +35,8 @@ class seed_finding
     /// @param config is seed finder configuration parameters
     /// @param sp_grid spacepoint grid
     /// @param mr vecmem memory resource
-    seed_finding(const seedfinder_config& config, vecmem::memory_resource& mr);
+    seed_finding(const seedfinder_config& config,
+                 const traccc::memory_resource& mr);
 
     /// Callable operator for the seed finding
     ///
@@ -45,7 +47,8 @@ class seed_finding
     private:
     seedfinder_config m_seedfinder_config;
     seedfilter_config m_seedfilter_config;
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
+    traccc::memory_resource m_mr;
+    std::unique_ptr<vecmem::copy> m_copy;
 };
 
 }  // namespace traccc::cuda

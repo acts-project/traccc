@@ -5,32 +5,26 @@
  * Mozilla Public License Version 2.0
  */
 
-// io
-#include "traccc/io/csv.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/utils.hpp"
-#include "traccc/io/writer.hpp"
-
-// algorithms
+// Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
-#include "traccc/seeding/seeding_algorithm.hpp"
-#include "traccc/seeding/track_params_estimation.hpp"
-
-// performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-
-// options
+#include "traccc/io/csv.hpp"
+#include "traccc/io/reader.hpp"
+#include "traccc/io/utils.hpp"
+#include "traccc/io/writer.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/seeding/seeding_algorithm.hpp"
+#include "traccc/seeding/track_params_estimation.hpp"
 
-// vecmem
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
+// VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 

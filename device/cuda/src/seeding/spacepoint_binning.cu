@@ -50,7 +50,9 @@ __global__ void populate_grid(
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr)
-    : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr) {
+    : m_config(config),
+      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
+      m_mr(mr) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
@@ -63,18 +65,31 @@ spacepoint_binning::spacepoint_binning(
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_container_types::view& sp_data) const {
 
-    // Helper object for the data management.
-    vecmem::copy copy;
+    // Get the spacepoint sizes from the buffer
+    auto sp_sizes = m_copy->get_sizes(sp_data.items);
 
-    // Get the prefix sum for the spacepoints.
-    const device::prefix_sum_t sp_prefix_sum =
-        device::get_prefix_sum(sp_data.items, m_mr.get(), copy);
-    auto sp_prefix_sum_view = vecmem::get_data(sp_prefix_sum);
+    // Get the prefix sum for the spacepoints using buffer.
+    const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
+        sp_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
+
+    // Set up the buffer of the prefix sum and its view
+    vecmem::data::vector_buffer<device::prefix_sum_element_t>
+        sp_prefix_sum_buff(sp_prefix_sum.size(), m_mr.main);
+    m_copy->setup(sp_prefix_sum_buff);
+    (*m_copy)(vecmem::get_data(sp_prefix_sum), sp_prefix_sum_buff,
+              vecmem::copy::type::copy_type::host_to_device);
+    vecmem::data::vector_view<device::prefix_sum_element_t> sp_prefix_sum_view =
+        sp_prefix_sum_buff;
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
-    vecmem::vector<unsigned int> grid_capacities(grid_bins, 0, &m_mr.get());
+    vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
+                                                                   m_mr.main);
+    m_copy->setup(grid_capacities_buff);
+    m_copy->memset(grid_capacities_buff, 0);
+    vecmem::data::vector_view<unsigned int> grid_capacities_view =
+        grid_capacities_buff;
 
     // Calculate the number of threads and thread blocks to run the kernels for.
     const unsigned int num_threads = WARP_SIZE * 8;
@@ -83,21 +98,27 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Fill the grid capacity container.
     kernels::count_grid_capacities<<<num_blocks, num_threads>>>(
         m_config, m_axes.first, m_axes.second, sp_data, sp_prefix_sum_view,
-        vecmem::get_data(grid_capacities));
+        grid_capacities_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
+    // Copy grid capacities back to the host
+    vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
+                                                                : &(m_mr.main));
+    (*m_copy)(grid_capacities_buff, grid_capacities_host);
+
     // Create the grid buffer.
-    sp_grid_buffer grid_buffer(m_axes.first, m_axes.second,
-                               std::vector<std::size_t>(grid_bins, 0),
-                               std::vector<std::size_t>(grid_capacities.begin(),
-                                                        grid_capacities.end()),
-                               m_mr.get());
-    copy.setup(grid_buffer._buffer);
+    sp_grid_buffer grid_buffer(
+        m_axes.first, m_axes.second, std::vector<std::size_t>(grid_bins, 0),
+        std::vector<std::size_t>(grid_capacities_host.begin(),
+                                 grid_capacities_host.end()),
+        m_mr.main, m_mr.host);
+    m_copy->setup(grid_buffer._buffer);
+    sp_grid_view grid_view = grid_buffer;
 
     // Populate the grid.
     kernels::populate_grid<<<num_blocks, num_threads>>>(
-        m_config, sp_data, sp_prefix_sum_view, grid_buffer);
+        m_config, sp_data, sp_prefix_sum_view, grid_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 

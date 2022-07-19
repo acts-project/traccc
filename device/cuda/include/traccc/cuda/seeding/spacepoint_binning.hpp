@@ -12,9 +12,10 @@
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
@@ -39,7 +40,8 @@ class spacepoint_binning : public algorithm<sp_grid_buffer(
     private:
     seedfinder_config m_config;
     std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
+    traccc::memory_resource m_mr;
+    std::unique_ptr<vecmem::copy> m_copy;
 
 };  // class spacepoint_binning
 
