@@ -18,6 +18,7 @@
 
 // Vecmem include(s).
 #include <vecmem/utils/copy.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <algorithm>
@@ -84,8 +85,17 @@ __global__ void form_spacepoints(
 
 }  // namespace kernels
 
-clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr)
-    : m_mr(mr) {}
+clusterization_algorithm::clusterization_algorithm(
+    const traccc::memory_resource& mr)
+    : m_mr(mr) {
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::cuda::copy>();
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
+}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::host& cells_per_event) const {
@@ -100,7 +110,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     std::size_t threadsPerBlock = 64;
 
     // Get the view of the cells container
-    auto cells_data = get_data(cells_per_event, &m_mr.get());
+    auto cells_data =
+        get_data(cells_per_event, (m_mr.host ? m_mr.host : &(m_mr.main)));
 
     // Get the sizes of the cells in each module
     auto cell_sizes = copy.get_sizes(cells_data.items);
@@ -114,8 +125,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
      */
     vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices_buff(
         std::vector<std::size_t>(cell_sizes.begin(), cell_sizes.end()),
-        m_mr.get());
-    copy.setup(sparse_ccl_indices_buff);
+        m_mr.main, m_mr.host);
+    m_copy->setup(sparse_ccl_indices_buff);
 
     /*
      * cl_per_module_prefix_buff is a vector buffer with numbers of found
@@ -146,8 +157,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
      * needed to allocate memory for other buffers later in the code.
      */
     vecmem::data::vector_buffer<std::size_t> cl_per_module_prefix_buff(
-        num_modules, m_mr.get());
-    copy.setup(cl_per_module_prefix_buff);
+        num_modules, m_mr.main);
+    m_copy->setup(cl_per_module_prefix_buff);
 
     // Create views to pass to cluster finding kernel
     const cell_container_types::const_view cells_view(cells_data);
@@ -167,22 +178,23 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Get the prefix sum of the cells and copy it to the device buffer
-    const device::prefix_sum_t cells_prefix_sum =
-        device::get_prefix_sum(cell_sizes, m_mr.get());
+    const device::prefix_sum_t cells_prefix_sum = device::get_prefix_sum(
+        cell_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
     vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        cells_prefix_sum_buff(cells_prefix_sum.size(), m_mr.get());
-    copy.setup(cells_prefix_sum_buff);
-    copy(vecmem::get_data(cells_prefix_sum), cells_prefix_sum_buff,
-         vecmem::copy::type::copy_type::host_to_device);
+        cells_prefix_sum_buff(cells_prefix_sum.size(), m_mr.main);
+    m_copy->setup(cells_prefix_sum_buff);
+    (*m_copy)(vecmem::get_data(cells_prefix_sum), cells_prefix_sum_buff,
+              vecmem::copy::type::copy_type::host_to_device);
 
     // Wait here for the cluster_finding kernel to finish
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
-    vecmem::vector<std::size_t> cl_per_module_prefix_host(&m_mr.get());
-    copy(cl_per_module_prefix_buff, cl_per_module_prefix_host,
-         vecmem::copy::type::copy_type::device_to_host);
+    vecmem::vector<std::size_t> cl_per_module_prefix_host(
+        m_mr.host ? m_mr.host : &(m_mr.main));
+    (*m_copy)(cl_per_module_prefix_buff, cl_per_module_prefix_host,
+              vecmem::copy::type::copy_type::device_to_host);
     std::vector<std::size_t> clusters_per_module_host(
         cl_per_module_prefix_host.begin(), cl_per_module_prefix_host.end());
 
@@ -194,14 +206,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     unsigned int total_clusters = cl_per_module_prefix_host.back();
 
     // Copy the prefix sum back to its device container
-    copy(vecmem::get_data(cl_per_module_prefix_host), cl_per_module_prefix_buff,
-         vecmem::copy::type::copy_type::host_to_device);
+    (*m_copy)(vecmem::get_data(cl_per_module_prefix_host),
+              cl_per_module_prefix_buff,
+              vecmem::copy::type::copy_type::host_to_device);
 
     // Vector of the exact cluster sizes, will be filled in cluster counting
     vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
-        total_clusters, m_mr.get());
-    copy.setup(cluster_sizes_buffer);
-    copy.memset(cluster_sizes_buffer, 0);
+        total_clusters, m_mr.main);
+    m_copy->setup(cluster_sizes_buffer);
+    m_copy->memset(cluster_sizes_buffer, 0);
 
     // Create views to pass to cluster counting kernel
     vecmem::data::vector_view<const device::prefix_sum_element_t>
@@ -223,17 +236,17 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Copy cluster sizes back to the host
     std::vector<unsigned int> cluster_sizes;
-    copy(cluster_sizes_buffer, cluster_sizes,
-         vecmem::copy::type::copy_type::device_to_host);
+    (*m_copy)(cluster_sizes_buffer, cluster_sizes,
+              vecmem::copy::type::copy_type::device_to_host);
 
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_types::buffer clusters_buffer{
-        {total_clusters, m_mr.get()},
+        {total_clusters, m_mr.main},
         {std::vector<std::size_t>(total_clusters, 0),
          std::vector<std::size_t>(cluster_sizes.begin(), cluster_sizes.end()),
-         m_mr.get()}};
-    copy.setup(clusters_buffer.headers);
-    copy.setup(clusters_buffer.items);
+         m_mr.main, m_mr.host}};
+    m_copy->setup(clusters_buffer.headers);
+    m_copy->setup(clusters_buffer.items);
 
     // Create views to pass to component connection kernel
     cluster_container_types::view clusters_view = clusters_buffer;
@@ -247,20 +260,20 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
-        {num_modules, m_mr.get()},
+        {num_modules, m_mr.main},
         {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
-         m_mr.get()}};
-    copy.setup(measurements_buffer.headers);
-    copy.setup(measurements_buffer.items);
+         m_mr.main, m_mr.host}};
+    m_copy->setup(measurements_buffer.headers);
+    m_copy->setup(measurements_buffer.items);
 
     // Spacepoint container buffer to fill inside the spacepoint formation
     // kernel
     spacepoint_container_types::buffer spacepoints_buffer{
-        {num_modules, m_mr.get()},
+        {num_modules, m_mr.main},
         {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
-         m_mr.get()}};
-    copy.setup(spacepoints_buffer.headers);
-    copy.setup(spacepoints_buffer.items);
+         m_mr.main, m_mr.host}};
+    m_copy->setup(spacepoints_buffer.headers);
+    m_copy->setup(spacepoints_buffer.items);
 
     // Wait here for the component connection kernel to finish
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
@@ -282,13 +295,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Get the prefix sum of the measurements and copy it to the device buffer
-    const device::prefix_sum_t meas_prefix_sum = device::get_prefix_sum(
-        copy.get_sizes(measurements_buffer.items), m_mr.get());
+    const device::prefix_sum_t meas_prefix_sum =
+        device::get_prefix_sum(m_copy->get_sizes(measurements_buffer.items),
+                               (m_mr.host ? *(m_mr.host) : m_mr.main));
     vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        meas_prefix_sum_buff(meas_prefix_sum.size(), m_mr.get());
-    copy.setup(meas_prefix_sum_buff);
-    copy(vecmem::get_data(meas_prefix_sum), meas_prefix_sum_buff,
-         vecmem::copy::type::copy_type::host_to_device);
+        meas_prefix_sum_buff(meas_prefix_sum.size(), m_mr.main);
+    m_copy->setup(meas_prefix_sum_buff);
+    (*m_copy)(vecmem::get_data(meas_prefix_sum), meas_prefix_sum_buff,
+              vecmem::copy::type::copy_type::host_to_device);
 
     // Create views to run spacepoint formation
     vecmem::data::vector_view<const device::prefix_sum_element_t>

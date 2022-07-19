@@ -7,8 +7,13 @@
 
 #pragma once
 
+// Project include(s)
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
+
+// VecMem include(s).
+#include <vecmem/utils/copy.hpp>
 
 namespace traccc {
 namespace cuda {
@@ -21,7 +26,7 @@ struct track_params_estimation
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
-    track_params_estimation(vecmem::memory_resource& mr) : m_mr(mr) {}
+    track_params_estimation(const traccc::memory_resource& mr);
 
     /// Callable operator for track_params_esitmation
     ///
@@ -33,7 +38,8 @@ struct track_params_estimation
         host_seed_collection&& seeds) const override;
 
     private:
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
+    traccc::memory_resource m_mr;
+    std::unique_ptr<vecmem::copy> m_copy;
 };
 
 }  // namespace cuda

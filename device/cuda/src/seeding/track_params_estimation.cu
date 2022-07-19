@@ -5,8 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
+
+// VecMem include(s).
+#include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc {
 namespace cuda {
@@ -22,11 +26,23 @@ __global__ void track_params_estimating_kernel(
     vecmem::data::vector_view<seed> seeds_view,
     vecmem::data::vector_view<bound_track_parameters> params_view);
 
+track_params_estimation::track_params_estimation(
+    const traccc::memory_resource& mr)
+    : m_mr(mr) {
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::cuda::copy>();
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
+}
+
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_container_types::view& spacepoints_view,
     host_seed_collection&& seeds) const {
 
-    output_type params(seeds.size(), &m_mr.get());
+    output_type params(seeds.size(), (m_mr.host ? m_mr.host : &(m_mr.main)));
 
     auto seeds_view = vecmem::get_data(seeds);
     auto params_view = vecmem::get_data(params);

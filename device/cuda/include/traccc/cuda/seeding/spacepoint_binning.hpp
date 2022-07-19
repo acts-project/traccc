@@ -30,7 +30,7 @@ class spacepoint_binning : public algorithm<sp_grid_buffer(
     /// Constructor for the algorithm
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
-                       vecmem::memory_resource& mr);
+                       const traccc::memory_resource& mr);
 
     /// Function executing the algorithm
     sp_grid_buffer operator()(

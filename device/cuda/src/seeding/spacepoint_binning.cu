@@ -16,6 +16,7 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc::cuda {
 namespace kernels {
@@ -48,8 +49,16 @@ __global__ void populate_grid(
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    vecmem::memory_resource& mr)
-    : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr) {}
+    const traccc::memory_resource& mr)
+    : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr) {
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::cuda::copy>();
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
+}
 
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_container_types::view& sp_data) const {

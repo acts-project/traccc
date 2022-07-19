@@ -19,6 +19,9 @@
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
+// traccc library include(s).
+#include "traccc/utils/memory_resource.hpp"
+
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
@@ -30,7 +33,7 @@ class seeding_algorithm : public algorithm<host_seed_collection(
     ///
     /// @param mr The memory resource to use
     ///
-    seeding_algorithm(vecmem::memory_resource& mr);
+    seeding_algorithm(const traccc::memory_resource& mr);
 
     /// Operator executing the algorithm.
     ///

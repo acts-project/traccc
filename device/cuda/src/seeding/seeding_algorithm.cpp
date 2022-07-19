@@ -54,7 +54,7 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
 
 namespace traccc::cuda {
 
-seeding_algorithm::seeding_algorithm(vecmem::memory_resource& mr)
+seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr)
     : m_spacepoint_binning(default_seedfinder_config(),
                            default_spacepoint_grid_config(), mr),
       m_seed_finding(default_seedfinder_config(), mr) {}
