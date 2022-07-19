@@ -19,8 +19,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 
@@ -47,11 +45,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
-    vecmem::cuda::host_memory_resource cu_host_mr;
-    vecmem::cuda::device_memory_resource cu_dev_mr;
-
-    // Struct with memory resources to pass to CUDA algorithms
-    traccc::memory_resource mr{cu_dev_mr, &cu_host_mr};
 
     // Elapsed time
     float wall_time(0);
@@ -64,8 +57,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda(mr);
-    traccc::cuda::track_params_estimation tp_cuda(mr);
+    traccc::cuda::seeding_algorithm sa_cuda({mng_mr});
+    traccc::cuda::track_params_estimation tp_cuda({mng_mr});
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
