@@ -277,23 +277,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
              Writer
           ------------*/
 
-<<<<<<< HEAD
         if (i_cfg.check_performance) {
             traccc::event_map evt_map(
                 event, i_cfg.detector_file, i_cfg.digitization_config_file,
                 common_opts.input_directory, common_opts.input_directory,
                 common_opts.input_directory, host_mr);
-            sd_performance_writer.write("CUDA", seeds_cuda,
-                                        spacepoints_per_event, evt_map);
-=======
-        if (i_cfg.check_seeding_performance) {
-            traccc::event_map evt_map(event, i_cfg.detector_file,
-                                      i_cfg.digitization_config_file,
-                                      i_cfg.cell_directory, i_cfg.hit_directory,
-                                      i_cfg.particle_directory, host_mr);
             sd_performance_writer.write("CUDA", seeds_cuda, spacepoints_cuda,
                                         evt_map);
->>>>>>> 79cb8ea2b07c54be561a4c6cefaa0862749307ce
 
             if (run_cpu) {
                 sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
