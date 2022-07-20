@@ -70,12 +70,28 @@ seed_finding::seed_finding(const seedfinder_config& config,
     }
 }
 
-seed_finding::output_type seed_finding::operator()(
-    const spacepoint_container_types::view& spacepoints,
+vecmem::data::vector_buffer<seed> seed_finding::operator()(
+    const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& g2_view) const {
-
     // Get the sizes from the grid view
     auto grid_sizes = m_copy->get_sizes(g2_view._data_view);
+
+    return this->operator()(spacepoints_view, g2_view, grid_sizes);
+}
+
+vecmem::data::vector_buffer<seed> seed_finding::operator()(
+    const spacepoint_container_types::buffer& spacepoints_buffer,
+    const sp_grid_buffer& g2_buffer) const {
+    // Get the sizes from the grid buffer
+    auto grid_sizes = m_copy->get_sizes(g2_buffer._buffer);
+
+    return this->operator()(spacepoints_buffer, g2_buffer, grid_sizes);
+}
+
+vecmem::data::vector_buffer<seed> seed_finding::operator()(
+    const spacepoint_container_types::const_view& spacepoints_view,
+    const sp_grid_const_view& g2_view,
+    const std::vector<unsigned int>& grid_sizes) const {
 
     // Get the prefix sum for the spacepoint grid using buffer.
     const device::prefix_sum_t sp_grid_prefix_sum = device::get_prefix_sum(
@@ -212,16 +228,12 @@ seed_finding::output_type seed_finding::operator()(
     m_copy->setup(seed_buffer);
 
     // Run seed selecting
-    traccc::cuda::seed_selecting(m_seedfilter_config, doublet_counts,
-                                 spacepoints, g2_view, doublet_counter_buffer,
-                                 tcc_buffer, tc_buffer, seed_buffer,
-                                 m_mr.host ? *m_mr.host : m_mr.main);
+    traccc::cuda::seed_selecting(
+        m_seedfilter_config, doublet_counts, spacepoints_view, g2_view,
+        doublet_counter_buffer, tcc_buffer, tc_buffer, seed_buffer,
+        m_mr.host ? *m_mr.host : m_mr.main);
 
-    // Take seed buffer into seed collection
-    host_seed_collection seed_collection(m_mr.host ? m_mr.host : &(m_mr.main));
-    (*m_copy)(seed_buffer, seed_collection);
-
-    return seed_collection;
+    return seed_buffer;
 }
 
 }  // namespace traccc::cuda

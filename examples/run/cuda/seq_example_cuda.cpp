@@ -27,6 +27,7 @@
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <chrono>
@@ -52,6 +53,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
+    uint64_t n_spacepoints_cuda = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
@@ -100,11 +102,19 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
-        // Read the cells from the relevant event file
+        // Read the cells from the relevant event file for CPU algorithm
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, common_opts.input_directory,
                                           common_opts.input_data_format,
-                                          surface_transforms, digi_cfg, mng_mr);
+                                          surface_transforms, digi_cfg,
+                                          host_mr);
+
+        // Read the cells from the relevant event file for CUDA algorithm
+        traccc::cell_container_types::host cells_per_event_cuda =
+            traccc::read_cells_from_event(event, common_opts.input_directory,
+                                          common_opts.input_data_format,
+                                          surface_transforms, digi_cfg,
+                                          (mr.host ? *(mr.host) : mr.main));
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -112,44 +122,53 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
 
         /*-----------------------------
-              Clusterization (cpu)
-          -----------------------------*/
-
-        /*time*/ auto start_clusterization_cpu =
-            std::chrono::system_clock::now();
-
-        auto measurements_per_event = ca(cells_per_event);
-
-        /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_clusterization_cpu =
-            end_clusterization_cpu - start_clusterization_cpu;
-        /*time*/ clusterization_cpu += time_clusterization_cpu.count();
-
-        /*---------------------------------
-               Spacepoint formation (cpu)
-          ---------------------------------*/
-
-        /*time*/ auto start_sp_formation_cpu = std::chrono::system_clock::now();
-
-        auto spacepoints_per_event = sf(measurements_per_event);
-
-        /*time*/ auto end_sp_formation_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
-            end_sp_formation_cpu - start_sp_formation_cpu;
-        /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
-
-        /*-----------------------------
               Clusterization and Spacepoint Creation (cuda)
           -----------------------------*/
         /*time*/ auto start_cluterization_cuda =
             std::chrono::system_clock::now();
 
-        auto spacepoints_per_event_cuda = ca_cuda(cells_per_event);
+        auto spacepoints_cuda_buffer = ca_cuda(cells_per_event_cuda);
 
         /*time*/ auto end_cluterization_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cuda =
             end_cluterization_cuda - start_cluterization_cuda;
         /*time*/ clusterization_sp_cuda += time_clusterization_cuda.count();
+
+        traccc::clusterization_algorithm::output_type measurements_per_event;
+        traccc::spacepoint_formation::output_type spacepoints_per_event;
+
+        if (run_cpu) {
+
+            /*-----------------------------
+                  Clusterization (cpu)
+              -----------------------------*/
+
+            /*time*/ auto start_clusterization_cpu =
+                std::chrono::system_clock::now();
+
+            measurements_per_event = ca(cells_per_event);
+
+            /*time*/ auto end_clusterization_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_clusterization_cpu =
+                end_clusterization_cpu - start_clusterization_cpu;
+            /*time*/ clusterization_cpu += time_clusterization_cpu.count();
+
+            /*---------------------------------
+                   Spacepoint formation (cpu)
+              ---------------------------------*/
+
+            /*time*/ auto start_sp_formation_cpu =
+                std::chrono::system_clock::now();
+
+            spacepoints_per_event = sf(measurements_per_event);
+
+            /*time*/ auto end_sp_formation_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
+                end_sp_formation_cpu - start_sp_formation_cpu;
+            /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
+        }
 
         /*----------------------------
              Seeding algorithm
@@ -159,7 +178,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 
-        auto seeds_cuda = sa_cuda(spacepoints_per_event_cuda);
+        auto seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -168,18 +187,18 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         // CPU
 
-        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
-
         traccc::seeding_algorithm::output_type seeds;
 
         if (run_cpu) {
-            seeds = sa(spacepoints_per_event);
-        }
+            /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
-        /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_seeding_cpu =
-            end_seeding_cpu - start_seeding_cpu;
-        /*time*/ seeding_cpu += time_seeding_cpu.count();
+            seeds = sa(spacepoints_per_event);
+
+            /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_seeding_cpu =
+                end_seeding_cpu - start_seeding_cpu;
+            /*time*/ seeding_cpu += time_seeding_cpu.count();
+        }
 
         /*----------------------------
           Track params estimation
@@ -190,8 +209,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_cuda =
             std::chrono::system_clock::now();
 
-        auto params_cuda = tp_cuda(std::move(spacepoints_per_event_cuda),
-                                   std::move(seeds_cuda));
+        auto params_cuda = tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
@@ -200,40 +218,85 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         // CPU
 
-        /*time*/ auto start_tp_estimating_cpu =
-            std::chrono::system_clock::now();
-
         traccc::track_params_estimation::output_type params;
         if (run_cpu) {
-            params = tp(spacepoints_per_event, seeds);
-        }
+            /*time*/ auto start_tp_estimating_cpu =
+                std::chrono::system_clock::now();
 
-        /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
-            end_tp_estimating_cpu - start_tp_estimating_cpu;
-        /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+            params = tp(spacepoints_per_event, seeds);
+
+            /*time*/ auto end_tp_estimating_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
+                end_tp_estimating_cpu - start_tp_estimating_cpu;
+            /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+        }
 
         /*----------------------------------
           compare cpu and cuda result
           ----------------------------------*/
         // Convering spacepoints container buffer to host
-        vecmem::copy copy;
-        traccc::spacepoint_container_types::host spacepoints_cuda(&mng_mr);
-        copy(spacepoints_per_event_cuda.headers,
-             spacepoints_cuda.get_headers());
-        copy(spacepoints_per_event_cuda.items, spacepoints_cuda.get_items());
+        vecmem::cuda::copy copy;
+        traccc::spacepoint_container_types::host spacepoints_per_event_cuda;
+        traccc::host_seed_collection seeds_cuda;
+        copy(spacepoints_cuda_buffer.headers,
+             spacepoints_per_event_cuda.get_headers());
+        copy(spacepoints_cuda_buffer.items,
+             spacepoints_per_event_cuda.get_items());
+        copy(seeds_cuda_buffer, seeds_cuda);
 
         if (run_cpu) {
-            // seeding
+
+            // Initial information about number of seeds found
+            std::cout << "event " << std::to_string(event) << std::endl;
+            std::cout << " number of seeds (cpu): " << seeds.size()
+                      << std::endl;
+            std::cout << " number of seeds (cuda): " << seeds_cuda.size()
+                      << std::endl;
+
+            // measurements & spacepoint matching rate
+            int n_m_match = 0;
             int n_match = 0;
+            assert(spacepoints_per_event.size() ==
+                   spacepoints_per_event_cuda.size());
+            for (std::size_t i = 0; i < spacepoints_per_event.size(); ++i) {
+                assert(spacepoints_per_event[i].items.size() ==
+                       spacepoints_per_event_cuda[i].items.size());
+                for (auto& sp : spacepoints_per_event[i].items) {
+                    auto found_sp = std::find(
+                        spacepoints_per_event_cuda[i].items.begin(),
+                        spacepoints_per_event_cuda[i].items.end(), sp);
+                    auto found_m = std::find_if(
+                        spacepoints_per_event_cuda[i].items.begin(),
+                        spacepoints_per_event_cuda[i].items.end(),
+                        [&sp](auto& sp_cuda) {
+                            return sp.meas == sp_cuda.meas;
+                        });
+                    if (found_m != spacepoints_per_event_cuda[i].items.end()) {
+                        n_m_match++;
+                    }
+                    if (found_sp != spacepoints_per_event_cuda[i].items.end()) {
+                        n_match++;
+                    }
+                }
+            }
+            float m_matching_rate =
+                float(n_m_match) / spacepoints_per_event.total_size();
+            std::cout << " measurements matching rate: " << m_matching_rate
+                      << std::endl;
+            float matching_rate =
+                float(n_match) / spacepoints_per_event.total_size();
+            std::cout << " spacepoint matching rate: " << matching_rate
+                      << std::endl;
 
-            // Copy to spacepoints buffer to host container
-
+            // seeding matching rate
+            n_match = 0;
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector =
                 traccc::get_spacepoint_vector(seeds, spacepoints_per_event);
 
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_cuda =
-                traccc::get_spacepoint_vector(seeds_cuda, spacepoints_cuda);
+                traccc::get_spacepoint_vector(seeds_cuda,
+                                              spacepoints_per_event_cuda);
 
             for (const auto& sp3 : sp3_vector) {
                 if (std::find(sp3_vector_cuda.cbegin(), sp3_vector_cuda.cend(),
@@ -241,16 +304,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                     n_match++;
                 }
             }
-
-            float matching_rate = float(n_match) / seeds.size();
-            std::cout << "event " << std::to_string(event) << std::endl;
-            std::cout << " number of seeds (cpu): " << seeds.size()
-                      << std::endl;
-            std::cout << " number of seeds (cuda): " << seeds_cuda.size()
-                      << std::endl;
+            matching_rate = float(n_match) / seeds.size();
             std::cout << " seed matching rate: " << matching_rate << std::endl;
 
-            // track parameter estimation
+            // track parameter estimation matching rate
             n_match = 0;
             for (auto& param : params) {
                 if (std::find(params_cuda.begin(), params_cuda.end(), param) !=
@@ -271,6 +328,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_cells += cells_per_event.total_size();
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
+        n_spacepoints_cuda += spacepoints_per_event_cuda.total_size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
 
@@ -283,8 +341,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 event, i_cfg.detector_file, i_cfg.digitization_config_file,
                 common_opts.input_directory, common_opts.input_directory,
                 common_opts.input_directory, host_mr);
-            sd_performance_writer.write("CUDA", seeds_cuda, spacepoints_cuda,
-                                        evt_map);
+            sd_performance_writer.write("CUDA", seeds_cuda,
+                                        spacepoints_per_event_cuda, evt_map);
 
             if (run_cpu) {
                 sd_performance_writer.write("CPU", seeds, spacepoints_per_event,

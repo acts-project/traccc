@@ -63,10 +63,26 @@ spacepoint_binning::spacepoint_binning(
 }
 
 sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::view& sp_data) const {
+    const spacepoint_container_types::const_view& spacepoints_view) const {
+
+    // Get the spacepoint sizes from the view
+    auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
+
+    return this->operator()(spacepoints_view, sp_sizes);
+}
+
+sp_grid_buffer spacepoint_binning::operator()(
+    const spacepoint_container_types::buffer& spacepoints_buffer) const {
 
     // Get the spacepoint sizes from the buffer
-    auto sp_sizes = m_copy->get_sizes(sp_data.items);
+    auto sp_sizes = m_copy->get_sizes(spacepoints_buffer.items);
+
+    return this->operator()(spacepoints_buffer, sp_sizes);
+}
+
+sp_grid_buffer spacepoint_binning::operator()(
+    const spacepoint_container_types::const_view& spacepoints_view,
+    const std::vector<unsigned int>& sp_sizes) const {
 
     // Get the prefix sum for the spacepoints using buffer.
     const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
@@ -97,8 +113,8 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Fill the grid capacity container.
     kernels::count_grid_capacities<<<num_blocks, num_threads>>>(
-        m_config, m_axes.first, m_axes.second, sp_data, sp_prefix_sum_view,
-        grid_capacities_view);
+        m_config, m_axes.first, m_axes.second, spacepoints_view,
+        sp_prefix_sum_view, grid_capacities_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -118,7 +134,7 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Populate the grid.
     kernels::populate_grid<<<num_blocks, num_threads>>>(
-        m_config, sp_data, sp_prefix_sum_view, grid_view);
+        m_config, spacepoints_view, sp_prefix_sum_view, grid_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 

@@ -126,18 +126,18 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // CPU
 
-        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
-
         traccc::seeding_algorithm::output_type seeds;
 
         if (run_cpu) {
-            seeds = sa(spacepoints_per_event);
-        }
+            /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
-        /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_seeding_cpu =
-            end_seeding_cpu - start_seeding_cpu;
-        /*time*/ seeding_cpu += time_seeding_cpu.count();
+            seeds = sa(spacepoints_per_event);
+
+            /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_seeding_cpu =
+                end_seeding_cpu - start_seeding_cpu;
+            /*time*/ seeding_cpu += time_seeding_cpu.count();
+        }
 
         /*----------------------------
           Track params estimation
@@ -159,18 +159,19 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // CPU
 
-        /*time*/ auto start_tp_estimating_cpu =
-            std::chrono::system_clock::now();
-
         traccc::track_params_estimation::output_type params;
         if (run_cpu) {
-            params = tp(std::move(spacepoints_per_event), seeds);
-        }
+            /*time*/ auto start_tp_estimating_cpu =
+                std::chrono::system_clock::now();
 
-        /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
-            end_tp_estimating_cpu - start_tp_estimating_cpu;
-        /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+            params = tp(std::move(spacepoints_per_event), seeds);
+
+            /*time*/ auto end_tp_estimating_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
+                end_tp_estimating_cpu - start_tp_estimating_cpu;
+            /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+        }
 
         /*----------------------------------
           compare seeds from cpu and sycl

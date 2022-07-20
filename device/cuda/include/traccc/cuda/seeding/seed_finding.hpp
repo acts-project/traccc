@@ -26,8 +26,11 @@ namespace traccc::cuda {
 
 /// Seed finding for cuda
 class seed_finding
-    : public algorithm<host_seed_collection(
-          const spacepoint_container_types::view&, const sp_grid_const_view&)> {
+    : public algorithm<vecmem::data::vector_buffer<seed>(
+          const spacepoint_container_types::const_view&,
+          const sp_grid_const_view&)>,
+      public algorithm<vecmem::data::vector_buffer<seed>(
+          const spacepoint_container_types::buffer&, const sp_grid_buffer&)> {
 
     public:
     /// Constructor for the cuda seed finding
@@ -40,9 +43,30 @@ class seed_finding
 
     /// Callable operator for the seed finding
     ///
-    /// @return seed_collection is the vector of seeds per event
-    output_type operator()(const spacepoint_container_types::view& spacepoints,
-                           const sp_grid_const_view& g2_view) const override;
+    /// @param spacepoints_view     is a view of all spacepoints in the event
+    /// @param g2_view              is a view of the spacepoint grid
+    /// @return                     a vector buffer of seeds
+    ///
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::const_view& spacepoints_view,
+        const sp_grid_const_view& g2_view) const override;
+
+    /// Callable operator for the seed finding
+    ///
+    /// @param spacepoints_buffer   is a buffer of all spacepoints in the event
+    /// @param g2_buffer            is a buffer of the spacepoint grid
+    /// @return                     a vector buffer of seeds
+    ///
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::buffer& spacepoints_buffer,
+        const sp_grid_buffer& g2_buffer) const override;
+
+    private:
+    /// Implementation for the public seed finding operators.
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::const_view& spacepoints_view,
+        const sp_grid_const_view& g2_view,
+        const std::vector<unsigned int>& grid_sizes) const;
 
     private:
     seedfinder_config m_seedfinder_config;
