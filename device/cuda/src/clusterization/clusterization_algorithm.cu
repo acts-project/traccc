@@ -174,8 +174,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Invoke find clusters that will call cluster finding kernel
     kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
-    // Check for kernel launch errors
+
     CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum = device::get_prefix_sum(
@@ -185,9 +186,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(cells_prefix_sum_buff);
     (*m_copy)(vecmem::get_data(cells_prefix_sum), cells_prefix_sum_buff,
               vecmem::copy::type::copy_type::host_to_device);
-
-    // Wait here for the cluster_finding kernel to finish
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
@@ -256,8 +254,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     kernels::connect_components<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, clusters_view);
-    // Check for kernel launch errors
     CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.main},
@@ -274,9 +273,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
          m_mr.main, m_mr.host}};
     m_copy->setup(spacepoints_buffer.headers);
     m_copy->setup(spacepoints_buffer.items);
-
-    // Wait here for the component connection kernel to finish
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Create views to pass to measurement creation kernel
     measurement_container_types::view measurements_view = measurements_buffer;
