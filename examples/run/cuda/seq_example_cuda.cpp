@@ -94,20 +94,23 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         sd_performance_writer.add_cache("CUDA");
     }
 
-    /*time*/ auto start_wall_time = std::chrono::system_clock::now();
-
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
+        /*time*/ auto start_wall_time = std::chrono::system_clock::now();
+
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
-        // Read the cells from the relevant event file for CPU algorithm
-        traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(event, common_opts.input_directory,
-                                          common_opts.input_data_format,
-                                          surface_transforms, digi_cfg,
-                                          host_mr);
+        traccc::cell_container_types::host cells_per_event;
+
+        if (run_cpu) {
+            // Read the cells from the relevant event file for CPU algorithm
+            cells_per_event = traccc::read_cells_from_event(
+                event, common_opts.input_directory,
+                common_opts.input_data_format, surface_transforms, digi_cfg,
+                host_mr);
+        }
 
         // Read the cells from the relevant event file for CUDA algorithm
         traccc::cell_container_types::host cells_per_event_cuda =
@@ -235,17 +238,19 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*----------------------------------
           compare cpu and cuda result
           ----------------------------------*/
-        // Convering spacepoints container buffer to host
+
         vecmem::cuda::copy copy;
         traccc::spacepoint_container_types::host spacepoints_per_event_cuda;
         traccc::host_seed_collection seeds_cuda;
-        copy(spacepoints_cuda_buffer.headers,
-             spacepoints_per_event_cuda.get_headers());
-        copy(spacepoints_cuda_buffer.items,
-             spacepoints_per_event_cuda.get_items());
-        copy(seeds_cuda_buffer, seeds_cuda);
 
         if (run_cpu) {
+
+            // Converting spacepoints container buffer to host
+            copy(spacepoints_cuda_buffer.headers,
+                 spacepoints_per_event_cuda.get_headers());
+            copy(spacepoints_cuda_buffer.items,
+                 spacepoints_per_event_cuda.get_items());
+            copy(seeds_cuda_buffer, seeds_cuda);
 
             // Initial information about number of seeds found
             std::cout << "event " << std::to_string(event) << std::endl;
@@ -337,6 +342,14 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           ------------*/
 
         if (i_cfg.check_performance) {
+
+            // Converting spacepoints container buffer to host
+            copy(spacepoints_cuda_buffer.headers,
+                 spacepoints_per_event_cuda.get_headers());
+            copy(spacepoints_cuda_buffer.items,
+                 spacepoints_per_event_cuda.get_items());
+            copy(seeds_cuda_buffer, seeds_cuda);
+
             traccc::event_map evt_map(
                 event, i_cfg.detector_file, i_cfg.digitization_config_file,
                 common_opts.input_directory, common_opts.input_directory,
@@ -349,13 +362,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                             evt_map);
             }
         }
+
+        /*time*/ auto end_wall_time = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_wall_time =
+            end_wall_time - start_wall_time;
+
+        /*time*/ wall_time += time_wall_time.count();
     }
-
-    /*time*/ auto end_wall_time = std::chrono::system_clock::now();
-    /*time*/ std::chrono::duration<double> time_wall_time =
-        end_wall_time - start_wall_time;
-
-    /*time*/ wall_time += time_wall_time.count();
 
     if (i_cfg.check_performance) {
         sd_performance_writer.finalize();
