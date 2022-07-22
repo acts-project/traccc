@@ -323,23 +323,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             matching_rate = float(n_match) / params.size();
             std::cout << " track parameters matching rate: " << matching_rate
                       << std::endl;
+
+            /// Statistics
+            n_modules += cells_per_event.size();
+            n_cells += cells_per_event.total_size();
+            n_measurements += measurements_per_event.total_size();
+            n_spacepoints += spacepoints_per_event.total_size();
+            n_spacepoints_cuda += spacepoints_per_event_cuda.total_size();
+            n_seeds_cuda += seeds_cuda.size();
+            n_seeds += seeds.size();
         }
-
-        /*----------------
-             Statistics
-          ---------------*/
-
-        n_modules += cells_per_event.size();
-        n_cells += cells_per_event.total_size();
-        n_measurements += measurements_per_event.total_size();
-        n_spacepoints += spacepoints_per_event.total_size();
-        n_spacepoints_cuda += spacepoints_per_event_cuda.total_size();
-        n_seeds_cuda += seeds_cuda.size();
-        n_seeds += seeds.size();
-
-        /*------------
-             Writer
-          ------------*/
 
         if (i_cfg.check_performance) {
 
