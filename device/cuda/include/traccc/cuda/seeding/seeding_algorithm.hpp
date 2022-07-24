@@ -19,26 +19,41 @@
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
+// traccc library include(s).
+#include "traccc/utils/memory_resource.hpp"
+
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
-class seeding_algorithm : public algorithm<host_seed_collection(
-                              const spacepoint_container_types::view&)> {
+class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
+                              const spacepoint_container_types::const_view&)>,
+                          public algorithm<vecmem::data::vector_buffer<seed>(
+                              const spacepoint_container_types::buffer&)> {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
     /// @param mr The memory resource to use
     ///
-    seeding_algorithm(vecmem::memory_resource& mr);
+    seeding_algorithm(const traccc::memory_resource& mr);
 
     /// Operator executing the algorithm.
     ///
-    /// @param spacepoint All spacepoints in the event
-    /// @return The track seeds reconstructed from the spacepoints
+    /// @param spacepoints_view is a view of all spacepoints in the event
+    /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
-    output_type operator()(
-        const spacepoint_container_types::view& spacepoints) const override;
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::const_view& spacepoints_view)
+        const override;
+
+    /// Operator executing the algorithm.
+    ///
+    /// @param spacepoints_buffer is a buffer of all spacepoints in the event
+    /// @return the buffer of track seeds reconstructed from the spacepoints
+    ///
+    vecmem::data::vector_buffer<seed> operator()(
+        const spacepoint_container_types::buffer& spacepoints_buffer)
+        const override;
 
     private:
     /// Sub-algorithm performing the spacepoint binning

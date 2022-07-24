@@ -5,26 +5,20 @@
  * Mozilla Public License Version 2.0
  */
 
-// io
+// Project include(s).
+#include "traccc/cuda/seeding/seeding_algorithm.hpp"
+#include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/writer.hpp"
-
-// algorithms
-#include "traccc/cuda/seeding/seeding_algorithm.hpp"
-#include "traccc/cuda/seeding/track_params_estimation.hpp"
-#include "traccc/seeding/seeding_algorithm.hpp"
-#include "traccc/seeding/track_params_estimation.hpp"
-
-// performance
-#include "traccc/efficiency/seeding_performance_writer.hpp"
-
-// options
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
+#include "traccc/seeding/seeding_algorithm.hpp"
+#include "traccc/seeding/track_params_estimation.hpp"
 
-// vecmem
+// VecMem include(s).
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 
@@ -63,14 +57,16 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
-    traccc::cuda::track_params_estimation tp_cuda(mng_mr);
+    traccc::cuda::seeding_algorithm sa_cuda({mng_mr});
+    traccc::cuda::track_params_estimation tp_cuda({mng_mr});
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    sd_performance_writer.add_cache("CPU");
-    sd_performance_writer.add_cache("CUDA");
+    if (i_cfg.check_performance) {
+        sd_performance_writer.add_cache("CPU");
+        sd_performance_writer.add_cache("CUDA");
+    }
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
@@ -86,20 +82,14 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Read the hits from the relevant event file
         traccc::spacepoint_container_types::host spacepoints_per_event =
-            traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
-                                                common_opts.input_data_format,
-                                                surface_transforms, mng_mr);
+            traccc::read_spacepoints_from_event(
+                event, common_opts.input_directory,
+                common_opts.input_data_format, surface_transforms, mng_mr);
 
         /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_hit_reading_cpu =
             end_hit_reading_cpu - start_hit_reading_cpu;
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
-
-        // Get spacepoint container view.
-        // This is required as seeding cuda now expected a spacepoint container
-        // view
-        traccc::spacepoint_container_types::view sp_view_per_event =
-            get_data(spacepoints_per_event, &mng_mr);
 
         /*----------------------------
              Seeding algorithm
@@ -109,7 +99,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 
-        auto seeds_cuda = sa_cuda(std::move(sp_view_per_event));
+        auto seeds_cuda_buffer =
+            sa_cuda(traccc::get_data(spacepoints_per_event, &mng_mr));
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -118,18 +109,18 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // CPU
 
-        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
-
         traccc::seeding_algorithm::output_type seeds;
 
         if (run_cpu) {
-            seeds = sa(spacepoints_per_event);
-        }
 
-        /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_seeding_cpu =
-            end_seeding_cpu - start_seeding_cpu;
-        /*time*/ seeding_cpu += time_seeding_cpu.count();
+            /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
+            seeds = sa(spacepoints_per_event);
+
+            /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_seeding_cpu =
+                end_seeding_cpu - start_seeding_cpu;
+            /*time*/ seeding_cpu += time_seeding_cpu.count();
+        }
 
         /*----------------------------
           Track params estimation
@@ -141,7 +132,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             std::chrono::system_clock::now();
 
         auto params_cuda =
-            tp_cuda(std::move(sp_view_per_event), std::move(seeds_cuda));
+            tp_cuda(traccc::get_data(spacepoints_per_event, &mng_mr),
+                    seeds_cuda_buffer);
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
@@ -150,22 +142,28 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // CPU
 
-        /*time*/ auto start_tp_estimating_cpu =
-            std::chrono::system_clock::now();
-
         traccc::track_params_estimation::output_type params;
         if (run_cpu) {
-            params = tp(std::move(spacepoints_per_event), seeds);
-        }
+            /*time*/ auto start_tp_estimating_cpu =
+                std::chrono::system_clock::now();
 
-        /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
-            end_tp_estimating_cpu - start_tp_estimating_cpu;
-        /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+            params = tp(std::move(spacepoints_per_event), seeds);
+
+            /*time*/ auto end_tp_estimating_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
+                end_tp_estimating_cpu - start_tp_estimating_cpu;
+            /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+        }
 
         /*----------------------------------
           compare seeds from cpu and cuda
           ----------------------------------*/
+
+        // Copy the seeds to the host for comparisons
+        vecmem::copy copy;
+        traccc::host_seed_collection seeds_cuda;
+        copy(seeds_cuda_buffer, seeds_cuda);
 
         if (run_cpu) {
             // seeding
@@ -214,10 +212,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
-        if (i_cfg.check_seeding_performance) {
+        if (i_cfg.check_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
-                                      i_cfg.hit_directory,
-                                      i_cfg.particle_directory, host_mr);
+                                      common_opts.input_directory,
+                                      common_opts.input_directory, host_mr);
             sd_performance_writer.write("CUDA", seeds_cuda,
                                         spacepoints_per_event, evt_map);
             if (run_cpu) {
@@ -233,7 +231,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     /*time*/ wall_time += time_wall_time.count();
 
-    sd_performance_writer.finalize();
+    if (i_cfg.check_performance) {
+        sd_performance_writer.finalize();
+    }
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
@@ -282,8 +282,8 @@ int main(int argc, char* argv[]) {
     auto run_cpu = vm["run_cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " " << seeding_input_cfg.detector_file
-              << " " << seeding_input_cfg.hit_directory << " "
-              << common_opts.events << std::endl;
+              << " " << common_opts.input_directory << " " << common_opts.events
+              << std::endl;
 
     return seq_run(seeding_input_cfg, common_opts, run_cpu);
 }

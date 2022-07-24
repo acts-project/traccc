@@ -211,7 +211,7 @@ cmake --build <build_directory> <options>
 ### cpu reconstruction chain
 
 ```sh
-<build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_pixels/ --events=10 
+<build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 
 ```
 
 ### cuda reconstruction chain

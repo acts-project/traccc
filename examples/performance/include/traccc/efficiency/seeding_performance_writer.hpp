@@ -44,16 +44,7 @@ class seeding_performance_writer {
     seeding_performance_writer(config cfg)
         : m_cfg(std::move(cfg)),
           m_eff_plot_tool(m_cfg.eff_plot_tool_config),
-          m_duplication_plot_tool(m_cfg.duplication_plot_tool_config) {
-
-        auto path = m_cfg.file_path;
-
-        m_output_file = TFile::Open(path.c_str(), m_cfg.file_mode.c_str());
-
-        if (not m_output_file) {
-            throw std::invalid_argument("Could not open '" + path + "'");
-        }
-    };
+          m_duplication_plot_tool(m_cfg.duplication_plot_tool_config){};
 
     ~seeding_performance_writer() {
 
@@ -71,6 +62,10 @@ class seeding_performance_writer {
     }
 
     void add_cache(std::string name) {
+        if (not m_output_file) {
+            init();
+        }
+
         m_eff_plot_tool.book(name, m_eff_plot_caches[name]);
         m_duplication_plot_tool.book(name, m_duplication_plot_caches[name]);
     }
@@ -152,9 +147,20 @@ class seeding_performance_writer {
     }
 
     private:
+    void init() {
+        const std::string& path = m_cfg.file_path;
+
+        m_output_file = std::unique_ptr<TFile>{
+            TFile::Open(path.c_str(), m_cfg.file_mode.c_str())};
+
+        if (not m_output_file) {
+            throw std::invalid_argument("Could not open '" + path + "'");
+        }
+    }
+
     config m_cfg;
 
-    TFile* m_output_file{nullptr};
+    std::unique_ptr<TFile> m_output_file{nullptr};
     /// Plot tool for efficiency
     eff_plot_tool m_eff_plot_tool;
     std::map<std::string, eff_plot_tool::eff_plot_cache> m_eff_plot_caches;

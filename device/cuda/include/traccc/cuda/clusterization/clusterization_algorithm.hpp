@@ -13,6 +13,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -31,7 +32,7 @@ class clusterization_algorithm
     /// Constructor for clusterization algorithm
     ///
     /// @param mr is a memory resource (device)
-    clusterization_algorithm(vecmem::memory_resource& mr);
+    clusterization_algorithm(const traccc::memory_resource& mr);
 
     /// Callable operator for clusterization algorithm
     ///
@@ -43,7 +44,8 @@ class clusterization_algorithm
         const cell_container_types::host& cells_per_event) const override;
 
     private:
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
+    traccc::memory_resource m_mr;
+    std::unique_ptr<vecmem::copy> m_copy;
 };
 
 }  // namespace traccc::cuda
