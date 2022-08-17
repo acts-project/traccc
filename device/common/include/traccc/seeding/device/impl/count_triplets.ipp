@@ -59,12 +59,12 @@ void count_triplets(
     const const_sp_grid_device internal_sp_device(sp_view);
 
     // Get internal spacepoints for current bin
-    const unsigned int& num_compat_spM_per_bin =
+    const unsigned int num_compat_spM_per_bin =
         doublet_counter_device.get_headers().at(bin_idx).m_nSpM;
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    const vecmem::device_vector<const doublet_counter> doublet_counter_per_bin =
+    const doublet_counter_collection_types::const_device doublet_counter_per_bin =
         doublet_counter_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
@@ -73,16 +73,16 @@ void count_triplets(
         mid_top_doublet_device.get_items().at(bin_idx);
 
     // middle spacepoint indexes
-    const unsigned int& spM_bin = mid_bot.sp1.bin_idx;
-    const unsigned int& spM_idx = mid_bot.sp1.sp_idx;
+    const unsigned int spM_bin = mid_bot.sp1.bin_idx;
+    const unsigned int spM_idx = mid_bot.sp1.sp_idx;
     // middle spacepoint
-    const traccc::internal_spacepoint<traccc::spacepoint>& spM =
+    const traccc::internal_spacepoint<traccc::spacepoint> spM =
         internal_sp_device.bin(spM_bin)[spM_idx];
     // bottom spacepoint indexes
-    const unsigned int& spB_bin = mid_bot.sp2.bin_idx;
-    const unsigned int& spB_idx = mid_bot.sp2.sp_idx;
+    const unsigned int spB_bin = mid_bot.sp2.bin_idx;
+    const unsigned int spB_idx = mid_bot.sp2.sp_idx;
     // bottom spacepoint
-    const traccc::internal_spacepoint<traccc::spacepoint>& spB =
+    const traccc::internal_spacepoint<traccc::spacepoint> spB =
         internal_sp_device.bin(spB_bin)[spB_idx];
 
     // Apply the conformal transformation to middle-bot doublet
@@ -94,6 +94,9 @@ void count_triplets(
     scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
     scalar scatteringInRegion2 = config.maxScatteringAngle2 * iSinTheta2;
     scatteringInRegion2 *= config.sigmaScattering * config.sigmaScattering;
+    
+    // These two quantities are used as output parameters in 
+    // triplet_finding_helper::isCompatible but their values are irrelevant
     scalar curvature, impact_parameter;
 
     // find the reference (start) index of the mid-top doublet container
@@ -127,11 +130,11 @@ void count_triplets(
 
     // iterate over mid-top doublets
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
-        const traccc::doublet& mid_top_doublet = mid_top_doublets_per_bin[i];
+        const traccc::doublet mid_top_doublet = mid_top_doublets_per_bin[i];
 
-        const unsigned int& spT_bin = mid_top_doublet.sp2.bin_idx;
-        const unsigned int& spT_idx = mid_top_doublet.sp2.sp_idx;
-        const traccc::internal_spacepoint<traccc::spacepoint>& spT =
+        const unsigned int spT_bin = mid_top_doublet.sp2.bin_idx;
+        const unsigned int spT_idx = mid_top_doublet.sp2.sp_idx;
+        const traccc::internal_spacepoint<traccc::spacepoint> spT =
             internal_sp_device.bin(spT_bin)[spT_idx];
 
         // Apply the conformal transformation to middle-top doublet

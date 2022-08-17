@@ -110,7 +110,7 @@ class TripletFind {
         if (item_idx < num_compat_mb_per_bin) {
             // middle bottom doublet
             const doublet& mid_bot_doublet =
-                triplet_counter_per_bin[item_idx].mid_bot_doublet;
+                triplet_counter_per_bin[item_idx].m_midBotDoublet;
             // middle spacepoint index
             const auto& spM_idx = mid_bot_doublet.sp1.sp_idx;
             // middle spacepoint

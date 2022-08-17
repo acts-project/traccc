@@ -15,6 +15,7 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "src/get_prefix_sum.cpp"
    # EDM class(es).
    "include/traccc/edm/device/doublet_counter.hpp"
+   "include/traccc/edm/device/triplet_counter.hpp"
    # Clusterization function(s).
    "include/traccc/clusterization/device/find_clusters.hpp"
    "include/traccc/clusterization/device/impl/find_clusters.ipp"
@@ -42,7 +43,6 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "src/seeding/make_doublet_buffers.cpp"
    "include/traccc/seeding/device/count_triplets.hpp"
    "include/traccc/seeding/device/impl/count_triplets.ipp"
-   "include/traccc/edm/device/triplet_counter.hpp"
    "include/traccc/seeding/device/make_triplet_counter_buffer.hpp"
    "src/seeding/make_triplet_counter_buffer.cpp" )
 target_link_libraries( traccc_device_common

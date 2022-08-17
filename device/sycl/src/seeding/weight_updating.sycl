@@ -78,8 +78,8 @@ class WeightUpdate {
         for (auto triplet_counter : triplet_counter_per_bin) {
             end_idx += triplet_counter.m_nTriplets;
 
-            if (triplet_counter.mid_bot_doublet.sp1 == spM_idx &&
-                triplet_counter.mid_bot_doublet.sp2 == spB_idx) {
+            if (triplet_counter.m_midBotDoublet.sp1 == spM_idx &&
+                triplet_counter.m_midBotDoublet.sp2 == spB_idx) {
                 break;
             }
 

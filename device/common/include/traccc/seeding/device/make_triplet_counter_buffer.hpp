@@ -14,6 +14,10 @@
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
+// System include(s)
+#include <vector>
+#include <cstddef>
+
 namespace traccc::device {
 
 /// Create a triplet counter buffer
@@ -29,7 +33,7 @@ namespace traccc::device {
 /// @return A buffer usable by @c traccc::device::count_triplets
 ///
 triplet_counter_container_types::buffer make_triplet_counter_buffer(
-    const std::vector<size_t>& mb_doublet_sizes, vecmem::copy& copy,
+    const std::vector<std::size_t>& mb_doublet_sizes, vecmem::copy& copy,
     vecmem::memory_resource& mr, vecmem::memory_resource* mr_host = nullptr);
 
 }  // namespace traccc::device

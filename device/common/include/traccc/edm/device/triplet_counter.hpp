@@ -30,11 +30,6 @@ struct triplet_counter_header {
     TRACCC_HOST_DEVICE
     unsigned int get_ref_num() const { return m_nMidBot; }
 
-    void zeros() {
-        m_nMidBot = 0;
-        m_nTriplets = 0;
-    }
-
 };  // struct triplet_counter_header
 
 /// Item type for the "triplet counter container"
@@ -44,7 +39,7 @@ struct triplet_counter_header {
 struct triplet_counter {
 
     /// indices of two spacepoints of midbot doublet
-    doublet mid_bot_doublet;
+    doublet m_midBotDoublet;
 
     /// The number of compatible triplets for a the midbot doublet
     unsigned int m_nTriplets = 0;
