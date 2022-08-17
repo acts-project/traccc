@@ -64,8 +64,9 @@ void count_triplets(
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    const doublet_counter_collection_types::const_device doublet_counter_per_bin =
-        doublet_counter_device.get_items().at(bin_idx);
+    const doublet_counter_collection_types::const_device
+        doublet_counter_per_bin =
+            doublet_counter_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
@@ -94,8 +95,8 @@ void count_triplets(
     scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
     scalar scatteringInRegion2 = config.maxScatteringAngle2 * iSinTheta2;
     scatteringInRegion2 *= config.sigmaScattering * config.sigmaScattering;
-    
-    // These two quantities are used as output parameters in 
+
+    // These two quantities are used as output parameters in
     // triplet_finding_helper::isCompatible but their values are irrelevant
     scalar curvature, impact_parameter;
 

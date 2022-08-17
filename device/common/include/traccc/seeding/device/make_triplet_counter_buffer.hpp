@@ -15,8 +15,8 @@
 #include <vecmem/utils/copy.hpp>
 
 // System include(s)
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 namespace traccc::device {
 
