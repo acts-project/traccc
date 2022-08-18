@@ -10,6 +10,7 @@
 
 // System include(s).
 #include <algorithm>
+#include <cassert>
 
 namespace traccc::device {
 
@@ -19,15 +20,15 @@ prefix_sum_t get_prefix_sum(
     vecmem::memory_resource& mr) {
 
     // Create the result object.
-    prefix_sum_t result(&mr);
     const std::size_t nelements = static_cast<std::size_t>(
         std::accumulate(sizes.begin(), sizes.end(), 0));
-    result.reserve(nelements);
+    prefix_sum_t result(nelements, &mr);
 
     // Fill the result object.
-    for (std::size_t i = 0; i < sizes.size(); ++i) {
-        for (std::size_t j = 0; j < sizes[i]; ++j) {
-            result.push_back({i, j});
+    for (std::size_t i = 0, k = 0; i < sizes.size(); ++i) {
+        for (std::size_t j = 0; j < sizes[i]; ++j, ++k) {
+            assert(k < result.size());
+            result[k] = {i, j};
         }
     }
 
