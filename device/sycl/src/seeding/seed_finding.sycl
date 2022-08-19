@@ -24,9 +24,11 @@
 #include "traccc/seeding/device/count_doublets.hpp"
 #include "traccc/seeding/device/count_triplets.hpp"
 #include "traccc/seeding/device/find_doublets.hpp"
+#include "traccc/seeding/device/find_triplets.hpp"
 #include "traccc/seeding/device/make_doublet_buffers.hpp"
 #include "traccc/seeding/device/make_doublet_counter_buffer.hpp"
 #include "traccc/seeding/device/make_triplet_counter_buffer.hpp"
+#include "traccc/seeding/device/make_triplet_buffer.hpp"
 
 // VecMem include(s).
 #include "vecmem/utils/sycl/copy.hpp"
@@ -42,6 +44,9 @@ class find_doublets;
 
 /// Class identifying the kernel running @c traccc::device::count_triplets
 class count_triplets;
+
+/// Class identifying the kernel running @c traccc::device::find_triplets
+class find_triplets;
 
 }  // namespace kernels
 
@@ -237,14 +242,110 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
                     g2_view, doublet_counter_view, mb_view, mt_view,
                     triplet_counter_buffer, tc_buffer, m_queue);
 
-    // Take header of the triplet container buffer into host
+// ------------------------------------------------------------------------
+
+    // Set up the triplet buffer and its view
+    triplet_container_buffer triplet_buffer = device::make_triplet_buffer(
+        triplet_counter_buffer, *m_copy, m_mr.main, m_mr.host);
+    triplet_container_view triplet_view = triplet_buffer;
+
+    // Get the prefix sum for the triplet counter buffer
+    const device::prefix_sum_t triplet_prefix_sum =
+        device::get_prefix_sum(triplet_counter_buffer.items,
+                               (m_mr.host ? *(m_mr.host) : m_mr.main), *m_copy);
+
+    // Set up the buffer of the prefix sum and its view
+    vecmem::data::vector_buffer<device::prefix_sum_element_t>
+        triplet_prefix_sum_buff(triplet_prefix_sum.size(), m_mr.main);
+    m_copy->setup(triplet_prefix_sum_buff);
+    (*m_copy)(vecmem::get_data(triplet_prefix_sum), triplet_prefix_sum_buff);
+    vecmem::data::vector_view<device::prefix_sum_element_t>
+        triplet_prefix_sum_view = triplet_prefix_sum_buff;
+
+    // Calculate the range to run the triplet finding for
+    static constexpr unsigned int tripletFindLocalSize = 32 * 2;
+    auto tripletFindRange = traccc::sycl::calculate1DimNdRange(
+        triplet_prefix_sum.size(), tripletFindLocalSize);
+
+    // Find all of the spacepoint triplets.
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
+            h.parallel_for<kernels::find_triplets>(
+                tripletFindRange,
+                [config = m_seedfinder_config, filter_config = m_seedfilter_config, g2_view, 
+                 doublet_counter_view, mb_view, mt_view, triplet_counter_view,
+                 triplet_prefix_sum_view, triplet_view](::sycl::nd_item<1> item) {
+                    device::find_triplets(item.get_global_linear_id(), config, filter_config,
+                                          g2_view, doublet_counter_view, mb_view, mt_view,
+                                          triplet_counter_view, triplet_prefix_sum_view,
+                                          triplet_view);
+                });
+        })
+        .wait_and_throw();
     vecmem::vector<triplet_per_bin> tc_headers(m_mr.host ? m_mr.host
                                                          : &(m_mr.main));
     (*m_copy)(tc_buffer.headers, tc_headers);
+    vecmem::jagged_vector<triplet> tc_items(m_mr.host ? m_mr.host
+                                                         : &(m_mr.main));
+    (*m_copy)(tc_buffer.items, tc_items);
+    vecmem::vector<triplet_per_bin> tc_headers_new(m_mr.host ? m_mr.host
+                                                         : &(m_mr.main));
+    (*m_copy)(triplet_buffer.headers, tc_headers_new);
+    vecmem::jagged_vector<triplet> tc_items_new(m_mr.host ? m_mr.host
+                                                         : &(m_mr.main));
+    (*m_copy)(triplet_buffer.items, tc_items_new);
+
+    unsigned int matches(0), matches2(0), total(0);
+    for(unsigned int i = 0; i < tc_headers.size(); ++i){
+        total += tc_headers[i].n_triplets;
+        if(tc_headers[i].n_triplets == tc_headers_new[i].n_triplets){
+            matches++;
+        }
+        for(unsigned int j = 0; j < tc_headers[i].n_triplets; ++j){
+            for(unsigned int k = 0; k < tc_headers[i].n_triplets; ++k){
+                if(tc_items[i][j] == tc_items_new[i][k]){
+                    matches2++;
+                }
+            }
+        }
+    }
+    std::cout << "headers matching rate = " << (float)matches/(float)tc_headers.size() << std::endl;
+    std::cout << "items   matching rate = " << (float)matches2/(float)total << std::endl;
+    std::cout << "\n\n\n-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-\n\n"<< std::endl;
+
+    for(int i = 0; i < 10; ++i){
+        bool flag = false;
+        for(unsigned int i = 0; i < tc_headers.size(); ++i){
+            for(unsigned int j = 0; j < tc_headers[i].n_triplets; ++j){
+                for(unsigned int k = 0; k < tc_headers[i].n_triplets; ++k){
+                    if(tc_items[i][j] == tc_items_new[i][k] && j != k){
+                        auto temp = tc_items_new[i][j];
+                        tc_items_new[i][j] = tc_items_new[i][k];
+                        tc_items_new[i][k] = temp;
+                        flag = true;
+                    }
+                }
+            }
+        }
+        if(!flag){
+            std::cout << "ordered in #loops = " << i << std::endl;
+            break;
+        }
+    }
+
+    (*m_copy)(vecmem::get_data(tc_items_new), triplet_buffer.items);
+
+// 
+// ------------------------------------------------------------------------
+
+    // Take header of the triplet container buffer into host
+    // vecmem::vector<triplet_per_bin> tc_headers(m_mr.host ? m_mr.host
+    //                                                      : &(m_mr.main));
+    // (*m_copy)(tc_buffer.headers, tc_headers);
 
     // weight updating
     weight_updating(m_seedfilter_config, tc_headers, g2_view,
-                    triplet_counter_buffer, tc_buffer, m_queue);
+                    triplet_counter_buffer, triplet_buffer, m_queue);
 
     // Get the number of seeds (triplets)
     auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
@@ -256,7 +357,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // seed selecting
     seed_selecting(m_seedfilter_config, doublet_counts, spacepoints_view,
                    g2_view, doublet_counter_view, triplet_counter_buffer,
-                   tc_buffer, seed_buffer, m_queue);
+                   triplet_buffer, seed_buffer, m_queue);
 
     return seed_buffer;
 }

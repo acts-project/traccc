@@ -43,7 +43,11 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "src/seeding/make_doublet_buffers.cpp"
    "include/traccc/seeding/device/count_triplets.hpp"
    "include/traccc/seeding/device/impl/count_triplets.ipp"
+   "include/traccc/seeding/device/find_triplets.hpp"
+   "include/traccc/seeding/device/impl/find_triplets.ipp"
    "include/traccc/seeding/device/make_triplet_counter_buffer.hpp"
-   "src/seeding/make_triplet_counter_buffer.cpp" )
+   "src/seeding/make_triplet_counter_buffer.cpp"
+   "include/traccc/seeding/device/make_triplet_buffer.hpp"
+   "src/seeding/make_triplet_buffer.cpp" )
 target_link_libraries( traccc_device_common
    PUBLIC traccc::core vecmem::core )

@@ -31,7 +31,8 @@ class TripletFind {
         doublet_container_view mid_bot_doublet_view,
         doublet_container_view mid_top_doublet_view,
         device::triplet_counter_container_types::view triplet_counter_view,
-        triplet_container_view triplet_view, local_accessor<int> localMem)
+        triplet_container_view triplet_view, local_accessor<int> localMem,
+        ::sycl::stream out)
         : m_config(config),
           m_filter_config(filter_config),
           m_internal_sp_view(internal_sp_view),
@@ -40,7 +41,8 @@ class TripletFind {
           m_mid_top_doublet_view(mid_top_doublet_view),
           m_triplet_counter_view(triplet_counter_view),
           m_triplet_view(triplet_view),
-          m_localMem(localMem) {}
+          m_localMem(localMem),
+          m_out(out) {}
 
     void operator()(::sycl::nd_item<1> item) const {
 
@@ -253,6 +255,7 @@ class TripletFind {
     device::triplet_counter_container_types::view m_triplet_counter_view;
     triplet_container_view m_triplet_view;
     local_accessor<int> m_localMem;
+    ::sycl::stream m_out;
 };
 
 void triplet_finding(
@@ -304,11 +307,11 @@ void triplet_finding(
         .submit([&](::sycl::handler& h) {
             // local memory initialization (equivalent to shared memory in CUDA)
             auto localMem = local_accessor<int>(::sycl::range<1>(localSize), h);
-
+            auto out = ::sycl::stream(1024, 768, h);
             TripletFind kernel(
                 config, filter_config, internal_sp, doublet_counter_container,
                 mid_bot_doublet_container, mid_top_doublet_container, tcc_view,
-                tc_view, localMem);
+                tc_view, localMem, out);
 
             h.parallel_for<TripletFind>(tripletFindNdRange, kernel);
         })
