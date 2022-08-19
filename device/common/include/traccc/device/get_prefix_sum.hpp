@@ -21,8 +21,16 @@
 
 namespace traccc::device {
 
-/// Convenience type definition for the elements of the prefix sums
-typedef std::pair<std::size_t, std::size_t> prefix_sum_element_t;
+struct prefix_sum_element {
+    // Bin id
+    std::size_t first;
+
+    // Local id
+    std::size_t second;
+};
+
+typedef prefix_sum_element prefix_sum_element_t;
+
 /// Convenience type definition for the return value of the helper function
 typedef vecmem::vector<prefix_sum_element_t> prefix_sum_t;
 
