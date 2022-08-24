@@ -11,9 +11,9 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/edm/device/triplet_counter.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/seeding/detail/triplet.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -38,8 +38,7 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
-    const seedfilter_config& filter_config,
-    const sp_grid_const_view& sp_view,
+    const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
     const device::doublet_counter_container_types::const_view dc_view,
     const doublet_container_view mid_bot_doublet_view,
     const doublet_container_view mid_top_doublet_view,

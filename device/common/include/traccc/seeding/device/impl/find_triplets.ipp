@@ -13,17 +13,14 @@
 // VecMem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 
-// System include(s).
-#include <cassert>
-
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
-    const seedfilter_config& filter_config,
-    const sp_grid_const_view& sp_view,
-    const device::doublet_counter_container_types::const_view doublet_counter_view,
+    const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
+    const device::doublet_counter_container_types::const_view
+        doublet_counter_view,
     const doublet_container_view mid_bot_doublet_view,
     const doublet_container_view mid_top_doublet_view,
     const device::triplet_counter_container_types::const_view& tc_view,
@@ -32,46 +29,45 @@ void find_triplets(
     triplet_container_view triplet_view) {
 
     // Check if anything needs to be done.
-    vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
+    const vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
         triplet_ps_view);
     if (globalIndex >= triplet_prefix_sum.size()) {
         return;
     }
-    
+
     // Get device copy of input parameters
-    device::doublet_counter_container_types::const_device
+    const device::doublet_counter_container_types::const_device
         doublet_counter_device(doublet_counter_view);
     const device_doublet_container mid_bot_doublet_device(mid_bot_doublet_view);
     const device_doublet_container mid_top_doublet_device(mid_top_doublet_view);
+    const const_sp_grid_device sp_grid(sp_view);
 
-    // Get the mid bottom doublet that we need to be looking at.
+    // Get the current work item
     const prefix_sum_element_t ps_idx = triplet_prefix_sum[globalIndex];
     const device::triplet_counter_container_types::const_device triplet_counts(
         tc_view);
     const device::triplet_counter mid_bot_counter =
         triplet_counts.get_items().at(ps_idx.first).at(ps_idx.second);
-
     const doublet mid_bot_doublet = mid_bot_counter.m_midBotDoublet;
-
-    // Set up the device containers
-    const const_sp_grid_device sp_grid(sp_view);
 
     // middle spacepoint indexes
     const auto spM_bin = mid_bot_doublet.sp1.bin_idx;
     const auto spM_idx = mid_bot_doublet.sp1.sp_idx;
     // middle spacepoint
-    const auto spM = sp_grid.bin(spM_bin)[spM_idx];
-    
+    const traccc::internal_spacepoint<traccc::spacepoint> spM =
+        sp_grid.bin(spM_bin)[spM_idx];
+
     // bottom spacepoint indexes
     const auto spB_bin = mid_bot_doublet.sp2.bin_idx;
     const auto spB_idx = mid_bot_doublet.sp2.sp_idx;
     // bottom spacepoint
-    const auto spB = sp_grid.bin(spB_bin)[spB_idx];
+    const traccc::internal_spacepoint<traccc::spacepoint> spB =
+        sp_grid.bin(spB_bin)[spB_idx];
 
     // Header of internal spacepoint container : spacepoint bin information
     // Item of internal spacepoint container : internal spacepoint objects
     // per bin
-    const auto num_compat_spM_per_bin =
+    const unsigned int num_compat_spM_per_bin =
         doublet_counter_device.get_headers().at(spM_bin).m_nSpM;
 
     // Header of doublet counter : number of compatible middle sp per bin
@@ -81,7 +77,7 @@ void find_triplets(
 
     // Header of doublet: number of mid_bot doublets per bin
     // Item of doublet: doublet objects per bin
-    const auto num_mid_bot_doublets_per_bin =
+    const unsigned int num_mid_bot_doublets_per_bin =
         mid_bot_doublet_device.get_headers().at(spM_bin).n_doublets;
     const auto mid_bot_doublets_per_bin =
         mid_bot_doublet_device.get_items().at(spM_bin);
@@ -93,9 +89,9 @@ void find_triplets(
 
     // Set up the device result container
     device_triplet_container triplets(triplet_view);
-    
+
     // Apply the conformal transformation to middle-bot doublet
-    traccc::lin_circle lb =
+    const traccc::lin_circle lb =
         doublet_finding_helper::transform_coordinates(spM, spB, true);
 
     // Calculate some physical quantities required for triplet compatibility
@@ -153,7 +149,7 @@ void find_triplets(
             sp_grid.bin(spT_bin)[spT_idx];
 
         // Apply the conformal transformation to middle-top doublet
-        traccc::lin_circle lt =
+        const traccc::lin_circle lt =
             doublet_finding_helper::transform_coordinates(spM, spT, false);
 
         // Check if mid-bot and mid-top doublets can form a triplet
@@ -164,17 +160,16 @@ void find_triplets(
             // mid bottom doublet.
             vecmem::device_atomic_ref<unsigned int> num_triplets_per_bin(
                 triplets.get_headers().at(spM_bin).n_triplets);
-            auto pos = num_triplets_per_bin.fetch_add(1);
+            num_triplets_per_bin.fetch_add(1);
 
             // Add triplet to jagged vector
-            triplets.get_items().at(spM_bin).push_back(triplet({mid_bot_doublet.sp2, mid_bot_doublet.sp1,
-                                     mid_top_doublet.sp2, curvature,
-                                     -impact_parameter *
-                                         filter_config.impactWeightFactor,
-                                     lb.Zo()}));
+            triplets.get_items().at(spM_bin).push_back(
+                triplet({mid_bot_doublet.sp2, mid_bot_doublet.sp1,
+                         mid_top_doublet.sp2, curvature,
+                         -impact_parameter * filter_config.impactWeightFactor,
+                         lb.Zo()}));
         }
     }
-
 }
 
 }  // namespace traccc::device

@@ -13,6 +13,7 @@
 
 // System include(s).
 #include <algorithm>
+#include <iostream>
 
 namespace traccc::device {
 
@@ -28,15 +29,19 @@ triplet_container_buffer make_triplet_buffer(
 
     // Construct the size (vectors) for the buffers.
     std::vector<std::size_t> triplet_sizes(triplet_counts.size());
-    std::transform(
-        triplet_counts.begin(), triplet_counts.end(), triplet_sizes.begin(),
-        [](const device::triplet_counter_header& tc) { return tc.m_nTriplets; });
+    std::transform(triplet_counts.begin(), triplet_counts.end(),
+                   triplet_sizes.begin(),
+                   [](const device::triplet_counter_header& tc) {
+                       return tc.m_nTriplets;
+                   });
 
     const triplet_container_buffer::header_vector::size_type triplets_size =
         triplet_sizes.size();
 
     // Create the result object.
-    triplet_container_buffer result{{triplets_size, mr}, {std::vector<std::size_t>(triplets_size, 0),triplet_sizes, mr, mr_host}};
+    triplet_container_buffer result{{triplets_size, mr},
+                                    {std::vector<std::size_t>(triplets_size, 0),
+                                     triplet_sizes, mr, mr_host}};
 
     // Initialise the buffer(s).
     copy.setup(result.headers);
