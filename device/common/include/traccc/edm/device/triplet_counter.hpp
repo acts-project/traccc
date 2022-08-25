@@ -27,9 +27,6 @@ struct triplet_counter_header {
     /// The total number of Triplets in a given geometric bin
     unsigned int m_nTriplets = 0;
 
-    TRACCC_HOST_DEVICE
-    unsigned int get_ref_num() const { return m_nMidBot; }
-
 };  // struct triplet_counter_header
 
 /// Item type for the "triplet counter container"

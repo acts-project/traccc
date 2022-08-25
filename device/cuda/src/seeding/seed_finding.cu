@@ -9,9 +9,6 @@
 #include "traccc/cuda/seeding/seed_finding.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 
-// Library include(s).
-#include "traccc/cuda/seeding/seed_selecting.hpp"
-
 // Project include(s).
 #include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
@@ -23,6 +20,7 @@
 #include "traccc/seeding/device/make_doublet_counter_buffer.hpp"
 #include "traccc/seeding/device/make_triplet_buffer.hpp"
 #include "traccc/seeding/device/make_triplet_counter_buffer.hpp"
+#include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
 
 // VecMem include(s).
@@ -97,6 +95,21 @@ __global__ void update_triplet_weights(
     device::update_triplet_weights(threadIdx.x + blockIdx.x * blockDim.x,
                                    filter_config, sp_grid, triplet_prefix_sum,
                                    triplet_view);
+}
+
+/// CUDA kernel for running @c traccc::device::select_seeds
+__global__ void select_seeds(
+    seedfilter_config filter_config,
+    spacepoint_container_types::const_view spacepoints_view,
+    sp_grid_const_view internal_sp_view,
+    vecmem::data::vector_view<const device::prefix_sum_element_t> dc_ps_view,
+    device::doublet_counter_container_types::const_view
+        doublet_counter_container,
+    triplet_container_view tc_view, vecmem::data::vector_view<seed> seed_view) {
+
+    device::select_seeds(threadIdx.x + blockIdx.x * blockDim.x, filter_config,
+                         spacepoints_view, internal_sp_view, dc_ps_view,
+                         doublet_counter_container, tc_view, seed_view);
 }
 
 }  // namespace kernels
@@ -202,9 +215,6 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    // The number of bins.
-    unsigned int nbins = g2_view._data_view.m_size;
-
     std::vector<std::size_t> mb_buffer_sizes(doublet_counts.size());
     std::transform(
         doublet_counts.begin(), doublet_counts.end(), mb_buffer_sizes.begin(),
@@ -239,11 +249,6 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         doublet_buffers.middleTop, triplet_counter_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
-    // Take header of the triplet counter container buffer into host
-    vecmem::vector<device::triplet_counter_header> tcc_headers(
-        m_mr.host ? m_mr.host : &(m_mr.main));
-    (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
 
     // Set up the triplet buffer.
     triplet_container_buffer triplet_buffer = device::make_triplet_buffer(
@@ -287,8 +292,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     m_copy->setup(triplet_prefix_sum_buff);
     (*m_copy)(vecmem::get_data(triplet_prefix_sum), triplet_prefix_sum_buff);
 
-    // Calculate the number of threads and thread blocks to run the triplet
-    // finding kernel for.
+    // Calculate the number of threads and thread blocks to run the weight
+    // updating kernel for.
     const unsigned int nWeightUpdatingThreads = WARP_SIZE * 2;
     const unsigned int nWeightUpdatingBlocks =
         triplet_prefix_sum.size() / nWeightUpdatingThreads + 1;
@@ -300,25 +305,32 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    // Fill the size vector for triplet container
-    std::vector<std::size_t> n_triplets_per_bin;
-    n_triplets_per_bin.reserve(nbins);
-    for (const auto& h : tcc_headers) {
-        n_triplets_per_bin.push_back(h.m_nTriplets);
-    }
+    // Take header of the triplet counter container buffer into host
+    vecmem::vector<device::triplet_counter_header> tcc_headers(
+        m_mr.host ? m_mr.host : &(m_mr.main));
+    (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
 
     // Get the number of seeds (triplets)
-    auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
-                                      n_triplets_per_bin.end(), 0);
+    auto n_triplets = 0;
+    for (const auto& h : tcc_headers) {
+        n_triplets += h.m_nTriplets;
+    }
 
     vecmem::data::vector_buffer<seed> seed_buffer(n_triplets, 0, m_mr.main);
     m_copy->setup(seed_buffer);
 
-    // Run seed selecting
-    traccc::cuda::seed_selecting(
-        m_seedfilter_config, doublet_counts, spacepoints_view, g2_view,
-        doublet_counter_buffer, triplet_counter_buffer, triplet_buffer,
-        seed_buffer, m_mr.host ? *m_mr.host : m_mr.main);
+    // Calculate the number of threads and thread blocks to run the seed
+    // selecting kernel for.
+    const unsigned int nSeedSelectingThreads = WARP_SIZE * 2;
+    const unsigned int nSeedSelectingBlocks =
+        doublet_prefix_sum.size() / nSeedSelectingThreads + 1;
+
+    // Create seeds out of selected triplets
+    kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads>>>(
+        m_seedfilter_config, spacepoints_view, g2_view, doublet_prefix_sum_buff,
+        doublet_counter_buffer, triplet_buffer, seed_buffer);
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     return seed_buffer;
 }

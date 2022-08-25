@@ -15,12 +15,6 @@ namespace traccc {
 /// Header: the number of triplets per spacepoint bin
 struct triplet_per_bin {
     unsigned int n_triplets = 0;
-
-    TRACCC_HOST_DEVICE
-    unsigned int get_ref_num() const { return n_triplets; }
-
-    TRACCC_HOST_DEVICE
-    void zeros() { n_triplets = 0; }
 };
 
 /// Item: triplets of middle-bottom-top

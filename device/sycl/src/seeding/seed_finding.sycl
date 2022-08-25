@@ -10,8 +10,6 @@
 
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
-#include "seed_selecting.hpp"
-#include "sycl_helper.hpp"
 #include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 
 // Project include(s).
@@ -27,6 +25,7 @@
 #include "traccc/seeding/device/make_doublet_counter_buffer.hpp"
 #include "traccc/seeding/device/make_triplet_buffer.hpp"
 #include "traccc/seeding/device/make_triplet_counter_buffer.hpp"
+#include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
 
 // VecMem include(s).
@@ -50,6 +49,9 @@ class find_triplets;
 /// Class identifying the kernel running @c
 /// traccc::device::update_triplet_weights
 class update_triplet_weights;
+
+/// Class identifying the kernel running @c traccc::device::select_seeds
+class select_seeds;
 
 }  // namespace kernels
 
@@ -172,9 +174,6 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         })
         .wait_and_throw();
 
-    // The number of bins.
-    unsigned int nbins = g2_view._data_view.m_size;
-
     std::vector<std::size_t> mb_buffer_sizes(doublet_counts.size());
     std::transform(
         doublet_counts.begin(), doublet_counts.end(), mb_buffer_sizes.begin(),
@@ -221,18 +220,6 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
                 });
         })
         .wait_and_throw();
-
-    // Take header of the triplet counter container buffer into host
-    vecmem::vector<device::triplet_counter_header> tcc_headers(
-        m_mr.host ? m_mr.host : &(m_mr.main));
-    (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
-
-    // Fill the size vector for triplet container
-    std::vector<size_t> n_triplets_per_bin;
-    n_triplets_per_bin.reserve(nbins);
-    for (const auto& h : tcc_headers) {
-        n_triplets_per_bin.push_back(h.m_nTriplets);
-    }
 
     // Set up the triplet buffer and its view
     triplet_container_buffer triplet_buffer = device::make_triplet_buffer(
@@ -308,17 +295,42 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         })
         .wait_and_throw();
 
-    // Get the number of seeds (triplets)
-    auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
-                                      n_triplets_per_bin.end(), 0);
+    // Take header of the triplet counter container buffer into host
+    vecmem::vector<device::triplet_counter_header> tcc_headers(
+        m_mr.host ? m_mr.host : &(m_mr.main));
+    (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
 
+    // Get the number of seeds (triplets)
+    auto n_triplets = 0;
+    for (const auto& h : tcc_headers) {
+        n_triplets += h.m_nTriplets;
+    }
+
+    // Create seed buffer object and its view
     vecmem::data::vector_buffer<seed> seed_buffer(n_triplets, 0, m_mr.main);
     m_copy->setup(seed_buffer);
+    vecmem::data::vector_view<seed> seed_view(seed_buffer);
 
-    // seed selecting
-    seed_selecting(m_seedfilter_config, doublet_counts, spacepoints_view,
-                   g2_view, doublet_counter_view, triplet_counter_buffer,
-                   triplet_buffer, seed_buffer, m_queue);
+    // Calculate the range to run the seed selecting for
+    static constexpr unsigned int seedSelectingLocalSize = 32 * 2;
+    auto seedSelectingRange = traccc::sycl::calculate1DimNdRange(
+        doublet_prefix_sum.size(), seedSelectingLocalSize);
+
+    // Create seeds out of selected triplets
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
+            h.parallel_for<kernels::select_seeds>(
+                seedSelectingRange,
+                [filter_config = m_seedfilter_config, spacepoints_view, g2_view,
+                 doublet_prefix_sum_view, doublet_counter_view, triplet_view,
+                 seed_view](::sycl::nd_item<1> item) {
+                    device::select_seeds(
+                        item.get_global_linear_id(), filter_config,
+                        spacepoints_view, g2_view, doublet_prefix_sum_view,
+                        doublet_counter_view, triplet_view, seed_view);
+                });
+        })
+        .wait_and_throw();
 
     return seed_buffer;
 }
