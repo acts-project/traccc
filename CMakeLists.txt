@@ -183,3 +183,7 @@ include( CTest )
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    add_subdirectory( tests )
 endif()
+
+if(TRACCC_BUILD_FUTHARK)
+   add_subdirectory(device/futhark)
+endif()
