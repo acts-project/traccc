@@ -167,10 +167,6 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // The number of bins.
     unsigned int nbins = g2_view._data_view.m_size;
 
-    vecmem::vector<doublet_per_bin> mb_headers(m_mr.host ? m_mr.host
-                                                         : &(m_mr.main));
-    (*m_copy)(doublet_buffers.middleBottom.headers, mb_headers);
-
     std::vector<std::size_t> mb_buffer_sizes(doublet_counts.size());
     std::transform(
         doublet_counts.begin(), doublet_counts.end(), mb_buffer_sizes.begin(),

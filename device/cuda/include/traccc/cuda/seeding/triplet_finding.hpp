@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "traccc/cuda/seeding/detail/triplet_counter.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/triplet_counter.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
@@ -35,12 +35,12 @@ namespace cuda {
 /// @param resource vecmem memory resource
 void triplet_finding(
     const seedfinder_config& config, const seedfilter_config& filter_config,
-    const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
+    const vecmem::vector<device::triplet_counter_header>& tcc_headers,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view dcc_view,
     doublet_container_view mbc_view, doublet_container_view mtc_view,
-    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
-    vecmem::memory_resource& resource);
+    device::triplet_counter_container_types::const_view tcc_view,
+    triplet_container_view tc_view, vecmem::memory_resource& resource);
 
 }  // namespace cuda
 }  // namespace traccc

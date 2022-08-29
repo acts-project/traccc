@@ -35,7 +35,7 @@ __global__ void seed_selecting_kernel(
     spacepoint_container_types::const_view spacepoints_view,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view doublet_counter_view,
-    triplet_counter_container_view triplet_counter_view,
+    device::triplet_counter_container_types::const_view triplet_counter_view,
     triplet_container_view triplet_view,
     vecmem::data::vector_view<seed> seed_view);
 
@@ -45,7 +45,8 @@ void seed_selecting(
     const spacepoint_container_types::const_view& spacepoints_view,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view dcc_view,
-    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
+    device::triplet_counter_container_types::const_view tcc_view,
+    triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
     vecmem::memory_resource& resource) {
 
@@ -87,7 +88,7 @@ __global__ void seed_selecting_kernel(
     spacepoint_container_types::const_view spacepoints_view,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view doublet_counter_view,
-    triplet_counter_container_view triplet_counter_view,
+    device::triplet_counter_container_types::const_view triplet_counter_view,
     triplet_container_view triplet_view,
     vecmem::data::vector_view<seed> seed_view) {
 
@@ -98,8 +99,8 @@ __global__ void seed_selecting_kernel(
 
     const device::doublet_counter_container_types::const_device
         doublet_counter_device(doublet_counter_view);
-    device_triplet_counter_container triplet_counter_device(
-        triplet_counter_view);
+    device::triplet_counter_container_types::const_device
+        triplet_counter_device(triplet_counter_view);
     device_triplet_container triplet_device(triplet_view);
     device_seed_collection seed_device(seed_view);
 
@@ -122,7 +123,7 @@ __global__ void seed_selecting_kernel(
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
     auto& num_compat_mb_per_bin =
-        triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
+        triplet_counter_device.get_headers().at(bin_idx).m_nMidBot;
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin

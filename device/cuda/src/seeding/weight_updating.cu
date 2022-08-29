@@ -22,15 +22,15 @@ namespace cuda {
 /// @param triplet_container vecmem container for triplets
 __global__ void weight_updating_kernel(
     const seedfilter_config filter_config, sp_grid_const_view internal_sp_view,
-    triplet_counter_container_view triplet_counter_view,
+    device::triplet_counter_container_types::const_view triplet_counter_view,
     triplet_container_view triplet_view);
 
-void weight_updating(const seedfilter_config& filter_config,
-                     const vecmem::vector<triplet_per_bin>& tc_headers,
-                     sp_grid_const_view internal_sp_view,
-                     triplet_counter_container_view tcc_view,
-                     triplet_container_view tc_view,
-                     vecmem::memory_resource& resource) {
+void weight_updating(
+    const seedfilter_config& filter_config,
+    const vecmem::vector<triplet_per_bin>& tc_headers,
+    sp_grid_const_view internal_sp_view,
+    device::triplet_counter_container_types::const_view tcc_view,
+    triplet_container_view tc_view, vecmem::memory_resource& resource) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -65,14 +65,14 @@ void weight_updating(const seedfilter_config& filter_config,
 
 __global__ void weight_updating_kernel(
     const seedfilter_config filter_config, sp_grid_const_view internal_sp_view,
-    triplet_counter_container_view triplet_counter_view,
+    device::triplet_counter_container_types::const_view triplet_counter_view,
     triplet_container_view triplet_view) {
 
     // Get device container for input parameters
     const_sp_grid_device internal_sp_device(internal_sp_view);
 
-    device_triplet_counter_container triplet_counter_device(
-        triplet_counter_view);
+    device::triplet_counter_container_types::const_device
+        triplet_counter_device(triplet_counter_view);
     device_triplet_container triplet_device(triplet_view);
 
     // Get the bin and item index
@@ -87,7 +87,7 @@ __global__ void weight_updating_kernel(
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
     auto& num_compat_mb_per_bin =
-        triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
+        triplet_counter_device.get_headers().at(bin_idx).m_nMidBot;
     auto triplet_counter_per_bin =
         triplet_counter_device.get_items().at(bin_idx);
 
@@ -117,14 +117,14 @@ __global__ void weight_updating_kernel(
     unsigned int end_idx = 0;
 
     for (auto triplet_counter : triplet_counter_per_bin) {
-        end_idx += triplet_counter.n_triplets;
+        end_idx += triplet_counter.m_nTriplets;
 
-        if (triplet_counter.mid_bot_doublet.sp1 == spM_idx &&
-            triplet_counter.mid_bot_doublet.sp2 == spB_idx) {
+        if (triplet_counter.m_midBotDoublet.sp1 == spM_idx &&
+            triplet_counter.m_midBotDoublet.sp2 == spB_idx) {
             break;
         }
 
-        start_idx += triplet_counter.n_triplets;
+        start_idx += triplet_counter.m_nTriplets;
     }
 
     if (end_idx >= triplets_per_bin.size()) {

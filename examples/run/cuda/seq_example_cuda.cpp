@@ -376,6 +376,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
               << std::endl;
     std::cout << "- created        " << n_spacepoints << " spacepoints     "
               << std::endl;
+    std::cout << "- created (cuda) " << n_spacepoints_cuda
+              << " spacepoints     " << std::endl;
 
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (cuda) " << n_seeds_cuda << " seeds" << std::endl;

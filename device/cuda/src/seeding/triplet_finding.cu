@@ -41,17 +41,17 @@ __global__ void triplet_finding_kernel(
     device::doublet_counter_container_types::const_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
-    triplet_counter_container_view triplet_counter_view,
+    device::triplet_counter_container_types::const_view triplet_counter_view,
     triplet_container_view triplet_view);
 
 void triplet_finding(
     const seedfinder_config& config, const seedfilter_config& filter_config,
-    const vecmem::vector<triplet_counter_per_bin>& tcc_headers,
+    const vecmem::vector<device::triplet_counter_header>& tcc_headers,
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view dcc_view,
     doublet_container_view mbc_view, doublet_container_view mtc_view,
-    triplet_counter_container_view tcc_view, triplet_container_view tc_view,
-    vecmem::memory_resource& resource) {
+    device::triplet_counter_container_types::const_view tcc_view,
+    triplet_container_view tc_view, vecmem::memory_resource& resource) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -78,7 +78,7 @@ void triplet_finding(
     // num_compatible_mid_bot_doublets_per_bin / num_threads + 1
     num_blocks = 0;
     for (size_t i = 0; i < nbins; ++i) {
-        num_blocks += tcc_headers[i].n_mid_bot / num_threads + 1;
+        num_blocks += tcc_headers[i].m_nMidBot / num_threads + 1;
     }
 
     // shared memory assignment for the number of triplets per thread
@@ -100,7 +100,7 @@ __global__ void triplet_finding_kernel(
     device::doublet_counter_container_types::const_view doublet_counter_view,
     doublet_container_view mid_bot_doublet_view,
     doublet_container_view mid_top_doublet_view,
-    triplet_counter_container_view triplet_counter_view,
+    device::triplet_counter_container_types::const_view triplet_counter_view,
     triplet_container_view triplet_view) {
 
     // Get device container for input parameters
@@ -111,8 +111,8 @@ __global__ void triplet_finding_kernel(
     device_doublet_container mid_bot_doublet_device(mid_bot_doublet_view);
     device_doublet_container mid_top_doublet_device(mid_top_doublet_view);
 
-    device_triplet_counter_container triplet_counter_device(
-        triplet_counter_view);
+    device::triplet_counter_container_types::const_device
+        triplet_counter_device(triplet_counter_view);
     device_triplet_container triplet_device(triplet_view);
 
     // Get the bin and item index
@@ -149,7 +149,7 @@ __global__ void triplet_finding_kernel(
     // Header of triplet counter: number of compatible mid_top doublets per bin
     // Item of triplet counter: triplet counter objects per bin
     auto& num_compat_mb_per_bin =
-        triplet_counter_device.get_headers().at(bin_idx).n_mid_bot;
+        triplet_counter_device.get_headers().at(bin_idx).m_nMidBot;
     auto triplet_counter_per_bin =
         triplet_counter_device.get_items().at(bin_idx);
 
@@ -170,7 +170,7 @@ __global__ void triplet_finding_kernel(
 
     // middle-bot doublet
     const auto& mid_bot_doublet =
-        triplet_counter_per_bin[item_idx].mid_bot_doublet;
+        triplet_counter_per_bin[item_idx].m_midBotDoublet;
     // middle spacepoint index
     const auto& spM_idx = mid_bot_doublet.sp1.sp_idx;
     // middle spacepoint
@@ -238,7 +238,7 @@ __global__ void triplet_finding_kernel(
     // The start index is calculated by accumulating the number of triplets of
     // all previous compatible middle-bottom doublets
     for (unsigned int i = 0; i < item_idx; i++) {
-        triplet_start_idx += triplet_counter_per_bin[i].n_triplets;
+        triplet_start_idx += triplet_counter_per_bin[i].m_nTriplets;
     }
 
     // iterate over mid-top doublets
