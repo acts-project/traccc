@@ -115,8 +115,15 @@ endfunction()
 # Create a new CUDA core library for CCA from our Futhark sources.
 add_futhark_library(
     traccc_futhark_cca_cuda_core
-    CUDA
+    C
     src/cca_core.fut
+)
+
+# Create a new CUDA core library for SP creation from our Futhark sources.
+add_futhark_library(
+    traccc_futhark_spc_cuda_core
+    C
+    src/spc_core.fut
 )
 
 # Create a new traccc library which is built from the CCA CUDA core, plus some
@@ -127,6 +134,8 @@ traccc_add_library(
     TYPE SHARED
     "src/cca.cpp"
     "include/traccc/futhark/cca.hpp"
+    "src/spc.cpp"
+    "include/traccc/futhark/spc.hpp"
 )
 
 # Link the new outward-facing library against our code librar(y|ies)
@@ -137,4 +146,5 @@ target_link_libraries(
     PRIVATE
     vecmem::core
     traccc_futhark_cca_cuda_core
+    traccc_futhark_spc_cuda_core
 )

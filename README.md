@@ -4,16 +4,16 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category           | Algorithms             | CPU | CUDA | SYCL |
-| ------------------ | ---------------------- | --- | ---- | ---- |
-| **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   |
-|                    | Measurement creation   | ✅  | 🟡   | 🟡   |
-|                    | Spacepoint formation   | ✅  | 🟡   | 🟡   |
-| **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   |
-|                    | Seed finding           | ✅  | ✅   | ✅   |
-|                    | Track param estimation | ✅  | ✅   | ✅   |
-|                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   |
-| **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   |
+| Category           | Algorithms             | CPU | CUDA | SYCL | Futhark |
+| ------------------ | ---------------------- | --- | ---- | ---- | ------- |
+| **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   | ✅      |
+|                    | Measurement creation   | ✅  | 🟡   | 🟡   | ✅      |
+|                    | Spacepoint formation   | ✅  | 🟡   | 🟡   | ✅      |
+| **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
+|                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
+|                    | Track param estimation | ✅  | ✅   | ✅   | ⚪      |
+|                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   | ⚪      |
+| **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
