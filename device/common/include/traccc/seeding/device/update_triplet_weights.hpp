@@ -15,8 +15,7 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
 
-// System include(s).
-#include <cassert>
+// System include(s)
 #include <cstddef>
 
 namespace traccc::device {

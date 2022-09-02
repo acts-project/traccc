@@ -13,7 +13,6 @@
 
 // System include(s).
 #include <algorithm>
-#include <iostream>
 
 namespace traccc::device {
 

@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// System include(s).
+#include <cassert>
+
 #pragma once
 
 namespace traccc::device {
@@ -28,15 +31,16 @@ void update_triplet_weights(
     const const_sp_grid_device sp_grid(sp_view);
 
     const prefix_sum_element_t ps_idx = triplet_prefix_sum[globalIndex];
-    const auto bin_idx = ps_idx.first;
+    const unsigned int bin_idx = ps_idx.first;
 
     device_triplet_container triplets(triplet_view);
-    auto triplets_per_bin = triplets.get_items().at(bin_idx);
+    vecmem::device_vector<triplet> triplets_per_bin =
+        triplets.get_items().at(bin_idx);
 
     // Current work item
-    triplet& this_triplet = triplets_per_bin[ps_idx.second];
+    triplet this_triplet = triplets_per_bin[ps_idx.second];
 
-    const sp_location spT_idx = this_triplet.sp3;
+    const sp_location& spT_idx = this_triplet.sp3;
 
     const traccc::internal_spacepoint<traccc::spacepoint> current_spT =
         sp_grid.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
@@ -52,7 +56,7 @@ void update_triplet_weights(
         this_triplet.curvature + filter_config.deltaInvHelixDiameter;
     std::size_t num_compat_seedR = 0;
 
-    static const std::size_t MAX_COMPAT_SEED = 5;
+    static constexpr std::size_t MAX_COMPAT_SEED = 5;
     assert(MAX_COMPAT_SEED >= filter_config.compatSeedLimit);
     scalar compat_seedR[MAX_COMPAT_SEED];
 
@@ -65,8 +69,8 @@ void update_triplet_weights(
             continue;
         }
 
-        const auto& other_triplet = *tr_it;
-        const auto other_spT_idx = (*tr_it).sp3;
+        const triplet& other_triplet = *tr_it;
+        const sp_location other_spT_idx = other_triplet.sp3;
         const traccc::internal_spacepoint<traccc::spacepoint> other_spT =
             sp_grid.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx];
 
@@ -114,6 +118,8 @@ void update_triplet_weights(
             break;
         }
     }
+
+    triplets_per_bin[ps_idx.second].weight = this_triplet.weight;
 }
 
 }  // namespace traccc::device

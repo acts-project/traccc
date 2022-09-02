@@ -19,10 +19,10 @@ TRACCC_HOST_DEVICE
 void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
-    const device::doublet_counter_container_types::const_view
+    const device::doublet_counter_container_types::const_view&
         doublet_counter_view,
-    const doublet_container_view mid_bot_doublet_view,
-    const doublet_container_view mid_top_doublet_view,
+    const doublet_container_view& mid_bot_doublet_view,
+    const doublet_container_view& mid_top_doublet_view,
     const device::triplet_counter_container_types::const_view& tc_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
@@ -51,15 +51,15 @@ void find_triplets(
     const doublet mid_bot_doublet = mid_bot_counter.m_midBotDoublet;
 
     // middle spacepoint indexes
-    const auto spM_bin = mid_bot_doublet.sp1.bin_idx;
-    const auto spM_idx = mid_bot_doublet.sp1.sp_idx;
+    const unsigned int spM_bin = mid_bot_doublet.sp1.bin_idx;
+    const unsigned int spM_idx = mid_bot_doublet.sp1.sp_idx;
     // middle spacepoint
     const traccc::internal_spacepoint<traccc::spacepoint> spM =
         sp_grid.bin(spM_bin)[spM_idx];
 
     // bottom spacepoint indexes
-    const auto spB_bin = mid_bot_doublet.sp2.bin_idx;
-    const auto spB_idx = mid_bot_doublet.sp2.sp_idx;
+    const unsigned int spB_bin = mid_bot_doublet.sp2.bin_idx;
+    const unsigned int spB_idx = mid_bot_doublet.sp2.sp_idx;
     // bottom spacepoint
     const traccc::internal_spacepoint<traccc::spacepoint> spB =
         sp_grid.bin(spB_bin)[spB_idx];
@@ -72,19 +72,23 @@ void find_triplets(
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    const auto doublet_counter_per_bin =
+    // const
+    // doublet_counter_container_types::const_device::item_vector::value_type
+    // doublet_counter_per_bin =
+    //     doublet_counter_device.get_items().at(spM_bin);
+    const vecmem::device_vector<const doublet_counter> doublet_counter_per_bin =
         doublet_counter_device.get_items().at(spM_bin);
 
     // Header of doublet: number of mid_bot doublets per bin
     // Item of doublet: doublet objects per bin
     const unsigned int num_mid_bot_doublets_per_bin =
         mid_bot_doublet_device.get_headers().at(spM_bin).n_doublets;
-    const auto mid_bot_doublets_per_bin =
+    const vecmem::device_vector<const doublet> mid_bot_doublets_per_bin =
         mid_bot_doublet_device.get_items().at(spM_bin);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
-    const auto mid_top_doublets_per_bin =
+    const vecmem::device_vector<const doublet> mid_top_doublets_per_bin =
         mid_top_doublet_device.get_items().at(spM_bin);
 
     // Set up the device result container
@@ -96,9 +100,10 @@ void find_triplets(
 
     // Calculate some physical quantities required for triplet compatibility
     // check
-    scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
-    scalar scatteringInRegion2 = config.maxScatteringAngle2 * iSinTheta2;
-    scatteringInRegion2 *= config.sigmaScattering * config.sigmaScattering;
+    const scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
+    const scalar scatteringInRegion2 = config.maxScatteringAngle2 * iSinTheta2 *
+                                       config.sigmaScattering *
+                                       config.sigmaScattering;
 
     // These two quantities are used as output parameters in
     // triplet_finding_helper::isCompatible but their values are irrelevant
