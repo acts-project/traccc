@@ -10,7 +10,7 @@ enable_language( CUDA )
 # Project include(s).
 include( traccc-compiler-options-cpp )
 include( traccc-compiler-options-kokkos )
-include( traccc-compiler-options-kokkos )
+include( traccc-compiler-options-cuda )
 
 add_subdirectory( device/kokkos ) 
 
@@ -18,26 +18,25 @@ add_subdirectory( device/kokkos )
 traccc_add_library( traccc_kokkos kokkos TYPE SHARED
   # Utility definitions.
   "include/traccc/kokkos/utils/definitions.hpp"
-  #"include/traccc/kokkos/utils/cuda_helper.cuh"
   "include/traccc/kokkos/utils/kokkos_helper.cpp"
   # Seed finding code.
   "include/traccc/kokkos/seeding/detail/triplet_counter.hpp"
   "include/traccc/kokkos/seeding/weight_updating.hpp"
   "include/traccc/kokkos/seeding/triplet_counting.hpp"
   "include/traccc/kokkos/seeding/seed_selecting.hpp"
-  "include/traccc/kokkos/seeding/track_params_estimation.hpp"
+  #"include/traccc/kokkos/seeding/track_params_estimation.hpp"
   "include/traccc/kokkos/seeding/triplet_finding.hpp"
   "include/traccc/kokkos/seeding/seed_finding.hpp"
   "include/traccc/kokkos/seeding/seeding_algorithm.hpp"
-  "include/traccc/kokkos/seeding/spacepoint_binning.hpp"
+  #"include/traccc/kokkos/seeding/spacepoint_binning.hpp"
   # CCL code.
   "include/traccc/kokkos/cca/component_connection.hpp"
   "src/seeding/triplet_counting.cpp"
   "src/seeding/weight_updating.cpp"
-  "src/seeding/track_params_estimation.cu"
+  #"src/seeding/track_params_estimation.cu"
   "src/seeding/seed_finding.cpp"
   "src/seeding/seed_selecting.cpp"
-  "src/seeding/spacepoint_binning.cu"
+  #"src/seeding/spacepoint_binning.cu"
   "src/seeding/triplet_finding.cpp"
   "src/seeding/seeding_algorithm.cpp"
   "src/cca/component_connection.cu"
