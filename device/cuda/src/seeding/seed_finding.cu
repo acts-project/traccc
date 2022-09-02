@@ -92,9 +92,15 @@ __global__ void update_triplet_weights(
         triplet_prefix_sum,
     triplet_container_view triplet_view) {
 
+    // Array for temporary storage of quality parameters for comparing triplets
+    // within weight updating kernel
+    extern __shared__ scalar data[];
+    // Each thread uses compatSeedLimit elements of the array
+    scalar* dataPos = &data[threadIdx.x * filter_config.compatSeedLimit];
+
     device::update_triplet_weights(threadIdx.x + blockIdx.x * blockDim.x,
                                    filter_config, sp_grid, triplet_prefix_sum,
-                                   triplet_view);
+                                   dataPos, triplet_view);
 }
 
 /// CUDA kernel for running @c traccc::device::select_seeds
@@ -107,9 +113,16 @@ __global__ void select_seeds(
         doublet_counter_container,
     triplet_container_view tc_view, vecmem::data::vector_view<seed> seed_view) {
 
+    // Array for temporary storage of triplets for comparing within seed
+    // selecting kernel
+    extern __shared__ triplet data2[];
+    // Each thread uses max_triplets_per_spM elements of the array
+    triplet* dataPos = &data2[threadIdx.x * filter_config.max_triplets_per_spM];
+
     device::select_seeds(threadIdx.x + blockIdx.x * blockDim.x, filter_config,
                          spacepoints_view, internal_sp_view, dc_ps_view,
-                         doublet_counter_container, tc_view, seed_view);
+                         doublet_counter_container, tc_view, dataPos,
+                         seed_view);
 }
 
 }  // namespace kernels
@@ -299,9 +312,11 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         triplet_prefix_sum.size() / nWeightUpdatingThreads + 1;
 
     // Update the weights of all spacepoint triplets.
-    kernels::update_triplet_weights<<<nWeightUpdatingBlocks,
-                                      nWeightUpdatingThreads>>>(
-        m_seedfilter_config, g2_view, triplet_prefix_sum_buff, triplet_buffer);
+    kernels::update_triplet_weights<<<
+        nWeightUpdatingBlocks, nWeightUpdatingThreads,
+        sizeof(scalar) * m_seedfilter_config.compatSeedLimit *
+            nWeightUpdatingThreads>>>(m_seedfilter_config, g2_view,
+                                      triplet_prefix_sum_buff, triplet_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -326,7 +341,10 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         doublet_prefix_sum.size() / nSeedSelectingThreads + 1;
 
     // Create seeds out of selected triplets
-    kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads>>>(
+    kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads,
+                            sizeof(triplet) *
+                                m_seedfilter_config.max_triplets_per_spM *
+                                nSeedSelectingThreads>>>(
         m_seedfilter_config, spacepoints_view, g2_view, doublet_prefix_sum_buff,
         doublet_counter_buffer, triplet_buffer, seed_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());

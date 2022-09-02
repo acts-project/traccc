@@ -26,6 +26,8 @@ namespace traccc::device {
 /// @param[in] filter_config        Seedfilter configuration
 /// @param[in] sp_view       The spacepoint grid
 /// @param[in] triplet_ps_view    Prefix sum for iterating over the triplets
+/// @param[in] data Array for temporary storage of quality parameters for
+/// comparison of triplets
 /// @param[out] triplet_view Container storing the triplets
 ///
 TRACCC_HOST_DEVICE
@@ -34,7 +36,7 @@ void update_triplet_weights(
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
-    triplet_container_view triplet_view);
+    scalar* data, triplet_container_view triplet_view);
 
 }  // namespace traccc::device
 

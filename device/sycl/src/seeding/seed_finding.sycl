@@ -281,16 +281,37 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     auto weightUpdatingRange = traccc::sycl::calculate1DimNdRange(
         triplet_prefix_sum.size(), weightUpdatingLocalSize);
 
+    // Check if device is capable of allocating sufficient local memory
+    assert(sizeof(scalar) * m_seedfilter_config.compatSeedLimit *
+               weightUpdatingLocalSize <
+           details::get_queue(m_queue)
+               .get_device()
+               .get_info<::sycl::info::device::local_mem_size>());
+
     // Update the weight of all of the spacepoint triplets.
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
+            // Array for temporary storage of triplets for comparing within seed
+            // selecting kernel
+            ::sycl::accessor<scalar, 1, ::sycl::access::mode::read_write,
+                             ::sycl::access::target::local>
+                local_mem(m_seedfilter_config.compatSeedLimit *
+                              weightUpdatingLocalSize,
+                          h);
+
             h.parallel_for<kernels::update_triplet_weights>(
-                weightUpdatingRange, [filter_config = m_seedfilter_config,
-                                      g2_view, triplet_prefix_sum_view,
-                                      triplet_view](::sycl::nd_item<1> item) {
+                weightUpdatingRange,
+                [filter_config = m_seedfilter_config, g2_view,
+                 triplet_prefix_sum_view, local_mem,
+                 triplet_view](::sycl::nd_item<1> item) {
+                    // Each thread uses compatSeedLimit elements of the array
+                    scalar* dataPos =
+                        &local_mem.get_pointer()[item.get_local_id() *
+                                                 filter_config.compatSeedLimit];
+
                     device::update_triplet_weights(
                         item.get_global_linear_id(), filter_config, g2_view,
-                        triplet_prefix_sum_view, triplet_view);
+                        triplet_prefix_sum_view, dataPos, triplet_view);
                 });
         })
         .wait_and_throw();
@@ -316,18 +337,39 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     auto seedSelectingRange = traccc::sycl::calculate1DimNdRange(
         doublet_prefix_sum.size(), seedSelectingLocalSize);
 
+    // Check if device is capable of allocating sufficient local memory
+    assert(sizeof(triplet) * m_seedfilter_config.max_triplets_per_spM *
+               seedSelectingLocalSize <
+           details::get_queue(m_queue)
+               .get_device()
+               .get_info<::sycl::info::device::local_mem_size>());
+
     // Create seeds out of selected triplets
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
+            // Array for temporary storage of triplets for comparing within seed
+            // selecting kernel
+            ::sycl::accessor<triplet, 1, ::sycl::access::mode::read_write,
+                             ::sycl::access::target::local>
+                local_mem(m_seedfilter_config.max_triplets_per_spM *
+                              seedSelectingLocalSize,
+                          h);
+
             h.parallel_for<kernels::select_seeds>(
                 seedSelectingRange,
                 [filter_config = m_seedfilter_config, spacepoints_view, g2_view,
                  doublet_prefix_sum_view, doublet_counter_view, triplet_view,
-                 seed_view](::sycl::nd_item<1> item) {
+                 local_mem, seed_view](::sycl::nd_item<1> item) {
+                    // Each thread uses compatSeedLimit elements of the array
+                    triplet* dataPos =
+                        &local_mem
+                             .get_pointer()[item.get_local_id() *
+                                            filter_config.max_triplets_per_spM];
+
                     device::select_seeds(
                         item.get_global_linear_id(), filter_config,
                         spacepoints_view, g2_view, doublet_prefix_sum_view,
-                        doublet_counter_view, triplet_view, seed_view);
+                        doublet_counter_view, triplet_view, dataPos, seed_view);
                 });
         })
         .wait_and_throw();

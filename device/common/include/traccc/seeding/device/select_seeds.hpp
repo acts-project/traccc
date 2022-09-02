@@ -17,12 +17,14 @@ namespace traccc::device {
 ///
 /// @param[in] globalIndex   The index of the current thread
 /// @param[in] filter_config seed filter config
-/// @param[in] sp_view vecmem container for internal spacepoint
+/// @param[in] spacepoints_view vecmem container for internal spacepoint
 /// @param[in] dc_prefix_sum view of the vector prefix sum on
 /// doublet_counter_container
 /// @param[in] doublet_counter_container vecmem container for doublet_counter
-/// @param[in] triplet_container vecmem container for triplets
-/// @param seed_container vecmem container for seeds
+/// @param[in] tc_view view on vecmem container for triplets
+/// @param[in] data Array for temporary storage of triplets for
+/// comparison
+/// @param[out] seed_container vecmem container for seeds
 ///
 TRACCC_HOST_DEVICE
 void select_seeds(
@@ -32,7 +34,7 @@ void select_seeds(
     const vecmem::data::vector_view<const prefix_sum_element_t>& dc_ps_view,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
-    const triplet_container_view& tc_view,
+    const triplet_container_view& tc_view, triplet* data,
     vecmem::data::vector_view<seed> seed_view);
 
 }  // namespace traccc::device
