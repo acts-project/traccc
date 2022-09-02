@@ -25,9 +25,9 @@ struct triplet_per_bin {
 
 /// Item: triplets of middle-bottom-top
 struct triplet {
-    // middle spacepoint location in internal spacepoint container
-    sp_location sp1;
     // bottom spacepoint location in internal spacepoint container
+    sp_location sp1;
+    // middle spacepoint location in internal spacepoint container
     sp_location sp2;
     // top spacepoint location in internal spacepoint container
     sp_location sp3;
