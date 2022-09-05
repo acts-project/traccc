@@ -7,7 +7,7 @@
 
 // Local include(s).
 #include "traccc/kokkos/seeding/seed_finding.hpp"
-#include "traccc/kokkos/utils/definitions.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 
 // Library include(s).
 #include "traccc/kokkos/seeding/seed_selecting.hpp"

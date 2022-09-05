@@ -5,8 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/cuda/seeding/triplet_counting.hpp"
-#include "traccc/cuda/utils/kokkos_helper.hpp"
+// Project include(s)
+#include "traccc/cuda/utils/cuda_helper.hpp"
+#include "traccc/kokkos/seeding/triplet_counting.hpp"
+#include "traccc/kokkos/utils/kokkos_helper.hpp"
 
 namespace traccc {
 

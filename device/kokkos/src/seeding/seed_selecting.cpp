@@ -6,6 +6,8 @@
  */
 
 // Project include(s).
+#include "traccc/cuda/utils/definitions.hpp"
+#include "traccc/cuda/utils/cuda_helper.hpp"
 #include "traccc/kokkos/seeding/seed_selecting.hpp"
 #include "traccc/kokkos/utils/kokkos_helper.cuh"
 

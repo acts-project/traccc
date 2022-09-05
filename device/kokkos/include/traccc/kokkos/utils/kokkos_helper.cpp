@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/kokkos/utils/definitions.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 
 namespace traccc {
 namespace kokkos {

@@ -5,9 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s)
+#include "traccc/cuda/utils/definitions.hpp"
+#include "traccc/cuda/utils/cuda_helper.hpp"
 #include "traccc/kokkos/seeding/weight_updating.hpp"
 #include "traccc/kokkos/utils/kokkos_helper.cuh"
-#include "traccc/kokkos/utils/definitions.hpp"
 
 namespace traccc {
 namespace kokkos {

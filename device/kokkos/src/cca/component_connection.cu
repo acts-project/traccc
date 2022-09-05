@@ -6,8 +6,8 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/kokkos/cca/component_connection.hpp"
-#include "traccc/kokkos/utils/definitions.hpp"
+#include "traccc/cuda/cca/component_connection.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"

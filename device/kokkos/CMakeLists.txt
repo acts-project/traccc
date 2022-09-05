@@ -17,7 +17,7 @@ add_subdirectory( device/kokkos )
 # Set up the build of the traccc::kokkos library.
 traccc_add_library( traccc_kokkos kokkos TYPE SHARED
   # Utility definitions.
-  "include/traccc/kokkos/utils/definitions.hpp"
+  #"include/traccc/kokkos/utils/definitions.hpp"
   "include/traccc/kokkos/utils/kokkos_helper.cpp"
   # Seed finding code.
   "include/traccc/kokkos/seeding/detail/triplet_counter.hpp"
@@ -30,7 +30,7 @@ traccc_add_library( traccc_kokkos kokkos TYPE SHARED
   "include/traccc/kokkos/seeding/seeding_algorithm.hpp"
   #"include/traccc/kokkos/seeding/spacepoint_binning.hpp"
   # CCL code.
-  "include/traccc/kokkos/cca/component_connection.hpp"
+  #"include/traccc/kokkos/cca/component_connection.hpp"
   "src/seeding/triplet_counting.cpp"
   "src/seeding/weight_updating.cpp"
   #"src/seeding/track_params_estimation.cu"
@@ -39,7 +39,7 @@ traccc_add_library( traccc_kokkos kokkos TYPE SHARED
   #"src/seeding/spacepoint_binning.cu"
   "src/seeding/triplet_finding.cpp"
   "src/seeding/seeding_algorithm.cpp"
-  "src/cca/component_connection.cu"
+  #"src/cca/component_connection.cu"
 )
 target_compile_options( traccc_kokkos
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
