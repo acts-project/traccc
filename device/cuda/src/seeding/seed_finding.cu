@@ -326,7 +326,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
 
     // Get the number of seeds (triplets)
-    auto n_triplets = 0;
+    unsigned int n_triplets = 0;
     for (const auto& h : tcc_headers) {
         n_triplets += h.m_nTriplets;
     }

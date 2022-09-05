@@ -25,6 +25,11 @@ inline TRACCC_HOST_DEVICE bool operator==(const sp_location& lhs,
     return (lhs.bin_idx == rhs.bin_idx && lhs.sp_idx == rhs.sp_idx);
 }
 
+inline TRACCC_HOST_DEVICE bool operator!=(const sp_location& lhs,
+                                          const sp_location& rhs) {
+    return (lhs.bin_idx != rhs.bin_idx || lhs.sp_idx != rhs.sp_idx);
+}
+
 /// Container of singlet belonging to one detector module
 template <template <typename> class vector_t>
 using singlet_collection = vector_t<sp_location>;

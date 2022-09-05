@@ -28,7 +28,7 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 void select_seeds(
-    const std::size_t globalIndex, const seedfilter_config& filter_config,
+    std::size_t globalIndex, const seedfilter_config& filter_config,
     const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& dc_ps_view,

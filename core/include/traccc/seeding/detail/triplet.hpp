@@ -43,6 +43,11 @@ inline TRACCC_HOST_DEVICE bool operator==(const triplet& lhs,
             lhs.sp3.sp_idx == rhs.sp3.sp_idx);
 }
 
+inline TRACCC_HOST_DEVICE bool operator!=(const triplet& lhs,
+                                          const triplet& rhs) {
+    return !(lhs == rhs);
+}
+
 inline TRACCC_HOST_DEVICE bool operator<(const triplet& lhs,
                                          const triplet& rhs) {
     return lhs.weight < rhs.weight;

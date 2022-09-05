@@ -305,8 +305,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
                  triplet_prefix_sum_view, local_mem,
                  triplet_view](::sycl::nd_item<1> item) {
                     // Each thread uses compatSeedLimit elements of the array
-                    scalar* dataPos =
-                        &local_mem.get_pointer()[item.get_local_id() *
+                    scalar* dataPos = &local_mem[item.get_local_id() *
                                                  filter_config.compatSeedLimit];
 
                     device::update_triplet_weights(
@@ -322,7 +321,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
 
     // Get the number of seeds (triplets)
-    auto n_triplets = 0;
+    unsigned int n_triplets = 0;
     for (const auto& h : tcc_headers) {
         n_triplets += h.m_nTriplets;
     }
@@ -362,9 +361,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
                  local_mem, seed_view](::sycl::nd_item<1> item) {
                     // Each thread uses compatSeedLimit elements of the array
                     triplet* dataPos =
-                        &local_mem
-                             .get_pointer()[item.get_local_id() *
-                                            filter_config.max_triplets_per_spM];
+                        &local_mem[item.get_local_id() *
+                                   filter_config.max_triplets_per_spM];
 
                     device::select_seeds(
                         item.get_global_linear_id(), filter_config,
