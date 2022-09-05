@@ -9,10 +9,7 @@ enable_language( CUDA )
 
 # Project include(s).
 include( traccc-compiler-options-cpp )
-include( traccc-compiler-options-kokkos )
 include( traccc-compiler-options-cuda )
-
-add_subdirectory( device/kokkos ) 
 
 # Set up the build of the traccc::kokkos library.
 traccc_add_library( traccc_kokkos kokkos TYPE SHARED
@@ -44,5 +41,5 @@ traccc_add_library( traccc_kokkos kokkos TYPE SHARED
 target_compile_options( traccc_kokkos
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_kokkos
-  PUBLIC traccc::core vecmem::core
-  PRIVATE traccc::device_common vecmem::kokkos )
+  PUBLIC traccc::core vecmem::core Kokkos::kokkos
+  PRIVATE traccc::device_common vecmem::cuda )
