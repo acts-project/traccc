@@ -32,10 +32,6 @@ struct doublet_counter_header {
     /// geometric bin.
     unsigned int m_nMidTop = 0;
 
-    /// Temporary compatibility function
-    TRACCC_HOST_DEVICE
-    unsigned int get_ref_num() const { return m_nSpM; }
-
 };  // struct doublet_counter_header
 
 /// Item type for the "doublet container"

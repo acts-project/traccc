@@ -18,7 +18,7 @@ void update_triplet_weights(
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
-    triplet_container_view triplet_view) {
+    scalar* data, triplet_container_view triplet_view) {
 
     // Check if anything needs to be done.
     const vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
@@ -56,10 +56,6 @@ void update_triplet_weights(
         this_triplet.curvature + filter_config.deltaInvHelixDiameter;
     std::size_t num_compat_seedR = 0;
 
-    static constexpr std::size_t MAX_COMPAT_SEED = 5;
-    assert(MAX_COMPAT_SEED >= filter_config.compatSeedLimit);
-    scalar compat_seedR[MAX_COMPAT_SEED];
-
     // iterate over triplets
     for (auto tr_it = triplets_per_bin.begin(); tr_it != triplets_per_bin.end();
          tr_it++) {
@@ -95,7 +91,7 @@ void update_triplet_weights(
         bool newCompSeed = true;
 
         for (std::size_t i_s = 0; i_s < num_compat_seedR; ++i_s) {
-            const scalar previousDiameter = compat_seedR[i_s];
+            const scalar previousDiameter = data[i_s];
 
             // original ATLAS code uses higher min distance for 2nd found
             // compatible seed (20mm instead of 5mm) add new compatible seed
@@ -109,7 +105,7 @@ void update_triplet_weights(
         }
 
         if (newCompSeed) {
-            compat_seedR[num_compat_seedR] = otherTop_r;
+            data[num_compat_seedR] = otherTop_r;
             this_triplet.weight += filter_config.compatSeedWeight;
             num_compat_seedR++;
         }

@@ -50,6 +50,8 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/seeding/device/make_triplet_buffer.hpp"
    "src/seeding/make_triplet_buffer.cpp"
    "include/traccc/seeding/device/update_triplet_weights.hpp"
-   "include/traccc/seeding/device/impl/update_triplet_weights.ipp" )
+   "include/traccc/seeding/device/impl/update_triplet_weights.ipp"
+   "include/traccc/seeding/device/select_seeds.hpp"
+   "include/traccc/seeding/device/impl/select_seeds.ipp" )
 target_link_libraries( traccc_device_common
    PUBLIC traccc::core vecmem::core )
