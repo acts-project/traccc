@@ -15,8 +15,6 @@ namespace po = boost::program_options;
 
 int create_binaries(const std::string& detector_file,
                     const std::string& digi_config_file,
-                    const std::string& cell_directory,
-                    const std::string& hit_directory,
                     const traccc::common_options& common_opts) {
 
     // Read the surface transforms
@@ -32,32 +30,26 @@ int create_binaries(const std::string& detector_file,
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-        if (!cell_directory.empty()) {
+        // Read the cells from the relevant event file
+        traccc::cell_container_types::host cells_csv =
+            traccc::read_cells_from_event(event, common_opts.input_directory,
+                                          common_opts.input_data_format,
+                                          surface_transforms, digi_cfg,
+                                          host_mr);
 
-            // Read the cells from the relevant event file
-            traccc::cell_container_types::host cells_csv =
-                traccc::read_cells_from_event(
-                    event, cell_directory, common_opts.input_data_format,
-                    surface_transforms, digi_cfg, host_mr);
+        // Write binary file
+        traccc::write_cells(event, common_opts.input_directory,
+                            traccc::data_format::binary, cells_csv);
 
-            // Write binary file
-            traccc::write_cells(event, cell_directory,
-                                traccc::data_format::binary, cells_csv);
-        }
+        // Read the hits from the relevant event file
+        traccc::spacepoint_container_types::host spacepoints_csv =
+            traccc::read_spacepoints_from_event(
+                event, common_opts.input_directory,
+                common_opts.input_data_format, surface_transforms, host_mr);
 
-        if (!hit_directory.empty()) {
-
-            // Read the hits from the relevant event file
-            traccc::spacepoint_container_types::host spacepoints_csv =
-                traccc::read_spacepoints_from_event(
-                    event, hit_directory, common_opts.input_data_format,
-                    surface_transforms, host_mr);
-
-            // Write binary file
-            traccc::write_spacepoints(event, hit_directory,
-                                      traccc::data_format::binary,
-                                      spacepoints_csv);
-        }
+        // Write binary file
+        traccc::write_spacepoints(event, common_opts.input_directory,
+                                  traccc::data_format::binary, spacepoints_csv);
     }
 
     return 0;
@@ -76,12 +68,6 @@ int main(int argc, char* argv[]) {
     desc.add_options()("digitization_config_file",
                        po::value<std::string>()->required(),
                        "specify digitization configuration file");
-    desc.add_options()("cell_directory",
-                       po::value<std::string>()->default_value(""),
-                       "specify the directory of cell files");
-    desc.add_options()("hit_directory",
-                       po::value<std::string>()->default_value(""),
-                       "specify the directory of hit files");
     traccc::common_options common_opts(desc);
 
     po::variables_map vm;
@@ -93,10 +79,7 @@ int main(int argc, char* argv[]) {
     // Read options
     auto detector_file = vm["detector_file"].as<std::string>();
     auto digi_config_file = vm["digitization_config_file"].as<std::string>();
-    auto cell_directory = vm["cell_directory"].as<std::string>();
-    auto hit_directory = vm["hit_directory"].as<std::string>();
     common_opts.read(vm);
 
-    return create_binaries(detector_file, digi_config_file, cell_directory,
-                           hit_directory, common_opts);
+    return create_binaries(detector_file, digi_config_file, common_opts);
 }

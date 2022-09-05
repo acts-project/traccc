@@ -211,7 +211,7 @@ cmake --build <build_directory> <options>
 ### cpu reconstruction chain
 
 ```sh
-<build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_pixels/ --events=10 
+<build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 
 ```
 
 ### cuda reconstruction chain
@@ -219,7 +219,7 @@ cmake --build <build_directory> <options>
 - Users can generate cuda examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
 
 ```sh
-<build_directory>/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_pixels/ --events=10 --run_cpu=1
+<build_directory>/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 --run_cpu=1
 ```
 
 ## Troubleshooting

@@ -46,7 +46,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    sd_performance_writer.add_cache("CPU");
+    if (i_cfg.check_performance) {
+        sd_performance_writer.add_cache("CPU");
+    }
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
@@ -54,9 +56,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Read the hits from the relevant event file
         traccc::spacepoint_container_types::host spacepoints_per_event =
-            traccc::read_spacepoints_from_event(event, i_cfg.hit_directory,
-                                                common_opts.input_data_format,
-                                                surface_transforms, host_mr);
+            traccc::read_spacepoints_from_event(
+                event, common_opts.input_directory,
+                common_opts.input_data_format, surface_transforms, host_mr);
 
         /*----------------
              Seeding
@@ -75,16 +77,18 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
-        if (i_cfg.check_seeding_performance) {
+        if (i_cfg.check_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
-                                      i_cfg.hit_directory,
-                                      i_cfg.particle_directory, host_mr);
+                                      common_opts.input_directory,
+                                      common_opts.input_directory, host_mr);
             sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
                                         evt_map);
         }
     }
 
-    sd_performance_writer.finalize();
+    if (i_cfg.check_performance) {
+        sd_performance_writer.finalize();
+    }
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints" << std::endl;
@@ -115,8 +119,8 @@ int main(int argc, char* argv[]) {
     seeding_input_cfg.read(vm);
 
     std::cout << "Running " << argv[0] << " " << seeding_input_cfg.detector_file
-              << " " << seeding_input_cfg.hit_directory << " "
-              << common_opts.events << std::endl;
+              << " " << common_opts.input_directory << " " << common_opts.events
+              << std::endl;
 
     return seq_run(seeding_input_cfg, common_opts);
 }

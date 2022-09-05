@@ -59,7 +59,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    sd_performance_writer.add_cache("CPU");
+
+    if (i_cfg.check_performance) {
+        sd_performance_writer.add_cache("CPU");
+    }
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
@@ -67,9 +70,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         // Read the cells from the relevant event file
         traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(
-                event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, host_mr);
+            traccc::read_cells_from_event(event, common_opts.input_directory,
+                                          common_opts.input_data_format,
+                                          surface_transforms, digi_cfg,
+                                          host_mr);
 
         /*-------------------
             Clusterization
@@ -109,18 +113,20 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
              Writer
           ------------*/
 
-        if (i_cfg.check_seeding_performance) {
-            traccc::event_map evt_map(event, i_cfg.detector_file,
-                                      i_cfg.digitization_config_file,
-                                      i_cfg.cell_directory, i_cfg.hit_directory,
-                                      i_cfg.particle_directory, host_mr);
+        if (i_cfg.check_performance) {
+            traccc::event_map evt_map(
+                event, i_cfg.detector_file, i_cfg.digitization_config_file,
+                common_opts.input_directory, common_opts.input_directory,
+                common_opts.input_directory, host_mr);
 
             sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
                                         evt_map);
         }
     }
 
-    sd_performance_writer.finalize();
+    if (i_cfg.check_performance) {
+        sd_performance_writer.finalize();
+    }
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_cells << " cells from " << n_modules
@@ -157,8 +163,8 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
-              << full_tracking_input_cfg.cell_directory << " "
-              << common_opts.events << std::endl;
+              << common_opts.input_directory << " " << common_opts.events
+              << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts);
 }

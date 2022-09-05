@@ -54,15 +54,23 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
 
 namespace traccc::cuda {
 
-seeding_algorithm::seeding_algorithm(vecmem::memory_resource& mr)
+seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr)
     : m_spacepoint_binning(default_seedfinder_config(),
                            default_spacepoint_grid_config(), mr),
       m_seed_finding(default_seedfinder_config(), mr) {}
 
-seeding_algorithm::output_type seeding_algorithm::operator()(
-    const spacepoint_container_types::host& spacepoints) const {
+vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
+    const spacepoint_container_types::const_view& spacepoints_view) const {
 
-    return m_seed_finding(spacepoints, m_spacepoint_binning(spacepoints));
+    return m_seed_finding(spacepoints_view,
+                          m_spacepoint_binning(spacepoints_view));
+}
+
+vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
+    const spacepoint_container_types::buffer& spacepoints_buffer) const {
+
+    return m_seed_finding(spacepoints_buffer,
+                          m_spacepoint_binning(spacepoints_buffer));
 }
 
 }  // namespace traccc::cuda

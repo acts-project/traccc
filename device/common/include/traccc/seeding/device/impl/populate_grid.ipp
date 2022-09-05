@@ -31,7 +31,7 @@ void populate_grid(
     const prefix_sum_element_t sp_idx = sp_prefix_sum[globalIndex];
     const spacepoint_container_types::const_device spacepoints(
         spacepoints_view);
-    const spacepoint sp = spacepoints.at(sp_idx);
+    const spacepoint sp = spacepoints.at({sp_idx.first, sp_idx.second});
 
     /// Check out if the spacepoint can be used for seeding.
     if (is_valid_sp(config, sp) != detray::invalid_value<size_t>()) {
@@ -42,8 +42,8 @@ void populate_grid(
         const sp_grid_device::axis_p1_type& z_axis = grid.axis_p1();
 
         // Find the grid bin that the spacepoint belongs to.
-        const internal_spacepoint<spacepoint> isp(spacepoints, sp_idx,
-                                                  config.beamPos);
+        const internal_spacepoint<spacepoint> isp(
+            spacepoints, {sp_idx.first, sp_idx.second}, config.beamPos);
         const std::size_t bin_index =
             phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 

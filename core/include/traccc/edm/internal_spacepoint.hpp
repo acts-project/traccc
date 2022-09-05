@@ -48,7 +48,8 @@ struct internal_spacepoint {
         const spacepoint_container_t& sp_container, const link_type& sp_link,
         const vector2& offsetXY)
         : m_link(std::move(sp_link)) {
-        const spacepoint_t& sp = sp_container.at(sp_link);
+        const spacepoint_t& sp =
+            sp_container.at({sp_link.first, sp_link.second});
         m_x = sp.global[0] - offsetXY[0];
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];
