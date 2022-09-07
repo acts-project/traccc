@@ -20,7 +20,7 @@ struct triplet_finding_helper {
     ///
     /// @param spM is middle spacepoint
     /// @param lb is transformed coordinate of middle-bottom doublet
-    /// @param lt is transformed coordinate of middle-bottom doublet
+    /// @param lt is transformed coordinate of middle-top doublet
     /// @param config is configuration parameter
     /// @param iSinTheta2 is the square of sin of pitch angle
     /// @param scatteringInRegion2 is the threshold for scattering angle for the

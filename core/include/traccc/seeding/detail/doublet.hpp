@@ -14,12 +14,6 @@ namespace traccc {
 /// Header: the number of doublets per spacepoint bin
 struct doublet_per_bin {
     unsigned int n_doublets = 0;
-
-    TRACCC_HOST_DEVICE
-    unsigned int get_ref_num() const { return n_doublets; }
-
-    TRACCC_HOST_DEVICE
-    void zeros() { n_doublets = 0; }
 };
 
 /// Item: doublet of middle-bottom or middle-top

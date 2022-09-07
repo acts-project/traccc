@@ -47,6 +47,7 @@ endif()
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
+option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc" FALSE)
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
@@ -182,4 +183,8 @@ endif()
 include( CTest )
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    add_subdirectory( tests )
+endif()
+
+if(TRACCC_BUILD_FUTHARK)
+   add_subdirectory(device/futhark)
 endif()
