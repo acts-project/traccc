@@ -57,36 +57,12 @@ struct internal_spacepoint {
     }
 
     TRACCC_HOST_DEVICE
-    internal_spacepoint(const link_type& sp_link) : m_link(std::move(sp_link)) {
+    internal_spacepoint(const link_type& sp_link) : m_link(sp_link) {
 
         m_x = 0;
         m_y = 0;
         m_z = 0;
         m_r = 0;
-    }
-
-    TRACCC_HOST_DEVICE
-    internal_spacepoint(const internal_spacepoint<spacepoint_t>& sp)
-        : m_link(std::move(sp.m_link)) {
-
-        m_x = sp.m_x;
-        m_y = sp.m_y;
-        m_z = sp.m_z;
-        m_r = sp.m_r;
-    }
-
-    TRACCC_HOST_DEVICE
-    internal_spacepoint& operator=(
-        const internal_spacepoint<spacepoint_t>& sp) {
-
-        m_link.first = sp.m_link.first;
-        m_link.second = sp.m_link.second;
-        m_x = sp.m_x;
-        m_y = sp.m_y;
-        m_z = sp.m_z;
-        m_r = sp.m_r;
-
-        return *this;
     }
 
     TRACCC_HOST_DEVICE

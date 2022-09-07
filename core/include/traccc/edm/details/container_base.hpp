@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/details/container_element.hpp"
+#include "traccc/utils/pair.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -35,7 +36,7 @@ namespace traccc {
 template <typename header_t, typename item_t,
           template <typename> class vector_t,
           template <typename> class jagged_vector_t,
-          template <typename, typename> class pair_t = std::pair>
+          template <typename, typename> class pair_t = pair>
 class container_base {
     public:
     /// @name Type definitions

@@ -24,26 +24,6 @@ struct seed {
     scalar weight;
     scalar z_vertex;
 
-    seed() = default;
-    seed(const seed&) = default;
-
-    TRACCC_HOST_DEVICE
-    seed& operator=(const seed& aSeed) {
-
-        spB_link.first = aSeed.spB_link.first;
-        spB_link.second = aSeed.spB_link.second;
-
-        spM_link.first = aSeed.spM_link.first;
-        spM_link.second = aSeed.spM_link.second;
-
-        spT_link.first = aSeed.spT_link.first;
-        spT_link.second = aSeed.spT_link.second;
-
-        weight = aSeed.weight;
-        z_vertex = aSeed.z_vertex;
-        return *this;
-    }
-
     TRACCC_HOST_DEVICE
     std::array<measurement, 3> get_measurements(
         const spacepoint_container_types::const_view& spacepoints_view) const {
