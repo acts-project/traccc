@@ -1,0 +1,32 @@
+name: MPS Test
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  builds:
+    name: ${{ matrix.platform.name }}-${{ matrix.build }}
+    runs-on: [self-hosted, linux, ARM64]
+
+    steps:
+      - name: Dependencies
+        run: apt-get install -y git-lfs
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          lfs: true
+      - name: Configure
+        run:
+          cmake -S . -B build
+      - name: Build
+        run:
+          cmake --build build
+      - name: Auto Benchmark cuda
+        if: "matrix.platform.name == 'CUDA'"
+        run: |
+          cd multi_process
+          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"../data/"
+      
