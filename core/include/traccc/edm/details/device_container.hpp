@@ -17,7 +17,6 @@
 
 // System include(s).
 #include <cassert>
-#include <utility>
 
 namespace traccc {
 
@@ -25,11 +24,11 @@ namespace traccc {
 template <typename header_t, typename item_t>
 class device_container
     : public container_base<header_t, item_t, vecmem::device_vector,
-                            vecmem::jagged_device_vector, std::pair> {
+                            vecmem::jagged_device_vector> {
     public:
     /// Base class type
     using base_type = container_base<header_t, item_t, vecmem::device_vector,
-                                     vecmem::jagged_device_vector, std::pair>;
+                                     vecmem::jagged_device_vector>;
 
     /// Inherit all of the base class's constructors
     using base_type::base_type;

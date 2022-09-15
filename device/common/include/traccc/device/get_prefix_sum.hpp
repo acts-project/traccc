@@ -16,20 +16,16 @@
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
+// Thrust include(s).
+#include <thrust/pair.h>
+
 // System include(s).
 #include <utility>
 
 namespace traccc::device {
 
-struct prefix_sum_element {
-    // Bin id
-    std::size_t first;
-
-    // Local id
-    std::size_t second;
-};
-
-typedef prefix_sum_element prefix_sum_element_t;
+/// Type for the individual elements in the prefix sum vector
+typedef thrust::pair<std::size_t, std::size_t> prefix_sum_element_t;
 
 /// Convenience type definition for the return value of the helper function
 typedef vecmem::vector<prefix_sum_element_t> prefix_sum_t;

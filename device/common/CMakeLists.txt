@@ -12,7 +12,11 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    # General function(s).
    "include/traccc/device/get_prefix_sum.hpp"
    "include/traccc/device/impl/get_prefix_sum.ipp"
+   "include/traccc/device/fill_prefix_sum.hpp"
+   "include/traccc/device/impl/fill_prefix_sum.ipp"
    "src/get_prefix_sum.cpp"
+   "include/traccc/device/make_prefix_sum_buffer.hpp"
+   "src/make_prefix_sum_buffer.cpp"
    # EDM class(es).
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
@@ -54,4 +58,4 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/seeding/device/select_seeds.hpp"
    "include/traccc/seeding/device/impl/select_seeds.ipp" )
 target_link_libraries( traccc_device_common
-   PUBLIC traccc::core vecmem::core )
+   PUBLIC traccc::Thrust traccc::core vecmem::core )

@@ -84,6 +84,26 @@ if( TRACCC_SETUP_EIGEN3 )
    endif()
 endif()
 
+# Set up Thrust.
+option( TRACCC_SETUP_THRUST
+   "Set up the Thrust target(s) explicitly" TRUE )
+option( TRACCC_USE_SYSTEM_THRUST
+   "Pick up an existing installation of Thrust from the build environment"
+   FALSE )
+if( TRACCC_SETUP_THRUST )
+   if( TRACCC_USE_SYSTEM_THRUST )
+      find_package( Thrust REQUIRED )
+   else()
+      add_subdirectory( extern/thrust )
+   endif()
+endif()
+# Set up an IMPORTED library on top of the Thrust library/libraries. One that
+# the TRACCC/Detray code could depend on publicly.
+set( TRACCC_THRUST_OPTIONS "" CACHE STRING
+   "Extra options for configuring how Thrust should be used" )
+mark_as_advanced( TRACCC_THRUST_OPTIONS )
+thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+
 # Set up Algebra Plugins.
 option( TRACCC_SETUP_ALGEBRA_PLUGINS
    "Set up the Algebra Plugins target(s) explicitly" TRUE )

@@ -70,4 +70,5 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cpp" )
 target_link_libraries( traccc_core
-  PUBLIC Eigen3::Eigen vecmem::core detray::core ActsCore ActsPluginJson traccc::algebra )
+  PUBLIC Eigen3::Eigen vecmem::core detray::core ActsCore ActsPluginJson
+         traccc::Thrust traccc::algebra )
