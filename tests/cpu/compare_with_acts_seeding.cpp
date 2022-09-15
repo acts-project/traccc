@@ -95,17 +95,17 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc::seedfinder_config traccc_config;
     traccc::spacepoint_grid_config grid_config;
 
+    traccc::seedfinder_config config_copy = traccc_config.toInternalUnits();
     traccc_config.highland =
-        13.6 * std::sqrt(traccc_config.radLengthPerSeed) *
-        (1 + 0.038 * std::log(traccc_config.radLengthPerSeed));
-    float maxScatteringAngle = traccc_config.highland / traccc_config.minPt;
+        13.6 * std::sqrt(config_copy.radLengthPerSeed) *
+        (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
+    float maxScatteringAngle = traccc_config.highland / config_copy.minPt;
     traccc_config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
     // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
     // and millimeter
-    // TODO: change using ACTS units
-    traccc_config.pTPerHelixRadius = 300. * traccc_config.bFieldInZ;
+    traccc_config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
     traccc_config.minHelixDiameter2 =
-        std::pow(traccc_config.minPt * 2 / traccc_config.pTPerHelixRadius, 2);
+        std::pow(config_copy.minPt * 2 / traccc_config.pTPerHelixRadius, 2);
     traccc_config.pT2perRadius =
         std::pow(traccc_config.highland / traccc_config.pTPerHelixRadius, 2);
 
@@ -184,34 +184,34 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     Acts::SeedfinderConfig<SpacePoint> acts_config;
 
     // silicon detector max
-    acts_config.phiMin = traccc_config.phiMin;
-    acts_config.phiMax = traccc_config.phiMax;
+    acts_config.phiMin = config_copy.phiMin;
+    acts_config.phiMax = config_copy.phiMax;
 
-    acts_config.rMin = traccc_config.rMin;
-    acts_config.rMax = traccc_config.rMax;
-    acts_config.deltaRMin = traccc_config.deltaRMin;
-    acts_config.deltaRMax = traccc_config.deltaRMax;
-    acts_config.collisionRegionMin = traccc_config.collisionRegionMin;
-    acts_config.collisionRegionMax = traccc_config.collisionRegionMax;
+    acts_config.rMin = config_copy.rMin;
+    acts_config.rMax = config_copy.rMax;
+    acts_config.deltaRMin = config_copy.deltaRMin;
+    acts_config.deltaRMax = config_copy.deltaRMax;
+    acts_config.collisionRegionMin = config_copy.collisionRegionMin;
+    acts_config.collisionRegionMax = config_copy.collisionRegionMax;
 
-    acts_config.zMin = traccc_config.zMin;
-    acts_config.zMax = traccc_config.zMax;
-    acts_config.maxSeedsPerSpM = traccc_config.maxSeedsPerSpM;
+    acts_config.zMin = config_copy.zMin;
+    acts_config.zMax = config_copy.zMax;
+    acts_config.maxSeedsPerSpM = config_copy.maxSeedsPerSpM;
 
     // 2.7 eta
-    acts_config.cotThetaMax = traccc_config.cotThetaMax;
-    acts_config.sigmaScattering = traccc_config.sigmaScattering;
-    acts_config.maxPtScattering = traccc_config.maxPtScattering;
+    acts_config.cotThetaMax = config_copy.cotThetaMax;
+    acts_config.sigmaScattering = config_copy.sigmaScattering;
+    acts_config.maxPtScattering = config_copy.maxPtScattering;
 
-    acts_config.minPt = traccc_config.minPt;
-    acts_config.bFieldInZ = traccc_config.bFieldInZ;
+    acts_config.minPt = config_copy.minPt;
+    acts_config.bFieldInZ = config_copy.bFieldInZ;
 
-    acts_config.beamPos[0] = traccc_config.beamPos[0];
-    acts_config.beamPos[1] = traccc_config.beamPos[1];
+    acts_config.beamPos[0] = config_copy.beamPos[0];
+    acts_config.beamPos[1] = config_copy.beamPos[1];
 
-    acts_config.impactMax = traccc_config.impactMax;
+    acts_config.impactMax = config_copy.impactMax;
 
-    acts_config.sigmaError = traccc_config.sigmaError;
+    acts_config.sigmaError = config_copy.sigmaError;
 
     auto bottomBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
         Acts::BinFinder<SpacePoint>());
