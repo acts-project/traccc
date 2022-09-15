@@ -7,6 +7,10 @@
 
 #pragma once
 
+// Acts include(s).
+#include <Acts/Definitions/Units.hpp>
+
+// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
@@ -18,32 +22,31 @@ struct seedfinder_config {
     // without any spacepoints
     // m_config.zMin = -2800.;
     // m_config.zMax = 2800.;
-    scalar zMin = -1186;
-    scalar zMax = 1186;
-    scalar rMax = 200;
+    scalar zMin = -1186 * Acts::UnitConstants::mm;
+    scalar zMax = 1186 * Acts::UnitConstants::mm;
+    scalar rMax = 200 * Acts::UnitConstants::mm;
     // WARNING: if rMin is smaller than impactMax, the bin size will be 2*pi,
     // which will make seeding very slow!
-    scalar rMin = 33;
+    scalar rMin = 33 * Acts::UnitConstants::mm;
 
     // Geometry Settings
     // Detector ROI
     // limiting location of collision region in z
-    scalar collisionRegionMin = -250;
-    scalar collisionRegionMax = +250;
+    scalar collisionRegionMin = -250 * Acts::UnitConstants::mm;
+    scalar collisionRegionMax = +250 * Acts::UnitConstants::mm;
     scalar phiMin = -M_PI;
     scalar phiMax = M_PI;
 
     // Seed Cuts
     // lower cutoff for seeds in MeV
-    // FIXME: Acts units
-    scalar minPt = 500.;
+    scalar minPt = 500. * Acts::UnitConstants::MeV;
     // cot of maximum theta angle
     // equivalent to 2.7 eta (pseudorapidity)
     scalar cotThetaMax = 7.40627;
     // minimum distance in mm in r between two measurements within one seed
-    scalar deltaRMin = 1;
+    scalar deltaRMin = 1 * Acts::UnitConstants::mm;
     // maximum distance in mm in r between two measurements within one seed
-    scalar deltaRMax = 60;
+    scalar deltaRMax = 60 * Acts::UnitConstants::mm;
 
     // FIXME: this is not used yet
     //        scalar upperPtResolutionPerSeed = 20* Acts::GeV;
@@ -55,22 +58,20 @@ struct seedfinder_config {
     // compatible
 
     // impact parameter in mm
-    // FIXME: Acts units
-    scalar impactMax = 10.;
+    scalar impactMax = 10. * Acts::UnitConstants::mm;
     // how many sigmas of scattering angle should be considered?
     scalar sigmaScattering = 1.0;
     // Upper pt limit for scattering calculation
-    scalar maxPtScattering = 10000;
+    scalar maxPtScattering = 10 * Acts::UnitConstants::GeV;
 
     // for how many seeds can one SpacePoint be the middle SpacePoint?
     int maxSeedsPerSpM = 20;
 
-    // Unit in kiloTesla
-    // FIXME: Acts units
-    scalar bFieldInZ = 0.00199724;
+    scalar bFieldInZ = 1.99724 * Acts::UnitConstants::T;
     // location of beam in x,y plane.
     // used as offset for Space Points
-    vector2 beamPos{-.0, -.0};
+    vector2 beamPos{-.0 * Acts::UnitConstants::mm,
+                    -.0 * Acts::UnitConstants::mm};
 
     // average radiation lengths of material on the length of a seed. used for
     // scattering.
@@ -83,8 +84,8 @@ struct seedfinder_config {
     // will be added to spacepoint measurement uncertainties (and therefore also
     // multiplied by sigmaError)
     // FIXME: call align1 and align2
-    scalar zAlign = 0;
-    scalar rAlign = 0;
+    scalar zAlign = 0 * Acts::UnitConstants::mm;
+    scalar rAlign = 0 * Acts::UnitConstants::mm;
     // used for measurement (+alignment) uncertainties.
     // find seeds within 5sigma error ellipse
     scalar sigmaError = 5;
@@ -106,6 +107,31 @@ struct seedfinder_config {
     TRACCC_HOST_DEVICE
     unsigned int get_max_neighbor_bins() const {
         return std::pow(neighbor_scope[0] + neighbor_scope[1] + 1, 2);
+    }
+
+    seedfinder_config toInternalUnits() const {
+        using namespace Acts::UnitLiterals;
+        seedfinder_config config = *this;
+        config.minPt /= 1_MeV;
+        config.deltaRMin /= 1_mm;
+        config.deltaRMax /= 1_mm;
+        config.impactMax /= 1_mm;
+        config.maxPtScattering /= 1_MeV;  // correct?
+        config.collisionRegionMin /= 1_mm;
+        config.collisionRegionMax /= 1_mm;
+        config.zMin /= 1_mm;
+        config.zMax /= 1_mm;
+        config.rMax /= 1_mm;
+        config.rMin /= 1_mm;
+        config.bFieldInZ /= 1000. * 1_T;
+
+        config.beamPos[0] /= 1_mm;
+        config.beamPos[1] /= 1_mm;
+
+        config.zAlign /= 1_mm;
+        config.rAlign /= 1_mm;
+
+        return config;
     }
 };
 
@@ -130,12 +156,26 @@ struct spacepoint_grid_config {
     scalar deltaRMax;
     // maximum forward direction expressed as cot(theta)
     scalar cotThetaMax;
+
+    spacepoint_grid_config toInternalUnits() const {
+        using namespace Acts::UnitLiterals;
+        spacepoint_grid_config config = *this;
+        config.minPt /= 1_MeV;
+        config.zMin /= 1_mm;
+        config.zMax /= 1_mm;
+        config.rMax /= 1_mm;
+        config.bFieldInZ /= 1000. * 1_T;
+
+        config.deltaRMax /= 1_mm;
+
+        return config;
+    }
 };
 
 struct seedfilter_config {
     // the allowed delta between two inverted seed radii for them to be
     // considered compatible.
-    scalar deltaInvHelixDiameter = 0.00003;
+    scalar deltaInvHelixDiameter = 0.00003 * 1. / Acts::UnitConstants::mm;
     // the impact parameters (d0) is multiplied by this factor and subtracted
     // from weight
     scalar impactWeightFactor = 1.;
@@ -143,7 +183,7 @@ struct seedfilter_config {
     scalar compatSeedWeight = 200.;
     // minimum distance between compatible seeds to be considered for weight
     // boost
-    scalar deltaRMin = 5.;
+    scalar deltaRMin = 5. * Acts::UnitConstants::mm;
     // in dense environments many seeds may be found per middle space point.
     // only seeds with the highest weight will be kept if this limit is reached.
     unsigned int maxSeedsPerSpM = 20;
@@ -155,9 +195,9 @@ struct seedfilter_config {
     size_t max_triplets_per_spM = 5;
 
     // seed weight increase
-    scalar good_spB_min_radius = 150.;
+    scalar good_spB_min_radius = 150. * Acts::UnitConstants::mm;
     scalar good_spB_weight_increase = 400.;
-    scalar good_spT_max_radius = 150.;
+    scalar good_spT_max_radius = 150. * Acts::UnitConstants::mm;
     scalar good_spT_weight_increase = 200.;
 
     // bottom sp cut
@@ -165,7 +205,20 @@ struct seedfilter_config {
 
     // seed cut
     scalar seed_min_weight = 200;
-    scalar spB_min_radius = 43.;
+    scalar spB_min_radius = 43. * Acts::UnitConstants::mm;
+
+    seedfilter_config toInternalUnits() const {
+        using namespace Acts::UnitLiterals;
+        seedfilter_config config = *this;
+        config.deltaRMin /= 1_mm;
+        config.deltaInvHelixDiameter /= 1. / 1_mm;
+
+        config.good_spB_min_radius /= 1_mm;
+        config.good_spT_max_radius /= 1_mm;
+        config.spB_min_radius /= 1_mm;
+
+        return config;
+    }
 };
 
 }  // namespace traccc

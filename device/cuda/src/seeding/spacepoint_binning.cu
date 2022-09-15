@@ -50,8 +50,9 @@ __global__ void populate_grid(
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr)
-    : m_config(config),
-      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
+    : m_config(config.toInternalUnits()),
+      m_axes(get_axes(grid_config.toInternalUnits(),
+                      (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr) {
 
     // Initialize m_copy ptr based on memory resources that were given

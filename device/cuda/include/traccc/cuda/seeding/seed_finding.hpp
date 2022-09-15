@@ -36,9 +36,11 @@ class seed_finding
     /// Constructor for the cuda seed finding
     ///
     /// @param config is seed finder configuration parameters
+    /// @param filter_config is seed filter configuration parameters
     /// @param sp_grid spacepoint grid
     /// @param mr vecmem memory resource
     seed_finding(const seedfinder_config& config,
+                 const seedfilter_config& filter_config,
                  const traccc::memory_resource& mr);
 
     /// Callable operator for the seed finding
