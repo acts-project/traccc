@@ -17,18 +17,17 @@
 
 // System include(s).
 #include <cassert>
-#include <utility>
 
 namespace traccc {
 
 /// Host container describing objects in a given event
 template <typename header_t, typename item_t>
 class host_container : public container_base<header_t, item_t, vecmem::vector,
-                                             vecmem::jagged_vector, std::pair> {
+                                             vecmem::jagged_vector> {
     public:
     /// Base class type
-    using base_type = container_base<header_t, item_t, vecmem::vector,
-                                     vecmem::jagged_vector, std::pair>;
+    using base_type =
+        container_base<header_t, item_t, vecmem::vector, vecmem::jagged_vector>;
 
     /// Inherit all of the base class's constructors
     using base_type::base_type;
