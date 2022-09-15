@@ -13,7 +13,8 @@
 #include "traccc/cuda/cca/component_connection.hpp"
 
 namespace {
-traccc::cuda::component_connection cc;
+vecmem::host_memory_resource resource;
+traccc::cuda::component_connection cc({resource});
 
 cca_function_t f = [](const traccc::cell_container_types::host &data) {
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;

@@ -12,9 +12,7 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "vecmem/containers/vector.hpp"
-#include "vecmem/memory/allocator.hpp"
-#include "vecmem/memory/binary_page_memory_resource.hpp"
-#include "vecmem/memory/cuda/managed_memory_resource.hpp"
+#include "vecmem/memory/cuda/device_memory_resource.hpp"
 
 namespace {
 static constexpr std::size_t MAX_CELLS_PER_PARTITION = 2048;
@@ -29,8 +27,8 @@ namespace details {
  * Structure that defines the start point of a partition and its size.
  */
 struct ccl_partition {
-    std::size_t start;
-    std::size_t size;
+    unsigned int start;
+    unsigned int size;
 };
 
 /*
@@ -38,7 +36,7 @@ struct ccl_partition {
  * an array/vector of cells.
  */
 struct cell_container {
-    std::size_t size = 0;
+    unsigned int size = 0;
     channel_id* channel0 = nullptr;
     channel_id* channel1 = nullptr;
     scalar* activation = nullptr;
@@ -51,7 +49,6 @@ struct cell_container {
  * an array/vector of measures.
  */
 struct measurement_container {
-    unsigned int size = 0;
     scalar* channel0 = nullptr;
     scalar* channel1 = nullptr;
     scalar* variance0 = nullptr;
@@ -518,7 +515,7 @@ __device__ void aggregate_clusters(const cell_container& cells,
 
 __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     const cell_container container, const ccl_partition* partitions,
-    measurement_container& _out_ctnr) {
+    measurement_container _out_ctnr, unsigned int* measurement_count) {
     const ccl_partition& partition = partitions[blockIdx.x];
 
     /*
@@ -646,7 +643,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
      * amount of threads per block, this has no sever implications.
      */
     if (threadIdx.x == 0) {
-        outi = atomicAdd(&_out_ctnr.size, outi);
+        outi = atomicAdd(measurement_count, outi);
     }
 
     __syncthreads();
@@ -661,16 +658,16 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     aggregate_clusters(cells, out, f);
 }
 
-vecmem::vector<details::ccl_partition> partition(
-    const cell_container_types::host& data, vecmem::memory_resource& mem) {
-    vecmem::vector<details::ccl_partition> partitions(&mem);
-    std::size_t index = 0;
-    std::size_t size = 0;
+std::vector<details::ccl_partition> partition(
+    const cell_container_types::host& data) {
+    std::vector<details::ccl_partition> partitions;
+    unsigned int index = 0;
+    unsigned int size = 0;
 
     /*
      * Iterate over every cell module in the current data set.
      */
-    for (std::size_t i = 0; i < data.size(); ++i) {
+    for (unsigned int i = 0; i < data.size(); ++i) {
         /*
          * We start at 0 since this is the origin of the local coordinate
          * system within a cell module.
@@ -727,14 +724,16 @@ vecmem::vector<details::ccl_partition> partition(
 }
 }  // namespace details
 
+component_connection::component_connection(const traccc::memory_resource& mr)
+    : m_mr(mr) {}
+
 component_connection::output_type component_connection::operator()(
     const cell_container_types::host& data) const {
-    vecmem::cuda::managed_memory_resource upstream;
-    vecmem::binary_page_memory_resource mem(upstream);
+    vecmem::cuda::device_memory_resource dmr;
 
-    std::size_t total_cells = 0;
+    unsigned int total_cells = 0;
 
-    for (std::size_t i = 0; i < data.size(); ++i) {
+    for (unsigned int i = 0; i < data.size(); ++i) {
         total_cells += data.at(i).items.size();
     }
 
@@ -743,19 +742,19 @@ component_connection::output_type component_connection::operator()(
      * more efficiently. This removes the hierarchy level that
      * references to the cell module.
      */
-    vecmem::vector<channel_id> channel0(&mem);
+    std::vector<channel_id> channel0;
     channel0.reserve(total_cells);
-    vecmem::vector<channel_id> channel1(&mem);
+    std::vector<channel_id> channel1;
     channel1.reserve(total_cells);
-    vecmem::vector<scalar> activation(&mem);
+    std::vector<scalar> activation;
     activation.reserve(total_cells);
-    vecmem::vector<scalar> time(&mem);
+    std::vector<scalar> time;
     time.reserve(total_cells);
-    vecmem::vector<geometry_id> module_id(&mem);
+    std::vector<geometry_id> module_id;
     module_id.reserve(total_cells);
 
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        for (std::size_t j = 0; j < data.at(i).items.size(); ++j) {
+    for (unsigned int i = 0; i < data.size(); ++i) {
+        for (unsigned int j = 0; j < data.at(i).items.size(); ++j) {
             channel0.push_back(data.at(i).items.at(j).channel0);
             channel1.push_back(data.at(i).items.at(j).channel1);
             activation.push_back(data.at(i).items.at(j).activation);
@@ -765,15 +764,48 @@ component_connection::output_type component_connection::operator()(
     }
 
     /*
+     * Allocate space on the device for input.
+     */
+    vecmem::unique_alloc_ptr<channel_id[]> channel0_device =
+        vecmem::make_unique_alloc<channel_id[]>(dmr, channel0.size());
+    vecmem::unique_alloc_ptr<channel_id[]> channel1_device =
+        vecmem::make_unique_alloc<channel_id[]>(dmr, channel1.size());
+    vecmem::unique_alloc_ptr<scalar[]> activation_device =
+        vecmem::make_unique_alloc<scalar[]>(dmr, activation.size());
+    vecmem::unique_alloc_ptr<scalar[]> time_device =
+        vecmem::make_unique_alloc<scalar[]>(dmr, time.size());
+    vecmem::unique_alloc_ptr<geometry_id[]> module_id_device =
+        vecmem::make_unique_alloc<geometry_id[]>(dmr, module_id.size());
+
+    /*
+     * Move data from host to device.
+     */
+    CUDA_ERROR_CHECK(cudaMemcpy(channel0_device.get(), channel0.data(),
+                                total_cells * sizeof(channel_id),
+                                cudaMemcpyHostToDevice));
+    CUDA_ERROR_CHECK(cudaMemcpy(channel1_device.get(), channel1.data(),
+                                total_cells * sizeof(channel_id),
+                                cudaMemcpyHostToDevice));
+    CUDA_ERROR_CHECK(cudaMemcpy(activation_device.get(), activation.data(),
+                                total_cells * sizeof(scalar),
+                                cudaMemcpyHostToDevice));
+    CUDA_ERROR_CHECK(cudaMemcpy(time_device.get(), time.data(),
+                                total_cells * sizeof(scalar),
+                                cudaMemcpyHostToDevice));
+    CUDA_ERROR_CHECK(cudaMemcpy(module_id_device.get(), module_id.data(),
+                                total_cells * sizeof(geometry_id),
+                                cudaMemcpyHostToDevice));
+
+    /*
      * Store the flattened arrays in a convenience data container.
      */
     details::cell_container container;
     container.size = total_cells;
-    container.channel0 = channel0.data();
-    container.channel1 = channel1.data();
-    container.activation = activation.data();
-    container.time = time.data();
-    container.module_id = module_id.data();
+    container.channel0 = channel0_device.get();
+    container.channel1 = channel1_device.get();
+    container.activation = activation_device.get();
+    container.time = time_device.get();
+    container.module_id = module_id_device.get();
 
     /*
      * Separate the problem into various subproblems (partitions).
@@ -783,29 +815,41 @@ component_connection::output_type component_connection::operator()(
      * consecutive cells. If this distance is above a threshold, we have the
      * guarantee that the two cells belong not to the same cluster.
      */
-    vecmem::vector<details::ccl_partition> partitions =
-        details::partition(data, mem);
+    std::vector<details::ccl_partition> partitions = details::partition(data);
+
+    /*
+     * Allocate space on the device for partition data.
+     */
+    vecmem::unique_alloc_ptr<details::ccl_partition[]> partitions_data =
+        vecmem::make_unique_alloc<details::ccl_partition[]>(dmr,
+                                                            partitions.size());
+
+    /*
+     * Transfer partition data to the device.
+     */
+    CUDA_ERROR_CHECK(
+        cudaMemcpy(partitions_data.get(), partitions.data(),
+                   partitions.size() * sizeof(decltype(partitions)::value_type),
+                   cudaMemcpyHostToDevice));
 
     /*
      * Reserve space for the result of the algorithm. Currently, there is
      * enough space allocated that (in theory) each cell could be a single
      * cluster, but this should not be the case with real experiment data.
      */
-    vecmem::allocator alloc(mem);
+    vecmem::unique_alloc_ptr<unsigned int> num_measurements_device =
+        vecmem::make_unique_alloc<unsigned int>(dmr);
 
-    details::measurement_container* mctnr =
-        alloc.new_object<details::measurement_container>();
-
-    mctnr->channel0 = static_cast<scalar*>(
-        alloc.allocate_bytes(total_cells * sizeof(scalar)));
-    mctnr->channel1 = static_cast<scalar*>(
-        alloc.allocate_bytes(total_cells * sizeof(scalar)));
-    mctnr->variance0 = static_cast<scalar*>(
-        alloc.allocate_bytes(total_cells * sizeof(scalar)));
-    mctnr->variance1 = static_cast<scalar*>(
-        alloc.allocate_bytes(total_cells * sizeof(scalar)));
-    mctnr->module_id = static_cast<geometry_id*>(
-        alloc.allocate_bytes(total_cells * sizeof(geometry_id)));
+    vecmem::unique_alloc_ptr<scalar[]> channel0_out_device =
+        vecmem::make_unique_alloc<scalar[]>(dmr, total_cells);
+    vecmem::unique_alloc_ptr<scalar[]> channel1_out_device =
+        vecmem::make_unique_alloc<scalar[]>(dmr, total_cells);
+    vecmem::unique_alloc_ptr<scalar[]> variance0_out_device =
+        vecmem::make_unique_alloc<scalar[]>(dmr, total_cells);
+    vecmem::unique_alloc_ptr<scalar[]> variance1_out_device =
+        vecmem::make_unique_alloc<scalar[]>(dmr, total_cells);
+    vecmem::unique_alloc_ptr<geometry_id[]> module_id_out_device =
+        vecmem::make_unique_alloc<geometry_id[]>(dmr, total_cells);
 
     /*
      * Run the connected component labeling algorithm to retrieve the clusters.
@@ -813,24 +857,65 @@ component_connection::output_type component_connection::operator()(
      * This step includes the measurement (hit) creation for each cluster.
      */
     ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
-        container, partitions.data(), *mctnr);
+        container, partitions_data.get(),
+        {
+            channel0_out_device.get(),
+            channel1_out_device.get(),
+            variance0_out_device.get(),
+            variance1_out_device.get(),
+            module_id_out_device.get(),
+        },
+        num_measurements_device.get());
 
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     /*
      * Copy back the data from our flattened data structure into the traccc EDM.
      */
+    unsigned int num_measurements_host;
+
+    CUDA_ERROR_CHECK(cudaMemcpy(&num_measurements_host,
+                                num_measurements_device.get(),
+                                sizeof(unsigned int), cudaMemcpyDeviceToHost));
+
+    std::unique_ptr<scalar[]> channel0_out_host =
+        std::make_unique<scalar[]>(num_measurements_host);
+    std::unique_ptr<scalar[]> channel1_out_host =
+        std::make_unique<scalar[]>(num_measurements_host);
+    std::unique_ptr<scalar[]> variance0_out_host =
+        std::make_unique<scalar[]>(num_measurements_host);
+    std::unique_ptr<scalar[]> variance1_out_host =
+        std::make_unique<scalar[]>(num_measurements_host);
+    std::unique_ptr<geometry_id[]> module_id_out_host =
+        std::make_unique<geometry_id[]>(num_measurements_host);
+
+    CUDA_ERROR_CHECK(cudaMemcpy(
+        channel0_out_host.get(), channel0_out_device.get(),
+        num_measurements_host * sizeof(scalar), cudaMemcpyDeviceToHost));
+    CUDA_ERROR_CHECK(cudaMemcpy(
+        channel1_out_host.get(), channel1_out_device.get(),
+        num_measurements_host * sizeof(scalar), cudaMemcpyDeviceToHost));
+    CUDA_ERROR_CHECK(cudaMemcpy(
+        variance0_out_host.get(), variance0_out_device.get(),
+        num_measurements_host * sizeof(scalar), cudaMemcpyDeviceToHost));
+    CUDA_ERROR_CHECK(cudaMemcpy(
+        variance1_out_host.get(), variance1_out_device.get(),
+        num_measurements_host * sizeof(scalar), cudaMemcpyDeviceToHost));
+    CUDA_ERROR_CHECK(cudaMemcpy(
+        module_id_out_host.get(), module_id_out_device.get(),
+        num_measurements_host * sizeof(geometry_id), cudaMemcpyDeviceToHost));
+
     output_type out;
 
     for (std::size_t i = 0; i < data.size(); ++i) {
-        vecmem::vector<measurement> v(&mem);
+        vecmem::vector<measurement> v(&m_mr.main);
 
-        for (std::size_t j = 0; j < mctnr->size; ++j) {
-            if (mctnr->module_id[j] == data.at(i).header.module) {
+        for (std::size_t j = 0; j < num_measurements_host; ++j) {
+            if (module_id_out_host[j] == data.at(i).header.module) {
                 measurement m;
 
-                m.local = {mctnr->channel0[j], mctnr->channel1[j]};
-                m.variance = {mctnr->variance0[j], mctnr->variance1[j]};
+                m.local = {channel0_out_host[j], channel1_out_host[j]};
+                m.variance = {variance0_out_host[j], variance1_out_host[j]};
 
                 v.push_back(m);
             }
