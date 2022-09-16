@@ -12,10 +12,56 @@
 #include <cstring>
 #include <numeric>
 #include <traccc/futhark/context.hpp>
+#include <traccc/futhark/utils.hpp>
 #include <tuple>
 #include <vector>
 
 namespace traccc::futhark {
+struct futhark_u64_1d_wrapper {
+    using cpp_t = uint64_t;
+    using futhark_t = struct futhark_u64_1d;
+    static constexpr futhark_t *(*alloc_f)(struct futhark_context *,
+                                           const cpp_t *,
+                                           int64_t) = &futhark_new_u64_1d;
+    static constexpr int (*free_f)(struct futhark_context *,
+                                   futhark_t *) = &futhark_free_u64_1d;
+    static constexpr const int64_t *(*shape_f)(
+        struct futhark_context *, futhark_t *) = &futhark_shape_u64_1d;
+    static constexpr int (*values_f)(struct futhark_context *, futhark_t *,
+                                     cpp_t *) = &futhark_values_u64_1d;
+    static constexpr std::size_t rank_v = 1;
+};
+
+struct futhark_i64_1d_wrapper {
+    using cpp_t = int64_t;
+    using futhark_t = struct futhark_i64_1d;
+    static constexpr futhark_t *(*alloc_f)(struct futhark_context *,
+                                           const cpp_t *,
+                                           int64_t) = &futhark_new_i64_1d;
+    static constexpr int (*free_f)(struct futhark_context *,
+                                   futhark_t *) = &futhark_free_i64_1d;
+    static constexpr const int64_t *(*shape_f)(
+        struct futhark_context *, futhark_t *) = &futhark_shape_i64_1d;
+    static constexpr int (*values_f)(struct futhark_context *, futhark_t *,
+                                     cpp_t *) = &futhark_values_i64_1d;
+    static constexpr std::size_t rank_v = 1;
+};
+
+struct futhark_f32_1d_wrapper {
+    using cpp_t = float;
+    using futhark_t = struct futhark_f32_1d;
+    static constexpr futhark_t *(*alloc_f)(struct futhark_context *,
+                                           const cpp_t *,
+                                           int64_t) = &futhark_new_f32_1d;
+    static constexpr int (*free_f)(struct futhark_context *,
+                                   futhark_t *) = &futhark_free_f32_1d;
+    static constexpr const int64_t *(*shape_f)(
+        struct futhark_context *, futhark_t *) = &futhark_shape_f32_1d;
+    static constexpr int (*values_f)(struct futhark_context *, futhark_t *,
+                                     cpp_t *) = &futhark_values_f32_1d;
+    static constexpr std::size_t rank_v = 1;
+};
+
 template <typename, typename, typename>
 struct wrapper {};
 
@@ -32,16 +78,25 @@ struct wrapper<T, std::tuple<IArgs...>, std::tuple<OArgs...>> {
             IArgs::alloc_f(&ctx, args.data(), args.size())...};
         std::tuple<typename OArgs::futhark_t *...> futhark_outputs;
 
+        FUTHARK_ERROR_CHECK(futhark_context_sync(&ctx));
+
         /*
          * Make the call to the Futhark entry point.
          */
-        T::entry_f(&ctx, (&std::get<OIdxs>(futhark_outputs))...,
-                   std::get<IIdxs>(futhark_inputs)...);
+        FUTHARK_ERROR_CHECK(T::entry_f(&ctx,
+                                       (&std::get<OIdxs>(futhark_outputs))...,
+                                       std::get<IIdxs>(futhark_inputs)...));
+
+        FUTHARK_ERROR_CHECK(futhark_context_sync(&ctx));
 
         /*
          * Free the inputs, which are no longer needed.
          */
-        (IArgs::free_f(&ctx, std::get<IIdxs>(futhark_inputs)), ...);
+        (FUTHARK_ERROR_CHECK(
+             IArgs::free_f(&ctx, std::get<IIdxs>(futhark_inputs))),
+         ...);
+
+        FUTHARK_ERROR_CHECK(futhark_context_sync(&ctx));
 
         /*
          * Retrieve the shapes of output vectors.
@@ -51,6 +106,9 @@ struct wrapper<T, std::tuple<IArgs...>, std::tuple<OArgs...>> {
         ((std::get<OIdxs>(output_rank_ptrs) =
               OArgs::shape_f(&ctx, std::get<OIdxs>(futhark_outputs))),
          ...);
+
+        FUTHARK_ERROR_CHECK(futhark_context_sync(&ctx));
+
         ((std::memcpy(std::get<OIdxs>(output_ranks).data(),
                       std::get<OIdxs>(output_rank_ptrs),
                       OArgs::rank_v * sizeof(int64_t))),
@@ -67,14 +125,21 @@ struct wrapper<T, std::tuple<IArgs...>, std::tuple<OArgs...>> {
         /*
          * Copy the values from the Futhark output vectors.
          */
-        (OArgs::values_f(&ctx, std::get<OIdxs>(futhark_outputs),
-                         std::get<OIdxs>(out).data()),
+        (FUTHARK_ERROR_CHECK(OArgs::values_f(&ctx,
+                                             std::get<OIdxs>(futhark_outputs),
+                                             std::get<OIdxs>(out).data())),
          ...);
+
+        FUTHARK_ERROR_CHECK(futhark_context_sync(&ctx));
 
         /*
          * Free the Futhark output vectors.
          */
-        (OArgs::free_f(&ctx, std::get<OIdxs>(futhark_outputs)), ...);
+        (FUTHARK_ERROR_CHECK(
+             OArgs::free_f(&ctx, std::get<OIdxs>(futhark_outputs))),
+         ...);
+
+        FUTHARK_ERROR_CHECK(futhark_context_sync(&ctx));
 
         return out;
     }
