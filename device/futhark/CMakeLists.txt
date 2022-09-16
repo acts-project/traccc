@@ -13,6 +13,11 @@ traccc_add_library(
     futhark
     TYPE SHARED
     "src/context.cpp"
+    "src/component_connection.cpp"
+    "include/traccc/futhark/context.hpp"
+    "include/traccc/futhark/component_connection.hpp"
+    "include/traccc/futhark/utils.hpp"
+    "include/traccc/futhark/wrapper.hpp"
 )
 
 # Link the new outward-facing library against our code librar(y|ies)
@@ -34,4 +39,5 @@ add_futhark_to_library(
     src/edm.fut
     src/maybe.fut
     src/zip.fut
+    src/measurement_creation.fut
 )

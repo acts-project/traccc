@@ -6,8 +6,8 @@ Demonstrator tracking chain for accelerators.
 
 | Category           | Algorithms             | CPU | CUDA | SYCL | Futhark |
 | ------------------ | ---------------------- | --- | ---- | ---- | ------- |
-| **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   | ⚪      |
-|                    | Measurement creation   | ✅  | 🟡   | 🟡   | ⚪      |
+| **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   | ✅      |
+|                    | Measurement creation   | ✅  | 🟡   | 🟡   | ✅      |
 |                    | Spacepoint formation   | ✅  | 🟡   | 🟡   | ⚪      |
 | **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
 |                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
@@ -19,10 +19,11 @@ Demonstrator tracking chain for accelerators.
 
 The relations between datatypes and algorithms is given in the (approximately
 commutative) diagram shown below. Black lines indicate CPU algorithms, green
-lines indicate CUDA algorithms, and blue lines indicate SYCL algorithms. Solid
-algorithms are ready for use, dashed algorithms are in development or future
-goals. Data types for different heterogeneous platforms are contracted for
-legibility, and identities are hidden.
+lines indicate CUDA algorithms, blue lines indicate SYCL algorithms, and brown
+lines indicate Futhark algorithms. Solid algorithms are ready for use, dashed
+algorithms are in development or future goals. Data types for different
+heterogeneous platforms are contracted for legibility, and identities are
+hidden.
 
 ```mermaid
 flowchart LR
@@ -134,6 +135,10 @@ flowchart LR
     %% SYCL track parameter est.
     seed -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
     linkStyle 20 stroke: blue;
+
+    %% Futhark measurement creation
+    cell -->|<a href='https://github.com/acts-project/traccc/blob/main/device/futhark/src/measurement_creation.fut'>CCA</a>| meas;
+    linkStyle 21 stroke: brown;
 ```
 
 ## Requirements and dependencies 
