@@ -34,5 +34,5 @@ test_cuda:
     - git -C src submodule init && git -C src submodule update
     - cd build
     - nvidia-smi
-    - ctest --output-on-failure
+    - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
 
