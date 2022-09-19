@@ -6,7 +6,7 @@ stages:
 build_cuda:
   tags: [docker]
   stage: build
-  image: ghcr.io/acts-project/ubuntu2004_cuda:v13
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
   artifacts:
     paths: 
       - build
@@ -24,7 +24,7 @@ build_cuda:
 test_cuda:
   stage: test
   tags: [docker-gpu-nvidia]
-  image: ghcr.io/acts-project/ubuntu2004_cuda:v13
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
   needs: 
     - build_cuda
   script:
