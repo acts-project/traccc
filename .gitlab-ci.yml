@@ -30,7 +30,7 @@ test_cuda:
   script:
     - git clone $CLONE_URL src
     - git -C src checkout $HEAD_SHA
-    - git -C src submdoule init && git -C src submodule update
+    - git -C src submodule init && git -C src submodule update
     - cd build
     - nvidia-smi
     - ctest --output-on-failure
