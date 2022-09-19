@@ -30,8 +30,13 @@ test_cuda:
   script:
     - apt-get update && apt-get install -y git-lfs
     - git clone $CLONE_URL src
-    - git -C src checkout $HEAD_SHA
-    - git -C src submodule init && git -C src submodule update
+    - cd src
+    - git checkout $HEAD_SHA
+    - git submodule init 
+    - git clone -n $(git config submodule.data.url) data
+    - git -C data sparse-checkout set cca_test tml_detector
+    - time git -C data reset --hard
+    - cd ..
     - cd build
     - nvidia-smi
     - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
