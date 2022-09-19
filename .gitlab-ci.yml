@@ -14,7 +14,7 @@ build_cuda:
       - git clone $CLONE_URL src
       - git -C src checkout $HEAD_SHA
       - >
-        cmake -S src -B build 
+        cmake -S src -B build -GNinja
         -DCMAKE_BUILD_TYPE=Release
         -DTRACCC_BUILD_TESTING=ON
         -DTRACCC_BUILD_CUDA=ON
