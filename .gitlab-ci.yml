@@ -28,8 +28,10 @@ test_cuda:
   needs: 
     - build_cuda
   script:
+    - git clone $CLONE_URL src
+    - git -C src checkout $HEAD_SHA
+    - git -C src submdoule init && git -C src submodule update
     - cd build
     - nvidia-smi
-    - ctest --output-on-failure -R ".*cuda.*"
-    - find bin -type f -name "*cuda" -not -name "*text*" -exec {} \;
+    - ctest --output-on-failure
 
