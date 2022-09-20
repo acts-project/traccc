@@ -8,21 +8,14 @@
 #pragma once
 
 // traccc include
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/container.hpp"
 
 // detray core
 #include <detray/utils/invalid_values.hpp>
 
-// VecMem include(s).
-#include <vecmem/containers/data/jagged_vector_buffer.hpp>
-#include <vecmem/containers/data/vector_buffer.hpp>
-#include <vecmem/containers/device_vector.hpp>
-#include <vecmem/containers/jagged_device_vector.hpp>
-#include <vecmem/containers/jagged_vector.hpp>
-#include <vecmem/containers/vector.hpp>
-
-// std
-#include <algorithm>
+// Algebra plugins include(s).
+#include <algebra/math/common.hpp>
 
 namespace traccc {
 
@@ -53,8 +46,8 @@ struct internal_spacepoint {
         m_x = sp.global[0] - offsetXY[0];
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];
-        m_r = std::sqrt(m_x * m_x + m_y * m_y);
-        m_phi = std::atan2(m_y, m_x);
+        m_r = algebra::math::sqrt(m_x * m_x + m_y * m_y);
+        m_phi = algebra::math::atan2(m_y, m_x);
     }
 
     TRACCC_HOST_DEVICE
