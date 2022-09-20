@@ -40,6 +40,7 @@ struct internal_spacepoint {
     scalar m_y;
     scalar m_z;
     scalar m_r;
+    scalar m_phi;
 
     internal_spacepoint() = default;
 
@@ -53,6 +54,7 @@ struct internal_spacepoint {
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];
         m_r = std::sqrt(m_x * m_x + m_y * m_y);
+        m_phi = std::atan2(m_y, m_x);
     }
 
     TRACCC_HOST_DEVICE
@@ -62,6 +64,7 @@ struct internal_spacepoint {
         m_y = 0;
         m_z = 0;
         m_r = 0;
+        m_phi = 0;
     }
 
     TRACCC_HOST_DEVICE
@@ -85,7 +88,7 @@ struct internal_spacepoint {
     scalar radius() const { return m_r; }
 
     TRACCC_HOST_DEVICE
-    scalar phi() const { return algebra::math::atan2(m_y, m_x); }
+    scalar phi() const { return m_phi; }
 
     TRACCC_HOST_DEVICE
     scalar varianceR() const { return 0.; }
