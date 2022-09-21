@@ -6,7 +6,7 @@
 
 # Set up the project.
 cmake_minimum_required( VERSION 3.9 )
-project( traccc VERSION 0.1.0 LANGUAGES CXX )
+project( traccc VERSION 0.2.0 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 17 CACHE STRING "The (host) C++ standard to use" )
@@ -47,6 +47,7 @@ endif()
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
+option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc" FALSE)
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
@@ -82,6 +83,26 @@ if( TRACCC_SETUP_EIGEN3 )
       add_subdirectory( extern/eigen3 )
    endif()
 endif()
+
+# Set up Thrust.
+option( TRACCC_SETUP_THRUST
+   "Set up the Thrust target(s) explicitly" TRUE )
+option( TRACCC_USE_SYSTEM_THRUST
+   "Pick up an existing installation of Thrust from the build environment"
+   FALSE )
+if( TRACCC_SETUP_THRUST )
+   if( TRACCC_USE_SYSTEM_THRUST )
+      find_package( Thrust REQUIRED )
+   else()
+      add_subdirectory( extern/thrust )
+   endif()
+endif()
+# Set up an IMPORTED library on top of the Thrust library/libraries. One that
+# the TRACCC/Detray code could depend on publicly.
+set( TRACCC_THRUST_OPTIONS "" CACHE STRING
+   "Extra options for configuring how Thrust should be used" )
+mark_as_advanced( TRACCC_THRUST_OPTIONS )
+thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
 
 # Set up Algebra Plugins.
 option( TRACCC_SETUP_ALGEBRA_PLUGINS
@@ -182,4 +203,8 @@ endif()
 include( CTest )
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    add_subdirectory( tests )
+endif()
+
+if(TRACCC_BUILD_FUTHARK)
+   add_subdirectory(device/futhark)
 endif()

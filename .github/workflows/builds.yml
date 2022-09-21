@@ -21,11 +21,11 @@ jobs:
       matrix:
         platform:
           - name: CPU
-            container: ghcr.io/acts-project/ubuntu2004:v11
+            container: ghcr.io/acts-project/ubuntu2004:v30
           - name: CUDA
-            container: ghcr.io/acts-project/ubuntu2004_cuda:v16.1
+            container: ghcr.io/acts-project/ubuntu2004_cuda:v30
           - name: SYCL
-            container: ghcr.io/acts-project/ubuntu2004_oneapi:v20
+            container: ghcr.io/acts-project/ubuntu2004_oneapi:v30
         build:
           - Release
           - Debug

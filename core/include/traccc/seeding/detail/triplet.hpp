@@ -15,19 +15,13 @@ namespace traccc {
 /// Header: the number of triplets per spacepoint bin
 struct triplet_per_bin {
     unsigned int n_triplets = 0;
-
-    TRACCC_HOST_DEVICE
-    unsigned int get_ref_num() const { return n_triplets; }
-
-    TRACCC_HOST_DEVICE
-    void zeros() { n_triplets = 0; }
 };
 
 /// Item: triplets of middle-bottom-top
 struct triplet {
-    // middle spacepoint location in internal spacepoint container
-    sp_location sp1;
     // bottom spacepoint location in internal spacepoint container
+    sp_location sp1;
+    // middle spacepoint location in internal spacepoint container
     sp_location sp2;
     // top spacepoint location in internal spacepoint container
     sp_location sp3;
@@ -47,6 +41,11 @@ inline TRACCC_HOST_DEVICE bool operator==(const triplet& lhs,
             lhs.sp2.sp_idx == rhs.sp2.sp_idx &&
             lhs.sp3.bin_idx == rhs.sp3.bin_idx &&
             lhs.sp3.sp_idx == rhs.sp3.sp_idx);
+}
+
+inline TRACCC_HOST_DEVICE bool operator!=(const triplet& lhs,
+                                          const triplet& rhs) {
+    return !(lhs == rhs);
 }
 
 inline TRACCC_HOST_DEVICE bool operator<(const triplet& lhs,
