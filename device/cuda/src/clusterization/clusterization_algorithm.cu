@@ -14,7 +14,8 @@
 #include "traccc/clusterization/device/create_measurements.hpp"
 #include "traccc/clusterization/device/find_clusters.hpp"
 #include "traccc/clusterization/device/form_spacepoints.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/cuda/utils/make_prefix_sum_buff.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 
 // Vecmem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -178,14 +179,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    // Get the prefix sum of the cells and copy it to the device buffer
-    const device::prefix_sum_t cells_prefix_sum = device::get_prefix_sum(
-        cell_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
-    vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        cells_prefix_sum_buff(cells_prefix_sum.size(), m_mr.main);
-    m_copy->setup(cells_prefix_sum_buff);
-    (*m_copy)(vecmem::get_data(cells_prefix_sum), cells_prefix_sum_buff,
-              vecmem::copy::type::copy_type::host_to_device);
+    // Create prefix sum buffer
+    vecmem::data::vector_buffer cells_prefix_sum_buff =
+        make_prefix_sum_buff(cell_sizes, *m_copy, m_mr);
 
     // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
@@ -290,15 +286,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    // Get the prefix sum of the measurements and copy it to the device buffer
-    const device::prefix_sum_t meas_prefix_sum =
-        device::get_prefix_sum(m_copy->get_sizes(measurements_buffer.items),
-                               (m_mr.host ? *(m_mr.host) : m_mr.main));
-    vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        meas_prefix_sum_buff(meas_prefix_sum.size(), m_mr.main);
-    m_copy->setup(meas_prefix_sum_buff);
-    (*m_copy)(vecmem::get_data(meas_prefix_sum), meas_prefix_sum_buff,
-              vecmem::copy::type::copy_type::host_to_device);
+    // Create prefix sum buffer
+    vecmem::data::vector_buffer meas_prefix_sum_buff = make_prefix_sum_buff(
+        m_copy->get_sizes(measurements_buffer.items), *m_copy, m_mr);
 
     // Create views to run spacepoint formation
     vecmem::data::vector_view<const device::prefix_sum_element_t>
