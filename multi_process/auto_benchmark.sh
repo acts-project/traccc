@@ -45,4 +45,6 @@ do
 		sleep 1
 	done		
 done
+echo quit|nvidia-cuda-mps-control
+
 exit $result
