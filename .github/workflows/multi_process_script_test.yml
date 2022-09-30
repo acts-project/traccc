@@ -10,7 +10,7 @@ on:
 
 jobs:
   builds:
-    runs-on: docker-gpu-nvidia
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
