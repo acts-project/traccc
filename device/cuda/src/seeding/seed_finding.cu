@@ -163,8 +163,11 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
 }
 
 seed_finding::seed_finding(const seedfinder_config& config,
+                           const seedfilter_config& filter_config,
                            const traccc::memory_resource& mr)
-    : m_seedfinder_config(config), m_mr(mr) {
+    : m_seedfinder_config(config.toInternalUnits()),
+      m_seedfilter_config(filter_config.toInternalUnits()),
+      m_mr(mr) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
