@@ -10,8 +10,8 @@
 #include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s).
+#include "traccc/cuda/utils/make_prefix_sum_buff.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/device/make_prefix_sum_buffer.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/seeding/device/count_doublets.hpp"
@@ -34,15 +34,6 @@
 
 namespace traccc::cuda {
 namespace kernels {
-
-/// CUDA kernel for running @c traccc::device::fill_prefix_sum
-__global__ void fill_prefix_sum(
-    vecmem::data::vector_view<const device::prefix_sum_size_t> sizes_view,
-    vecmem::data::vector_view<device::prefix_sum_element_t> ps_view) {
-
-    device::fill_prefix_sum(threadIdx.x + blockIdx.x * blockDim.x, sizes_view,
-                            ps_view);
-}
 
 /// CUDA kernel for running @c traccc::device::count_doublets
 __global__ void count_doublets(
@@ -138,30 +129,6 @@ __global__ void select_seeds(
 
 }  // namespace kernels
 
-vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
-    const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
-    const traccc::memory_resource& mr) {
-
-    const device::prefix_sum_buffer_t make_sum_result =
-        device::make_prefix_sum_buffer(sizes, copy, mr);
-    const vecmem::data::vector_view<const device::prefix_sum_size_t>
-        sizes_sum_view = make_sum_result.view;
-    const unsigned int totalSize = make_sum_result.totalSize;
-
-    // Create buffer and view objects for prefix sum vector
-    vecmem::data::vector_buffer<device::prefix_sum_element_t> prefix_sum_buff(
-        totalSize, mr.main);
-    copy.setup(prefix_sum_buff);
-
-    // Fill the prefix sum vector
-    kernels::fill_prefix_sum<<<(sizes_sum_view.size() / 32) + 1, 32>>>(
-        sizes_sum_view, prefix_sum_buff);
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
-    return prefix_sum_buff;
-}
-
 seed_finding::seed_finding(const seedfinder_config& config,
                            const seedfilter_config& filter_config,
                            const traccc::memory_resource& mr)
@@ -200,7 +167,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     const sp_grid_const_view& g2_view,
     const std::vector<unsigned int>& grid_sizes) const {
 
-    // Create prefix sum buffer and its view
+    // Create prefix sum buffer
     vecmem::data::vector_buffer sp_grid_prefix_sum_buff =
         make_prefix_sum_buff(grid_sizes, *m_copy, m_mr);
 
@@ -231,7 +198,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     device::doublet_buffer_pair doublet_buffers = device::make_doublet_buffers(
         doublet_counter_buffer, *m_copy, m_mr.main, m_mr.host);
 
-    // Create prefix sum buffer and its view
+    // Create prefix sum buffer
     vecmem::data::vector_buffer doublet_prefix_sum_buff = make_prefix_sum_buff(
         m_copy->get_sizes(doublet_counter_buffer.items), *m_copy, m_mr);
 
@@ -254,12 +221,12 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         doublet_counts.begin(), doublet_counts.end(), mb_buffer_sizes.begin(),
         [](const device::doublet_counter_header& dc) { return dc.m_nMidBot; });
 
-    // Set up the triplet counter buffer and its view
+    // Set up the triplet counter buffer
     device::triplet_counter_container_types::buffer triplet_counter_buffer =
         device::make_triplet_counter_buffer(mb_buffer_sizes, *m_copy, m_mr.main,
                                             m_mr.host);
 
-    // Create prefix sum buffer and its view
+    // Create prefix sum buffer
     vecmem::data::vector_buffer mb_prefix_sum_buff = make_prefix_sum_buff(
         m_copy->get_sizes(doublet_buffers.middleBottom.items), *m_copy, m_mr);
 
@@ -282,7 +249,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         triplet_counter_buffer, *m_copy, m_mr.main, m_mr.host);
     triplet_container_view triplet_view(triplet_buffer);
 
-    // Create prefix sum buffer and its view
+    // Create prefix sum buffer
     vecmem::data::vector_buffer triplet_counter_prefix_sum_buff =
         make_prefix_sum_buff(m_copy->get_sizes(triplet_counter_buffer.items),
                              *m_copy, m_mr);
@@ -302,7 +269,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    // Create prefix sum buffer and its view
+    // Create prefix sum buffer
     vecmem::data::vector_buffer triplet_prefix_sum_buff = make_prefix_sum_buff(
         m_copy->get_sizes(triplet_buffer.items), *m_copy, m_mr);
 

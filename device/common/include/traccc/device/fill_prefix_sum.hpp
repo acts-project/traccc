@@ -9,14 +9,22 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/edm/container.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
+// Thrust include(s).
+#include <thrust/pair.h>
+
 namespace traccc::device {
+
+/// Type for the individual elements in the prefix sum vector
+typedef thrust::pair<std::size_t, std::size_t> prefix_sum_element_t;
+
+/// Convenience type definition for the return value of the helper function
+typedef vecmem::vector<prefix_sum_element_t> prefix_sum_t;
 
 using prefix_sum_size_t = vecmem::data::vector_view<int>::size_type;
 
@@ -32,8 +40,8 @@ using prefix_sum_size_t = vecmem::data::vector_view<int>::size_type;
 /// @param[out] ps_view   View on the result vector of index pairs
 ///
 TRACCC_HOST_DEVICE
-void fill_prefix_sum(
-    std::size_t globalIndex,
+inline void fill_prefix_sum(
+    const std::size_t globalIndex,
     const vecmem::data::vector_view<const prefix_sum_size_t>& sizes_view,
     vecmem::data::vector_view<prefix_sum_element_t> ps_view);
 

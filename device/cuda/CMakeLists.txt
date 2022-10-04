@@ -15,6 +15,8 @@ include( traccc-compiler-options-cuda )
 traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/definitions.hpp"
+  "include/traccc/cuda/utils/make_prefix_sum_buff.hpp"
+  "src/utils/make_prefix_sum_buff.cu"
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "include/traccc/cuda/seeding/seed_finding.hpp"

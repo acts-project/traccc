@@ -1,6 +1,6 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
