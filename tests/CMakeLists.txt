@@ -20,3 +20,7 @@ add_subdirectory( io )
 if( TRACCC_BUILD_CUDA )
     add_subdirectory( cuda )
 endif()
+
+if(TRACCC_BUILD_FUTHARK)
+    add_subdirectory(futhark)
+endif()

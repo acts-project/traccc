@@ -16,9 +16,9 @@ namespace traccc {
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     vecmem::memory_resource& mr)
-    : m_config(config),
-      m_grid_config(grid_config),
-      m_axes(get_axes(grid_config, mr)),
+    : m_config(config.toInternalUnits()),
+      m_grid_config(grid_config.toInternalUnits()),
+      m_axes(get_axes(grid_config.toInternalUnits(), mr)),
       m_mr(mr) {}
 
 spacepoint_binning::output_type spacepoint_binning::operator()(

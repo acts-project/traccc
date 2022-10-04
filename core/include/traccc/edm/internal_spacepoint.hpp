@@ -8,21 +8,14 @@
 #pragma once
 
 // traccc include
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/container.hpp"
 
 // detray core
 #include <detray/utils/invalid_values.hpp>
 
-// VecMem include(s).
-#include <vecmem/containers/data/jagged_vector_buffer.hpp>
-#include <vecmem/containers/data/vector_buffer.hpp>
-#include <vecmem/containers/device_vector.hpp>
-#include <vecmem/containers/jagged_device_vector.hpp>
-#include <vecmem/containers/jagged_vector.hpp>
-#include <vecmem/containers/vector.hpp>
-
-// std
-#include <algorithm>
+// Algebra plugins include(s).
+#include <algebra/math/common.hpp>
 
 namespace traccc {
 
@@ -40,6 +33,7 @@ struct internal_spacepoint {
     scalar m_y;
     scalar m_z;
     scalar m_r;
+    scalar m_phi;
 
     internal_spacepoint() = default;
 
@@ -47,46 +41,23 @@ struct internal_spacepoint {
     TRACCC_HOST_DEVICE internal_spacepoint(
         const spacepoint_container_t& sp_container, const link_type& sp_link,
         const vector2& offsetXY)
-        : m_link(std::move(sp_link)) {
-        const spacepoint_t& sp =
-            sp_container.at({sp_link.first, sp_link.second});
+        : m_link(sp_link) {
+        const spacepoint_t& sp = sp_container.at(sp_link);
         m_x = sp.global[0] - offsetXY[0];
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];
-        m_r = std::sqrt(m_x * m_x + m_y * m_y);
+        m_r = algebra::math::sqrt(m_x * m_x + m_y * m_y);
+        m_phi = algebra::math::atan2(m_y, m_x);
     }
 
     TRACCC_HOST_DEVICE
-    internal_spacepoint(const link_type& sp_link) : m_link(std::move(sp_link)) {
+    internal_spacepoint(const link_type& sp_link) : m_link(sp_link) {
 
         m_x = 0;
         m_y = 0;
         m_z = 0;
         m_r = 0;
-    }
-
-    TRACCC_HOST_DEVICE
-    internal_spacepoint(const internal_spacepoint<spacepoint_t>& sp)
-        : m_link(std::move(sp.m_link)) {
-
-        m_x = sp.m_x;
-        m_y = sp.m_y;
-        m_z = sp.m_z;
-        m_r = sp.m_r;
-    }
-
-    TRACCC_HOST_DEVICE
-    internal_spacepoint& operator=(
-        const internal_spacepoint<spacepoint_t>& sp) {
-
-        m_link.first = sp.m_link.first;
-        m_link.second = sp.m_link.second;
-        m_x = sp.m_x;
-        m_y = sp.m_y;
-        m_z = sp.m_z;
-        m_r = sp.m_r;
-
-        return *this;
+        m_phi = 0;
     }
 
     TRACCC_HOST_DEVICE
@@ -110,7 +81,7 @@ struct internal_spacepoint {
     scalar radius() const { return m_r; }
 
     TRACCC_HOST_DEVICE
-    scalar phi() const { return algebra::math::atan2(m_y, m_x); }
+    scalar phi() const { return m_phi; }
 
     TRACCC_HOST_DEVICE
     scalar varianceR() const { return 0.; }
