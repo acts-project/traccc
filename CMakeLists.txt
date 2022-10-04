@@ -47,6 +47,7 @@ endif()
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
+option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc" FALSE )
 option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc" FALSE)
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
@@ -177,6 +178,20 @@ if( TRACCC_SETUP_GOOGLETEST )
    endif()
 endif()
 
+# Set up Kokkos.
+option( TRACCC_SETUP_KOKKOS
+   "Set up the Kokkos library" TRUE )
+option( TRACCC_USE_SYSTEM_KOKKOS 
+   "Pick up an existing installation of Kokkos from the build environment"
+   FALSE )
+if( TRACCC_SETUP_ACTS )
+   if( TRACCC_USE_SYSTEM_KOKKOS )
+      find_package( Kokkos REQUIRED )
+   else()
+      add_subdirectory( extern/Kokkos )
+   endif() 
+endif() 
+
 # option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
 set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the build")
 message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGINS})
@@ -185,30 +200,13 @@ add_definitions(-DALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
 # Build the traccc code.
 add_subdirectory( core )
 add_subdirectory( device/common )
-if( TRACCC_BUILD_CUDA )
+if( TRACCC_BUILD_CUDA OR TRACCC_BUILD_KOKKOS )
    add_subdirectory( device/cuda )
-else()
-   if( TRACCC_BUILD_KOKKOS )
-      add_subdirectory( device/cuda )
-   endif()
 endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )
 endif()
-if( TRACCC_BUILD_KOKKOS )
-   # Set up Kokkos.
-   option( TRACCC_SETUP_KOKKOS
-     "Set up the Kokkos library" TRUE )
-   option( TRACCC_USE_SYSTEM_KOKKOS 
-      "Pick up an existing installation of Acts from the build environment"
-      TRUE )
-   if( TRACCC_SETUP_ACTS )
-      if( TRACCC_USE_SYSTEM_KOKKOS )
-         find_package( Kokkos REQUIRED )
-      else()
-         add_subdirectory( extern / kokkos )
-      endif() 
-   endif() 
+if( TRACCC_BUILD_KOKKOS ) 
    add_subdirectory( device/kokkos )
 endif()
 add_subdirectory( io )
