@@ -161,7 +161,7 @@ void count_triplets(
         nTriplets.fetch_add(num_triplets_per_mb);
 
         triplet_counter.get_items().at(bin_idx).push_back(
-            {mid_bot, num_triplets_per_mb});
+            {mid_bot, num_triplets_per_mb, item_idx});
     }
 }
 

@@ -72,10 +72,6 @@ void find_triplets(
 
     // Header of doublet counter : number of compatible middle sp per bin
     // Item of doublet counter : doublet counter objects per bin
-    // const
-    // doublet_counter_container_types::const_device::item_vector::value_type
-    // doublet_counter_per_bin =
-    //     doublet_counter_device.get_items().at(spM_bin);
     const vecmem::device_vector<const doublet_counter> doublet_counter_per_bin =
         doublet_counter_device.get_items().at(spM_bin);
 
@@ -116,15 +112,7 @@ void find_triplets(
     unsigned int mb_end_idx = 0;
     unsigned int mt_start_idx = 0;
     unsigned int mt_end_idx = 0;
-    unsigned int mb_idx;
-
-    // First, find the index of middle-bottom doublet
-    for (unsigned int i = 0; i < num_mid_bot_doublets_per_bin; i++) {
-        if (mid_bot_doublet == mid_bot_doublets_per_bin[i]) {
-            mb_idx = i;
-            break;
-        }
-    }
+    unsigned int mb_idx = mid_bot_counter.m_mb_idx;
 
     for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
         mb_end_idx += doublet_counter_per_bin[i].m_nMidBot;
