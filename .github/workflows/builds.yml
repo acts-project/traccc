@@ -26,6 +26,8 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2004_cuda:v30
           - name: SYCL
             container: ghcr.io/acts-project/ubuntu2004_oneapi:v30
+          - name: KOKKOS
+            container: ghcr.io/acts-project/ubuntu2004:v30
         build:
           - Release
           - Debug

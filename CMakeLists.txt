@@ -47,7 +47,10 @@ endif()
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
-option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc" FALSE)
+option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
+   FALSE )
+option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
+   FALSE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
@@ -106,6 +109,20 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
    "Extra options for configuring how Thrust should be used" )
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+
+# Set up Kokkos.
+option( TRACCC_SETUP_KOKKOS
+   "Set up the Kokkos library" TRUE )
+option( TRACCC_USE_SYSTEM_KOKKOS
+   "Pick up an existing installation of Kokkos from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_KOKKOS )
+   if( TRACCC_USE_SYSTEM_KOKKOS )
+      find_package( Kokkos REQUIRED )
+   else()
+      add_subdirectory( extern/kokkos )
+   endif()
+endif()
 
 # Set up Algebra Plugins.
 option( TRACCC_SETUP_ALGEBRA_PLUGINS
