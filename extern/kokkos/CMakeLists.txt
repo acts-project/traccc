@@ -26,12 +26,6 @@ FetchContent_Declare( Kokkos ${TRACCC_KOKKOS_SOURCE} )
 # Default options for the Kokkos build.
 set( Kokkos_ENABLE_SERIAL TRUE CACHE BOOL
    "Enable the serial backend of Kokkos" )
-set( Kokkos_ENABLE_CUDA_DEFAULT FALSE )
-if( CMAKE_CUDA_COMPILER )
-   set( Kokkos_ENABLE_CUDA_DEFAULT TRUE )
-endif()
-set( Kokkos_ENABLE_CUDA ${Kokkos_ENABLE_CUDA_DEFAULT} CACHE BOOL
-   "Enable the CUDA backend of Kokkos" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Kokkos )
