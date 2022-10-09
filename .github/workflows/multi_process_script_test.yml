@@ -10,6 +10,7 @@ on:
 
 jobs:
   builds:
+    runs-on: [self-hosted]
     image: ghcr.io/acts-project/ubuntu2004_cuda:v30
     steps:
       - uses: actions/checkout@v2
@@ -18,7 +19,7 @@ jobs:
             lfs: true
       - name: Configure
         run:
-          cmake -S ${GITHUB_WORKSPACE} -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S ${GITHUB_WORKSPACE} -B build -DCMAKE_BUILD_TYPE=Release -DTRACCC_BUILD_CUDA=ON
       - name: Build
         run:
           cmake --build build
