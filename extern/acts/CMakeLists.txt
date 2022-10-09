@@ -1,12 +1,17 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021 CERN for the benefit of the ACTS project
+# (c) 2021-2022 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
 # CMake include(s).
 cmake_minimum_required( VERSION 3.11 )
 include( FetchContent )
+
+# Silence FetchContent warnings with CMake >=3.24.
+if( POLICY CMP0135 )
+   cmake_policy( SET CMP0135 NEW )
+endif()
 
 # Tell the user what's happening.
 message( STATUS "Building Acts as part of the TRACCC project" )

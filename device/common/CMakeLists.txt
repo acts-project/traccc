@@ -10,13 +10,15 @@ include( traccc-compiler-options-cpp )
 # Declare the traccc::device_common library.
 traccc_add_library( traccc_device_common device_common TYPE SHARED
    # General function(s).
-   "include/traccc/device/get_prefix_sum.hpp"
-   "include/traccc/device/impl/get_prefix_sum.ipp"
    "include/traccc/device/fill_prefix_sum.hpp"
    "include/traccc/device/impl/fill_prefix_sum.ipp"
-   "src/get_prefix_sum.cpp"
    "include/traccc/device/make_prefix_sum_buffer.hpp"
    "src/make_prefix_sum_buffer.cpp"
+   # General algorithm(s).
+   "include/traccc/device/container_h2d_copy_alg.hpp"
+   "include/traccc/device/impl/container_h2d_copy_alg.ipp"
+   "include/traccc/device/container_d2h_copy_alg.hpp"
+   "include/traccc/device/impl/container_d2h_copy_alg.ipp"
    # EDM class(es).
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
