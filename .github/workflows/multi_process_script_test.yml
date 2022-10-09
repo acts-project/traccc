@@ -10,7 +10,7 @@ on:
 
 jobs:
   builds:
-    runs-on: ubuntu-latest
+    image: ghcr.io/acts-project/ubuntu2004_cuda:v30
     steps:
       - uses: actions/checkout@v2
         with:
@@ -18,7 +18,7 @@ jobs:
             lfs: true
       - name: Configure
         run:
-          cmake -S ${GITHUB_WORKSPACE} -B build
+          cmake -S ${GITHUB_WORKSPACE} -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run:
           cmake --build build
