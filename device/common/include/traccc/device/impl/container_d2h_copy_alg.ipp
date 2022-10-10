@@ -16,52 +16,7 @@ container_d2h_copy_alg<CONTAINER_TYPES>::container_d2h_copy_alg(
 
 template <typename CONTAINER_TYPES>
 typename container_d2h_copy_alg<CONTAINER_TYPES>::output_type
-container_d2h_copy_alg<CONTAINER_TYPES>::operator()(
-    const typename CONTAINER_TYPES::const_view& input) const {
-
-    // Create the result object.
-    output_type result = make_output(input);
-
-    // Perform the copy.
-    m_copy(input.headers, result.get_headers(),
-           vecmem::copy::type::device_to_host);
-    m_copy(input.items, result.get_items(), vecmem::copy::type::device_to_host);
-
-    // Return the host object.
-    return result;
-}
-
-template <typename CONTAINER_TYPES>
-typename container_d2h_copy_alg<CONTAINER_TYPES>::output_type
-container_d2h_copy_alg<CONTAINER_TYPES>::operator()(
-    const typename CONTAINER_TYPES::buffer& input) const {
-
-    // Create the result object.
-    output_type result = make_output(input);
-
-    // Perform the copy.
-    m_copy(input.headers, result.get_headers(),
-           vecmem::copy::type::device_to_host);
-    m_copy(input.items, result.get_items(), vecmem::copy::type::device_to_host);
-
-    // Return the host object.
-    return result;
-}
-
-template <typename CONTAINER_TYPES>
-typename container_d2h_copy_alg<CONTAINER_TYPES>::output_type
-container_d2h_copy_alg<CONTAINER_TYPES>::operator()(
-    typename CONTAINER_TYPES::buffer&& input) const {
-
-    // Call on the other function to do the work.
-    const typename CONTAINER_TYPES::buffer& input_ref = input;
-    return (*this)(input_ref);
-}
-
-template <typename CONTAINER_TYPES>
-typename container_d2h_copy_alg<CONTAINER_TYPES>::output_type
-container_d2h_copy_alg<CONTAINER_TYPES>::make_output(
-    const typename CONTAINER_TYPES::const_view& input) const {
+container_d2h_copy_alg<CONTAINER_TYPES>::operator()(input_type input) const {
 
     // Decide what memory resource to use for the host container.
     vecmem::memory_resource* mr = m_mr.host ? m_mr.host : &(m_mr.main);
@@ -74,7 +29,12 @@ container_d2h_copy_alg<CONTAINER_TYPES>::make_output(
             typename CONTAINER_TYPES::host::item_vector::value_type{mr};
     }
 
-    // Return the output object.
+    // Perform the copy.
+    m_copy(input.headers, result.get_headers(),
+           vecmem::copy::type::device_to_host);
+    m_copy(input.items, result.get_items(), vecmem::copy::type::device_to_host);
+
+    // Return the host object.
     return result;
 }
 
