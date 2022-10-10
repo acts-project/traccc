@@ -10,8 +10,9 @@ on:
 
 jobs:
   builds:
-    runs-on: [self-hosted]
-    image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+    runs-on: ubuntu-latest
+    container: 
+      image: ghcr.io/acts-project/ubuntu2004_cuda:v30
     steps:
       - uses: actions/checkout@v2
         with:
