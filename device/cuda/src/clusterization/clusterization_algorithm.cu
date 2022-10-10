@@ -258,8 +258,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(spacepoints_buffer.items);
 
     // Calculating grid size for measurements creation kernel (block size 64)
-    blocksPerGrid =
-        (clusters_buffer.headers.size() - 1 + threadsPerBlock) / threadsPerBlock;
+    blocksPerGrid = (clusters_buffer.headers.size() - 1 + threadsPerBlock) /
+                    threadsPerBlock;
 
     // Invoke measurements creation will call create measurements kernel
     kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
