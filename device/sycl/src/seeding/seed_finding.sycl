@@ -234,12 +234,12 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
                 tripletFindRange,
                 [config = m_seedfinder_config,
                  filter_config = m_seedfilter_config, g2_view,
-                 doublet_counter_view, mb_view, mt_view, triplet_counter_view,
+                 doublet_counter_view, mt_view, triplet_counter_view,
                  triplet_counter_prefix_sum_view,
                  triplet_view](::sycl::nd_item<1> item) {
                     device::find_triplets(
                         item.get_global_linear_id(), config, filter_config,
-                        g2_view, doublet_counter_view, mb_view, mt_view,
+                        g2_view, doublet_counter_view, mt_view,
                         triplet_counter_view, triplet_counter_prefix_sum_view,
                         triplet_view);
                 });

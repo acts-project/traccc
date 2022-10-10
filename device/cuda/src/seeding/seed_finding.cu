@@ -76,7 +76,7 @@ __global__ void find_triplets(
     seedfinder_config config, seedfilter_config filter_config,
     sp_grid_const_view sp_grid,
     device::doublet_counter_container_types::const_view doublet_counter_view,
-    doublet_container_view mb_doublets, doublet_container_view mt_doublets,
+    doublet_container_view mt_doublets,
     device::triplet_counter_container_types::const_view tc_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         triplet_prefix_sum,
@@ -84,7 +84,7 @@ __global__ void find_triplets(
 
     device::find_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
                           filter_config, sp_grid, doublet_counter_view,
-                          mb_doublets, mt_doublets, tc_view, triplet_prefix_sum,
+                          mt_doublets, tc_view, triplet_prefix_sum,
                           triplet_view);
 }
 /// CUDA kernel for running @c traccc::device::update_triplet_weights
@@ -180,7 +180,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // counting kernel for.
     const unsigned int nDoubletCountThreads = WARP_SIZE * 2;
     const unsigned int nDoubletCountBlocks =
-        sp_grid_prefix_sum_buff.size() / nDoubletCountThreads + 1;
+        (sp_grid_prefix_sum_buff.size() + nDoubletCountThreads - 1) /
+        nDoubletCountThreads;
 
     // Count the number of doublets that we need to produce.
     kernels::count_doublets<<<nDoubletCountBlocks, nDoubletCountThreads>>>(
@@ -206,7 +207,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // finding kernel for.
     const unsigned int nDoubletFindThreads = WARP_SIZE * 2;
     const unsigned int nDoubletFindBlocks =
-        doublet_prefix_sum_buff.size() / nDoubletFindThreads + 1;
+        (doublet_prefix_sum_buff.size() + nDoubletFindThreads - 1) /
+        nDoubletFindThreads;
 
     // Find all of the spacepoint doublets.
     kernels::find_doublets<<<nDoubletFindBlocks, nDoubletFindThreads>>>(
@@ -234,7 +236,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // counting kernel for.
     const unsigned int nTripletCountThreads = WARP_SIZE * 2;
     const unsigned int nTripletCountBlocks =
-        mb_prefix_sum_buff.size() / nTripletCountThreads + 1;
+        (mb_prefix_sum_buff.size() + nTripletCountThreads - 1) /
+        nTripletCountThreads;
 
     // Count the number of triplets that we need to produce.
     kernels::count_triplets<<<nTripletCountBlocks, nTripletCountThreads>>>(
@@ -247,7 +250,6 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // Set up the triplet buffer.
     triplet_container_buffer triplet_buffer = device::make_triplet_buffer(
         triplet_counter_buffer, *m_copy, m_mr.main, m_mr.host);
-    triplet_container_view triplet_view(triplet_buffer);
 
     // Create prefix sum buffer
     vecmem::data::vector_buffer triplet_counter_prefix_sum_buff =
@@ -258,14 +260,15 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // finding kernel for.
     const unsigned int nTripletFindThreads = WARP_SIZE * 2;
     const unsigned int nTripletFindBlocks =
-        triplet_counter_prefix_sum_buff.size() / nTripletFindThreads + 1;
+        (triplet_counter_prefix_sum_buff.size() + nTripletFindThreads - 1) /
+        nTripletFindThreads;
 
     // Find all of the spacepoint triplets.
     kernels::find_triplets<<<nTripletFindBlocks, nTripletFindThreads>>>(
         m_seedfinder_config, m_seedfilter_config, g2_view,
-        doublet_counter_buffer, doublet_buffers.middleBottom,
-        doublet_buffers.middleTop, triplet_counter_buffer,
-        triplet_counter_prefix_sum_buff, triplet_buffer);
+        doublet_counter_buffer, doublet_buffers.middleTop,
+        triplet_counter_buffer, triplet_counter_prefix_sum_buff,
+        triplet_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -277,7 +280,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // updating kernel for.
     const unsigned int nWeightUpdatingThreads = WARP_SIZE * 2;
     const unsigned int nWeightUpdatingBlocks =
-        triplet_prefix_sum_buff.size() / nWeightUpdatingThreads + 1;
+        (triplet_prefix_sum_buff.size() + nWeightUpdatingThreads - 1) /
+        nWeightUpdatingThreads;
 
     // Update the weights of all spacepoint triplets.
     kernels::update_triplet_weights<<<
@@ -306,7 +310,8 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // selecting kernel for.
     const unsigned int nSeedSelectingThreads = WARP_SIZE * 2;
     const unsigned int nSeedSelectingBlocks =
-        doublet_prefix_sum_buff.size() / nSeedSelectingThreads + 1;
+        (doublet_prefix_sum_buff.size() + nSeedSelectingThreads - 1) /
+        nSeedSelectingThreads;
 
     // Create seeds out of selected triplets
     kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads,

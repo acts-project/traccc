@@ -41,6 +41,9 @@ struct triplet_counter {
     /// The number of compatible triplets for a the midbot doublet
     unsigned int m_nTriplets = 0;
 
+    /// The position of the middle bottom doublet in its jagged vector
+    unsigned int m_mb_idx = 0;
+
 };  // struct triplet_counter
 
 /// Declare all triplet counter collection types
