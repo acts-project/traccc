@@ -30,10 +30,7 @@ namespace traccc::sycl {
 struct track_params_estimation
     : public algorithm<host_bound_track_parameters_collection(
           const spacepoint_container_types::const_view&,
-          const vecmem::data::vector_view<const seed>&)>,
-      public algorithm<host_bound_track_parameters_collection(
-          const spacepoint_container_types::buffer&,
-          const vecmem::data::vector_buffer<seed>&)> {
+          const vecmem::data::vector_view<const seed>&)> {
 
     public:
     /// Constructor for track_params_estimation
@@ -55,23 +52,7 @@ struct track_params_estimation
         const spacepoint_container_types::const_view& spacepoints_view,
         const vecmem::data::vector_view<const seed>& seeds_view) const override;
 
-    /// Callable operator for track_params_esitmation
-    ///
-    /// @param spaepoints_buffer   is the buffer of the spacepoint container
-    /// @param seeds_buffer        is the buffer of the seed container
-    /// @return                    vector of bound track parameters
-    ///
-    host_bound_track_parameters_collection operator()(
-        const spacepoint_container_types::buffer& spacepoints_buffer,
-        const vecmem::data::vector_buffer<seed>& seeds_buffer) const override;
-
     private:
-    /// Implementation for the public track params estimation operators
-    host_bound_track_parameters_collection operator()(
-        const spacepoint_container_types::const_view& spacepoints_view,
-        const vecmem::data::vector_view<const seed>& seeds_view,
-        std::size_t seeds_size) const;
-
     // Private member variables
     traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;

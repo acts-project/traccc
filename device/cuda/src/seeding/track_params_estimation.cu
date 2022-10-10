@@ -43,25 +43,7 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     const vecmem::data::vector_view<const seed>& seeds_view) const {
 
     // Get the size of the seeds view
-    auto seeds_size = m_copy->get_size(seeds_view);
-
-    return this->operator()(spacepoints_view, seeds_view, seeds_size);
-}
-
-host_bound_track_parameters_collection track_params_estimation::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer,
-    const vecmem::data::vector_buffer<seed>& seeds_buffer) const {
-
-    // Get the size of the seeds buffer
-    auto seeds_size = m_copy->get_size(seeds_buffer);
-
-    return this->operator()(spacepoints_buffer, seeds_buffer, seeds_size);
-}
-
-host_bound_track_parameters_collection track_params_estimation::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const vecmem::data::vector_view<const seed>& seeds_view,
-    std::size_t seeds_size) const {
+    const std::size_t seeds_size = m_copy->get_size(seeds_view);
 
     // Create output host container
     host_bound_track_parameters_collection params(
