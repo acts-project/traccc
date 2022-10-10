@@ -21,7 +21,7 @@ namespace traccc {
 
 /// Seed finding
 class seed_finding
-    : public algorithm<host_seed_collection(
+    : public algorithm<seed_collection_types::host(
           const spacepoint_container_types::host&, const sp_grid&)> {
 
     public:

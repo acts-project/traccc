@@ -22,7 +22,7 @@ namespace cuda {
 struct track_params_estimation
     : public algorithm<host_bound_track_parameters_collection(
           const spacepoint_container_types::const_view&,
-          const vecmem::data::vector_view<const seed>&)> {
+          const seed_collection_types::const_view&)> {
 
     public:
     /// Constructor for track_params_estimation
@@ -38,7 +38,7 @@ struct track_params_estimation
     ///
     host_bound_track_parameters_collection operator()(
         const spacepoint_container_types::const_view& spacepoints_view,
-        const vecmem::data::vector_view<const seed>& seeds_view) const override;
+        const seed_collection_types::const_view& seeds_view) const override;
 
     private:
     /// Memory resource used by the algorithm

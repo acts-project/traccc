@@ -28,7 +28,7 @@
 namespace traccc::sycl {
 
 // Sycl seeding function object
-class seed_finding : public algorithm<vecmem::data::vector_buffer<seed>(
+class seed_finding : public algorithm<seed_collection_types::buffer(
                          const spacepoint_container_types::const_view&,
                          const sp_grid_const_view&)> {
 
@@ -51,7 +51,7 @@ class seed_finding : public algorithm<vecmem::data::vector_buffer<seed>(
     /// @param g2_view              is a view of the spacepoint grid
     /// @return                     a vector buffer of seeds
     ///
-    vecmem::data::vector_buffer<seed> operator()(
+    seed_collection_types::buffer operator()(
         const spacepoint_container_types::const_view& spacepoints_view,
         const sp_grid_const_view& g2_view) const override;
 

@@ -113,7 +113,7 @@ __global__ void select_seeds(
     vecmem::data::vector_view<const device::prefix_sum_element_t> dc_ps_view,
     device::doublet_counter_container_types::const_view
         doublet_counter_container,
-    triplet_container_view tc_view, vecmem::data::vector_view<seed> seed_view) {
+    triplet_container_view tc_view, seed_collection_types::view seed_view) {
 
     // Array for temporary storage of triplets for comparing within seed
     // selecting kernel
@@ -144,7 +144,7 @@ seed_finding::seed_finding(const seedfinder_config& config,
     }
 }
 
-vecmem::data::vector_buffer<seed> seed_finding::operator()(
+seed_collection_types::buffer seed_finding::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& g2_view) const {
 
@@ -287,7 +287,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         n_triplets += h.m_nTriplets;
     }
 
-    vecmem::data::vector_buffer<seed> seed_buffer(n_triplets, 0, m_mr.main);
+    seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
     m_copy->setup(seed_buffer);
 
     // Calculate the number of threads and thread blocks to run the seed
