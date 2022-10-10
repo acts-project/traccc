@@ -68,7 +68,7 @@ container_d2h_copy_alg<CONTAINER_TYPES>::make_output(
 
     // Create the result object, giving it the appropriate memory resource for
     // all of its elements.
-    output_type result{input.items.m_size, mr};
+    output_type result{input.items.size(), mr};
     for (std::size_t i = 0; i < result.size(); ++i) {
         result[i].items =
             typename CONTAINER_TYPES::host::item_vector::value_type{mr};
