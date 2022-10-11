@@ -30,13 +30,11 @@ namespace traccc::device {
 template <typename CONTAINER_TYPES>
 class container_d2h_copy_alg
     : public algorithm<typename CONTAINER_TYPES::host(
-          const typename CONTAINER_TYPES::const_view&)>,
-      public algorithm<typename CONTAINER_TYPES::host(
-          const typename CONTAINER_TYPES::buffer&)>,
-      public algorithm<typename CONTAINER_TYPES::host(
-          typename CONTAINER_TYPES::buffer&&)> {
+          const typename CONTAINER_TYPES::const_view&)> {
 
     public:
+    /// Helper type declaration for the input type
+    typedef const typename CONTAINER_TYPES::const_view& input_type;
     /// Help the compiler understand what @c output_type is
     using output_type = typename algorithm<typename CONTAINER_TYPES::host(
         const typename CONTAINER_TYPES::const_view&)>::output_type;
@@ -45,20 +43,9 @@ class container_d2h_copy_alg
     container_d2h_copy_alg(const memory_resource& mr, vecmem::copy& copy);
 
     /// Function executing the copy to the host
-    virtual output_type operator()(
-        const typename CONTAINER_TYPES::const_view& input) const override;
-    /// Function executing the copy to the host
-    virtual output_type operator()(
-        const typename CONTAINER_TYPES::buffer& input) const override;
-    /// Function executing the copy to the host
-    virtual output_type operator()(
-        typename CONTAINER_TYPES::buffer&& input) const override;
+    virtual output_type operator()(input_type input) const override;
 
     private:
-    /// Helper function setting up the output container
-    output_type make_output(
-        const typename CONTAINER_TYPES::const_view& input) const;
-
     /// The memory resource(s) to use
     memory_resource m_mr;
     /// The copy object to use

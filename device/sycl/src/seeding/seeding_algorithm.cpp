@@ -68,11 +68,4 @@ vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
                           m_spacepoint_binning(spacepoints_view));
 }
 
-vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer) const {
-
-    return m_seed_finding(spacepoints_buffer,
-                          m_spacepoint_binning(spacepoints_buffer));
-}
-
 }  // namespace traccc::sycl

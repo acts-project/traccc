@@ -26,7 +26,7 @@ container_h2d_copy_alg<CONTAINER_TYPES>::operator()(input_type input) const {
     // Get the sizes of the jagged vector. Remember that the input comes from
     // host accessible memory. (Using the vecmem::copy object is not a good idea
     // in this case.)
-    assert(input.headers.size() == input.items.m_size);
+    assert(input.headers.size() == input.items.size());
     const typename std::remove_reference<typename std::remove_cv<
         input_type>::type>::type::header_vector::size_type size =
         input.headers.size();

@@ -58,22 +58,6 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Get the spacepoint sizes from the view
     auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
 
-    return this->operator()(spacepoints_view, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer) const {
-
-    // Get the spacepoint sizes from the buffer
-    auto sp_sizes = m_copy->get_sizes(spacepoints_buffer.items);
-
-    return this->operator()(spacepoints_buffer, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const std::vector<unsigned int>& sp_sizes) const {
-
     // Create prefix sum buffer and its view
     vecmem::data::vector_buffer sp_prefix_sum_buff = make_prefix_sum_buff(
         sp_sizes, *m_copy, m_mr, details::get_queue(m_queue));
