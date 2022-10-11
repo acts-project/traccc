@@ -17,10 +17,10 @@ namespace traccc {
 
 /// Triplet finding to search the compatible combintations of two doublets which
 /// share same middle spacepoint
-struct triplet_finding
-    : public algorithm<triplet_collection_types::host(
-          const sp_grid&, const doublet&, const lin_circle&,
-          const doublet_collection_types::host&, const lin_circle_collection_types::host&)> {
+struct triplet_finding : public algorithm<triplet_collection_types::host(
+                             const sp_grid&, const doublet&, const lin_circle&,
+                             const doublet_collection_types::host&,
+                             const lin_circle_collection_types::host&)> {
     /// Constructor for the triplet finding
     ///
     /// @param seedfinder_config is the configuration parameters
@@ -58,11 +58,11 @@ struct triplet_finding
     /// void interface
     ///
     /// @return a vector of triplets
-    void operator()(const sp_grid& g2, const doublet& mid_bot,
-                    const lin_circle& lb,
-                    const doublet_collection_types::host& doublets_mid_top,
-                    const lin_circle_collection_types::host& lin_circles_mid_top,
-                    output_type& o) const {
+    void operator()(
+        const sp_grid& g2, const doublet& mid_bot, const lin_circle& lb,
+        const doublet_collection_types::host& doublets_mid_top,
+        const lin_circle_collection_types::host& lin_circles_mid_top,
+        output_type& o) const {
         // output
         auto& triplets = o;
 

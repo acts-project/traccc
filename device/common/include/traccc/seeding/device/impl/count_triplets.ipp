@@ -36,7 +36,8 @@ void count_triplets(
     }
 
     // Create device copy of input parameters
-    const doublet_container_types::const_device mid_bot_doublet_device(mid_bot_doublet_view);
+    const doublet_container_types::const_device mid_bot_doublet_device(
+        mid_bot_doublet_view);
 
     // Get ids
     const prefix_sum_element_t ps_idx = doublet_prefix_sum[globalIndex];
@@ -50,7 +51,8 @@ void count_triplets(
     // Create device copy of input parameters
     const device::doublet_counter_container_types::const_device
         doublet_counter_device(doublet_counter_view);
-    const doublet_container_types::const_device mid_top_doublet_device(mid_top_doublet_view);
+    const doublet_container_types::const_device mid_top_doublet_device(
+        mid_top_doublet_view);
 
     // Create device copy of output parameter
     triplet_counter_container_types::device triplet_counter(triplet_view);

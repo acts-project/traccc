@@ -37,7 +37,8 @@ void find_triplets(
     // Get device copy of input parameters
     const device::doublet_counter_container_types::const_device
         doublet_counter_device(doublet_counter_view);
-    const doublet_container_types::const_device mid_top_doublet_device(mid_top_doublet_view);
+    const doublet_container_types::const_device mid_top_doublet_device(
+        mid_top_doublet_view);
     const const_sp_grid_device sp_grid(sp_view);
 
     // Get the current work item
