@@ -19,7 +19,7 @@ namespace traccc {
 /// Doublet finding to search the combinations of two compatible spacepoints
 struct doublet_finding
     : public algorithm<
-          std::pair<doublet_collection_types::host, host_lin_circle_collection>(
+          std::pair<doublet_collection_types::host, lin_circle_collection_types::host>(
               const sp_grid&, const sp_location&, const bool&)> {
 
     /// Constructor for the doublet finding
