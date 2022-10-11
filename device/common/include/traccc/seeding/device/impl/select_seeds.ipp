@@ -62,7 +62,7 @@ void select_seeds(
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
     const triplet_container_view& triplet_view, triplet* data,
-    vecmem::data::vector_view<seed> seed_view) {
+    seed_collection_types::view seed_view) {
 
     // Check if anything needs to be done.
     const vecmem::device_vector<const prefix_sum_element_t> dc_prefix_sum(
@@ -82,7 +82,7 @@ void select_seeds(
     device::doublet_counter_container_types::const_device
         doublet_counter_device(doublet_counter_container);
     device_triplet_container triplet_device(triplet_view);
-    device_seed_collection seed_device(seed_view);
+    seed_collection_types::device seed_device(seed_view);
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin

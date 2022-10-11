@@ -179,7 +179,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Copy the seeds to the host for comparisons
         vecmem::copy copy;
-        traccc::host_seed_collection seeds_sycl;
+        traccc::seed_collection_types::host seeds_sycl;
         copy(seeds_sycl_buffer, seeds_sycl);
 
         if (run_cpu) {

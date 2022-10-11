@@ -61,7 +61,7 @@ seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr,
       m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr,
                      queue) {}
 
-vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
+seed_collection_types::buffer seeding_algorithm::operator()(
     const spacepoint_container_types::const_view& spacepoints_view) const {
 
     return m_seed_finding(spacepoints_view,

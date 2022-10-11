@@ -77,7 +77,7 @@ seed_finding::seed_finding(const seedfinder_config& config,
     }
 }
 
-vecmem::data::vector_buffer<seed> seed_finding::operator()(
+seed_collection_types::buffer seed_finding::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& g2_view) const {
 
@@ -287,9 +287,9 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     }
 
     // Create seed buffer object and its view
-    vecmem::data::vector_buffer<seed> seed_buffer(n_triplets, 0, m_mr.main);
+    seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
     m_copy->setup(seed_buffer);
-    vecmem::data::vector_view<seed> seed_view(seed_buffer);
+    seed_collection_types::view seed_view(seed_buffer);
 
     // Calculate the range to run the seed selecting for
     static constexpr unsigned int seedSelectingLocalSize = 32 * 2;

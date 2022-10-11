@@ -34,7 +34,7 @@ class seed_filtering {
     /// added
     void operator()(const spacepoint_container_types::host& sp_container,
                     const sp_grid& g2, host_triplet_collection& triplets,
-                    host_seed_collection& seeds) const;
+                    seed_collection_types::host& seeds) const;
 
     private:
     /// Seed filter configuration

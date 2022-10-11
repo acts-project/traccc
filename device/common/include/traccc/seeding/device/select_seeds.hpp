@@ -1,3 +1,10 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2022 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
@@ -35,7 +42,7 @@ void select_seeds(
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
     const triplet_container_view& tc_view, triplet* data,
-    vecmem::data::vector_view<seed> seed_view);
+    seed_collection_types::view seed_view);
 
 }  // namespace traccc::device
 

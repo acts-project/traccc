@@ -70,7 +70,7 @@ class seeding_performance_writer {
         m_duplication_plot_tool.book(name, m_duplication_plot_caches[name]);
     }
 
-    void write(std::string name, const host_seed_collection& seeds,
+    void write(std::string name, const seed_collection_types::host& seeds,
                const spacepoint_container_types::host& spacepoints,
                event_map& evt_map) {
 
