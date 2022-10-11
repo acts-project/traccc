@@ -18,7 +18,7 @@ namespace traccc {
 /// Triplet finding to search the compatible combintations of two doublets which
 /// share same middle spacepoint
 struct triplet_finding
-    : public algorithm<host_triplet_collection(
+    : public algorithm<triplet_collection_types::host(
           const sp_grid&, const doublet&, const lin_circle&,
           const doublet_collection_types::host&, const host_lin_circle_collection&)> {
     /// Constructor for the triplet finding

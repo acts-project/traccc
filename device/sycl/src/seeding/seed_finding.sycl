@@ -195,9 +195,9 @@ seed_collection_types::buffer seed_finding::operator()(
         .wait_and_throw();
 
     // Set up the triplet buffer and its view
-    triplet_container_buffer triplet_buffer = device::make_triplet_buffer(
+    triplet_container_types::buffer triplet_buffer = device::make_triplet_buffer(
         triplet_counter_buffer, *m_copy, m_mr.main, m_mr.host);
-    triplet_container_view triplet_view = triplet_buffer;
+    triplet_container_types::view triplet_view = triplet_buffer;
 
     // Create prefix sum buffer and its view
     vecmem::data::vector_buffer triplet_counter_prefix_sum_buff =

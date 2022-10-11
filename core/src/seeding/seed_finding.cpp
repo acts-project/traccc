@@ -45,7 +45,7 @@ seed_finding::output_type seed_finding::operator()(
             if (mid_top.first.empty())
                 continue;
 
-            host_triplet_collection triplets_per_spM;
+            triplet_collection_types::host triplets_per_spM;
 
             // triplet search from the combinations of two doublets which
             // share middle spacepoint
@@ -53,7 +53,7 @@ seed_finding::output_type seed_finding::operator()(
                 auto& doublet_mb = mid_bot.first[k];
                 auto& lb = mid_bot.second[k];
 
-                host_triplet_collection triplets = m_triplet_finding(
+                triplet_collection_types::host triplets = m_triplet_finding(
                     g2, doublet_mb, lb, mid_top.first, mid_top.second);
 
                 triplets_per_spM.insert(std::end(triplets_per_spM),

@@ -33,7 +33,7 @@ class seed_filtering {
     /// @return seeds are the vector of seeds where the new compatible seeds are
     /// added
     void operator()(const spacepoint_container_types::host& sp_container,
-                    const sp_grid& g2, host_triplet_collection& triplets,
+                    const sp_grid& g2, triplet_collection_types::host& triplets,
                     seed_collection_types::host& seeds) const;
 
     private:

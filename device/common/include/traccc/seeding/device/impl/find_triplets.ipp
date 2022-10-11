@@ -25,7 +25,7 @@ void find_triplets(
     const device::triplet_counter_container_types::const_view& tc_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
-    triplet_container_view triplet_view) {
+    triplet_container_types::view triplet_view) {
 
     // Check if anything needs to be done.
     const vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
@@ -79,7 +79,7 @@ void find_triplets(
         mid_top_doublet_device.get_items().at(spM_bin);
 
     // Set up the device result container
-    device_triplet_container triplets(triplet_view);
+    triplet_container_types::device triplets(triplet_view);
 
     // Apply the conformal transformation to middle-bot doublet
     const traccc::lin_circle lb =
