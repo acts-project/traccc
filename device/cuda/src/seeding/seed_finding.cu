@@ -51,7 +51,7 @@ __global__ void find_doublets(
     device::doublet_counter_container_types::const_view doublet_counter,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         doublet_prefix_sum,
-    doublet_container_view mb_doublets, doublet_container_view mt_doublets) {
+    doublet_container_types::view mb_doublets, doublet_container_types::view mt_doublets) {
 
     device::find_doublets(threadIdx.x + blockIdx.x * blockDim.x, config,
                           sp_grid, doublet_counter, doublet_prefix_sum,
@@ -64,7 +64,7 @@ __global__ void count_triplets(
     device::doublet_counter_container_types::const_view doublet_counter_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         doublet_prefix_sum,
-    doublet_container_view mb_doublets, doublet_container_view mt_doublets,
+    doublet_container_types::const_view mb_doublets, doublet_container_types::const_view mt_doublets,
     device::triplet_counter_container_types::view triplet_view) {
 
     device::count_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
@@ -76,7 +76,7 @@ __global__ void find_triplets(
     seedfinder_config config, seedfilter_config filter_config,
     sp_grid_const_view sp_grid,
     device::doublet_counter_container_types::const_view doublet_counter_view,
-    doublet_container_view mt_doublets,
+    doublet_container_types::const_view mt_doublets,
     device::triplet_counter_container_types::const_view tc_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         triplet_prefix_sum,

@@ -137,8 +137,8 @@ seed_collection_types::buffer seed_finding::operator()(
         doublet_prefix_sum_view.size(), doubletFindLocalSize);
 
     // Find all of the spacepoint doublets.
-    doublet_container_view mb_view = doublet_buffers.middleBottom;
-    doublet_container_view mt_view = doublet_buffers.middleTop;
+    doublet_container_types::view mb_view = doublet_buffers.middleBottom;
+    doublet_container_types::view mt_view = doublet_buffers.middleTop;
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::find_doublets>(

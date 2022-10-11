@@ -20,7 +20,7 @@ namespace traccc {
 struct triplet_finding
     : public algorithm<host_triplet_collection(
           const sp_grid&, const doublet&, const lin_circle&,
-          const host_doublet_collection&, const host_lin_circle_collection&)> {
+          const doublet_collection_types::host&, const host_lin_circle_collection&)> {
     /// Constructor for the triplet finding
     ///
     /// @param seedfinder_config is the configuration parameters
@@ -39,7 +39,7 @@ struct triplet_finding
     /// @return a vector of triplets
     output_type operator()(
         const sp_grid& g2, const doublet& d, const lin_circle& lc,
-        const host_doublet_collection& doublet,
+        const doublet_collection_types::host& doublet,
         const host_lin_circle_collection& lincol) const override {
         output_type result;
         this->operator()(g2, d, lc, doublet, lincol, result);
@@ -60,7 +60,7 @@ struct triplet_finding
     /// @return a vector of triplets
     void operator()(const sp_grid& g2, const doublet& mid_bot,
                     const lin_circle& lb,
-                    const host_doublet_collection& doublets_mid_top,
+                    const doublet_collection_types::host& doublets_mid_top,
                     const host_lin_circle_collection& lin_circles_mid_top,
                     output_type& o) const {
         // output

@@ -40,8 +40,8 @@ void find_doublets(
     const device::doublet_counter_container_types::const_view& doublet_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         doublet_ps_view,
-    doublet_container_view mb_doublets_view,
-    doublet_container_view mt_doublets_view);
+    doublet_container_types::view mb_doublets_view,
+    doublet_container_types::view mt_doublets_view);
 
 }  // namespace traccc::device
 
