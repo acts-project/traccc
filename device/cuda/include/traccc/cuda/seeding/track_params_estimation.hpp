@@ -20,7 +20,7 @@ namespace cuda {
 
 /// track parameter estimation for cuda
 struct track_params_estimation
-    : public algorithm<host_bound_track_parameters_collection(
+    : public algorithm<bound_track_parameters_collection_types::host(
           const spacepoint_container_types::const_view&,
           const seed_collection_types::const_view&)> {
 
@@ -36,7 +36,7 @@ struct track_params_estimation
     /// @param seeds_view        is the view of the seed container
     /// @return                  vector of bound track parameters
     ///
-    host_bound_track_parameters_collection operator()(
+    bound_track_parameters_collection_types::host operator()(
         const spacepoint_container_types::const_view& spacepoints_view,
         const seed_collection_types::const_view& seeds_view) const override;
 
