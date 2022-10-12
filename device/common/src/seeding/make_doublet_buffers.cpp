@@ -37,9 +37,9 @@ doublet_buffer_pair make_doublet_buffers(
         doublet_counts.begin(), doublet_counts.end(), mt_sizes.begin(),
         [](const device::doublet_counter_header& dc) { return dc.m_nMidTop; });
 
-    const doublet_container_buffer::header_vector::size_type mb_size =
+    const doublet_container_types::buffer::header_vector::size_type mb_size =
         mb_sizes.size();
-    const doublet_container_buffer::header_vector::size_type mt_size =
+    const doublet_container_types::buffer::header_vector::size_type mt_size =
         mt_sizes.size();
 
     // Create the result object.

@@ -39,11 +39,11 @@ void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
     const device::doublet_counter_container_types::const_view& dc_view,
-    const doublet_container_view& mid_top_doublet_view,
+    const doublet_container_types::const_view& mid_top_doublet_view,
     const device::triplet_counter_container_types::const_view& tc_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
-    triplet_container_view triplet_view);
+    triplet_container_types::view triplet_view);
 
 }  // namespace traccc::device
 

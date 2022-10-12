@@ -16,7 +16,7 @@
 
 namespace traccc::device {
 
-triplet_container_buffer make_triplet_buffer(
+triplet_container_types::buffer make_triplet_buffer(
     const triplet_counter_container_types::const_view& triplet_counter,
     vecmem::copy& copy, vecmem::memory_resource& mr,
     vecmem::memory_resource* mr_host) {
@@ -34,13 +34,14 @@ triplet_container_buffer make_triplet_buffer(
                        return tc.m_nTriplets;
                    });
 
-    const triplet_container_buffer::header_vector::size_type triplets_size =
-        triplet_sizes.size();
+    const triplet_container_types::buffer::header_vector::size_type
+        triplets_size = triplet_sizes.size();
 
     // Create the result object.
-    triplet_container_buffer result{{triplets_size, mr},
-                                    {std::vector<std::size_t>(triplets_size, 0),
-                                     triplet_sizes, mr, mr_host}};
+    triplet_container_types::buffer result{
+        {triplets_size, mr},
+        {std::vector<std::size_t>(triplets_size, 0), triplet_sizes, mr,
+         mr_host}};
 
     // Initialise the buffer(s).
     copy.setup(result.headers);

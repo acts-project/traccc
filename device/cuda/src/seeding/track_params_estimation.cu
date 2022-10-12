@@ -24,7 +24,7 @@ namespace cuda {
 __global__ void track_params_estimating_kernel(
     spacepoint_container_types::const_view spacepoints_view,
     seed_collection_types::const_view seeds_view,
-    vecmem::data::vector_view<bound_track_parameters> params_view);
+    bound_track_parameters_collection_types::view params_view);
 
 track_params_estimation::track_params_estimation(
     const traccc::memory_resource& mr)
@@ -38,7 +38,8 @@ track_params_estimation::track_params_estimation(
     }
 }
 
-host_bound_track_parameters_collection track_params_estimation::operator()(
+bound_track_parameters_collection_types::host
+track_params_estimation::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const seed_collection_types::const_view& seeds_view) const {
 
@@ -46,7 +47,7 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     const std::size_t seeds_size = m_copy->get_size(seeds_view);
 
     // Create output host container
-    host_bound_track_parameters_collection params(
+    bound_track_parameters_collection_types::host params(
         seeds_size, (m_mr.host ? m_mr.host : &(m_mr.main)));
 
     // Check if anything needs to be done.
@@ -55,8 +56,8 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     }
 
     // Create device buffer for the parameters
-    vecmem::data::vector_buffer<bound_track_parameters> params_buffer(
-        seeds_size, m_mr.main);
+    bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
+                                                                  m_mr.main);
     m_copy->setup(params_buffer);
 
     // -- Num threads
@@ -84,13 +85,13 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
 __global__ void track_params_estimating_kernel(
     spacepoint_container_types::const_view spacepoints_view,
     seed_collection_types::const_view seeds_view,
-    vecmem::data::vector_view<bound_track_parameters> params_view) {
+    bound_track_parameters_collection_types::view params_view) {
 
     // Get device container for input parameters
     const spacepoint_container_types::const_device spacepoints_device(
         spacepoints_view);
     seed_collection_types::const_device seeds_device(seeds_view);
-    device_bound_track_parameters_collection params_device(params_view);
+    bound_track_parameters_collection_types::device params_device(params_view);
 
     // vector index for threads
     unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;

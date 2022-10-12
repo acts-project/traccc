@@ -98,19 +98,9 @@ inline bool operator==(const bound_track_parameters& lhs,
     return false;
 }
 
-/// Collection of bound_track_parameters
-template <template <typename> class vector_t>
-using bound_track_parameters_collection = vector_t<bound_track_parameters>;
-
-/// Convenient declaration for the bound track parameters collection type to use
-/// in host code
-using host_bound_track_parameters_collection =
-    bound_track_parameters_collection<vecmem::vector>;
-
-/// Convenient declaration for the bound track parameters collection type to use
-/// in device code
-using device_bound_track_parameters_collection =
-    bound_track_parameters_collection<vecmem::device_vector>;
+/// Declare all track_parameters collection types
+using bound_track_parameters_collection_types =
+    collection_types<bound_track_parameters>;
 
 struct curvilinear_track_parameters {
     using vector_t = bound_vector;

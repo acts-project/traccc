@@ -51,7 +51,8 @@ __global__ void find_doublets(
     device::doublet_counter_container_types::const_view doublet_counter,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         doublet_prefix_sum,
-    doublet_container_view mb_doublets, doublet_container_view mt_doublets) {
+    doublet_container_types::view mb_doublets,
+    doublet_container_types::view mt_doublets) {
 
     device::find_doublets(threadIdx.x + blockIdx.x * blockDim.x, config,
                           sp_grid, doublet_counter, doublet_prefix_sum,
@@ -64,7 +65,8 @@ __global__ void count_triplets(
     device::doublet_counter_container_types::const_view doublet_counter_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         doublet_prefix_sum,
-    doublet_container_view mb_doublets, doublet_container_view mt_doublets,
+    doublet_container_types::const_view mb_doublets,
+    doublet_container_types::const_view mt_doublets,
     device::triplet_counter_container_types::view triplet_view) {
 
     device::count_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
@@ -76,11 +78,11 @@ __global__ void find_triplets(
     seedfinder_config config, seedfilter_config filter_config,
     sp_grid_const_view sp_grid,
     device::doublet_counter_container_types::const_view doublet_counter_view,
-    doublet_container_view mt_doublets,
+    doublet_container_types::const_view mt_doublets,
     device::triplet_counter_container_types::const_view tc_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         triplet_prefix_sum,
-    triplet_container_view triplet_view) {
+    triplet_container_types::view triplet_view) {
 
     device::find_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
                           filter_config, sp_grid, doublet_counter_view,
@@ -92,7 +94,7 @@ __global__ void update_triplet_weights(
     seedfilter_config filter_config, sp_grid_const_view sp_grid,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         triplet_prefix_sum,
-    triplet_container_view triplet_view) {
+    triplet_container_types::view triplet_view) {
 
     // Array for temporary storage of quality parameters for comparing triplets
     // within weight updating kernel
@@ -113,7 +115,8 @@ __global__ void select_seeds(
     vecmem::data::vector_view<const device::prefix_sum_element_t> dc_ps_view,
     device::doublet_counter_container_types::const_view
         doublet_counter_container,
-    triplet_container_view tc_view, seed_collection_types::view seed_view) {
+    triplet_container_types::const_view tc_view,
+    seed_collection_types::view seed_view) {
 
     // Array for temporary storage of triplets for comparing within seed
     // selecting kernel
@@ -232,8 +235,9 @@ seed_collection_types::buffer seed_finding::operator()(
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Set up the triplet buffer.
-    triplet_container_buffer triplet_buffer = device::make_triplet_buffer(
-        triplet_counter_buffer, *m_copy, m_mr.main, m_mr.host);
+    triplet_container_types::buffer triplet_buffer =
+        device::make_triplet_buffer(triplet_counter_buffer, *m_copy, m_mr.main,
+                                    m_mr.host);
 
     // Create prefix sum buffer
     vecmem::data::vector_buffer triplet_counter_prefix_sum_buff =

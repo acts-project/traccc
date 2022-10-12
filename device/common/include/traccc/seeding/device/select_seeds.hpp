@@ -41,7 +41,7 @@ void select_seeds(
     const vecmem::data::vector_view<const prefix_sum_element_t>& dc_ps_view,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
-    const triplet_container_view& tc_view, triplet* data,
+    const triplet_container_types::const_view& tc_view, triplet* data,
     seed_collection_types::view seed_view);
 
 }  // namespace traccc::device
