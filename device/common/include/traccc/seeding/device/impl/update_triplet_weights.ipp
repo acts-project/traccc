@@ -13,7 +13,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void update_triplet_weights(
+inline void update_triplet_weights(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&

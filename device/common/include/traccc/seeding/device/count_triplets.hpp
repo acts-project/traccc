@@ -36,7 +36,7 @@ namespace traccc::device {
 /// triplets
 ///
 TRACCC_HOST_DEVICE
-void count_triplets(
+inline void count_triplets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const doublet_counter_container_types::const_view doublet_counter_view,

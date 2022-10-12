@@ -54,7 +54,7 @@ TRACCC_HOST_DEVICE void insertionSort(triplet* arr, const std::size_t begin_idx,
 
 // Select seeds kernel
 TRACCC_HOST_DEVICE
-void select_seeds(
+inline void select_seeds(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
     const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,

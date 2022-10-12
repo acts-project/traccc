@@ -13,7 +13,7 @@
 namespace traccc::device {
 
 TRACCC_DEVICE
-void populate_grid(
+inline void populate_grid(
     std::size_t globalIndex, const seedfinder_config& config,
     const spacepoint_container_types::const_view& spacepoints_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&

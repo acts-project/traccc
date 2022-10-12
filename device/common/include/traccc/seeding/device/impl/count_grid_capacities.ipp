@@ -16,7 +16,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void count_grid_capacities(
+inline void count_grid_capacities(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
     const spacepoint_container_types::const_view& spacepoints_view,

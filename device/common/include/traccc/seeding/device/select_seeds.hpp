@@ -34,7 +34,7 @@ namespace traccc::device {
 /// @param[out] seed_container vecmem container for seeds
 ///
 TRACCC_HOST_DEVICE
-void select_seeds(
+inline void select_seeds(
     std::size_t globalIndex, const seedfilter_config& filter_config,
     const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,
