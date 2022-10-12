@@ -30,10 +30,4 @@ inline TRACCC_HOST_DEVICE bool operator!=(const sp_location& lhs,
     return (lhs.bin_idx != rhs.bin_idx || lhs.sp_idx != rhs.sp_idx);
 }
 
-/// Declare all singlet collection types
-using singlet_collection_types = collection_types<sp_location>;
-
-/// Declare all singlet container types
-using singlet_container_types = container_types<unsigned int, sp_location>;
-
 }  // namespace traccc

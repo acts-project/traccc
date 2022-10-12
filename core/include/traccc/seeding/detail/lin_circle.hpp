@@ -51,7 +51,4 @@ struct lin_circle {
 /// Declare all lin_circle collection types
 using lin_circle_collection_types = collection_types<lin_circle>;
 
-/// Declare all lin_circle container types
-using lin_circle_container_types = container_types<unsigned int, lin_circle>;
-
 }  // namespace traccc

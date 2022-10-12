@@ -88,7 +88,7 @@ void select_seeds(
     // Item of triplet: triplet objects per bin
     const unsigned int num_triplets_per_bin =
         triplet_device.get_headers().at(bin_idx).n_triplets;
-    const vecmem::device_vector<const triplet> triplets_per_bin =
+    const triplet_collection_types::const_device triplets_per_bin =
         triplet_device.get_items().at(bin_idx);
 
     // Current work item = middle spacepoint
