@@ -8,7 +8,9 @@
 #pragma once
 
 // Project include(s)
-#include "traccc/seeding/track_params_estimation_helper.hpp"
+#include "traccc/edm/seed.hpp"
+#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
