@@ -34,7 +34,7 @@ namespace traccc::device {
 /// @param[out] mt_doublets_view Container of middle-top doublets
 ///
 TRACCC_HOST_DEVICE
-void find_doublets(
+inline void find_doublets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const device::doublet_counter_container_types::const_view& doublet_view,

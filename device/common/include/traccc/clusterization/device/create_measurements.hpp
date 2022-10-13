@@ -32,10 +32,10 @@ namespace traccc::device {
 /// for each module
 ///
 TRACCC_HOST_DEVICE
-void create_measurements(std::size_t globalIndex,
-                         cluster_container_types::const_view clusters_view,
-                         const cell_container_types::const_view& cells_view,
-                         measurement_container_types::view measurements_view);
+inline void create_measurements(
+    std::size_t globalIndex, cluster_container_types::const_view clusters_view,
+    const cell_container_types::const_view& cells_view,
+    measurement_container_types::view measurements_view);
 
 }  // namespace traccc::device
 

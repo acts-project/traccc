@@ -10,7 +10,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void form_spacepoints(
+inline void form_spacepoints(
     std::size_t globalIndex,
     measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>

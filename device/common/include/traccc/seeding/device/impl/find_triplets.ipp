@@ -16,7 +16,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void find_triplets(
+inline void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
     const device::doublet_counter_container_types::const_view&

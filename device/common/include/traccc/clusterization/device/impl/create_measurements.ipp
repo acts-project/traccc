@@ -13,10 +13,10 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void create_measurements(std::size_t globalIndex,
-                         cluster_container_types::const_view clusters_view,
-                         const cell_container_types::const_view& cells_view,
-                         measurement_container_types::view measurements_view) {
+inline void create_measurements(
+    std::size_t globalIndex, cluster_container_types::const_view clusters_view,
+    const cell_container_types::const_view& cells_view,
+    measurement_container_types::view measurements_view) {
 
     // Initialize device vector that gives us the execution range
     const cluster_container_types::const_device clusters_device(clusters_view);
