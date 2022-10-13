@@ -75,14 +75,10 @@ inline void find_doublets(
             .at(middle_sp_counter.m_spM.sp_idx);
 
     // Find the reference (start) index of the doublet container item vector,
-    // where the doublets are recorded. The start index is calculated by
-    // accumulating the number of doublets of all previous compatible middle
-    // spacepoints.
-    unsigned int mid_bot_start_idx = 0, mid_top_start_idx = 0;
-    for (unsigned int i = 0; i < middle_sp_idx.second; i++) {
-        mid_bot_start_idx += doublet_counts_in_bin[i].m_nMidBot;
-        mid_top_start_idx += doublet_counts_in_bin[i].m_nMidTop;
-    }
+    // where the doublets are recorded.
+    const unsigned int mid_bot_start_idx = middle_sp_counter.m_posMidBot;
+    const unsigned int mid_top_start_idx = middle_sp_counter.m_posMidTop;
+
     // The running indices for the middle-bottom and middle-top pairs.
     unsigned int mid_bot_idx = 0, mid_top_idx = 0;
 

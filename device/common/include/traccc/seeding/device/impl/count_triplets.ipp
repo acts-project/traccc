@@ -103,29 +103,15 @@ inline void count_triplets(
     scalar curvature, impact_parameter;
 
     // find the reference (start) index of the mid-top doublet container
-    // item vector, where the doublets are recorded The start index is
-    // calculated by accumulating the number of mid-top doublets of all
-    // previous compatible middle spacepoints
-    unsigned int mb_end_idx = 0;
+    // item vector, where the doublets are recorded
     unsigned int mt_start_idx = 0;
     unsigned int mt_end_idx = 0;
 
     for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
-        mb_end_idx += doublet_counter_per_bin[i].m_nMidBot;
-        mt_end_idx += doublet_counter_per_bin[i].m_nMidTop;
-
-        if (mb_end_idx > item_idx) {
-            break;
+        if (doublet_counter_per_bin[i].m_spM == mid_bot.sp1) {
+            mt_start_idx = doublet_counter_per_bin[i].m_posMidTop;
+            mt_end_idx = mt_start_idx + doublet_counter_per_bin[i].m_nMidTop;
         }
-        mt_start_idx += doublet_counter_per_bin[i].m_nMidTop;
-    }
-
-    if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
-        mt_end_idx = std::min(mid_top_doublets_per_bin.size(), mt_end_idx);
-    }
-
-    if (mt_start_idx >= mid_top_doublets_per_bin.size()) {
-        return;
     }
 
     // number of triplets per middle-bot doublet
