@@ -63,8 +63,8 @@ struct internal_spacepoint {
     TRACCC_HOST_DEVICE
     static inline internal_spacepoint<spacepoint_t> invalid_value() {
 
-        link_type l = {detray::invalid_value<decltype(l.first)>(),
-                       detray::invalid_value<decltype(l.second)>()};
+        link_type l = {detray::detail::invalid_value<decltype(l.first)>(),
+                       detray::detail::invalid_value<decltype(l.second)>()};
 
         return internal_spacepoint<spacepoint_t>({std::move(l)});
     }

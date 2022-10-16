@@ -38,7 +38,7 @@ inline void count_grid_capacities(
     const spacepoint sp = spacepoints.at(sp_idx);
 
     /// Check out if the spacepoint can be used for seeding.
-    if (is_valid_sp(config, sp) != detray::invalid_value<size_t>()) {
+    if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {
 
         // Find the grid bin that the spacepoint belongs to.
         const internal_spacepoint<spacepoint> isp(
