@@ -27,8 +27,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     for (const auto& seed : seeds) {
         bound_track_parameters track_params;
-        track_params.vector() =
-            seed_to_bound_vector(spacepoints, seed, bfield, PION_MASS_MEV);
+        track_params.set_vector(
+            seed_to_bound_vector(spacepoints, seed, bfield, PION_MASS_MEV));
 
         result.push_back(track_params);
     }
