@@ -32,7 +32,7 @@ namespace traccc::device {
 ///                buffer, in case @c mr is not host-accessible
 /// @return Buffer usable by @c traccc::device::find_triplets
 ///
-triplet_container_buffer make_triplet_buffer(
+triplet_container_types::buffer make_triplet_buffer(
     const triplet_counter_container_types::const_view& triplet_counter,
     vecmem::copy& copy, vecmem::memory_resource& mr,
     vecmem::memory_resource* mr_host = nullptr);

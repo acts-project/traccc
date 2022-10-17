@@ -26,9 +26,9 @@ namespace traccc {
 /// Transcribed from Acts/Seeding/EstimateTrackParamsFromSeed.hpp.
 ///
 class track_params_estimation
-    : public algorithm<host_bound_track_parameters_collection(
+    : public algorithm<bound_track_parameters_collection_types::host(
           const spacepoint_container_types::host&,
-          const host_seed_collection&)> {
+          const seed_collection_types::host&)> {
 
     public:
     /// Constructor for track_params_estimation
@@ -42,8 +42,9 @@ class track_params_estimation
     /// @param seeds The reconstructed track seeds of the event
     /// @return A vector of bound track parameters
     ///
-    output_type operator()(const spacepoint_container_types::host& spacepoints,
-                           const host_seed_collection& seeds) const override;
+    output_type operator()(
+        const spacepoint_container_types::host& spacepoints,
+        const seed_collection_types::host& seeds) const override;
 
     private:
     /// The memory resource to use in the algorithm

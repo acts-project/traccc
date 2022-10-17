@@ -20,7 +20,7 @@
 namespace traccc {
 
 /// Main algorithm for performing the track seeding on the CPU
-class seeding_algorithm : public algorithm<host_seed_collection(
+class seeding_algorithm : public algorithm<seed_collection_types::host(
                               const spacepoint_container_types::host&)> {
 
     public:

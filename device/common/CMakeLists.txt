@@ -58,6 +58,9 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/seeding/device/update_triplet_weights.hpp"
    "include/traccc/seeding/device/impl/update_triplet_weights.ipp"
    "include/traccc/seeding/device/select_seeds.hpp"
-   "include/traccc/seeding/device/impl/select_seeds.ipp" )
+   "include/traccc/seeding/device/impl/select_seeds.ipp"
+   # Track parameters estimation function(s).
+   "include/traccc/seeding/device/estimate_track_params.hpp"
+   "include/traccc/seeding/device/impl/estimate_track_params.ipp" )
 target_link_libraries( traccc_device_common
    PUBLIC traccc::Thrust traccc::core vecmem::core )

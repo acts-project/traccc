@@ -22,9 +22,9 @@ namespace traccc::device {
 /// Helper struct for the return type of @c traccc::device::make_doublet_buffer
 struct doublet_buffer_pair {
     /// Middle-bottom doublet buffer
-    doublet_container_buffer middleBottom;
+    doublet_container_types::buffer middleBottom;
     /// Middle-top doublet buffer
-    doublet_container_buffer middleTop;
+    doublet_container_types::buffer middleTop;
 };
 
 /// Create the doublet buffers

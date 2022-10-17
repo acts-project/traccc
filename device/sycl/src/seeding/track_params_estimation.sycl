@@ -8,65 +8,21 @@
 // SYCL library include(s).
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 
 // Project include(s).
-#include "traccc/seeding/track_params_estimation_helper.hpp"
+#include "traccc/seeding/device/estimate_track_params.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
 
 namespace traccc::sycl {
 
-// kernel class
-class TrackParamsEstimation {
-    public:
-    TrackParamsEstimation(
-        const spacepoint_container_types::const_view& spacepoints_view,
-        const vecmem::data::vector_view<const seed>& seeds_view,
-        vecmem::data::vector_view<bound_track_parameters>& params_view)
-        : m_spacepoints_view(spacepoints_view),
-          m_seeds_view(seeds_view),
-          m_params_view(params_view) {}
-
-    void operator()(::sycl::nd_item<1> item) const {
-
-        // Equivalent to blockIdx.x in cuda
-        auto groupIdx = item.get_group(0);
-        // Equivalent to blockDim.x in cuda
-        auto groupDim = item.get_local_range(0);
-        // Equivalent to threadIdx.x in cuda
-        auto workItemIdx = item.get_local_id(0);
-
-        // Get device container for input parameters
-        const spacepoint_container_types::const_device spacepoints_device(
-            m_spacepoints_view);
-        vecmem::device_vector<const seed> seeds_device(m_seeds_view);
-        device_bound_track_parameters_collection params_device(m_params_view);
-
-        // vector index for threads
-        unsigned int gid = workItemIdx + groupIdx * groupDim;
-
-        // prevent overflow
-        if (gid >= seeds_device.size()) {
-            return;
-        }
-
-        // convenient assumption on bfield and mass
-        vector3 bfield = {0, 0, 2};
-
-        const auto& seed = seeds_device.at(gid);
-        auto& param = params_device[gid].vector();
-
-        // Get bound track parameter
-        param = seed_to_bound_vector(spacepoints_device, seed, bfield,
-                                     PION_MASS_MEV);
-    }
-
-    private:
-    spacepoint_container_types::const_view m_spacepoints_view;
-    vecmem::data::vector_view<const seed> m_seeds_view;
-    vecmem::data::vector_view<bound_track_parameters> m_params_view;
-};
+namespace kernels {
+/// Class identifying the kernel running @c
+/// traccc::device::estimate_track_params
+class estimate_track_params;
+}  // namespace kernels
 
 track_params_estimation::track_params_estimation(
     const traccc::memory_resource& mr, queue_wrapper queue)
@@ -80,33 +36,16 @@ track_params_estimation::track_params_estimation(
     }
 }
 
-host_bound_track_parameters_collection track_params_estimation::operator()(
+bound_track_parameters_collection_types::host
+track_params_estimation::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
-    const vecmem::data::vector_view<const seed>& seeds_view) const {
+    const seed_collection_types::const_view& seeds_view) const {
 
     // Get the size of the seeds view
     auto seeds_size = m_copy->get_size(seeds_view);
 
-    return this->operator()(spacepoints_view, seeds_view, seeds_size);
-}
-
-host_bound_track_parameters_collection track_params_estimation::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer,
-    const vecmem::data::vector_buffer<seed>& seeds_buffer) const {
-
-    // Get the size of the seeds buffer
-    auto seeds_size = m_copy->get_size(seeds_buffer);
-
-    return this->operator()(spacepoints_buffer, seeds_buffer, seeds_size);
-}
-
-host_bound_track_parameters_collection track_params_estimation::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const vecmem::data::vector_view<const seed>& seeds_view,
-    std::size_t seeds_size) const {
-
     // Create output host container
-    host_bound_track_parameters_collection params(
+    bound_track_parameters_collection_types::host params(
         seeds_size, (m_mr.host ? m_mr.host : &(m_mr.main)));
 
     // Check if anything needs to be done.
@@ -115,29 +54,29 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     }
 
     // Create device buffer for the parameters
-    vecmem::data::vector_buffer<bound_track_parameters> params_buffer(
-        seeds_size, m_mr.main);
+    bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
+                                                                  m_mr.main);
     m_copy->setup(params_buffer);
+    bound_track_parameters_collection_types::view params_view(params_buffer);
 
     // -- localSize
     // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
     // (=32)
     unsigned int localSize = 64;
 
-    // -- Num groups
-    // The dimension of grid is number_of_seeds / localSize + 1
-    unsigned int num_groups = (seeds_size + localSize - 1) / localSize;
-
-    unsigned int globalSize = localSize * num_groups;
     // 1 dim ND Range for the kernel
-    auto trackParamsNdRange = ::sycl::nd_range<1>{globalSize, localSize};
-    details::get_queue(m_queue)
-        .submit([&trackParamsNdRange, &spacepoints_view, &seeds_view,
-                 &params_buffer](::sycl::handler& h) {
-            TrackParamsEstimation kernel(spacepoints_view, seeds_view,
-                                         params_buffer);
+    auto trackParamsNdRange =
+        traccc::sycl::calculate1DimNdRange(seeds_size, localSize);
 
-            h.parallel_for<TrackParamsEstimation>(trackParamsNdRange, kernel);
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
+            h.parallel_for<kernels::estimate_track_params>(
+                trackParamsNdRange, [spacepoints_view, seeds_view,
+                                     params_view](::sycl::nd_item<1> item) {
+                    device::estimate_track_params(item.get_global_linear_id(),
+                                                  spacepoints_view, seeds_view,
+                                                  params_view);
+                });
         })
         .wait_and_throw();
 

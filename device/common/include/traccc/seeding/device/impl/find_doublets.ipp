@@ -19,14 +19,14 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void find_doublets(
+inline void find_doublets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const device::doublet_counter_container_types::const_view& doublet_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         doublet_ps_view,
-    doublet_container_view mb_doublets_view,
-    doublet_container_view mt_doublets_view) {
+    doublet_container_types::view mb_doublets_view,
+    doublet_container_types::view mt_doublets_view) {
 
     // Check if anything needs to be done.
     vecmem::device_vector<const prefix_sum_element_t> doublet_prefix_sum(
@@ -47,14 +47,14 @@ void find_doublets(
 
     // Set up the device containers.
     const const_sp_grid_device sp_grid(sp_view);
-    device_doublet_container mb_doublets(mb_doublets_view);
-    device_doublet_container mt_doublets(mt_doublets_view);
+    doublet_container_types::device mb_doublets(mb_doublets_view);
+    doublet_container_types::device mt_doublets(mt_doublets_view);
 
     // Get the doublet vectors just for the geometric bin of the middle
     // spacepoint.
-    device_doublet_collection mb_doublets_in_bin =
+    doublet_collection_types::device mb_doublets_in_bin =
         mb_doublets.get_items().at(middle_sp_counter.m_spM.bin_idx);
-    device_doublet_collection mt_doublets_in_bin =
+    doublet_collection_types::device mt_doublets_in_bin =
         mt_doublets.get_items().at(middle_sp_counter.m_spM.bin_idx);
 
     // Atomic references for the doublet summary values for the bin of the

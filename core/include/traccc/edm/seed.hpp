@@ -58,36 +58,7 @@ TRACCC_HOST std::vector<std::array<spacepoint, 3>> get_spacepoint_vector(
     return result;
 }
 
-/// Container of internal_spacepoint for an event
-template <template <typename> class vector_t>
-using seed_collection = vector_t<seed>;
-
-/// Convenience declaration for the seed collection type to use
-/// in host code
-using host_seed_collection = seed_collection<vecmem::vector>;
-
-/// Convenience declaration for the seed collection type to use
-/// in device code
-using device_seed_collection = seed_collection<vecmem::device_vector>;
-
-/// Convenience declaration for the seed container type to use in
-/// host code
-using host_seed_container = host_container<unsigned int, seed>;
-
-/// Convenience declaration for the seed container type to use in
-/// device code
-using device_seed_container = device_container<unsigned int, seed>;
-
-/// Convenience declaration for the seed container data type to
-/// use in host code
-using seed_container_data = container_data<unsigned int, seed>;
-
-/// Convenience declaration for the seed container buffer type to
-/// use in host code
-using seed_container_buffer = container_buffer<unsigned int, seed>;
-
-/// Convenience declaration for the seed container view type to
-/// use in host code
-using seed_container_view = container_view<unsigned int, seed>;
+/// Declare all seed collection types
+using seed_collection_types = collection_types<seed>;
 
 }  // namespace traccc

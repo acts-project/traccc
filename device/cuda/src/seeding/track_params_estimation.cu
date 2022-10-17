@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
+#include "traccc/seeding/device/estimate_track_params.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
@@ -15,16 +16,17 @@
 namespace traccc {
 namespace cuda {
 
-/// Forward declaration of track parameter estimating kernel
-/// The bound track parameters at the bottom spacepoints are obtained
-///
-/// @param seeds_view seeds found by seed finding
-/// @param params_view vector of bound track parameters at the bottom
-/// spacepoints
-__global__ void track_params_estimating_kernel(
+namespace kernels {
+/// CUDA kernel for running @c traccc::device::estimate_track_params
+__global__ void estimate_track_params(
     spacepoint_container_types::const_view spacepoints_view,
-    vecmem::data::vector_view<const seed> seeds_view,
-    vecmem::data::vector_view<bound_track_parameters> params_view);
+    seed_collection_types::const_view seed_view,
+    bound_track_parameters_collection_types::view params_view) {
+
+    device::estimate_track_params(threadIdx.x + blockIdx.x * blockDim.x,
+                                  spacepoints_view, seed_view, params_view);
+}
+}  // namespace kernels
 
 track_params_estimation::track_params_estimation(
     const traccc::memory_resource& mr)
@@ -38,33 +40,16 @@ track_params_estimation::track_params_estimation(
     }
 }
 
-host_bound_track_parameters_collection track_params_estimation::operator()(
+bound_track_parameters_collection_types::host
+track_params_estimation::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
-    const vecmem::data::vector_view<const seed>& seeds_view) const {
+    const seed_collection_types::const_view& seeds_view) const {
 
     // Get the size of the seeds view
-    auto seeds_size = m_copy->get_size(seeds_view);
-
-    return this->operator()(spacepoints_view, seeds_view, seeds_size);
-}
-
-host_bound_track_parameters_collection track_params_estimation::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer,
-    const vecmem::data::vector_buffer<seed>& seeds_buffer) const {
-
-    // Get the size of the seeds buffer
-    auto seeds_size = m_copy->get_size(seeds_buffer);
-
-    return this->operator()(spacepoints_buffer, seeds_buffer, seeds_size);
-}
-
-host_bound_track_parameters_collection track_params_estimation::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const vecmem::data::vector_view<const seed>& seeds_view,
-    std::size_t seeds_size) const {
+    const std::size_t seeds_size = m_copy->get_size(seeds_view);
 
     // Create output host container
-    host_bound_track_parameters_collection params(
+    bound_track_parameters_collection_types::host params(
         seeds_size, (m_mr.host ? m_mr.host : &(m_mr.main)));
 
     // Check if anything needs to be done.
@@ -73,8 +58,8 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     }
 
     // Create device buffer for the parameters
-    vecmem::data::vector_buffer<bound_track_parameters> params_buffer(
-        seeds_size, m_mr.main);
+    bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
+                                                                  m_mr.main);
     m_copy->setup(params_buffer);
 
     // -- Num threads
@@ -82,11 +67,12 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     unsigned int num_threads = WARP_SIZE * 2;
 
     // -- Num blocks
-    // The dimension of grid is number_of_seeds / num_threads + 1
-    unsigned int num_blocks = seeds_size / num_threads + 1;
+    // The dimension of grid is (number_of_seeds + num_threads - 1) /
+    // num_threads + 1
+    unsigned int num_blocks = (seeds_size + num_threads - 1) / num_threads;
 
     // run the kernel
-    track_params_estimating_kernel<<<num_blocks, num_threads>>>(
+    kernels::estimate_track_params<<<num_blocks, num_threads>>>(
         spacepoints_view, seeds_view, params_buffer);
 
     // cuda error check
@@ -97,37 +83,6 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     (*m_copy)(params_buffer, params);
 
     return params;
-}
-
-__global__ void track_params_estimating_kernel(
-    spacepoint_container_types::const_view spacepoints_view,
-    vecmem::data::vector_view<const seed> seeds_view,
-    vecmem::data::vector_view<bound_track_parameters> params_view) {
-
-    // Get device container for input parameters
-    const spacepoint_container_types::const_device spacepoints_device(
-        spacepoints_view);
-    vecmem::device_vector<const seed> seeds_device(seeds_view);
-    device_bound_track_parameters_collection params_device(params_view);
-
-    // vector index for threads
-    unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;
-
-    // prevent overflow
-    if (gid >= seeds_device.size()) {
-        return;
-    }
-
-    // convenient assumption on bfield and mass
-    // TODO: make use of bfield extension for the future
-    vector3 bfield = {0, 0, 2};
-
-    const auto& seed = seeds_device.at(gid);
-    auto& param = params_device[gid].vector();
-
-    // Get bound track parameter
-    param =
-        seed_to_bound_vector(spacepoints_device, seed, bfield, PION_MASS_MEV);
 }
 
 }  // namespace cuda

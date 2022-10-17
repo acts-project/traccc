@@ -13,12 +13,12 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void update_triplet_weights(
+inline void update_triplet_weights(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
-    scalar* data, triplet_container_view triplet_view) {
+    scalar* data, triplet_container_types::view triplet_view) {
 
     // Check if anything needs to be done.
     const vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
@@ -33,7 +33,7 @@ void update_triplet_weights(
     const prefix_sum_element_t ps_idx = triplet_prefix_sum[globalIndex];
     const unsigned int bin_idx = ps_idx.first;
 
-    device_triplet_container triplets(triplet_view);
+    triplet_container_types::device triplets(triplet_view);
     vecmem::device_vector<triplet> triplets_per_bin =
         triplets.get_items().at(bin_idx);
 

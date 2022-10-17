@@ -36,14 +36,14 @@ namespace traccc::device {
 /// triplets
 ///
 TRACCC_HOST_DEVICE
-void count_triplets(
+inline void count_triplets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const doublet_counter_container_types::const_view doublet_counter_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         doublet_ps_view,
-    const doublet_container_view mid_bot_doublet_view,
-    const doublet_container_view mid_top_doublet_view,
+    const doublet_container_types::const_view mid_bot_doublet_view,
+    const doublet_container_types::const_view mid_top_doublet_view,
     triplet_counter_container_types::view triplet_view);
 
 }  // namespace traccc::device

@@ -53,33 +53,10 @@ inline TRACCC_HOST_DEVICE bool operator<(const triplet& lhs,
     return lhs.weight < rhs.weight;
 }
 
-/// Container of triplet belonging to one detector module
-template <template <typename> class vector_t>
-using triplet_collection = vector_t<triplet>;
+/// Declare all triplet collection types
+using triplet_collection_types = collection_types<triplet>;
 
-/// Convenience declaration for the triplet collection type to use in host code
-using host_triplet_collection = triplet_collection<vecmem::vector>;
-
-/// Convenience declaration for the triplet collection type to use in device
-/// code
-using device_triplet_collection = triplet_collection<vecmem::device_vector>;
-
-/// Convenience declaration for the triplet container type to use in host code
-using host_triplet_container = host_container<triplet_per_bin, triplet>;
-
-/// Convenience declaration for the triplet container type to use in device code
-using device_triplet_container = device_container<triplet_per_bin, triplet>;
-
-/// Convenience declaration for the triplet container data type to use in host
-/// code
-using triplet_container_data = container_data<triplet_per_bin, triplet>;
-
-/// Convenience declaration for the triplet container buffer type to use in host
-/// code
-using triplet_container_buffer = container_buffer<triplet_per_bin, triplet>;
-
-/// Convenience declaration for the triplet container view type to use in host
-/// code
-using triplet_container_view = container_view<triplet_per_bin, triplet>;
+/// Declare all triplet container types
+using triplet_container_types = container_types<triplet_per_bin, triplet>;
 
 }  // namespace traccc

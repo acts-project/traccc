@@ -241,7 +241,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         vecmem::cuda::copy copy;
         traccc::spacepoint_container_types::host spacepoints_per_event_cuda;
-        traccc::host_seed_collection seeds_cuda;
+        traccc::seed_collection_types::host seeds_cuda;
 
         if (run_cpu) {
 
