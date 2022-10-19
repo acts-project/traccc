@@ -41,8 +41,9 @@ struct triplet_counter {
     /// The number of compatible triplets for a the midbot doublet
     unsigned int m_nTriplets = 0;
 
-    /// The position of the middle bottom doublet in its jagged vector
-    unsigned int m_mb_idx = 0;
+    /// The position of the middle top doublets with this spM
+    unsigned int m_mt_start_idx = 0;
+    unsigned int m_mt_end_idx;
 
 };  // struct triplet_counter
 

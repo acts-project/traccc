@@ -111,6 +111,7 @@ inline void count_triplets(
         if (doublet_counter_per_bin[i].m_spM == mid_bot.sp1) {
             mt_start_idx = doublet_counter_per_bin[i].m_posMidTop;
             mt_end_idx = mt_start_idx + doublet_counter_per_bin[i].m_nMidTop;
+            break;
         }
     }
 
@@ -149,7 +150,7 @@ inline void count_triplets(
         nTriplets.fetch_add(num_triplets_per_mb);
 
         triplet_counter.get_items().at(bin_idx).push_back(
-            {mid_bot, num_triplets_per_mb, item_idx});
+            {mid_bot, num_triplets_per_mb, mt_start_idx, mt_end_idx});
     }
 }
 

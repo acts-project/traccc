@@ -19,8 +19,6 @@ TRACCC_HOST_DEVICE
 inline void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
-    const device::doublet_counter_container_types::const_view&
-        doublet_counter_view,
     const doublet_container_types::const_view& mid_top_doublet_view,
     const device::triplet_counter_container_types::const_view& tc_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
@@ -35,8 +33,6 @@ inline void find_triplets(
     }
 
     // Get device copy of input parameters
-    const device::doublet_counter_container_types::const_device
-        doublet_counter_device(doublet_counter_view);
     const doublet_container_types::const_device mid_top_doublet_device(
         mid_top_doublet_view);
     const const_sp_grid_device sp_grid(sp_view);
@@ -63,17 +59,6 @@ inline void find_triplets(
     const traccc::internal_spacepoint<traccc::spacepoint> spB =
         sp_grid.bin(spB_bin)[spB_idx];
 
-    // Header of internal spacepoint container : spacepoint bin information
-    // Item of internal spacepoint container : internal spacepoint objects
-    // per bin
-    const unsigned int num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(spM_bin).m_nSpM;
-
-    // Header of doublet counter : number of compatible middle sp per bin
-    // Item of doublet counter : doublet counter objects per bin
-    const vecmem::device_vector<const doublet_counter> doublet_counter_per_bin =
-        doublet_counter_device.get_items().at(spM_bin);
-
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
     const vecmem::device_vector<const doublet> mid_top_doublets_per_bin =
@@ -99,15 +84,8 @@ inline void find_triplets(
 
     // find the reference (start) index of the mid-top doublet container
     // item vector, where the doublets are recorded
-    unsigned int mt_start_idx = 0;
-    unsigned int mt_end_idx = 0;
-
-    for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
-        if (doublet_counter_per_bin[i].m_spM == mid_bot_doublet.sp1) {
-            mt_start_idx = doublet_counter_per_bin[i].m_posMidTop;
-            mt_end_idx = mt_start_idx + doublet_counter_per_bin[i].m_nMidTop;
-        }
-    }
+    const unsigned int mt_start_idx = mid_bot_counter.m_mt_start_idx;
+    const unsigned int mt_end_idx = mid_bot_counter.m_mt_end_idx;
 
     // iterate over mid-top doublets
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {

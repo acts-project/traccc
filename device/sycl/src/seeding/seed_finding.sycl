@@ -218,15 +218,13 @@ seed_collection_types::buffer seed_finding::operator()(
             h.parallel_for<kernels::find_triplets>(
                 tripletFindRange,
                 [config = m_seedfinder_config,
-                 filter_config = m_seedfilter_config, g2_view,
-                 doublet_counter_view, mt_view, triplet_counter_view,
-                 triplet_counter_prefix_sum_view,
+                 filter_config = m_seedfilter_config, g2_view, mt_view,
+                 triplet_counter_view, triplet_counter_prefix_sum_view,
                  triplet_view](::sycl::nd_item<1> item) {
                     device::find_triplets(
                         item.get_global_linear_id(), config, filter_config,
-                        g2_view, doublet_counter_view, mt_view,
-                        triplet_counter_view, triplet_counter_prefix_sum_view,
-                        triplet_view);
+                        g2_view, mt_view, triplet_counter_view,
+                        triplet_counter_prefix_sum_view, triplet_view);
                 });
         })
         .wait_and_throw();
