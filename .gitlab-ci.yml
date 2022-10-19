@@ -41,3 +41,22 @@ test_cuda:
     - nvidia-smi
     - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
 
+test_multi_process_cuda:
+  stage: test
+  tags: [docker-gpu-nvidia]
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  needs: 
+    - test_cuda
+  script:
+    - cd $CI_PROJECT_DIR/multi_process
+    - ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"$CI_PROJECT_DIR/data"
+
+test_multi_process_cpu:
+  stage: test
+  tags: [docker-gpu-nvidia]
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  needs: 
+    - test_cuda
+  script:
+    - cd $CI_PROJECT_DIR/multi_process
+    - ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r1 -d"$CI_PROJECT_DIR/data"
