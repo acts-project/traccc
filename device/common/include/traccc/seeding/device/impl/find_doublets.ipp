@@ -78,6 +78,8 @@ inline void find_doublets(
     // where the doublets are recorded.
     const unsigned int mid_bot_start_idx = middle_sp_counter.m_posMidBot;
     const unsigned int mid_top_start_idx = middle_sp_counter.m_posMidTop;
+    const unsigned int mid_top_end_idx =
+        middle_sp_counter.m_posMidTop + middle_sp_counter.m_nMidTop;
 
     // The running indices for the middle-bottom and middle-top pairs.
     unsigned int mid_bot_idx = 0, mid_top_idx = 0;
@@ -142,7 +144,9 @@ inline void find_doublets(
                              middle_sp_counter.m_spM.bin_idx),
                          static_cast<unsigned int>(
                              middle_sp_counter.m_spM.sp_idx)},
-                        {other_bin_idx, other_sp_idx}};
+                        {other_bin_idx, other_sp_idx},
+                        mid_top_start_idx,
+                        mid_top_end_idx};
                     mb_doublet_count.fetch_add(1);
                 }
                 // Check if this spacepoint is a compatible "top" spacepoint to

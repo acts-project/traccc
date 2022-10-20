@@ -19,7 +19,6 @@ TRACCC_HOST_DEVICE
 inline void count_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
-    const doublet_counter_container_types::const_view doublet_counter_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         doublet_ps_view,
     const doublet_container_types::const_view mid_bot_doublet_view,
@@ -49,8 +48,6 @@ inline void count_triplets(
         mid_bot_doublet_device.get_items().at(bin_idx).at(item_idx);
 
     // Create device copy of input parameters
-    const device::doublet_counter_container_types::const_device
-        doublet_counter_device(doublet_counter_view);
     const doublet_container_types::const_device mid_top_doublet_device(
         mid_top_doublet_view);
 
@@ -59,16 +56,6 @@ inline void count_triplets(
 
     // Get all spacepoints
     const const_sp_grid_device internal_sp_device(sp_view);
-
-    // Get internal spacepoints for current bin
-    const unsigned int num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx).m_nSpM;
-
-    // Header of doublet counter : number of compatible middle sp per bin
-    // Item of doublet counter : doublet counter objects per bin
-    const doublet_counter_collection_types::const_device
-        doublet_counter_per_bin =
-            doublet_counter_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
@@ -104,16 +91,8 @@ inline void count_triplets(
 
     // find the reference (start) index of the mid-top doublet container
     // item vector, where the doublets are recorded
-    unsigned int mt_start_idx = 0;
-    unsigned int mt_end_idx = 0;
-
-    for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
-        if (doublet_counter_per_bin[i].m_spM == mid_bot.sp1) {
-            mt_start_idx = doublet_counter_per_bin[i].m_posMidTop;
-            mt_end_idx = mt_start_idx + doublet_counter_per_bin[i].m_nMidTop;
-            break;
-        }
-    }
+    const unsigned int mt_start_idx = mid_bot.m_mt_start_idx;
+    const unsigned int mt_end_idx = mid_bot.m_mt_end_idx;
 
     // number of triplets per middle-bot doublet
     unsigned int num_triplets_per_mb = 0;

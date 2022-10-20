@@ -183,13 +183,12 @@ seed_collection_types::buffer seed_finding::operator()(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::count_triplets>(
                 tripletCountRange,
-                [config = m_seedfinder_config, g2_view, doublet_counter_view,
-                 mb_prefix_sum_view, mb_view, mt_view,
+                [config = m_seedfinder_config, g2_view, mb_prefix_sum_view,
+                 mb_view, mt_view,
                  triplet_counter_view](::sycl::nd_item<1> item) {
                     device::count_triplets(item.get_global_linear_id(), config,
-                                           g2_view, doublet_counter_view,
-                                           mb_prefix_sum_view, mb_view, mt_view,
-                                           triplet_counter_view);
+                                           g2_view, mb_prefix_sum_view, mb_view,
+                                           mt_view, triplet_counter_view);
                 });
         })
         .wait_and_throw();
