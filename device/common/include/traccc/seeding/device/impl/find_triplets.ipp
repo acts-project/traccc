@@ -86,6 +86,10 @@ inline void find_triplets(
     // item vector, where the doublets are recorded
     const unsigned int mt_start_idx = mid_bot_counter.m_mt_start_idx;
     const unsigned int mt_end_idx = mid_bot_counter.m_mt_end_idx;
+    const unsigned int triplets_mb_begin = mid_bot_counter.posTriplets;
+    const unsigned int triplets_mb_end =
+        triplets_mb_begin + mid_bot_counter.m_nTriplets;
+    unsigned int posTriplets = triplets_mb_begin;
 
     // iterate over mid-top doublets
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
@@ -111,11 +115,11 @@ inline void find_triplets(
             num_triplets_per_bin.fetch_add(1);
 
             // Add triplet to jagged vector
-            triplets.get_items().at(spM_bin).push_back(
+            triplets.get_items().at(spM_bin).at(posTriplets++) =
                 triplet({mid_bot_doublet.sp2, mid_bot_doublet.sp1,
                          mid_top_doublet.sp2, curvature,
                          -impact_parameter * filter_config.impactWeightFactor,
-                         lb.Zo()}));
+                         lb.Zo(), triplets_mb_begin, triplets_mb_end});
         }
     }
 }

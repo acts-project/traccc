@@ -38,10 +38,8 @@ triplet_container_types::buffer make_triplet_buffer(
         triplets_size = triplet_sizes.size();
 
     // Create the result object.
-    triplet_container_types::buffer result{
-        {triplets_size, mr},
-        {std::vector<std::size_t>(triplets_size, 0), triplet_sizes, mr,
-         mr_host}};
+    triplet_container_types::buffer result{{triplets_size, mr},
+                                           {triplet_sizes, mr, mr_host}};
 
     // Initialise the buffer(s).
     copy.setup(result.headers);

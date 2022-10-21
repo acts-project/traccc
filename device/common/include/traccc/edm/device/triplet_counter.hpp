@@ -45,6 +45,9 @@ struct triplet_counter {
     unsigned int m_mt_start_idx = 0;
     unsigned int m_mt_end_idx;
 
+    /// The position in which these triplets will be added
+    unsigned int posTriplets = 0;
+
 };  // struct triplet_counter
 
 /// Declare all triplet counter collection types
