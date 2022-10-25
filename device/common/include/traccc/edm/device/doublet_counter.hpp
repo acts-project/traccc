@@ -51,6 +51,12 @@ struct doublet_counter {
     /// spacepoint.
     unsigned int m_nMidTop = 0;
 
+    /// The position of the middle-bottom doublets
+    unsigned int m_posMidBot = 0;
+
+    /// The position of the middle-top doublets
+    unsigned int m_posMidTop = 0;
+
 };  // struct doublet_counter
 
 /// Declare all doublet counter collection types

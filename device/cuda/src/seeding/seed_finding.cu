@@ -62,7 +62,6 @@ __global__ void find_doublets(
 /// CUDA kernel for running @c traccc::device::count_triplets
 __global__ void count_triplets(
     seedfinder_config config, sp_grid_const_view sp_grid,
-    device::doublet_counter_container_types::const_view doublet_counter_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         doublet_prefix_sum,
     doublet_container_types::const_view mb_doublets,
@@ -70,24 +69,21 @@ __global__ void count_triplets(
     device::triplet_counter_container_types::view triplet_view) {
 
     device::count_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
-                           sp_grid, doublet_counter_view, doublet_prefix_sum,
-                           mb_doublets, mt_doublets, triplet_view);
+                           sp_grid, doublet_prefix_sum, mb_doublets,
+                           mt_doublets, triplet_view);
 }
 /// CUDA kernel for running @c traccc::device::find_triplets
 __global__ void find_triplets(
     seedfinder_config config, seedfilter_config filter_config,
-    sp_grid_const_view sp_grid,
-    device::doublet_counter_container_types::const_view doublet_counter_view,
-    doublet_container_types::const_view mt_doublets,
+    sp_grid_const_view sp_grid, doublet_container_types::const_view mt_doublets,
     device::triplet_counter_container_types::const_view tc_view,
     vecmem::data::vector_view<const device::prefix_sum_element_t>
         triplet_prefix_sum,
     triplet_container_types::view triplet_view) {
 
     device::find_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
-                          filter_config, sp_grid, doublet_counter_view,
-                          mt_doublets, tc_view, triplet_prefix_sum,
-                          triplet_view);
+                          filter_config, sp_grid, mt_doublets, tc_view,
+                          triplet_prefix_sum, triplet_view);
 }
 /// CUDA kernel for running @c traccc::device::update_triplet_weights
 __global__ void update_triplet_weights(
@@ -228,9 +224,9 @@ seed_collection_types::buffer seed_finding::operator()(
 
     // Count the number of triplets that we need to produce.
     kernels::count_triplets<<<nTripletCountBlocks, nTripletCountThreads>>>(
-        m_seedfinder_config, g2_view, doublet_counter_buffer,
-        mb_prefix_sum_buff, doublet_buffers.middleBottom,
-        doublet_buffers.middleTop, triplet_counter_buffer);
+        m_seedfinder_config, g2_view, mb_prefix_sum_buff,
+        doublet_buffers.middleBottom, doublet_buffers.middleTop,
+        triplet_counter_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -254,9 +250,8 @@ seed_collection_types::buffer seed_finding::operator()(
     // Find all of the spacepoint triplets.
     kernels::find_triplets<<<nTripletFindBlocks, nTripletFindThreads>>>(
         m_seedfinder_config, m_seedfilter_config, g2_view,
-        doublet_counter_buffer, doublet_buffers.middleTop,
-        triplet_counter_buffer, triplet_counter_prefix_sum_buff,
-        triplet_buffer);
+        doublet_buffers.middleTop, triplet_counter_buffer,
+        triplet_counter_prefix_sum_buff, triplet_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
