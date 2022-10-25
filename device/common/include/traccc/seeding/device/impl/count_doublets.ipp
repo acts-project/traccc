@@ -115,9 +115,9 @@ inline void count_doublets(
         vecmem::device_atomic_ref<unsigned int> nSpM(header.m_nSpM);
         nSpM.fetch_add(1);
         vecmem::device_atomic_ref<unsigned int> nMidBot(header.m_nMidBot);
-        nMidBot.fetch_add(n_mb_cand);
+        const unsigned int posBot = nMidBot.fetch_add(n_mb_cand);
         vecmem::device_atomic_ref<unsigned int> nMidTop(header.m_nMidTop);
-        nMidTop.fetch_add(n_mt_cand);
+        const unsigned int posTop = nMidTop.fetch_add(n_mt_cand);
 
         // Add the number of candidates for the "current bin".
         doublet_counter.get_items()
@@ -125,7 +125,9 @@ inline void count_doublets(
             .push_back({{static_cast<unsigned int>(middle_sp_idx.first),
                          static_cast<unsigned int>(middle_sp_idx.second)},
                         n_mb_cand,
-                        n_mt_cand});
+                        n_mt_cand,
+                        posBot,
+                        posTop});
     }
 }
 
