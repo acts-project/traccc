@@ -35,7 +35,6 @@ inline void estimate_track_params(
     vector3 bfield = {0, 0, 2};
 
     const seed& this_seed = seeds_device.at(globalIndex);
-    // bound_vector param = params_device[globalIndex].vector();
 
     // Get bound track parameter
     const auto param = seed_to_bound_vector(spacepoints_device, this_seed,
