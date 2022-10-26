@@ -35,14 +35,4 @@ using vector3 = __plugin::point3<traccc::scalar>;
 using variance3 = __plugin::point3<traccc::scalar>;
 using transform3 = __plugin::transform3<traccc::scalar>;
 
-// Fixme: Need to utilize algebra plugin for vector and matrix
-template <unsigned int kSize>
-using traccc_vector = Eigen::Matrix<scalar, kSize, 1>;
-
-template <unsigned int kRows, unsigned int kCols>
-using traccc_matrix = Eigen::Matrix<scalar, kRows, kCols>;
-
-template <unsigned int kSize>
-using traccc_sym_matrix = Eigen::Matrix<scalar, kSize, kSize>;
-
 }  // namespace traccc

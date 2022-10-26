@@ -65,11 +65,11 @@ inline std::pair<detray::axis::circular<>, detray::axis::regular<>> get_axes(
 inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
                                              const spacepoint& sp) {
     if (sp.z() > config.zMax || sp.z() < config.zMin) {
-        return detray::invalid_value<size_t>();
+        return detray::detail::invalid_value<size_t>();
     }
     scalar spPhi = algebra::math::atan2(sp.y(), sp.x());
     if (spPhi > config.phiMax || spPhi < config.phiMin) {
-        return detray::invalid_value<size_t>();
+        return detray::detail::invalid_value<size_t>();
     }
     size_t r_index = getter::perp(
         vector2{sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]});
@@ -78,7 +78,7 @@ inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
         return r_index;
     }
 
-    return detray::invalid_value<size_t>();
+    return detray::detail::invalid_value<size_t>();
 }
 
 template <typename spacepoint_container_t,
@@ -92,7 +92,7 @@ inline TRACCC_HOST_DEVICE void fill_radius_bins(
 
     auto r_index = is_valid_sp(config, sp);
 
-    if (r_index != detray::invalid_value<size_t>()) {
+    if (r_index != detray::detail::invalid_value<size_t>()) {
         r_bins[r_index].push_back(sp_loc);
     }
 }

@@ -62,21 +62,4 @@ enum free_indices : unsigned int {
     e_free_size,
 };
 
-// ToDo: Need to use __plugin for ActsVector and ActsMatrix
-
-// Shorthand vector/matrix types related to bound track parameters.
-using bound_vector = traccc_vector<e_bound_size>;
-using bound_matrix = traccc_matrix<e_bound_size, e_bound_size>;
-using bound_sym_matrix = traccc_sym_matrix<e_bound_size>;
-// Mapping from bound track parameters.
-using bound_to_free_matrix = traccc_matrix<e_free_size, e_bound_size>;
-
-// Shorthand vector/matrix types related to free track parameters.
-using free_vector = traccc_vector<e_free_size>;
-using free_matrix = traccc_matrix<e_free_size, e_free_size>;
-using free_sym_matrix = traccc_sym_matrix<e_free_size>;
-// Mapping from free track parameters.
-using free_to_bound_matrix = traccc_matrix<e_bound_size, e_free_size>;
-using free_to_path_matrix = traccc_matrix<1, e_free_size>;
-
 }  // namespace traccc
