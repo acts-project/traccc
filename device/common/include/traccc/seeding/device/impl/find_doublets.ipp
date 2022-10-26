@@ -123,9 +123,10 @@ inline void find_doublets(
             const unsigned int other_bin_idx =
                 phi_bin + z_bin * sp_grid.axis_p0().bins();
 
+            const unsigned int size = spacepoints.size();
             // Loop over all of those spacepoints.
-            for (unsigned int other_sp_idx = 0;
-                 other_sp_idx < spacepoints.size(); ++other_sp_idx) {
+            for (unsigned int other_sp_idx = 0; other_sp_idx < size;
+                 ++other_sp_idx) {
 
                 // Access the "other spacepoint".
                 const internal_spacepoint<spacepoint> other_sp =
