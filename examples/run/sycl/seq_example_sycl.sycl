@@ -25,6 +25,7 @@
 
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/utils/container_comparator.hpp"
 
 // options
 #include "traccc/options/common_options.hpp"
@@ -327,6 +328,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 float(n_match) / spacepoints_per_event.total_size();
             std::cout << " spacepoint matching rate: " << matching_rate
                       << std::endl;
+
+            // Compare the spacepoints made on the host and on the device.
+            traccc::details::container_comparator<traccc::geometry_id,
+                                                  traccc::spacepoint>
+                compare_spacepoints{"spacepoints", "host", "device"};
+            compare_spacepoints(traccc::get_data(spacepoints_per_event),
+                                traccc::get_data(spacepoints_per_event_sycl));
 
             // seeding matching rate
             n_match = 0;
