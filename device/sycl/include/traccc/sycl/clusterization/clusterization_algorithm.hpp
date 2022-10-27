@@ -28,7 +28,7 @@ namespace traccc::sycl {
 
 class clusterization_algorithm
     : public algorithm<spacepoint_container_types::buffer(
-          const cell_container_types::host&)> {
+          const cell_container_types::const_view&)> {
 
     public:
     /// Constructor for clusterization algorithm
@@ -41,12 +41,12 @@ class clusterization_algorithm
 
     /// Callable operator for clusterization algorithm
     ///
-    /// @param cells_per_event is a container with cell modules as headers
+    /// @param cells_view is a container with cell modules as headers
     /// and cells as the items
     /// @return a spacepoint container (buffer) - jagged vector of spacepoints
     /// per module.
     output_type operator()(
-        const cell_container_types::host& cells_per_event) const override;
+        const cell_container_types::const_view& cells_view) const override;
 
     private:
     traccc::memory_resource m_mr;
