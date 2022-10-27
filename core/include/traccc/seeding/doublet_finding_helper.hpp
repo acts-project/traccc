@@ -45,41 +45,31 @@ bool doublet_finding_helper::isCompatible(
     const internal_spacepoint<spacepoint>& sp1,
     const internal_spacepoint<spacepoint>& sp2, const seedfinder_config& config,
     bool bottom) {
+
     if (bottom) {
+        // check if R distance is too small, because bins are not R-sorted
         scalar deltaR = sp1.radius() - sp2.radius();
-        // if r-distance is too big, try next SP in bin
-        if (deltaR > config.deltaRMax) {
+        // actually cotTheta * deltaR to avoid division by 0 statements
+        scalar cotTheta = sp1.z() - sp2.z();
+        // actually zOrigin * deltaR to avoid division by 0 statements
+        scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
+        if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
+            std::fabs(cotTheta) > config.cotThetaMax * deltaR ||
+            zOrigin < config.collisionRegionMin * deltaR ||
+            zOrigin > config.collisionRegionMax * deltaR) {
             return false;
         }
-        // if r-distance is too small, continue because bins are NOT r-sorted
-        if (deltaR < config.deltaRMin) {
-            return false;
-        }
-        scalar cotTheta = (sp1.z() - sp2.z()) / deltaR;
-        if (std::fabs(cotTheta) > config.cotThetaMax) {
-            return false;
-        }
-        scalar zOrigin = sp1.z() - sp1.radius() * cotTheta;
-        if (zOrigin < config.collisionRegionMin ||
-            zOrigin > config.collisionRegionMax) {
-            return false;
-        }
-    } else if (!bottom) {
+    } else {
+        // check if R distance is too small, because bins are not R-sorted
         scalar deltaR = sp2.radius() - sp1.radius();
-        if (deltaR > config.deltaRMax) {
-            return false;
-        }
-        // if r-distance is too small, continue because bins are NOT r-sorted
-        if (deltaR < config.deltaRMin) {
-            return false;
-        }
-        scalar cotTheta = (sp2.z() - sp1.z()) / deltaR;
-        if (std::fabs(cotTheta) > config.cotThetaMax) {
-            return false;
-        }
-        scalar zOrigin = sp1.z() - sp1.radius() * cotTheta;
-        if (zOrigin < config.collisionRegionMin ||
-            zOrigin > config.collisionRegionMax) {
+        // actually cotTheta * deltaR to avoid division by 0 statements
+        scalar cotTheta = (sp2.z() - sp1.z());
+        // actually zOrigin * deltaR to avoid division by 0 statements
+        scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
+        if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
+            std::fabs(cotTheta) > config.cotThetaMax * deltaR ||
+            zOrigin < config.collisionRegionMin * deltaR ||
+            zOrigin > config.collisionRegionMax * deltaR) {
             return false;
         }
     }
