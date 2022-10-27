@@ -39,11 +39,11 @@ class container_comparator {
     public:
     /// Constructor with all configurable options
     container_comparator(
-        std::string_view type_name, std::string_view lhs_type,
-        std::string_view rhs_type,
+        std::string_view type_name,
         details::comparator_factory<HEADER_TYPE> header_comp_factory = {},
         details::comparator_factory<ITEM_TYPE> item_comp_factory = {},
-        std::ostream& out = std::cout,
+        std::string_view lhs_type = "host",
+        std::string_view rhs_type = "device", std::ostream& out = std::cout,
         const std::vector<scalar>& uncertainties = {0.0001, 0.001, 0.01, 0.05});
 
     /// Function comparing two collections, and printing the results

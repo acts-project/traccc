@@ -37,9 +37,10 @@ class collection_comparator {
 
     public:
     /// Constructor with all configurable options
-    collection_comparator(std::string_view type_name, std::string_view lhs_type,
-                          std::string_view rhs_type,
+    collection_comparator(std::string_view type_name,
                           details::comparator_factory<TYPE> comp_factory = {},
+                          std::string_view lhs_type = "host",
+                          std::string_view rhs_type = "device",
                           std::ostream& out = std::cout,
                           const std::vector<scalar>& uncertainties = {
                               0.0001, 0.001, 0.01, 0.05});
@@ -72,4 +73,3 @@ class collection_comparator {
 
 // Include the implementation.
 #include "traccc/performance/impl/collection_comparator.ipp"
-

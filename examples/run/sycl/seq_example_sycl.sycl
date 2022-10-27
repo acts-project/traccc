@@ -291,42 +291,28 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         if (run_cpu) {
 
             // Show which event we are currently presenting the results for.
-            std::cout << "Event " << event << std::endl;
-            std::cout << " number of seeds (cpu): " << seeds.size()
-                      << std::endl;
-            std::cout << " number of seeds (sycl): " << seeds_sycl.size()
-                      << std::endl;
+            std::cout << "===>>> Event " << event << " <<<===" << std::endl;
 
             // Compare the spacepoints made on the host and on the device.
             traccc::container_comparator<traccc::geometry_id,
                                          traccc::spacepoint>
-                compare_spacepoints{"spacepoints", "host", "device"};
+                compare_spacepoints{"spacepoints"};
             compare_spacepoints(traccc::get_data(spacepoints_per_event),
                                 traccc::get_data(spacepoints_per_event_sycl));
 
+            // Compare the seeds made on the host and on the device
+            traccc::collection_comparator<traccc::seed> compare_seeds{
+                "seeds", traccc::details::comparator_factory<traccc::seed>{
+                             traccc::get_data(spacepoints_per_event),
+                             traccc::get_data(spacepoints_per_event_sycl)}};
+            compare_seeds(vecmem::get_data(seeds),
+                          vecmem::get_data(seeds_sycl));
+
             // Compare the track parameters made on the host and on the device.
             traccc::collection_comparator<traccc::bound_track_parameters>
-                compare_track_parameters{"track parameters", "host", "device"};
+                compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_sycl));
-
-            // seeding matching rate
-            std::size_t n_match = 0;
-            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector =
-                traccc::get_spacepoint_vector(seeds, spacepoints_per_event);
-
-            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_sycl =
-                traccc::get_spacepoint_vector(seeds_sycl,
-                                              spacepoints_per_event_sycl);
-
-            for (const auto& sp3 : sp3_vector) {
-                if (std::find(sp3_vector_sycl.cbegin(), sp3_vector_sycl.cend(),
-                              sp3) != sp3_vector_sycl.cend()) {
-                    n_match++;
-                }
-            }
-            float matching_rate = float(n_match) / seeds.size();
-            std::cout << " seed matching rate: " << matching_rate << std::endl;
 
             /// Statistics
             n_modules += cells_per_event.size();

@@ -38,3 +38,6 @@ class comparator_factory {
 
 // Include the generic implementation.
 #include "traccc/performance/impl/comparator_factory.ipp"
+
+// Include the specialised implementation(s).
+#include "traccc/performance/impl/seed_comparator_factory.ipp"

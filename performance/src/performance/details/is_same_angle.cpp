@@ -35,7 +35,7 @@ namespace traccc::details {
 
 bool is_same_angle(scalar lhs, scalar rhs, scalar unc) {
 
-    return (std::abs(wrap_to_pi(lhs - rhs)) <
+    return (std::abs(wrap_to_pi(lhs - rhs)) <=
             (unc *
              ((std::abs(wrap_to_pi(lhs)) + std::abs(wrap_to_pi(rhs))) / 2.f)));
 }

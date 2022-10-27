@@ -27,9 +27,9 @@ namespace traccc {
 
 template <typename TYPE>
 collection_comparator<TYPE>::collection_comparator(
-    std::string_view type_name, std::string_view lhs_type,
-    std::string_view rhs_type, details::comparator_factory<TYPE> comp_factory,
-    std::ostream& out, const std::vector<scalar>& uncertainties)
+    std::string_view type_name, details::comparator_factory<TYPE> comp_factory,
+    std::string_view lhs_type, std::string_view rhs_type, std::ostream& out,
+    const std::vector<scalar>& uncertainties)
     : m_type_name(type_name),
       m_lhs_type(lhs_type),
       m_rhs_type(rhs_type),
@@ -77,8 +77,8 @@ void collection_comparator<TYPE>::operator()(
     // Now print them.
     m_out.get() << "  Matching rate(s):\n";
     for (std::size_t i = 0; i < m_uncertainties.size(); ++i) {
-        m_out.get() << "    - " << agreements.at(i) << "\% at "
-                    << m_uncertainties.at(i) * 100. << "\% uncertainty\n";
+        m_out.get() << "    - " << agreements.at(i) << "% at "
+                    << m_uncertainties.at(i) * 100. << "% uncertainty\n";
     }
     m_out.get() << std::flush;
 }
