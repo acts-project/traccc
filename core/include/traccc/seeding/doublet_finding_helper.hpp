@@ -47,8 +47,11 @@ bool doublet_finding_helper::isCompatible(
     bool bottom) {
 
     if (bottom) {
+        // check if R distance is too small, because bins are not R-sorted
         scalar deltaR = sp1.radius() - sp2.radius();
+        // actually cotTheta * deltaR to avoid division by 0 statements
         scalar cotTheta = sp1.z() - sp2.z();
+        // actually zOrigin * deltaR to avoid division by 0 statements
         scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
         if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
             std::fabs(cotTheta) > config.cotThetaMax * deltaR ||
@@ -57,8 +60,11 @@ bool doublet_finding_helper::isCompatible(
             return false;
         }
     } else {
+        // check if R distance is too small, because bins are not R-sorted
         scalar deltaR = sp2.radius() - sp1.radius();
+        // actually cotTheta * deltaR to avoid division by 0 statements
         scalar cotTheta = (sp2.z() - sp1.z());
+        // actually zOrigin * deltaR to avoid division by 0 statements
         scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
         if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
             std::fabs(cotTheta) > config.cotThetaMax * deltaR ||
