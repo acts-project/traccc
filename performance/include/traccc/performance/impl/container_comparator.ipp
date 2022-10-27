@@ -28,11 +28,15 @@ namespace traccc {
 template <typename HEADER_TYPE, typename ITEM_TYPE>
 container_comparator<HEADER_TYPE, ITEM_TYPE>::container_comparator(
     std::string_view type_name, std::string_view lhs_type,
-    std::string_view rhs_type, std::ostream& out,
+    std::string_view rhs_type,
+    details::comparator_factory<HEADER_TYPE> header_comp_factory,
+    details::comparator_factory<ITEM_TYPE> item_comp_factory, std::ostream& out,
     const std::vector<scalar>& uncertainties)
     : m_type_name(type_name),
       m_lhs_type(lhs_type),
       m_rhs_type(rhs_type),
+      m_header_comp_factory(header_comp_factory),
+      m_item_comp_factory(item_comp_factory),
       m_out(out),
       m_uncertainties(uncertainties) {}
 
@@ -65,7 +69,7 @@ void container_comparator<HEADER_TYPE, ITEM_TYPE>::operator()(
         // Iterate over the "outer vectors".
         for (std::size_t i = 0; i < cont_size; ++i) {
             // If the headers don't match, don't even compare the items.
-            if (details::is_same_object<HEADER_TYPE>(
+            if (m_header_comp_factory.make_comparator(
                     lhs_cont.get_headers().at(i),
                     uncertainty)(rhs_cont.get_headers().at(i)) == false) {
                 continue;
@@ -77,7 +81,7 @@ void container_comparator<HEADER_TYPE, ITEM_TYPE>::operator()(
                 rhs_cont.get_items().at(i);
             for (const ITEM_TYPE& obj : lhs_items) {
                 if (std::find_if(rhs_items.begin(), rhs_items.end(),
-                                 details::is_same_object<ITEM_TYPE>(
+                                 m_item_comp_factory.make_comparator(
                                      obj, uncertainty)) != rhs_items.end()) {
                     ++matched;
                 }

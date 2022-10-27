@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Library include(s).
+#include "traccc/performance/details/comparator_factory.hpp"
+
 // Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -35,11 +38,13 @@ class container_comparator {
 
     public:
     /// Constructor with names for the output, and an output stream
-    container_comparator(std::string_view type_name, std::string_view lhs_type,
-                         std::string_view rhs_type,
-                         std::ostream& out = std::cout,
-                         const std::vector<scalar>& uncertainties = {
-                             0.0001, 0.001, 0.01, 0.05});
+    container_comparator(
+        std::string_view type_name, std::string_view lhs_type,
+        std::string_view rhs_type,
+        details::comparator_factory<HEADER_TYPE> header_comp_factory = {},
+        details::comparator_factory<ITEM_TYPE> item_comp_factory = {},
+        std::ostream& out = std::cout,
+        const std::vector<scalar>& uncertainties = {0.0001, 0.001, 0.01, 0.05});
 
     /// Function comparing two collections, and printing the results
     void operator()(
@@ -54,6 +59,11 @@ class container_comparator {
     std::string m_lhs_type;
     /// Type of the "Right Hand Side" collection
     std::string m_rhs_type;
+
+    /// Factory for making comparator objects for header objects
+    details::comparator_factory<HEADER_TYPE> m_header_comp_factory;
+    /// Factory for making comparator objects for item objects
+    details::comparator_factory<ITEM_TYPE> m_item_comp_factory;
 
     /// Output stream to print the results to
     std::reference_wrapper<std::ostream> m_out;

@@ -7,7 +7,7 @@
 
 #pragma once
 
-// Library include(s).
+// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 
@@ -28,10 +28,10 @@ class is_same_object {
 
     public:
     /// Constructor with a reference object, and an allowed uncertainty
-    is_same_object(const T& ref, scalar /*unc*/ = float_epsilon) : m_ref(ref) {}
+    is_same_object(const T& ref, scalar /*unc*/ = float_epsilon);
 
     /// Default implementation relying on @c operator== for the given type
-    bool operator()(const T& obj) const { return (obj == m_ref.get()); }
+    bool operator()(const T& obj) const;
 
     private:
     /// The reference object
@@ -40,6 +40,9 @@ class is_same_object {
 };  // class is_same_object
 
 }  // namespace traccc::details
+
+// Include the generic implementation.
+#include "traccc/performance/impl/is_same_object.ipp"
 
 // Include specialisations for the core library types.
 #include "traccc/performance/impl/is_same_measurement.ipp"

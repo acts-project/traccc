@@ -19,9 +19,12 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/details/is_same_scalar.hpp"
    "src/performance/details/is_same_scalar.cpp"
    "include/traccc/performance/details/is_same_object.hpp"
+   "include/traccc/performance/impl/is_same_object.ipp"
    "include/traccc/performance/impl/is_same_measurement.ipp"
    "include/traccc/performance/impl/is_same_spacepoint.ipp"
    "src/performance/details/is_same_object.cpp"
+   "include/traccc/performance/details/comparator_factory.hpp"
+   "include/traccc/performance/impl/comparator_factory.ipp"
    # Collection/container comparison code.
    "include/traccc/performance/container_comparator.hpp"
    "include/traccc/performance/impl/container_comparator.ipp" )
