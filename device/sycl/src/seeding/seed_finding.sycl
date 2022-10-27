@@ -139,8 +139,8 @@ seed_collection_types::buffer seed_finding::operator()(
     // Find all of the spacepoint doublets.
     doublet_container_types::view mb_view = doublet_buffers.middleBottom;
     doublet_container_types::view mt_view = doublet_buffers.middleTop;
-    details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
+    auto find_doublets_kernel =
+        details::get_queue(m_queue).submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::find_doublets>(
                 doubletFindRange,
                 [config = m_seedfinder_config, g2_view, doublet_counter_view,
@@ -151,8 +151,7 @@ seed_collection_types::buffer seed_finding::operator()(
                                           doublet_prefix_sum_view, mb_view,
                                           mt_view);
                 });
-        })
-        .wait_and_throw();
+        });
 
     std::vector<std::size_t> mb_buffer_sizes(doublet_counts.size());
     std::transform(
@@ -177,6 +176,9 @@ seed_collection_types::buffer seed_finding::operator()(
     static constexpr unsigned int tripletCountLocalSize = 32 * 2;
     auto tripletCountRange = traccc::sycl::calculate1DimNdRange(
         mb_prefix_sum_view.size(), tripletCountLocalSize);
+
+    // Wait here for the find_doublets kernel to finish
+    find_doublets_kernel.wait_and_throw();
 
     // Count the number of triplets that we need to produce.
     details::get_queue(m_queue)
@@ -212,8 +214,8 @@ seed_collection_types::buffer seed_finding::operator()(
         triplet_counter_prefix_sum_view.size(), tripletFindLocalSize);
 
     // Find all of the spacepoint triplets.
-    details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
+    auto find_triplets_kernel =
+        details::get_queue(m_queue).submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::find_triplets>(
                 tripletFindRange,
                 [config = m_seedfinder_config,
@@ -225,8 +227,7 @@ seed_collection_types::buffer seed_finding::operator()(
                         g2_view, mt_view, triplet_counter_view,
                         triplet_counter_prefix_sum_view, triplet_view);
                 });
-        })
-        .wait_and_throw();
+        });
 
     // Create prefix sum buffer and its view
     vecmem::data::vector_buffer triplet_prefix_sum_buff =
@@ -239,6 +240,9 @@ seed_collection_types::buffer seed_finding::operator()(
     auto weightUpdatingRange = traccc::sycl::calculate1DimNdRange(
         triplet_prefix_sum_view.size(), weightUpdatingLocalSize);
 
+    // Wait here for the find_triplets kernel to finish
+    find_triplets_kernel.wait_and_throw();
+
     // Check if device is capable of allocating sufficient local memory
     assert(sizeof(scalar) * m_seedfilter_config.compatSeedLimit *
                weightUpdatingLocalSize <
@@ -247,8 +251,8 @@ seed_collection_types::buffer seed_finding::operator()(
                .get_info<::sycl::info::device::local_mem_size>());
 
     // Update the weight of all of the spacepoint triplets.
-    details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
+    auto update_weights_kernel =
+        details::get_queue(m_queue).submit([&](::sycl::handler& h) {
             // Array for temporary storage of triplets for comparing within seed
             // selecting kernel
             ::sycl::accessor<scalar, 1, ::sycl::access::mode::read_write,
@@ -270,8 +274,7 @@ seed_collection_types::buffer seed_finding::operator()(
                         item.get_global_linear_id(), filter_config, g2_view,
                         triplet_prefix_sum_view, dataPos, triplet_view);
                 });
-        })
-        .wait_and_throw();
+        });
 
     // Take header of the triplet counter container buffer into host
     vecmem::vector<device::triplet_counter_header> tcc_headers(
@@ -293,6 +296,9 @@ seed_collection_types::buffer seed_finding::operator()(
     static constexpr unsigned int seedSelectingLocalSize = 32 * 2;
     auto seedSelectingRange = traccc::sycl::calculate1DimNdRange(
         doublet_prefix_sum_view.size(), seedSelectingLocalSize);
+
+    // Wait here for the update_weights kernel to finish
+    update_weights_kernel.wait_and_throw();
 
     // Check if device is capable of allocating sufficient local memory
     assert(sizeof(triplet) * m_seedfilter_config.max_triplets_per_spM *

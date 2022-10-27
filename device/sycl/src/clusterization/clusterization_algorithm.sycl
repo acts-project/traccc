@@ -246,14 +246,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(spacepoints_buffer.headers);
     m_copy->setup(spacepoints_buffer.items);
 
-    // Wait here for the component_connection kernel to finish
-    component_connection_kernel.wait_and_throw();
-
     // Create views to pass to measurement creation kernel
     measurement_container_types::view measurements_view = measurements_buffer;
 
     // Calculate nd_range to run measurement creation (localSize = 64)
     ndrange = calculate1DimNdRange(clusters_view.headers.size(), localSize);
+
+    // Wait here for the component_connection kernel to finish
+    component_connection_kernel.wait_and_throw();
 
     // Run measurement_creation kernel
     details::get_queue(m_queue)
