@@ -23,7 +23,7 @@ traccc::scalar wrap_to_pi(traccc::scalar phi) {
     while (phi > PI) {
         phi -= TWOPI;
     }
-    while (phi < PI) {
+    while (phi < -PI) {
         phi += TWOPI;
     }
     return phi;

@@ -8,6 +8,7 @@
 // Library include(s).
 #include "traccc/performance/details/is_same_object.hpp"
 
+#include "traccc/performance/details/is_same_angle.hpp"
 #include "traccc/performance/details/is_same_scalar.hpp"
 
 namespace traccc::details {
@@ -40,6 +41,27 @@ bool is_same_object<spacepoint>::operator()(const spacepoint& obj) const {
             is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
             is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
             is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
+}
+
+/// @}
+
+/// @name Implementation for
+///       @c traccc::details::is_same_object<bound_track_parameters>
+/// @{
+
+is_same_object<bound_track_parameters>::is_same_object(
+    const bound_track_parameters& ref, scalar unc)
+    : m_ref(ref), m_unc(unc) {}
+
+bool is_same_object<bound_track_parameters>::operator()(
+    const bound_track_parameters& obj) const {
+
+    return (is_same_scalar(obj.local()[0], m_ref.get().local()[0], m_unc) &&
+            is_same_scalar(obj.local()[1], m_ref.get().local()[1], m_unc) &&
+            is_same_angle(obj.phi(), m_ref.get().phi(), m_unc) &&
+            is_same_scalar(obj.theta(), m_ref.get().theta(), m_unc) &&
+            is_same_scalar(obj.time(), m_ref.get().time(), m_unc) &&
+            is_same_scalar(obj.qop(), m_ref.get().qop(), m_unc));
 }
 
 /// @}

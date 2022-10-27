@@ -26,6 +26,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/details/comparator_factory.hpp"
    "include/traccc/performance/impl/comparator_factory.ipp"
    # Collection/container comparison code.
+   "include/traccc/performance/collection_comparator.hpp"
+   "include/traccc/performance/impl/collection_comparator.ipp"
    "include/traccc/performance/container_comparator.hpp"
    "include/traccc/performance/impl/container_comparator.ipp" )
 target_link_libraries( traccc_performance

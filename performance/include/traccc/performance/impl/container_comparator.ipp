@@ -46,7 +46,7 @@ void container_comparator<HEADER_TYPE, ITEM_TYPE>::operator()(
     const typename container_types<HEADER_TYPE, ITEM_TYPE>::const_view& rhs)
     const {
 
-    // Create device collections on top of the views.
+    // Create device containers on top of the views.
     const typename container_types<HEADER_TYPE, ITEM_TYPE>::const_device
         lhs_cont{lhs},
         rhs_cont{rhs};
