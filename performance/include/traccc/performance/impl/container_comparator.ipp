@@ -8,10 +8,12 @@
 #pragma once
 
 // Library include(s).
+#include "traccc/performance/details/is_same_object.hpp"
+
+// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
-#include "traccc/utils/is_same_object.hpp"
 
 // System include(s).
 #include <algorithm>
@@ -21,7 +23,7 @@
 #include <string_view>
 #include <vector>
 
-namespace traccc::details {
+namespace traccc {
 
 template <typename HEADER_TYPE, typename ITEM_TYPE>
 container_comparator<HEADER_TYPE, ITEM_TYPE>::container_comparator(
@@ -63,7 +65,7 @@ void container_comparator<HEADER_TYPE, ITEM_TYPE>::operator()(
         // Iterate over the "outer vectors".
         for (std::size_t i = 0; i < cont_size; ++i) {
             // If the headers don't match, don't even compare the items.
-            if (is_same_object<HEADER_TYPE>(
+            if (details::is_same_object<HEADER_TYPE>(
                     lhs_cont.get_headers().at(i),
                     uncertainty)(rhs_cont.get_headers().at(i)) == false) {
                 continue;
@@ -75,8 +77,8 @@ void container_comparator<HEADER_TYPE, ITEM_TYPE>::operator()(
                 rhs_cont.get_items().at(i);
             for (const ITEM_TYPE& obj : lhs_items) {
                 if (std::find_if(rhs_items.begin(), rhs_items.end(),
-                                 is_same_object<ITEM_TYPE>(obj, uncertainty)) !=
-                    rhs_items.end()) {
+                                 details::is_same_object<ITEM_TYPE>(
+                                     obj, uncertainty)) != rhs_items.end()) {
                     ++matched;
                 }
             }
@@ -98,4 +100,4 @@ void container_comparator<HEADER_TYPE, ITEM_TYPE>::operator()(
     m_out.get() << std::flush;
 }
 
-}  // namespace traccc::details
+}  // namespace traccc

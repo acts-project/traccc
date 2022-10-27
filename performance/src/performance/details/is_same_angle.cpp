@@ -6,7 +6,7 @@
  */
 
 // Library include(s).
-#include "traccc/utils/details/is_same_angle.hpp"
+#include "traccc/performance/details/is_same_angle.hpp"
 
 // System include(s).
 #include <cmath>

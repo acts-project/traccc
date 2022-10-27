@@ -7,7 +7,7 @@
 
 #pragma once
 
-// Library include(s).
+// Project include(s).
 #include "traccc/edm/measurement.hpp"
 
 namespace traccc::details {

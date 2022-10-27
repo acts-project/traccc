@@ -6,7 +6,7 @@
  */
 
 // Library include(s).
-#include "traccc/utils/details/is_same_scalar.hpp"
+#include "traccc/performance/details/is_same_scalar.hpp"
 
 // System include(s).
 #include <cmath>

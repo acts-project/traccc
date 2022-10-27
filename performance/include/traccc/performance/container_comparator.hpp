@@ -7,7 +7,7 @@
 
 #pragma once
 
-// Library include(s).
+// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
@@ -19,7 +19,7 @@
 #include <string_view>
 #include <vector>
 
-namespace traccc::details {
+namespace traccc {
 
 /// Functor comparing two containers, and printing the results to the output
 ///
@@ -63,7 +63,7 @@ class container_comparator {
 
 };  // class container_comparator
 
-}  // namespace traccc::details
+}  // namespace traccc
 
 // Include the implementation.
-#include "traccc/utils/impl/container_comparator.ipp"
+#include "traccc/performance/impl/container_comparator.ipp"

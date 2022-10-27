@@ -42,5 +42,5 @@ class is_same_object {
 }  // namespace traccc::details
 
 // Include specialisations for the core library types.
-#include "traccc/utils/impl/is_same_measurement.ipp"
-#include "traccc/utils/impl/is_same_spacepoint.ipp"
+#include "traccc/performance/impl/is_same_measurement.ipp"
+#include "traccc/performance/impl/is_same_spacepoint.ipp"
