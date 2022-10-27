@@ -198,8 +198,6 @@ seed_collection_types::buffer seed_finding::operator()(
         m_seedfinder_config, g2_view, doublet_counter_buffer,
         doublet_prefix_sum_buff, doublet_buffers.middleBottom,
         doublet_buffers.middleTop);
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     std::vector<std::size_t> mb_buffer_sizes(doublet_counts.size());
     std::transform(
@@ -221,6 +219,9 @@ seed_collection_types::buffer seed_finding::operator()(
     const unsigned int nTripletCountBlocks =
         (mb_prefix_sum_buff.size() + nTripletCountThreads - 1) /
         nTripletCountThreads;
+
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Count the number of triplets that we need to produce.
     kernels::count_triplets<<<nTripletCountBlocks, nTripletCountThreads>>>(
@@ -252,8 +253,6 @@ seed_collection_types::buffer seed_finding::operator()(
         m_seedfinder_config, m_seedfilter_config, g2_view,
         doublet_buffers.middleTop, triplet_counter_buffer,
         triplet_counter_prefix_sum_buff, triplet_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Create prefix sum buffer
     vecmem::data::vector_buffer triplet_prefix_sum_buff = make_prefix_sum_buff(
@@ -266,14 +265,15 @@ seed_collection_types::buffer seed_finding::operator()(
         (triplet_prefix_sum_buff.size() + nWeightUpdatingThreads - 1) /
         nWeightUpdatingThreads;
 
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
     // Update the weights of all spacepoint triplets.
     kernels::update_triplet_weights<<<
         nWeightUpdatingBlocks, nWeightUpdatingThreads,
         sizeof(scalar) * m_seedfilter_config.compatSeedLimit *
             nWeightUpdatingThreads>>>(m_seedfilter_config, g2_view,
                                       triplet_prefix_sum_buff, triplet_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Take header of the triplet counter container buffer into host
     vecmem::vector<device::triplet_counter_header> tcc_headers(
@@ -295,6 +295,9 @@ seed_collection_types::buffer seed_finding::operator()(
     const unsigned int nSeedSelectingBlocks =
         (doublet_prefix_sum_buff.size() + nSeedSelectingThreads - 1) /
         nSeedSelectingThreads;
+
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Create seeds out of selected triplets
     kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads,
