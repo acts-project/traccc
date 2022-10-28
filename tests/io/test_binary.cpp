@@ -150,3 +150,62 @@ TEST(io_binary, spacepoint) {
         }
     }
 }
+
+// This defines the local frame test suite for binary measurement container
+TEST(io_binary, measurement) {
+
+    // Set event configuration
+    const std::size_t event = 0;
+    const std::string measurements_directory = "tml_full/ttbar_mu200/";
+
+    // Memory resource used by the EDM.
+    vecmem::host_memory_resource host_mr;
+
+    // Read csv file
+    traccc::measurement_container_types::host measurements_csv =
+        traccc::read_measurements_from_event(event, measurements_directory,
+                                             traccc::data_format::csv, host_mr);
+
+    // Write binary file
+    traccc::write_measurements(event, measurements_directory,
+                               traccc::data_format::binary, measurements_csv);
+
+    // Read binary file
+    traccc::measurement_container_types::host measurements_binary =
+        traccc::read_measurements_from_event(event, measurements_directory,
+                                             traccc::data_format::binary,
+                                             host_mr);
+
+    // Delete binary file
+    std::string io_measurements_file =
+        traccc::data_directory() + measurements_directory +
+        traccc::get_event_filename(event, "-measurements.dat");
+    std::remove(io_measurements_file.c_str());
+
+    ASSERT_TRUE(!std::ifstream(io_measurements_file));
+
+    // Check header size
+    ASSERT_TRUE(measurements_csv.size() > 0);
+    ASSERT_EQ(measurements_csv.size(), measurements_binary.size());
+
+    auto& headers_csv = measurements_csv.get_headers();
+    auto& headers_bin = measurements_binary.get_headers();
+
+    for (std::size_t i = 0; i < measurements_csv.size(); i++) {
+
+        // Check header content
+        ASSERT_EQ(headers_csv[i], headers_bin[i]);
+
+        auto& items_csv = measurements_csv.get_items()[i];
+        auto& items_bin = measurements_binary.get_items()[i];
+
+        // Check item size
+        ASSERT_TRUE(items_csv.size() > 0);
+        ASSERT_EQ(items_csv.size(), items_bin.size());
+
+        // Check item contents
+        for (std::size_t j = 0; j < items_csv.size(); j++) {
+            ASSERT_EQ(items_csv[j], items_bin[j]);
+        }
+    }
+}

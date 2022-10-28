@@ -96,3 +96,35 @@ TEST_F(io, csv_read_tml_pixelbarrel) {
 
     ASSERT_EQ(tml_barrel_modules.size(), 2382u);
 }
+
+// This checks if hit and measurement container from the first single muon event
+TEST_F(io, csv_read_tml_single_muon) {
+    vecmem::host_memory_resource resource;
+
+    // Read the surface transforms
+    auto surface_transforms =
+        traccc::read_geometry("tml_detector/trackml-detector.csv");
+
+    // Read the hits from the relevant event file
+    traccc::spacepoint_container_types::host spacepoints_per_event =
+        traccc::read_spacepoints_from_event(0, "tml_full/single_muon/",
+                                            traccc::data_format::csv,
+                                            surface_transforms, resource);
+
+    // Read the measurements from the relevant event file
+    traccc::measurement_container_types::host measurements_per_event =
+        traccc::read_measurements_from_event(
+            0, "tml_full/single_muon/", traccc::data_format::csv, resource);
+
+    const auto sp_header_size = spacepoints_per_event.size();
+    const auto ms_header_size = measurements_per_event.size();
+    ASSERT_EQ(sp_header_size, 11u);
+    ASSERT_EQ(ms_header_size, 11u);
+
+    for (std::size_t i = 0; i < sp_header_size; i++) {
+        ASSERT_EQ(spacepoints_per_event[i].items.size(), 1u);
+    }
+    for (std::size_t i = 0; i < ms_header_size; i++) {
+        ASSERT_EQ(measurements_per_event[i].items.size(), 1u);
+    }
+}
