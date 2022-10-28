@@ -13,7 +13,7 @@
 
 namespace {
 
-traccc::scalar wrap_to_pi(traccc::scalar phi) {
+inline traccc::scalar wrap_to_pi(traccc::scalar phi) {
 
     // Make sure that we only use the precision necessary.
     static constexpr traccc::scalar PI = static_cast<traccc::scalar>(M_PI);
@@ -29,6 +29,12 @@ traccc::scalar wrap_to_pi(traccc::scalar phi) {
     return phi;
 }
 
+inline traccc::scalar angle_mean(traccc::scalar lhs, traccc::scalar rhs) {
+
+    const traccc::scalar diff = wrap_to_pi(lhs - rhs);
+    return wrap_to_pi(rhs + 0.5 * diff);
+}
+
 }  // namespace
 
 namespace traccc::details {
@@ -36,8 +42,7 @@ namespace traccc::details {
 bool is_same_angle(scalar lhs, scalar rhs, scalar unc) {
 
     return (std::abs(wrap_to_pi(lhs - rhs)) <=
-            (unc *
-             ((std::abs(wrap_to_pi(lhs)) + std::abs(wrap_to_pi(rhs))) / 2.f)));
+            (unc * std::abs(angle_mean(lhs, rhs))));
 }
 
 }  // namespace traccc::details
