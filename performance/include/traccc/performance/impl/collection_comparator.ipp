@@ -18,6 +18,7 @@
 // System include(s).
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <functional>
 #include <iostream>
 #include <string_view>
@@ -67,10 +68,10 @@ void collection_comparator<TYPE>::operator()(
             }
         }
         // Calculate the agreement value.
-        agreements.push_back(static_cast<scalar>(matched) /
-                             ((static_cast<scalar>(lhs_coll.size()) +
-                               static_cast<scalar>(rhs_coll.size())) /
-                              200.));
+        agreements.push_back(
+            static_cast<scalar>(matched) /
+            static_cast<scalar>(std::max(lhs_coll.size(), rhs_coll.size())) *
+            100.);
     }
     assert(agreements.size() == m_uncertainties.size());
 
