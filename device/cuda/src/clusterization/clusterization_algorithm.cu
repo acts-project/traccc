@@ -99,23 +99,19 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_container_types::host& cells_per_event) const {
-
-    // Vecmem copy object for moving the data between host and device
-    vecmem::copy copy;
+    const cell_container_types::const_view& cells_view) const {
 
     // Number of modules
-    unsigned int num_modules = cells_per_event.size();
+    const cell_container_types::const_device::header_vector::size_type
+        num_modules = m_copy->get_size(cells_view.headers);
 
     // Work block size for kernel execution
-    std::size_t threadsPerBlock = 64;
-
-    // Get the view of the cells container
-    auto cells_data =
-        get_data(cells_per_event, (m_mr.host ? m_mr.host : &(m_mr.main)));
+    const std::size_t threadsPerBlock = 64;
 
     // Get the sizes of the cells in each module
-    auto cell_sizes = copy.get_sizes(cells_data.items);
+    const std::vector<
+        cell_container_types::const_device::item_vector::value_type::size_type>
+        cell_sizes = m_copy->get_sizes(cells_view.items);
 
     /*
      * Helper container for sparse CCL calculations.
@@ -160,9 +156,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::data::vector_buffer<std::size_t> cl_per_module_prefix_buff(
         num_modules, m_mr.main);
     m_copy->setup(cl_per_module_prefix_buff);
-
-    // Create views to pass to cluster finding kernel
-    const cell_container_types::const_view cells_view(cells_data);
 
     // Calculating grid size for cluster finding kernel
     std::size_t blocksPerGrid =
