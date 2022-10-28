@@ -87,7 +87,8 @@ is_same_object<bound_track_parameters>::is_same_object(
 bool is_same_object<bound_track_parameters>::operator()(
     const bound_track_parameters& obj) const {
 
-    return (is_same_scalar(obj.local()[0], m_ref.get().local()[0], m_unc) &&
+    return ((obj.surface_link() == m_ref.get().surface_link()) &&
+            is_same_scalar(obj.local()[0], m_ref.get().local()[0], m_unc) &&
             is_same_scalar(obj.local()[1], m_ref.get().local()[1], m_unc) &&
             is_same_angle(obj.phi(), m_ref.get().phi(), m_unc) &&
             is_same_scalar(obj.theta(), m_ref.get().theta(), m_unc) &&
