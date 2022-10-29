@@ -23,6 +23,7 @@ target_compile_definitions( traccc_seeding_example_sycl PRIVATE EIGEN_NO_CUDA )
 
 traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
-                  traccc::core traccc::sycl traccc::performance )
+                  traccc::core traccc::device_common traccc::sycl
+                  traccc::performance )
 
 target_compile_definitions( traccc_seq_example_sycl PRIVATE EIGEN_NO_CUDA )
