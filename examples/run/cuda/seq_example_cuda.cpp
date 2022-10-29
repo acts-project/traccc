@@ -11,6 +11,7 @@
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
@@ -19,6 +20,8 @@
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/performance/collection_comparator.hpp"
+#include "traccc/performance/container_comparator.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -85,6 +88,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::cuda::seeding_algorithm sa_cuda(mr);
     traccc::cuda::track_params_estimation tp_cuda(mr);
     traccc::cuda::clusterization_algorithm ca_cuda(mr);
+
+    vecmem::cuda::copy copy;
+    traccc::device::container_d2h_copy_alg<traccc::spacepoint_container_types>
+        spacepoint_copy{traccc::memory_resource{cu_dev_mr, &host_mr}, copy};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -239,90 +246,39 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           compare cpu and cuda result
           ----------------------------------*/
 
-        vecmem::cuda::copy copy;
         traccc::spacepoint_container_types::host spacepoints_per_event_cuda;
         traccc::seed_collection_types::host seeds_cuda;
+        if (run_cpu || i_cfg.check_performance) {
+            spacepoints_per_event_cuda =
+                spacepoint_copy(spacepoints_cuda_buffer);
+            copy(seeds_cuda_buffer, seeds_cuda);
+        }
 
         if (run_cpu) {
 
-            // Converting spacepoints container buffer to host
-            copy(spacepoints_cuda_buffer.headers,
-                 spacepoints_per_event_cuda.get_headers());
-            copy(spacepoints_cuda_buffer.items,
-                 spacepoints_per_event_cuda.get_items());
-            copy(seeds_cuda_buffer, seeds_cuda);
+            // Show which event we are currently presenting the results for.
+            std::cout << "===>>> Event " << event << " <<<===" << std::endl;
 
-            // Initial information about number of seeds found
-            std::cout << "event " << std::to_string(event) << std::endl;
-            std::cout << " number of seeds (cpu): " << seeds.size()
-                      << std::endl;
-            std::cout << " number of seeds (cuda): " << seeds_cuda.size()
-                      << std::endl;
+            // Compare the spacepoints made on the host and on the device.
+            traccc::container_comparator<traccc::geometry_id,
+                                         traccc::spacepoint>
+                compare_spacepoints{"spacepoints"};
+            compare_spacepoints(traccc::get_data(spacepoints_per_event),
+                                traccc::get_data(spacepoints_per_event_cuda));
 
-            // measurements & spacepoint matching rate
-            int n_m_match = 0;
-            int n_match = 0;
-            assert(spacepoints_per_event.size() ==
-                   spacepoints_per_event_cuda.size());
-            for (std::size_t i = 0; i < spacepoints_per_event.size(); ++i) {
-                assert(spacepoints_per_event[i].items.size() ==
-                       spacepoints_per_event_cuda[i].items.size());
-                for (auto& sp : spacepoints_per_event[i].items) {
-                    auto found_sp = std::find(
-                        spacepoints_per_event_cuda[i].items.begin(),
-                        spacepoints_per_event_cuda[i].items.end(), sp);
-                    auto found_m = std::find_if(
-                        spacepoints_per_event_cuda[i].items.begin(),
-                        spacepoints_per_event_cuda[i].items.end(),
-                        [&sp](auto& sp_cuda) {
-                            return sp.meas == sp_cuda.meas;
-                        });
-                    if (found_m != spacepoints_per_event_cuda[i].items.end()) {
-                        n_m_match++;
-                    }
-                    if (found_sp != spacepoints_per_event_cuda[i].items.end()) {
-                        n_match++;
-                    }
-                }
-            }
-            float m_matching_rate =
-                float(n_m_match) / spacepoints_per_event.total_size();
-            std::cout << " measurements matching rate: " << m_matching_rate
-                      << std::endl;
-            float matching_rate =
-                float(n_match) / spacepoints_per_event.total_size();
-            std::cout << " spacepoint matching rate: " << matching_rate
-                      << std::endl;
+            // Compare the seeds made on the host and on the device
+            traccc::collection_comparator<traccc::seed> compare_seeds{
+                "seeds", traccc::details::comparator_factory<traccc::seed>{
+                             traccc::get_data(spacepoints_per_event),
+                             traccc::get_data(spacepoints_per_event_cuda)}};
+            compare_seeds(vecmem::get_data(seeds),
+                          vecmem::get_data(seeds_cuda));
 
-            // seeding matching rate
-            n_match = 0;
-            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector =
-                traccc::get_spacepoint_vector(seeds, spacepoints_per_event);
-
-            std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_cuda =
-                traccc::get_spacepoint_vector(seeds_cuda,
-                                              spacepoints_per_event_cuda);
-
-            for (const auto& sp3 : sp3_vector) {
-                if (std::find(sp3_vector_cuda.cbegin(), sp3_vector_cuda.cend(),
-                              sp3) != sp3_vector_cuda.cend()) {
-                    n_match++;
-                }
-            }
-            matching_rate = float(n_match) / seeds.size();
-            std::cout << " seed matching rate: " << matching_rate << std::endl;
-
-            // track parameter estimation matching rate
-            n_match = 0;
-            for (auto& param : params) {
-                if (std::find(params_cuda.begin(), params_cuda.end(), param) !=
-                    params_cuda.end()) {
-                    n_match++;
-                }
-            }
-            matching_rate = float(n_match) / params.size();
-            std::cout << " track parameters matching rate: " << matching_rate
-                      << std::endl;
+            // Compare the track parameters made on the host and on the device.
+            traccc::collection_comparator<traccc::bound_track_parameters>
+                compare_track_parameters{"track parameters"};
+            compare_track_parameters(vecmem::get_data(params),
+                                     vecmem::get_data(params_cuda));
 
             /// Statistics
             n_modules += cells_per_event.size();
@@ -335,13 +291,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         }
 
         if (i_cfg.check_performance) {
-
-            // Converting spacepoints container buffer to host
-            copy(spacepoints_cuda_buffer.headers,
-                 spacepoints_per_event_cuda.get_headers());
-            copy(spacepoints_cuda_buffer.items,
-                 spacepoints_per_event_cuda.get_items());
-            copy(seeds_cuda_buffer, seeds_cuda);
 
             traccc::event_map evt_map(
                 event, i_cfg.detector_file, i_cfg.digitization_config_file,
