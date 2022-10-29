@@ -353,4 +353,44 @@ inline spacepoint_container_types::host read_hits(
     return result;
 }
 
+/// Read the collection of measurements per module and fill into a collection
+///
+/// @param mreader The measurement reader type
+/// @param resource The memory resource to use for the return value
+inline measurement_container_types::host read_measurements(
+    measurement_reader& mreader, vecmem::memory_resource& resource,
+    unsigned int max_measurements = std::numeric_limits<unsigned int>::max()) {
+    measurement_container_types::host result(&resource);
+
+    unsigned int read_measurements = 0;
+    csv_measurement io_measurement;
+
+    while (mreader.read(io_measurement)) {
+        cell_module module;
+
+        module.module = io_measurement.geometry_id;
+
+        measurement meas;
+        meas.local = {io_measurement.local0, io_measurement.local1};
+        meas.variance = {io_measurement.var_local0, io_measurement.var_local1};
+
+        const measurement_container_types::host::header_vector& headers =
+            result.get_headers();
+
+        auto it = std::find(headers.begin(), headers.end(), module);
+
+        if (it == headers.end()) {
+            result.push_back(module, vecmem::vector<measurement>({meas}));
+        } else {
+            auto idx = it - headers.begin();
+            result.at(idx).items.push_back(meas);
+        }
+
+        if (++read_measurements >= max_measurements) {
+            break;
+        }
+    }
+    return result;
+}
+
 }  // namespace traccc

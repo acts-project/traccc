@@ -50,6 +50,17 @@ int create_binaries(const std::string& detector_file,
         // Write binary file
         traccc::write_spacepoints(event, common_opts.input_directory,
                                   traccc::data_format::binary, spacepoints_csv);
+
+        // Read the measurements from the relevant event file
+        traccc::measurement_container_types::host measurements_csv =
+            traccc::read_measurements_from_event(
+                event, common_opts.input_directory,
+                common_opts.input_data_format, host_mr);
+
+        // Write binary file
+        traccc::write_measurements(event, common_opts.input_directory,
+                                   traccc::data_format::binary,
+                                   measurements_csv);
     }
 
     return 0;

@@ -60,4 +60,27 @@ inline void write_spacepoints(
     }
 }
 
+/// Function for measurement file writing
+///
+/// @param event is the event index
+/// @param measurements_directory is the directory of hit file
+/// @param data_format is the data format (e.g. csv or binary) of output file
+/// @param measurements_per_event is input measurement container
+inline void write_measurements(
+    size_t event, const std::string &measurements_directory,
+    const traccc::data_format &data_format,
+    const measurement_container_types::host &measurements_per_event) {
+
+    if (data_format == traccc::data_format::binary) {
+
+        std::string io_measurements_file =
+            data_directory() + measurements_directory +
+            get_event_filename(event, "-measurements.dat");
+
+        traccc::write_binary(io_measurements_file, measurements_per_event);
+    } else {
+        throw std::invalid_argument("Allowed data format is binary");
+    }
+}
+
 }  // namespace traccc
