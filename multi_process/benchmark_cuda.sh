@@ -21,7 +21,6 @@ done
 echo "$datapath"
 echo "number of processes : $num_proc";
 echo "number of events : $events";
-# echo "log path $log_dir"
 export TRACCC_TEST_DATA_DIR=$datapath
 
 # enable cuda mps
