@@ -134,8 +134,9 @@ inline void find_doublets(
 
                 // Check if this spacepoint is a compatible "bottom" spacepoint
                 // to the thread's "middle" spacepoint.
-                if (doublet_finding_helper::isCompatible(middle_sp, other_sp,
-                                                         config, true)) {
+                if (doublet_finding_helper::isCompatible<
+                        details::spacepoint_type::bottom>(middle_sp, other_sp,
+                                                          config)) {
 
                     // Add it as a candidate to the middle-bottom container.
                     const unsigned int pos = mid_bot_start_idx + mid_bot_idx++;
@@ -152,8 +153,9 @@ inline void find_doublets(
                 }
                 // Check if this spacepoint is a compatible "top" spacepoint to
                 // the thread's "middle" spacepoint.
-                if (doublet_finding_helper::isCompatible(middle_sp, other_sp,
-                                                         config, false)) {
+                if (doublet_finding_helper::isCompatible<
+                        details::spacepoint_type::top>(middle_sp, other_sp,
+                                                       config)) {
 
                     // Add it as a candidate to the middle-top container.
                     const unsigned int pos = mid_top_start_idx + mid_top_idx++;
