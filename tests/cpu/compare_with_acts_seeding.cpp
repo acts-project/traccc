@@ -247,6 +247,38 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // create grid with bin sizes according to the configured geometry
     std::unique_ptr<Acts::SpacePointGrid<SpacePoint>> grid =
         Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf);
+
+    // Currently traccc is using grid2. check if acts grid dimensionality is the
+    // same
+    EXPECT_EQ(grid->numLocalBins().size(), 2);
+
+    detray::axis::circular axis0 = internal_spacepoints_per_event.axis_p0();
+    detray::axis::regular axis1 = internal_spacepoints_per_event.axis_p1();
+
+    auto acts_axis0 = grid->axes()[0];
+    auto acts_axis1 = grid->axes()[1];
+
+    EXPECT_EQ(axis0.bins(), acts_axis0->getNBins());
+    EXPECT_EQ(axis1.bins(), acts_axis1->getNBins());
+
+    auto axis0_borders = axis0.all_borders();
+    auto axis1_borders = axis1.all_borders();
+    auto acts_axis0_borders = acts_axis0->getBinEdges();
+    auto acts_axis1_borders = acts_axis1->getBinEdges();
+
+    EXPECT_EQ(axis0_borders.size(), axis0.bins() + 1);
+    EXPECT_EQ(axis1_borders.size(), axis1.bins() + 1);
+
+    EXPECT_EQ(axis0_borders.size(), acts_axis0_borders.size());
+    EXPECT_EQ(axis1_borders.size(), acts_axis1_borders.size());
+
+    for (unsigned int i = 0; i < axis0.bins() + 1; ++i) {
+        EXPECT_NEAR(axis0_borders[i], acts_axis0_borders[i], 0.01);
+    }
+    for (unsigned int i = 0; i < axis1.bins() + 1; ++i) {
+        EXPECT_NEAR(axis1_borders[i], acts_axis1_borders[i], 0.01);
+    }
+
     auto spGroup = Acts::BinnedSPGroup<SpacePoint>(
         spVec.begin(), spVec.end(), ct, bottomBinFinder, topBinFinder,
         std::move(grid), acts_config);
