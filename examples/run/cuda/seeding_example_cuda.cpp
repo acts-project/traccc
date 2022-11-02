@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
@@ -20,8 +21,9 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <chrono>
@@ -43,9 +45,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
-    // Memory resource used by the EDM.
+    // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::cuda::managed_memory_resource mng_mr;
+    vecmem::cuda::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
 
     // Elapsed time
     float wall_time(0);
@@ -58,8 +61,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda({mng_mr});
-    traccc::cuda::track_params_estimation tp_cuda({mng_mr});
+    vecmem::cuda::copy copy;
+
+    traccc::device::container_h2d_copy_alg<traccc::spacepoint_container_types>
+        spacepoint_h2d{mr, copy};
+    traccc::cuda::seeding_algorithm sa_cuda{mr};
+    traccc::cuda::track_params_estimation tp_cuda{mr};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -85,7 +92,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         traccc::spacepoint_container_types::host spacepoints_per_event =
             traccc::read_spacepoints_from_event(
                 event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, mng_mr);
+                common_opts.input_data_format, surface_transforms, host_mr);
 
         /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_hit_reading_cpu =
@@ -100,8 +107,14 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 
-        auto seeds_cuda_buffer =
-            sa_cuda(traccc::get_data(spacepoints_per_event, &mng_mr));
+        // Copy the spacepoint data to the device.
+        const traccc::spacepoint_container_types::buffer
+            spacepoints_cuda_buffer =
+                spacepoint_h2d(traccc::get_data(spacepoints_per_event));
+
+        // Reconstruct the spacepoints into seeds.
+        const traccc::seed_collection_types::buffer seeds_cuda_buffer =
+            sa_cuda(spacepoints_cuda_buffer);
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -132,9 +145,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_cuda =
             std::chrono::system_clock::now();
 
-        auto params_cuda =
-            tp_cuda(traccc::get_data(spacepoints_per_event, &mng_mr),
-                    seeds_cuda_buffer);
+        auto params_cuda = tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
@@ -162,7 +173,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ----------------------------------*/
 
         // Copy the seeds to the host for comparisons
-        vecmem::copy copy;
         traccc::seed_collection_types::host seeds_cuda;
         copy(seeds_cuda_buffer, seeds_cuda);
 

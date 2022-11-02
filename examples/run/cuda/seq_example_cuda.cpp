@@ -12,6 +12,7 @@
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
@@ -27,8 +28,6 @@
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
@@ -71,27 +70,25 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     float tp_estimating_cpu(0);
     float tp_estimating_cuda(0);
 
-    // Memory resource used by the EDM.
+    // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::cuda::managed_memory_resource mng_mr;
-    vecmem::cuda::host_memory_resource cu_host_mr;
-    vecmem::cuda::device_memory_resource cu_dev_mr;
-
-    // Struct with memory resources to pass to CUDA algorithms
-    traccc::memory_resource mr{cu_dev_mr, &cu_host_mr};
+    vecmem::cuda::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
+    vecmem::cuda::copy copy;
+
+    traccc::device::container_h2d_copy_alg<traccc::cell_container_types>
+        cell_h2d{mr, copy};
+    traccc::cuda::clusterization_algorithm ca_cuda(mr);
     traccc::cuda::seeding_algorithm sa_cuda(mr);
     traccc::cuda::track_params_estimation tp_cuda(mr);
-    traccc::cuda::clusterization_algorithm ca_cuda(mr);
-
-    vecmem::cuda::copy copy;
     traccc::device::container_d2h_copy_alg<traccc::spacepoint_container_types>
-        spacepoint_copy{traccc::memory_resource{cu_dev_mr, &host_mr}, copy};
+        spacepoint_copy{mr, copy};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -109,22 +106,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
-        traccc::cell_container_types::host cells_per_event;
-
-        if (run_cpu) {
-            // Read the cells from the relevant event file for CPU algorithm
-            cells_per_event = traccc::read_cells_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, digi_cfg,
-                host_mr);
-        }
-
-        // Read the cells from the relevant event file for CUDA algorithm
-        traccc::cell_container_types::host cells_per_event_cuda =
+        // Read the cells from the relevant event file into host memory.
+        const traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, common_opts.input_directory,
                                           common_opts.input_data_format,
                                           surface_transforms, digi_cfg,
-                                          (mr.host ? *(mr.host) : mr.main));
+                                          host_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -137,7 +124,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_cluterization_cuda =
             std::chrono::system_clock::now();
 
-        auto spacepoints_cuda_buffer = ca_cuda(cells_per_event_cuda);
+        // Copy the cell data to the device.
+        const traccc::cell_container_types::buffer cells_cuda_buffer =
+            cell_h2d(traccc::get_data(cells_per_event));
+
+        // Reconstruct it into spacepoints on the device.
+        const traccc::spacepoint_container_types::buffer
+            spacepoints_cuda_buffer = ca_cuda(cells_cuda_buffer);
 
         /*time*/ auto end_cluterization_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cuda =

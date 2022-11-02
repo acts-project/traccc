@@ -18,6 +18,7 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
@@ -100,30 +101,25 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     std::cout << "Running Seeding on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
-    // Memory resource used by the EDM.
-    vecmem::sycl::shared_memory_resource shared_mr(&q);
-    vecmem::sycl::host_memory_resource sycl_host_mr(&q);
-    vecmem::sycl::device_memory_resource device_mr(&q);
-
-    // Struct with memory resources to pass to SYCL algorithms
-    traccc::memory_resource mr{device_mr, &sycl_host_mr};
-
-    // Memory resource used by the EDM.
+    // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::sycl::device_memory_resource device_mr{&q};
+    traccc::memory_resource mr{device_mr, &host_mr};
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
+    vecmem::sycl::copy copy{&q};
+
+    traccc::device::container_h2d_copy_alg<traccc::cell_container_types>
+        cell_h2d{mr, copy};
     traccc::sycl::clusterization_algorithm ca_sycl(mr, &q);
     traccc::sycl::seeding_algorithm sa_sycl(mr, &q);
     traccc::sycl::track_params_estimation tp_sycl(mr, &q);
-
-    // Create the algorithm(s) for copying device data back to the host.
-    vecmem::sycl::copy copy(&q);
     traccc::device::container_d2h_copy_alg<traccc::spacepoint_container_types>
-        spacepoint_copy{traccc::memory_resource{device_mr, &host_mr}, copy};
+        spacepoint_copy{mr, copy};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -141,22 +137,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
 
-        // Read the cells from the relevant event file for CPU algorithm
-        traccc::cell_container_types::host cells_per_event;
-
-        if (run_cpu) {
-            cells_per_event = traccc::read_cells_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, digi_cfg,
-                host_mr);
-        }
-
-        // Read the cells from the relevant event file for SYCL algorithm
-        traccc::cell_container_types::host cells_per_event_sycl =
+        // Read the cells from the relevant event file into host memory.
+        const traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, common_opts.input_directory,
                                           common_opts.input_data_format,
                                           surface_transforms, digi_cfg,
-                                          (mr.host ? *(mr.host) : mr.main));
+                                          host_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -170,7 +156,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_clusterization_sycl =
             std::chrono::system_clock::now();
 
-        auto spacepoints_sycl_buffer = ca_sycl(cells_per_event_sycl);
+        // Copy the cell data to the device.
+        const traccc::cell_container_types::buffer cells_sycl_buffer =
+            cell_h2d(traccc::get_data(cells_per_event));
+
+        // Reconstruct it into spacepoints on the device.
+        auto spacepoints_sycl_buffer = ca_sycl(cells_sycl_buffer);
 
         /*time*/ auto end_clusterization_sycl =
             std::chrono::system_clock::now();

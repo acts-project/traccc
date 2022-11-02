@@ -58,19 +58,18 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_container_types::host& cells_per_event) const {
+    const cell_container_types::const_view& cells_view) const {
 
     // Number of modules
-    unsigned int num_modules = cells_per_event.size();
+    const cell_container_types::const_device::header_vector::size_type
+        num_modules = m_copy->get_size(cells_view.headers);
     // Work group size for kernel execution
-    std::size_t localSize = 64;
-
-    // Get the view of the cells container
-    auto cells_data =
-        get_data(cells_per_event, (m_mr.host ? m_mr.host : &(m_mr.main)));
+    const std::size_t localSize = 64;
 
     // Get the sizes of the cells in each module
-    auto cell_sizes = m_copy->get_sizes(cells_data.items);
+    const std::vector<
+        cell_container_types::const_device::item_vector::value_type::size_type>
+        cell_sizes = m_copy->get_sizes(cells_view.items);
 
     /*
      * Helper container for sparse CCL calculations.
@@ -117,7 +116,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(cl_per_module_prefix_buff);
 
     // Create views to pass to cluster finding kernel
-    const cell_container_types::const_view cells_view(cells_data);
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view =
         sparse_ccl_indices_buff;
     vecmem::data::vector_view<std::size_t> cl_per_module_prefix_view =
