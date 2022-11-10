@@ -14,21 +14,6 @@
 
 namespace traccc::kokkos {
 
-namespace kernels {
-
-/// CUDA kernel for running @c traccc::device::fill_prefix_sum
-/*
-__global__ void fill_prefix_sum(
-    vecmem::data::vector_view<const device::prefix_sum_size_t> sizes_view,
-    vecmem::data::vector_view<device::prefix_sum_element_t> ps_view) {
-
-    device::fill_prefix_sum(threadIdx.x + blockIdx.x * blockDim.x, sizes_view,
-                            ps_view);
-}
-
-*/
-}  // namespace kernels
-
 vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
     const traccc::memory_resource& mr) {
