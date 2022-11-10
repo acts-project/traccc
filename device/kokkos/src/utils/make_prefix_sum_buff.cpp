@@ -12,7 +12,7 @@
 #include "traccc/kokkos/utils/make_prefix_sum_buff.hpp"
 #include "traccc/device/make_prefix_sum_buffer.hpp"
 
-namespace traccc::cuda {
+namespace traccc::kokkos {
 
 namespace kernels {
 
@@ -26,8 +26,8 @@ __global__ void fill_prefix_sum(
                             ps_view);
 }
 
-}  // namespace kernels
 */
+}  // namespace kernels
 
 vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
@@ -49,13 +49,14 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     //    sizes_sum_view, prefix_sum_buff);
     uint64_t num_blocks = (sizes_sum_view.size() / 32) + 1;
     uint64_t num_threads = 32;
+    auto data_prefix_sum_buff = vecmem::get_data(prefix_sum_buff);
     Kokkos::parallel_for("fill_prefix_sum", team_policy(num_blocks, num_threads),
-      KOKKOS_LAMBDA (cons member_type &team_member) {
-        device::fill_prefix_sum(team_member.league() * team_member.team_size() + team_member.team_rank()
-                                sizes_sum_view, prefix_sum_buff);
+      KOKKOS_LAMBDA (const member_type &team_member) {
+        device::fill_prefix_sum(team_member.league_rank() * team_member.team_size() + team_member.team_rank(),
+                                sizes_sum_view, data_prefix_sum_buff);
       }  
     );
     return prefix_sum_buff;
 }
 
-}  // namespace traccc::cuda
+}  // namespace traccc::kokkos

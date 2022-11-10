@@ -13,11 +13,13 @@ traccc_add_library( traccc_kokkos kokkos TYPE SHARED
   "include/traccc/kokkos/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
   # Seed finding code.
-  "include/traccc/cuda/seeding/spacepoint_binning.hpp"
+  "include/traccc/kokkos/seeding/seeding_algorithm.hpp"
+  "include/traccc/kokkos/seeding/spacepoint_binning.hpp"
   # CCL code.
+  "src/seeding/seeding_algorithm.cpp"
   "src/seeding/spacepoint_binning.cpp"
 )
 
 target_link_libraries( traccc_kokkos 
-  PUBLIC traccc::core vecmem::core vecmem::core
+  PUBLIC traccc::core vecmem::core vecmem::core Kokkos::kokkos
   PRIVATE traccc::device_common )

@@ -19,7 +19,7 @@
 #endif 
 
 // defining execution space and range_policy
-using ExecSpace = Memspace::execution_space;
+using ExecSpace = MemSpace::execution_space;
 using range_policy = Kokkos::RangePolicy<ExecSpace>; 
  
 typedef Kokkos::TeamPolicy<ExecSpace> team_policy;

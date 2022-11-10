@@ -11,9 +11,6 @@
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
-#include "vecmem/utils/kokkos/copy.hpp"
-
 namespace traccc::kokkos {
 
 /// Function that returns vector of prefix_sum_element_t for accessing a jagged

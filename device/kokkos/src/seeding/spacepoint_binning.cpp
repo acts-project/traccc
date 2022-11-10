@@ -74,7 +74,7 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Get the spacepoint sizes from the view
     auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
-1
+
     // Create prefix sum buffer
     vecmem::data::vector_buffer sp_prefix_sum_buff =
         make_prefix_sum_buff(sp_sizes, *m_copy, m_mr);
@@ -90,7 +90,7 @@ sp_grid_buffer spacepoint_binning::operator()(
         grid_capacities_buff;
 
     // Calculate the number of threads and thread blocks to run the kernels for.
-    const unsigned int num_threads = WARP_SIZE * 8;
+    const unsigned int num_threads = 32 * 8;
     const unsigned int num_blocks = sp_prefix_sum_buff.size() / num_threads + 1;
 
     // Fill the grid capacity container.
@@ -100,10 +100,11 @@ sp_grid_buffer spacepoint_binning::operator()(
         sp_prefix_sum_buff, grid_capacities_view);
     */
 
+    auto sp_prefix_sum_buff_view = vecmem::get_data(sp_prefix_sum_buff);
     Kokkos::parallel_for("count_grid_capacities", team_policy(num_blocks, num_threads),
       KOKKOS_LAMBDA (const member_type &team_member) {
           device::count_grid_capacities(team_member.league_rank() * team_member.team_size() + team_member.team_rank(),
-                                        m_confir, m_axes.first, m_axes.second, spacepoints_view, sp_prefix_sum_buff,
+                                        m_config, m_axes.first, m_axes.second, spacepoints_view, sp_prefix_sum_buff_view,
                                         grid_capacities_view);
         }
     );
@@ -129,7 +130,7 @@ sp_grid_buffer spacepoint_binning::operator()(
     Kokkos::parallel_for("count_grid_capacities", team_policy(num_blocks, num_threads),
       KOKKOS_LAMBDA (const member_type &team_member) {
         device::populate_grid(team_member.league_rank() * team_member.team_size() + team_member.team_rank(), m_config,
-                              spacepoints_view, sp_prefix_sum_buff, grid_view);
+                              spacepoints_view, sp_prefix_sum_buff_view, grid_view);
       }
     );
 
