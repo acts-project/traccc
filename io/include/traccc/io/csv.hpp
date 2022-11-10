@@ -34,6 +34,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <stdexcept>
 
 /// reader
 namespace traccc {
@@ -254,27 +255,30 @@ inline cell_container_types::host read_cells(
 
         if (it == headers.end()) {
 
-            // TODO: Need to handle the case that transform3 or digitization
-            // config is not found
             if (tfmap != nullptr) {
-                if (tfmap->contains(module.module)) {
-                    module.placement = (*tfmap)[module.module];
+                if (!tfmap->contains(module.module)) {
+                    throw std::runtime_error(
+                        "Could not find placement for geometry ID " +
+                        std::to_string(module.module));
                 }
+                module.placement = (*tfmap)[module.module];
             }
 
             if (digi_cfg != nullptr) {
                 Acts::GeometryIdentifier id(module.module);
 
                 auto geo_it = digi_cfg->find(id);
-                if (geo_it != digi_cfg->end()) {
-
-                    const auto& binning_data =
-                        geo_it->segmentation.binningData();
-
-                    module.pixel =
-                        pixel_data{binning_data[0].min, binning_data[1].min,
-                                   binning_data[0].step, binning_data[1].step};
+                if (geo_it == digi_cfg->end()) {
+                    throw std::runtime_error(
+                        "Could not find digitization config for geometry ID " +
+                        std::to_string(module.module));
                 }
+
+                const auto& binning_data = geo_it->segmentation.binningData();
+
+                module.pixel =
+                    pixel_data{binning_data[0].min, binning_data[1].min,
+                               binning_data[0].step, binning_data[1].step};
             }
 
             module.range0[0] = std::min(module.range0[0], iocell.channel0);
