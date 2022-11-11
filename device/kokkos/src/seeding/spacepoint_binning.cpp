@@ -19,7 +19,6 @@
 #include <vecmem/utils/copy.hpp>
 
 namespace traccc::kokkos {
-namespace kernels {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
@@ -28,7 +27,7 @@ spacepoint_binning::spacepoint_binning(
       m_axes(get_axes(grid_config.toInternalUnits(),
                       *(mr.host))),
       m_mr(mr) {
-    m_copy = std::make_unique<vecmem::copy>();
+      m_copy = std::make_unique<vecmem::copy>();
 }
 
 sp_grid_buffer spacepoint_binning::operator()(
@@ -79,7 +78,7 @@ sp_grid_buffer spacepoint_binning::operator()(
     sp_grid_view grid_view = grid_buffer;
 
     // Populate the grid.
-    Kokkos::parallel_for("count_grid_capacities", team_policy(num_blocks, num_threads),
+    Kokkos::parallel_for("populate_grid", team_policy(num_blocks, num_threads),
       KOKKOS_LAMBDA (const member_type &team_member) {
         device::populate_grid(team_member.league_rank() * team_member.team_size() + team_member.team_rank(), m_config,
                               spacepoints_view, sp_prefix_sum_buff_view, grid_view);

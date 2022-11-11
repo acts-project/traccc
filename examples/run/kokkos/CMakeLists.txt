@@ -5,6 +5,6 @@
 # Mozilla Public License Version 2.0
 
 traccc_add_executable( seeding_example_kokkos "seeding_example_kokkos.cpp"
-   LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
+   LINK_LIBRARIES vecmem::core traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::kokkos Kokkos::kokkos
                   traccc::options )
