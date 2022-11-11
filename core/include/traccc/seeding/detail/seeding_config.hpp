@@ -97,6 +97,14 @@ struct seedfinder_config {
     scalar minHelixDiameter2 = 0;
     scalar pT2perRadius = 0;
 
+    // Multiplicator for the number of phi-bins. The minimum number of phi-bins
+    // depends on min_pt, magnetic field: 2*M_PI/(minPT particle
+    // phi-deflection). phiBinDeflectionCoverage is a multiplier for this
+    // number. If numPhiNeighbors (in the configuration of the BinFinders) is
+    // configured to return 1 neighbor on either side of the current phi-bin
+    // (and you want to cover the full phi-range of minPT), leave this at 1.
+    int phiBinDeflectionCoverage = 1;
+
     darray<unsigned long, 2> neighbor_scope{1, 1};
 
     TRACCC_HOST_DEVICE
@@ -156,6 +164,19 @@ struct spacepoint_grid_config {
     scalar deltaRMax;
     // maximum forward direction expressed as cot(theta)
     scalar cotThetaMax;
+    // impact parameter in mm
+    scalar impactMax;
+    // minimum phi value for phiAxis construction
+    scalar phiMin = -M_PI;
+    // maximum phi value for phiAxis construction
+    scalar phiMax = M_PI;
+    // Multiplicator for the number of phi-bins. The minimum number of phi-bins
+    // depends on min_pt, magnetic field: 2*M_PI/(minPT particle
+    // phi-deflection). phiBinDeflectionCoverage is a multiplier for this
+    // number. If numPhiNeighbors (in the configuration of the BinFinders) is
+    // configured to return 1 neighbor on either side of the current phi-bin
+    // (and you want to cover the full phi-range of minPT), leave this at 1.
+    int phiBinDeflectionCoverage = 1;
 
     spacepoint_grid_config toInternalUnits() const {
         using namespace Acts::UnitLiterals;
@@ -164,6 +185,8 @@ struct spacepoint_grid_config {
         config.zMin /= 1_mm;
         config.zMax /= 1_mm;
         config.rMax /= 1_mm;
+        // This should probably be in but it is not in ACTS
+        // config.impactMax /= 1_mm;
         config.bFieldInZ /= 1000. * 1_T;
 
         config.deltaRMax /= 1_mm;

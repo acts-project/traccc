@@ -47,6 +47,10 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
     grid_config.zMin = config.zMin;
     grid_config.deltaRMax = config.deltaRMax;
     grid_config.cotThetaMax = config.cotThetaMax;
+    grid_config.impactMax = config.impactMax;
+    grid_config.phiMax = config.phiMax;
+    grid_config.phiMin = config.phiMin;
+    grid_config.phiBinDeflectionCoverage = config.phiBinDeflectionCoverage;
     return grid_config;
 }
 
