@@ -40,27 +40,22 @@ track_params_estimation::track_params_estimation(
     }
 }
 
-bound_track_parameters_collection_types::host
-track_params_estimation::operator()(
+track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const seed_collection_types::const_view& seeds_view) const {
 
     // Get the size of the seeds view
     const std::size_t seeds_size = m_copy->get_size(seeds_view);
 
-    // Create output host container
-    bound_track_parameters_collection_types::host params(
-        seeds_size, (m_mr.host ? m_mr.host : &(m_mr.main)));
-
-    // Check if anything needs to be done.
-    if (seeds_size == 0) {
-        return params;
-    }
-
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
                                                                   m_mr.main);
     m_copy->setup(params_buffer);
+
+    // Check if anything needs to be done.
+    if (seeds_size == 0) {
+        return params_buffer;
+    }
 
     // -- Num threads
     // The dimension of block is the integer multiple of WARP_SIZE (=32)
@@ -79,10 +74,7 @@ track_params_estimation::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    // Copy the results back to the host
-    (*m_copy)(params_buffer, params);
-
-    return params;
+    return params_buffer;
 }
 
 }  // namespace cuda
