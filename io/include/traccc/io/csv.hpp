@@ -11,6 +11,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -222,6 +223,14 @@ inline std::map<geometry_id, transform3> read_surfaces(
     return transform_map;
 }
 
+struct cell_counter {
+    geometry_id module = 0;
+    unsigned int nCells = 0;
+};  // struct cell_counter
+
+/// Declare all cell counter collection types
+using cell_counter_collection_types = collection_types<cell_counter>;
+
 /// Read the collection of cells per module and fill into a collection
 ///
 /// @param creader The cellreader type
@@ -235,72 +244,37 @@ inline cell_container_types::host read_cells(
     const Acts::GeometryHierarchyMap<digitization_config>* digi_cfg = nullptr,
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
-    cell_container_types::host result(&resource);
+    // Create cell counter vector
+    cell_counter_collection_types::host cell_counts(&resource);
+    // Create cell vector
+    cell_collection_types::host allCells(&resource);
+    allCells.reserve(50000);
+    cell_counts.reserve(5000);
 
     unsigned int read_cells = 0;
     csv_cell iocell;
 
+    // Read all cells from input file
     while (creader.read(iocell)) {
-        cell_module module;
 
         cell c = cell{iocell.channel0, iocell.channel1, iocell.value,
                       iocell.timestamp};
 
-        module.module = iocell.geometry_id;
+        // Add current cell to vector
+        allCells.push_back(c);
 
-        const cell_container_types::host::header_vector& headers =
-            result.get_headers();
+        geometry_id id = iocell.geometry_id;
 
-        auto rit = std::find(headers.rbegin(), headers.rend(), module);
+        auto rit = std::find_if(
+            cell_counts.rbegin(), cell_counts.rend(),
+            [&id](const cell_counter& cc) { return cc.module == id; });
 
-        if (rit == headers.rend()) {
-
-            if (tfmap != nullptr) {
-                if (!tfmap->contains(module.module)) {
-                    throw std::runtime_error(
-                        "Could not find placement for geometry ID " +
-                        std::to_string(module.module));
-                }
-                module.placement = (*tfmap)[module.module];
-            }
-
-            if (digi_cfg != nullptr) {
-                Acts::GeometryIdentifier id(module.module);
-
-                auto geo_it = digi_cfg->find(id);
-                if (geo_it == digi_cfg->end()) {
-                    throw std::runtime_error(
-                        "Could not find digitization config for geometry ID " +
-                        std::to_string(module.module));
-                }
-
-                const auto& binning_data = geo_it->segmentation.binningData();
-
-                module.pixel =
-                    pixel_data{binning_data[0].min, binning_data[1].min,
-                               binning_data[0].step, binning_data[1].step};
-            }
-
-            module.range0[0] = std::min(module.range0[0], iocell.channel0);
-            module.range0[1] = std::max(module.range0[1], iocell.channel0);
-            module.range1[0] = std::min(module.range1[0], iocell.channel1);
-            module.range1[1] = std::max(module.range1[1], iocell.channel1);
-
-            result.push_back(module, vecmem::vector<cell>({c}));
+        if (rit == cell_counts.rend()) {
+            // Add module to cell counter vector
+            cell_counts.push_back({id, 1});
         } else {
-            // The reverse iterator.base() returns the equivalent normal
-            // iterator shifted by 1, so that the (r)end and (r)begin iterators
-            // match consistently, due to the extra past-the-last element
-            auto idx = std::distance(headers.begin(), rit.base()) - 1;
-            result.at(idx).items.push_back(c);
-
-            module = result.at(idx).header;
-            module.range0[0] = std::min(module.range0[0], iocell.channel0);
-            module.range0[1] = std::max(module.range0[1], iocell.channel0);
-            module.range1[0] = std::min(module.range1[0], iocell.channel1);
-            module.range1[1] = std::max(module.range1[1], iocell.channel1);
-
-            result.at(idx).header = module;
+            // Increment number of cells for this module
+            ++(rit->nCells);
         }
 
         if (++read_cells >= max_cells) {
@@ -308,13 +282,63 @@ inline cell_container_types::host read_cells(
         }
     }
 
-    for (size_t i = 0; i < result.size(); i++) {
-        auto& cells = result.get_items()[i];
+    const std::size_t size = cell_counts.size();
+
+    // Construct the result container and reserve sizes for jagged vector.
+    cell_container_types::host result(size, &resource);
+    for (std::size_t i = 0; i < size; ++i) {
+        result.get_items().at(i).reserve(cell_counts[i].nCells);
+    }
+
+    std::size_t idx = 0;
+    // Fill result container
+    for (std::size_t i = 0; i < size; ++i) {
+        cell_module module;
+        module.module = cell_counts[i].module;
+
+        if (tfmap != nullptr) {
+            if (!tfmap->contains(module.module)) {
+                throw std::runtime_error(
+                    "Could not find placement for geometry ID " +
+                    std::to_string(module.module));
+            }
+            module.placement = (*tfmap)[module.module];
+        }
+
+        if (digi_cfg != nullptr) {
+            Acts::GeometryIdentifier id(module.module);
+
+            auto geo_it = digi_cfg->find(id);
+            if (geo_it == digi_cfg->end()) {
+                throw std::runtime_error(
+                    "Could not find digitization config for geometry ID " +
+                    std::to_string(module.module));
+            }
+
+            const auto& binning_data = geo_it->segmentation.binningData();
+
+            module.pixel =
+                pixel_data{binning_data[0].min, binning_data[1].min,
+                           binning_data[0].step, binning_data[1].step};
+        }
+
+        for (unsigned int j = 0; j < cell_counts[i].nCells; ++j) {
+            const cell& c = allCells[idx++];
+            // Fill item for this cell
+            result.get_items().at(i).push_back(c);
+            module.range0[0] = std::min(module.range0[0], c.channel0);
+            module.range0[1] = std::max(module.range0[1], c.channel0);
+            module.range1[0] = std::min(module.range1[0], c.channel1);
+            module.range1[1] = std::max(module.range1[1], c.channel1);
+        }
+        // Fill header for this module
+        result.get_headers().at(i) = module;
+
+        auto& cells = result.get_items().at(i);
         std::sort(cells.begin(), cells.end(), [](const auto& a, const auto& b) {
             return a.channel1 < b.channel1;
         });
     }
-
     return result;
 }
 
