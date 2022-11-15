@@ -22,49 +22,6 @@ namespace traccc {
 
 /// Function for binary file writing
 ///
-/// @param out_name is the output filename which includes the path
-/// @param container is the input traccc container
-template <typename container_t>
-void write_binary(const std::string& out_name, const container_t& container) {
-
-    static_assert(std::is_standard_layout_v<typename container_t::header_type>,
-                  "Container header type must be standard layout.");
-    static_assert(std::is_standard_layout_v<typename container_t::item_type>,
-                  "Container item type must be standard layout.");
-
-    std::ofstream out_file(out_name, std::ios::out | std::ios::binary);
-
-    const auto& headers = container.get_headers();
-    const auto& items = container.get_items();
-
-    typename container_t::header_vector::size_type headers_size =
-        container.size();
-
-    // Write size
-    out_file.write(reinterpret_cast<const char*>(&headers_size),
-                   sizeof(typename container_t::header_vector::size_type));
-
-    for (const auto& i : items) {
-        typename container_t::item_vector::size_type items_size = i.size();
-
-        out_file.write(reinterpret_cast<const char*>(&items_size),
-                       sizeof(typename container_t::item_vector::size_type));
-    }
-
-    // Write elements
-    out_file.write(reinterpret_cast<const char*>(&headers[0]),
-                   headers.size() * sizeof(typename container_t::header_type));
-
-    for (const auto& i : items) {
-        out_file.write(reinterpret_cast<const char*>(&i[0]),
-                       i.size() * sizeof(typename container_t::item_type));
-    }
-
-    out_file.close();
-}
-
-/// Function for binary file writing
-///
 /// @param in_name is the input filename which includes the path
 /// @param copy is the vecem copy helper object
 /// @param resource is the vecmem memory resource
@@ -80,16 +37,13 @@ container_t read_binary(const std::string& in_name, vecmem::copy& copy,
     std::ifstream in_file(in_name, std::ios::binary);
 
     // Read size
-    typename container_t::header_vector::size_type headers_size;
-    in_file.read(reinterpret_cast<char*>(&headers_size),
-                 sizeof(typename container_t::header_vector::size_type));
+    std::size_t headers_size;
+    in_file.read(reinterpret_cast<char*>(&headers_size), sizeof(std::size_t));
 
-    std::vector<typename container_t::item_vector::size_type> items_size(
-        headers_size);
+    std::vector<std::size_t> items_size(headers_size);
 
-    in_file.read(
-        reinterpret_cast<char*>(&items_size[0]),
-        headers_size * sizeof(typename container_t::item_vector::size_type));
+    in_file.read(reinterpret_cast<char*>(&items_size[0]),
+                 headers_size * sizeof(typename std::size_t));
 
     // Read element
     container_t container(&resource);
