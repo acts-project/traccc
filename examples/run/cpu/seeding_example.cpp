@@ -8,7 +8,6 @@
 // io
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"

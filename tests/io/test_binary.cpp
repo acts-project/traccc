@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/write.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -44,8 +44,8 @@ TEST(io_binary, cell) {
                                       surface_transforms, digi_cfg, host_mr);
 
     // Write binary file
-    traccc::write_cells(event, cells_directory, traccc::data_format::binary,
-                        cells_csv);
+    traccc::io::write(event, cells_directory, traccc::data_format::binary,
+                      traccc::get_data(cells_csv));
 
     // Read binary file
     traccc::cell_container_types::host cells_binary =
@@ -108,8 +108,8 @@ TEST(io_binary, spacepoint) {
                                             surface_transforms, host_mr);
 
     // Write binary file
-    traccc::write_spacepoints(event, hits_directory,
-                              traccc::data_format::binary, spacepoints_csv);
+    traccc::io::write(event, hits_directory, traccc::data_format::binary,
+                      traccc::get_data(spacepoints_csv));
 
     // Read binary file
     traccc::spacepoint_container_types::host spacepoints_binary =
@@ -167,8 +167,9 @@ TEST(io_binary, measurement) {
                                              traccc::data_format::csv, host_mr);
 
     // Write binary file
-    traccc::write_measurements(event, measurements_directory,
-                               traccc::data_format::binary, measurements_csv);
+    traccc::io::write(event, measurements_directory,
+                      traccc::data_format::binary,
+                      traccc::get_data(measurements_csv));
 
     // Read binary file
     traccc::measurement_container_types::host measurements_binary =

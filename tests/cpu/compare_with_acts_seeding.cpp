@@ -9,7 +9,6 @@
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/io/writer.hpp"
 
 // algorithms
 #include "traccc/seeding/seed_finding.hpp"

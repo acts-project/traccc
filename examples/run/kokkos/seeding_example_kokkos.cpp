@@ -10,7 +10,6 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
 #include "traccc/kokkos/seeding/spacepoint_binning.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"

@@ -12,7 +12,6 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
 #include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
 
 // Boost
 #include <boost/program_options.hpp>
