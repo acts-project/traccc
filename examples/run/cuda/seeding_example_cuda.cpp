@@ -17,6 +17,7 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 #include "traccc/performance/collection_comparator.hpp"
+#include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -26,7 +27,6 @@
 #include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
-#include <chrono>
 #include <exception>
 #include <iomanip>
 #include <iostream>
@@ -50,14 +50,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 
-    // Elapsed time
-    float wall_time(0);
-    float hit_reading_cpu(0);
-    float seeding_cpu(0);
-    float seeding_cuda(0);
-    float tp_estimating_cpu(0);
-    float tp_estimating_cuda(0);
-
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
@@ -76,98 +68,82 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         sd_performance_writer.add_cache("CUDA");
     }
 
-    /*time*/ auto start_wall_time = std::chrono::system_clock::now();
+    traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-        /*-----------------
-          hit file reading
-          -----------------*/
-
-        /*time*/ auto start_hit_reading_cpu = std::chrono::system_clock::now();
-
-        // Read the hits from the relevant event file
-        traccc::spacepoint_container_types::host spacepoints_per_event =
-            traccc::read_spacepoints_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, host_mr);
-
-        /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_hit_reading_cpu =
-            end_hit_reading_cpu - start_hit_reading_cpu;
-        /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
-
-        /*----------------------------
-             Seeding algorithm
-          ----------------------------*/
-
-        /// CUDA
-
-        /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
-
-        // Copy the spacepoint data to the device.
-        const traccc::spacepoint_container_types::buffer
-            spacepoints_cuda_buffer =
-                spacepoint_h2d(traccc::get_data(spacepoints_per_event));
-
-        // Reconstruct the spacepoints into seeds.
-        const traccc::seed_collection_types::buffer seeds_cuda_buffer =
-            sa_cuda(spacepoints_cuda_buffer);
-
-        /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_seeding_cuda =
-            end_seeding_cuda - start_seeding_cuda;
-        /*time*/ seeding_cuda += time_seeding_cuda.count();
-
-        // CPU
-
+        // Instantiate host containers/collections
+        traccc::spacepoint_container_types::host spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
-
-        if (run_cpu) {
-
-            /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
-            seeds = sa(spacepoints_per_event);
-
-            /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-            /*time*/ std::chrono::duration<double> time_seeding_cpu =
-                end_seeding_cpu - start_seeding_cpu;
-            /*time*/ seeding_cpu += time_seeding_cpu.count();
-        }
-
-        /*----------------------------
-          Track params estimation
-          ----------------------------*/
-
-        // CUDA
-
-        /*time*/ auto start_tp_estimating_cuda =
-            std::chrono::system_clock::now();
-
-        traccc::cuda::track_params_estimation::output_type params_cuda_buffer =
-            tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
-
-        /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
-            end_tp_estimating_cuda - start_tp_estimating_cuda;
-        /*time*/ tp_estimating_cuda += time_tp_estimating_cuda.count();
-
-        // CPU
-
         traccc::track_params_estimation::output_type params;
-        if (run_cpu) {
-            /*time*/ auto start_tp_estimating_cpu =
-                std::chrono::system_clock::now();
 
-            params = tp(std::move(spacepoints_per_event), seeds);
+        // Instantiate cuda containers/collections
+        traccc::seed_collection_types::buffer seeds_cuda_buffer(0, *(mr.host));
+        traccc::bound_track_parameters_collection_types::buffer
+            params_cuda_buffer(0, *mr.host);
 
-            /*time*/ auto end_tp_estimating_cpu =
-                std::chrono::system_clock::now();
-            /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
-                end_tp_estimating_cpu - start_tp_estimating_cpu;
-            /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
-        }
+        {  // Start measuring wall time
+            traccc::performance::timer wall_t("Wall time", elapsedTimes);
+
+            /*-----------------
+            hit file reading
+            -----------------*/
+            {
+                traccc::performance::timer t("Hit reading  (cpu)",
+                                             elapsedTimes);
+                // Read the hits from the relevant event file
+                spacepoints_per_event = traccc::read_spacepoints_from_event(
+                    event, common_opts.input_directory,
+                    common_opts.input_data_format, surface_transforms, host_mr);
+
+            }  // stop measuring hit reading timer
+
+            /*----------------------------
+                Seeding algorithm
+            ----------------------------*/
+
+            /// CUDA
+
+            // Copy the spacepoint data to the device.
+            const traccc::spacepoint_container_types::buffer
+                spacepoints_cuda_buffer =
+                    spacepoint_h2d(traccc::get_data(spacepoints_per_event));
+            {
+                traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
+                // Reconstruct the spacepoints into seeds.
+                seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+            }  // stop measuring seeding cuda timer
+
+            // CPU
+
+            if (run_cpu) {
+                traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
+                seeds = sa(spacepoints_per_event);
+            }  // stop measuring seeding cpu timer
+
+            /*----------------------------
+            Track params estimation
+            ----------------------------*/
+
+            // CUDA
+
+            {
+                traccc::performance::timer t("Track params (cuda)",
+                                             elapsedTimes);
+                params_cuda_buffer =
+                    tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
+            }  // stop measuring track params cuda timer
+            // CPU
+
+            if (run_cpu) {
+                traccc::performance::timer t("Track params  (cpu)",
+                                             elapsedTimes);
+                params = tp(std::move(spacepoints_per_event), seeds);
+            }  // stop measuring track params cpu timer
+
+        }  // Stop measuring wall time
 
         /*----------------------------------
           compare seeds from cpu and cuda
@@ -223,12 +199,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         }
     }
 
-    /*time*/ auto end_wall_time = std::chrono::system_clock::now();
-    /*time*/ std::chrono::duration<double> time_wall_time =
-        end_wall_time - start_wall_time;
-
-    /*time*/ wall_time += time_wall_time.count();
-
     if (i_cfg.check_performance) {
         sd_performance_writer.finalize();
     }
@@ -236,21 +206,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
-    std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
+    std::cout << "- created  (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (cuda) " << n_seeds_cuda << " seeds" << std::endl;
-    std::cout << "==> Elpased time ... " << std::endl;
-    std::cout << "wall time           " << std::setw(10) << std::left
-              << wall_time << std::endl;
-    std::cout << "hit reading (cpu)   " << std::setw(10) << std::left
-              << hit_reading_cpu << std::endl;
-    std::cout << "seeding_time (cpu)  " << std::setw(10) << std::left
-              << seeding_cpu << std::endl;
-    std::cout << "seeding_time (cuda) " << std::setw(10) << std::left
-              << seeding_cuda << std::endl;
-    std::cout << "tr_par_esti_time (cpu)    " << std::setw(10) << std::left
-              << tp_estimating_cpu << std::endl;
-    std::cout << "tr_par_esti_time (cuda)   " << std::setw(10) << std::left
-              << tp_estimating_cuda << std::endl;
+    std::cout << "==>Elapsed time (ms)..." << elapsedTimes << std::endl;
 
     return 0;
 }
