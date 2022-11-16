@@ -7,11 +7,12 @@
 
 // Local include(s).
 #include "traccc/kokkos/seeding/spacepoint_binning.hpp"
+
 #include "traccc/kokkos/utils/definitions.hpp"
 
 // Project include(s).
-#include "traccc/kokkos/utils/make_prefix_sum_buff.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
+#include "traccc/kokkos/utils/make_prefix_sum_buff.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
@@ -24,10 +25,9 @@ spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr)
     : m_config(config.toInternalUnits()),
-      m_axes(get_axes(grid_config.toInternalUnits(),
-                      *(mr.host))),
+      m_axes(get_axes(grid_config.toInternalUnits(), *(mr.host))),
       m_mr(mr) {
-      m_copy = std::make_unique<vecmem::copy>();
+    m_copy = std::make_unique<vecmem::copy>();
 }
 
 sp_grid_buffer spacepoint_binning::operator()(
@@ -56,13 +56,15 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Fill the grid capacity container.
     auto sp_prefix_sum_buff_view = vecmem::get_data(sp_prefix_sum_buff);
-    Kokkos::parallel_for("count_grid_capacities", team_policy(num_blocks, num_threads),
-      KOKKOS_LAMBDA (const member_type &team_member) {
-          device::count_grid_capacities(team_member.league_rank() * team_member.team_size() + team_member.team_rank(),
-                                        m_config, m_axes.first, m_axes.second, spacepoints_view, sp_prefix_sum_buff_view,
-                                        grid_capacities_view);
-        }
-    );
+    Kokkos::parallel_for(
+        "count_grid_capacities", team_policy(num_blocks, num_threads),
+        KOKKOS_LAMBDA(const member_type& team_member) {
+            device::count_grid_capacities(
+                team_member.league_rank() * team_member.team_size() +
+                    team_member.team_rank(),
+                m_config, m_axes.first, m_axes.second, spacepoints_view,
+                sp_prefix_sum_buff_view, grid_capacities_view);
+        });
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
                                                                 : &(m_mr.main));
@@ -78,15 +80,17 @@ sp_grid_buffer spacepoint_binning::operator()(
     sp_grid_view grid_view = grid_buffer;
 
     // Populate the grid.
-    Kokkos::parallel_for("populate_grid", team_policy(num_blocks, num_threads),
-      KOKKOS_LAMBDA (const member_type &team_member) {
-        device::populate_grid(team_member.league_rank() * team_member.team_size() + team_member.team_rank(), m_config,
-                              spacepoints_view, sp_prefix_sum_buff_view, grid_view);
-      }
-    );
+    Kokkos::parallel_for(
+        "populate_grid", team_policy(num_blocks, num_threads),
+        KOKKOS_LAMBDA(const member_type& team_member) {
+            device::populate_grid(
+                team_member.league_rank() * team_member.team_size() +
+                    team_member.team_rank(),
+                m_config, spacepoints_view, sp_prefix_sum_buff_view, grid_view);
+        });
 
     // Return the freshly filled buffer.
     return grid_buffer;
 }
 
-}  // namespace traccc:kokkos
+}  // namespace traccc::kokkos

@@ -6,13 +6,12 @@
  */
 
 // Project include(s).
-#include "traccc/kokkos/seeding/spacepoint_binning.hpp"
-#include "traccc/kokkos/seeding/seeding_algorithm.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/writer.hpp"
+#include "traccc/kokkos/seeding/spacepoint_binning.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
@@ -36,7 +35,7 @@ namespace po = boost::program_options;
 
 /// Helper function that would produce a default seed-finder configuration
 traccc::seedfinder_config default_seedfinder_config() {
- 
+
     traccc::seedfinder_config config;
     traccc::seedfinder_config config_copy = config.toInternalUnits();
     config.highland = 13.6 * std::sqrt(config_copy.radLengthPerSeed) *
@@ -51,7 +50,7 @@ traccc::seedfinder_config default_seedfinder_config() {
     config.pT2perRadius =
         std::pow(config.highland / config.pTPerHelixRadius, 2);
     return config;
-}                                                                      
+}
 
 /// Helper function that would produce a default spacepoint grid configuration
 traccc::spacepoint_grid_config default_spacepoint_grid_config() {
@@ -118,10 +117,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_hit_reading_cpu =
             end_hit_reading_cpu - start_hit_reading_cpu;
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
-        
-        traccc::kokkos::spacepoint_binning m_spacepoint_binning(default_seedfinder_config(), default_spacepoint_grid_config(), mr);
-        m_spacepoint_binning(traccc::get_data(spacepoints_per_event));
 
+        traccc::kokkos::spacepoint_binning m_spacepoint_binning(
+            default_seedfinder_config(), default_spacepoint_grid_config(), mr);
+        m_spacepoint_binning(traccc::get_data(spacepoints_per_event));
     }
 
     /*time*/ auto end_wall_time = std::chrono::system_clock::now();
@@ -138,7 +137,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
-    std::cout << "- created (kokkos) " << n_seeds_kokkos << " seeds" << std::endl;
+    std::cout << "- created (kokkos) " << n_seeds_kokkos << " seeds"
+              << std::endl;
     std::cout << "==> Elpased time ... " << std::endl;
     std::cout << "wall time           " << std::setw(10) << std::left
               << wall_time << std::endl;
@@ -153,7 +153,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 int main(int argc, char* argv[]) {
     // Initialise both Kokkos and GoogleTest.
     Kokkos::initialize(argc, argv);
- 
 
     // Set up the program options
     po::options_description desc("Allowed options");
@@ -181,7 +180,7 @@ int main(int argc, char* argv[]) {
               << std::endl;
 
     int ret = seq_run(seeding_input_cfg, common_opts, run_cpu);
-    
+
     // Finalise Kokkos.
     Kokkos::finalize();
 

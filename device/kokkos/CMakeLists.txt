@@ -13,10 +13,8 @@ traccc_add_library( traccc_kokkos kokkos TYPE SHARED
   "include/traccc/kokkos/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
   # Seed finding code.
-  "include/traccc/kokkos/seeding/seeding_algorithm.hpp"
   "include/traccc/kokkos/seeding/spacepoint_binning.hpp"
   # CCL code.
-  "src/seeding/seeding_algorithm.cpp"
   "src/seeding/spacepoint_binning.cpp"
 )
 
