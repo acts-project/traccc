@@ -244,7 +244,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_sycl =
             std::chrono::system_clock::now();
 
-        auto params_sycl = tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
+        traccc::sycl::track_params_estimation::output_type params_sycl_buffer =
+            tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
 
         /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
@@ -273,10 +274,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         traccc::spacepoint_container_types::host spacepoints_per_event_sycl;
         traccc::seed_collection_types::host seeds_sycl;
+        traccc::bound_track_parameters_collection_types::host params_sycl;
         if (run_cpu || i_cfg.check_performance) {
             spacepoints_per_event_sycl =
                 spacepoint_copy(spacepoints_sycl_buffer);
             copy(seeds_sycl_buffer, seeds_sycl);
+            copy(params_sycl_buffer, params_sycl);
         }
 
         if (run_cpu) {

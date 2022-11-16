@@ -212,7 +212,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto start_tp_estimating_cuda =
             std::chrono::system_clock::now();
 
-        auto params_cuda = tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
+        traccc::cuda::track_params_estimation::output_type params_cuda_buffer =
+            tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
@@ -241,10 +242,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         traccc::spacepoint_container_types::host spacepoints_per_event_cuda;
         traccc::seed_collection_types::host seeds_cuda;
+        traccc::bound_track_parameters_collection_types::host params_cuda;
         if (run_cpu || i_cfg.check_performance) {
             spacepoints_per_event_cuda =
                 spacepoint_copy(spacepoints_cuda_buffer);
             copy(seeds_cuda_buffer, seeds_cuda);
+            copy(params_cuda_buffer, params_cuda);
         }
 
         if (run_cpu) {
