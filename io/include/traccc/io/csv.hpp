@@ -109,7 +109,7 @@ struct csv_particle {
                    vz, vt, px, py, pz, m, q);
 };
 
-using fatras_particle_reader = dfe::NamedTupleCsvReader<csv_particle>;
+using particle_reader = dfe::NamedTupleCsvReader<csv_particle>;
 
 /// writer
 
@@ -391,6 +391,34 @@ inline measurement_container_types::host read_measurements(
         }
 
         if (++read_measurements >= max_measurements) {
+            break;
+        }
+    }
+    return result;
+}
+
+/// Read the collection of particles
+///
+/// @param preader The particle reader type
+/// @param resource The memory resource to use for the return value
+inline particle_collection_types::host read_particles(
+    particle_reader& preader, vecmem::memory_resource& resource,
+    unsigned int max_particles = std::numeric_limits<unsigned int>::max()) {
+    particle_collection_types::host result(&resource);
+
+    unsigned int read_particles = 0;
+    csv_particle io_particle;
+
+    while (preader.read(io_particle)) {
+
+        point3 pos{io_particle.vx, io_particle.vy, io_particle.vz};
+        vector3 mom{io_particle.px, io_particle.py, io_particle.pz};
+
+        result.push_back({io_particle.particle_id, io_particle.particle_type,
+                          io_particle.process, pos, io_particle.vt, mom,
+                          io_particle.m, io_particle.q});
+
+        if (++read_particles >= max_particles) {
             break;
         }
     }

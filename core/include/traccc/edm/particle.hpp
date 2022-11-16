@@ -7,8 +7,8 @@
 
 #pragma once
 
-// VecMem include(s).
-#include <vecmem/containers/vector.hpp>
+// Project include(s).
+#include "traccc/edm/container.hpp"
 
 namespace traccc {
 
@@ -31,12 +31,7 @@ inline bool operator<(const particle& lhs, const particle& rhs) {
     return false;
 }
 
-/// Container of particle for an event
-template <template <typename> class vector_t>
-using particle_collection = vector_t<particle>;
-
-/// Convenience declaration for the particle collection type to use
-/// in host code
-using host_particle_collection = particle_collection<vecmem::vector>;
+/// Declare particle collection type
+using particle_collection_types = collection_types<particle>;
 
 }  // namespace traccc

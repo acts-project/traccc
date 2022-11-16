@@ -168,6 +168,30 @@ inline measurement_container_types::host read_measurements_from_event(
     }
 }
 
+/// Function for particle file reading. The output is traccc container.
+///
+/// @param event is the event index
+/// @param particles_directory is the directory of measurement file
+/// @param data_format is the data format (e.g. csv or binary) of output file
+/// @param resource is the vecmem resource
+inline particle_collection_types::host read_particles_from_event(
+    size_t event, const std::string &particles_directory,
+    const traccc::data_format &data_format, vecmem::memory_resource &resource) {
+
+    // Read the cells from the relevant event file
+    if (data_format == traccc::data_format::csv) {
+        std::string io_particles_file =
+            data_directory() + particles_directory +
+            get_event_filename(event, "-particles.csv");
+        traccc::particle_reader preader(
+            io_particles_file, {"particle_id", "particle_type", "process", "vx",
+                                "vy", "vz", "vt", "px", "py", "pz", "m", "q"});
+        return traccc::read_particles(preader, resource);
+    } else {
+        throw std::invalid_argument("Allowed data format is csv");
+    }
+}
+
 inline traccc::demonstrator_input read(size_t events,
                                        const std::string &detector_file,
                                        const std::string &cell_directory,

@@ -39,9 +39,9 @@ particle_map generate_particle_map(size_t event,
         data_directory() + particle_dir +
         get_event_filename(event, "-particles_initial.csv");
 
-    fatras_particle_reader preader(
-        io_particles_file, {"particle_id", "particle_type", "process", "vx",
-                            "vy", "vz", "vt", "px", "py", "pz", "m", "q"});
+    particle_reader preader(io_particles_file,
+                            {"particle_id", "particle_type", "process", "vx",
+                             "vy", "vz", "vt", "px", "py", "pz", "m", "q"});
 
     csv_particle ioptc;
 

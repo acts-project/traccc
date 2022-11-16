@@ -127,4 +127,11 @@ TEST_F(io, csv_read_tml_single_muon) {
     for (std::size_t i = 0; i < ms_header_size; i++) {
         ASSERT_EQ(measurements_per_event[i].items.size(), 1u);
     }
+
+    // Read the particles from the relevant event file
+    traccc::particle_collection_types::host particles_per_event =
+        traccc::read_particles_from_event(0, "tml_full/single_muon/",
+                                          traccc::data_format::csv, resource);
+
+    ASSERT_EQ(particles_per_event.size(), 1u);
 }
