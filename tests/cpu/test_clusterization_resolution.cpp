@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 
 // VecMem include(s).
@@ -29,7 +30,7 @@ TEST_P(SurfaceBinningTests, Run) {
     unsigned int event = std::get<3>(GetParam());
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(detector_file);
+    auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg = traccc::read_digitization_config(digi_config_file);

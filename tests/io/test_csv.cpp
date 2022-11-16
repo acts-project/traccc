@@ -7,6 +7,8 @@
 
 // Project include(s).
 #include "traccc/io/csv.hpp"
+#include "traccc/io/details/read_surfaces.hpp"
+#include "traccc/io/read_geometry.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -76,10 +78,7 @@ TEST_F(io, csv_read_two_modules) {
 TEST_F(io, csv_read_tml_transforms) {
     std::string file = get_datafile("tml_detector/trackml-detector.csv");
 
-    traccc::surface_reader sreader(
-        file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw",
-               "rot_zu", "rot_zv", "rot_zw"});
-    auto tml_barrel_transforms = traccc::read_surfaces(sreader);
+    auto tml_barrel_transforms = traccc::io::details::read_surfaces(file);
 
     ASSERT_EQ(tml_barrel_transforms.size(), 18791u);
 }
@@ -103,7 +102,7 @@ TEST_F(io, csv_read_tml_single_muon) {
 
     // Read the surface transforms
     auto surface_transforms =
-        traccc::read_geometry("tml_detector/trackml-detector.csv");
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the hits from the relevant event file
     traccc::spacepoint_container_types::host spacepoints_per_event =

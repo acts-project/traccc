@@ -15,6 +15,7 @@
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
@@ -42,7 +43,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =

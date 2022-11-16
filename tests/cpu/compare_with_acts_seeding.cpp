@@ -7,6 +7,7 @@
 
 // io
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
 
@@ -124,7 +125,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc::track_params_estimation tp(host_mr);
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(detector_file);
+    auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the hits from the relevant event file
     traccc::spacepoint_container_types::host spacepoints_per_event =

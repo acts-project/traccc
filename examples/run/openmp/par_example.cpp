@@ -14,6 +14,7 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
 
@@ -40,7 +41,7 @@ int par_run(const std::string &detector_file,
             unsigned int events) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(detector_file);
+    auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg = traccc::read_digitization_config(digi_config_file);

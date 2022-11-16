@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/write.hpp"
 
@@ -31,7 +32,7 @@ TEST(io_binary, cell) {
 
     // Read the surface transforms
     auto surface_transforms =
-        traccc::read_geometry("tml_detector/trackml-detector.csv");
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the digitization configuration file
     auto digi_cfg = traccc::read_digitization_config(
@@ -99,7 +100,7 @@ TEST(io_binary, spacepoint) {
 
     // Read the surface transforms
     auto surface_transforms =
-        traccc::read_geometry("tml_detector/trackml-detector.csv");
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read csv file
     traccc::spacepoint_container_types::host spacepoints_csv =

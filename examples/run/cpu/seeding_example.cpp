@@ -7,6 +7,7 @@
 
 // io
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 
 // algorithms
@@ -30,7 +31,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
 
     // Output stats
     uint64_t n_spacepoints = 0;
