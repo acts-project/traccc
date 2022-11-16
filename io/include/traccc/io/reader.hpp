@@ -12,12 +12,12 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/geometry.hpp"
 #include "traccc/io/binary.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
 #include "traccc/io/detail/json_digitization_config.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
 
 // Acts include(s)
@@ -33,15 +33,6 @@
 #include <functional>
 
 namespace traccc {
-
-inline traccc::geometry read_geometry(const std::string &detector_file) {
-    // Read the surface transforms
-    std::string io_detector_file = data_directory() + detector_file;
-    traccc::surface_reader sreader(
-        io_detector_file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv",
-                           "rot_xw", "rot_zu", "rot_zv", "rot_zw"});
-    return traccc::read_surfaces(sreader);
-}
 
 /// Function for digtization configuration reading. The output is Acts
 /// GeometryHierarchyMap.
@@ -175,7 +166,7 @@ inline traccc::demonstrator_input read(size_t events,
                                        const traccc::data_format &data_format,
                                        vecmem::host_memory_resource &resource) {
     using namespace std::placeholders;
-    auto geom = read_geometry(detector_file);
+    auto geom = io::read_geometry(detector_file);
     auto digi_cfg = read_digitization_config(digi_config_file);
     auto readFn = std::bind(read_cells_from_event, _1, cell_directory,
                             data_format, geom, digi_cfg, resource);

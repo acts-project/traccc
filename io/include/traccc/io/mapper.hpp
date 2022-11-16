@@ -13,6 +13,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
 
@@ -193,7 +194,7 @@ measurement_cell_map generate_measurement_cell_map(
     measurement_creation mc(resource);
 
     // Read the surface transforms
-    auto surface_transforms = read_geometry(detector_file);
+    auto surface_transforms = io::read_geometry(detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg = traccc::read_digitization_config(digi_config_file);
@@ -254,7 +255,7 @@ measurement_particle_map generate_measurement_particle_map(
     auto h_p_map = generate_hit_particle_map(event, hits_dir, particle_dir);
 
     // Read the surface transforms
-    auto surface_transforms = read_geometry(detector_file);
+    auto surface_transforms = io::read_geometry(detector_file);
 
     // Read the spacepoints from the relevant event file
     spacepoint_container_types::host spacepoints_per_event =

@@ -187,42 +187,6 @@ struct csv_bound_track_parameters {
 using bound_track_parameters_writer =
     dfe::NamedTupleCsvWriter<csv_bound_track_parameters>;
 
-struct csv_surface {
-
-    uint64_t geometry_id = 0;
-    scalar cx, cy, cz;
-    scalar rot_xu, rot_xv, rot_xw;
-    scalar rot_yu, rot_yv, rot_yw;
-    scalar rot_zu, rot_zv, rot_zw;
-
-    // geometry_id,hit_id,channel0,channel1,timestamp,value
-    DFE_NAMEDTUPLE(csv_surface, geometry_id, cx, cy, cz, rot_xu, rot_xv, rot_xw,
-                   rot_yu, rot_yv, rot_yw, rot_zu, rot_zv, rot_zw);
-};
-
-using surface_reader = dfe::NamedTupleCsvReader<csv_surface>;
-
-/// Read the geometry information per module and fill into a map
-///
-/// @param sreader The surface reader type
-inline std::map<geometry_id, transform3> read_surfaces(
-    surface_reader& sreader) {
-
-    std::map<geometry_id, transform3> transform_map;
-    csv_surface iosurface;
-    while (sreader.read(iosurface)) {
-
-        geometry_id module = iosurface.geometry_id;
-
-        vector3 t{iosurface.cx, iosurface.cy, iosurface.cz};
-        vector3 x{iosurface.rot_xu, iosurface.rot_yu, iosurface.rot_zu};
-        vector3 z{iosurface.rot_xw, iosurface.rot_yw, iosurface.rot_zw};
-
-        transform_map.insert({module, transform3{t, z, x}});
-    }
-    return transform_map;
-}
-
 struct cell_counter {
     geometry_id module = 0;
     unsigned int nCells = 0;
