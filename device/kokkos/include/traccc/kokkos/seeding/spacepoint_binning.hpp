@@ -18,12 +18,12 @@
 #include <vecmem/utils/copy.hpp>
 
 // System include(s).
-#include <functional>
+#include <memory>
 #include <utility>
 
 namespace traccc::kokkos {
 
-/// Spacepoing binning executed on a CUDA device
+/// Spacepoing binning executed on a Kokkos device
 class spacepoint_binning : public algorithm<sp_grid_buffer(
                                const spacepoint_container_types::const_view&)> {
 

@@ -9,7 +9,9 @@
 
 #include <Kokkos_Core.hpp>
 
-//defining MemSpace to generalize in case they use other
+namespace traccc::kokkos {
+
+// defining MemSpace to generalize in case they use other
 #ifdef KOKKOS_ENABLE_CUDA
 #define MemSpace Kokkos::CudaSpace
 #endif
@@ -24,3 +26,5 @@ using range_policy = Kokkos::RangePolicy<ExecSpace>;
  
 typedef Kokkos::TeamPolicy<ExecSpace> team_policy;
 typedef Kokkos::TeamPolicy<ExecSpace>::member_type member_type;
+
+} // namespace traccc::kokkos
