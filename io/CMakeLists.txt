@@ -7,8 +7,8 @@
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
+  "include/traccc/io/read_digitization_config.hpp"
   "include/traccc/io/read_geometry.hpp"
-  "include/traccc/io/detail/json_digitization_config.hpp"
   "include/traccc/io/binary.hpp"
   "include/traccc/io/csv.hpp"
   "include/traccc/io/data_format.hpp"
@@ -19,6 +19,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/reader.hpp"
   "include/traccc/io/details/read_surfaces.hpp"
   # Implementation
+  "src/read_digitization_config.cpp"
   "src/read_geometry.cpp"
   "src/write_binary.hpp"
   "src/write.cpp"
@@ -29,4 +30,5 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/read_surfaces.hpp"
   "src/csv/read_surfaces.cpp" )
 target_link_libraries( traccc_io
-  PUBLIC dfelibs::dfelibs vecmem::core traccc::core ActsPluginJson ActsCore )
+  PUBLIC dfelibs::dfelibs vecmem::core traccc::core ActsCore
+         ActsPluginJson )

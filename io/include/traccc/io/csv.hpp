@@ -16,11 +16,8 @@
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/geometry/digitization_config.hpp"
 #include "traccc/geometry/geometry.hpp"
-#include "traccc/io/detail/json_digitization_config.hpp"
-
-// Acts include(s)
-#include "Acts/Geometry/GeometryHierarchyMap.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -205,7 +202,7 @@ using cell_counter_collection_types = collection_types<cell_counter>;
 inline cell_container_types::host read_cells(
     cell_reader& creader, vecmem::memory_resource& resource,
     const traccc::geometry* tfmap = nullptr,
-    const Acts::GeometryHierarchyMap<digitization_config>* digi_cfg = nullptr,
+    const traccc::digitization_config* digi_cfg = nullptr,
     unsigned int max_cells = std::numeric_limits<unsigned int>::max()) {
 
     // Create cell counter vector

@@ -12,17 +12,14 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/digitization_config.hpp"
 #include "traccc/io/binary.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
-#include "traccc/io/detail/json_digitization_config.hpp"
+#include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
-
-// Acts include(s)
-#include "Acts/Geometry/GeometryHierarchyMap.hpp"
-#include "Acts/Plugins/Json/GeometryHierarchyMapJsonConverter.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -33,24 +30,6 @@
 #include <functional>
 
 namespace traccc {
-
-/// Function for digtization configuration reading. The output is Acts
-/// GeometryHierarchyMap.
-///
-/// @param config_file is the digitization configuration file
-inline Acts::GeometryHierarchyMap<digitization_config> read_digitization_config(
-    const std::string &config_file) {
-    std::string json_file = data_directory() + config_file;
-    nlohmann::json djson;
-    std::ifstream infile(json_file, std::ifstream::in | std::ifstream::binary);
-    // rely on exception for error handling
-    infile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    infile >> djson;
-
-    return Acts::GeometryHierarchyMapJsonConverter<digitization_config>(
-               "digitization-configuration")
-        .fromJson(djson);
-}
 
 /// Function for cell file reading. The output is traccc container.
 ///
@@ -63,7 +42,7 @@ inline Acts::GeometryHierarchyMap<digitization_config> read_digitization_config(
 inline traccc::cell_container_types::host read_cells_from_event(
     size_t event, const std::string &cells_directory,
     const traccc::data_format &data_format, traccc::geometry surface_transforms,
-    const Acts::GeometryHierarchyMap<digitization_config> digi_config,
+    const traccc::digitization_config &digi_config,
     vecmem::memory_resource &resource) {
 
     // Read the cells from the relevant event file
@@ -167,7 +146,7 @@ inline traccc::demonstrator_input read(size_t events,
                                        vecmem::host_memory_resource &resource) {
     using namespace std::placeholders;
     auto geom = io::read_geometry(detector_file);
-    auto digi_cfg = read_digitization_config(digi_config_file);
+    auto digi_cfg = io::read_digitization_config(digi_config_file);
     auto readFn = std::bind(read_cells_from_event, _1, cell_directory,
                             data_format, geom, digi_cfg, resource);
     traccc::demonstrator_input input_data(events, &resource);

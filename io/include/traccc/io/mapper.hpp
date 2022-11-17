@@ -13,6 +13,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
@@ -197,7 +198,7 @@ measurement_cell_map generate_measurement_cell_map(
     auto surface_transforms = io::read_geometry(detector_file);
 
     // Read the digitization configuration file
-    auto digi_cfg = traccc::read_digitization_config(digi_config_file);
+    auto digi_cfg = io::read_digitization_config(digi_config_file);
 
     // Read the cells from the relevant event file
     cell_container_types::host cells_per_event =
