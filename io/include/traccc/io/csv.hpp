@@ -251,9 +251,9 @@ inline cell_container_types::host read_cells(
         const cell_container_types::host::header_vector& headers =
             result.get_headers();
 
-        auto it = std::find(headers.begin(), headers.end(), module);
+        auto rit = std::find(headers.rbegin(), headers.rend(), module);
 
-        if (it == headers.end()) {
+        if (rit == headers.rend()) {
 
             if (tfmap != nullptr) {
                 if (!tfmap->contains(module.module)) {
@@ -288,7 +288,10 @@ inline cell_container_types::host read_cells(
 
             result.push_back(module, vecmem::vector<cell>({c}));
         } else {
-            auto idx = it - headers.begin();
+            // The reverse iterator.base() returns the equivalent normal
+            // iterator shifted by 1, so that the (r)end and (r)begin iterators
+            // match consistently, due to the extra past-the-last element
+            auto idx = std::distance(headers.begin(), rit.base()) - 1;
             result.at(idx).items.push_back(c);
 
             module = result.at(idx).header;
@@ -340,12 +343,15 @@ inline spacepoint_container_types::host read_hits(
         const spacepoint_container_types::host::header_vector& headers =
             result.get_headers();
 
-        auto it = std::find(headers.begin(), headers.end(), geom_id);
+        auto rit = std::find(headers.rbegin(), headers.rend(), geom_id);
 
-        if (it == headers.end()) {
+        if (rit == headers.rend()) {
             result.push_back(geom_id, vecmem::vector<spacepoint>({sp}));
         } else {
-            auto idx = it - headers.begin();
+            // The reverse iterator.base() returns the equivalent normal
+            // iterator shifted by 1, so that the (r)end and (r)begin iterators
+            // match consistently, due to the extra past-the-last element
+            auto idx = std::distance(headers.begin(), rit.base()) - 1;
             result.at(idx).items.push_back(sp);
         }
 
@@ -381,12 +387,15 @@ inline measurement_container_types::host read_measurements(
         const measurement_container_types::host::header_vector& headers =
             result.get_headers();
 
-        auto it = std::find(headers.begin(), headers.end(), module);
+        auto rit = std::find(headers.rbegin(), headers.rend(), module);
 
-        if (it == headers.end()) {
+        if (rit == headers.rend()) {
             result.push_back(module, vecmem::vector<measurement>({meas}));
         } else {
-            auto idx = it - headers.begin();
+            // The reverse iterator.base() returns the equivalent normal
+            // iterator shifted by 1, so that the (r)end and (r)begin iterators
+            // match consistently, due to the extra past-the-last element
+            auto idx = std::distance(headers.begin(), rit.base()) - 1;
             result.at(idx).items.push_back(meas);
         }
 
