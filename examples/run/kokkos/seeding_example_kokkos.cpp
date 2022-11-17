@@ -189,6 +189,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
               << wall_time << std::endl;
     std::cout << "hit reading (cpu)   " << std::setw(10) << std::left
               << hit_reading_cpu << std::endl;
+    std::cout << "seeding_time (cpu)  " << std::setw(10) << std::left
+              << seeding_cpu << std::endl;
+    std::cout << "tr_par_esti_time (cpu)    " << std::setw(10) << std::left
+              << tp_estimating_cpu << std::endl;
 
     return 0;
 }
