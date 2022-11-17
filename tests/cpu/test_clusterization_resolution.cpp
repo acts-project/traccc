@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 
@@ -33,7 +34,7 @@ TEST_P(SurfaceBinningTests, Run) {
     auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the digitization configuration file
-    auto digi_cfg = traccc::read_digitization_config(digi_config_file);
+    auto digi_cfg = traccc::io::read_digitization_config(digi_config_file);
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;

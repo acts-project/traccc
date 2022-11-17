@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/write.hpp"
@@ -35,7 +36,7 @@ TEST(io_binary, cell) {
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the digitization configuration file
-    auto digi_cfg = traccc::read_digitization_config(
+    auto digi_cfg = traccc::io::read_digitization_config(
         "tml_detector/default-geometric-config-generic.json");
 
     // Read csv file

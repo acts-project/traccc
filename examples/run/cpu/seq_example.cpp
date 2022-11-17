@@ -7,6 +7,7 @@
 
 // io
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
@@ -39,7 +40,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Read the digitization configuration file
     auto digi_cfg =
-        traccc::read_digitization_config(i_cfg.digitization_config_file);
+        traccc::io::read_digitization_config(i_cfg.digitization_config_file);
 
     // Output stats
     uint64_t n_cells = 0;
