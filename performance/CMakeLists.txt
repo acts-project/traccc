@@ -33,6 +33,11 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/collection_comparator.hpp"
    "include/traccc/performance/impl/collection_comparator.ipp"
    "include/traccc/performance/container_comparator.hpp"
-   "include/traccc/performance/impl/container_comparator.ipp" )
+   "include/traccc/performance/impl/container_comparator.ipp"
+   # Performance time measurement code.
+   "include/traccc/performance/timer.hpp"
+   "src/performance/timer.cpp"
+   "include/traccc/performance/timing_info.hpp"
+   "src/performance/timing_info.cpp" )
 target_link_libraries( traccc_performance
    PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core )

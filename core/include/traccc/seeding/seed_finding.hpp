@@ -43,8 +43,10 @@ class seed_finding
                            const sp_grid& g2) const override;
 
     private:
-    /// Algorithm performing the doublet finding
-    doublet_finding m_doublet_finding;
+    /// Algorithm performing the mid bottom doublet finding
+    doublet_finding<details::spacepoint_type::bottom> m_midBot_finding;
+    /// Algorithm performing the mid top doublet finding
+    doublet_finding<details::spacepoint_type::top> m_midTop_finding;
     /// Algorithm performing the triplet finding
     triplet_finding m_triplet_finding;
     /// Algorithm performing the seed selection

@@ -23,6 +23,7 @@
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/performance/collection_comparator.hpp"
+#include "traccc/performance/timer.hpp"
 
 // options
 #include "traccc/options/common_options.hpp"
@@ -35,7 +36,6 @@
 #include <vecmem/utils/sycl/copy.hpp>
 
 // System include(s).
-#include <chrono>
 #include <exception>
 #include <iomanip>
 #include <iostream>
@@ -55,7 +55,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     uint64_t n_seeds_sycl = 0;
 
     // Creating sycl queue object
-    ::sycl::queue q(::sycl::gpu_selector{});
+    ::sycl::queue q;
     std::cout << "Running on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
@@ -63,14 +63,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     vecmem::host_memory_resource host_mr;
     vecmem::sycl::device_memory_resource device_mr{&q};
     traccc::memory_resource mr{device_mr, &host_mr};
-
-    // Elapsed time
-    float wall_time(0);
-    float hit_reading_cpu(0);
-    float seeding_cpu(0);
-    float seeding_sycl(0);
-    float tp_estimating_cpu(0);
-    float tp_estimating_sycl(0);
 
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
@@ -90,97 +82,83 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         sd_performance_writer.add_cache("SYCL");
     }
 
-    /*time*/ auto start_wall_time = std::chrono::system_clock::now();
+    traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-        /*-----------------
-          hit file reading
-          -----------------*/
-
-        /*time*/ auto start_hit_reading_cpu = std::chrono::system_clock::now();
-
-        // Read the hits from the relevant event file
-        traccc::spacepoint_container_types::host spacepoints_per_event =
-            traccc::read_spacepoints_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, host_mr);
-
-        /*time*/ auto end_hit_reading_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_hit_reading_cpu =
-            end_hit_reading_cpu - start_hit_reading_cpu;
-        /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
-
-        /*----------------------------
-             Seeding algorithm
-          ----------------------------*/
-
-        /// SYCL
-
-        /*time*/ auto start_seeding_sycl = std::chrono::system_clock::now();
-
-        // Copy the spacepoint data to the device.
-        const traccc::spacepoint_container_types::buffer
-            spacepoints_sycl_buffer =
-                spacepoint_h2d(traccc::get_data(spacepoints_per_event));
-
-        // Reconstruct the spacepoints into seeds.
-        const traccc::seed_collection_types::buffer seeds_sycl_buffer =
-            sa_sycl(spacepoints_sycl_buffer);
-
-        /*time*/ auto end_seeding_sycl = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_seeding_sycl =
-            end_seeding_sycl - start_seeding_sycl;
-        /*time*/ seeding_sycl += time_seeding_sycl.count();
-
-        // CPU
-
+        // Instantiate host containers/collections
+        traccc::spacepoint_container_types::host spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
-
-        if (run_cpu) {
-            /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
-
-            seeds = sa(spacepoints_per_event);
-
-            /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
-            /*time*/ std::chrono::duration<double> time_seeding_cpu =
-                end_seeding_cpu - start_seeding_cpu;
-            /*time*/ seeding_cpu += time_seeding_cpu.count();
-        }
-
-        /*----------------------------
-          Track params estimation
-          ----------------------------*/
-
-        // SYCL
-
-        /*time*/ auto start_tp_estimating_sycl =
-            std::chrono::system_clock::now();
-
-        auto params_sycl = tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
-
-        /*time*/ auto end_tp_estimating_sycl = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_tp_estimating_sycl =
-            end_tp_estimating_sycl - start_tp_estimating_sycl;
-        /*time*/ tp_estimating_sycl += time_tp_estimating_sycl.count();
-
-        // CPU
-
         traccc::track_params_estimation::output_type params;
-        if (run_cpu) {
-            /*time*/ auto start_tp_estimating_cpu =
-                std::chrono::system_clock::now();
 
-            params = tp(spacepoints_per_event, seeds);
+        // Instantiate sycl containers/collections
+        traccc::seed_collection_types::buffer seeds_sycl_buffer(0, *(mr.host));
+        traccc::bound_track_parameters_collection_types::buffer
+            params_sycl_buffer(0, *mr.host);
 
-            /*time*/ auto end_tp_estimating_cpu =
-                std::chrono::system_clock::now();
-            /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
-                end_tp_estimating_cpu - start_tp_estimating_cpu;
-            /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
-        }
+        {  // Start measuring wall time
+            traccc::performance::timer wall_t("Wall time", elapsedTimes);
+
+            /*-----------------
+              hit file reading
+              -----------------*/
+
+            {
+                traccc::performance::timer t("Hit reading  (cpu)",
+                                             elapsedTimes);
+                // Read the hits from the relevant event file
+                spacepoints_per_event = traccc::read_spacepoints_from_event(
+                    event, common_opts.input_directory,
+                    common_opts.input_data_format, surface_transforms, host_mr);
+            }  // stop measuring hit reading timer
+
+            /*----------------------------
+                 Seeding algorithm
+              ----------------------------*/
+
+            /// SYCL
+
+            // Copy the spacepoint data to the device.
+            const traccc::spacepoint_container_types::buffer
+                spacepoints_sycl_buffer =
+                    spacepoint_h2d(traccc::get_data(spacepoints_per_event));
+
+            {
+                traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
+                // Reconstruct the spacepoints into seeds.
+                seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+            }  // stop measuring seeding sycl timer
+
+            // CPU
+
+            if (run_cpu) {
+                traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
+                seeds = sa(spacepoints_per_event);
+            }  // stop measuring seeding cpu timer
+
+            /*----------------------------
+              Track params estimation
+              ----------------------------*/
+
+            // SYCL
+
+            {
+                traccc::performance::timer t("Track params (sycl)",
+                                             elapsedTimes);
+                params_sycl_buffer =
+                    tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
+            }  // stop measuring track params sycl timer
+
+            // CPU
+            if (run_cpu) {
+                traccc::performance::timer t("Track params  (cpu)",
+                                             elapsedTimes);
+                params = tp(spacepoints_per_event, seeds);
+            }  // stop measuring track params cpu timer
+
+        }  // Stop measuring wall time
 
         /*----------------------------------
           compare seeds from cpu and sycl
@@ -188,7 +166,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Copy the seeds to the host for comparison.
         traccc::seed_collection_types::host seeds_sycl;
+        traccc::bound_track_parameters_collection_types::host params_sycl;
         copy(seeds_sycl_buffer, seeds_sycl);
+        copy(params_sycl_buffer, params_sycl);
 
         if (run_cpu) {
             // Show which event we are currently presenting the results for.
@@ -234,12 +214,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         }
     }
 
-    /*time*/ auto end_wall_time = std::chrono::system_clock::now();
-    /*time*/ std::chrono::duration<double> time_wall_time =
-        end_wall_time - start_wall_time;
-
-    /*time*/ wall_time += time_wall_time.count();
-
     if (i_cfg.check_performance) {
         sd_performance_writer.finalize();
     }
@@ -247,21 +221,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
-    std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
+    std::cout << "- created  (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (sycl) " << n_seeds_sycl << " seeds" << std::endl;
-    std::cout << "==> Elpased time ... " << std::endl;
-    std::cout << "wall time           " << std::setw(10) << std::left
-              << wall_time << std::endl;
-    std::cout << "hit reading (cpu)   " << std::setw(10) << std::left
-              << hit_reading_cpu << std::endl;
-    std::cout << "seeding_time (cpu)  " << std::setw(10) << std::left
-              << seeding_cpu << std::endl;
-    std::cout << "seeding_time (sycl) " << std::setw(10) << std::left
-              << seeding_sycl << std::endl;
-    std::cout << "tr_par_esti_time (cpu)    " << std::setw(10) << std::left
-              << tp_estimating_cpu << std::endl;
-    std::cout << "tr_par_esti_time (sycl)   " << std::setw(10) << std::left
-              << tp_estimating_sycl << std::endl;
+    std::cout << "==>Elapsed time (ms)..." << elapsedTimes << std::endl;
 
     return 0;
 }

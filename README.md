@@ -147,6 +147,10 @@ flowchart LR
     %% Futhark measurement creation
     cell -->|<a href='https://github.com/acts-project/traccc/blob/main/device/futhark/src/measurement_creation.fut'>CCA</a>| meas;
     linkStyle 23 stroke: brown;
+
+    %% Futhark spacepoint creation
+    meas -->|<a href='https://github.com/acts-project/traccc/blob/main/device/futhark/src/spacepoint_formation.fut'>L2G</a>| sp;
+    linkStyle 24 stroke: brown;
 ```
 
 ## Requirements and dependencies 

@@ -29,8 +29,8 @@ class comparator_factory {
 
     public:
     /// Instantiate an instance of a comparator object
-    is_same_object<TYPE> make_comparator(
-        const TYPE& ref, scalar unc = float_epsilon) const;
+    is_same_object<TYPE> make_comparator(const TYPE& ref,
+                                         scalar unc = float_epsilon) const;
 
 };  // class comparator_factory
 
