@@ -16,6 +16,7 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 #include "traccc/performance/collection_comparator.hpp"
+#include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -89,7 +90,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // KOKKOS Spacepoint Binning
     traccc::kokkos::spacepoint_binning m_spacepoint_binning(
         default_seedfinder_config(), default_spacepoint_grid_config(), mr);
-    m_spacepoint_binning(traccc::get_data(spacepoints_per_event));
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -123,6 +123,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                     event, common_opts.input_directory,
                     common_opts.input_data_format, surface_transforms, host_mr);
             }  // stop measuring hit reading timer
+
+            { // Spacepoin binning for kokkos
+                m_spacepoint_binning(traccc::get_data(spacepoints_per_event));
+            }
 
             /*----------------------------
                 Seeding algorithm
