@@ -86,6 +86,11 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // Elapsed time
     float wall_time(0);
     float hit_reading_cpu(0);
+    float seeding_cpu(0);
+    float tp_estimating_cpu(0);
+
+    traccc::seeding_algorithm sa(host_mr);
+    traccc::track_params_estimation tp(host_mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -118,9 +123,49 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             end_hit_reading_cpu - start_hit_reading_cpu;
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
 
+        // KOKKOS Spacepoint Binning
         traccc::kokkos::spacepoint_binning m_spacepoint_binning(
             default_seedfinder_config(), default_spacepoint_grid_config(), mr);
         m_spacepoint_binning(traccc::get_data(spacepoints_per_event));
+
+        /*----------------------------
+             Seeding algorithm
+          ----------------------------*/
+
+        // CPU
+
+        traccc::seeding_algorithm::output_type seeds;
+
+        if (run_cpu) {
+
+            /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
+            seeds = sa(spacepoints_per_event);
+
+            /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_seeding_cpu =
+                end_seeding_cpu - start_seeding_cpu;
+            /*time*/ seeding_cpu += time_seeding_cpu.count();
+        }
+
+        /*----------------------------
+          Track params estimation
+          ----------------------------*/
+
+        // CPU
+
+        traccc::track_params_estimation::output_type params;
+        if (run_cpu) {
+            /*time*/ auto start_tp_estimating_cpu =
+                std::chrono::system_clock::now();
+
+            params = tp(std::move(spacepoints_per_event), seeds);
+
+            /*time*/ auto end_tp_estimating_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
+                end_tp_estimating_cpu - start_tp_estimating_cpu;
+            /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
+        }
     }
 
     /*time*/ auto end_wall_time = std::chrono::system_clock::now();
