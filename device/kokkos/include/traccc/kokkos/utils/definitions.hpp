@@ -15,16 +15,16 @@ namespace traccc::kokkos {
 #ifdef KOKKOS_ENABLE_CUDA
 #define MemSpace Kokkos::CudaSpace
 #endif
-    
+
 #ifndef MemSpace
 #define MemSpace Kokkos::HostSpace
-#endif 
+#endif
 
 // defining execution space and range_policy
 using ExecSpace = MemSpace::execution_space;
-using range_policy = Kokkos::RangePolicy<ExecSpace>; 
- 
+using range_policy = Kokkos::RangePolicy<ExecSpace>;
+
 typedef Kokkos::TeamPolicy<ExecSpace> team_policy;
 typedef Kokkos::TeamPolicy<ExecSpace>::member_type member_type;
 
-} // namespace traccc::kokkos
+}  // namespace traccc::kokkos

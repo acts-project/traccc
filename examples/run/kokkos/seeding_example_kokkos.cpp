@@ -111,7 +111,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
-            
+
             /*-----------------
             hit file reading
             -----------------*/
@@ -124,7 +124,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                     common_opts.input_data_format, surface_transforms, host_mr);
             }  // stop measuring hit reading timer
 
-            { // Spacepoin binning for kokkos
+            {  // Spacepoin binning for kokkos
                 m_spacepoint_binning(traccc::get_data(spacepoints_per_event));
             }
 
@@ -137,7 +137,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
                 seeds = sa(spacepoints_per_event);
-            } // stop measuring seeding cpu timer
+            }  // stop measuring seeding cpu timer
 
             /*----------------------------
             Track params estimation
