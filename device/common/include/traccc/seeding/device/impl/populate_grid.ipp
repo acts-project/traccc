@@ -31,7 +31,7 @@ inline void populate_grid(
     const prefix_sum_element_t sp_idx = sp_prefix_sum[globalIndex];
     const spacepoint_container_types::const_device spacepoints(
         spacepoints_view);
-    const spacepoint sp = spacepoints.at({sp_idx.first, sp_idx.second});
+    const spacepoint sp = spacepoints.at(sp_idx);
 
     /// Check out if the spacepoint can be used for seeding.
     if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {
