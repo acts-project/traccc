@@ -7,6 +7,7 @@
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
+  "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_digitization_config.hpp"
   "include/traccc/io/read_geometry.hpp"
   "include/traccc/io/binary.hpp"
@@ -19,16 +20,24 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/reader.hpp"
   "include/traccc/io/details/read_surfaces.hpp"
   # Implementation
+  "src/mapper.cpp"
+  "src/read_cells.cpp"
   "src/read_digitization_config.cpp"
   "src/read_geometry.cpp"
-  "src/write_binary.hpp"
   "src/write.cpp"
+  "src/read_binary.hpp"
+  "src/write_binary.hpp"
   "src/details/read_surfaces.cpp"
   "src/csv/surface.hpp"
   "src/csv/make_surface_reader.hpp"
   "src/csv/make_surface_reader.cpp"
   "src/csv/read_surfaces.hpp"
-  "src/csv/read_surfaces.cpp" )
+  "src/csv/read_surfaces.cpp"
+  "src/csv/cell.hpp"
+  "src/csv/make_cell_reader.hpp"
+  "src/csv/make_cell_reader.cpp"
+  "src/csv/read_cells.hpp"
+  "src/csv/read_cells.cpp" )
 target_link_libraries( traccc_io
   PUBLIC dfelibs::dfelibs vecmem::core traccc::core ActsCore
          ActsPluginJson )

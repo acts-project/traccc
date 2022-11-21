@@ -13,6 +13,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/io/csv.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
@@ -138,28 +139,7 @@ hit_map generate_hit_map(size_t event, const std::string& hits_dir) {
 }
 
 hit_cell_map generate_hit_cell_map(size_t event, const std::string& cells_dir,
-                                   const std::string& hits_dir) {
-
-    hit_cell_map result;
-
-    auto hmap = generate_hit_map(event, hits_dir);
-
-    // Read the cells from the relevant event file
-    std::string io_cells_file =
-        data_directory() + cells_dir + get_event_filename(event, "-cells.csv");
-
-    cell_reader creader(io_cells_file, {"geometry_id", "hit_id", "cannel0",
-                                        "channel1", "activation", "time"});
-
-    csv_cell iocell;
-
-    while (creader.read(iocell)) {
-        result[hmap[iocell.hit_id]].push_back(cell{
-            iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp});
-    }
-
-    return result;
-}
+                                   const std::string& hits_dir);
 
 cell_particle_map generate_cell_particle_map(size_t event,
                                              const std::string& cells_dir,
@@ -202,8 +182,8 @@ measurement_cell_map generate_measurement_cell_map(
 
     // Read the cells from the relevant event file
     cell_container_types::host cells_per_event =
-        read_cells_from_event(event, cells_dir, traccc::data_format::csv,
-                              surface_transforms, digi_cfg, resource);
+        io::read_cells(event, cells_dir, traccc::data_format::csv,
+                       &surface_transforms, &digi_cfg, &resource);
 
     auto clusters_per_event = cc(cells_per_event);
     auto measurements_per_event = mc(cells_per_event, clusters_per_event);

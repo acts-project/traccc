@@ -17,6 +17,7 @@
 #include "traccc/io/csv.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
@@ -30,44 +31,6 @@
 #include <functional>
 
 namespace traccc {
-
-/// Function for cell file reading. The output is traccc container.
-///
-/// @param event is the event index
-/// @param cells_directory is the directory of cell file
-/// @param data_format is the data format (e.g. csv or binary) of output file
-/// @param surface_transforms is the input geometry data
-/// @param digitization_info is the digitization configuration
-/// @param resource is the vecmem resource
-inline traccc::cell_container_types::host read_cells_from_event(
-    size_t event, const std::string &cells_directory,
-    const traccc::data_format &data_format, traccc::geometry surface_transforms,
-    const traccc::digitization_config &digi_config,
-    vecmem::memory_resource &resource) {
-
-    // Read the cells from the relevant event file
-    if (data_format == traccc::data_format::csv) {
-        std::string io_cells_file = data_directory() + cells_directory +
-                                    get_event_filename(event, "-cells.csv");
-
-        traccc::cell_reader creader(
-            io_cells_file, {"geometry_id", "hit_id", "cannel0", "channel1",
-                            "activation", "time"});
-        return traccc::read_cells(creader, resource, &surface_transforms,
-                                  &digi_config);
-
-    } else if (data_format == traccc::data_format::binary) {
-        std::string io_cells_file = data_directory() + cells_directory +
-                                    get_event_filename(event, "-cells.dat");
-
-        vecmem::copy copy;
-
-        return traccc::read_binary<traccc::cell_container_types::host>(
-            io_cells_file, copy, resource);
-    } else {
-        throw std::invalid_argument("Allowed data format is csv or binary");
-    }
-}
 
 /// Function for spacepoint file reading. The output is traccc container.
 ///
@@ -147,15 +110,14 @@ inline traccc::demonstrator_input read(size_t events,
     using namespace std::placeholders;
     auto geom = io::read_geometry(detector_file);
     auto digi_cfg = io::read_digitization_config(digi_config_file);
-    auto readFn = std::bind(read_cells_from_event, _1, cell_directory,
-                            data_format, geom, digi_cfg, resource);
     traccc::demonstrator_input input_data(events, &resource);
 
 #if defined(_OPENMP)
 #pragma omp parallel for
 #endif
     for (size_t event = 0; event < events; ++event) {
-        traccc::cell_container_types::host cells_per_event = readFn(event);
+        traccc::cell_container_types::host cells_per_event = io::read_cells(
+            event, cell_directory, data_format, &geom, &digi_cfg, &resource);
 
 #if defined(_OPENMP)
 #pragma omp critical
