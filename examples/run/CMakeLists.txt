@@ -18,6 +18,10 @@ if (TRACCC_BUILD_SYCL)
   add_subdirectory(sycl)
 endif()
 
+if (TRACCC_BUILD_KOKKOS)
+  add_subdirectory(kokkos)
+endif()
+
 find_package(OpenMP COMPONENTS CXX)
 if (OpenMP_CXX_FOUND)
     add_subdirectory(openmp)
