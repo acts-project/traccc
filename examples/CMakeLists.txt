@@ -7,3 +7,4 @@
 add_subdirectory(options)
 add_subdirectory(run)
 add_subdirectory(io)
+add_subdirectory(simulation)

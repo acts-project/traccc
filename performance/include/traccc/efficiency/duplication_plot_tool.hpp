@@ -8,7 +8,7 @@
 #pragma once
 
 #include "traccc/edm/particle.hpp"
-#include "traccc/efficiency/helpers.hpp"
+#include "traccc/utils/helpers.hpp"
 #include "traccc/utils/unit_vectors.hpp"
 
 namespace traccc {

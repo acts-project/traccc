@@ -24,6 +24,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/internal_spacepoint.hpp"
   "include/traccc/edm/seed.hpp"
   "include/traccc/edm/cell.hpp"
+  "include/traccc/edm/track_candidate.hpp"
+  "include/traccc/edm/track_state.hpp"
   # Geometry description.
   "include/traccc/geometry/module_map.hpp"
   "include/traccc/geometry/geometry.hpp"
@@ -44,6 +46,12 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/spacepoint_formation.cpp"
   "include/traccc/clusterization/measurement_creation.hpp"
   "src/clusterization/measurement_creation.cpp"
+  # Fitting algorithmic code
+  "include/traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
+  "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+  "include/traccc/fitting/kalman_filter/kalman_actor.hpp"
+  "include/traccc/fitting/kalman_filter/kalman_fitter.hpp"
+  "include/traccc/fitting/fitting_algorithm.hpp"
   # Seed finding algorithmic code.
   "include/traccc/seeding/detail/lin_circle.hpp"
   "include/traccc/seeding/detail/doublet.hpp"

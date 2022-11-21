@@ -110,12 +110,13 @@ struct csv_particle {
                    vz, vt, px, py, pz, m, q);
 };
 
-using fatras_particle_reader = dfe::NamedTupleCsvReader<csv_particle>;
+using particle_reader = dfe::NamedTupleCsvReader<csv_particle>;
 
 /// writer
 
 struct csv_measurement {
 
+    uint64_t measurement_id = 0;
     uint64_t geometry_id = 0;
     std::string local_key = "";
     scalar local0 = 0.;
@@ -129,8 +130,9 @@ struct csv_measurement {
     scalar var_theta = 0.;
     scalar var_time = 0.;
 
-    DFE_NAMEDTUPLE(csv_measurement, geometry_id, local0, local1, phi, theta,
-                   time, var_local0, var_local1, var_phi, var_theta, var_time);
+    DFE_NAMEDTUPLE(csv_measurement, measurement_id, geometry_id, local_key,
+                   local0, local1, phi, theta, time, var_local0, var_local1,
+                   var_phi, var_theta, var_time);
 };
 
 using measurement_reader = dfe::NamedTupleCsvReader<csv_measurement>;
@@ -360,6 +362,7 @@ inline spacepoint_container_types::host read_hits(
         auto placement = (*tfmap)[geom_id];
 
         point3 position({iohit.tx, iohit.ty, iohit.tz});
+        // FIXME: This transformation will ONLY work on cartesian...
         auto local = placement.point_to_local(position);
         measurement m({point2({local[0], local[1]}), variance2({0., 0.})});
         spacepoint sp({position, m});

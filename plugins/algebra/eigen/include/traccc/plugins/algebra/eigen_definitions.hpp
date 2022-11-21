@@ -11,9 +11,6 @@
 // Detray include(s).
 #include "detray/plugins/algebra/eigen_definitions.hpp"
 
-// Algebra Plugins include(s).
-#include <algebra/eigen_eigen.hpp>
-
 // VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>
 #include <vecmem/containers/vector.hpp>

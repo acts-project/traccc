@@ -18,8 +18,9 @@ message( STATUS "Building Algebra Plugins as part of the TRACCC project" )
 
 # Declare where to get Algebra Plugins from.
 set( TRACCC_ALGEBRA_PLUGINS_SOURCE
-   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.10.0.tar.gz;URL_MD5;91e04307f2cdeda5dc541104fedb6860"
+   "GIT_REPOSITORY;https://github.com/beomki-yeo/algebra-plugins;GIT_TAG;LU-decomposition"
    CACHE STRING "Source for Algebra Plugins, when built as part of this project" )
+#"URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.14.0.tar.gz;URL_MD5;ecf9c90f64f41677803a6790eb2ececb"   
 mark_as_advanced( TRACCC_ALGEBRA_PLUGINS_SOURCE )
 FetchContent_Declare( AlgebraPlugins ${TRACCC_ALGEBRA_PLUGINS_SOURCE} )
 
