@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/reader.hpp"
@@ -41,19 +42,17 @@ TEST(io_binary, cell) {
 
     // Read csv file
     traccc::cell_container_types::host cells_csv =
-        traccc::read_cells_from_event(event, cells_directory,
-                                      traccc::data_format::csv,
-                                      surface_transforms, digi_cfg, host_mr);
+        traccc::io::read_cells(event, cells_directory, traccc::data_format::csv,
+                               &surface_transforms, &digi_cfg, &host_mr);
 
     // Write binary file
     traccc::io::write(event, cells_directory, traccc::data_format::binary,
                       traccc::get_data(cells_csv));
 
     // Read binary file
-    traccc::cell_container_types::host cells_binary =
-        traccc::read_cells_from_event(event, cells_directory,
-                                      traccc::data_format::binary,
-                                      surface_transforms, digi_cfg, host_mr);
+    traccc::cell_container_types::host cells_binary = traccc::io::read_cells(
+        event, cells_directory, traccc::data_format::binary,
+        &surface_transforms, &digi_cfg, &host_mr);
 
     // Delete binary file
     std::string io_cells_file = traccc::data_directory() + cells_directory +

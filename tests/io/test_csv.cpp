@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/io/csv.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_geometry.hpp"
 
 // Test include(s).
@@ -23,12 +24,9 @@ class io : public traccc::tests::data_test {};
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_single_module) {
-    std::string file = get_datafile("single_module/cells.csv");
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
 
-    vecmem::host_memory_resource resource;
-    auto single_module_cells = traccc::read_cells(creader, resource);
+    auto single_module_cells = traccc::io::read_cells(
+        get_datafile("single_module/cells.csv"), traccc::data_format::csv);
     ASSERT_EQ(single_module_cells.size(), 1u);
     auto module_cells = single_module_cells.at(0).items;
     auto module = single_module_cells.at(0).header;
@@ -43,12 +41,9 @@ TEST_F(io, csv_read_single_module) {
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_two_modules) {
-    std::string file = get_datafile("two_modules/cells.csv");
 
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
-    vecmem::host_memory_resource resource;
-    auto two_module_cells = traccc::read_cells(creader, resource);
+    auto two_module_cells = traccc::io::read_cells(
+        get_datafile("two_modules/cells.csv"), traccc::data_format::csv);
     ASSERT_EQ(two_module_cells.size(), 2u);
 
     auto first_module_cells = two_module_cells.at(0).items;
@@ -85,13 +80,10 @@ TEST_F(io, csv_read_tml_transforms) {
 
 // This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_pixelbarrel) {
-    std::string file =
-        get_datafile("tml_pixel_barrel/event000000000-cells.csv");
 
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
-    vecmem::host_memory_resource resource;
-    auto tml_barrel_modules = traccc::read_cells(creader, resource);
+    auto tml_barrel_modules = traccc::io::read_cells(
+        get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
+        traccc::data_format::csv);
 
     ASSERT_EQ(tml_barrel_modules.size(), 2382u);
 }

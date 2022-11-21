@@ -11,6 +11,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/io/read_cells.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -82,11 +83,8 @@ class ConnectedComponentAnalysisTests
         std::string file_truth =
             get_datafile("cca_test/" + file_prefix + "_truth.csv");
 
-        traccc::cell_reader creader(file_hits);
-
-        vecmem::host_memory_resource resource;
         traccc::cell_container_types::host data =
-            traccc::read_cells(creader, resource);
+            traccc::io::read_cells(file_hits);
 
         for (std::size_t i = 0; i < data.size(); i++) {
             data.at(i).header.pixel = traccc::pixel_data{0, 0, 1, 1};

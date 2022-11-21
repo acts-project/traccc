@@ -6,11 +6,9 @@
  */
 
 // io
-#include "traccc/io/csv.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/utils.hpp"
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
@@ -71,10 +69,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         // Read the cells from the relevant event file
         traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(event, common_opts.input_directory,
-                                          common_opts.input_data_format,
-                                          surface_transforms, digi_cfg,
-                                          host_mr);
+            traccc::io::read_cells(event, common_opts.input_directory,
+                                   common_opts.input_data_format,
+                                   &surface_transforms, &digi_cfg, &host_mr);
 
         /*-------------------
             Clusterization

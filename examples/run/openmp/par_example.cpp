@@ -13,11 +13,9 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
-#include "traccc/io/csv.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/utils.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -66,9 +64,8 @@ int par_run(const std::string &detector_file,
 
         // Read the cells from the relevant event file
         traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(
-                event, cells_dir, traccc::data_format::csv, surface_transforms,
-                digi_cfg, resource);
+            traccc::io::read_cells(event, cells_dir, traccc::data_format::csv,
+                                   &surface_transforms, &digi_cfg, &resource);
 
         /*-------------------
             Clusterization
