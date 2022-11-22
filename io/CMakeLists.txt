@@ -32,6 +32,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/read_measurements.cpp"
   "src/read_spacepoints.cpp"
   "src/write.cpp"
+  "src/utils.cpp"
   "src/read_binary.hpp"
   "src/write_binary.hpp"
   "src/details/read_surfaces.cpp"
@@ -58,6 +59,8 @@ traccc_add_library( traccc_io io TYPE SHARED
 target_link_libraries( traccc_io
   PUBLIC dfelibs::dfelibs vecmem::core traccc::core ActsCore
          ActsPluginJson )
+target_compile_definitions( traccc_io
+  PRIVATE TRACCC_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data" )
 if( OpenMP_CXX_FOUND )
   target_link_libraries( traccc_io PRIVATE OpenMP::OpenMP_CXX )
 endif()

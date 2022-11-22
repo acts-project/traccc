@@ -39,8 +39,8 @@ particle_map generate_particle_map(size_t event,
 
     // Read the particles from the relevant event file
     std::string io_particles_file =
-        data_directory() + particle_dir +
-        get_event_filename(event, "-particles_initial.csv");
+        io::data_directory() + particle_dir +
+        io::get_event_filename(event, "-particles_initial.csv");
 
     fatras_particle_reader preader(
         io_particles_file, {"particle_id", "particle_type", "process", "vx",

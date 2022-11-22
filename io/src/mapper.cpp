@@ -21,8 +21,8 @@ hit_particle_map generate_hit_particle_map(size_t event,
     auto pmap = generate_particle_map(event, particle_dir);
 
     // Read the hits from the relevant event file
-    std::string io_hits_file =
-        data_directory() + hits_dir + get_event_filename(event, "-hits.csv");
+    std::string io_hits_file = io::data_directory() + hits_dir +
+                               io::get_event_filename(event, "-hits.csv");
 
     auto hreader = io::csv::make_hit_reader(io_hits_file);
 
@@ -45,8 +45,8 @@ hit_map generate_hit_map(size_t event, const std::string& hits_dir) {
     hit_map result;
 
     // Read the hits from the relevant event file
-    std::string io_hits_file =
-        data_directory() + hits_dir + get_event_filename(event, "-hits.csv");
+    std::string io_hits_file = io::data_directory() + hits_dir +
+                               io::get_event_filename(event, "-hits.csv");
 
     auto hreader = io::csv::make_hit_reader(io_hits_file);
 
@@ -54,8 +54,8 @@ hit_map generate_hit_map(size_t event, const std::string& hits_dir) {
 
     // Read the hits from the relevant event file
     std::string io_meas_hit_id_file =
-        data_directory() + hits_dir +
-        get_event_filename(event, "-measurement-simhit-map.csv");
+        io::data_directory() + hits_dir +
+        io::get_event_filename(event, "-measurement-simhit-map.csv");
 
     meas_hit_id_reader mhid_reader(io_meas_hit_id_file,
                                    {"measurement_id", "hit_id"});
@@ -91,8 +91,8 @@ hit_cell_map generate_hit_cell_map(size_t event, const std::string& cells_dir,
     auto hmap = generate_hit_map(event, hits_dir);
 
     // Read the cells from the relevant event file
-    std::string io_cells_file =
-        data_directory() + cells_dir + get_event_filename(event, "-cells.csv");
+    std::string io_cells_file = io::data_directory() + cells_dir +
+                                io::get_event_filename(event, "-cells.csv");
 
     auto creader = io::csv::make_cell_reader(io_cells_file);
 
