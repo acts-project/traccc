@@ -9,11 +9,14 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/io/reader.hpp"
 #include "traccc/io/write.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
 
 namespace po = boost::program_options;
 
@@ -57,9 +60,9 @@ int create_binaries(const std::string& detector_file,
 
         // Read the measurements from the relevant event file
         traccc::measurement_container_types::host measurements_csv =
-            traccc::read_measurements_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, host_mr);
+            traccc::io::read_measurements(event, common_opts.input_directory,
+                                          common_opts.input_data_format,
+                                          &host_mr);
 
         // Write binary file
         traccc::io::write(event, common_opts.input_directory,

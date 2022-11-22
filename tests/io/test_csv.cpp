@@ -9,6 +9,7 @@
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 
 // Test include(s).
@@ -104,8 +105,8 @@ TEST_F(io, csv_read_tml_single_muon) {
 
     // Read the measurements from the relevant event file
     traccc::measurement_container_types::host measurements_per_event =
-        traccc::read_measurements_from_event(
-            0, "tml_full/single_muon/", traccc::data_format::csv, resource);
+        traccc::io::read_measurements(0, "tml_full/single_muon/",
+                                      traccc::data_format::csv, &resource);
 
     const auto sp_header_size = spacepoints_per_event.size();
     const auto ms_header_size = measurements_per_event.size();

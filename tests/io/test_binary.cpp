@@ -9,8 +9,9 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/io/reader.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/io/write.hpp"
 
 // VecMem include(s).
@@ -163,8 +164,8 @@ TEST(io_binary, measurement) {
 
     // Read csv file
     traccc::measurement_container_types::host measurements_csv =
-        traccc::read_measurements_from_event(event, measurements_directory,
-                                             traccc::data_format::csv, host_mr);
+        traccc::io::read_measurements(event, measurements_directory,
+                                      traccc::data_format::csv, &host_mr);
 
     // Write binary file
     traccc::io::write(event, measurements_directory,
@@ -173,9 +174,8 @@ TEST(io_binary, measurement) {
 
     // Read binary file
     traccc::measurement_container_types::host measurements_binary =
-        traccc::read_measurements_from_event(event, measurements_directory,
-                                             traccc::data_format::binary,
-                                             host_mr);
+        traccc::io::read_measurements(event, measurements_directory,
+                                      traccc::data_format::binary, &host_mr);
 
     // Delete binary file
     std::string io_measurements_file =
