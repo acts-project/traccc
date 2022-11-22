@@ -50,29 +50,6 @@ struct csv_meas_hit_id {
 
 using meas_hit_id_reader = dfe::NamedTupleCsvReader<csv_meas_hit_id>;
 
-struct csv_fatras_hit {
-    uint64_t particle_id = 0;
-    uint64_t geometry_id = 0;
-    scalar tx = 0;
-    scalar ty = 0;
-    scalar tz = 0;
-    scalar tt = 0;
-    scalar tpx = 0;
-    scalar tpy = 0;
-    scalar tpz = 0;
-    scalar te = 0;
-    scalar deltapx = 0;
-    scalar deltapy = 0;
-    scalar deltapz = 0;
-    scalar deltae = 0;
-    uint64_t index = 0;
-
-    DFE_NAMEDTUPLE(csv_fatras_hit, particle_id, geometry_id, tx, ty, tz, tt,
-                   tpx, tpy, tpz, te, deltapx, deltapy, deltapz, deltae, index);
-};
-
-using fatras_hit_reader = dfe::NamedTupleCsvReader<csv_fatras_hit>;
-
 struct csv_particle {
     uint64_t particle_id = 0;
     int particle_type = 0;
@@ -117,16 +94,6 @@ struct csv_measurement {
 using measurement_reader = dfe::NamedTupleCsvReader<csv_measurement>;
 using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
 
-struct csv_spacepoint {
-
-    uint64_t geometry_id = 0;
-    scalar x, y, z;
-
-    DFE_NAMEDTUPLE(csv_spacepoint, geometry_id, x, y, z);
-};
-
-using spacepoint_writer = dfe::NamedTupleCsvWriter<csv_spacepoint>;
-
 struct csv_seed {
     scalar weight;
     scalar z_vertex;
@@ -167,51 +134,6 @@ struct csv_bound_track_parameters {
 
 using bound_track_parameters_writer =
     dfe::NamedTupleCsvWriter<csv_bound_track_parameters>;
-
-/// Read the collection of hits per module and fill into a collection
-///
-/// @param hreader The hit reader type
-/// @param resource The memory resource to use for the return value
-inline spacepoint_container_types::host read_hits(
-    fatras_hit_reader& hreader, vecmem::memory_resource& resource,
-    const traccc::geometry* tfmap = nullptr,
-    unsigned int max_hits = std::numeric_limits<unsigned int>::max()) {
-    spacepoint_container_types::host result(&resource);
-
-    unsigned int read_hits = 0;
-    csv_fatras_hit iohit;
-
-    while (hreader.read(iohit)) {
-        geometry_id geom_id = iohit.geometry_id;
-        auto placement = (*tfmap)[geom_id];
-
-        point3 position({iohit.tx, iohit.ty, iohit.tz});
-        auto local = placement.point_to_local(position);
-        measurement m({point2({local[0], local[1]}), variance2({0., 0.})});
-        spacepoint sp({position, m});
-
-        const spacepoint_container_types::host::header_vector& headers =
-            result.get_headers();
-
-        auto rit = std::find(headers.rbegin(), headers.rend(), geom_id);
-
-        if (rit == headers.rend()) {
-            result.push_back(geom_id, vecmem::vector<spacepoint>({sp}));
-        } else {
-            // The reverse iterator.base() returns the equivalent normal
-            // iterator shifted by 1, so that the (r)end and (r)begin iterators
-            // match consistently, due to the extra past-the-last element
-            auto idx = std::distance(headers.begin(), rit.base()) - 1;
-            result.at(idx).items.push_back(sp);
-        }
-
-        if (++read_hits >= max_hits) {
-            break;
-        }
-    }
-
-    return result;
-}
 
 /// Read the collection of measurements per module and fill into a collection
 ///

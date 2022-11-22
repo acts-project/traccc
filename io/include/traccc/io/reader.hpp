@@ -35,40 +35,6 @@ namespace traccc {
 /// Function for spacepoint file reading. The output is traccc container.
 ///
 /// @param event is the event index
-/// @param hits_directory is the directory of cell file
-/// @param data_format is the data format (e.g. csv or binary) of output file
-/// @param surface_transforms is the input geometry data
-/// @param resource is the vecmem resource
-inline spacepoint_container_types::host read_spacepoints_from_event(
-    size_t event, const std::string &hits_directory,
-    const traccc::data_format &data_format, traccc::geometry surface_transforms,
-    vecmem::memory_resource &resource) {
-
-    // Read the cells from the relevant event file
-    if (data_format == traccc::data_format::csv) {
-        std::string io_hits_file = data_directory() + hits_directory +
-                                   get_event_filename(event, "-hits.csv");
-        traccc::fatras_hit_reader hreader(
-            io_hits_file,
-            {"particle_id", "geometry_id", "tx", "ty", "tz", "tt", "tpx", "tpy",
-             "tpz", "te", "deltapx", "deltapy", "deltapz", "deltae", "index"});
-        return traccc::read_hits(hreader, resource, &surface_transforms);
-    } else if (data_format == traccc::data_format::binary) {
-        std::string io_hits_file = data_directory() + hits_directory +
-                                   get_event_filename(event, "-hits.dat");
-
-        vecmem::copy copy;
-
-        return traccc::read_binary<spacepoint_container_types::host>(
-            io_hits_file, copy, resource);
-    } else {
-        throw std::invalid_argument("Allowed data format is csv or binary");
-    }
-}
-
-/// Function for spacepoint file reading. The output is traccc container.
-///
-/// @param event is the event index
 /// @param measurements_directory is the directory of measurement file
 /// @param data_format is the data format (e.g. csv or binary) of output file
 /// @param resource is the vecmem resource
