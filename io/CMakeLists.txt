@@ -4,9 +4,13 @@
 #
 # Mozilla Public License Version 2.0
 
+# Look for OpenMP.
+find_package( OpenMP COMPONENTS CXX )
+
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
+  "include/traccc/io/read.hpp"
   "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_digitization_config.hpp"
   "include/traccc/io/read_geometry.hpp"
@@ -18,10 +22,10 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/mapper.hpp"
   "include/traccc/io/write.hpp"
   "include/traccc/io/utils.hpp"
-  "include/traccc/io/reader.hpp"
   "include/traccc/io/details/read_surfaces.hpp"
   # Implementation
   "src/mapper.cpp"
+  "src/read.cpp"
   "src/read_cells.cpp"
   "src/read_digitization_config.cpp"
   "src/read_geometry.cpp"
@@ -54,3 +58,6 @@ traccc_add_library( traccc_io io TYPE SHARED
 target_link_libraries( traccc_io
   PUBLIC dfelibs::dfelibs vecmem::core traccc::core ActsCore
          ActsPluginJson )
+if( OpenMP_CXX_FOUND )
+  target_link_libraries( traccc_io PRIVATE OpenMP::OpenMP_CXX )
+endif()

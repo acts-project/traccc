@@ -17,7 +17,6 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/io/reader.hpp"
 #include "traccc/io/utils.hpp"
 
 namespace traccc {
