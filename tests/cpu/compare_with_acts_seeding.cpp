@@ -6,10 +6,8 @@
  */
 
 // io
-#include "traccc/io/csv.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/utils.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // algorithms
 #include "traccc/seeding/seed_finding.hpp"
@@ -35,6 +33,9 @@
 #include "Acts/Surfaces/DiscSurface.hpp"
 #include "Acts/Surfaces/PlaneSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
+
+// VecMem
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -129,9 +130,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Read the hits from the relevant event file
     traccc::spacepoint_container_types::host spacepoints_per_event =
-        traccc::read_spacepoints_from_event(event, hits_dir,
-                                            traccc::data_format::csv,
-                                            surface_transforms, host_mr);
+        traccc::io::read_spacepoints(event, hits_dir, surface_transforms,
+                                     traccc::data_format::csv, &host_mr);
 
     /*--------------------------------
       TRACCC seeding

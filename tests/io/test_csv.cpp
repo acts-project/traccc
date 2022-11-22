@@ -6,10 +6,10 @@
  */
 
 // Project include(s).
-#include "traccc/io/csv.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -98,9 +98,9 @@ TEST_F(io, csv_read_tml_single_muon) {
 
     // Read the hits from the relevant event file
     traccc::spacepoint_container_types::host spacepoints_per_event =
-        traccc::read_spacepoints_from_event(0, "tml_full/single_muon/",
-                                            traccc::data_format::csv,
-                                            surface_transforms, resource);
+        traccc::io::read_spacepoints(0, "tml_full/single_muon/",
+                                     surface_transforms,
+                                     traccc::data_format::csv, &resource);
 
     // Read the measurements from the relevant event file
     traccc::measurement_container_types::host measurements_per_event =

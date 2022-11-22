@@ -9,6 +9,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/reader.hpp"
 #include "traccc/io/write.hpp"
 #include "traccc/options/common_options.hpp"
@@ -45,9 +46,9 @@ int create_binaries(const std::string& detector_file,
 
         // Read the hits from the relevant event file
         traccc::spacepoint_container_types::host spacepoints_csv =
-            traccc::read_spacepoints_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, host_mr);
+            traccc::io::read_spacepoints(
+                event, common_opts.input_directory, surface_transforms,
+                common_opts.input_data_format, &host_mr);
 
         // Write binary file
         traccc::io::write(event, common_opts.input_directory,
