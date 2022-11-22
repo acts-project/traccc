@@ -6,7 +6,11 @@
  */
 
 // Project include(s).
-#include "traccc/io/csv.hpp"
+#include "traccc/io/details/read_surfaces.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -21,12 +25,9 @@ class io : public traccc::tests::data_test {};
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_single_module) {
-    std::string file = get_datafile("single_module/cells.csv");
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
 
-    vecmem::host_memory_resource resource;
-    auto single_module_cells = traccc::read_cells(creader, resource);
+    auto single_module_cells = traccc::io::read_cells(
+        get_datafile("single_module/cells.csv"), traccc::data_format::csv);
     ASSERT_EQ(single_module_cells.size(), 1u);
     auto module_cells = single_module_cells.at(0).items;
     auto module = single_module_cells.at(0).header;
@@ -41,12 +42,9 @@ TEST_F(io, csv_read_single_module) {
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_two_modules) {
-    std::string file = get_datafile("two_modules/cells.csv");
 
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
-    vecmem::host_memory_resource resource;
-    auto two_module_cells = traccc::read_cells(creader, resource);
+    auto two_module_cells = traccc::io::read_cells(
+        get_datafile("two_modules/cells.csv"), traccc::data_format::csv);
     ASSERT_EQ(two_module_cells.size(), 2u);
 
     auto first_module_cells = two_module_cells.at(0).items;
@@ -76,23 +74,17 @@ TEST_F(io, csv_read_two_modules) {
 TEST_F(io, csv_read_tml_transforms) {
     std::string file = get_datafile("tml_detector/trackml-detector.csv");
 
-    traccc::surface_reader sreader(
-        file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw",
-               "rot_zu", "rot_zv", "rot_zw"});
-    auto tml_barrel_transforms = traccc::read_surfaces(sreader);
+    auto tml_barrel_transforms = traccc::io::details::read_surfaces(file);
 
     ASSERT_EQ(tml_barrel_transforms.size(), 18791u);
 }
 
 // This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_pixelbarrel) {
-    std::string file =
-        get_datafile("tml_pixel_barrel/event000000000-cells.csv");
 
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
-    vecmem::host_memory_resource resource;
-    auto tml_barrel_modules = traccc::read_cells(creader, resource);
+    auto tml_barrel_modules = traccc::io::read_cells(
+        get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
+        traccc::data_format::csv);
 
     ASSERT_EQ(tml_barrel_modules.size(), 2382u);
 }
@@ -103,18 +95,18 @@ TEST_F(io, csv_read_tml_single_muon) {
 
     // Read the surface transforms
     auto surface_transforms =
-        traccc::read_geometry("tml_detector/trackml-detector.csv");
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the hits from the relevant event file
     traccc::spacepoint_container_types::host spacepoints_per_event =
-        traccc::read_spacepoints_from_event(0, "tml_full/single_muon/",
-                                            traccc::data_format::csv,
-                                            surface_transforms, resource);
+        traccc::io::read_spacepoints(0, "tml_full/single_muon/",
+                                     surface_transforms,
+                                     traccc::data_format::csv, &resource);
 
     // Read the measurements from the relevant event file
     traccc::measurement_container_types::host measurements_per_event =
-        traccc::read_measurements_from_event(
-            0, "tml_full/single_muon/", traccc::data_format::csv, resource);
+        traccc::io::read_measurements(0, "tml_full/single_muon/",
+                                      traccc::data_format::csv, &resource);
 
     const auto sp_header_size = spacepoints_per_event.size();
     const auto ms_header_size = measurements_per_event.size();

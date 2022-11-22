@@ -11,6 +11,9 @@ include( traccc-compiler-options-cpp )
 add_library( traccc_tests_common INTERFACE )
 target_include_directories( traccc_tests_common
     INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/common )
+target_link_libraries( traccc_tests_common
+    INTERFACE dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
+              traccc::core traccc::io )
 
 # Add all of the test subdirectories.
 add_subdirectory( core )

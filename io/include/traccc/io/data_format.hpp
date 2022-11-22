@@ -9,9 +9,11 @@
 
 namespace traccc {
 
+/// Format for an input or output file
 enum data_format : int {
     csv = 0,
     binary = 1,
+    json = 2,
 };
 
 }  // namespace traccc

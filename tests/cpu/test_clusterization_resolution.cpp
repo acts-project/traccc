@@ -8,7 +8,10 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/io/reader.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_digitization_config.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -29,10 +32,10 @@ TEST_P(SurfaceBinningTests, Run) {
     unsigned int event = std::get<3>(GetParam());
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(detector_file);
+    auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the digitization configuration file
-    auto digi_cfg = traccc::read_digitization_config(digi_config_file);
+    auto digi_cfg = traccc::io::read_digitization_config(digi_config_file);
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -43,8 +46,8 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Read the cells from the relevant event file
     traccc::cell_container_types::host cells_truth =
-        traccc::read_cells_from_event(event, data_dir, traccc::data_format::csv,
-                                      surface_transforms, digi_cfg, host_mr);
+        traccc::io::read_cells(event, data_dir, traccc::data_format::csv,
+                               &surface_transforms, &digi_cfg, &host_mr);
 
     // Get Reconstructed Spacepoints
     auto measurements_recon = ca(cells_truth);
@@ -52,9 +55,8 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Read the hits from the relevant event file
     traccc::spacepoint_container_types::host spacepoints_truth =
-        traccc::read_spacepoints_from_event(event, data_dir,
-                                            traccc::data_format::csv,
-                                            surface_transforms, host_mr);
+        traccc::io::read_spacepoints(event, data_dir, surface_transforms,
+                                     traccc::data_format::csv, &host_mr);
 
     // Check the size of spacepoints
     EXPECT_TRUE(spacepoints_recon.size() > 0);
