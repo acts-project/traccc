@@ -163,23 +163,6 @@ class kalman_fitter {
 
         const auto& mask_store = m_detector.get()->mask_store();
 
-        /// Delete Me ///
-        /*
-        for (auto& trk_state : track_states) {
-            printf("predicted cov \n");
-            for (std::size_t i = 0; i < 6; i++) {
-                for (std::size_t j = 0; j < 6; j++) {
-                    printf("%f ",
-                           getter::element(trk_state.predicted().covariance(),
-                                           i, j));
-                }
-                printf("\n");
-            }
-            printf("\n");
-        }
-        */
-        /// Delete Me ///
-
         for (typename track_state_collection_t::reverse_iterator it =
                  track_states.rbegin() + 1;
              it != track_states.rend(); ++it) {
