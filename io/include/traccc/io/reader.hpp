@@ -13,7 +13,6 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/digitization_config.hpp"
-#include "traccc/io/binary.hpp"
 #include "traccc/io/csv.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
@@ -31,41 +30,6 @@
 #include <functional>
 
 namespace traccc {
-
-/// Function for spacepoint file reading. The output is traccc container.
-///
-/// @param event is the event index
-/// @param measurements_directory is the directory of measurement file
-/// @param data_format is the data format (e.g. csv or binary) of output file
-/// @param resource is the vecmem resource
-inline measurement_container_types::host read_measurements_from_event(
-    size_t event, const std::string &measurements_directory,
-    const traccc::data_format &data_format, vecmem::memory_resource &resource) {
-
-    // Read the cells from the relevant event file
-    if (data_format == traccc::data_format::csv) {
-        std::string io_measurements_file =
-            data_directory() + measurements_directory +
-            get_event_filename(event, "-measurements.csv");
-        traccc::measurement_reader mreader(
-            io_measurements_file,
-            {"geometry_id", "local_key", "local0", "local1", "phi", "theta",
-             "time", "var_local0", "var_local1", "var_phi", "var_theta",
-             "var_time"});
-        return traccc::read_measurements(mreader, resource);
-    } else if (data_format == traccc::data_format::binary) {
-        std::string io_measurements_file =
-            data_directory() + measurements_directory +
-            get_event_filename(event, "-measurements.dat");
-
-        vecmem::copy copy;
-
-        return traccc::read_binary<measurement_container_types::host>(
-            io_measurements_file, copy, resource);
-    } else {
-        throw std::invalid_argument("Allowed data format is csv or binary");
-    }
-}
 
 inline traccc::demonstrator_input read(size_t events,
                                        const std::string &detector_file,

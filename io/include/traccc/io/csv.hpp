@@ -72,28 +72,6 @@ using fatras_particle_reader = dfe::NamedTupleCsvReader<csv_particle>;
 
 /// writer
 
-struct csv_measurement {
-
-    uint64_t geometry_id = 0;
-    std::string local_key = "";
-    scalar local0 = 0.;
-    scalar local1 = 0.;
-    scalar phi = 0.;
-    scalar theta = 0.;
-    scalar time = 0.;
-    scalar var_local0 = 0.;
-    scalar var_local1 = 0.;
-    scalar var_phi = 0.;
-    scalar var_theta = 0.;
-    scalar var_time = 0.;
-
-    DFE_NAMEDTUPLE(csv_measurement, geometry_id, local0, local1, phi, theta,
-                   time, var_local0, var_local1, var_phi, var_theta, var_time);
-};
-
-using measurement_reader = dfe::NamedTupleCsvReader<csv_measurement>;
-using measurement_writer = dfe::NamedTupleCsvWriter<csv_measurement>;
-
 struct csv_seed {
     scalar weight;
     scalar z_vertex;
@@ -134,48 +112,5 @@ struct csv_bound_track_parameters {
 
 using bound_track_parameters_writer =
     dfe::NamedTupleCsvWriter<csv_bound_track_parameters>;
-
-/// Read the collection of measurements per module and fill into a collection
-///
-/// @param mreader The measurement reader type
-/// @param resource The memory resource to use for the return value
-inline measurement_container_types::host read_measurements(
-    measurement_reader& mreader, vecmem::memory_resource& resource,
-    unsigned int max_measurements = std::numeric_limits<unsigned int>::max()) {
-    measurement_container_types::host result(&resource);
-
-    unsigned int read_measurements = 0;
-    csv_measurement io_measurement;
-
-    while (mreader.read(io_measurement)) {
-        cell_module module;
-
-        module.module = io_measurement.geometry_id;
-
-        measurement meas;
-        meas.local = {io_measurement.local0, io_measurement.local1};
-        meas.variance = {io_measurement.var_local0, io_measurement.var_local1};
-
-        const measurement_container_types::host::header_vector& headers =
-            result.get_headers();
-
-        auto rit = std::find(headers.rbegin(), headers.rend(), module);
-
-        if (rit == headers.rend()) {
-            result.push_back(module, vecmem::vector<measurement>({meas}));
-        } else {
-            // The reverse iterator.base() returns the equivalent normal
-            // iterator shifted by 1, so that the (r)end and (r)begin iterators
-            // match consistently, due to the extra past-the-last element
-            auto idx = std::distance(headers.begin(), rit.base()) - 1;
-            result.at(idx).items.push_back(meas);
-        }
-
-        if (++read_measurements >= max_measurements) {
-            break;
-        }
-    }
-    return result;
-}
 
 }  // namespace traccc
