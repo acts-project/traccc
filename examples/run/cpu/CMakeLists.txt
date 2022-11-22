@@ -14,3 +14,6 @@ traccc_add_executable( seq_example "seq_example.cpp"
 
 traccc_add_executable( ccl_example "ccl_example.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io)
+
+traccc_add_executable( tbb_task_example "tbb_task_example.cpp"
+   LINK_LIBRARIES TBB::tbb )

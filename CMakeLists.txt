@@ -110,6 +110,20 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
 
+# Set up TBB.
+option( TRACCC_SETUP_TBB
+   "Set up the TBB target(s) explicitly" TRUE )
+option( TRACCC_USE_SYSTEM_TBB
+   "Pick up an existing installation of TBB from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_TBB )
+   if( TRACCC_USE_SYSTEM_TBB )
+      find_package( TBB REQUIRED )
+   else()
+      add_subdirectory( extern/tbb )
+   endif()
+endif()
+
 # Set up Kokkos.
 option( TRACCC_SETUP_KOKKOS
    "Set up the Kokkos library" TRUE )
