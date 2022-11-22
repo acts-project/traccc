@@ -57,8 +57,9 @@ TEST(io_binary, cell) {
         &surface_transforms, &digi_cfg, &host_mr);
 
     // Delete binary file
-    std::string io_cells_file = traccc::data_directory() + cells_directory +
-                                traccc::get_event_filename(event, "-cells.dat");
+    std::string io_cells_file =
+        traccc::io::data_directory() + cells_directory +
+        traccc::io::get_event_filename(event, "-cells.dat");
     std::remove(io_cells_file.c_str());
 
     ASSERT_TRUE(!std::ifstream(io_cells_file));
@@ -120,8 +121,8 @@ TEST(io_binary, spacepoint) {
 
     // Delete binary file
     std::string io_spacepoints_file =
-        traccc::data_directory() + hits_directory +
-        traccc::get_event_filename(event, "-hits.dat");
+        traccc::io::data_directory() + hits_directory +
+        traccc::io::get_event_filename(event, "-hits.dat");
     std::remove(io_spacepoints_file.c_str());
 
     ASSERT_TRUE(!std::ifstream(io_spacepoints_file));
@@ -179,8 +180,8 @@ TEST(io_binary, measurement) {
 
     // Delete binary file
     std::string io_measurements_file =
-        traccc::data_directory() + measurements_directory +
-        traccc::get_event_filename(event, "-measurements.dat");
+        traccc::io::data_directory() + measurements_directory +
+        traccc::io::get_event_filename(event, "-measurements.dat");
     std::remove(io_measurements_file.c_str());
 
     ASSERT_TRUE(!std::ifstream(io_measurements_file));

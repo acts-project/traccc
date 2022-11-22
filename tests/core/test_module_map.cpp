@@ -135,8 +135,8 @@ TEST(geometry, module_map_failure) {
  */
 TEST(geometry, module_map_read_trackml) {
 
-    std::string file = traccc::data_directory() +
-                       std::string("tml_detector/trackml-detector.csv");
+    const std::string file =
+        traccc::io::data_directory() + "tml_detector/trackml-detector.csv";
 
     /*
      * Next, we read the surfaces from the TrackML data file, and we get back a

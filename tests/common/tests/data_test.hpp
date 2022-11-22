@@ -34,7 +34,9 @@ class data_test : public ::testing::Test {
     protected:
     std::string data_directory;
 
-    virtual void SetUp() override { data_directory = traccc::data_directory(); }
+    virtual void SetUp() override {
+        data_directory = traccc::io::data_directory();
+    }
 
     std::string get_datafile(std::string name) { return data_directory + name; }
 };
