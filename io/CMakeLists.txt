@@ -16,7 +16,6 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/read_geometry.hpp"
   "include/traccc/io/read_measurements.hpp"
   "include/traccc/io/read_spacepoints.hpp"
-  "include/traccc/io/csv.hpp"
   "include/traccc/io/data_format.hpp"
   "include/traccc/io/demonstrator_edm.hpp"
   "include/traccc/io/mapper.hpp"
@@ -55,10 +54,16 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/make_measurement_reader.hpp"
   "src/csv/make_measurement_reader.cpp"
   "src/csv/read_measurements.hpp"
-  "src/csv/read_measurements.cpp" )
+  "src/csv/read_measurements.cpp"
+  "src/csv/measurement_hit_id.hpp"
+  "src/csv/make_measurement_hit_id_reader.hpp"
+  "src/csv/make_measurement_hit_id_reader.cpp"
+  "src/csv/particle.hpp"
+  "src/csv/make_particle_reader.hpp"
+  "src/csv/make_particle_reader.cpp" )
 target_link_libraries( traccc_io
-  PUBLIC dfelibs::dfelibs vecmem::core traccc::core ActsCore
-         ActsPluginJson )
+  PUBLIC vecmem::core traccc::core
+  PRIVATE dfelibs::dfelibs ActsPluginJson )
 target_compile_definitions( traccc_io
   PRIVATE TRACCC_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data" )
 if( OpenMP_CXX_FOUND )
