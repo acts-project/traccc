@@ -9,7 +9,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/io/reader.hpp"
+#include "traccc/io/utils.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>

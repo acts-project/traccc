@@ -21,6 +21,9 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
+
 // System include(s).
 #include <iostream>
 

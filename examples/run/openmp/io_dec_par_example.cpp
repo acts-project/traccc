@@ -11,7 +11,9 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
-#include "traccc/io/reader.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // Boost
 #include <boost/program_options.hpp>

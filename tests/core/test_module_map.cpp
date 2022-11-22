@@ -9,12 +9,15 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/module_map.hpp"
-#include "traccc/io/csv.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
-#include "traccc/io/reader.hpp"
+#include "traccc/io/utils.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>
+
+// System include(s).
+#include <map>
+#include <string>
 
 /*
  * Simple test of this map using integers and strings.

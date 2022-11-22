@@ -24,6 +24,9 @@
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
+
 // System include(s).
 #include <exception>
 #include <iostream>

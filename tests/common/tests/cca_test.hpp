@@ -11,13 +11,21 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/io/read_cells.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
 
+// VecMem include(s).
+#include <vecmem/containers/vector.hpp>
+
 // GTest include(s).
 #include <gtest/gtest.h>
+
+// DFE include(s).
+#include <dfe/dfe_io_dsv.hpp>
+#include <dfe/dfe_namedtuple.hpp>
 
 // System include(s).
 #include <functional>
