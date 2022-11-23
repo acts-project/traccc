@@ -15,10 +15,14 @@
 
 namespace traccc::performance {
 
+using timing_info_pair = std::pair<std::string, std::chrono::nanoseconds>;
+
 /// Struct for storing time measurements collected in timer class
 ///
 struct timing_info {
-    std::vector<std::pair<std::string, std::chrono::nanoseconds>> data;
+    std::vector<timing_info_pair> data;
+
+    std::chrono::nanoseconds get_time(const std::string_view timer_name);
 };
 
 std::ostream& operator<<(std::ostream& out, const timing_info& info);
