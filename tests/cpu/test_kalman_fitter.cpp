@@ -9,7 +9,6 @@
 #include "tests/seed_generator.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
-#include "traccc/io/reader.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
 // detray include(s).
@@ -125,8 +124,7 @@ TEST_P(KalmanFittingTests, Run) {
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
         // Event map
-        traccc::event_map2<detector_type> evt_map(det, i_evt, full_path,
-                                                  full_path, full_path);
+        traccc::event_map2 evt_map(i_evt, full_path, full_path, full_path);
 
         // Truth Track Candidates
         traccc::track_candidates_container_types::host track_candidates =
@@ -149,7 +147,7 @@ TEST_P(KalmanFittingTests, Run) {
             ASSERT_EQ(track_states_per_track.size(),
                       plane_positions.size() - 2);
 
-            fit_performance_writer.write(track_states_per_track, evt_map);
+            fit_performance_writer.write(track_states_per_track, det, evt_map);
         }
     }
 

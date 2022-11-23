@@ -14,10 +14,9 @@
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-#include "traccc/io/csv.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/utils.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_digitization_config.hpp"
+#include "traccc/io/read_geometry.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
@@ -43,11 +42,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =
-        traccc::read_digitization_config(i_cfg.digitization_config_file);
+        traccc::io::read_digitization_config(i_cfg.digitization_config_file);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -114,10 +113,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                cells_per_event = traccc::read_cells_from_event(
+                cells_per_event = traccc::io::read_cells(
                     event, common_opts.input_directory,
-                    common_opts.input_data_format, surface_transforms, digi_cfg,
-                    host_mr);
+                    common_opts.input_data_format, &surface_transforms,
+                    &digi_cfg, &host_mr);
             }  // stop measuring file reading timer
 
             /*-----------------------------

@@ -48,19 +48,6 @@ void res_plot_tool::fill(res_plot_tool::res_plot_cache& cache,
         const auto pull = residual / std::sqrt(getter::element(
                                          fit_param.covariance(), idx, idx));
 
-        //// DELETE ME ////
-        /*
-        if (idx == 3) {
-            printf("fit %f  \n", getter::element(fit_param.vector(), idx, 0));
-            printf("truth %f  \n",
-                   getter::element(truth_param.vector(), idx, 0));
-            printf("cov %.10lf  \n", std::sqrt(getter::element(
-                                        fit_param.covariance(), idx, idx)));
-            printf("res %f  \n", residual);
-            printf("pull %f  \n", pull);
-        }
-        */
-
         plot_helpers::fill_histo(cache.residuals.at(par_name), residual);
         plot_helpers::fill_histo(cache.pulls.at(par_name), pull);
     }

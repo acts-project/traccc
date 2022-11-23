@@ -11,7 +11,6 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/efficiency/eff_plot_tool.hpp"
    "include/traccc/efficiency/seeding_performance_writer.hpp"
    "include/traccc/efficiency/track_classification.hpp"
-   "include/traccc/event/event_map.hpp"
    # Resolution calculation code.
    "include/traccc/resolution/fitting_performance_writer.hpp"
    "include/traccc/resolution/res_plot_tool.hpp"

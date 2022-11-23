@@ -82,7 +82,7 @@ int simulate(std::string output_directory, unsigned int events, scalar p0,
     std::string file_path =
         std::to_string(p0) + "_GeV_" + std::to_string(phi0) + "_phi/";
 
-    std::string full_path = data_directory() + output_directory + file_path;
+    std::string full_path = io::data_directory() + output_directory + file_path;
 
     std::filesystem::create_directories(full_path);
 

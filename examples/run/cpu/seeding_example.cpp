@@ -6,9 +6,8 @@
  */
 
 // io
-#include "traccc/io/csv.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -22,6 +21,9 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
+
 // System include(s).
 #include <iostream>
 
@@ -31,7 +33,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -56,9 +58,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Read the hits from the relevant event file
         traccc::spacepoint_container_types::host spacepoints_per_event =
-            traccc::read_spacepoints_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, host_mr);
+            traccc::io::read_spacepoints(
+                event, common_opts.input_directory, surface_transforms,
+                common_opts.input_data_format, &host_mr);
 
         /*----------------
              Seeding

@@ -6,8 +6,13 @@
  */
 
 // Project include(s).
-#include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_digitization_config.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
+#include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/utils.hpp"
+#include "traccc/io/write.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -31,31 +36,30 @@ TEST(io_binary, cell) {
 
     // Read the surface transforms
     auto surface_transforms =
-        traccc::read_geometry("tml_detector/trackml-detector.csv");
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the digitization configuration file
-    auto digi_cfg = traccc::read_digitization_config(
+    auto digi_cfg = traccc::io::read_digitization_config(
         "tml_detector/default-geometric-config-generic.json");
 
     // Read csv file
     traccc::cell_container_types::host cells_csv =
-        traccc::read_cells_from_event(event, cells_directory,
-                                      traccc::data_format::csv,
-                                      surface_transforms, digi_cfg, host_mr);
+        traccc::io::read_cells(event, cells_directory, traccc::data_format::csv,
+                               &surface_transforms, &digi_cfg, &host_mr);
 
     // Write binary file
-    traccc::write_cells(event, cells_directory, traccc::data_format::binary,
-                        cells_csv);
+    traccc::io::write(event, cells_directory, traccc::data_format::binary,
+                      traccc::get_data(cells_csv));
 
     // Read binary file
-    traccc::cell_container_types::host cells_binary =
-        traccc::read_cells_from_event(event, cells_directory,
-                                      traccc::data_format::binary,
-                                      surface_transforms, digi_cfg, host_mr);
+    traccc::cell_container_types::host cells_binary = traccc::io::read_cells(
+        event, cells_directory, traccc::data_format::binary,
+        &surface_transforms, &digi_cfg, &host_mr);
 
     // Delete binary file
-    std::string io_cells_file = traccc::data_directory() + cells_directory +
-                                traccc::get_event_filename(event, "-cells.dat");
+    std::string io_cells_file =
+        traccc::io::data_directory() + cells_directory +
+        traccc::io::get_event_filename(event, "-cells.dat");
     std::remove(io_cells_file.c_str());
 
     ASSERT_TRUE(!std::ifstream(io_cells_file));
@@ -99,28 +103,26 @@ TEST(io_binary, spacepoint) {
 
     // Read the surface transforms
     auto surface_transforms =
-        traccc::read_geometry("tml_detector/trackml-detector.csv");
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read csv file
     traccc::spacepoint_container_types::host spacepoints_csv =
-        traccc::read_spacepoints_from_event(event, hits_directory,
-                                            traccc::data_format::csv,
-                                            surface_transforms, host_mr);
+        traccc::io::read_spacepoints(event, hits_directory, surface_transforms,
+                                     traccc::data_format::csv, &host_mr);
 
     // Write binary file
-    traccc::write_spacepoints(event, hits_directory,
-                              traccc::data_format::binary, spacepoints_csv);
+    traccc::io::write(event, hits_directory, traccc::data_format::binary,
+                      traccc::get_data(spacepoints_csv));
 
     // Read binary file
     traccc::spacepoint_container_types::host spacepoints_binary =
-        traccc::read_spacepoints_from_event(event, hits_directory,
-                                            traccc::data_format::binary,
-                                            surface_transforms, host_mr);
+        traccc::io::read_spacepoints(event, hits_directory, surface_transforms,
+                                     traccc::data_format::binary, &host_mr);
 
     // Delete binary file
     std::string io_spacepoints_file =
-        traccc::data_directory() + hits_directory +
-        traccc::get_event_filename(event, "-hits.dat");
+        traccc::io::data_directory() + hits_directory +
+        traccc::io::get_event_filename(event, "-hits.dat");
     std::remove(io_spacepoints_file.c_str());
 
     ASSERT_TRUE(!std::ifstream(io_spacepoints_file));
@@ -163,23 +165,23 @@ TEST(io_binary, measurement) {
 
     // Read csv file
     traccc::measurement_container_types::host measurements_csv =
-        traccc::read_measurements_from_event(event, measurements_directory,
-                                             traccc::data_format::csv, host_mr);
+        traccc::io::read_measurements(event, measurements_directory,
+                                      traccc::data_format::csv, &host_mr);
 
     // Write binary file
-    traccc::write_measurements(event, measurements_directory,
-                               traccc::data_format::binary, measurements_csv);
+    traccc::io::write(event, measurements_directory,
+                      traccc::data_format::binary,
+                      traccc::get_data(measurements_csv));
 
     // Read binary file
     traccc::measurement_container_types::host measurements_binary =
-        traccc::read_measurements_from_event(event, measurements_directory,
-                                             traccc::data_format::binary,
-                                             host_mr);
+        traccc::io::read_measurements(event, measurements_directory,
+                                      traccc::data_format::binary, &host_mr);
 
     // Delete binary file
     std::string io_measurements_file =
-        traccc::data_directory() + measurements_directory +
-        traccc::get_event_filename(event, "-measurements.dat");
+        traccc::io::data_directory() + measurements_directory +
+        traccc::io::get_event_filename(event, "-measurements.dat");
     std::remove(io_measurements_file.c_str());
 
     ASSERT_TRUE(!std::ifstream(io_measurements_file));

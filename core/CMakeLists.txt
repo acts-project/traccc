@@ -27,6 +27,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/track_candidate.hpp"
   "include/traccc/edm/track_state.hpp"
   # Geometry description.
+  "include/traccc/geometry/digitization_config.hpp"
   "include/traccc/geometry/module_map.hpp"
   "include/traccc/geometry/geometry.hpp"
   "include/traccc/geometry/pixel_data.hpp"
@@ -77,5 +78,5 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cpp" )
 target_link_libraries( traccc_core
-  PUBLIC Eigen3::Eigen vecmem::core detray::core ActsCore ActsPluginJson
+  PUBLIC Eigen3::Eigen vecmem::core detray::core ActsCore
          traccc::Thrust traccc::algebra )

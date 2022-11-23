@@ -9,7 +9,7 @@
 // Project include(s).
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/io/csv.hpp"
+#include "traccc/io/read_cells.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -99,9 +99,8 @@ int main(int argc, char* argv[]) {
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
-    traccc::cell_reader creader(event_file, {"geometry_id", "hit_id", "cannel0",
-                                             "channel1", "activation", "time"});
-    traccc::cell_container_types::host data = traccc::read_cells(creader, mem);
+    traccc::cell_container_types::host data =
+        traccc::io::read_cells(event_file);
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 
