@@ -25,12 +25,11 @@ timer::timer(const std::string_view timer_name, timing_info& t_info)
 timer::~timer() {
     const auto end = std::chrono::high_resolution_clock::now();
     const std::chrono::nanoseconds totalTime = end - m_start;
-    const auto pos = std::find_if(
-        m_timing_info.data.begin(), m_timing_info.data.end(),
-        [&m_name = m_name](
-            const std::pair<std::string, std::chrono::nanoseconds>& element) {
-            return element.first == m_name;
-        });
+    const auto pos =
+        std::find_if(m_timing_info.data.begin(), m_timing_info.data.end(),
+                     [&m_name = m_name](const timing_info_pair& element) {
+                         return element.first == m_name;
+                     });
 
     if (pos == m_timing_info.data.end()) {
         m_timing_info.data.push_back({m_name, totalTime});
