@@ -34,6 +34,9 @@ throughput_options::throughput_options(po::options_description& desc) {
     desc.add_options()("processed_events",
                        po::value<std::size_t>()->default_value(100),
                        "Number of events to process");
+    desc.add_options()("cold_run_events",
+                       po::value<std::size_t>()->default_value(10),
+                       "Number of events to run 'cold'");
 }
 
 void throughput_options::read(const po::variables_map& vm) {
@@ -57,6 +60,7 @@ void throughput_options::read(const po::variables_map& vm) {
     digitization_config_file = vm["digitization_config_file"].as<std::string>();
     loaded_events = vm["loaded_events"].as<std::size_t>();
     processed_events = vm["processed_events"].as<std::size_t>();
+    cold_run_events = vm["cold_run_events"].as<std::size_t>();
 }
 
 std::ostream& operator<<(std::ostream& out, const throughput_options& opt) {
@@ -67,6 +71,7 @@ std::ostream& operator<<(std::ostream& out, const throughput_options& opt) {
         << "Detector geometry   : " << opt.detector_file << "\n"
         << "Digitization config : " << opt.digitization_config_file << "\n"
         << "Loaded event(s)     : " << opt.loaded_events << "\n"
+        << "Cold run event(s)   : " << opt.cold_run_events << "\n"
         << "Processed event(s)  : " << opt.processed_events;
     return out;
 }

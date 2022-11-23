@@ -98,6 +98,26 @@ int main(int argc, char* argv[]) {
     // optimisations don't skip any step
     std::atomic_size_t rec_track_params = 0;
 
+    // Cold Run events
+    // These are not accounted for the performance measurement
+    for (std::size_t i = 0; i < throughput_cfg.cold_run_events; ++i) {
+        // Choose which event to process.
+        const std::size_t event = std::rand() % throughput_cfg.loaded_events;
+
+        // Launch the processing of the event.
+        arena.execute([&]() {
+            group.run([&]() {
+                const traccc::cell_container_types::host& input = cells[event];
+                auto spacepoints = sf(ca(input));
+                auto track_params = tp(spacepoints, sa(spacepoints));
+                rec_track_params.fetch_add(track_params.size());
+            });
+        });
+    }
+
+    // Wait for all tasks to finish.
+    group.wait();
+
     {
         // Measure the total time of execution.
         traccc::performance::timer t{"Event processing", times};
