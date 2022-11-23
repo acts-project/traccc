@@ -25,7 +25,13 @@ struct measurement_link {
 TRACCC_HOST_DEVICE
 inline bool operator<(const measurement_link& lhs,
                       const measurement_link& rhs) {
-    return lhs.surface_link < rhs.surface_link;
+    if (lhs.surface_link < rhs.surface_link) {
+        return true;
+    } else if (lhs.surface_link == rhs.surface_link) {
+        return lhs.meas < rhs.meas;
+    }
+
+    return false;
 }
 
 struct event_map2 {

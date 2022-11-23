@@ -58,7 +58,8 @@ class fitting_performance_writer {
         // @todo: Use identify_contributing_particles function
         std::map<particle, uint64_t> contributing_particles =
             m_p_map[meas_link];
-        const particle ptc = (*contributing_particles.begin()).first;
+
+        const particle ptc = contributing_particles.begin()->first;
 
         // Find the truth global position and momentum
         const auto global_pos = evt_map.meas_xp_map[meas_link].first;
