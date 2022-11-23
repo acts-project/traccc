@@ -222,7 +222,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
               << n_modules << " modules" << std::endl;
     std::cout << "- created  (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (sycl) " << n_seeds_sycl << " seeds" << std::endl;
-    std::cout << "==>Elapsed time (ms)..." << elapsedTimes << std::endl;
+    std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;
 }

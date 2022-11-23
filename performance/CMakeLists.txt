@@ -38,6 +38,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/timer.hpp"
    "src/performance/timer.cpp"
    "include/traccc/performance/timing_info.hpp"
-   "src/performance/timing_info.cpp" )
+   "src/performance/timing_info.cpp"
+   "include/traccc/performance/throughput.hpp"
+   "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
    PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core )

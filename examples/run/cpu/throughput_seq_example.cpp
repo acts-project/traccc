@@ -15,7 +15,9 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
+#include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
+#include "traccc/performance/timing_info.hpp"
 
 // options
 #include "traccc/options/handle_argument_errors.hpp"
@@ -25,9 +27,8 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
-#include <time.h>
-
 #include <cstdlib>
+#include <ctime>
 #include <exception>
 #include <iostream>
 
@@ -71,7 +72,7 @@ int throughput_seq_run(
 
         {
 
-            traccc::performance::timer t("Events processing", elapsedTimes);
+            traccc::performance::timer t("Event processing", elapsedTimes);
 
             traccc::cell_container_types::host& cells_per_event =
                 cells_event_vec[event];
@@ -103,21 +104,13 @@ int throughput_seq_run(
     }
     std::cout << "dummy_count = " << dummy_count << std::endl;
 
-    std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- Processed " << i_cfg.processed_events << " events from "
-              << i_cfg.loaded_events << " loaded events." << std::endl;
-
-    std::cout << "File reading throughput (ms/event) = "
-              << elapsedTimes.get_time("File reading").count() * 1.e-6 /
-                     (double)i_cfg.loaded_events
-              << std::endl;
-    std::cout << "Event processing        (ms/event) = "
-              << elapsedTimes.get_time("Events processing").count() * 1.e-6 /
-                     (double)i_cfg.processed_events
-              << std::endl;
-    std::cout << "Processing throughput   (event/s) = "
-              << (double)i_cfg.processed_events /
-                     elapsedTimes.get_time("Events processing").count() * 1.e9
+    std::cout << "Time totals:" << std::endl;
+    std::cout << elapsedTimes << std::endl;
+    std::cout << "Throughput:" << std::endl;
+    std::cout << traccc::performance::throughput{static_cast<std::size_t>(
+                                                     i_cfg.processed_events),
+                                                 elapsedTimes,
+                                                 "Event processing"}
               << std::endl;
 
     return 0;

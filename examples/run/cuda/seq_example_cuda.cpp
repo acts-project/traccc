@@ -281,7 +281,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     std::cout << "- created  (cpu) " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (cuda) " << n_seeds_cuda << " seeds" << std::endl;
-    std::cout << "==>Elapsed time (ms)..." << elapsedTimes << std::endl;
+    std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;
 }
