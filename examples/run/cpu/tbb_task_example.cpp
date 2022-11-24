@@ -36,7 +36,7 @@ int main() {
     }
 
     // Wait for all threads to finish.
-    arena.execute([&group]() { group.wait(); });
+    group.wait();
 
     // Return gracefully.
     return 0;
