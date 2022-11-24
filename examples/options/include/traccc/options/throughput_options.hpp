@@ -35,6 +35,9 @@ struct throughput_options {
     std::size_t loaded_events = 10;
     /// The number of events to process during the job
     std::size_t processed_events = 100;
+    /// The number of events to run "cold", i.e. run without accounting for
+    /// them in the performance measurements
+    std::size_t cold_run_events = 10;
 
     /// Constructor on top of a common @c program_options object
     ///

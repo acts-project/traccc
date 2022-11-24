@@ -9,10 +9,10 @@
 #include "traccc/io/read.hpp"
 
 // algorithms
-#include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/seeding/seeding_algorithm.hpp"
-#include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/seeding/seeding_algorithm.hpp"
+#include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
 
 // performance
 #include "traccc/performance/throughput.hpp"
@@ -23,8 +23,10 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/throughput_options.hpp"
 
-// VecMem include(s).
+// Vecmem include(s)
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <cstdlib>
@@ -36,13 +38,19 @@ namespace po = boost::program_options;
 
 int throughput_seq_run(const traccc::throughput_options& i_cfg) {
 
-    // Memory resource used by the EDM.
+    // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::cuda::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
 
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    vecmem::cuda::copy copy;
+
+    traccc::device::container_h2d_copy_alg<traccc::cell_container_types>
+        cell_h2d{mr, copy};
+    traccc::cuda::clusterization_algorithm ca(mr);
+    traccc::cuda::seeding_algorithm sa(mr);
+    traccc::cuda::track_params_estimation tp(mr);
+    traccc::bound_track_parameters_collection_types::host params_copy;
 
     traccc::demonstrator_input cells_event_vec;
     cells_event_vec.reserve(i_cfg.loaded_events);
@@ -65,14 +73,18 @@ int throughput_seq_run(const traccc::throughput_options& i_cfg) {
     std::size_t rec_track_params = 0;
 
     // Cold Run events
+    // These are not accounted for the performance measurement
     for (std::size_t i = 0; i < i_cfg.cold_run_events; ++i) {
         const int event = std::rand() % i_cfg.loaded_events;
         traccc::cell_container_types::host& cells_per_event =
             cells_event_vec[event];
-        auto measurements_per_event = ca(cells_per_event);
-        auto spacepoints_per_event = sf(measurements_per_event);
-        auto seeds = sa(spacepoints_per_event);
-        rec_track_params += tp(spacepoints_per_event, seeds).size();
+        const traccc::cell_container_types::buffer cells_buffer =
+            cell_h2d(traccc::get_data(cells_per_event));
+        auto spacepoints_buffer = ca(cells_buffer);
+        auto seeds_buffer = sa(spacepoints_buffer);
+        auto params_buffer = tp(spacepoints_buffer, seeds_buffer);
+        copy(params_buffer, params_copy);
+        rec_track_params += params_copy.size();
     }
 
     // Loop over events
@@ -87,29 +99,30 @@ int throughput_seq_run(const traccc::throughput_options& i_cfg) {
             traccc::cell_container_types::host& cells_per_event =
                 cells_event_vec[event];
 
-            /*-------------------
-                Clusterization
-              -------------------*/
+            // Copy the cell data to the device.
+            const traccc::cell_container_types::buffer cells_buffer =
+                cell_h2d(traccc::get_data(cells_per_event));
 
-            auto measurements_per_event = ca(cells_per_event);
+            /*-------------------------------------------
+                Clusterization & Spacepoint formation
+            -------------------------------------------*/
 
-            /*------------------------
-                Spacepoint formation
-              ------------------------*/
-
-            auto spacepoints_per_event = sf(measurements_per_event);
+            auto spacepoints_buffer = ca(cells_buffer);
 
             /*-----------------------
               Seeding algorithm
               -----------------------*/
 
-            auto seeds = sa(spacepoints_per_event);
+            auto seeds_buffer = sa(spacepoints_buffer);
 
             /*----------------------------
               Track params estimation
               ----------------------------*/
 
-            rec_track_params += tp(spacepoints_per_event, seeds).size();
+            auto params_buffer = tp(spacepoints_buffer, seeds_buffer);
+
+            copy(params_buffer, params_copy);
+            rec_track_params += params_copy.size();
         }
     }
     std::cout << "Reconstructed track parameters: " << rec_track_params
@@ -144,7 +157,7 @@ int main(int argc, char* argv[]) {
     // Read options
     cfg.read(vm);
 
-    std::cout << "\nSingle-threaded throughput test\n\n"
+    std::cout << "\n Cuda throughput test with single-threaded CPU\n\n"
               << cfg << "\n"
               << std::endl;
 
