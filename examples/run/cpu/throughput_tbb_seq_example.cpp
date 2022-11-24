@@ -28,6 +28,7 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // TBB include(s).
+#include <tbb/global_control.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
@@ -65,6 +66,8 @@ int main(int argc, char* argv[]) {
     traccc::performance::timing_info times;
 
     // Set up the TBB arena and thread group.
+    tbb::global_control global_thread_limit(
+        tbb::global_control::max_allowed_parallelism, mt_cfg.threads + 1);
     tbb::task_arena arena{static_cast<int>(mt_cfg.threads), 0};
     tbb::task_group group;
 
