@@ -16,6 +16,10 @@ traccc_add_executable( throughput_seq_example "throughput_seq_example.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io 
    traccc::performance traccc::options)
 
+traccc_add_executable( throughput_tbb_seq_example "throughput_tbb_seq_example.cpp"
+   LINK_LIBRARIES TBB::tbb vecmem::core traccc::core traccc::io 
+   traccc::performance traccc::options )
+
 traccc_add_executable( ccl_example "ccl_example.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io)
 

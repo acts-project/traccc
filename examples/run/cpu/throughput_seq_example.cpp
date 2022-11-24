@@ -21,7 +21,7 @@
 
 // options
 #include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/throughput_full_tracking_input_options.hpp"
+#include "traccc/options/throughput_options.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -34,8 +34,7 @@
 
 namespace po = boost::program_options;
 
-int throughput_seq_run(
-    const traccc::throughput_full_tracking_input_config& i_cfg) {
+int throughput_seq_run(const traccc::throughput_options& i_cfg) {
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -63,12 +62,12 @@ int throughput_seq_run(
 
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip this step
-    std::size_t dummy_count = 0;
+    std::size_t rec_track_params = 0;
 
     // Loop over events
-    for (int i = 0; i < i_cfg.processed_events; ++i) {
+    for (std::size_t i = 0; i < i_cfg.processed_events; ++i) {
 
-        const int event = std::rand() % i_cfg.loaded_events;
+        const std::size_t event = std::rand() % i_cfg.loaded_events;
 
         {
 
@@ -99,16 +98,15 @@ int throughput_seq_run(
               Track params estimation
               ----------------------------*/
 
-            dummy_count += tp(spacepoints_per_event, seeds).size();
+            rec_track_params += tp(spacepoints_per_event, seeds).size();
         }
     }
-    std::cout << "dummy_count = " << dummy_count << std::endl;
-
+    std::cout << "Reconstructed track parameters: " << rec_track_params
+              << std::endl;
     std::cout << "Time totals:" << std::endl;
     std::cout << elapsedTimes << std::endl;
     std::cout << "Throughput:" << std::endl;
-    std::cout << traccc::performance::throughput{static_cast<std::size_t>(
-                                                     i_cfg.processed_events),
+    std::cout << traccc::performance::throughput{i_cfg.processed_events,
                                                  elapsedTimes,
                                                  "Event processing"}
               << std::endl;
@@ -124,7 +122,7 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::throughput_full_tracking_input_config cfg(desc);
+    traccc::throughput_options cfg(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -135,7 +133,9 @@ int main(int argc, char* argv[]) {
     // Read options
     cfg.read(vm);
 
-    std::cout << "Running " << argv[0] << " " << cfg << std::endl;
+    std::cout << "\nSingle-threaded throughput test\n\n"
+              << cfg << "\n"
+              << std::endl;
 
     return throughput_seq_run(cfg);
 }
