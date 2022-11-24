@@ -15,6 +15,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/read_digitization_config.hpp"
   "include/traccc/io/read_geometry.hpp"
   "include/traccc/io/read_measurements.hpp"
+  "include/traccc/io/read_particles.hpp"
   "include/traccc/io/read_spacepoints.hpp"
   "include/traccc/io/data_format.hpp"
   "include/traccc/io/demonstrator_edm.hpp"
@@ -30,6 +31,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/read_digitization_config.cpp"
   "src/read_geometry.cpp"
   "src/read_measurements.cpp"
+  "src/read_particles.cpp"
   "src/read_spacepoints.cpp"
   "src/write.cpp"
   "src/utils.cpp"
@@ -61,7 +63,9 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/make_measurement_hit_id_reader.cpp"
   "src/csv/particle.hpp"
   "src/csv/make_particle_reader.hpp"
-  "src/csv/make_particle_reader.cpp" )
+  "src/csv/make_particle_reader.cpp"
+  "src/csv/read_particles.hpp"
+  "src/csv/read_particles.cpp" )
 target_link_libraries( traccc_io
   PUBLIC vecmem::core traccc::core
   PRIVATE dfelibs::dfelibs ActsPluginJson )
