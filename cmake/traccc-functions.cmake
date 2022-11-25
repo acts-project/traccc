@@ -32,14 +32,16 @@ function( traccc_add_library fullname basename )
    add_library( ${fullname} ${ARG_TYPE} ${_sources} )
 
    # Set up how clients should find its headers.
-   set( _depType PUBLIC )
-   if( "${ARG_TYPE}" STREQUAL "INTERFACE" )
-      set( _depType INTERFACE )
+   if( IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" )
+      set( _depType PUBLIC )
+      if( "${ARG_TYPE}" STREQUAL "INTERFACE" )
+         set( _depType INTERFACE )
+      endif()
+      target_include_directories( ${fullname} ${_depType}
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}> )
+      unset( _depType )
    endif()
-   target_include_directories( ${fullname} ${_depType}
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}> )
-   unset( _depType )
 
    # Make sure that the library is available as "traccc::${basename}" in every
    # situation.
@@ -59,8 +61,10 @@ function( traccc_add_library fullname basename )
       LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
       ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
       RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" )
-   install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/"
-      DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" )
+   if( IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" )
+      install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/"
+         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" )
+   endif()
 
 endfunction( traccc_add_library )
 
