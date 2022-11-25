@@ -246,3 +246,6 @@ endif()
 if(TRACCC_BUILD_FUTHARK)
    add_subdirectory(device/futhark)
 endif()
+
+# Set up the packaging of the project.
+include( traccc-packaging )
