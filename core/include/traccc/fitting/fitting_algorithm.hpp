@@ -20,7 +20,7 @@ namespace traccc {
 template <typename fitter_t>
 class fitting_algorithm
     : public algorithm<track_state_container_types::host(
-          const typename track_candidates_container_types::host&)> {
+          const typename track_candidate_container_types::host&)> {
 
     public:
     using detector_type = typename fitter_t::detector_type;
@@ -35,7 +35,7 @@ class fitting_algorithm
     /// @param track_candidates the candidate measurements from track finding
     /// @return the container of the fitted track parameters
     track_state_container_types::host operator()(
-        const typename track_candidates_container_types::host& track_candidates)
+        const typename track_candidate_container_types::host& track_candidates)
         const override {
 
         fitter_t fitter(*m_detector.get());

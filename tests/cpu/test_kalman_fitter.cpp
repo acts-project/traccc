@@ -127,7 +127,7 @@ TEST_P(KalmanFittingTests, Run) {
         traccc::event_map2 evt_map(i_evt, full_path, full_path, full_path);
 
         // Truth Track Candidates
-        traccc::track_candidates_container_types::host track_candidates =
+        traccc::track_candidate_container_types::host track_candidates =
             evt_map.generate_truth_candidates(sg, host_mr);
 
         // n_trakcs = 100

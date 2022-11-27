@@ -41,10 +41,10 @@ struct event_map2 {
                const std::string& hit_dir, const std::string particle_dir);
 
     template <typename seed_generator_t>
-    track_candidates_container_types::host generate_truth_candidates(
+    track_candidate_container_types::host generate_truth_candidates(
         seed_generator_t& sg, vecmem::memory_resource& resource) {
 
-        traccc::track_candidates_container_types::host track_candidates(
+        traccc::track_candidate_container_types::host track_candidates(
             &resource);
 
         for (auto const& [ptc, measurements] : ptc_meas_map) {

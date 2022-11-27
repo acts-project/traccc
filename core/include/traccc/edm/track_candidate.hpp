@@ -20,7 +20,7 @@ struct track_candidate {
 };
 
 /// Declare a track candidates container type
-using track_candidates_container_types =
+using track_candidate_container_types =
     container_types<bound_track_parameters, track_candidate>;
 
 }  // namespace traccc
