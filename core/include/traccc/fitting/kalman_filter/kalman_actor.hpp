@@ -87,7 +87,6 @@ struct kalman_actor : detray::actor {
 
             // Abort if the propagator fails to find the next measurement
             if (navigation.current_object() != trk_state.surface_link()) {
-                printf("Aborting... \n");
                 propagation._heartbeat &= navigation.abort();
             }
 
