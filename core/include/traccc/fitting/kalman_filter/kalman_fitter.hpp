@@ -62,6 +62,8 @@ class kalman_fitter {
         detray::propagator<stepper_t, navigator_t, actor_chain_type>;
 
     /// Constructor with a detector
+    ///
+    /// @param det the detector object
     kalman_fitter(const detector_type& det) : m_detector(&det) {}
 
     /// Kalman fitter state
@@ -73,6 +75,7 @@ class kalman_fitter {
         state(vecmem::vector<track_state<transform3_type>>&& track_states)
             : m_fit_actor_state(std::move(track_states)) {}
 
+        /// @return the actor chain state
         typename actor_chain_type::state operator()() {
             return std::tie(m_aborter_state, m_transporter_state,
                             m_interactor_state, m_fit_actor_state,
@@ -157,7 +160,7 @@ class kalman_fitter {
     /// @brief The smoother is based on "Application of Kalman filtering to
     /// track and vertex fitting", R.Frühwirth, NIM A.
     ///
-    /// @param track_states the vector of track state
+    /// @param fitter_state the state of kalman fitter
     void smooth(state& fitter_state) {
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
