@@ -20,16 +20,26 @@ traccc_add_executable( seeding_example_sycl "seeding_example_sycl.sycl"
                   traccc::core traccc::device_common traccc::sycl
                   traccc::performance )
 
-target_compile_definitions( traccc_seeding_example_sycl PRIVATE EIGEN_NO_CUDA )
-
 traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
                   traccc::core traccc::device_common traccc::sycl
                   traccc::performance )
 
-traccc_add_executable( throughput_seq_example_sycl "throughput_seq_example_sycl.sycl"
-LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
-               traccc::core traccc::device_common traccc::sycl
-               traccc::performance )
+#
+# Set up the "throughput applications".
+#
+add_library( traccc_examples_sycl STATIC
+   "full_chain_algorithm.hpp"
+   "full_chain_algorithm.sycl" )
+target_link_libraries( traccc_examples_sycl
+   PUBLIC vecmem::core vecmem::sycl traccc::core traccc::device_common traccc::sycl )
 
-target_compile_definitions( traccc_seq_example_sycl PRIVATE EIGEN_NO_CUDA )
+traccc_add_executable( throughput_st_sycl "throughput_st.cpp"
+   LINK_LIBRARIES vecmem::core vecmem::sycl traccc::io traccc::performance
+                  traccc::core traccc::device_common traccc::sycl
+                  traccc::options traccc_examples_sycl )
+
+traccc_add_executable( throughput_mt_sycl "throughput_mt.cpp"
+   LINK_LIBRARIES TBB::tbb vecmem::core vecmem::sycl traccc::io traccc::performance
+                  traccc::core traccc::device_common traccc::sycl
+                  traccc::options traccc_examples_sycl )
