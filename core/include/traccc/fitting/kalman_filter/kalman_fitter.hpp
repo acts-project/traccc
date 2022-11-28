@@ -147,7 +147,7 @@ class kalman_fitter {
         propagator.propagate(propagation, fitter_state());
 
         // Run smoothing
-        smooth(fitter_state.m_fit_actor_state.m_track_states);
+        smooth(fitter_state);
 
         //@todo: Write track info
     }
@@ -158,8 +158,8 @@ class kalman_fitter {
     /// track and vertex fitting", R.Frühwirth, NIM A.
     ///
     /// @param track_states the vector of track state
-    template <typename track_state_collection_t>
-    void smooth(track_state_collection_t& track_states) {
+    void smooth(state& fitter_state) {
+        auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
         // The smoothing algorithm requires the following:
         // (1) the filtered track parameter of the current surface
@@ -174,7 +174,8 @@ class kalman_fitter {
 
         const auto& mask_store = m_detector->mask_store();
 
-        for (typename track_state_collection_t::reverse_iterator it =
+        for (typename vecmem::vector<
+                 track_state<transform3_type>>::reverse_iterator it =
                  track_states.rbegin() + 1;
              it != track_states.rend(); ++it) {
 
