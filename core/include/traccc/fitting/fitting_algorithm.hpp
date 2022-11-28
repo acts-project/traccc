@@ -55,8 +55,11 @@ class fitting_algorithm
                 track_states.emplace_back(cand);
             }
 
+            // Make a fitter state
+            typename fitter_t::state fitter_state(std::move(track_states));
+
             // Run fitter
-            fitter.fit(seed_param, std::move(track_states));
+            fitter.fit(seed_param, fitter_state);
 
             trk_states.push_back(std::move(fitter.get_fitter_info()),
                                  std::move(fitter.get_track_states()));
