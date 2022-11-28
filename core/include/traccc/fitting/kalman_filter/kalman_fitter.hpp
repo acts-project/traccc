@@ -62,8 +62,7 @@ class kalman_fitter {
         detray::propagator<stepper_t, navigator_t, actor_chain_type>;
 
     /// Constructor with a detector
-    kalman_fitter(const detector_type& det)
-        : m_detector(std::make_unique<detector_type>(det)) {}
+    kalman_fitter(const detector_type& det) : m_detector(&det) {}
 
     /// Run the kalman fitter for a given number of iterations
     ///
@@ -161,7 +160,7 @@ class kalman_fitter {
         last.smoothed().set_vector(last.filtered().vector());
         last.smoothed().set_covariance(last.filtered().covariance());
 
-        const auto& mask_store = m_detector.get()->mask_store();
+        const auto& mask_store = m_detector->mask_store();
 
         for (typename track_state_collection_t::reverse_iterator it =
                  track_states.rbegin() + 1;
@@ -169,7 +168,7 @@ class kalman_fitter {
 
             // Surface
             const auto& surface =
-                m_detector.get()->surface_by_index(it->surface_link());
+                m_detector->surface_by_index(it->surface_link());
 
             // Run kalman smoother
             mask_store.template call<gain_matrix_smoother<transform3_type>>(
@@ -186,7 +185,7 @@ class kalman_fitter {
     }
 
     private:
-    std::unique_ptr<detector_type> m_detector;
+    const detector_type* m_detector;
     fitter_info<transform3_type> m_fit_info;
     vecmem::vector<track_state<transform3_type>> m_track_states;
 
