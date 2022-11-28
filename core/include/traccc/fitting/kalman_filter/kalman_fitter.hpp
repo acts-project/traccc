@@ -84,6 +84,8 @@ class kalman_fitter {
         typename interactor::state m_interactor_state{};
         typename fit_actor::state m_fit_actor_state;
         typename resetter::state m_resetter_state{};
+
+        fitter_info<transform3_type> m_fit_info;
     };
 
     /// Run the kalman fitter for a given number of iterations
@@ -113,9 +115,6 @@ class kalman_fitter {
                 filter(new_seed_params, fitter_state);
             }
         }
-
-        m_track_states =
-            std::move(fitter_state.m_fit_actor_state.m_track_states);
     }
 
     /// Run the kalman fitter for an iteration
@@ -189,19 +188,10 @@ class kalman_fitter {
         }
     }
 
-    /// @return fitter result of a track
-    fitter_info<transform3_type> get_fitter_info() const { return m_fit_info; }
-
-    /// @return fitter result of each track states
-    vecmem::vector<track_state<transform3_type>> get_track_states() const {
-        return m_track_states;
-    }
-
     private:
+    // Detector object
     const detector_type* m_detector;
-    fitter_info<transform3_type> m_fit_info;
-    vecmem::vector<track_state<transform3_type>> m_track_states;
-
+    // Configuration object
     config m_cfg;
 };
 

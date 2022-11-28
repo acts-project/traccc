@@ -61,8 +61,9 @@ class fitting_algorithm
             // Run fitter
             fitter.fit(seed_param, fitter_state);
 
-            trk_states.push_back(std::move(fitter.get_fitter_info()),
-                                 std::move(fitter.get_track_states()));
+            trk_states.push_back(
+                std::move(fitter_state.m_fit_info),
+                std::move(fitter_state.m_fit_actor_state.m_track_states));
         }
 
         return trk_states;
