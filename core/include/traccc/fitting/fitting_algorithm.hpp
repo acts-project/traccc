@@ -20,25 +20,22 @@ namespace traccc {
 template <typename fitter_t>
 class fitting_algorithm
     : public algorithm<track_state_container_types::host(
+          const typename fitter_t::detector_type&,
           const typename track_candidate_container_types::host&)> {
 
     public:
-    using detector_type = typename fitter_t::detector_type;
     using transform3_type = typename fitter_t::transform3_type;
-
-    /// Constructor with a detector
-    fitting_algorithm(const detector_type& det)
-        : m_detector(std::make_unique<detector_type>(det)) {}
 
     /// Run the algorithm
     ///
     /// @param track_candidates the candidate measurements from track finding
     /// @return the container of the fitted track parameters
     track_state_container_types::host operator()(
+        const typename fitter_t::detector_type& det,
         const typename track_candidate_container_types::host& track_candidates)
         const override {
 
-        fitter_t fitter(*m_detector.get());
+        fitter_t fitter(det);
 
         track_state_container_types::host trk_states;
 
@@ -67,9 +64,6 @@ class fitting_algorithm
 
         return trk_states;
     }
-
-    private:
-    std::unique_ptr<detector_type> m_detector;
 };
 
 }  // namespace traccc

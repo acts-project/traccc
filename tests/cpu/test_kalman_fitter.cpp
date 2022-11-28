@@ -111,7 +111,7 @@ TEST_P(KalmanFittingTests, Run) {
     seed_generator<rk_stepper_type, navigator_type> sg(det, stddevs);
 
     // Fitting algorithm object
-    fitting_algorithm<fitter_type> fitting(det);
+    fitting_algorithm<fitter_type> fitting;
 
     // File path
     std::string file_path =
@@ -134,7 +134,7 @@ TEST_P(KalmanFittingTests, Run) {
         ASSERT_EQ(track_candidates.size(), 100);
 
         // Run fitting
-        auto track_states = fitting(track_candidates);
+        auto track_states = fitting(det, track_candidates);
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();
