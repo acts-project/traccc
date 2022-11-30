@@ -6,4 +6,5 @@
 
 traccc_add_executable(simulate_telescope "simulate_telescope.cpp"
     LINK_LIBRARIES vecmem::core traccc::io traccc::core
-    traccc::options detray::core detray::utils covfie::core)
+    traccc::options detray::core detray::utils covfie::core 
+    Boost::filesystem)

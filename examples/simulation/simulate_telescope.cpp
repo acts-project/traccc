@@ -20,8 +20,8 @@
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
-#include <filesystem>
+// Boost include(s).
+#include <boost/filesystem.hpp>
 
 using namespace traccc;
 namespace po = boost::program_options;
@@ -82,9 +82,10 @@ int simulate(std::string output_directory, unsigned int events, scalar p0,
     std::string file_path =
         std::to_string(p0) + "_GeV_" + std::to_string(phi0) + "_phi/";
 
-    std::string full_path = io::data_directory() + output_directory + file_path;
+    const std::string full_path =
+        io::data_directory() + output_directory + "/" + file_path;
 
-    std::filesystem::create_directories(full_path);
+    boost::filesystem::create_directories(full_path);
 
     auto sim =
         detray::simulator(events, det, generator, meas_smearer, full_path);
@@ -106,7 +107,7 @@ int main(int argc, char* argv[]) {
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
     desc.add_options()("p0", po::value<scalar>()->required(),
-                       "initial momentum");
+                       "initial momentum in GeV/c");
     desc.add_options()("phi0", po::value<scalar>()->required(), "initial phi");
 
     po::variables_map vm;
