@@ -10,6 +10,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
+#include "traccc/io/read_particles.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 
 // Test include(s).
@@ -108,6 +109,11 @@ TEST_F(io, csv_read_tml_single_muon) {
         traccc::io::read_measurements(0, "tml_full/single_muon/",
                                       traccc::data_format::csv, &resource);
 
+    // Read the particles from the relevant event file
+    traccc::particle_collection_types::host particles_per_event =
+        traccc::io::read_particles(0, "tml_full/single_muon/",
+                                   traccc::data_format::csv, &resource);
+
     const auto sp_header_size = spacepoints_per_event.size();
     const auto ms_header_size = measurements_per_event.size();
     ASSERT_EQ(sp_header_size, 11u);
@@ -119,4 +125,6 @@ TEST_F(io, csv_read_tml_single_muon) {
     for (std::size_t i = 0; i < ms_header_size; i++) {
         ASSERT_EQ(measurements_per_event[i].items.size(), 1u);
     }
+
+    ASSERT_EQ(particles_per_event.size(), 1u);
 }
