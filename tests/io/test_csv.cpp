@@ -34,11 +34,11 @@ TEST_F(io, csv_read_single_module) {
     auto module = single_module_cells.at(0).header;
 
     ASSERT_EQ(module.module, 0u);
-    ASSERT_EQ(module.range0[0], 123u);
-    ASSERT_EQ(module.range0[1], 174u);
-    ASSERT_EQ(module.range1[0], 32u);
-    ASSERT_EQ(module.range1[1], 880u);
     ASSERT_EQ(module_cells.size(), 6u);
+    ASSERT_EQ(module_cells.at(0).channel0, 123u);
+    ASSERT_EQ(module_cells.at(0).channel1, 32u);
+    ASSERT_EQ(module_cells.at(5).channel0, 174u);
+    ASSERT_EQ(module_cells.at(5).channel1, 880u);
 }
 
 // This defines the local frame test suite
@@ -52,23 +52,23 @@ TEST_F(io, csv_read_two_modules) {
     auto first_module = two_module_cells.at(0).header;
 
     ASSERT_EQ(first_module_cells.size(), 6u);
+    ASSERT_EQ(first_module_cells.at(0).channel0, 123u);
+    ASSERT_EQ(first_module_cells.at(0).channel1, 32u);
+    ASSERT_EQ(first_module_cells.at(5).channel0, 174u);
+    ASSERT_EQ(first_module_cells.at(5).channel1, 880u);
 
     ASSERT_EQ(first_module.module, 0u);
-    ASSERT_EQ(first_module.range0[0], 123u);
-    ASSERT_EQ(first_module.range0[1], 174u);
-    ASSERT_EQ(first_module.range1[0], 32u);
-    ASSERT_EQ(first_module.range1[1], 880u);
 
     auto second_module_cells = two_module_cells.at(1).items;
     auto second_module = two_module_cells.at(1).header;
 
     ASSERT_EQ(second_module_cells.size(), 8u);
+    ASSERT_EQ(second_module_cells.at(0).channel0, 0u);
+    ASSERT_EQ(second_module_cells.at(0).channel1, 4u);
+    ASSERT_EQ(second_module_cells.at(7).channel0, 5u);
+    ASSERT_EQ(second_module_cells.at(7).channel1, 98u);
 
     ASSERT_EQ(second_module.module, 1u);
-    EXPECT_EQ(second_module.range0[0], 0u);
-    EXPECT_EQ(second_module.range0[1], 22u);
-    EXPECT_EQ(second_module.range1[0], 4u);
-    EXPECT_EQ(second_module.range1[1], 98u);
 }
 
 // This reads in the tml pixel barrel first event

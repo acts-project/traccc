@@ -157,20 +157,6 @@ cell_container_types::host read_cells(std::string_view filename,
             .at(last_module_index)
             .push_back({iocell.channel0, iocell.channel1, iocell.value,
                         iocell.timestamp});
-
-        // Update the min/max values for this module.
-        result.get_headers().at(last_module_index).range0[0] =
-            std::min(result.get_headers().at(last_module_index).range0[0],
-                     iocell.channel0);
-        result.get_headers().at(last_module_index).range0[1] =
-            std::max(result.get_headers().at(last_module_index).range0[1],
-                     iocell.channel0);
-        result.get_headers().at(last_module_index).range1[0] =
-            std::min(result.get_headers().at(last_module_index).range1[0],
-                     iocell.channel1);
-        result.get_headers().at(last_module_index).range1[1] =
-            std::max(result.get_headers().at(last_module_index).range1[1],
-                     iocell.channel1);
     }
 
     // Do some post-processing on the cells.
