@@ -30,9 +30,6 @@
 // ROOT include(s).
 #include <TF1.h>
 
-// System include(s).
-#include <filesystem>
-
 using namespace traccc;
 
 // Kalman Fitting Test
@@ -162,21 +159,23 @@ TEST_P(KalmanFittingTests, Run) {
 
     auto f = fit_performance_writer.get_file();
 
-    auto gaus = new TF1("gaus", "gaus", -5, 5);
+    TF1 gaus{"gaus", "gaus", -5, 5};
     double fit_par[3];
 
     for (auto name : pull_names) {
 
         auto pull_d0 = (TH1F*)f->Get(name.c_str());
 
-        gaus->SetParameters(1, 0.);
-        gaus->SetParLimits(1, -0.1, 0.1);
-        gaus->SetParameters(2, 1.0);
-        gaus->SetParLimits(2, 0.9, 1.1);
+        // Set the mean seed to 0
+        gaus.SetParameters(1, 0.);
+        gaus.SetParLimits(1, -1., 1.);
+        // Set the standard deviation seed to 1
+        gaus.SetParameters(2, 1.0);
+        gaus.SetParLimits(2, 0.5, 2.);
 
         auto res = pull_d0->Fit("gaus", "Q0S");
 
-        gaus->GetParameters(&fit_par[0]);
+        gaus.GetParameters(&fit_par[0]);
 
         // Mean check
         EXPECT_NEAR(fit_par[1], 0, 0.05) << name << " mean value error";

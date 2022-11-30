@@ -9,17 +9,36 @@
 #include "traccc/performance/timing_info.hpp"
 
 // System include(s).
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 
 namespace traccc::performance {
 
-/// Printout timer ids (string name) & elapsed time in miliseconds
+std::chrono::nanoseconds timing_info::get_time(
+    std::string_view timer_name) const {
+
+    auto it = std::find_if(
+        data.begin(), data.end(),
+        [&timer_name](timing_info_pair it) { return it.first == timer_name; });
+    if (it == data.end()) {
+        throw std::invalid_argument("Unknown component name received");
+    }
+    return it->second;
+}
+
 std::ostream& operator<<(std::ostream& out, const timing_info& info) {
-    for (auto i : info.data) {
-        out << "\n"
-            << std::setw(30) << std::right << i.first << "  " << std::setw(12)
-            << std::left << (i.second.count() * 1.e-6);
+
+    for (std::size_t i = 0; i < info.data.size(); ++i) {
+        const timing_info_pair ti = info.data.at(i);
+        out << std::setw(30) << std::right << ti.first << "  "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(ti.second)
+                   .count()
+            << " ms";
+        if ((i + 1) < info.data.size()) {
+            out << "\n";
+        }
     }
     return out;
 }

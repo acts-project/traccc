@@ -25,6 +25,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/utils.hpp"
   "include/traccc/io/details/read_surfaces.hpp"
   # Implementation
+  "src/data_format.cpp"
   "src/event_map2.cpp"
   "src/mapper.cpp"
   "src/read.cpp"

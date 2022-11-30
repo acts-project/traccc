@@ -163,7 +163,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (kokkos) " << n_seeds_kokkos << " seeds"
               << std::endl;
-    std::cout << "==>Elapsed time (ms)..." << elapsedTimes << std::endl;
+    std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;
 }
