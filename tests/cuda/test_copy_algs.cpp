@@ -34,7 +34,7 @@ GTEST_TEST(CUDAContainerCopy, CellHostToDeviceToHost) {
     for (std::size_t i = 0; i < CONTAINER_SIZE; ++i) {
         host_orig.push_back(
             traccc::cell_container_types::host::header_type{
-                0, i + 1, {}, 0, {5, 0}, {4, 0}, pdata},
+                i + 1, {}, 0, pdata},
             traccc::cell_container_types::host::vector_type<
                 traccc::cell_container_types::host::item_type>{
                 i + 1,

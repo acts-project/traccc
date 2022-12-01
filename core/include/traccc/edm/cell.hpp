@@ -62,13 +62,9 @@ inline bool operator==(const cell& lhs, const cell& rhs) {
 ///
 struct cell_module {
 
-    event_id event = 0;
     geometry_id module = 0;
     transform3 placement = transform3{};
     scalar threshold = 0;
-
-    channel_id range0[2] = {std::numeric_limits<channel_id>::max(), 0};
-    channel_id range1[2] = {std::numeric_limits<channel_id>::max(), 0};
 
     pixel_data pixel;
 
