@@ -28,12 +28,16 @@
 namespace traccc::cuda {
 
 full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
-    : m_device_mr(),
+    : m_host_mr(host_mr),
+      m_device_mr(),
+      m_cached_device_mr(
+          std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(),
-      m_host2device(memory_resource{m_device_mr, &host_mr}, m_copy),
-      m_clusterization(memory_resource{m_device_mr, &host_mr}),
-      m_seeding(memory_resource{m_device_mr, &host_mr}),
-      m_track_parameter_estimation(memory_resource{m_device_mr, &host_mr}) {
+      m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}),
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
+      m_track_parameter_estimation(
+          memory_resource{*m_cached_device_mr, &m_host_mr}) {
 
     // Tell the user what device is being used.
     int device = 0;
@@ -43,6 +47,25 @@ full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
     std::cout << "Using CUDA device: " << props.name << " [id: " << device
               << ", bus: " << props.pciBusID
               << ", device: " << props.pciDeviceID << "]" << std::endl;
+}
+
+full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
+    : m_host_mr(parent.m_host_mr),
+      m_device_mr(),
+      m_cached_device_mr(
+          std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
+      m_copy(),
+      m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}),
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
+      m_track_parameter_estimation(
+          memory_resource{*m_cached_device_mr, &m_host_mr}) {}
+
+full_chain_algorithm::~full_chain_algorithm() {
+
+    // We need to ensure that the caching memory resource would be deleted
+    // before the device memory resource that it is based on.
+    m_cached_device_mr.reset();
 }
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
