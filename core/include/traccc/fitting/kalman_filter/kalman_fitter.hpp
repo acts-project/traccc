@@ -82,12 +82,14 @@ class kalman_fitter {
                             m_resetter_state);
         }
 
+        /// Individual actor states
         typename aborter::state m_aborter_state{};
         typename transporter::state m_transporter_state{};
         typename interactor::state m_interactor_state{};
         typename fit_actor::state m_fit_actor_state;
         typename resetter::state m_resetter_state{};
 
+        /// Fitting result per track
         fitter_info<transform3_type> m_fit_info;
     };
 
