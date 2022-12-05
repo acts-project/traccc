@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <vector>
 
 namespace traccc {
 
@@ -85,8 +86,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
                          throughput_cfg.input_data_format, &host_mr);
     }
 
-    // Set up the full-chain algorithm.
-    FULL_CHAIN_ALG alg(host_mr);
+    // Set up the full-chain algorithm(s). One for each thread.
+    std::vector<FULL_CHAIN_ALG> alg{mt_cfg.threads + 1, {host_mr}};
 
     // Seed the random number generator.
     std::srand(std::time(0));
@@ -111,7 +112,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
             // Launch the processing of the event.
             arena.execute([&]() {
                 group.run([&]() {
-                    rec_track_params.fetch_add(alg(cells[event]).size());
+                    rec_track_params.fetch_add(
+                        alg.at(tbb::this_task_arena::current_thread_index())(
+                               cells[event])
+                            .size());
                 });
             });
         }
@@ -137,7 +141,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
             // Launch the processing of the event.
             arena.execute([&]() {
                 group.run([&]() {
-                    rec_track_params.fetch_add(alg(cells[event]).size());
+                    rec_track_params.fetch_add(
+                        alg.at(tbb::this_task_arena::current_thread_index())(
+                               cells[event])
+                            .size());
                 });
             });
         }

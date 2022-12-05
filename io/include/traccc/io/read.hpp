@@ -12,7 +12,7 @@
 #include "traccc/io/demonstrator_edm.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/memory_resource.hpp>
 
 // System include(s).
 #include <string_view>
@@ -36,6 +36,6 @@ demonstrator_input read(std::size_t events, std::string_view directory,
                         std::string_view detector_file,
                         std::string_view digi_config_file,
                         data_format format = data_format::csv,
-                        vecmem::host_memory_resource *mr = nullptr);
+                        vecmem::memory_resource *mr = nullptr);
 
 }  // namespace traccc::io

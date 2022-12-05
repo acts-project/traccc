@@ -22,7 +22,7 @@ namespace traccc::io {
 demonstrator_input read(std::size_t events, std::string_view directory,
                         std::string_view detector_file,
                         std::string_view digi_config_file, data_format format,
-                        vecmem::host_memory_resource *mr) {
+                        vecmem::memory_resource *mr) {
 
     // Read in the detector configuration.
     const geometry geom = io::read_geometry(detector_file);

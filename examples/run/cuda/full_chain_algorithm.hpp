@@ -16,9 +16,13 @@
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
+
+// System include(s).
+#include <memory>
 
 namespace traccc::cuda {
 
@@ -38,6 +42,19 @@ class full_chain_algorithm
     ///
     full_chain_algorithm(vecmem::memory_resource& host_mr);
 
+    /// Copy constructor
+    ///
+    /// An explicit copy constructor is necessary because in the MT tests
+    /// we do want to copy such objects, but a default copy-constructor can
+    /// not be generated for them.
+    ///
+    /// @param parent The parent algorithm chain to copy
+    ///
+    full_chain_algorithm(const full_chain_algorithm& parent);
+
+    /// Algorithm destructor
+    ~full_chain_algorithm();
+
     /// Reconstruct track parameters in the entire detector
     ///
     /// @param cells The cells for every detector module in the event
@@ -47,8 +64,12 @@ class full_chain_algorithm
         const cell_container_types::host& cells) const override;
 
     private:
+    /// Host memory resource
+    vecmem::memory_resource& m_host_mr;
     /// Device memory resource
     vecmem::cuda::device_memory_resource m_device_mr;
+    /// Device caching memory resource
+    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
     /// Memory copy object
     mutable vecmem::cuda::copy m_copy;
 
