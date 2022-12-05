@@ -16,9 +16,13 @@
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
+
+// System include(s).
+#include <memory>
 
 namespace traccc::sycl {
 namespace details {
@@ -41,6 +45,17 @@ class full_chain_algorithm
     ///           objects
     ///
     full_chain_algorithm(vecmem::memory_resource& host_mr);
+
+    /// Copy constructor
+    ///
+    /// An explicit copy constructor is necessary because in the MT tests
+    /// we do want to copy such objects, but a default copy-constructor can
+    /// not be generated for them.
+    ///
+    /// @param parent The parent algorithm chain to copy
+    ///
+    full_chain_algorithm(const full_chain_algorithm& parent);
+
     /// Algorithm destructor
     ~full_chain_algorithm();
 
@@ -55,10 +70,14 @@ class full_chain_algorithm
     private:
     /// Private data object
     details::full_chain_algorithm_data* m_data;
+    /// Host memory resource
+    vecmem::memory_resource& m_host_mr;
     /// Device memory resource
-    vecmem::sycl::device_memory_resource m_device_mr;
+    std::unique_ptr<vecmem::sycl::device_memory_resource> m_device_mr;
+    /// Device caching memory resource
+    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
     /// Memory copy object
-    mutable vecmem::sycl::copy m_copy;
+    mutable std::unique_ptr<vecmem::sycl::copy> m_copy;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

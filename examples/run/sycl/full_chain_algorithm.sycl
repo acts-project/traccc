@@ -42,14 +42,20 @@ struct full_chain_algorithm_data {
 
 full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
     : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
-      m_device_mr(&(m_data->m_queue)),
-      m_copy(&(m_data->m_queue)),
-      m_host2device(memory_resource{m_device_mr, &host_mr}, m_copy),
-      m_clusterization(memory_resource{m_device_mr, &host_mr},
+      m_host_mr(host_mr),
+      m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(
+          &(m_data->m_queue))),
+      m_cached_device_mr(
+          std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
+      m_copy(std::make_unique<vecmem::sycl::copy>(&(m_data->m_queue))),
+      m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, *m_copy),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr},
                        &(m_data->m_queue)),
-      m_seeding(memory_resource{m_device_mr, &host_mr}, &(m_data->m_queue)),
-      m_track_parameter_estimation(memory_resource{m_device_mr, &host_mr},
-                                   &(m_data->m_queue)) {
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr},
+                &(m_data->m_queue)),
+      m_track_parameter_estimation(
+          memory_resource{*m_cached_device_mr, &m_host_mr},
+          &(m_data->m_queue)) {
 
     // Tell the user what device is being used.
     std::cout
@@ -58,7 +64,28 @@ full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
         << std::endl;
 }
 
+full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
+    : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
+      m_host_mr(parent.m_host_mr),
+      m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(
+          &(m_data->m_queue))),
+      m_cached_device_mr(
+          std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
+      m_copy(std::make_unique<vecmem::sycl::copy>(&(m_data->m_queue))),
+      m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, *m_copy),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr},
+                       &(m_data->m_queue)),
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr},
+                &(m_data->m_queue)),
+      m_track_parameter_estimation(
+          memory_resource{*m_cached_device_mr, &m_host_mr},
+          &(m_data->m_queue)) {}
+
 full_chain_algorithm::~full_chain_algorithm() {
+    // Need to ensure that objects would be deleted in the correct order.
+    m_cached_device_mr.reset();
+    m_device_mr.reset();
+    m_copy.reset();
     delete m_data;
 }
 
@@ -73,7 +100,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
 
     // Get the final data back to the host.
     bound_track_parameters_collection_types::host result;
-    m_copy(track_params, result);
+    (*m_copy)(track_params, result);
 
     // Return the host container.
     return result;
