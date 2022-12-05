@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -41,7 +41,7 @@ namespace traccc::device {
 /// @param[out] grid_capacities Capacity required for each spacepoint grid bin
 ///
 TRACCC_HOST_DEVICE
-void count_grid_capacities(
+inline void count_grid_capacities(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
     const spacepoint_container_types::const_view& spacepoints,

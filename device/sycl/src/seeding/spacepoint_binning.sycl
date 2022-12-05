@@ -7,12 +7,13 @@
 
 // Local include(s).
 #include "traccc/sycl/seeding/spacepoint_binning.hpp"
+#include "traccc/sycl/utils/make_prefix_sum_buff.hpp"
 
 // Local include(s).
 #include "../utils/get_queue.hpp"
 
 // Project include(s).
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
@@ -37,8 +38,9 @@ class populate_grid;
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr, queue_wrapper queue)
-    : m_config(config),
-      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
+    : m_config(config.toInternalUnits()),
+      m_axes(get_axes(grid_config.toInternalUnits(),
+                      (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
       m_queue(queue) {
 
@@ -56,32 +58,9 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Get the spacepoint sizes from the view
     auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
 
-    return this->operator()(spacepoints_view, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer) const {
-
-    // Get the spacepoint sizes from the buffer
-    auto sp_sizes = m_copy->get_sizes(spacepoints_buffer.items);
-
-    return this->operator()(spacepoints_buffer, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const std::vector<unsigned int>& sp_sizes) const {
-
-    // Get the prefix sum for the spacepoints using buffer.
-    const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
-        sp_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
-
-    // Set up the buffer of the prefix sum and its view
-    vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        sp_prefix_sum_buff(sp_prefix_sum.size(), m_mr.main);
-    m_copy->setup(sp_prefix_sum_buff);
-    (*m_copy)(vecmem::get_data(sp_prefix_sum), sp_prefix_sum_buff,
-              vecmem::copy::type::copy_type::host_to_device);
+    // Create prefix sum buffer and its view
+    vecmem::data::vector_buffer sp_prefix_sum_buff = make_prefix_sum_buff(
+        sp_sizes, *m_copy, m_mr, details::get_queue(m_queue));
     vecmem::data::vector_view<device::prefix_sum_element_t> sp_prefix_sum_view =
         sp_prefix_sum_buff;
 
@@ -97,7 +76,7 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Calculate the range to run the kernels for.
     static constexpr unsigned int localSize = 32 * 4;
-    const unsigned int nGroups = sp_prefix_sum.size() / localSize + 1;
+    const unsigned int nGroups = sp_prefix_sum_view.size() / localSize + 1;
     const unsigned int globalSize = nGroups * localSize;
     ::sycl::nd_range<1> range(globalSize, localSize);
 

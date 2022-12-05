@@ -20,16 +20,16 @@ namespace {
 traccc::seedfinder_config default_seedfinder_config() {
 
     traccc::seedfinder_config config;
-    config.highland = 13.6 * std::sqrt(config.radLengthPerSeed) *
-                      (1 + 0.038 * std::log(config.radLengthPerSeed));
-    float maxScatteringAngle = config.highland / config.minPt;
+    traccc::seedfinder_config config_copy = config.toInternalUnits();
+    config.highland = 13.6 * std::sqrt(config_copy.radLengthPerSeed) *
+                      (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
+    float maxScatteringAngle = config.highland / config_copy.minPt;
     config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
     // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
     // and millimeter
-    // TODO: change using ACTS units
-    config.pTPerHelixRadius = 300. * config.bFieldInZ;
+    config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
     config.minHelixDiameter2 =
-        std::pow(config.minPt * 2 / config.pTPerHelixRadius, 2);
+        std::pow(config_copy.minPt * 2 / config.pTPerHelixRadius, 2);
     config.pT2perRadius =
         std::pow(config.highland / config.pTPerHelixRadius, 2);
     return config;
@@ -47,6 +47,10 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
     grid_config.zMin = config.zMin;
     grid_config.deltaRMax = config.deltaRMax;
     grid_config.cotThetaMax = config.cotThetaMax;
+    grid_config.impactMax = config.impactMax;
+    grid_config.phiMax = config.phiMax;
+    grid_config.phiMin = config.phiMin;
+    grid_config.phiBinDeflectionCoverage = config.phiBinDeflectionCoverage;
     return grid_config;
 }
 
@@ -58,20 +62,14 @@ seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr,
                                      const queue_wrapper& queue)
     : m_spacepoint_binning(default_seedfinder_config(),
                            default_spacepoint_grid_config(), mr, queue),
-      m_seed_finding(default_seedfinder_config(), mr, queue) {}
+      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr,
+                     queue) {}
 
-vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
+seed_collection_types::buffer seeding_algorithm::operator()(
     const spacepoint_container_types::const_view& spacepoints_view) const {
 
     return m_seed_finding(spacepoints_view,
                           m_spacepoint_binning(spacepoints_view));
-}
-
-vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer) const {
-
-    return m_seed_finding(spacepoints_buffer,
-                          m_spacepoint_binning(spacepoints_buffer));
 }
 
 }  // namespace traccc::sycl

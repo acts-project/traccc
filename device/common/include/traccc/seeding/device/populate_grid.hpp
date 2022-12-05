@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -31,7 +31,7 @@ namespace traccc::device {
 /// @param[out] grid         The spacepoint grid to populate
 ///
 TRACCC_DEVICE
-void populate_grid(
+inline void populate_grid(
     std::size_t globalIndex, const seedfinder_config& config,
     const spacepoint_container_types::const_view& spacepoints,
     const vecmem::data::vector_view<const prefix_sum_element_t>& sp_prefix_sum,

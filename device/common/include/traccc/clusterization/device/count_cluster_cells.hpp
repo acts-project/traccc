@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 
 // Vecmem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
@@ -37,7 +37,7 @@ namespace traccc::device {
 /// for each cluster
 ///
 TRACCC_HOST_DEVICE
-void count_cluster_cells(
+inline void count_cluster_cells(
     std::size_t globalIndex,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,

@@ -5,10 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Sycl library include(s).
+// Local include(s).
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/utils/calculate1DimNdRange.hpp"
+#include "traccc/sycl/utils/make_prefix_sum_buff.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/connect_components.hpp"
@@ -16,7 +17,7 @@
 #include "traccc/clusterization/device/create_measurements.hpp"
 #include "traccc/clusterization/device/find_clusters.hpp"
 #include "traccc/clusterization/device/form_spacepoints.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 
 // Vecmem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
@@ -57,19 +58,18 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_container_types::host& cells_per_event) const {
+    const cell_container_types::const_view& cells_view) const {
 
     // Number of modules
-    unsigned int num_modules = cells_per_event.size();
+    const cell_container_types::const_device::header_vector::size_type
+        num_modules = m_copy->get_size(cells_view.headers);
     // Work group size for kernel execution
-    std::size_t localSize = 64;
-
-    // Get the view of the cells container
-    auto cells_data =
-        get_data(cells_per_event, (m_mr.host ? m_mr.host : &(m_mr.main)));
+    const std::size_t localSize = 64;
 
     // Get the sizes of the cells in each module
-    auto cell_sizes = m_copy->get_sizes(cells_data.items);
+    const std::vector<
+        cell_container_types::const_device::item_vector::value_type::size_type>
+        cell_sizes = m_copy->get_sizes(cells_view.items);
 
     /*
      * Helper container for sparse CCL calculations.
@@ -116,7 +116,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(cl_per_module_prefix_buff);
 
     // Create views to pass to cluster finding kernel
-    const cell_container_types::const_view cells_view(cells_data);
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view =
         sparse_ccl_indices_buff;
     vecmem::data::vector_view<std::size_t> cl_per_module_prefix_view =
@@ -137,14 +136,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                 });
         });
 
-    // Get the prefix sum of the cells and copy it to the device buffer
-    const device::prefix_sum_t cells_prefix_sum = device::get_prefix_sum(
-        cell_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
-    vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        cells_prefix_sum_buff(cells_prefix_sum.size(), m_mr.main);
-    m_copy->setup(cells_prefix_sum_buff);
-    (*m_copy)(vecmem::get_data(cells_prefix_sum), cells_prefix_sum_buff,
-              vecmem::copy::type::copy_type::host_to_device);
+    // Create prefix sum buffer and its view
+    vecmem::data::vector_buffer cells_prefix_sum_buff = make_prefix_sum_buff(
+        cell_sizes, *m_copy, m_mr, details::get_queue(m_queue));
+    vecmem::data::vector_view<device::prefix_sum_element_t>
+        cells_prefix_sum_view = cells_prefix_sum_buff;
 
     // Wait here for the cluster_finding kernel to finish
     cluster_finding_kernel.wait_and_throw();
@@ -176,9 +172,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(cluster_sizes_buffer);
     m_copy->memset(cluster_sizes_buffer, 0);
 
-    // Create views to pass to cluster counting kernel
-    vecmem::data::vector_view<const device::prefix_sum_element_t>
-        cells_prefix_sum_view = cells_prefix_sum_buff;
+    // Create view to pass to cluster counting kernel
     vecmem::data::vector_view<unsigned int> cluster_sizes_view =
         cluster_sizes_buffer;
 
@@ -250,14 +244,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy->setup(spacepoints_buffer.headers);
     m_copy->setup(spacepoints_buffer.items);
 
-    // Wait here for the component_connection kernel to finish
-    component_connection_kernel.wait_and_throw();
-
     // Create views to pass to measurement creation kernel
     measurement_container_types::view measurements_view = measurements_buffer;
 
     // Calculate nd_range to run measurement creation (localSize = 64)
     ndrange = calculate1DimNdRange(clusters_view.headers.size(), localSize);
+
+    // Wait here for the component_connection kernel to finish
+    component_connection_kernel.wait_and_throw();
 
     // Run measurement_creation kernel
     details::get_queue(m_queue)
@@ -272,19 +266,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         })
         .wait_and_throw();
 
-    // Get the prefix sum of the measurements and copy it to the device buffer
-    const device::prefix_sum_t meas_prefix_sum =
-        device::get_prefix_sum(m_copy->get_sizes(measurements_buffer.items),
-                               (m_mr.host ? *(m_mr.host) : m_mr.main));
-    vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        meas_prefix_sum_buff(meas_prefix_sum.size(), m_mr.main);
-    m_copy->setup(meas_prefix_sum_buff);
-    (*m_copy)(vecmem::get_data(meas_prefix_sum), meas_prefix_sum_buff,
-              vecmem::copy::type::copy_type::host_to_device);
-
-    // Create views to run spacepoint formation
-    vecmem::data::vector_view<const device::prefix_sum_element_t>
+    // Create prefix sum buffer and its view
+    vecmem::data::vector_buffer meas_prefix_sum_buff =
+        make_prefix_sum_buff(m_copy->get_sizes(measurements_buffer.items),
+                             *m_copy, m_mr, details::get_queue(m_queue));
+    vecmem::data::vector_view<device::prefix_sum_element_t>
         meas_prefix_sum_view = meas_prefix_sum_buff;
+
+    // Create view to run spacepoint formation
     spacepoint_container_types::view spacepoints_view = spacepoints_buffer;
 
     // Run spacepoint formation kernel (ndrange same as before)

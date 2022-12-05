@@ -32,10 +32,6 @@ struct doublet_counter_header {
     /// geometric bin.
     unsigned int m_nMidTop = 0;
 
-    /// Temporary compatibility function
-    TRACCC_HOST_DEVICE
-    unsigned int get_ref_num() const { return m_nSpM; }
-
 };  // struct doublet_counter_header
 
 /// Item type for the "doublet container"
@@ -54,6 +50,12 @@ struct doublet_counter {
     /// The number of compatible middle-top doublets for a the middle
     /// spacepoint.
     unsigned int m_nMidTop = 0;
+
+    /// The position of the middle-bottom doublets
+    unsigned int m_posMidBot = 0;
+
+    /// The position of the middle-top doublets
+    unsigned int m_posMidTop = 0;
 
 };  // struct doublet_counter
 

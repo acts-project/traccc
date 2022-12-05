@@ -16,7 +16,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void count_grid_capacities(
+inline void count_grid_capacities(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
     const spacepoint_container_types::const_view& spacepoints_view,
@@ -38,11 +38,11 @@ void count_grid_capacities(
     const spacepoint sp = spacepoints.at(sp_idx);
 
     /// Check out if the spacepoint can be used for seeding.
-    if (is_valid_sp(config, sp) != detray::invalid_value<size_t>()) {
+    if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {
 
         // Find the grid bin that the spacepoint belongs to.
-        const internal_spacepoint<spacepoint> isp(spacepoints, sp_idx,
-                                                  config.beamPos);
+        const internal_spacepoint<spacepoint> isp(
+            spacepoints, {sp_idx.first, sp_idx.second}, config.beamPos);
         const std::size_t bin_index =
             phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 

@@ -10,9 +10,15 @@ include( traccc-compiler-options-cpp )
 # Declare the traccc::device_common library.
 traccc_add_library( traccc_device_common device_common TYPE SHARED
    # General function(s).
-   "include/traccc/device/get_prefix_sum.hpp"
-   "include/traccc/device/impl/get_prefix_sum.ipp"
-   "src/get_prefix_sum.cpp"
+   "include/traccc/device/fill_prefix_sum.hpp"
+   "include/traccc/device/impl/fill_prefix_sum.ipp"
+   "include/traccc/device/make_prefix_sum_buffer.hpp"
+   "src/make_prefix_sum_buffer.cpp"
+   # General algorithm(s).
+   "include/traccc/device/container_h2d_copy_alg.hpp"
+   "include/traccc/device/impl/container_h2d_copy_alg.ipp"
+   "include/traccc/device/container_d2h_copy_alg.hpp"
+   "include/traccc/device/impl/container_d2h_copy_alg.ipp"
    # EDM class(es).
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
@@ -43,7 +49,18 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "src/seeding/make_doublet_buffers.cpp"
    "include/traccc/seeding/device/count_triplets.hpp"
    "include/traccc/seeding/device/impl/count_triplets.ipp"
+   "include/traccc/seeding/device/find_triplets.hpp"
+   "include/traccc/seeding/device/impl/find_triplets.ipp"
    "include/traccc/seeding/device/make_triplet_counter_buffer.hpp"
-   "src/seeding/make_triplet_counter_buffer.cpp" )
+   "src/seeding/make_triplet_counter_buffer.cpp"
+   "include/traccc/seeding/device/make_triplet_buffer.hpp"
+   "src/seeding/make_triplet_buffer.cpp"
+   "include/traccc/seeding/device/update_triplet_weights.hpp"
+   "include/traccc/seeding/device/impl/update_triplet_weights.ipp"
+   "include/traccc/seeding/device/select_seeds.hpp"
+   "include/traccc/seeding/device/impl/select_seeds.ipp"
+   # Track parameters estimation function(s).
+   "include/traccc/seeding/device/estimate_track_params.hpp"
+   "include/traccc/seeding/device/impl/estimate_track_params.ipp" )
 target_link_libraries( traccc_device_common
-   PUBLIC traccc::core vecmem::core )
+   PUBLIC traccc::Thrust traccc::core vecmem::core )

@@ -10,7 +10,8 @@
 #include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s).
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/cuda/utils/make_prefix_sum_buff.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
@@ -50,8 +51,9 @@ __global__ void populate_grid(
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr)
-    : m_config(config),
-      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
+    : m_config(config.toInternalUnits()),
+      m_axes(get_axes(grid_config.toInternalUnits(),
+                      (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr) {
 
     // Initialize m_copy ptr based on memory resources that were given
@@ -68,34 +70,9 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Get the spacepoint sizes from the view
     auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
 
-    return this->operator()(spacepoints_view, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer) const {
-
-    // Get the spacepoint sizes from the buffer
-    auto sp_sizes = m_copy->get_sizes(spacepoints_buffer.items);
-
-    return this->operator()(spacepoints_buffer, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const std::vector<unsigned int>& sp_sizes) const {
-
-    // Get the prefix sum for the spacepoints using buffer.
-    const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
-        sp_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
-
-    // Set up the buffer of the prefix sum and its view
-    vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        sp_prefix_sum_buff(sp_prefix_sum.size(), m_mr.main);
-    m_copy->setup(sp_prefix_sum_buff);
-    (*m_copy)(vecmem::get_data(sp_prefix_sum), sp_prefix_sum_buff,
-              vecmem::copy::type::copy_type::host_to_device);
-    vecmem::data::vector_view<device::prefix_sum_element_t> sp_prefix_sum_view =
-        sp_prefix_sum_buff;
+    // Create prefix sum buffer
+    vecmem::data::vector_buffer sp_prefix_sum_buff =
+        make_prefix_sum_buff(sp_sizes, *m_copy, m_mr);
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
@@ -109,12 +86,12 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Calculate the number of threads and thread blocks to run the kernels for.
     const unsigned int num_threads = WARP_SIZE * 8;
-    const unsigned int num_blocks = sp_prefix_sum.size() / num_threads + 1;
+    const unsigned int num_blocks = sp_prefix_sum_buff.size() / num_threads + 1;
 
     // Fill the grid capacity container.
     kernels::count_grid_capacities<<<num_blocks, num_threads>>>(
         m_config, m_axes.first, m_axes.second, spacepoints_view,
-        sp_prefix_sum_view, grid_capacities_view);
+        sp_prefix_sum_buff, grid_capacities_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -134,7 +111,7 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Populate the grid.
     kernels::populate_grid<<<num_blocks, num_threads>>>(
-        m_config, spacepoints_view, sp_prefix_sum_view, grid_view);
+        m_config, spacepoints_view, sp_prefix_sum_buff, grid_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 

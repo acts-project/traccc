@@ -8,8 +8,10 @@
 include( traccc-compiler-options-cuda )
 
 traccc_add_executable( seq_example_cuda "seq_example_cuda.cpp"
-   LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance 
-                  traccc::core traccc::cuda traccc::options)
+   LINK_LIBRARIES CUDA::cudart vecmem::core vecmem::cuda traccc::io traccc::performance
+                  traccc::core traccc::device_common traccc::cuda
+                  traccc::options )
 traccc_add_executable( seeding_example_cuda "seeding_example_cuda.cpp"
-   LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
-                  traccc::core traccc::cuda traccc::options)
+   LINK_LIBRARIES CUDA::cudart vecmem::core vecmem::cuda traccc::io traccc::performance
+                  traccc::core traccc::device_common traccc::cuda
+                  traccc::options )

@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
@@ -34,14 +34,14 @@ namespace traccc::device {
 /// @param[out] mt_doublets_view Container of middle-top doublets
 ///
 TRACCC_HOST_DEVICE
-void find_doublets(
+inline void find_doublets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const device::doublet_counter_container_types::const_view& doublet_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         doublet_ps_view,
-    doublet_container_view mb_doublets_view,
-    doublet_container_view mt_doublets_view);
+    doublet_container_types::view mb_doublets_view,
+    doublet_container_types::view mt_doublets_view);
 
 }  // namespace traccc::device
 

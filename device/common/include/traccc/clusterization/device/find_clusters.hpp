@@ -34,7 +34,7 @@ namespace traccc::device {
 /// in each module
 ///
 TRACCC_HOST_DEVICE
-void find_clusters(
+inline void find_clusters(
     std::size_t globalIndex, const cell_container_types::const_view& cells_view,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view);

@@ -19,7 +19,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void count_doublets(
+inline void count_doublets(
     std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& sp_ps_view,
@@ -91,14 +91,16 @@ void count_doublets(
 
                 // Check if this spacepoint is a compatible "bottom" spacepoint
                 // to the thread's "middle" spacepoint.
-                if (doublet_finding_helper::isCompatible(middle_sp, other_sp,
-                                                         config, true)) {
+                if (doublet_finding_helper::isCompatible<
+                        details::spacepoint_type::bottom>(middle_sp, other_sp,
+                                                          config)) {
                     ++n_mb_cand;
                 }
                 // Check if this spacepoint is a compatible "top" spacepoint to
                 // the thread's "middle" spacepoint.
-                if (doublet_finding_helper::isCompatible(middle_sp, other_sp,
-                                                         config, false)) {
+                if (doublet_finding_helper::isCompatible<
+                        details::spacepoint_type::top>(middle_sp, other_sp,
+                                                       config)) {
                     ++n_mt_cand;
                 }
             }
@@ -115,9 +117,9 @@ void count_doublets(
         vecmem::device_atomic_ref<unsigned int> nSpM(header.m_nSpM);
         nSpM.fetch_add(1);
         vecmem::device_atomic_ref<unsigned int> nMidBot(header.m_nMidBot);
-        nMidBot.fetch_add(n_mb_cand);
+        const unsigned int posBot = nMidBot.fetch_add(n_mb_cand);
         vecmem::device_atomic_ref<unsigned int> nMidTop(header.m_nMidTop);
-        nMidTop.fetch_add(n_mt_cand);
+        const unsigned int posTop = nMidTop.fetch_add(n_mt_cand);
 
         // Add the number of candidates for the "current bin".
         doublet_counter.get_items()
@@ -125,7 +127,9 @@ void count_doublets(
             .push_back({{static_cast<unsigned int>(middle_sp_idx.first),
                          static_cast<unsigned int>(middle_sp_idx.second)},
                         n_mb_cand,
-                        n_mt_cand});
+                        n_mt_cand,
+                        posBot,
+                        posTop});
     }
 }
 

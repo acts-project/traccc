@@ -25,9 +25,7 @@ namespace traccc::cuda {
 
 /// Spacepoing binning executed on a CUDA device
 class spacepoint_binning : public algorithm<sp_grid_buffer(
-                               const spacepoint_container_types::const_view&)>,
-                           public algorithm<sp_grid_buffer(
-                               const spacepoint_container_types::buffer&)> {
+                               const spacepoint_container_types::const_view&)> {
 
     public:
     /// Constructor for the algorithm
@@ -39,16 +37,7 @@ class spacepoint_binning : public algorithm<sp_grid_buffer(
     sp_grid_buffer operator()(const spacepoint_container_types::const_view&
                                   spacepoints_view) const override;
 
-    /// Function executing the algorithm with spacepoint buffer
-    sp_grid_buffer operator()(const spacepoint_container_types::buffer&
-                                  spacepoints_buffer) const override;
-
     private:
-    /// Implementation for the public spacepoint binning operators
-    sp_grid_buffer operator()(
-        const spacepoint_container_types::const_view& spacepoints_view,
-        const std::vector<unsigned int>& sp_sizes) const;
-
     /// Member variables
     seedfinder_config m_config;
     std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;

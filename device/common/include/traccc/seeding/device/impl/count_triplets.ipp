@@ -16,14 +16,13 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void count_triplets(
+inline void count_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
-    const doublet_counter_container_types::const_view doublet_counter_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         doublet_ps_view,
-    const doublet_container_view mid_bot_doublet_view,
-    const doublet_container_view mid_top_doublet_view,
+    const doublet_container_types::const_view mid_bot_doublet_view,
+    const doublet_container_types::const_view mid_top_doublet_view,
     triplet_counter_container_types::view triplet_view) {
 
     // Create device copy of input parameters
@@ -36,7 +35,8 @@ void count_triplets(
     }
 
     // Create device copy of input parameters
-    const device_doublet_container mid_bot_doublet_device(mid_bot_doublet_view);
+    const doublet_container_types::const_device mid_bot_doublet_device(
+        mid_bot_doublet_view);
 
     // Get ids
     const prefix_sum_element_t ps_idx = doublet_prefix_sum[globalIndex];
@@ -48,25 +48,14 @@ void count_triplets(
         mid_bot_doublet_device.get_items().at(bin_idx).at(item_idx);
 
     // Create device copy of input parameters
-    const device::doublet_counter_container_types::const_device
-        doublet_counter_device(doublet_counter_view);
-    const device_doublet_container mid_top_doublet_device(mid_top_doublet_view);
+    const doublet_container_types::const_device mid_top_doublet_device(
+        mid_top_doublet_view);
 
     // Create device copy of output parameter
     triplet_counter_container_types::device triplet_counter(triplet_view);
 
     // Get all spacepoints
     const const_sp_grid_device internal_sp_device(sp_view);
-
-    // Get internal spacepoints for current bin
-    const unsigned int num_compat_spM_per_bin =
-        doublet_counter_device.get_headers().at(bin_idx).m_nSpM;
-
-    // Header of doublet counter : number of compatible middle sp per bin
-    // Item of doublet counter : doublet counter objects per bin
-    const doublet_counter_collection_types::const_device
-        doublet_counter_per_bin =
-            doublet_counter_device.get_items().at(bin_idx);
 
     // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
@@ -87,8 +76,8 @@ void count_triplets(
         internal_sp_device.bin(spB_bin)[spB_idx];
 
     // Apply the conformal transformation to middle-bot doublet
-    traccc::lin_circle lb =
-        doublet_finding_helper::transform_coordinates(spM, spB, true);
+    traccc::lin_circle lb = doublet_finding_helper::transform_coordinates<
+        details::spacepoint_type::bottom>(spM, spB);
 
     // Calculate some physical quantities required for triplet compatibility
     // check
@@ -101,30 +90,9 @@ void count_triplets(
     scalar curvature, impact_parameter;
 
     // find the reference (start) index of the mid-top doublet container
-    // item vector, where the doublets are recorded The start index is
-    // calculated by accumulating the number of mid-top doublets of all
-    // previous compatible middle spacepoints
-    unsigned int mb_end_idx = 0;
-    unsigned int mt_start_idx = 0;
-    unsigned int mt_end_idx = 0;
-
-    for (unsigned int i = 0; i < num_compat_spM_per_bin; ++i) {
-        mb_end_idx += doublet_counter_per_bin[i].m_nMidBot;
-        mt_end_idx += doublet_counter_per_bin[i].m_nMidTop;
-
-        if (mb_end_idx > item_idx) {
-            break;
-        }
-        mt_start_idx += doublet_counter_per_bin[i].m_nMidTop;
-    }
-
-    if (mt_end_idx >= mid_top_doublets_per_bin.size()) {
-        mt_end_idx = std::min(mid_top_doublets_per_bin.size(), mt_end_idx);
-    }
-
-    if (mt_start_idx >= mid_top_doublets_per_bin.size()) {
-        return;
-    }
+    // item vector, where the doublets are recorded
+    const unsigned int mt_start_idx = mid_bot.m_mt_start_idx;
+    const unsigned int mt_end_idx = mid_bot.m_mt_end_idx;
 
     // number of triplets per middle-bot doublet
     unsigned int num_triplets_per_mb = 0;
@@ -139,8 +107,8 @@ void count_triplets(
             internal_sp_device.bin(spT_bin)[spT_idx];
 
         // Apply the conformal transformation to middle-top doublet
-        traccc::lin_circle lt =
-            doublet_finding_helper::transform_coordinates(spM, spT, false);
+        traccc::lin_circle lt = doublet_finding_helper::transform_coordinates<
+            details::spacepoint_type::top>(spM, spT);
 
         // Check if mid-bot and mid-top doublets can form a triplet
         if (triplet_finding_helper::isCompatible(
@@ -158,10 +126,12 @@ void count_triplets(
         vecmem::device_atomic_ref<unsigned int> nMidBot(header.m_nMidBot);
         nMidBot.fetch_add(1);
         vecmem::device_atomic_ref<unsigned int> nTriplets(header.m_nTriplets);
-        nTriplets.fetch_add(num_triplets_per_mb);
+        const unsigned int posTriplets =
+            nTriplets.fetch_add(num_triplets_per_mb);
 
         triplet_counter.get_items().at(bin_idx).push_back(
-            {mid_bot, num_triplets_per_mb});
+            {mid_bot, num_triplets_per_mb, mt_start_idx, mt_end_idx,
+             posTriplets});
     }
 }
 

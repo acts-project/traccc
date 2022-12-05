@@ -25,10 +25,8 @@
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
-class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
-                              const spacepoint_container_types::const_view&)>,
-                          public algorithm<vecmem::data::vector_buffer<seed>(
-                              const spacepoint_container_types::buffer&)> {
+class seeding_algorithm : public algorithm<seed_collection_types::buffer(
+                              const spacepoint_container_types::const_view&)> {
 
     public:
     /// Constructor for the seed finding algorithm
@@ -42,17 +40,8 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     /// @param spacepoints_view is a view of all spacepoints in the event
     /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
-    vecmem::data::vector_buffer<seed> operator()(
+    seed_collection_types::buffer operator()(
         const spacepoint_container_types::const_view& spacepoints_view)
-        const override;
-
-    /// Operator executing the algorithm.
-    ///
-    /// @param spacepoints_buffer is a buffer of all spacepoints in the event
-    /// @return the buffer of track seeds reconstructed from the spacepoints
-    ///
-    vecmem::data::vector_buffer<seed> operator()(
-        const spacepoint_container_types::buffer& spacepoints_buffer)
         const override;
 
     private:

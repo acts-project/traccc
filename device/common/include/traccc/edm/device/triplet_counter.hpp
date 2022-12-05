@@ -27,9 +27,6 @@ struct triplet_counter_header {
     /// The total number of Triplets in a given geometric bin
     unsigned int m_nTriplets = 0;
 
-    TRACCC_HOST_DEVICE
-    unsigned int get_ref_num() const { return m_nMidBot; }
-
 };  // struct triplet_counter_header
 
 /// Item type for the "triplet counter container"
@@ -43,6 +40,13 @@ struct triplet_counter {
 
     /// The number of compatible triplets for a the midbot doublet
     unsigned int m_nTriplets = 0;
+
+    /// The position of the middle top doublets with this spM
+    unsigned int m_mt_start_idx = 0;
+    unsigned int m_mt_end_idx;
+
+    /// The position in which these triplets will be added
+    unsigned int posTriplets = 0;
 
 };  // struct triplet_counter
 
