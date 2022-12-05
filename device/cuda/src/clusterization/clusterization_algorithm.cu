@@ -6,7 +6,9 @@
  */
 
 // CUDA Library include(s).
+#include "../utils/utils.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/connect_components.hpp"
@@ -19,13 +21,9 @@
 
 // Vecmem include(s).
 #include <vecmem/utils/copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <algorithm>
-
-// Local include(s)
-#include "traccc/cuda/utils/definitions.hpp"
 
 namespace traccc::cuda {
 namespace kernels {
@@ -87,23 +85,18 @@ __global__ void form_spacepoints(
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr)
-    : m_mr(mr) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::cuda::copy>();
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str)
+    : m_mr(mr), m_copy(copy), m_stream(str) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::const_view& cells_view) const {
 
+    // Get a convenience variable for the stream that we'll be using.
+    cudaStream_t stream = details::get_stream(m_stream);
+
     // Number of modules
     const cell_container_types::const_device::header_vector::size_type
-        num_modules = m_copy->get_size(cells_view.headers);
+        num_modules = m_copy.get_size(cells_view.headers);
 
     // Work block size for kernel execution
     const std::size_t threadsPerBlock = 64;
@@ -111,7 +104,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Get the sizes of the cells in each module
     const std::vector<
         cell_container_types::const_device::item_vector::value_type::size_type>
-        cell_sizes = m_copy->get_sizes(cells_view.items);
+        cell_sizes = m_copy.get_sizes(cells_view.items);
 
     /*
      * Helper container for sparse CCL calculations.
@@ -123,7 +116,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices_buff(
         std::vector<std::size_t>(cell_sizes.begin(), cell_sizes.end()),
         m_mr.main, m_mr.host);
-    m_copy->setup(sparse_ccl_indices_buff);
+    m_copy.setup(sparse_ccl_indices_buff);
 
     /*
      * cl_per_module_prefix_buff is a vector buffer with numbers of found
@@ -155,30 +148,28 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
      */
     vecmem::data::vector_buffer<std::size_t> cl_per_module_prefix_buff(
         num_modules, m_mr.main);
-    m_copy->setup(cl_per_module_prefix_buff);
+    m_copy.setup(cl_per_module_prefix_buff);
 
     // Calculating grid size for cluster finding kernel
     std::size_t blocksPerGrid =
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
 
     // Invoke find clusters that will call cluster finding kernel
-    kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::find_clusters<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(
         cells_view, sparse_ccl_indices_buff, cl_per_module_prefix_buff);
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Create prefix sum buffer
     vecmem::data::vector_buffer cells_prefix_sum_buff =
-        make_prefix_sum_buff(cell_sizes, *m_copy, m_mr);
-
-    // Wait here for the find_clusters kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+        make_prefix_sum_buff(cell_sizes, m_copy, m_mr, m_stream);
 
     // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
     vecmem::vector<std::size_t> cl_per_module_prefix_host(
         m_mr.host ? m_mr.host : &(m_mr.main));
-    (*m_copy)(cl_per_module_prefix_buff, cl_per_module_prefix_host,
-              vecmem::copy::type::copy_type::device_to_host);
+    m_copy(cl_per_module_prefix_buff, cl_per_module_prefix_host,
+           vecmem::copy::type::copy_type::device_to_host);
+    m_stream.synchronize();
     std::vector<std::size_t> clusters_per_module_host(
         cl_per_module_prefix_host.begin(), cl_per_module_prefix_host.end());
 
@@ -190,32 +181,33 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     unsigned int total_clusters = cl_per_module_prefix_host.back();
 
     // Copy the prefix sum back to its device container
-    (*m_copy)(vecmem::get_data(cl_per_module_prefix_host),
-              cl_per_module_prefix_buff,
-              vecmem::copy::type::copy_type::host_to_device);
+    m_copy(vecmem::get_data(cl_per_module_prefix_host),
+           cl_per_module_prefix_buff,
+           vecmem::copy::type::copy_type::host_to_device);
 
     // Vector of the exact cluster sizes, will be filled in cluster counting
     vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
         total_clusters, m_mr.main);
-    m_copy->setup(cluster_sizes_buffer);
-    m_copy->memset(cluster_sizes_buffer, 0);
+    m_copy.setup(cluster_sizes_buffer);
+    m_copy.memset(cluster_sizes_buffer, 0);
 
     // Calclating grid size for cluster counting kernel (block size 64)
-    blocksPerGrid =
-        (cells_prefix_sum_buff.size() + threadsPerBlock - 1) / threadsPerBlock;
+    blocksPerGrid = (cells_prefix_sum_buff.capacity() + threadsPerBlock - 1) /
+                    threadsPerBlock;
     // Invoke cluster counting will call count cluster cells kernel
-    kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(
         sparse_ccl_indices_buff, cl_per_module_prefix_buff,
         cells_prefix_sum_buff, cluster_sizes_buffer);
     // Check for kernel launch errors and Wait for the cluster_counting kernel
     // to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Copy cluster sizes back to the host
-    std::vector<unsigned int> cluster_sizes;
-    (*m_copy)(cluster_sizes_buffer, cluster_sizes,
-              vecmem::copy::type::copy_type::device_to_host);
+    vecmem::vector<unsigned int> cluster_sizes{m_mr.host ? m_mr.host
+                                                         : &(m_mr.main)};
+    m_copy(cluster_sizes_buffer, cluster_sizes,
+           vecmem::copy::type::copy_type::device_to_host);
+    m_stream.synchronize();
 
     // Cluster container buffer for the clusters and headers (cluster ids)
     cluster_container_types::buffer clusters_buffer{
@@ -223,22 +215,23 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         {std::vector<std::size_t>(total_clusters, 0),
          std::vector<std::size_t>(cluster_sizes.begin(), cluster_sizes.end()),
          m_mr.main, m_mr.host}};
-    m_copy->setup(clusters_buffer.headers);
-    m_copy->setup(clusters_buffer.items);
+    m_copy.setup(clusters_buffer.headers);
+    m_copy.setup(clusters_buffer.items);
 
     // Using previous block size and thread size (64)
     // Invoke connect components will call connect components kernel
-    kernels::connect_components<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::connect_components<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(
         cells_view, sparse_ccl_indices_buff, cl_per_module_prefix_buff,
         cells_prefix_sum_buff, clusters_buffer);
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.main},
         {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
          m_mr.main, m_mr.host}};
-    m_copy->setup(measurements_buffer.headers);
-    m_copy->setup(measurements_buffer.items);
+    m_copy.setup(measurements_buffer.headers);
+    m_copy.setup(measurements_buffer.items);
 
     // Spacepoint container buffer to fill inside the spacepoint formation
     // kernel
@@ -246,38 +239,31 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         {num_modules, m_mr.main},
         {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
          m_mr.main, m_mr.host}};
-    m_copy->setup(spacepoints_buffer.headers);
-    m_copy->setup(spacepoints_buffer.items);
+    m_copy.setup(spacepoints_buffer.headers);
+    m_copy.setup(spacepoints_buffer.items);
 
     // Calculating grid size for measurements creation kernel (block size 64)
     blocksPerGrid = (clusters_buffer.headers.size() - 1 + threadsPerBlock) /
                     threadsPerBlock;
 
-    // Wait here for the connect_components kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
     // Invoke measurements creation will call create measurements kernel
-    kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::create_measurements<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(
         cells_view, clusters_buffer, measurements_buffer);
-
-    // Check for kernel launch errors and Wait here for the measurements
-    // creation kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Create prefix sum buffer
     vecmem::data::vector_buffer meas_prefix_sum_buff = make_prefix_sum_buff(
-        m_copy->get_sizes(measurements_buffer.items), *m_copy, m_mr);
+        std::vector<device::prefix_sum_size_t>{clusters_per_module_host.begin(),
+                                               clusters_per_module_host.end()},
+        m_copy, m_mr, m_stream);
 
     // Using the same grid size as before
     // Invoke spacepoint formation will call form_spacepoints kernel
-    kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock>>>(
+    kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(
         measurements_buffer, meas_prefix_sum_buff, spacepoints_buffer);
-    // Check for kernel launch errors and Wait for the spacepoint formation
-    // kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
+    // Return the buffer. Which may very well not be filled at this point yet.
     return spacepoints_buffer;
 }
 
