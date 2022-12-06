@@ -11,6 +11,9 @@
 // System include(s).
 #include <algorithm>
 
+// Nividia tool extensions library
+#include "nvtx3/nvToolsExt.h"
+
 namespace traccc::performance {
 
 /// Start time measurement
@@ -19,7 +22,9 @@ namespace traccc::performance {
 timer::timer(const std::string_view timer_name, timing_info& t_info)
     : m_start(std::chrono::high_resolution_clock::now()),
       m_name(timer_name),
-      m_timing_info(t_info) {}
+      m_timing_info(t_info) {
+      nvtxRangePushA(timer_name.data());
+      }
 
 /// End time measurement
 timer::~timer() {
@@ -36,6 +41,7 @@ timer::~timer() {
     } else {
         pos->second += totalTime;
     }
+    nvtxRangePop();
 }
 
 }  // namespace traccc::performance
