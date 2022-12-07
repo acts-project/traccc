@@ -34,15 +34,14 @@ void write(std::size_t event, std::string_view directory,
            spacepoint_container_types::const_view spacepoints) {
 
     switch (format) {
-        case data_format::binary: {
+        case data_format::binary:
             details::write_binary_container(
                 data_directory() + directory.data() +
                     get_event_filename(event, "-hits.dat"),
                 traccc::spacepoint_container_types::const_device{spacepoints});
             break;
-            default:
-                throw std::invalid_argument("Unsupported data format");
-        }
+        default:
+            throw std::invalid_argument("Unsupported data format");
     }
 }
 
