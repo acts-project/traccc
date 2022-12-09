@@ -32,7 +32,7 @@ traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
 traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G" )
 
 #Allow the use of Nvidia extensions tools.
-traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-lnvToolsExt" )
+#traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-lnvToolsExt" )
 
 # More rigorous tests for the Debug builds.
 if( ( "${CUDAToolkit_VERSION}" VERSION_GREATER_EQUAL "10.2" ) AND

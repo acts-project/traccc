@@ -6,7 +6,7 @@
 
 # Project include(s).
 include( traccc-compiler-options-cpp )
-include( traccc-compiler-options-cuda )
+#include( traccc-compiler-options-cuda )
 
 # Set up the build of the traccc::performance library.
 traccc_add_library( traccc_performance performance TYPE SHARED
@@ -51,5 +51,5 @@ target_link_libraries( traccc_performance
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
         target_link_libraries( traccc_performance PRIVATE CUDA::cudart )
-                target_compile_options( traccc_performance PRIVATE )
+	target_compile_definitions( traccc_performance PRIVATE TRACCC_HAVE_NVTX)
 endif()
