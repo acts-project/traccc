@@ -21,7 +21,7 @@
 #include "traccc/performance/timing_info.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // TBB include(s).
 #include <tbb/global_control.h>
@@ -33,11 +33,12 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 namespace traccc {
 
-template <typename FULL_CHAIN_ALG>
+template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_mt(std::string_view description, int argc, char* argv[]) {
 
     // Convenience typedef.
@@ -73,7 +74,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     tbb::task_group group;
 
     // Memory resource to use in the test.
-    vecmem::host_memory_resource host_mr;
+    HOST_MR uncached_host_mr;
 
     // Read in all input events into memory.
     demonstrator_input cells;
@@ -83,11 +84,22 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
                          throughput_cfg.input_directory,
                          throughput_cfg.detector_file,
                          throughput_cfg.digitization_config_file,
-                         throughput_cfg.input_data_format, &host_mr);
+                         throughput_cfg.input_data_format, &uncached_host_mr);
     }
 
+    // Set up cached memory resources on top of the host memory resource
+    // separately for each CPU thread.
+    std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> > host_mrs{
+        mt_cfg.threads + 1};
+
     // Set up the full-chain algorithm(s). One for each thread.
-    std::vector<FULL_CHAIN_ALG> alg{mt_cfg.threads + 1, {host_mr}};
+    std::vector<FULL_CHAIN_ALG> algs;
+    algs.reserve(mt_cfg.threads + 1);
+    for (std::size_t i = 0; i < mt_cfg.threads + 1; ++i) {
+        host_mrs.at(i) = std::make_unique<vecmem::binary_page_memory_resource>(
+            uncached_host_mr);
+        algs.push_back({*(host_mrs.at(i))});
+    }
 
     // Seed the random number generator.
     std::srand(std::time(0));
@@ -113,8 +125,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
             arena.execute([&]() {
                 group.run([&]() {
                     rec_track_params.fetch_add(
-                        alg.at(tbb::this_task_arena::current_thread_index())(
-                               cells[event])
+                        algs.at(tbb::this_task_arena::current_thread_index())(
+                                cells[event])
                             .size());
                 });
             });
@@ -142,8 +154,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
             arena.execute([&]() {
                 group.run([&]() {
                     rec_track_params.fetch_add(
-                        alg.at(tbb::this_task_arena::current_thread_index())(
-                               cells[event])
+                        algs.at(tbb::this_task_arena::current_thread_index())(
+                                cells[event])
                             .size());
                 });
             });
@@ -152,6 +164,11 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
         // Wait for all tasks to finish.
         group.wait();
     }
+
+    // Delete the algorithms and host memory caches explicitly before their
+    // parent object would go out of scope.
+    algs.clear();
+    host_mrs.clear();
 
     // Print some results.
     std::cout << "Reconstructed track parameters: " << rec_track_params.load()

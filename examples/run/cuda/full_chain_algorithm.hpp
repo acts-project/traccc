@@ -11,6 +11,7 @@
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -19,7 +20,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 
 // System include(s).
 #include <memory>
@@ -66,12 +67,14 @@ class full_chain_algorithm
     private:
     /// Host memory resource
     vecmem::memory_resource& m_host_mr;
+    /// CUDA stream to use
+    stream m_stream;
     /// Device memory resource
     vecmem::cuda::device_memory_resource m_device_mr;
     /// Device caching memory resource
     std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
-    /// Memory copy object
-    mutable vecmem::cuda::copy m_copy;
+    /// (Asynchronous) Memory copy object
+    mutable vecmem::cuda::async_copy m_copy;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

@@ -11,6 +11,7 @@
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -28,7 +29,9 @@
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
@@ -60,19 +63,23 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
+    traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
+    traccc::cuda::stream stream;
+
     vecmem::cuda::copy copy;
+    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     traccc::device::container_h2d_copy_alg<traccc::cell_container_types>
-        cell_h2d{mr, copy};
-    traccc::cuda::clusterization_algorithm ca_cuda(mr);
+        cell_h2d{mr, async_copy};
+    traccc::cuda::clusterization_algorithm ca_cuda{mr, async_copy, stream};
     traccc::cuda::seeding_algorithm sa_cuda(mr);
     traccc::cuda::track_params_estimation tp_cuda(mr);
     traccc::device::container_d2h_copy_alg<traccc::spacepoint_container_types>
@@ -116,7 +123,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 cells_per_event = traccc::io::read_cells(
                     event, common_opts.input_directory,
                     common_opts.input_data_format, &surface_transforms,
-                    &digi_cfg, &host_mr);
+                    &digi_cfg, &cuda_host_mr);
             }  // stop measuring file reading timer
 
             /*-----------------------------
@@ -131,6 +138,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
                 spacepoints_cuda_buffer = ca_cuda(cells_cuda_buffer);
+                stream.synchronize();
             }  // stop measuring clusterization cuda timer
 
             if (run_cpu) {
