@@ -6,7 +6,6 @@
 
 # Project include(s).
 include( traccc-compiler-options-cpp )
-#include( traccc-compiler-options-cuda )
 
 # Set up the build of the traccc::performance library.
 traccc_add_library( traccc_performance performance TYPE SHARED
