@@ -10,9 +10,13 @@
 
 #include "full_chain_algorithm.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
+
 int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
-    return traccc::throughput_st<traccc::cuda::full_chain_algorithm>(
+    return traccc::throughput_st<traccc::cuda::full_chain_algorithm,
+                                 vecmem::cuda::host_memory_resource>(
         "Single-threaded CUDA GPU throughput tests", argc, argv);
 }

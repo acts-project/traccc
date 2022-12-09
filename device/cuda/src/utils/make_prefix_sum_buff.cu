@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "traccc/cuda/utils/definitions.hpp"
+#include "utils.hpp"
 
 // Project include(s).
 #include "traccc/cuda/utils/make_prefix_sum_buff.hpp"
@@ -43,10 +44,40 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     copy.setup(prefix_sum_buff);
 
     // Fill the prefix sum vector
-    kernels::fill_prefix_sum<<<(sizes_sum_view.size() / 32) + 1, 32>>>(
-        sizes_sum_view, prefix_sum_buff);
+    static const unsigned int threadsPerBlock = 32;
+    const unsigned int blocks =
+        (sizes_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
+    kernels::fill_prefix_sum<<<blocks, threadsPerBlock>>>(sizes_sum_view,
+                                                          prefix_sum_buff);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
+    return prefix_sum_buff;
+}
+
+vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
+    const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
+    const traccc::memory_resource& mr, const stream& str) {
+
+    const device::prefix_sum_buffer_t make_sum_result =
+        device::make_prefix_sum_buffer(sizes, copy, mr);
+    const vecmem::data::vector_view<const device::prefix_sum_size_t>
+        sizes_sum_view = make_sum_result.view;
+    const unsigned int totalSize = make_sum_result.totalSize;
+
+    // Create buffer and view objects for prefix sum vector
+    vecmem::data::vector_buffer<device::prefix_sum_element_t> prefix_sum_buff(
+        totalSize, mr.main);
+    copy.setup(prefix_sum_buff);
+
+    // Fill the prefix sum vector
+    static const unsigned int threadsPerBlock = 32;
+    const unsigned int blocks =
+        (sizes_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
+    kernels::fill_prefix_sum<<<blocks, threadsPerBlock, 0,
+                               details::get_stream(str)>>>(sizes_sum_view,
+                                                           prefix_sum_buff);
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     return prefix_sum_buff;
 }

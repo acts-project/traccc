@@ -29,12 +29,14 @@ namespace traccc::cuda {
 
 full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
     : m_host_mr(host_mr),
+      m_stream(),
       m_device_mr(),
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
-      m_copy(),
+      m_copy(m_stream.cudaStream()),
       m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
-      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                       m_stream),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}) {
@@ -51,12 +53,14 @@ full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     : m_host_mr(parent.m_host_mr),
+      m_stream(),
       m_device_mr(),
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
-      m_copy(),
+      m_copy(m_stream.cudaStream()),
       m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
-      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                       m_stream),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}) {}
@@ -74,6 +78,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     // Execute the algorithms.
     const clusterization_algorithm::output_type spacepoints =
         m_clusterization(m_host2device(get_data(cells)));
+    m_stream.synchronize();
     const track_params_estimation::output_type track_params =
         m_track_parameter_estimation(spacepoints, m_seeding(spacepoints));
 
