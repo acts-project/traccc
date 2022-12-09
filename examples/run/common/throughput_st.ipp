@@ -20,16 +20,17 @@
 #include "traccc/performance/timing_info.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // System include(s).
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <memory>
 
 namespace traccc {
 
-template <typename FULL_CHAIN_ALG>
+template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_st(std::string_view description, int argc, char* argv[]) {
 
     // Convenience typedef.
@@ -56,7 +57,9 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     performance::timing_info times;
 
     // Memory resource to use in the test.
-    vecmem::host_memory_resource host_mr;
+    HOST_MR uncached_host_mr;
+    std::unique_ptr<vecmem::binary_page_memory_resource> host_mr =
+        std::make_unique<vecmem::binary_page_memory_resource>(uncached_host_mr);
 
     // Read in all input events into memory.
     demonstrator_input cells;
@@ -66,11 +69,12 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
                          throughput_cfg.input_directory,
                          throughput_cfg.detector_file,
                          throughput_cfg.digitization_config_file,
-                         throughput_cfg.input_data_format, &host_mr);
+                         throughput_cfg.input_data_format, &uncached_host_mr);
     }
 
     // Set up the full-chain algorithm.
-    FULL_CHAIN_ALG alg(host_mr);
+    std::unique_ptr<FULL_CHAIN_ALG> alg =
+        std::make_unique<FULL_CHAIN_ALG>(*host_mr);
 
     // Seed the random number generator.
     std::srand(std::time(0));
@@ -93,7 +97,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
                 std::rand() % throughput_cfg.loaded_events;
 
             // Process one event.
-            rec_track_params += alg(cells[event]).size();
+            rec_track_params += (*alg)(cells[event]).size();
         }
     }
 
@@ -112,9 +116,13 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
                 std::rand() % throughput_cfg.loaded_events;
 
             // Process one event.
-            rec_track_params += alg(cells[event]).size();
+            rec_track_params += (*alg)(cells[event]).size();
         }
     }
+
+    // Explicitly delete the objects in the correct order.
+    alg.reset();
+    host_mr.reset();
 
     // Print some results.
     std::cout << "Reconstructed track parameters: " << rec_track_params
