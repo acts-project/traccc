@@ -6,8 +6,7 @@
  */
 
 // Local include(s).
-#include "../common/throughput_mt.hpp"
-
+#include "../common/throughput_mt_alt.hpp"
 #include "full_chain_algorithm.hpp"
 
 // VecMem include(s).
@@ -17,8 +16,8 @@ int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
     static const bool use_host_caching = true;
-    return traccc::throughput_mt<traccc::cuda::full_chain_algorithm,
-                                 vecmem::cuda::host_memory_resource>(
+    return traccc::throughput_mt_alt<traccc::cuda::full_chain_algorithm,
+                                     vecmem::cuda::host_memory_resource>(
         "Multi-threaded CUDA GPU throughput tests", argc, argv,
         use_host_caching);
 }

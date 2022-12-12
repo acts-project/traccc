@@ -28,8 +28,9 @@ struct alt_cell {
 /// Declare all cell collection types
 using alt_cell_collection_types = collection_types<alt_cell>;
 
-/// Type definition for the reading of cells into a single vector using
-/// alt_cell. The alt_cells hold a link to a position in the modules vector.
+/// Type definition for the reading of cells into a vector of alt_cells and a
+/// vector of modules. The alt_cells hold a link to a position in the modules'
+/// vector.
 struct alt_cell_reader_output_t {
     alt_cell_collection_types::host cells;
     cell_module_collection_types::host modules;

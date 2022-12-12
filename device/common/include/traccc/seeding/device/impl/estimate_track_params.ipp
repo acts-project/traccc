@@ -45,4 +45,36 @@ inline void estimate_track_params(
     params_device[globalIndex] = track_params;
 }
 
+TRACCC_HOST_DEVICE
+inline void estimate_track_params(
+    const std::size_t globalIndex,
+    const spacepoint_collection_types::const_view& spacepoints_view,
+    const alt_seed_collection_types::const_view& seeds_view,
+    bound_track_parameters_collection_types::view params_view) {
+
+    // Check if anything needs to be done.
+    const alt_seed_collection_types::const_device seeds_device(seeds_view);
+    if (globalIndex >= seeds_device.size()) {
+        return;
+    }
+
+    const spacepoint_collection_types::const_device spacepoints_device(
+        spacepoints_view);
+
+    bound_track_parameters_collection_types::device params_device(params_view);
+
+    // convenient assumption on bfield and mass
+    vector3 bfield = {0, 0, 2};
+
+    const alt_seed& this_seed = seeds_device.at(globalIndex);
+
+    // Get bound track parameter
+    bound_track_parameters track_params;
+    track_params.set_vector(seed_to_bound_vector(spacepoints_device, this_seed,
+                                                 bfield, PION_MASS_MEV));
+
+    // Save the object into global memory.
+    params_device[globalIndex] = track_params;
+}
+
 }  // namespace traccc::device

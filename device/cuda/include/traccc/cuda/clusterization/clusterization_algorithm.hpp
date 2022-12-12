@@ -11,7 +11,9 @@
 #include "traccc/cuda/utils/stream.hpp"
 
 // Project include(s).
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/ccl_partition.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -29,8 +31,10 @@ namespace traccc::cuda {
 /// algorithm, but also a pretty bad algorithm for a GPU.
 ///
 class clusterization_algorithm
-    : public algorithm<spacepoint_container_types::buffer(
-          const cell_container_types::const_view&)> {
+    : public algorithm<spacepoint_collection_types::buffer(
+          const alt_cell_collection_types::const_view&,
+          const cell_module_collection_types::const_view&,
+          const ccl_partition_collection_types::const_view&)> {
 
     public:
     /// Constructor for clusterization algorithm
@@ -45,12 +49,15 @@ class clusterization_algorithm
 
     /// Callable operator for clusterization algorithm
     ///
-    /// @param cells_per_event is a container with cell modules as headers
-    /// and cells as the items
-    /// @return a spacepoint container (buffer) - jagged vector of spacepoints
-    /// per module.
+    /// @param cells        a collection of cells
+    /// @param modules      a collection of modules
+    /// @param partitions   a collection of partitions on the cells collection
+    /// @return a spacepoint collection (buffer)
     output_type operator()(
-        const cell_container_types::const_view& cells_view) const override;
+        const alt_cell_collection_types::const_view& cells,
+        const cell_module_collection_types::const_view& modules,
+        const ccl_partition_collection_types::const_view& partitions)
+        const override;
 
     private:
     /// The memory resource(s) to use
