@@ -106,7 +106,7 @@ alt_cell_reader_output_t read_cells_alt(std::string_view filename,
         if (rit == result_modules.rend()) {
             // Add new cell and new cell counter if a new module is found
             const cell_module mod = get_module(iocell, geom, dconfig);
-            allCells.push_back({iocell, cellCounts.size()});
+            allCells.push_back({iocell, result_modules.size()});
             result_modules.push_back(mod);
             cellCounts.push_back(1);
         } else {
