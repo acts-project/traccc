@@ -31,7 +31,8 @@
 namespace traccc {
 
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
-int throughput_st(std::string_view description, int argc, char* argv[]) {
+int throughput_st(std::string_view description, int argc, char* argv[],
+                  bool use_host_caching) {
 
     // Convenience typedef.
     namespace po = boost::program_options;
@@ -58,8 +59,12 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
 
     // Memory resource to use in the test.
     HOST_MR uncached_host_mr;
-    std::unique_ptr<vecmem::binary_page_memory_resource> host_mr =
+    std::unique_ptr<vecmem::binary_page_memory_resource> cached_host_mr =
         std::make_unique<vecmem::binary_page_memory_resource>(uncached_host_mr);
+    vecmem::memory_resource& alg_host_mr =
+        use_host_caching
+            ? static_cast<vecmem::memory_resource&>(*cached_host_mr)
+            : static_cast<vecmem::memory_resource&>(uncached_host_mr);
 
     // Read in all input events into memory.
     demonstrator_input cells;
@@ -74,7 +79,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg =
-        std::make_unique<FULL_CHAIN_ALG>(*host_mr);
+        std::make_unique<FULL_CHAIN_ALG>(alg_host_mr);
 
     // Seed the random number generator.
     std::srand(std::time(0));
@@ -122,7 +127,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
 
     // Explicitly delete the objects in the correct order.
     alg.reset();
-    host_mr.reset();
+    cached_host_mr.reset();
 
     // Print some results.
     std::cout << "Reconstructed track parameters: " << rec_track_params

@@ -16,7 +16,9 @@
 int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
+    static const bool use_host_caching = true;
     return traccc::throughput_mt<traccc::cuda::full_chain_algorithm,
                                  vecmem::cuda::host_memory_resource>(
-        "Multi-threaded CUDA GPU throughput tests", argc, argv);
+        "Multi-threaded CUDA GPU throughput tests", argc, argv,
+        use_host_caching);
 }

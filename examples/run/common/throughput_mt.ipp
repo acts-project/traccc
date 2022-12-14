@@ -39,7 +39,8 @@
 namespace traccc {
 
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
-int throughput_mt(std::string_view description, int argc, char* argv[]) {
+int throughput_mt(std::string_view description, int argc, char* argv[],
+                  bool use_host_caching) {
 
     // Convenience typedef.
     namespace po = boost::program_options;
@@ -89,16 +90,22 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
 
     // Set up cached memory resources on top of the host memory resource
     // separately for each CPU thread.
-    std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> > host_mrs{
-        mt_cfg.threads + 1};
+    std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
+        cached_host_mrs{mt_cfg.threads + 1};
 
     // Set up the full-chain algorithm(s). One for each thread.
     std::vector<FULL_CHAIN_ALG> algs;
     algs.reserve(mt_cfg.threads + 1);
     for (std::size_t i = 0; i < mt_cfg.threads + 1; ++i) {
-        host_mrs.at(i) = std::make_unique<vecmem::binary_page_memory_resource>(
-            uncached_host_mr);
-        algs.push_back({*(host_mrs.at(i))});
+        cached_host_mrs.at(i) =
+            std::make_unique<vecmem::binary_page_memory_resource>(
+                uncached_host_mr);
+        vecmem::memory_resource& alg_host_mr =
+            use_host_caching
+                ? static_cast<vecmem::memory_resource&>(
+                      *(cached_host_mrs.at(i)))
+                : static_cast<vecmem::memory_resource&>(uncached_host_mr);
+        algs.push_back({alg_host_mr});
     }
 
     // Seed the random number generator.
@@ -168,7 +175,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     // Delete the algorithms and host memory caches explicitly before their
     // parent object would go out of scope.
     algs.clear();
-    host_mrs.clear();
+    cached_host_mrs.clear();
 
     // Print some results.
     std::cout << "Reconstructed track parameters: " << rec_track_params.load()

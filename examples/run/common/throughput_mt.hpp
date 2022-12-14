@@ -22,11 +22,14 @@ namespace traccc {
 /// @param description A short description of the application
 /// @param argc The count of command line arguments (from @c main(...))
 /// @param argv The command line arguments (from @c main(...))
+/// @param use_host_caching Flag specifying whether host-side memory caching
+///                         should be used
 /// @return The value to be returned from @c main(...)
 ///
 template <typename FULL_CHAIN_ALG,
           typename HOST_MR = vecmem::host_memory_resource>
-int throughput_mt(std::string_view description, int argc, char* argv[]);
+int throughput_mt(std::string_view description, int argc, char* argv[],
+                  bool use_host_caching = false);
 
 }  // namespace traccc
 
