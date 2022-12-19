@@ -29,32 +29,6 @@ namespace traccc::device {
 /// to be.
 ///
 /// This function needs to be called separately for every spacepoint of the
-/// event. Which is the same number as the size of the "prefix sum" given to
-/// this function.
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[in] config        Seedfinder configuration
-/// @param[in] phi_axis      The circular &Phi axis describing the geometry
-/// @param[in] z_axis        The linear Z axis describing the geometry
-/// @param[in] spacepoints   All the spacepoints of the event
-/// @param[in] sp_prefix_sum The prefix sum used for the spacepoints
-/// @param[out] grid_capacities Capacity required for each spacepoint grid bin
-///
-TRACCC_HOST_DEVICE
-inline void count_grid_capacities(
-    std::size_t globalIndex, const seedfinder_config& config,
-    const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
-    const spacepoint_container_types::const_view& spacepoints,
-    const vecmem::data::vector_view<const prefix_sum_element_t>& sp_prefix_sum,
-    vecmem::data::vector_view<unsigned int> grid_capacities);
-
-/// Function used for calculating the capacity for the spacepoint grid
-///
-/// Before filling the spacepoint grid with the spacepoints that belong to
-/// each grid bin, we need to calculate how big each of those bins are going
-/// to be.
-///
-/// This function needs to be called separately for every spacepoint of the
 /// event.
 ///
 /// @param[in] globalIndex   The index of the current thread

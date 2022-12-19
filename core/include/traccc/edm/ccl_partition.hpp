@@ -12,11 +12,11 @@
 
 namespace traccc {
 
-namespace partition {
+namespace partitioning {
 // Define number of cells to put together in each partition. Equal to the number
 // of threads per block in the CCL kernel.
 static constexpr std::size_t MAX_CELLS_PER_PARTITION = 1024;
-}  // namespace partition
+}  // namespace partitioning
 
 /// CCL partition used for dividing cell collection into similarly sized
 /// fragments

@@ -42,15 +42,15 @@ partitioning_algorithm::output_type partitioning_algorithm::operator()(
     // Create result object
     partitioning_algorithm::output_type partitions{0, &(m_mr.get())};
     // Reserve the minimum possible size of the result object
-    partitions.reserve(num_cells / partition::MAX_CELLS_PER_PARTITION);
+    partitions.reserve(num_cells / partitioning::MAX_CELLS_PER_PARTITION);
 
-    while (num_cells_remaining > partition::MAX_CELLS_PER_PARTITION) {
+    while (num_cells_remaining > partitioning::MAX_CELLS_PER_PARTITION) {
 
         bool broke = false;
         // Check if cell at a distance of max_cells_per_partition from last end
         // point can be used for partitioning. If not, look for nearest possible
         // previous cell.
-        for (unsigned int i = partition::MAX_CELLS_PER_PARTITION + last_end;
+        for (unsigned int i = partitioning::MAX_CELLS_PER_PARTITION + last_end;
              i > last_end; --i) {
             if (isFarEnough(cells[i - 1], cells[i])) {
                 partitions.push_back(

@@ -77,8 +77,8 @@ seed_finding::seed_finding(const seedfinder_config& config,
     }
 }
 
-seed_collection_types::buffer seed_finding::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
+seed_finding::output_type seed_finding::operator()(
+    const spacepoint_collection_types::const_view& spacepoints_view,
     const sp_grid_const_view& g2_view) const {
 
     // Get the sizes from the grid view
@@ -255,11 +255,9 @@ seed_collection_types::buffer seed_finding::operator()(
         details::get_queue(m_queue).submit([&](::sycl::handler& h) {
             // Array for temporary storage of triplets for comparing within seed
             // selecting kernel
-            ::sycl::accessor<scalar, 1, ::sycl::access::mode::read_write,
-                             ::sycl::access::target::local>
-                local_mem(m_seedfilter_config.compatSeedLimit *
-                              weightUpdatingLocalSize,
-                          h);
+            ::sycl::local_accessor<scalar, 1> local_mem(
+                m_seedfilter_config.compatSeedLimit * weightUpdatingLocalSize,
+                h);
 
             h.parallel_for<kernels::update_triplet_weights>(
                 weightUpdatingRange,
@@ -288,9 +286,9 @@ seed_collection_types::buffer seed_finding::operator()(
     }
 
     // Create seed buffer object and its view
-    seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
+    alt_seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
     m_copy->setup(seed_buffer);
-    seed_collection_types::view seed_view(seed_buffer);
+    alt_seed_collection_types::view seed_view(seed_buffer);
 
     // Calculate the range to run the seed selecting for
     static constexpr unsigned int seedSelectingLocalSize = 32 * 2;
@@ -312,11 +310,10 @@ seed_collection_types::buffer seed_finding::operator()(
         .submit([&](::sycl::handler& h) {
             // Array for temporary storage of triplets for comparing within seed
             // selecting kernel
-            ::sycl::accessor<triplet, 1, ::sycl::access::mode::read_write,
-                             ::sycl::access::target::local>
-                local_mem(m_seedfilter_config.max_triplets_per_spM *
-                              seedSelectingLocalSize,
-                          h);
+            ::sycl::local_accessor<triplet, 1> local_mem(
+                m_seedfilter_config.max_triplets_per_spM *
+                    seedSelectingLocalSize,
+                h);
 
             h.parallel_for<kernels::select_seeds>(
                 seedSelectingRange,

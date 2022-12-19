@@ -27,16 +27,13 @@ namespace traccc::device {
 /// partition
 /// @param[in] part     partition this cell belongs to
 /// @param[in] tid      current thread id
-/// @param[out] out     pointer to position in result clusters array to be
-/// filled
-/// @param outi         atomic object to store number of added clusters for
-/// current thread group
+/// @param[out] out     cluster to fill
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const alt_cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
     const unsigned short* f, const ccl_partition& part,
-    const unsigned short tid, alt_measurement* out, unsigned int& outi);
+    const unsigned short tid, alt_measurement& out);
 
 }  // namespace traccc::device
 

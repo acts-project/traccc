@@ -11,14 +11,12 @@
 #include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s)
-#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 #include "traccc/clusterization/device/aggregate_cluster.hpp"
 #include "traccc/clusterization/device/form_spacepoints.hpp"
 #include "traccc/clusterization/device/reduce_problem_cell.hpp"
-#include "traccc/edm/ccl_partition.hpp"
 
 // Vecmem include(s).
-#include "vecmem/utils/copy.hpp"
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <algorithm>
@@ -124,7 +122,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc,
 }
 
 __global__
-__launch_bounds__(partition::MAX_CELLS_PER_PARTITION) void ccl_kernel(
+__launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
     const alt_cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     const ccl_partition_collection_types::const_view partitions_view,
@@ -135,8 +133,12 @@ __launch_bounds__(partition::MAX_CELLS_PER_PARTITION) void ccl_kernel(
 
     const ccl_partition_collection_types::const_device partitions_device(
         partitions_view);
-    const ccl_partition& partition = partitions_device[blockIdx.x];
+    assert(blockIdx.x < partitions_device.size());
 
+    // Get partition for this thread group
+    const ccl_partition partition = partitions_device[blockIdx.x];
+
+    // Check if any work needs to be done
     if (tid >= partition.size) {
         return;
     }
@@ -150,9 +152,18 @@ __launch_bounds__(partition::MAX_CELLS_PER_PARTITION) void ccl_kernel(
 
     // Vector of indices of the adjacent cells
     index_t adjv[8];
+    /*
+     * The number of adjacent cells for each cell must start at zero, to
+     * avoid uninitialized memory. adjv does not need to be zeroed, as
+     * we will only access those values if adjc indicates that the value
+     * is set.
+     */
     // Number of adjacent cells
-    unsigned char adjc;
+    unsigned char adjc = 0;
 
+    /*
+     * Look for adjacent cells to the current one.
+     */
     device::reduce_problem_cell(cells_device, tid, partition, adjc, adjv);
 
     /*
@@ -163,8 +174,8 @@ __launch_bounds__(partition::MAX_CELLS_PER_PARTITION) void ccl_kernel(
      * shared memory is limited. These could always be moved to global memory,
      * but the algorithm would be decidedly slower in that case.
      */
-    __shared__ index_t f[partition::MAX_CELLS_PER_PARTITION];
-    __shared__ index_t f_next[partition::MAX_CELLS_PER_PARTITION];
+    __shared__ index_t f[partitioning::MAX_CELLS_PER_PARTITION];
+    __shared__ index_t f_next[partitioning::MAX_CELLS_PER_PARTITION];
 
     /*
      * At the start, the values of f and f_next should be equal to the
@@ -179,6 +190,10 @@ __launch_bounds__(partition::MAX_CELLS_PER_PARTITION) void ccl_kernel(
      */
     __syncthreads();
 
+    /*
+     * Run FastSV algorithm, which will update the father index to that of the
+     * cell belonging to the same cluster with the lowest index.
+     */
     fast_sv_1(f, f_next, adjc, adjv, tid);
 
     /*
@@ -220,10 +235,9 @@ __launch_bounds__(partition::MAX_CELLS_PER_PARTITION) void ccl_kernel(
     __syncthreads();
 
     /*
-     * Get the pointer in which to fill the measurements found in this thread
-     * group.
+     * Get the position to fill the measurements found in this thread group.
      */
-    alt_measurement* out = &(measurements_device[outi]);
+    const unsigned int groupPos = outi;
 
     __syncthreads();
 
@@ -233,8 +247,15 @@ __launch_bounds__(partition::MAX_CELLS_PER_PARTITION) void ccl_kernel(
 
     __syncthreads();
 
-    device::aggregate_cluster(cells_device, modules_device, f, partition, tid,
-                              out, outi);
+    if (f[tid] == tid) {
+        /*
+         * If we are a cluster owner, atomically claim a position in the
+         * output array which we can write to.
+         */
+        const unsigned int id = atomicAdd(&outi, 1);
+        device::aggregate_cluster(cells_device, modules_device, f, partition,
+                                  tid, measurements_device[groupPos + id]);
+    }
 }
 
 __global__ void form_spacepoints(
@@ -280,10 +301,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         cudaMemset(num_measurements_device.get(), 0, sizeof(unsigned int)));
 
     // Launch ccl kernel. Each thread will handle a single cell.
-    kernels::ccl_kernel<<<num_partitions, partition::MAX_CELLS_PER_PARTITION, 0,
-                          stream>>>(cells, modules, partitions,
-                                    measurements_buffer,
-                                    *num_measurements_device);
+    kernels::ccl_kernel<<<num_partitions, partitioning::MAX_CELLS_PER_PARTITION,
+                          0, stream>>>(cells, modules, partitions,
+                                       measurements_buffer,
+                                       *num_measurements_device);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
     m_stream.synchronize();
@@ -301,7 +322,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // For the following kernel, we can now use whatever the desired number of
     // threads
-    const unsigned int num_threads = partition::MAX_CELLS_PER_PARTITION;
+    const unsigned int num_threads = partitioning::MAX_CELLS_PER_PARTITION;
     const unsigned int num_blocks =
         (num_measurements_host + num_threads - 1) / num_threads;
 

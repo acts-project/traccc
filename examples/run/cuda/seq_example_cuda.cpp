@@ -53,6 +53,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Output stats
     uint64_t n_cells = 0;
+    uint64_t n_alt_cells = 0;
     uint64_t n_modules = 0;
     // uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
@@ -116,7 +117,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         {
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
 
-            {
+            if (run_cpu) {
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
@@ -152,7 +153,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             /*-----------------------------
                 Clusterization and Spacepoint Creation (cuda)
             -----------------------------*/
-            // Copy the cell data to the device.
             // Create device copy of input collections
             traccc::alt_cell_collection_types::buffer cells_buffer(
                 alt_cells_per_event.size(), mr.main);
@@ -280,40 +280,43 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             /// Statistics
             n_modules += cells_per_event.size();
             n_cells += cells_per_event.total_size();
+            n_alt_cells += alt_read_out_per_event.cells.size();
             n_measurements += measurements_per_event.total_size();
             n_spacepoints += spacepoints_per_event.total_size();
             n_spacepoints_cuda += spacepoints_per_event_cuda.size();
             n_seeds_cuda += seeds_cuda.size();
             n_seeds += seeds.size();
         }
+        /// TODO:
+        /* if (i_cfg.check_performance) {
 
-        //     if (i_cfg.check_performance) {
+            traccc::event_map evt_map(
+                event, i_cfg.detector_file,
+                i_cfg.digitization_config_file,
+                common_opts.input_directory, common_opts.input_directory,
+                common_opts.input_directory, host_mr);
+            sd_performance_writer.write("CUDA", seeds_cuda,
+                                        spacepoints_per_event_cuda,
+                                        evt_map);
 
-        //         traccc::event_map evt_map(
-        //             event, i_cfg.detector_file,
-        //             i_cfg.digitization_config_file,
-        //             common_opts.input_directory, common_opts.input_directory,
-        //             common_opts.input_directory, host_mr);
-        //         sd_performance_writer.write("CUDA", seeds_cuda,
-        //                                     spacepoints_per_event_cuda,
-        //                                     evt_map);
-
-        //         if (run_cpu) {
-        //             sd_performance_writer.write("CPU", seeds,
-        //             spacepoints_per_event,
-        //                                         evt_map);
-        //         }
-        //     }
+            if (run_cpu) {
+                sd_performance_writer.write("CPU", seeds,
+                spacepoints_per_event,
+                                            evt_map);
+            }
+        } */
     }
 
-    // if (i_cfg.check_performance) {
-    //     sd_performance_writer.finalize();
-    // }
+    /* if (i_cfg.check_performance) {
+        sd_performance_writer.finalize();
+    } */
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
     std::cout << "- created        " << n_cells << " cells           "
+              << std::endl;
+    std::cout << "- created        " << n_alt_cells << " alt cells"
               << std::endl;
     std::cout << "- created        " << n_measurements << " meaurements     "
               << std::endl;

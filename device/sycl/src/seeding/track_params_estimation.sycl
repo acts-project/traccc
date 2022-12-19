@@ -37,8 +37,8 @@ track_params_estimation::track_params_estimation(
 }
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const seed_collection_types::const_view& seeds_view) const {
+    const spacepoint_collection_types::const_view& spacepoints_view,
+    const alt_seed_collection_types::const_view& seeds_view) const {
 
     // Get the size of the seeds view
     auto seeds_size = m_copy->get_size(seeds_view);

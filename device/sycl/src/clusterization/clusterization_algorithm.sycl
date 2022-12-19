@@ -9,39 +9,292 @@
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/utils/calculate1DimNdRange.hpp"
-#include "traccc/sycl/utils/make_prefix_sum_buff.hpp"
 
 // Project include(s)
-#include "traccc/clusterization/device/connect_components.hpp"
-#include "traccc/clusterization/device/count_cluster_cells.hpp"
-#include "traccc/clusterization/device/create_measurements.hpp"
-#include "traccc/clusterization/device/find_clusters.hpp"
+#include "traccc/clusterization/device/aggregate_cluster.hpp"
 #include "traccc/clusterization/device/form_spacepoints.hpp"
-#include "traccc/device/fill_prefix_sum.hpp"
+#include "traccc/clusterization/device/reduce_problem_cell.hpp"
 
 // Vecmem include(s).
+#include <vecmem/memory/device_atomic_ref.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
 
 // System include(s).
 #include <algorithm>
 
 namespace traccc::sycl {
+
+namespace {
+/// These indices in clusterization will only range from 0 to
+/// MAX_CELLS_PER_PARTITION, so we only need a short
+using index_t = unsigned short;
+}  // namespace
+
 namespace kernels {
-
-/// Class identifying the kernel running @c traccc::device::find_clusters
-class find_clusters;
-
-/// Class identifying the kernel running @c traccc::device::count_cluster_cells
-class count_cluster_cells;
-
-/// Class identifying the kernel running @c traccc::device::connect_components
-class connect_components;
-
-/// Class identifying the kernel running @c traccc::device::create_measurements
-class create_measurements;
 
 /// Class identifying the kernel running @c traccc::device::form_spacepoints
 class form_spacepoints;
+
+/// Implementation of a FastSV algorithm with the following steps:
+///   1) mix of stochastic and aggressive hooking
+///   2) shortcutting
+///
+/// The implementation corresponds to an adapted versiion of Algorithm 3 of
+/// the following paper:
+/// https://www.sciencedirect.com/science/article/pii/S0743731520302689
+///
+/// @param[inout] f     array holding the parent cell ID for the current
+/// iteration.
+/// @param[inout] gf    array holding grandparent cell ID from the previous
+/// iteration.
+///                     This array only gets updated at the end of the iteration
+///                     to prevent race conditions.
+/// @param[in] adjc     The number of adjacent cells
+/// @param[in] adjv     Vector of adjacent cells
+/// @param[in] tid      The thread index
+///
+void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc, index_t adjv[8],
+               index_t tid, ::sycl::nd_item<1> item) {
+    /*
+     * The algorithm finishes if an iteration leaves the arrays unchanged.
+     * This varible will be set if a change is made, and dictates if another
+     * loop is necessary.
+     */
+    bool gf_changed;
+
+    do {
+        /*
+         * Reset the end-parameter to false, so we can set it to true if we
+         * make a change to the gf array.
+         */
+        gf_changed = false;
+
+        /*
+         * The algorithm executes in a loop of three distinct parallel
+         * stages. In this first one, a mix of stochastic and aggressive
+         * hooking, we examine adjacent cells and copy their grand parents
+         * cluster ID if it is lower than ours, essentially merging the two
+         * together.
+         */
+        __builtin_assume(adjc <= 8);
+        for (unsigned char k = 0; k < adjc; ++k) {
+            index_t q = gf[adjv[k]];
+
+            if (gf[tid] > q) {
+                f[f[tid]] = q;
+                f[tid] = q;
+            }
+        }
+
+        /*
+         * Each stage in this algorithm must be preceded by a
+         * synchronization barrier!
+         */
+        item.barrier();
+
+        /*
+         * The second stage is shortcutting, which is an optimisation that
+         * allows us to look at any shortcuts in the cluster IDs that we
+         * can merge without adjacency information.
+         */
+        if (f[tid] > gf[tid]) {
+            f[tid] = gf[tid];
+        }
+
+        /*
+         * Synchronize before the final stage.
+         */
+        item.barrier();
+
+        /*
+         * Update the array for the next generation, keeping track of any
+         * changes we make.
+         */
+        if (gf[tid] != f[f[tid]]) {
+            gf[tid] = f[f[tid]];
+            gf_changed = true;
+        }
+
+        /*
+         * To determine whether we need another iteration, we use block
+         * voting mechanics. Each thread checks if it has made any changes
+         * to the arrays, and votes. If any thread votes true, all threads
+         * will return a true value and go to the next iteration. Only if
+         * all threads return false will the loop exit.
+         */
+    } while (item.barrier(),
+             ::sycl::any_of_group(item.get_group(), gf_changed));
+}
+
+class ccl_kernel {
+    public:
+    ccl_kernel(const alt_cell_collection_types::const_view cells,
+               const cell_module_collection_types::const_view modules,
+               const ccl_partition_collection_types::const_view partitions,
+               alt_measurement_collection_types::view measurements,
+               unsigned int* num_measurements,
+               ::sycl::local_accessor<index_t> father,
+               ::sycl::local_accessor<index_t> grandfather,
+               ::sycl::local_accessor<unsigned int> outCounter)
+        : cells_view(cells),
+          modules_view(modules),
+          partitions_view(partitions),
+          measurements_view(measurements),
+          m_measurement_count(num_measurements),
+          f(father),
+          f_next(grandfather),
+          m_outi(outCounter) {}
+
+    void operator()(::sycl::nd_item<1> item) const {
+
+        const index_t tid = item.get_local_linear_id();
+
+        const ccl_partition_collection_types::const_device partitions_device(
+            partitions_view);
+        assert(item.get_group_linear_id() < partitions_device.size());
+
+        // Get partition for this thread group
+        const ccl_partition partition =
+            partitions_device[item.get_group_linear_id()];
+
+        const alt_cell_collection_types::const_device cells_device(cells_view);
+        const cell_module_collection_types::const_device modules_device(
+            modules_view);
+
+        alt_measurement_collection_types::device measurements_device(
+            measurements_view);
+
+        unsigned int& outi = m_outi[0];
+        unsigned int& measurement_count = m_measurement_count[0];
+
+        // Vector of indices of the adjacent cells
+        index_t adjv[8];
+        /*
+         * The number of adjacent cells for each cell must start at zero, to
+         * avoid uninitialized memory. adjv does not need to be zeroed, as
+         * we will only access those values if adjc indicates that the value
+         * is set.
+         */
+        // Number of adjacent cells
+        unsigned char adjc = 0;
+
+        // It seems that sycl runs into undefined behaviour when calling
+        // any_of_group when some threads have already run into a return. So can
+        // only do this after running the FastSV algorithm.
+        if (tid < partition.size) {
+            /*
+             * Look for adjacent cells to the current one.
+             */
+            device::reduce_problem_cell(cells_device, tid, partition, adjc,
+                                        adjv);
+        }
+
+        /*
+         * At the start, the values of f and f_next should be equal to the
+         * ID of the cell.
+         */
+        f[tid] = tid;
+        f_next[tid] = tid;
+
+        /*
+         * Now that the data has initialized, we synchronize again before we
+         * move onto the actual processing part.
+         */
+        item.barrier();
+
+        /*
+         * Run FastSV algorithm, which will update the father index to that of
+         * the cell belonging to the same cluster with the lowest index.
+         */
+        fast_sv_1(&f[0], &f_next[0], adjc, adjv, tid, item);
+
+        // Now that we can use return, check if any work needs to be done
+        if (tid >= partition.size) {
+            return;
+        }
+
+        /*
+         * Initialize the counter of clusters per thread block
+         */
+        if (tid == 0) {
+            outi = 0;
+        }
+
+        item.barrier();
+
+        /*
+         * Count the number of clusters by checking how many cells have
+         * themself assigned as a parent.
+         */
+        if (f[tid] == tid) {
+            ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
+                               ::sycl::memory_scope::work_group,
+                               ::sycl::access::address_space::local_space>(outi)
+                .fetch_add(1);
+        }
+
+        item.barrier();
+
+        /*
+         * Add the number of clusters of each thread block to the total
+         * number of clusters. At the same time, a cluster id is retrieved
+         * for the next data processing step.
+         * Note that this might be not the same cluster as has been treated
+         * previously. However, since each thread block spawns a the maximum
+         * amount of threads per block, this has no sever implications.
+         */
+        if (tid == 0) {
+            outi =
+                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::device,
+                                   ::sycl::access::address_space::global_space>(
+                    measurement_count)
+                    .fetch_add(outi);
+        }
+
+        item.barrier();
+
+        /*
+         * Get the position to fill the measurements found in this thread group.
+         */
+        const unsigned int groupPos = outi;
+
+        item.barrier();
+
+        if (tid == 0) {
+            outi = 0;
+        }
+
+        item.barrier();
+
+        if (f[tid] == tid) {
+            /*
+             * If we are a cluster owner, atomically claim a position in the
+             * output array which we can write to.
+             */
+            const unsigned int id =
+                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::work_group,
+                                   ::sycl::access::address_space::local_space>(
+                    outi)
+                    .fetch_add(1);
+
+            device::aggregate_cluster(cells_device, modules_device, &f[0],
+                                      partition, tid,
+                                      measurements_device[groupPos + id]);
+        }
+    }
+
+    private:
+    const alt_cell_collection_types::const_view cells_view;
+    const cell_module_collection_types::const_view modules_view;
+    const ccl_partition_collection_types::const_view partitions_view;
+    alt_measurement_collection_types::view measurements_view;
+    unsigned int* m_measurement_count;
+    ::sycl::local_accessor<index_t> f;
+    ::sycl::local_accessor<index_t> f_next;
+    ::sycl::local_accessor<unsigned int> m_outi;
+};
 
 }  // namespace kernels
 
@@ -58,233 +311,79 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_container_types::const_view& cells_view) const {
+    const alt_cell_collection_types::const_view& cells,
+    const cell_module_collection_types::const_view& modules,
+    const ccl_partition_collection_types::const_view& partitions) const {
 
-    // Number of modules
-    const cell_container_types::const_device::header_vector::size_type
-        num_modules = m_copy->get_size(cells_view.headers);
-    // Work group size for kernel execution
-    const std::size_t localSize = 64;
+    // Number of cells
+    const alt_cell_collection_types::view::size_type num_cells =
+        m_copy->get_size(cells);
+    // Number of cell partitions
+    const ccl_partition_collection_types::view::size_type num_partitions =
+        m_copy->get_size(partitions);
 
-    // Get the sizes of the cells in each module
-    const std::vector<
-        cell_container_types::const_device::item_vector::value_type::size_type>
-        cell_sizes = m_copy->get_sizes(cells_view.items);
+    // Create result object for the CCL kernel with size overestimation
+    alt_measurement_collection_types::buffer measurements_buffer(num_cells,
+                                                                 m_mr.main);
+    alt_measurement_collection_types::view measurements_view(
+        measurements_buffer);
 
-    /*
-     * Helper container for sparse CCL calculations.
-     * Each inner vector corresponds to 1 module.
-     * The indices in a particular inner vector will be filled by sparse ccl
-     * and will indicate to which cluster, a particular cell in the module
-     * belongs to.
-     */
-    vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices_buff(
-        std::vector<std::size_t>(cell_sizes.begin(), cell_sizes.end()),
-        m_mr.main, m_mr.host);
-    m_copy->setup(sparse_ccl_indices_buff);
-
-    /*
-     * cl_per_module_prefix_buff is a vector buffer with numbers of found
-     * clusters in each module. Later it will be transformed into prefix sum
-     * vector (hence the name). The logic is the following. After
-     * cluster_finding_kernel, the buffer will contain cluster sizes e.i.
-     *
-     * cluster sizes: | 1 | 12 | 5 | 102 | 42 | ... - cl_per_module_prefix_buff
-     * module index:  | 0 |  1 | 2 |  3  |  4 | ...
-     *
-     * Now, we copy those cluster sizes to the host and make a duplicate vector
-     * of them. So, we are left with cl_per_module_prefix_host, and
-     * clusters_per_module_host - which are the same. Now, we procede to
-     * modifying the cl_per_module_prefix_host to actually resemble its name
-     * i.e.
-     *
-     * We do std::inclusive_scan on it, which will result in a prefix sum
-     * vector:
-     *
-     * cl_per_module_prefix_host: | 1 | 13 | 18 | 120 | 162 | ...
-     *
-     * Then, we copy this vector into the previous cl_per_module_prefix_buff.
-     * In this way, we don't need to allocate the memory on the device twice.
-     *
-     * Now, the monotonic prefix sum buffer - cl_per_module_prefix_buff, will
-     * allow us to insert the clusters at the correct position inside the
-     * kernel. The remaining host vector - clusters_per_module_host, will be
-     * needed to allocate memory for other buffers later in the code.
-     */
-    vecmem::data::vector_buffer<std::size_t> cl_per_module_prefix_buff(
-        num_modules, m_mr.main);
-    m_copy->setup(cl_per_module_prefix_buff);
-
-    // Create views to pass to cluster finding kernel
-    vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view =
-        sparse_ccl_indices_buff;
-    vecmem::data::vector_view<std::size_t> cl_per_module_prefix_view =
-        cl_per_module_prefix_buff;
-
-    // Calculate nd_range to run cluster finding
-    auto ndrange = traccc::sycl::calculate1DimNdRange(num_modules, localSize);
-
-    // Run cluster finding kernel
-    auto cluster_finding_kernel = details::get_queue(m_queue).submit(
-        [&ndrange, &cells_view, &sparse_ccl_indices_view,
-         &cl_per_module_prefix_view](::sycl::handler& h) {
-            h.parallel_for<kernels::find_clusters>(
-                ndrange, [=](::sycl::nd_item<1> item) {
-                    device::find_clusters(item.get_global_linear_id(),
-                                          cells_view, sparse_ccl_indices_view,
-                                          cl_per_module_prefix_view);
-                });
-        });
-
-    // Create prefix sum buffer and its view
-    vecmem::data::vector_buffer cells_prefix_sum_buff = make_prefix_sum_buff(
-        cell_sizes, *m_copy, m_mr, details::get_queue(m_queue));
-    vecmem::data::vector_view<device::prefix_sum_element_t>
-        cells_prefix_sum_view = cells_prefix_sum_buff;
-
-    // Wait here for the cluster_finding kernel to finish
-    cluster_finding_kernel.wait_and_throw();
-
-    // Copy the sizes of clusters per module to the host
-    // and create a copy of "clusters per module" vector
-    vecmem::vector<std::size_t> cl_per_module_prefix_host(
-        m_mr.host ? m_mr.host : &(m_mr.main));
-    (*m_copy)(cl_per_module_prefix_buff, cl_per_module_prefix_host,
-              vecmem::copy::type::copy_type::device_to_host);
-    std::vector<std::size_t> clusters_per_module_host(
-        cl_per_module_prefix_host.begin(), cl_per_module_prefix_host.end());
-
-    // Perform the exclusive scan operation
-    std::inclusive_scan(cl_per_module_prefix_host.begin(),
-                        cl_per_module_prefix_host.end(),
-                        cl_per_module_prefix_host.begin());
-
-    unsigned int total_clusters = cl_per_module_prefix_host.back();
-
-    // Copy the prefix sum back to its device container
-    (*m_copy)(vecmem::get_data(cl_per_module_prefix_host),
-              cl_per_module_prefix_buff,
-              vecmem::copy::type::copy_type::host_to_device);
-
-    // Vector of the exact cluster sizes, will be filled in cluster counting
-    vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
-        total_clusters, m_mr.main);
-    m_copy->setup(cluster_sizes_buffer);
-    m_copy->memset(cluster_sizes_buffer, 0);
-
-    // Create view to pass to cluster counting kernel
-    vecmem::data::vector_view<unsigned int> cluster_sizes_view =
-        cluster_sizes_buffer;
-
-    // Calculate nd_range to run cluster counting (localSize = 64)
-    ndrange = traccc::sycl::calculate1DimNdRange(cells_prefix_sum_view.size(),
-                                                 localSize);
-
-    // Run cluster counting kernel
-    auto cluster_counting_kernel = details::get_queue(m_queue).submit(
-        [&ndrange, &sparse_ccl_indices_view, &cl_per_module_prefix_view,
-         &cells_prefix_sum_view, &cluster_sizes_view](::sycl::handler& h) {
-            h.parallel_for<kernels::count_cluster_cells>(
-                ndrange, [=](::sycl::nd_item<1> item) {
-                    device::count_cluster_cells(
-                        item.get_global_linear_id(), sparse_ccl_indices_view,
-                        cl_per_module_prefix_view, cells_prefix_sum_view,
-                        cluster_sizes_view);
-                });
-        });
-
-    // Wait here for the cluster counting kernel to finish
-    cluster_counting_kernel.wait_and_throw();
-
-    // Copy cluster sizes back to the host
-    std::vector<unsigned int> cluster_sizes;
-    (*m_copy)(cluster_sizes_buffer, cluster_sizes,
-              vecmem::copy::type::copy_type::device_to_host);
-
-    // Cluster container buffer for the clusters and headers (cluster ids)
-    cluster_container_types::buffer clusters_buffer{
-        {total_clusters, m_mr.main},
-        {std::vector<std::size_t>(total_clusters, 0),
-         std::vector<std::size_t>(cluster_sizes.begin(), cluster_sizes.end()),
-         m_mr.main, m_mr.host}};
-    m_copy->setup(clusters_buffer.headers);
-    m_copy->setup(clusters_buffer.items);
-
-    // Create views to pass to component connection kernel
-    cluster_container_types::view clusters_view = clusters_buffer;
-
-    // Run component connection kernel (nd_range same as before)
-    auto component_connection_kernel = details::get_queue(m_queue).submit(
-        [&ndrange, &cells_view, &sparse_ccl_indices_view,
-         &cl_per_module_prefix_view, &cells_prefix_sum_view,
-         &clusters_view](::sycl::handler& h) {
-            h.parallel_for<kernels::connect_components>(
-                ndrange, [=](::sycl::nd_item<1> item) {
-                    device::connect_components(
-                        item.get_global_linear_id(), cells_view,
-                        sparse_ccl_indices_view, cl_per_module_prefix_view,
-                        cells_prefix_sum_view, clusters_view);
-                });
-        });
-
-    // Resizable buffer for the measurements
-    measurement_container_types::buffer measurements_buffer{
-        {num_modules, m_mr.main},
-        {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
-         m_mr.main, m_mr.host}};
-    m_copy->setup(measurements_buffer.headers);
-    m_copy->setup(measurements_buffer.items);
-
-    // Spacepoint container buffer to fill inside the spacepoint formation
-    // kernel
-    spacepoint_container_types::buffer spacepoints_buffer{
-        {num_modules, m_mr.main},
-        {std::vector<std::size_t>(num_modules, 0), clusters_per_module_host,
-         m_mr.main, m_mr.host}};
-    m_copy->setup(spacepoints_buffer.headers);
-    m_copy->setup(spacepoints_buffer.items);
-
-    // Create views to pass to measurement creation kernel
-    measurement_container_types::view measurements_view = measurements_buffer;
-
-    // Calculate nd_range to run measurement creation (localSize = 64)
-    ndrange = calculate1DimNdRange(clusters_view.headers.size(), localSize);
-
-    // Wait here for the component_connection kernel to finish
-    component_connection_kernel.wait_and_throw();
-
-    // Run measurement_creation kernel
+    // Counter for number of measurements
+    vecmem::unique_alloc_ptr<unsigned int> num_measurements_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
     details::get_queue(m_queue)
-        .submit([&ndrange, &cells_view, &clusters_view,
-                 &measurements_view](::sycl::handler& h) {
-            h.parallel_for<kernels::create_measurements>(
-                ndrange, [=](::sycl::nd_item<1> item) {
-                    device::create_measurements(item.get_global_linear_id(),
-                                                clusters_view, cells_view,
-                                                measurements_view);
-                });
+        .memset(num_measurements_device.get(), 0, sizeof(unsigned int))
+        .wait_and_throw();
+
+    ::sycl::nd_range ndrange(
+        ::sycl::range<1>(num_partitions *
+                         partitioning::MAX_CELLS_PER_PARTITION),
+        ::sycl::range<1>(partitioning::MAX_CELLS_PER_PARTITION));
+
+    // Run ccl kernel
+    details::get_queue(m_queue)
+        .submit([&ndrange, &cells, &modules, &partitions, &measurements_view,
+                 &num_measurements_device](::sycl::handler& h) {
+            ::sycl::local_accessor<index_t, 1> f(
+                partitioning::MAX_CELLS_PER_PARTITION, h);
+            ::sycl::local_accessor<index_t, 1> f_next(
+                partitioning::MAX_CELLS_PER_PARTITION, h);
+            ::sycl::local_accessor<unsigned int, 1> outi(1, h);
+
+            h.parallel_for<kernels::ccl_kernel>(
+                ndrange, kernels::ccl_kernel(
+                             cells, modules, partitions, measurements_view,
+                             num_measurements_device.get(), f, f_next, outi));
         })
         .wait_and_throw();
 
-    // Create prefix sum buffer and its view
-    vecmem::data::vector_buffer meas_prefix_sum_buff =
-        make_prefix_sum_buff(m_copy->get_sizes(measurements_buffer.items),
-                             *m_copy, m_mr, details::get_queue(m_queue));
-    vecmem::data::vector_view<device::prefix_sum_element_t>
-        meas_prefix_sum_view = meas_prefix_sum_buff;
-
-    // Create view to run spacepoint formation
-    spacepoint_container_types::view spacepoints_view = spacepoints_buffer;
-
-    // Run spacepoint formation kernel (ndrange same as before)
+    // Copy number of measurements to host
+    unsigned int num_measurements_host;
     details::get_queue(m_queue)
-        .submit([&ndrange, &measurements_view, &meas_prefix_sum_view,
-                 &spacepoints_view](::sycl::handler& h) {
+        .memcpy(&num_measurements_host, num_measurements_device.get(),
+                sizeof(unsigned int))
+        .wait_and_throw();
+
+    spacepoint_collection_types::buffer spacepoints_buffer(
+        num_measurements_host, m_mr.main);
+    spacepoint_collection_types::view spacepoints_view(spacepoints_buffer);
+
+    // For the following kernel, we can now use whatever the desired number of
+    // threads
+    const unsigned int num_threads = partitioning::MAX_CELLS_PER_PARTITION;
+    auto spacepointsRange =
+        traccc::sycl::calculate1DimNdRange(num_measurements_host, num_threads);
+
+    // Run form spacepoints kernel, turning 2D measurements into 3D spacepoints
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::form_spacepoints>(
-                ndrange, [=](::sycl::nd_item<1> item) {
+                spacepointsRange,
+                [measurements_view, modules, num_measurements_host,
+                 spacepoints_view](::sycl::nd_item<1> item) {
                     device::form_spacepoints(
-                        item.get_global_linear_id(), measurements_view,
-                        meas_prefix_sum_view, spacepoints_view);
+                        item.get_global_linear_id(), measurements_view, modules,
+                        num_measurements_host, spacepoints_view);
                 });
         })
         .wait_and_throw();

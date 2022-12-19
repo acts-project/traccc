@@ -27,13 +27,6 @@ inline void reduce_problem_cell(
     const alt_cell_collection_types::const_device& cells,
     const unsigned short tid, const ccl_partition& part, unsigned char& adjc,
     unsigned short adjv[8]) {
-    /*
-     * The number of adjacent cells for each cell must start at zero, to
-     * avoid uninitialized memory. adjv does not need to be zeroed, as
-     * we will only access those values if adjc indicates that the value
-     * is set.
-     */
-    adjc = 0;
 
     const unsigned int start = part.start;
     const unsigned int end = start + part.size;

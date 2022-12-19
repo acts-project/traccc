@@ -89,7 +89,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             /*-----------------
             hit file reading
             -----------------*/
-            {
+            if (run_cpu) {
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
@@ -116,9 +116,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             /// CUDA
 
             // Copy the spacepoint data to the device.
-            const traccc::spacepoint_collection_types::buffer
-                spacepoints_cuda_buffer(alt_spacepoints_per_event.size(),
-                                        mr.main);
+            traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
+                alt_spacepoints_per_event.size(), mr.main);
             copy(vecmem::get_data(alt_spacepoints_per_event),
                  spacepoints_cuda_buffer);
             {
@@ -197,23 +196,23 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
-        // if (i_cfg.check_performance) {
-        //     traccc::event_map evt_map(event, i_cfg.detector_file,
-        //                               common_opts.input_directory,
-        //                               common_opts.input_directory, host_mr);
-        //     sd_performance_writer.write("CUDA", seeds_cuda,
-        //                                 spacepoints_per_event, evt_map);
-        //     if (run_cpu) {
-        //         sd_performance_writer.write("CPU", seeds,
-        //         spacepoints_per_event,
-        //                                     evt_map);
-        //     }
-        // }
+        /* if (i_cfg.check_performance) {
+            traccc::event_map evt_map(event, i_cfg.detector_file,
+                                      common_opts.input_directory,
+                                      common_opts.input_directory, host_mr);
+            sd_performance_writer.write("CUDA", seeds_cuda,
+                                        spacepoints_per_event, evt_map);
+            if (run_cpu) {
+                sd_performance_writer.write("CPU", seeds,
+                spacepoints_per_event,
+                                            evt_map);
+            }
+        } */
     }
 
-    // if (i_cfg.check_performance) {
-    //     sd_performance_writer.finalize();
-    // }
+    /* if (i_cfg.check_performance) {
+        sd_performance_writer.finalize();
+    } */
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "

@@ -18,8 +18,8 @@
 namespace traccc::device {
 
 /// Function for looking for adjacent cells. The thread ids will range from 0 to
-/// partition::MAX_CELLS_PER_PARTITION and the number of blocks will equal the
-/// number of partitions, hence checking all cells.
+/// partitioning::MAX_CELLS_PER_PARTITION and the number of blocks will equal
+/// the number of partitions, hence checking all cells.
 ///
 /// @param[in] cells    Collection of cells
 /// @param[in] tid      Current thread id
