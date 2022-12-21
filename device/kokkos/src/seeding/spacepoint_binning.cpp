@@ -11,8 +11,6 @@
 #include "traccc/kokkos/utils/definitions.hpp"
 
 // Project include(s).
-#include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/kokkos/utils/make_prefix_sum_buff.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
@@ -30,15 +28,11 @@ spacepoint_binning::spacepoint_binning(
     m_copy = std::make_unique<vecmem::copy>();
 }
 
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view) const {
+spacepoint_binning::output_type spacepoint_binning::operator()(
+    const spacepoint_collection_types::const_view& spacepoints_view) const {
 
     // Get the spacepoint sizes from the view
-    auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
-
-    // Create prefix sum buffer
-    vecmem::data::vector_buffer sp_prefix_sum_buff =
-        make_prefix_sum_buff(sp_sizes, *m_copy, m_mr);
+    auto sp_size = m_copy->get_size(spacepoints_view);
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
@@ -52,10 +46,8 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Calculate the number of threads and thread blocks to run the kernels for.
     const unsigned int num_threads = 32 * 8;
-    const unsigned int num_blocks = sp_prefix_sum_buff.size() / num_threads + 1;
+    const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
-    // Fill the grid capacity container.
-    auto sp_prefix_sum_buff_view = vecmem::get_data(sp_prefix_sum_buff);
     Kokkos::parallel_for(
         "count_grid_capacities", team_policy(num_blocks, num_threads),
         KOKKOS_LAMBDA(const member_type& team_member) {
@@ -63,7 +55,7 @@ sp_grid_buffer spacepoint_binning::operator()(
                 team_member.league_rank() * team_member.team_size() +
                     team_member.team_rank(),
                 m_config, m_axes.first, m_axes.second, spacepoints_view,
-                sp_prefix_sum_buff_view, grid_capacities_view);
+                grid_capacities_view);
         });
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
@@ -86,7 +78,7 @@ sp_grid_buffer spacepoint_binning::operator()(
             device::populate_grid(
                 team_member.league_rank() * team_member.team_size() +
                     team_member.team_rank(),
-                m_config, spacepoints_view, sp_prefix_sum_buff_view, grid_view);
+                m_config, spacepoints_view, grid_view);
         });
 
     // Return the freshly filled buffer.

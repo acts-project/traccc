@@ -6,10 +6,10 @@
  */
 
 // Project include(s).
-#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 #include "traccc/kokkos/seeding/spacepoint_binning.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
@@ -105,6 +105,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         traccc::spacepoint_container_types::host spacepoints_per_event;
+        traccc::spacepoint_collection_types::host alt_spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -114,7 +115,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             /*-----------------
             hit file reading
             -----------------*/
-            {
+            if (run_cpu) {
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
@@ -123,9 +124,25 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                     common_opts.input_data_format, &host_mr);
             }  // stop measuring hit reading timer
 
+            {
+                traccc::performance::timer t("Alt hit reading  (cpu)",
+                                             elapsedTimes);
+                // Read the hits from the relevant event file
+                alt_spacepoints_per_event = traccc::io::read_spacepoints_alt(
+                    event, common_opts.input_directory, surface_transforms,
+                    common_opts.input_data_format, &host_mr);
+            }  // stop measuring hit reading timer
+
+            std::cout << "here " << __LINE__ << std::endl;
+
             {  // Spacepoin binning for kokkos
-                m_spacepoint_binning(traccc::get_data(spacepoints_per_event));
+                traccc::performance::timer t("Spacepoint binning (kokkos)",
+                                             elapsedTimes);
+                m_spacepoint_binning(
+                    vecmem::get_data(alt_spacepoints_per_event));
             }
+
+            std::cout << "here " << __LINE__ << std::endl;
 
             /*----------------------------
                 Seeding algorithm
