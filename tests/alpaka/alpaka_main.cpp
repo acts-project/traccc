@@ -32,7 +32,6 @@ struct VectorOpKernel {
         // but for simplicity we just repeat the type here
         if(globalThreadIdx < n)
         {
-            std::cout << "Hello from " << globalThreadIdx << std::endl;
             result[globalThreadIdx] = process(acc, globalThreadIdx);
         }
         
@@ -55,14 +54,13 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
     using Queue = Queue<Acc, Blocking>;
     auto queue = Queue{devAcc};
 
-    uint32_t n = 16;
+    uint32_t n = 10000;
 
     uint32_t blocksPerGrid = n;
     uint32_t threadsPerBlock = 1;
     uint32_t elementsPerThread = 4;
     using WorkDiv = WorkDivMembers<Dim, Idx>;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << workDiv << std::endl;
 
     // Create a device for host for memory allocation, using the first CPU available
     auto devHost = getDevByIdx<DevCpu>(0u);
