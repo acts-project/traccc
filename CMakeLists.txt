@@ -51,6 +51,8 @@ option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
    FALSE )
+option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
+   FALSE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
@@ -135,6 +137,20 @@ if( TRACCC_SETUP_KOKKOS )
       find_package( Kokkos REQUIRED )
    else()
       add_subdirectory( extern/kokkos )
+   endif()
+endif()
+
+# Set up Alpaka.
+option( TRACCC_SETUP_ALPAKA
+   "Set up the Alpaka library" TRUE )
+option( TRACCC_USE_SYSTEM_ALPAKA
+   "Pick up an existing installation of Alpaka from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_ALPAKA )
+   if( TRACCC_USE_SYSTEM_ALPAKA )
+      find_package( alpaka REQUIRED )
+   else()
+      add_subdirectory( extern/alpaka )
    endif()
 endif()
 

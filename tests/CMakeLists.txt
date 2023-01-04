@@ -28,6 +28,10 @@ if( TRACCC_BUILD_KOKKOS )
     add_subdirectory( kokkos )
 endif()
 
+if( TRACCC_BUILD_ALPAKA )
+    add_subdirectory( alpaka )
+endif()
+
 if(TRACCC_BUILD_FUTHARK)
     add_subdirectory(futhark)
 endif()
