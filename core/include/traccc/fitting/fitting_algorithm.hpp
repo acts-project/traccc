@@ -37,7 +37,7 @@ class fitting_algorithm
 
         fitter_t fitter(det);
 
-        track_state_container_types::host trk_states;
+        track_state_container_types::host output_states;
 
         // The number of tracks
         std::size_t n_tracks = track_candidates.size();
@@ -50,23 +50,23 @@ class fitting_algorithm
 
             // Make a vector of track state
             auto& cands = track_candidates[i].items;
-            vecmem::vector<track_state<transform3_type>> track_states;
+            vecmem::vector<track_state<transform3_type>> input_states;
             for (auto& cand : cands) {
-                track_states.emplace_back(cand);
+                input_states.emplace_back(cand);
             }
 
             // Make a fitter state
-            typename fitter_t::state fitter_state(std::move(track_states));
+            typename fitter_t::state fitter_state(std::move(input_states));
 
             // Run fitter
             fitter.fit(seed_param, fitter_state);
 
-            trk_states.push_back(
+            output_states.push_back(
                 std::move(fitter_state.m_fit_info),
                 std::move(fitter_state.m_fit_actor_state.m_track_states));
         }
 
-        return trk_states;
+        return output_states;
     }
 };
 

@@ -46,9 +46,10 @@ struct gain_matrix_updater {
         auto& stepping = propagation._stepping;
 
         // Some identity matrices
-        const matrix_type<6, 6> I66 =
+        // @Note: Make constexpr work
+        static const matrix_type<6, 6> I66 =
             matrix_operator().template identity<e_bound_size, e_bound_size>();
-        const matrix_type<2, 2> I22 =
+        static const matrix_type<2, 2> I22 =
             matrix_operator().template identity<2, 2>();
 
         // projection matrix

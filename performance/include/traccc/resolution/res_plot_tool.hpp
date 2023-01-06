@@ -18,25 +18,27 @@ class res_plot_tool {
     public:
     /// @brief The nested configuration struct
     struct config {
+
         /// parameter sets to do plots
-        std::vector<std::string> param_names = {"d0",    "z0",  "phi",
-                                                "theta", "qop", "t"};
+        static const inline std::vector<std::string> param_names = {
+            "d0", "z0", "phi", "theta", "qop", "t"};
 
         /// Binning setups
-        std::map<std::string, plot_helpers::binning> var_binning = {
-            {"pull", plot_helpers::binning("pull", 100, -5, 5)},
-            {"residual_d0",
-             plot_helpers::binning("r_{d0} [mm]", 100, -0.5, 0.5)},
-            {"residual_z0",
-             plot_helpers::binning("r_{z0} [mm]", 100, -0.5, 0.5)},
-            {"residual_phi",
-             plot_helpers::binning("r_{#phi} [rad]", 100, -0.01, 0.01)},
-            {"residual_theta",
-             plot_helpers::binning("r_{#theta} [rad]", 100, -0.01, 0.01)},
-            {"residual_qop",
-             plot_helpers::binning("r_{q/p} [c/GeV]", 100, -0.1, 0.1)},
-            {"residual_t",
-             plot_helpers::binning("r_{t} [s]", 100, -1000, 1000)}};
+        static const inline std::map<std::string, plot_helpers::binning>
+            var_binning = {
+                {"pull", plot_helpers::binning("pull", 100, -5, 5)},
+                {"residual_d0",
+                 plot_helpers::binning("r_{d0} [mm]", 100, -0.5, 0.5)},
+                {"residual_z0",
+                 plot_helpers::binning("r_{z0} [mm]", 100, -0.5, 0.5)},
+                {"residual_phi",
+                 plot_helpers::binning("r_{#phi} [rad]", 100, -0.01, 0.01)},
+                {"residual_theta",
+                 plot_helpers::binning("r_{#theta} [rad]", 100, -0.01, 0.01)},
+                {"residual_qop",
+                 plot_helpers::binning("r_{q/p} [c/GeV]", 100, -0.1, 0.1)},
+                {"residual_t",
+                 plot_helpers::binning("r_{t} [s]", 100, -1000, 1000)}};
     };
 
     /// @brief Nested Cache struct
