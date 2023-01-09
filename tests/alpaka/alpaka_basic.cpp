@@ -80,18 +80,8 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
     alpaka::memcpy(queue, bufHost, bufAcc);
     // Calculate on the host and compare result
     for (uint32_t i = 0u; i < n; i++) {
-        bool testPassed = std::abs(bufHost[i] - std::sin(i)) < 1e-3;
-        if (!testPassed) {
-            std::cout << "bufHost[" << i << "]: " << bufHost[i] << std::endl;
-            std::cout << "bufAcc[" << i << "]: " << bufAcc[i] << std::endl;
-            std::cout << "std::sin(" << i << "): " << std::sin(i) << std::endl;
-        }
-        ASSERT_TRUE(testPassed);
+        EXPECT_FLOAT_EQ(bufHost[i], std::sin(i));
     }
 }
 
-int main(int argc, char** argv) {
-    testing::InitGoogleTest(&argc, argv);
-    int r = RUN_ALL_TESTS();
-    return r;
-}
+

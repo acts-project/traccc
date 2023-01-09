@@ -5,8 +5,8 @@
 # Mozilla Public License Version 2.0
 
 traccc_add_test( alpaka
-   alpaka_main.cpp
+   alpaka_basic.cpp
    LINK_LIBRARIES
-   GTest::gtest
-   alpaka
+   GTest::gtest_main
+   alpaka::alpaka
 )
