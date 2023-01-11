@@ -12,10 +12,16 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    # Efficiency calculation code.
    "include/traccc/efficiency/duplication_plot_tool.hpp"
    "include/traccc/efficiency/eff_plot_tool.hpp"
-   "include/traccc/efficiency/helpers.hpp"
    "include/traccc/efficiency/seeding_performance_writer.hpp"
    "include/traccc/efficiency/track_classification.hpp"
-   "include/traccc/event/event_map.hpp"
+   # Resolution calculation code.
+   "include/traccc/resolution/fitting_performance_writer.hpp"
+   "include/traccc/resolution/res_plot_tool.hpp"
+   "src/resolution/fitting_performance_writer.cpp"
+   "src/resolution/res_plot_tool.cpp"
+   # Utils
+   "include/traccc/utils/helpers.hpp"
+   "src/utils/helpers.cpp"
    # Value/object comparison code.
    "include/traccc/performance/details/is_same_angle.hpp"
    "src/performance/details/is_same_angle.cpp"
@@ -45,6 +51,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/throughput.hpp"
    "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
+
    PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core )
 
 find_package(CUDAToolkit)
@@ -52,3 +59,4 @@ if(CUDAToolkit_FOUND)
         target_link_libraries( traccc_performance PRIVATE CUDA::cudart )
 	target_compile_definitions( traccc_performance PRIVATE TRACCC_HAVE_NVTX)
 endif()
+
