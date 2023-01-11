@@ -56,7 +56,7 @@ target_link_libraries( traccc_performance
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
-        target_link_libraries( traccc_performance PRIVATE CUDA::cudart )
+        target_link_libraries( traccc_performance PRIVATE CUDA::cudart );
 	target_compile_definitions( traccc_performance PRIVATE TRACCC_HAVE_NVTX)
 endif()
 
