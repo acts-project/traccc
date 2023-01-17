@@ -86,7 +86,13 @@ alt_cell_reader_output_t read_cells_alt(std::string_view filename,
     // Create cell counter vector.
     std::vector<unsigned int> cellCounts;
     cellCounts.reserve(5000);
-    cell_module_collection_types::host result_modules(0, mr);
+
+    cell_module_collection_types::host result_modules;
+    if (mr != nullptr) {
+        result_modules = cell_module_collection_types::host{0, mr};
+    } else {
+        result_modules = cell_module_collection_types::host(0);
+    }
     result_modules.reserve(5000);
 
     // Create a cell collection, which holds on to a flat list of all the cells
@@ -126,7 +132,12 @@ alt_cell_reader_output_t read_cells_alt(std::string_view filename,
     const unsigned int totalCells = allCells.size();
 
     // Construct the result collection.
-    alt_cell_collection_types::host result_cells{totalCells, mr};
+    alt_cell_collection_types::host result_cells;
+    if (mr != nullptr) {
+        result_cells = alt_cell_collection_types::host{totalCells, mr};
+    } else {
+        result_cells = alt_cell_collection_types::host(totalCells);
+    }
 
     // Member "-1" of the prefix sum vector
     unsigned int nCellsZero = 0;
@@ -144,6 +155,9 @@ alt_cell_reader_output_t read_cells_alt(std::string_view filename,
                      .module_link = counterPos};
     }
 
+    if (cellCounts.size() == 0) {
+        return {result_cells, result_modules};
+    }
     /* This is might look a bit overcomplicated, and could be made simpler by
      * having a copy of the prefix sum vector before incrementing its value when
      * filling the vector. however this seems more efficient, but requires

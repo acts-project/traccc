@@ -72,7 +72,7 @@ inline void aggregate_cluster(
             if (weight > this_module.threshold) {
                 totalWeight += this_cell.activation;
                 const point2 cell_position =
-                    traccc::detail::position_from_cell(this_cell, this_module);
+                    traccc::detail::position_from_cell(this_cell.channel0, this_cell.channel1, this_module);
                 const point2 prev = mean;
                 const point2 diff = cell_position - prev;
 

@@ -12,10 +12,10 @@
 #include "csv/make_hit_reader.hpp"
 #include "csv/make_measurement_hit_id_reader.hpp"
 #include "csv/make_particle_reader.hpp"
-#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_cells_alt.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 #include "traccc/io/utils.hpp"
 
 // Project include(s).
@@ -139,8 +139,8 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
     io::csv::cell iocell;
 
     while (creader.read(iocell)) {
-        result[hmap[iocell.hit_id]].push_back(cell{
-            iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp});
+        result[hmap[iocell.hit_id]].push_back(alt_cell{
+            {iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp}, 0});
     }
 
     return result;
@@ -186,22 +186,20 @@ measurement_cell_map generate_measurement_cell_map(
     auto digi_cfg = io::read_digitization_config(digi_config_file);
 
     // Read the cells from the relevant event file
-    cell_container_types::host cells_per_event =
-        io::read_cells(event, cells_dir, traccc::data_format::csv,
-                       &surface_transforms, &digi_cfg, &resource);
+    alt_cell_reader_output_t readOut =
+        io::read_cells_alt(event, cells_dir, traccc::data_format::csv,
+                           &surface_transforms, &digi_cfg, &resource);
+    alt_cell_collection_types::host& cells_per_event = readOut.cells;
+    cell_module_collection_types::host& modules_per_event = readOut.modules;
 
     auto clusters_per_event = cc(cells_per_event);
-    auto measurements_per_event = mc(cells_per_event, clusters_per_event);
+    auto measurements_per_event = mc(clusters_per_event, modules_per_event);
 
-    for (std::size_t i = 0; i < measurements_per_event.size(); ++i) {
-        const auto& measurements = measurements_per_event.get_items()[i];
+    for (unsigned int i = 0; i < measurements_per_event.size(); ++i) {
+        const auto& clus =
+            clusters_per_event.get_items()[i];
 
-        for (const auto& meas : measurements) {
-            const auto& clus =
-                clusters_per_event.get_items()[meas.cluster_link];
-
-            result[meas] = clus;
-        }
+        result[measurements_per_event[i]] = clus;
     }
 
     return result;
@@ -245,22 +243,18 @@ measurement_particle_map generate_measurement_particle_map(
     auto surface_transforms = io::read_geometry(detector_file);
 
     // Read the spacepoints from the relevant event file
-    spacepoint_container_types::host spacepoints_per_event =
-        io::read_spacepoints(event, hits_dir, surface_transforms,
+    spacepoint_collection_types::host spacepoints_per_event =
+        io::read_spacepoints_alt(event, hits_dir, surface_transforms,
                              traccc::data_format::csv, &resource);
 
-    for (std::size_t i = 0; i < spacepoints_per_event.size(); ++i) {
-        const auto& spacepoints_per_module = spacepoints_per_event.at(i).items;
+    for (const auto& hit : spacepoints_per_event) {
+        const auto& meas = hit.meas;
 
-        for (const auto& hit : spacepoints_per_module) {
-            const auto& meas = hit.meas;
+        spacepoint new_hit;
+        new_hit.global = hit.global;
 
-            spacepoint new_hit;
-            new_hit.global = hit.global;
-
-            const auto& ptc = h_p_map[new_hit];
-            result[meas][ptc]++;
-        }
+        const auto& ptc = h_p_map[new_hit];
+        result[meas][ptc]++;
     }
 
     return result;

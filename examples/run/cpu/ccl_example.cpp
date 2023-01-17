@@ -8,8 +8,8 @@
 
 // Project include(s).
 #include "traccc/clusterization/component_connection.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/io/read_cells.hpp"
+#include "traccc/edm/alt_cell.hpp"
+#include "traccc/io/read_cells_alt.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -78,7 +78,7 @@ void print_statistics(const traccc::cell_container_types::host& data) {
 }
 
 void run_on_event(traccc::component_connection& cc,
-                  traccc::cell_container_types::host& data) {
+                  traccc::alt_cell_collection_types::host& data) {
     traccc::cluster_container_types::host clusters = cc(data);
 }
 
@@ -99,12 +99,13 @@ int main(int argc, char* argv[]) {
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
-    traccc::cell_container_types::host data =
-        traccc::io::read_cells(event_file);
+    traccc::alt_cell_collection_types::host data =
+        traccc::io::read_cells_alt(event_file).cells;
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 
-    print_statistics(data);
+    /// TODO: ?
+    // print_statistics(data);
 
     auto time_process_p1 = std::chrono::high_resolution_clock::now();
 

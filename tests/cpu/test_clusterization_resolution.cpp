@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_cells_alt.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
@@ -45,13 +45,16 @@ TEST_P(SurfaceBinningTests, Run) {
     traccc::spacepoint_formation sf(host_mr);
 
     // Read the cells from the relevant event file
-    traccc::cell_container_types::host cells_truth =
-        traccc::io::read_cells(event, data_dir, traccc::data_format::csv,
-                               &surface_transforms, &digi_cfg, &host_mr);
+    auto readOut =
+        traccc::io::read_cells_alt(event, data_dir, traccc::data_format::csv,
+                                   &surface_transforms, &digi_cfg, &host_mr);
+
+    traccc::alt_cell_collection_types::host& cells_truth = readOut.cells;
+    traccc::cell_module_collection_types::host& modules = readOut.modules;
 
     // Get Reconstructed Spacepoints
-    auto measurements_recon = ca(cells_truth);
-    auto spacepoints_recon = sf(measurements_recon);
+    auto measurements_recon = ca(cells_truth, modules);
+    auto spacepoints_recon = sf(measurements_recon, modules);
 
     // Read the hits from the relevant event file
     traccc::spacepoint_container_types::host spacepoints_truth =

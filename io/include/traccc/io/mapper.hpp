@@ -8,8 +8,8 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
@@ -26,11 +26,11 @@ using particle_id = uint64_t;
 using particle_map = std::map<particle_id, particle>;
 using hit_particle_map = std::map<spacepoint, particle>;
 using hit_map = std::map<hit_id, spacepoint>;
-using hit_cell_map = std::map<spacepoint, std::vector<cell>>;
-using cell_particle_map = std::map<cell, particle>;
-using measurement_cell_map = std::map<measurement, vecmem::vector<cell>>;
+using hit_cell_map = std::map<spacepoint, std::vector<alt_cell>>;
+using cell_particle_map = std::map<alt_cell, particle>;
+using measurement_cell_map = std::map<alt_measurement, vecmem::vector<alt_cell>>;
 using measurement_particle_map =
-    std::map<measurement, std::map<particle, uint64_t>>;
+    std::map<alt_measurement, std::map<particle, uint64_t>>;
 
 particle_map generate_particle_map(std::size_t event,
                                    const std::string& particle_dir);

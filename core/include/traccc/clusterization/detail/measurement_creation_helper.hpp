@@ -10,9 +10,9 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 
 namespace traccc::detail {
 
@@ -25,10 +25,10 @@ inline scalar signal_cell_modelling(scalar signal_in,
 
 /// Function for pixel segmentation
 TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(const cell& c, const cell_module& module) {
+inline vector2 position_from_cell(const channel_id channel0, const channel_id channel1, const cell_module& module) {
     // Retrieve the specific values based on module idx
-    return {module.pixel.min_center_x + c.channel0 * module.pixel.pitch_x,
-            module.pixel.min_center_y + c.channel1 * module.pixel.pitch_y};
+    return {module.pixel.min_center_x + channel0 * module.pixel.pitch_x,
+            module.pixel.min_center_y + channel1 * module.pixel.pitch_y};
 }
 
 /// Function used for calculating the properties of the cluster during
@@ -42,22 +42,22 @@ inline vector2 position_from_cell(const cell& c, const cell_module& module) {
 /// @param[out] totalWeight The total weight of the cluster/measurement
 ///
 template <typename cell_collection_t>
-TRACCC_HOST_DEVICE inline void calc_cluster_properties(
+TRACCC_HOST inline void calc_cluster_properties(
     const cell_collection_t& cluster, const cell_module& module, point2& mean,
     point2& var, scalar& totalWeight) {
 
     // Loop over the cells of the cluster.
-    for (const cell& cell : cluster) {
+    for (const alt_cell& cell : cluster) {
 
         // Translate the cell readout value into a weight.
-        const scalar weight = signal_cell_modelling(cell.activation, module);
+        const scalar weight = signal_cell_modelling(cell.c.activation, module);
 
         // Only consider cells over a minimum threshold.
         if (weight > module.threshold) {
 
             // Update all output properties with this cell.
-            totalWeight += cell.activation;
-            const point2 cell_position = position_from_cell(cell, module);
+            totalWeight += cell.c.activation;
+            const point2 cell_position = position_from_cell(cell.c.channel0, cell.c.channel1, module);
             const point2 prev = mean;
             const point2 diff = cell_position - prev;
 
@@ -80,11 +80,10 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 /// @param[in] module_link is the module index of the cell container
 /// @param[in] cluster_link is the cluster index of the cluster container
 ///
-template <typename measurement_container_t, typename cell_collection_t>
-TRACCC_HOST_DEVICE inline void fill_measurement(
-    measurement_container_t& measurements, const cell_collection_t& cluster,
-    const cell_module& module, const std::size_t module_link,
-    const std::size_t cl_link) {
+TRACCC_HOST void fill_measurement(
+    alt_measurement_collection_types::host& measurements,
+    const alt_cell_collection_types::host& cluster, const cell_module& module,
+    const unsigned int module_link) {
 
     // To calculate the mean and variance with high numerical stability
     // we use a weighted variant of Welford's algorithm. This is a
@@ -102,9 +101,8 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     detail::calc_cluster_properties(cluster, module, mean, var, totalWeight);
 
     if (totalWeight > 0.) {
-        measurement m;
-        // cluster link
-        m.cluster_link = cl_link;
+        alt_measurement m;
+        m.module_link = module_link;
         // normalize the cell position
         m.local = mean;
         // normalize the variance
@@ -116,8 +114,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
                      point2{pitch[0] * pitch[0] / 12, pitch[1] * pitch[1] / 12};
         // @todo add variance estimation
 
-        measurements[module_link].header = module;
-        measurements[module_link].items.push_back(std::move(m));
+        measurements.push_back(std::move(m));
     }
 }
 

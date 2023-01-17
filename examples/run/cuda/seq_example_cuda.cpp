@@ -13,7 +13,6 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_cells_alt.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
@@ -52,7 +51,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Output stats
     uint64_t n_cells = 0;
-    uint64_t n_alt_cells = 0;
     uint64_t n_modules = 0;
     // uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
@@ -97,7 +95,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::cell_container_types::host cells_per_event;
         traccc::alt_cell_reader_output_t alt_read_out_per_event;
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
@@ -115,18 +112,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         {
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
 
-            if (run_cpu) {
-                traccc::performance::timer t("File reading  (cpu)",
-                                             elapsedTimes);
-                // Read the cells from the relevant event file into host memory.
-                cells_per_event = traccc::io::read_cells(
-                    event, common_opts.input_directory,
-                    common_opts.input_data_format, &surface_transforms,
-                    &digi_cfg, &cuda_host_mr);
-            }  // stop measuring file reading timer
-
             {
-                traccc::performance::timer t("Alt File reading  (cpu)",
+                traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
                 alt_read_out_per_event = traccc::io::read_cells_alt(
@@ -169,7 +156,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 {
                     traccc::performance::timer t("Clusterization  (cpu)",
                                                  elapsedTimes);
-                    measurements_per_event = ca(cells_per_event);
+                    measurements_per_event =
+                        ca(alt_cells_per_event, modules_per_event);
                 }  // stop measuring clusterization cpu timer
 
                 /*---------------------------------
@@ -179,7 +167,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 {
                     traccc::performance::timer t("Spacepoint formation  (cpu)",
                                                  elapsedTimes);
-                    spacepoints_per_event = sf(measurements_per_event);
+                    spacepoints_per_event =
+                        sf(measurements_per_event, modules_per_event);
                 }  // stop measuring spacepoint formation cpu timer
             }
 
@@ -265,10 +254,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                      vecmem::get_data(params_cuda));
 
             /// Statistics
-            n_modules += cells_per_event.size();
-            n_cells += cells_per_event.total_size();
-            n_alt_cells += alt_read_out_per_event.cells.size();
-            n_measurements += measurements_per_event.total_size();
+            n_modules += alt_read_out_per_event.modules.size();
+            n_cells += alt_read_out_per_event.cells.size();
+            n_measurements += measurements_per_event.size();
             n_spacepoints += spacepoints_per_event.total_size();
             n_spacepoints_cuda += spacepoints_per_event_cuda.size();
             n_seeds_cuda += seeds_cuda.size();
@@ -301,10 +289,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
-    std::cout << "- created        " << n_cells << " cells           "
-              << std::endl;
-    std::cout << "- created        " << n_alt_cells << " alt cells"
-              << std::endl;
+    std::cout << "- created        " << n_cells << " alt cells" << std::endl;
     std::cout << "- created        " << n_measurements << " meaurements     "
               << std::endl;
     std::cout << "- created        " << n_spacepoints << " spacepoints     "

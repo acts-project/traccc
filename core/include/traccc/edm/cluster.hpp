@@ -9,16 +9,17 @@
 
 // Library include(s).
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 
 // System include(s).
 #include <cstddef>
+#include <variant>
 
 namespace traccc {
 
 /// Declare all cluster container types
-using cluster_container_types = container_types<std::size_t, cell>;
+using cluster_container_types = container_types<std::monostate, alt_cell>;
 
 }  // namespace traccc

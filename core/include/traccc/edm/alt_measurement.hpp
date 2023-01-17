@@ -30,6 +30,31 @@ struct alt_measurement {
     link_type module_link;
 };
 
+/// Comparison / ordering operator for measurements
+TRACCC_HOST_DEVICE
+inline bool operator<(const alt_measurement& lhs, const alt_measurement& rhs) {
+
+    if(lhs.module_link != rhs.module_link) {
+        return lhs.module_link < rhs.module_link;
+    }
+    else if (std::abs(lhs.local[0] - rhs.local[0]) > float_epsilon) {
+        return (lhs.local[0] < rhs.local[0]);
+    } else {
+        return (lhs.local[1] < rhs.local[1]);
+    }
+}
+
+/// Equality operator for measurements
+// TRACCC_HOST_DEVICE
+// inline bool operator==(const alt_measurement& lhs, const alt_measurement& rhs) {
+
+//     return ((lhs.module_link == rhs.module_link) &&
+//             (std::abs(lhs.local[0] - rhs.local[0]) < float_epsilon) &&
+//             (std::abs(lhs.local[1] - rhs.local[1]) < float_epsilon) &&
+//             (std::abs(lhs.variance[0] - rhs.variance[0]) < float_epsilon) &&
+//             (std::abs(lhs.variance[1] - rhs.variance[1]) < float_epsilon));
+// }
+
 /// Declare all alt measurement collection types
 using alt_measurement_collection_types = collection_types<alt_measurement>;
 
