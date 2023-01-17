@@ -128,14 +128,21 @@ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc, index_t adjv[8],
 
 class ccl_kernel {
     public:
-    ccl_kernel(const alt_cell_collection_types::const_view cells,
-               const cell_module_collection_types::const_view modules,
-               const ccl_partition_collection_types::const_view partitions,
-               alt_measurement_collection_types::view measurements,
-               unsigned int* num_measurements,
-               ::sycl::local_accessor<index_t> father,
-               ::sycl::local_accessor<index_t> grandfather,
-               ::sycl::local_accessor<unsigned int> outCounter)
+    ccl_kernel(
+        const alt_cell_collection_types::const_view cells,
+        const cell_module_collection_types::const_view modules,
+        const ccl_partition_collection_types::const_view partitions,
+        alt_measurement_collection_types::view measurements,
+        unsigned int* num_measurements,
+        ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
+                         ::sycl::access::target::local>
+            father,
+        ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
+                         ::sycl::access::target::local>
+            grandfather,
+        ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
+                         ::sycl::access::target::local>
+            outCounter)
         : cells_view(cells),
           modules_view(modules),
           partitions_view(partitions),
@@ -227,9 +234,10 @@ class ccl_kernel {
          * themself assigned as a parent.
          */
         if (f[tid] == tid) {
-            ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
-                               ::sycl::memory_scope::work_group,
-                               ::sycl::access::address_space::local_space>(outi)
+            ::sycl::ext::oneapi::atomic_ref<
+                unsigned int, ::sycl::memory_order::relaxed,
+                ::sycl::memory_scope::work_group,
+                ::sycl::access::address_space::local_space>(outi)
                 .fetch_add(1);
         }
 
@@ -244,12 +252,12 @@ class ccl_kernel {
          * amount of threads per block, this has no sever implications.
          */
         if (tid == 0) {
-            outi =
-                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
-                                   ::sycl::memory_scope::device,
-                                   ::sycl::access::address_space::global_space>(
-                    measurement_count)
-                    .fetch_add(outi);
+            outi = ::sycl::ext::oneapi::atomic_ref<
+                       unsigned int, ::sycl::memory_order::relaxed,
+                       ::sycl::memory_scope::device,
+                       ::sycl::access::address_space::global_space>(
+                       measurement_count)
+                       .fetch_add(outi);
         }
 
         item.barrier();
@@ -273,10 +281,10 @@ class ccl_kernel {
              * output array which we can write to.
              */
             const unsigned int id =
-                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
-                                   ::sycl::memory_scope::work_group,
-                                   ::sycl::access::address_space::local_space>(
-                    outi)
+                ::sycl::ext::oneapi::atomic_ref<
+                    unsigned int, ::sycl::memory_order::relaxed,
+                    ::sycl::memory_scope::work_group,
+                    ::sycl::access::address_space::local_space>(outi)
                     .fetch_add(1);
 
             device::aggregate_cluster(cells_device, modules_device, &f[0],
@@ -291,9 +299,15 @@ class ccl_kernel {
     const ccl_partition_collection_types::const_view partitions_view;
     alt_measurement_collection_types::view measurements_view;
     unsigned int* m_measurement_count;
-    ::sycl::local_accessor<index_t> f;
-    ::sycl::local_accessor<index_t> f_next;
-    ::sycl::local_accessor<unsigned int> m_outi;
+    ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
+                     ::sycl::access::target::local>
+        f;
+    ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
+                     ::sycl::access::target::local>
+        f_next;
+    ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
+                     ::sycl::access::target::local>
+        m_outi;
 };
 
 }  // namespace kernels
@@ -344,11 +358,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     details::get_queue(m_queue)
         .submit([&ndrange, &cells, &modules, &partitions, &measurements_view,
                  &num_measurements_device](::sycl::handler& h) {
-            ::sycl::local_accessor<index_t, 1> f(
-                partitioning::MAX_CELLS_PER_PARTITION, h);
-            ::sycl::local_accessor<index_t, 1> f_next(
-                partitioning::MAX_CELLS_PER_PARTITION, h);
-            ::sycl::local_accessor<unsigned int, 1> outi(1, h);
+            ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
+                             ::sycl::access::target::local>
+                f(partitioning::MAX_CELLS_PER_PARTITION, h);
+            ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
+                             ::sycl::access::target::local>
+                f_next(partitioning::MAX_CELLS_PER_PARTITION, h);
+            ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
+                             ::sycl::access::target::local>
+                outi(1, h);
 
             h.parallel_for<kernels::ccl_kernel>(
                 ndrange, kernels::ccl_kernel(

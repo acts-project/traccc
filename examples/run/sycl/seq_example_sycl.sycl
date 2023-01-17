@@ -86,7 +86,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_seeds_sycl = 0;
 
     // Creating SYCL queue object
-    ::sycl::queue q(::sycl::gpu_selector_v, handle_async_error);
+    ::sycl::queue q(::sycl::gpu_selector{}, handle_async_error);
     std::cout << "Running Seeding on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
