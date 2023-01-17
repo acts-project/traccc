@@ -37,7 +37,7 @@ struct cell_container {
     channel_id* channel1 = nullptr;
     scalar* activation = nullptr;
     scalar* time = nullptr;
-    geometry_id* module_id = nullptr;
+    unsigned int* module_link = nullptr;
 };
 
 /*
@@ -50,7 +50,7 @@ struct measurement_container {
     scalar* channel1 = nullptr;
     scalar* variance0 = nullptr;
     scalar* variance1 = nullptr;
-    geometry_id* module_id = nullptr;
+    unsigned int* module_link = nullptr;
 };
 
 /*
@@ -77,7 +77,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
 
     channel_id c0 = cells.channel0[tid];
     channel_id c1 = cells.channel1[tid];
-    geometry_id gid = cells.module_id[tid];
+    unsigned int mlink = cells.module_link[tid];
 
     /*
      * First, we traverse the cells backwards, starting from the current
@@ -91,7 +91,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
          * impossible for that cell to ever be adjacent to this one.
          * This is a small optimisation.
          */
-        if (cells.channel1[j] + 1 < c1 || cells.module_id[j] != gid) {
+        if (cells.channel1[j] + 1 < c1 || cells.module_link[j] != mlink) {
             break;
         }
 
@@ -113,7 +113,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
          * Note that this check now looks in the opposite direction! An
          * important difference.
          */
-        if (cells.channel1[j] > c1 + 1 || cells.module_id[j] != gid) {
+        if (cells.channel1[j] > c1 + 1 || cells.module_link[j] != mlink) {
             break;
         }
 
@@ -505,7 +505,7 @@ __device__ void aggregate_clusters(const cell_container& cells,
             out.channel1[id] = my;
             out.variance0[id] = vx / sw;
             out.variance1[id] = vy / sw;
-            out.module_id[id] = cells.module_id[tid];
+            out.module_link[id] = cells.module_link[tid];
         }
     }
 }
@@ -536,7 +536,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
          * cells that have been claimed by the previous block (if any).
          */
         while (start != 0 &&
-               container.module_id[start - 1] == container.module_id[start] &&
+               container.module_link[start - 1] ==
+                   container.module_link[start] &&
                container.channel1[start] <= container.channel1[start - 1] + 1) {
             ++start;
         }
@@ -547,7 +548,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
          * that is not a possible boundary!
          */
         while (end < num_cells &&
-               container.module_id[end - 1] == container.module_id[end] &&
+               container.module_link[end - 1] == container.module_link[end] &&
                container.channel1[end] <= container.channel1[end - 1] + 1) {
             ++end;
         }
@@ -568,7 +569,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     cells.channel1 = &container.channel1[start];
     cells.activation = &container.activation[start];
     cells.time = &container.time[start];
-    cells.module_id = &container.module_id[start];
+    cells.module_link = &container.module_link[start];
 
     assert(cells.size <= MAX_CELLS_PER_PARTITION);
 
@@ -690,23 +691,19 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     out.channel1 = &_out_ctnr.channel1[outi];
     out.variance0 = &_out_ctnr.variance0[outi];
     out.variance1 = &_out_ctnr.variance1[outi];
-    out.module_id = &_out_ctnr.module_id[outi];
+    out.module_link = &_out_ctnr.module_link[outi];
 
     aggregate_clusters(cells, out, f);
 }
 }  // namespace details
 
 component_connection::output_type component_connection::operator()(
-    const cell_container_types::host& data) const {
+    const alt_cell_collection_types::host& cells) const {
     vecmem::cuda::managed_memory_resource upstream;
     vecmem::cuda::device_memory_resource dmem;
     vecmem::binary_page_memory_resource mem(upstream);
 
-    std::size_t total_cells = 0;
-
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        total_cells += data.at(i).items.size();
-    }
+    std::size_t total_cells = cells.size();
 
     /*
      * Flatten the data to handle memory access (fetch and cache)
@@ -721,17 +718,15 @@ component_connection::output_type component_connection::operator()(
     activation.reserve(total_cells);
     vecmem::vector<scalar> time(&mem);
     time.reserve(total_cells);
-    vecmem::vector<geometry_id> module_id(&mem);
-    module_id.reserve(total_cells);
+    vecmem::vector<unsigned int> module_link(&mem);
+    module_link.reserve(total_cells);
 
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        for (std::size_t j = 0; j < data.at(i).items.size(); ++j) {
-            channel0.push_back(data.at(i).items.at(j).channel0);
-            channel1.push_back(data.at(i).items.at(j).channel1);
-            activation.push_back(data.at(i).items.at(j).activation);
-            time.push_back(data.at(i).items.at(j).time);
-            module_id.push_back(data.at(i).header.module);
-        }
+    for (std::size_t i = 0; i < cells.size(); ++i) {
+        channel0.push_back(cells.at(i).c.channel0);
+        channel1.push_back(cells.at(i).c.channel1);
+        activation.push_back(cells.at(i).c.activation);
+        time.push_back(cells.at(i).c.time);
+        module_link.push_back(cells.at(i).module_link);
     }
 
     /*
@@ -743,7 +738,7 @@ component_connection::output_type component_connection::operator()(
     container.channel1 = channel1.data();
     container.activation = activation.data();
     container.time = time.data();
-    container.module_id = module_id.data();
+    container.module_link = module_link.data();
 
     /*
      * Reserve space for the result of the algorithm. Currently, there is
@@ -763,8 +758,8 @@ component_connection::output_type component_connection::operator()(
         alloc.allocate_bytes(total_cells * sizeof(scalar)));
     mctnr->variance1 = static_cast<scalar*>(
         alloc.allocate_bytes(total_cells * sizeof(scalar)));
-    mctnr->module_id = static_cast<geometry_id*>(
-        alloc.allocate_bytes(total_cells * sizeof(geometry_id)));
+    mctnr->module_link = static_cast<unsigned int*>(
+        alloc.allocate_bytes(total_cells * sizeof(unsigned int)));
 
     /*
      * Run the connected component labeling algorithm to retrieve the clusters.
@@ -781,25 +776,17 @@ component_connection::output_type component_connection::operator()(
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     /*
-     * Copy back the data from our flattened data structure into the traccc EDM.
+     * Copy back the data from our SoA data structure into the traccc EDM.
      */
     output_type out;
 
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        vecmem::vector<measurement> v(&mem);
+    for (std::size_t i = 0; i < mctnr->size; ++i) {
+        alt_measurement m;
+        m.local = {mctnr->channel0[i], mctnr->channel1[i]};
+        m.variance = {mctnr->variance0[i], mctnr->variance1[i]};
+        m.module_link = mctnr->module_link[i];
 
-        for (std::size_t j = 0; j < mctnr->size; ++j) {
-            if (mctnr->module_id[j] == data.at(i).header.module) {
-                measurement m;
-
-                m.local = {mctnr->channel0[j], mctnr->channel1[j]};
-                m.variance = {mctnr->variance0[j], mctnr->variance1[j]};
-
-                v.push_back(m);
-            }
-        }
-
-        out.push_back(cell_module(data.at(i).header), std::move(v));
+        out.push_back(m);
     }
 
     return out;

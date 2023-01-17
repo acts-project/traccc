@@ -26,7 +26,7 @@ struct alt_seed {
     scalar z_vertex;
 
     TRACCC_HOST_DEVICE
-    std::array<measurement, 3> get_measurements(
+    std::array<alt_measurement, 3> get_measurements(
         const spacepoint_collection_types::const_view& spacepoints_view) const {
         const spacepoint_collection_types::const_device spacepoints(
             spacepoints_view);

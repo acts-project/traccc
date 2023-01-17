@@ -23,16 +23,8 @@ namespace traccc {
 template <typename spacepoint_t>
 struct internal_spacepoint {
 
-    // FIXME: geometry_id is hard-coded here
-    using spacepoint_container_type = host_container<geometry_id, spacepoint_t>;
-    using link_type = typename spacepoint_container_type::link_type;
-
+    using link_type = typename collection_types<spacepoint_t>::host::size_type;
     link_type m_link;
-
-    /// TODO: This is a *VERY* temporary variable which will be removed asap.
-    /// only here while transitioning from the jagged to non-jagged
-    /// clusterization and prevent even more code duplication
-    unsigned int m_link_alt;
 
     scalar m_x;
     scalar m_y;
@@ -42,23 +34,10 @@ struct internal_spacepoint {
 
     internal_spacepoint() = default;
 
-    template <typename spacepoint_container_t>
-    TRACCC_HOST_DEVICE internal_spacepoint(
-        const spacepoint_container_t& sp_container, const link_type& sp_link,
-        const vector2& offsetXY)
-        : m_link(sp_link) {
-        const spacepoint_t& sp = sp_container.at(sp_link);
-        m_x = sp.global[0] - offsetXY[0];
-        m_y = sp.global[1] - offsetXY[1];
-        m_z = sp.global[2];
-        m_r = algebra::math::sqrt(m_x * m_x + m_y * m_y);
-        m_phi = algebra::math::atan2(m_y, m_x);
-    }
-
     TRACCC_HOST_DEVICE internal_spacepoint(const spacepoint_t& sp,
-                                           const unsigned int sp_link,
+                                           const link_type sp_link,
                                            const vector2& offsetXY)
-        : m_link_alt(sp_link) {
+        : m_link(sp_link) {
         m_x = sp.global[0] - offsetXY[0];
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];
@@ -79,8 +58,7 @@ struct internal_spacepoint {
     TRACCC_HOST_DEVICE
     static inline internal_spacepoint<spacepoint_t> invalid_value() {
 
-        link_type l = {detray::detail::invalid_value<decltype(l.first)>(),
-                       detray::detail::invalid_value<decltype(l.second)>()};
+        link_type l = detray::detail::invalid_value<link_type>();
 
         return internal_spacepoint<spacepoint_t>({std::move(l)});
     }

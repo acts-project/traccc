@@ -12,6 +12,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
+#include "traccc/io/reader_edm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -33,7 +34,7 @@ namespace traccc::io {
 /// @param mr The memory resource to create the host container with
 /// @return A cell (host) container
 ///
-measurement_container_types::host read_measurements(
+measurement_reader_output read_measurements(
     std::size_t event, std::string_view directory,
     data_format format = data_format::csv,
     vecmem::memory_resource *mr = nullptr);
@@ -47,7 +48,7 @@ measurement_container_types::host read_measurements(
 /// @param mr The memory resource to create the host container with
 /// @return A cell (host) container
 ///
-measurement_container_types::host read_measurements(
+measurement_reader_output read_measurements(
     std::string_view filename, data_format format = data_format::csv,
     vecmem::memory_resource *mr = nullptr);
 

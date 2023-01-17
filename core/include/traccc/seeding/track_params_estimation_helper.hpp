@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/seed.hpp"
+#include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
@@ -37,16 +37,16 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// @param seed is the input seed
 /// @param bfield is the magnetic field
 /// @param mass is the mass of particle
-template <typename spacepoint_container_t, typename seed_t>
+template <typename spacepoint_collection_t>
 inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
-    const spacepoint_container_t& sp_container, const seed_t& seed,
+    const spacepoint_collection_t& sp_collection, const alt_seed& seed,
     const vector3& bfield, const scalar mass) {
 
     bound_vector params;
 
-    const auto& spB = sp_container.at(seed.spB_link);
-    const auto& spM = sp_container.at(seed.spM_link);
-    const auto& spT = sp_container.at(seed.spT_link);
+    const auto& spB = sp_collection.at(seed.spB_link);
+    const auto& spM = sp_collection.at(seed.spM_link);
+    const auto& spT = sp_collection.at(seed.spT_link);
 
     darray<vector3, 3> sp_global_positions;
     sp_global_positions[0] = spB.global;

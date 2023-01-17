@@ -11,6 +11,7 @@
 #include "traccc/edm/alt_cell.hpp"
 #include "traccc/geometry/digitization_config.hpp"
 #include "traccc/geometry/geometry.hpp"
+#include "traccc/io/reader_edm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -28,9 +29,9 @@ namespace traccc::io::csv {
 /// @param mr The memory resource to create the host collection with
 /// @return A alt_cell (host) collection & a cell_module collection
 ///
-alt_cell_reader_output_t read_cells_alt(
-    std::string_view filename, const geometry* geom = nullptr,
-    const digitization_config* dconfig = nullptr,
-    vecmem::memory_resource* mr = nullptr);
+cell_reader_output read_cells_alt(std::string_view filename,
+                                  const geometry* geom = nullptr,
+                                  const digitization_config* dconfig = nullptr,
+                                  vecmem::memory_resource* mr = nullptr);
 
 }  // namespace traccc::io::csv

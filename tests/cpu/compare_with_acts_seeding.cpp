@@ -7,7 +7,7 @@
 
 // io
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 
 // algorithms
 #include "traccc/seeding/seed_finding.hpp"
@@ -129,10 +129,14 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the hits from the relevant event file
-    traccc::spacepoint_container_types::host spacepoints_per_event =
-        traccc::io::read_spacepoints(event, hits_dir, surface_transforms,
-                                     traccc::data_format::csv, &host_mr);
+    auto reader_output =
+        traccc::io::read_spacepoints_alt(event, hits_dir, surface_transforms,
+                                         traccc::data_format::csv, &host_mr);
 
+    traccc::spacepoint_collection_types::host& spacepoints_per_event =
+        reader_output.spacepoints;
+    traccc::cell_module_collection_types::host& modules_per_event =
+        reader_output.modules;
     /*--------------------------------
       TRACCC seeding
       --------------------------------*/
@@ -153,34 +157,27 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // copy traccc::spacepoint into SpacePoint
     std::vector<const SpacePoint*> spVec;
-    for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
-        auto& items = spacepoints_per_event.get_items()[i_h];
-        for (auto& sp : items) {
-
-            SpacePoint* acts_sp =
-                new SpacePoint{static_cast<float>(sp.global[0]),
-                               static_cast<float>(sp.global[1]),
-                               static_cast<float>(sp.global[2]),
-                               std::hypot(static_cast<float>(sp.global[0]),
-                                          static_cast<float>(sp.global[1])),
-                               0,
-                               0,
-                               0};
-            spVec.push_back(acts_sp);
-        }
+    for (auto& sp : spacepoints_per_event) {
+        SpacePoint* acts_sp =
+            new SpacePoint{static_cast<float>(sp.global[0]),
+                           static_cast<float>(sp.global[1]),
+                           static_cast<float>(sp.global[2]),
+                           std::hypot(static_cast<float>(sp.global[0]),
+                                      static_cast<float>(sp.global[1])),
+                           0,
+                           0,
+                           0};
+        spVec.push_back(acts_sp);
     }
 
     // spacepoint equality check
     int n_sp_match = 0;
-    for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
-        auto& items = spacepoints_per_event.get_items()[i_h];
-        for (auto& sp : items) {
-            if (std::find(spVec.begin(), spVec.end(), sp) != spVec.end()) {
-                n_sp_match++;
-            }
+    for (auto& sp : spacepoints_per_event) {
+        if (std::find(spVec.begin(), spVec.end(), sp) != spVec.end()) {
+            n_sp_match++;
         }
     }
-    EXPECT_EQ(spacepoints_per_event.total_size(), n_sp_match);
+    EXPECT_EQ(spacepoints_per_event.size(), n_sp_match);
     EXPECT_EQ(spVec.size(), n_sp_match);
 
     Acts::SeedFinderConfig<SpacePoint> acts_config;
@@ -363,12 +360,10 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         // find geometry id
         auto spB = spacePoints[0];
         traccc::geometry_id geo_id = 0;
-        for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
-            auto& items = spacepoints_per_event.get_items()[i_h];
-            if (std::find(items.begin(), items.end(), spB) != items.end()) {
-                geo_id = spacepoints_per_event.get_headers()[i_h];
-                break;
-            }
+        auto it = std::find(spacepoints_per_event.begin(),
+                            spacepoints_per_event.end(), spB);
+        if (it != spacepoints_per_event.end()) {
+            geo_id = modules_per_event.at((*it).meas.module_link).module;
         }
 
         EXPECT_TRUE(geo_id != 0);

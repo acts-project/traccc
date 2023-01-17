@@ -41,7 +41,7 @@ inline void form_spacepoints(
     point3 global = mod.placement.point_to_global(local_3d);
 
     // Fill the result object with this spacepoint
-    spacepoints_device[globalIndex] = {global, {meas.local, meas.variance, 0}};
+    spacepoints_device[globalIndex] = {global, meas};
 }
 
 }  // namespace traccc::device

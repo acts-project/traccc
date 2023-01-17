@@ -8,10 +8,10 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_cells_alt.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -45,50 +45,45 @@ TEST_P(SurfaceBinningTests, Run) {
     traccc::spacepoint_formation sf(host_mr);
 
     // Read the cells from the relevant event file
-    traccc::cell_container_types::host cells_truth =
-        traccc::io::read_cells(event, data_dir, traccc::data_format::csv,
-                               &surface_transforms, &digi_cfg, &host_mr);
+    auto readOut =
+        traccc::io::read_cells_alt(event, data_dir, traccc::data_format::csv,
+                                   &surface_transforms, &digi_cfg, &host_mr);
+
+    const traccc::alt_cell_collection_types::host& cells_truth = readOut.cells;
+    const traccc::cell_module_collection_types::host& modules = readOut.modules;
 
     // Get Reconstructed Spacepoints
-    auto measurements_recon = ca(cells_truth);
-    auto spacepoints_recon = sf(measurements_recon);
+    auto measurements_recon = ca(cells_truth, modules);
+    auto spacepoints_recon = sf(measurements_recon, modules);
 
     // Read the hits from the relevant event file
-    traccc::spacepoint_container_types::host spacepoints_truth =
-        traccc::io::read_spacepoints(event, data_dir, surface_transforms,
-                                     traccc::data_format::csv, &host_mr);
+    auto sp_readOut =
+        traccc::io::read_spacepoints_alt(event, data_dir, surface_transforms,
+                                         traccc::data_format::csv, &host_mr);
+
+    const traccc::spacepoint_collection_types::host& spacepoints_truth =
+        sp_readOut.spacepoints;
+    const traccc::cell_module_collection_types::host& modules_2 =
+        sp_readOut.modules;
 
     // Check the size of spacepoints
     EXPECT_TRUE(spacepoints_recon.size() > 0);
     EXPECT_EQ(spacepoints_recon.size(), spacepoints_truth.size());
-    EXPECT_TRUE(spacepoints_recon.total_size() > 0);
-    EXPECT_EQ(spacepoints_recon.total_size(), spacepoints_truth.total_size());
 
     for (std::size_t i = 0; i < spacepoints_recon.size(); i++) {
-        EXPECT_EQ(spacepoints_recon.at(i).header,
-                  spacepoints_truth.at(i).header);
 
-        // Get the spacepoint vectors
-        traccc::spacepoint_collection_types::host& sp_collection_recon =
-            spacepoints_recon[i].items;
+        const auto& sp_recon = spacepoints_recon[i];
+        const auto& sp_truth = spacepoints_truth[i];
 
-        traccc::spacepoint_collection_types::host& sp_collection_truth =
-            spacepoints_truth[i].items;
+        // Check that the spacepoints belong to the same module
+        EXPECT_EQ(modules.at(sp_recon.meas.module_link).module,
+                  modules_2.at(sp_truth.meas.module_link).module);
 
-        EXPECT_EQ(sp_collection_recon.size(), sp_collection_truth.size());
-
-        // Iterate over each spacepoint
-        for (std::size_t j = 0; j < sp_collection_recon.size(); j++) {
-            const auto& sp_recon = sp_collection_recon[j];
-            const auto& sp_truth = sp_collection_truth[j];
-
-            // Make sure that the difference in spacepoint position is less than
-            // 1%
-            EXPECT_TRUE(
-                traccc::getter::norm(sp_recon.global - sp_truth.global) /
-                    traccc::getter::norm(sp_recon.global) <
-                0.01);
-        }
+        // Make sure that the difference in spacepoint position is less than
+        // 1%
+        EXPECT_TRUE(traccc::getter::norm(sp_recon.global - sp_truth.global) /
+                        traccc::getter::norm(sp_recon.global) <
+                    0.01);
     }
 }
 

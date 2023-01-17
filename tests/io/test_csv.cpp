@@ -13,7 +13,7 @@
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_particles.hpp"
-#include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -97,10 +97,9 @@ TEST_F(io, csv_read_cells_alt) {
                                &surface_transforms, &digi_cfg, &host_mr);
 
     // Read csv file to collection of cells + collection of modules
-    traccc::alt_cell_reader_output_t alt_cells_modules_csv =
-        traccc::io::read_cells_alt(event, cells_directory,
-                                   traccc::data_format::csv,
-                                   &surface_transforms, &digi_cfg, &host_mr);
+    auto alt_cells_modules_csv = traccc::io::read_cells_alt(
+        event, cells_directory, traccc::data_format::csv, &surface_transforms,
+        &digi_cfg, &host_mr);
 
     const traccc::alt_cell_collection_types::host& alt_cells_csv =
         alt_cells_modules_csv.cells;
@@ -150,32 +149,24 @@ TEST_F(io, csv_read_tml_single_muon) {
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the hits from the relevant event file
-    traccc::spacepoint_container_types::host spacepoints_per_event =
-        traccc::io::read_spacepoints(0, "tml_full/single_muon/",
-                                     surface_transforms,
-                                     traccc::data_format::csv, &resource);
+    auto spacepoints_per_event = traccc::io::read_spacepoints_alt(
+        0, "tml_full/single_muon/", surface_transforms,
+        traccc::data_format::csv, &resource);
 
     // Read the measurements from the relevant event file
-    traccc::measurement_container_types::host measurements_per_event =
-        traccc::io::read_measurements(0, "tml_full/single_muon/",
-                                      traccc::data_format::csv, &resource);
+    auto measurements_per_event = traccc::io::read_measurements(
+        0, "tml_full/single_muon/", traccc::data_format::csv, &resource);
 
     // Read the particles from the relevant event file
     traccc::particle_collection_types::host particles_per_event =
         traccc::io::read_particles(0, "tml_full/single_muon/",
                                    traccc::data_format::csv, &resource);
 
-    const auto sp_header_size = spacepoints_per_event.size();
-    const auto ms_header_size = measurements_per_event.size();
-    ASSERT_EQ(sp_header_size, 11u);
-    ASSERT_EQ(ms_header_size, 11u);
+    ASSERT_EQ(spacepoints_per_event.modules.size(), 11u);
+    ASSERT_EQ(measurements_per_event.modules.size(), 11u);
 
-    for (std::size_t i = 0; i < sp_header_size; i++) {
-        ASSERT_EQ(spacepoints_per_event[i].items.size(), 1u);
-    }
-    for (std::size_t i = 0; i < ms_header_size; i++) {
-        ASSERT_EQ(measurements_per_event[i].items.size(), 1u);
-    }
+    ASSERT_EQ(spacepoints_per_event.spacepoints.size(), 11u);
+    ASSERT_EQ(measurements_per_event.measurements.size(), 11u);
 
     ASSERT_EQ(particles_per_event.size(), 1u);
 }

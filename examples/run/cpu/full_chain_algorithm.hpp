@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/edm/alt_cell.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -25,15 +26,19 @@ namespace traccc {
 ///
 class full_chain_algorithm
     : public algorithm<bound_track_parameters_collection_types::host(
-          const cell_container_types::host&)> {
+          const alt_cell_collection_types::host&,
+          const cell_module_collection_types::host&)> {
 
     public:
     /// Algorithm constructor
     ///
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
+    /// @param dummy This is not used anywhere. Allows templating CPU/Device
+    /// algorithm.
     ///
-    full_chain_algorithm(vecmem::memory_resource& mr);
+
+    full_chain_algorithm(vecmem::memory_resource& mr, unsigned int dummy);
 
     /// Reconstruct track parameters in the entire detector
     ///
@@ -41,7 +46,8 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const cell_container_types::host& cells) const override;
+        const alt_cell_collection_types::host& cells,
+        const cell_module_collection_types::host& modules) const override;
 
     private:
     /// @name Sub-algorithms used by this full-chain algorithm
