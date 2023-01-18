@@ -83,5 +83,3 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
         EXPECT_FLOAT_EQ(bufHost[i], std::sin(i));
     }
 }
-
-
