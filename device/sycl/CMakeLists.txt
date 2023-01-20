@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -37,5 +37,7 @@ target_link_libraries( traccc_sycl
   PUBLIC vecmem::core traccc::core
   PRIVATE traccc::device_common vecmem::sycl )
 
-# Prevent Eigen from getting confused when building code for a HIP backend.
-target_compile_definitions( traccc_sycl PRIVATE EIGEN_NO_CUDA )
+# Prevent Eigen from getting confused when building code for a
+# CUDA or HIP backend.
+target_compile_definitions( traccc_sycl
+  PRIVATE EIGEN_NO_CUDA EIGEN_NO_HIP )
