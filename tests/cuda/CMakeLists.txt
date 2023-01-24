@@ -30,8 +30,11 @@ traccc_add_test(
     test_basic.cu
     test_cca.cpp
     test_copy_algs.cpp
+    test_graphs.cu
+    test_graph_concepts.cpp
 
     LINK_LIBRARIES
+    CUDA::cudart
     GTest::gtest
     vecmem::cuda
     traccc::core
@@ -41,3 +44,5 @@ traccc_add_test(
     traccc_tests_cuda_main
     traccc_tests_common
 )
+
+target_compile_features(traccc_test_cuda PRIVATE cxx_std_20)

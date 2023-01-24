@@ -29,4 +29,13 @@ struct is_same_nc<const TYPE, TYPE> {
     static constexpr bool value = true;
 };
 
+template <typename>
+struct is_tuple {
+    static constexpr bool value = false;
+};
+
+template <typename... T>
+struct is_tuple<std::tuple<T...>> {
+    static constexpr bool value = true;
+};
 }  // namespace traccc::details
