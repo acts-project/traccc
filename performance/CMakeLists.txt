@@ -52,7 +52,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
 
-   PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core )
+   PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core traccc::io covfie::core)
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
