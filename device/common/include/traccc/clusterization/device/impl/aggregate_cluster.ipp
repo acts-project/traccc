@@ -18,8 +18,11 @@ TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const alt_cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
-    const unsigned short* f, const ccl_partition& part,
-    const unsigned short tid, alt_measurement& out) {
+    const vecmem::data::vector_view<unsigned short> f_view,
+    const partition start, const partition end, const unsigned short tid,
+    alt_measurement& out) {
+
+    const vecmem::device_vector<unsigned short> f(f_view);
 
     /*
      * Now, we iterate over all other cells to check if they belong
@@ -29,16 +32,20 @@ inline void aggregate_cluster(
      */
     float totalWeight = 0.;
     point2 mean{0., 0.}, var{0., 0.};
-    const auto module_link = cells[tid + part.start].module_link;
+    const auto module_link = cells[tid + start].module_link;
     const cell_module this_module = modules.at(module_link);
-    for (unsigned short j = tid; j < part.size; j++) {
+    const unsigned short partition_size = end - start;
+    for (unsigned short j = tid; j < partition_size; j++) {
+
+        assert(j < f.size());
+
         /*
          * If the value of this cell is equal to our, that means it
          * is part of our cluster. In that case, we take its values
          * for position and add them to our accumulators.
          */
         if (f[j] == tid) {
-            const unsigned int pos = j + part.start;
+            const unsigned int pos = j + start;
             const cell this_cell = cells[pos].c;
 
             const float weight = traccc::detail::signal_cell_modelling(
@@ -70,8 +77,8 @@ inline void aggregate_cluster(
     /*
      * Fill output vector with calculated cluster properties
      */
-    out.meas.local = mean;
-    out.meas.variance = var;
+    out.local = mean;
+    out.variance = var;
     out.module_link = module_link;
 }
 

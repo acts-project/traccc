@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/ccl_partition.hpp"
+#include "traccc/edm/partition.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -23,15 +23,16 @@ namespace traccc::device {
 ///
 /// @param[in] cells    Collection of cells
 /// @param[in] tid      Current thread id
-/// @param[in] part     Current partition
+/// @param[in] start    Current partition start point
+/// @param[in] end      Current partition end point
 /// @param[out] ajc     Number of adjacent cells
 /// @param[out] ajv     Indices of adjacent cells
 ///
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
     const alt_cell_collection_types::const_device& cells,
-    const unsigned short tid, const ccl_partition& part, unsigned char& adjc,
-    unsigned short adjv[8]);
+    const unsigned short tid, const partition start, const partition end,
+    unsigned char& adjc, unsigned short adjv[8]);
 
 }  // namespace traccc::device
 

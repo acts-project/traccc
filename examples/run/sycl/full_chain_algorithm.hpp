@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/clusterization/partitioning_algorithm.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/ccl_partition.hpp"
+#include "traccc/edm/partition.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"

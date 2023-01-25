@@ -25,11 +25,9 @@ bool is_adjacent(channel_id ac0, channel_id ac1, channel_id bc0,
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
     const alt_cell_collection_types::const_device& cells,
-    const unsigned short tid, const ccl_partition& part, unsigned char& adjc,
-    unsigned short adjv[8]) {
+    const unsigned short tid, const partition start, const partition end,
+    unsigned char& adjc, unsigned short adjv[8]) {
 
-    const unsigned int start = part.start;
-    const unsigned int end = start + part.size;
     const unsigned int pos = tid + start;
 
     const channel_id c0 = cells[pos].c.channel0;

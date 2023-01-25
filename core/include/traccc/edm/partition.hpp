@@ -18,16 +18,10 @@ namespace partitioning {
 static constexpr std::size_t MAX_CELLS_PER_PARTITION = 1024;
 }  // namespace partitioning
 
-/// CCL partition used for dividing cell collection into similarly sized
-/// fragments
-struct ccl_partition {
-    unsigned int start;
+/// Partition used for dividing collections into similarly sized fragments
+using partition = unsigned int;
 
-    // The size of each partition will range from 0 to MAX_CELLS_PER_PARTITION
-    unsigned short size;
-};  // struct ccl_partition
-
-/// Declare all ccl_partition collection types
-using ccl_partition_collection_types = collection_types<ccl_partition>;
+/// Declare all partition collection types
+using partition_collection_types = collection_types<partition>;
 
 }  // namespace traccc

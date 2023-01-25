@@ -44,6 +44,9 @@ partitioning_algorithm::output_type partitioning_algorithm::operator()(
     // Reserve the minimum possible size of the result object
     partitions.reserve(num_cells / partitioning::MAX_CELLS_PER_PARTITION);
 
+    // The first partition point is the beggining of the vector
+    partitions.push_back(0);
+
     while (num_cells_remaining > partitioning::MAX_CELLS_PER_PARTITION) {
 
         bool broke = false;
@@ -53,9 +56,7 @@ partitioning_algorithm::output_type partitioning_algorithm::operator()(
         for (unsigned int i = partitioning::MAX_CELLS_PER_PARTITION + last_end;
              i > last_end; --i) {
             if (isFarEnough(cells[i - 1], cells[i])) {
-                partitions.push_back(
-                    {.start = last_end,
-                     .size = static_cast<unsigned short>(i - last_end)});
+                partitions.push_back(i);
                 last_end = i;
                 num_cells_remaining = num_cells - i;
                 broke = true;
@@ -67,12 +68,11 @@ partitioning_algorithm::output_type partitioning_algorithm::operator()(
             throw std::invalid_argument("Select larger partitions_per_cell.");
         }
     }
-    // Add final partition
-    if (num_cells_remaining > 0) {
-        partitions.push_back(
-            {.start = last_end,
-             .size = static_cast<unsigned short>(num_cells_remaining)});
-    }
+    assert(num_cells_remaining <= std::numeric_limits<unsigned short>::max());
+    assert(last_end + num_cells_remaining == num_cells);
+
+    // The final partition point is the end of the vector
+    partitions.push_back(num_cells);
 
     return partitions;
 }

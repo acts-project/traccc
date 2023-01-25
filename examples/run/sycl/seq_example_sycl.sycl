@@ -124,7 +124,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // Instantiate host containers/collections
         traccc::cell_container_types::host cells_per_event;
         traccc::alt_cell_reader_output_t alt_read_out_per_event;
-        traccc::ccl_partition_collection_types::host partitions_per_event;
+        traccc::partition_collection_types::host partitions_per_event;
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
@@ -185,7 +185,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
             copy(vecmem::get_data(modules_per_event), modules_buffer);
-            traccc::ccl_partition_collection_types::buffer partitions_buffer(
+            traccc::partition_collection_types::buffer partitions_buffer(
                 partitions_per_event.size(), mr.main);
             copy(vecmem::get_data(partitions_per_event), partitions_buffer);
 

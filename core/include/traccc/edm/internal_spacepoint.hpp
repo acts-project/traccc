@@ -56,7 +56,7 @@ struct internal_spacepoint {
     }
 
     TRACCC_HOST_DEVICE internal_spacepoint(const spacepoint_t& sp,
-                                           const unsigned int& sp_link,
+                                           const unsigned int sp_link,
                                            const vector2& offsetXY)
         : m_link_alt(sp_link) {
         m_x = sp.global[0] - offsetXY[0];

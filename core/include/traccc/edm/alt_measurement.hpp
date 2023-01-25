@@ -8,9 +8,9 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/container.hpp"
-#include "traccc/edm/measurement.hpp"
 
 namespace traccc {
 
@@ -21,7 +21,14 @@ namespace traccc {
 /// objects need to have both the header and item information from the
 /// measurement container types.
 struct alt_measurement {
-    measurement meas;
+    /// Local 2D coordinates for a measurement on a detector module
+    point2 local{0., 0.};
+    /// Variance on the 2D coordinates of the measurement
+    variance2 variance{0., 0.};
+    // TODO: We should consider removing the cluster link, as it is only used in
+    // a CI test.
+    /// Cluster link
+    std::size_t cluster_link = std::numeric_limits<std::size_t>::infinity();
 
     using link_type = cell_module_collection_types::view::size_type;
     link_type module_link;

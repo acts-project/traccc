@@ -125,21 +125,23 @@ __global__
 __launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
     const alt_cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
-    const ccl_partition_collection_types::const_view partitions_view,
+    const partition_collection_types::const_view partitions_view,
     alt_measurement_collection_types::view measurements_view,
     unsigned int& measurement_count) {
 
     const index_t tid = threadIdx.x;
 
-    const ccl_partition_collection_types::const_device partitions_device(
+    const partition_collection_types::const_device partitions_device(
         partitions_view);
     assert(blockIdx.x < partitions_device.size());
 
     // Get partition for this thread group
-    const ccl_partition partition = partitions_device[blockIdx.x];
+    const partition start = partitions_device[blockIdx.x];
+    const partition end = partitions_device[blockIdx.x + 1];
+    assert(end - start <= partitioning::MAX_CELLS_PER_PARTITION);
 
     // Check if any work needs to be done
-    if (tid >= partition.size) {
+    if (tid >= end - start) {
         return;
     }
 
@@ -164,7 +166,7 @@ __launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
     /*
      * Look for adjacent cells to the current one.
      */
-    device::reduce_problem_cell(cells_device, tid, partition, adjc, adjv);
+    device::reduce_problem_cell(cells_device, tid, start, end, adjc, adjv);
 
     /*
      * These arrays are the meat of the pudding of this algorithm, and we
@@ -247,14 +249,19 @@ __launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
 
     __syncthreads();
 
+    vecmem::data::vector_view<index_t> f_view(
+        partitioning::MAX_CELLS_PER_PARTITION, f);
+    vecmem::data::vector_view<index_t> f_next_view(
+        partitioning::MAX_CELLS_PER_PARTITION, f_next);
+
     if (f[tid] == tid) {
         /*
          * If we are a cluster owner, atomically claim a position in the
          * output array which we can write to.
          */
         const unsigned int id = atomicAdd(&outi, 1);
-        device::aggregate_cluster(cells_device, modules_device, f, partition,
-                                  tid, measurements_device[groupPos + id]);
+        device::aggregate_cluster(cells_device, modules_device, f_view, start,
+                                  end, tid, measurements_device[groupPos + id]);
     }
 }
 
@@ -278,7 +285,7 @@ clusterization_algorithm::clusterization_algorithm(
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const alt_cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules,
-    const ccl_partition_collection_types::const_view& partitions) const {
+    const partition_collection_types::const_view& partitions) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -287,8 +294,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const alt_cell_collection_types::view::size_type num_cells =
         m_copy.get_size(cells);
     // Number of cell partitions
-    const ccl_partition_collection_types::view::size_type num_partitions =
-        m_copy.get_size(partitions);
+    const partition_collection_types::view::size_type num_partitions =
+        m_copy.get_size(partitions) - 1;
 
     // Create result object for the CCL kernel with size overestimation
     alt_measurement_collection_types::buffer measurements_buffer(num_cells,
@@ -310,25 +317,25 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_stream.synchronize();
 
     // Copy number of measurements to host
-    unsigned int num_measurements_host;
-    CUDA_ERROR_CHECK(cudaMemcpy(&num_measurements_host,
-                                num_measurements_device.get(),
-                                sizeof(unsigned int), cudaMemcpyDeviceToHost));
-    // I doubt this is necessary here
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    vecmem::unique_alloc_ptr<unsigned int> num_measurements_host =
+        vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
+    CUDA_ERROR_CHECK(cudaMemcpyAsync(
+        num_measurements_host.get(), num_measurements_device.get(),
+        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+    m_stream.synchronize();
 
     spacepoint_collection_types::buffer spacepoints_buffer(
-        num_measurements_host, m_mr.main);
+        *num_measurements_host, m_mr.main);
 
     // For the following kernel, we can now use whatever the desired number of
     // threads
     const unsigned int num_threads = partitioning::MAX_CELLS_PER_PARTITION;
     const unsigned int num_blocks =
-        (num_measurements_host + num_threads - 1) / num_threads;
+        (*num_measurements_host + num_threads - 1) / num_threads;
 
     // Turn 2D measurements into 3D spacepoints
     kernels::form_spacepoints<<<num_blocks, num_threads, 0, stream>>>(
-        measurements_buffer, modules, num_measurements_host,
+        measurements_buffer, modules, *num_measurements_host,
         spacepoints_buffer);
 
     CUDA_ERROR_CHECK(cudaGetLastError());

@@ -77,7 +77,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const cell_module_collection_types::host& modules) const {
 
     // Execute the partitioning algorithm (on the host)
-    ccl_partition_collection_types::host partitions =
+    partition_collection_types::host partitions =
         m_partitioning(cells, modules);
 
     // Create device copy of input collections
@@ -87,8 +87,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     cell_module_collection_types::buffer modules_buffer(modules.size(),
                                                         *m_cached_device_mr);
     m_copy(vecmem::get_data(modules), modules_buffer);
-    ccl_partition_collection_types::buffer partitions_buffer(
-        partitions.size(), *m_cached_device_mr);
+    partition_collection_types::buffer partitions_buffer(partitions.size(),
+                                                         *m_cached_device_mr);
     m_copy(vecmem::get_data(partitions), partitions_buffer);
 
     // Synchronize assynchronous copies.

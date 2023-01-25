@@ -15,7 +15,7 @@
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/ccl_partition.hpp"
+#include "traccc/edm/partition.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).

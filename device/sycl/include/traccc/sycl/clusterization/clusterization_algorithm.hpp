@@ -13,9 +13,9 @@
 // Project include(s).
 #include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
-#include "traccc/edm/ccl_partition.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/partition.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -32,7 +32,7 @@ class clusterization_algorithm
     : public algorithm<spacepoint_collection_types::buffer(
           const alt_cell_collection_types::const_view&,
           const cell_module_collection_types::const_view&,
-          const ccl_partition_collection_types::const_view&)> {
+          const partition_collection_types::const_view&)> {
 
     public:
     /// Constructor for clusterization algorithm
@@ -50,7 +50,7 @@ class clusterization_algorithm
     output_type operator()(
         const alt_cell_collection_types::const_view& cells,
         const cell_module_collection_types::const_view& modules,
-        const ccl_partition_collection_types::const_view& partitions)
+        const partition_collection_types::const_view& partitions)
         const override;
 
     private:

@@ -36,7 +36,7 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 inline void form_spacepoints(
-    const unsigned int globalIndex,
+    const std::size_t globalIndex,
     alt_measurement_collection_types::const_view measurements_view,
     cell_module_collection_types::const_view modules_view,
     const unsigned int measurement_count,

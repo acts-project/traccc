@@ -9,7 +9,7 @@
 
 // Library include(s).
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/ccl_partition.hpp"
+#include "traccc/edm/partition.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -24,7 +24,7 @@ namespace traccc {
 /// GPU-friendly way for the clusterization algorithm
 ///
 class partitioning_algorithm
-    : public algorithm<ccl_partition_collection_types::host(
+    : public algorithm<partition_collection_types::host(
           const alt_cell_collection_types::host&,
           const cell_module_collection_types::host&)> {
 
