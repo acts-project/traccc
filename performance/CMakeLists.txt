@@ -1,11 +1,12 @@
-# TRACCC library, part of the ACTS project (R&D line)
+#TRACCC library, part of the ACTS project(R& D line)
 #
-# (c) 2022 CERN for the benefit of the ACTS project
+#(c) 2022 CERN for the benefit of the ACTS project
 #
-# Mozilla Public License Version 2.0
+#Mozilla Public License Version 2.0
 
-# Project include(s).
-include( traccc-compiler-options-cpp )
+#Project include(s).
+include(traccc-compiler-options-cpp)
+
 
 # Set up the build of the traccc::performance library.
 traccc_add_library( traccc_performance performance TYPE SHARED
@@ -52,7 +53,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
 
-   PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core)
+  PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core traccc::io covfie::core)
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)

@@ -31,6 +31,8 @@ traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
 # build.
 traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G" )
 
+# Make CUDA link against binary libraries.
+traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-ldl" )
 
 # More rigorous tests for the Debug builds.
 if( ( "${CUDAToolkit_VERSION}" VERSION_GREATER_EQUAL "10.2" ) AND
