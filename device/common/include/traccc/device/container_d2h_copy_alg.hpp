@@ -40,7 +40,7 @@ class container_d2h_copy_alg
         const typename CONTAINER_TYPES::const_view&)>::output_type;
 
     /// Constructor with the needed resources
-    container_d2h_copy_alg(const memory_resource& mr, vecmem::copy& copy);
+    container_d2h_copy_alg(const memory_resource& mr, vecmem::copy& deviceCopy);
 
     /// Function executing the copy to the host
     virtual output_type operator()(input_type input) const override;
@@ -48,8 +48,10 @@ class container_d2h_copy_alg
     private:
     /// The memory resource(s) to use
     memory_resource m_mr;
-    /// The copy object to use
-    vecmem::copy& m_copy;
+    /// The D->H copy object to use
+    vecmem::copy& m_deviceCopy;
+    /// The H->H copy object to use
+    vecmem::copy m_hostCopy;
 
 };  // class container_d2h_copy_alg
 

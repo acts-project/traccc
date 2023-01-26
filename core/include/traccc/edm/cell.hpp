@@ -70,6 +70,9 @@ struct cell_module {
 
 };  // struct cell_module
 
+/// Declare all cell module collection types
+using cell_module_collection_types = collection_types<cell_module>;
+
 /// Equality operator for cell module
 TRACCC_HOST_DEVICE
 inline bool operator==(const cell_module& lhs, const cell_module& rhs) {

@@ -26,14 +26,6 @@ namespace traccc::cuda {
 namespace details {
 
 /*
- * Structure that defines the start point of a partition and its size.
- */
-struct ccl_partition {
-    std::size_t start;
-    std::size_t size;
-};
-
-/*
  * Convenience structure to work with flattened data arrays instead of
  * an array/vector of cells.
  */
@@ -517,9 +509,9 @@ __device__ void aggregate_clusters(const cell_container& cells,
 }
 
 __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
-    const cell_container container, const ccl_partition* partitions,
+    const cell_container container, const unsigned* partitions,
     measurement_container& _out_ctnr) {
-    const ccl_partition& partition = partitions[blockIdx.x];
+    const unsigned start = partitions[blockIdx.x];
 
     /*
      * Seek the correct cell region in the input data. Again, this is all a
@@ -529,12 +521,12 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
      * module, and we have its size.
      */
     cell_container cells;
-    cells.size = partition.size;
-    cells.channel0 = &container.channel0[partition.start];
-    cells.channel1 = &container.channel1[partition.start];
-    cells.activation = &container.activation[partition.start];
-    cells.time = &container.time[partition.start];
-    cells.module_id = &container.module_id[partition.start];
+    cells.size = partitions[blockIdx.x + 1] - partitions[blockIdx.x];
+    cells.channel0 = &container.channel0[start];
+    cells.channel1 = &container.channel1[start];
+    cells.activation = &container.activation[start];
+    cells.time = &container.time[start];
+    cells.module_id = &container.module_id[start];
 
     assert(cells.size <= MAX_CELLS_PER_PARTITION);
 
@@ -661,11 +653,12 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     aggregate_clusters(cells, out, f);
 }
 
-vecmem::vector<details::ccl_partition> partition(
-    const cell_container_types::host& data, vecmem::memory_resource& mem) {
-    vecmem::vector<details::ccl_partition> partitions(&mem);
+vecmem::vector<unsigned> partition(const cell_container_types::host& data,
+                                   vecmem::memory_resource& mem) {
+    vecmem::vector<unsigned> partitions(&mem);
     std::size_t index = 0;
     std::size_t size = 0;
+    std::size_t elements = 0;
 
     /*
      * Iterate over every cell module in the current data set.
@@ -687,8 +680,7 @@ vecmem::vector<details::ccl_partition> partition(
              * guarantees that each thread handles later at least two cells.
              */
             if (c.channel1 > last_mid + 1 && size >= 2 * THREADS_PER_BLOCK) {
-                partitions.push_back(
-                    details::ccl_partition{.start = index, .size = size});
+                partitions.push_back(index);
 
                 index += size;
                 size = 0;
@@ -696,6 +688,7 @@ vecmem::vector<details::ccl_partition> partition(
 
             last_mid = c.channel1;
             size += 1;
+            elements += 1;
         }
 
         /*
@@ -706,8 +699,7 @@ vecmem::vector<details::ccl_partition> partition(
          * current partition if necessary here.
          */
         if (size >= 2 * THREADS_PER_BLOCK) {
-            partitions.push_back(
-                details::ccl_partition{.start = index, .size = size});
+            partitions.push_back(index);
 
             index += size;
             size = 0;
@@ -719,9 +711,10 @@ vecmem::vector<details::ccl_partition> partition(
      * modules and cells.
      */
     if (size > 0) {
-        partitions.push_back(
-            details::ccl_partition{.start = index, .size = size});
+        partitions.push_back(index);
     }
+
+    partitions.push_back(elements);
 
     return partitions;
 }
@@ -783,8 +776,7 @@ component_connection::output_type component_connection::operator()(
      * consecutive cells. If this distance is above a threshold, we have the
      * guarantee that the two cells belong not to the same cluster.
      */
-    vecmem::vector<details::ccl_partition> partitions =
-        details::partition(data, mem);
+    vecmem::vector<unsigned> partitions = details::partition(data, mem);
 
     /*
      * Reserve space for the result of the algorithm. Currently, there is
@@ -812,7 +804,7 @@ component_connection::output_type component_connection::operator()(
      *
      * This step includes the measurement (hit) creation for each cluster.
      */
-    ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
+    ccl_kernel<<<partitions.size() - 1, THREADS_PER_BLOCK>>>(
         container, partitions.data(), *mctnr);
 
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());

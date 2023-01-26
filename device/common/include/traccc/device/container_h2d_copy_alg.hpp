@@ -8,11 +8,13 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
+
+// System include(s).
+#include <type_traits>
 
 namespace traccc::device {
 
@@ -29,28 +31,38 @@ namespace traccc::device {
 /// @tparam CONTAINER_TYPES One of the "container types" traits
 ///
 template <typename CONTAINER_TYPES>
-class container_h2d_copy_alg
-    : public algorithm<typename CONTAINER_TYPES::buffer(
-          const typename CONTAINER_TYPES::const_view&)> {
+class container_h2d_copy_alg {
 
     public:
     /// Helper type declaration for the input type
     typedef const typename CONTAINER_TYPES::const_view& input_type;
-    /// Help the compiler understand what @c output_type is
-    using output_type = typename algorithm<typename CONTAINER_TYPES::buffer(
-        const typename CONTAINER_TYPES::const_view&)>::output_type;
+    /// Helper type declaration for the output type
+    typedef typename CONTAINER_TYPES::buffer output_type;
 
     /// Constructor with the needed resources
-    container_h2d_copy_alg(const memory_resource& mr, vecmem::copy& copy);
+    container_h2d_copy_alg(const memory_resource& mr, vecmem::copy& deviceCopy);
 
-    /// Function executing the copy to the device
-    virtual output_type operator()(input_type input) const override;
+    /// Function executing a simple copy to the device
+    output_type operator()(input_type input) const;
+    /// Function executing an optimised copy to the device
+    output_type operator()(input_type input,
+                           typename CONTAINER_TYPES::buffer& hostBuffer) const;
 
     private:
+    /// Size type for the handled container's header vector
+    using header_size_type =
+        const typename std::remove_reference<typename std::remove_cv<
+            input_type>::type>::type::header_vector::size_type;
+
+    /// Helper function calculating the size(s) of the input container
+    std::vector<std::size_t> get_sizes(input_type input) const;
+
     /// The memory resource(s) to use
     memory_resource m_mr;
-    /// The copy object to use
-    vecmem::copy& m_copy;
+    /// The H->D copy object to use
+    vecmem::copy& m_deviceCopy;
+    /// The H->H copy object to use
+    vecmem::copy m_hostCopy;
 
 };  // class container_h2d_copy_alg
 
