@@ -814,52 +814,95 @@ __global__ void partition_kernel(const cell_container cells, unsigned* out,
 
     /*
      * Next, we will combine partitions to more evenly spread the load on the
-     * actual CCL kernel. For now, this is done sequentially by the lead
-     * thread.
+     * actual CCL kernel.
+     *
+     * This code works by overriding the existing array of partition indices.
+     * The `old_idx` variable denotes the end of the old array, the `base_idx`
+     * variable denotes the current starting index in the old array, and the
+     * `tmp_idx` variable denotes the index we write partitions to in the new
+     * array. The old and new array are actually the same memory, but the
+     * writing index for the new points will always be behind the reading
+     * indices in the old part, so this is safe!
      */
+    const unsigned old_idx = tmp_idx;
+
+    __syncthreads();
+
+    /*
+     * Note that the first element always remains as it is, so we can simply
+     * start the process from index 1; that means the first element is never
+     * touched.
+     */
+    unsigned base_idx = 1;
+
     if (threadIdx.x == 0) {
+        tmp_idx = 1;
+    }
+
+    __syncthreads();
+
+    /*
+     * Now, try to merge partitions. Note once again that the base index is the
+     * position we look at in the old array. If this reaches the old index, we
+     * have reached the final point in the array and we are done.
+     */
+    while (base_idx < old_idx) {
         /*
-         * The first and last partition must always remain, otherwise the
-         * behaviour of combining partitions across block boundaries becomes
-         * poorly defined: it may lead to partitions being too large.
-         * Therefore, this only works if we have 3 or more partition points (so
-         * we can merge them into two or more).
+         * Retrieve the cell index of the last partition in the new segment
+         * of the array; we will compare against this point to check whether
+         * the size of the partition conforms with the maximum size.
          */
-        if (tmp_idx > 2) {
-            /*
-             * We save the last point, as well as the number of partitions.
-             */
-            const unsigned last = tmp[tmp_idx - 1];
-            const unsigned old_idx = tmp_idx;
+        unsigned base_val = tmp[tmp_idx - 1];
+
+        /*
+         * Each thread might need to check multiple partitions. We check in
+         * blocks starting from the beginning of the array and moving towards
+         * the end of it.
+         */
+        unsigned j = 0;
+        int rem;
+
+        do {
+            unsigned i = base_idx + j * blockDim.x + threadIdx.x;
 
             /*
-             * We start at index one; this is because the first element always
-             * stays in place!
+             * Each thread computes whether the partition it is investigating
+             * lies within the boundaries of the permissible partition size.
+             * A useful consequence of this is that the number of threads that
+             * satisfy this condition is also the delta that we must apply to
+             * the index to find the first partition that does _not_ satify the
+             * requirement. This works because the array is sorted.
+             *
+             * In case all threads report that they are within reach, the split
+             * may be in the next chunk. Thus, we consider a return equal to
+             * the size of the block to mean that we need to try this process
+             * again.
              */
-            tmp_idx = 1;
+            rem = __syncthreads_count(
+                i + 1 < old_idx && tmp[i] < base_val + MAX_CELLS_PER_PARTITION);
 
-            for (unsigned i = 1; i < old_idx - 1; ++i) {
-                /*
-                 * Compute the size of the partition if we include this point.
-                 * If it's too big, we create a merged partition by adding (or,
-                 * rather, overwriting) one of the existing partitions.
-                 */
-                unsigned delta = tmp[i + 1] - tmp[tmp_idx - 1];
+            ++j;
+        } while (rem == blockDim.x);
 
-                if (delta >= MAX_CELLS_PER_PARTITION) {
-                    tmp[tmp_idx++] = tmp[i];
-                }
-            }
+        /*
+         * Compute the new base index.
+         */
+        base_idx += (j - 1) * blockDim.x + rem + 1;
 
-            /*
-             * Finally, we append the last partition of the original array!
-             */
-            tmp[tmp_idx++] = last;
+        /*
+         * The lead thread inserts the partition into the new array.
+         */
+        if (threadIdx.x == 0) {
+            tmp[tmp_idx++] = tmp[base_idx - 1];
         }
 
-        /*
-         * Next, we reserve space in the output array in global memory.
-         */
+        __syncthreads();
+    }
+
+    /*
+     * Next, we reserve space in the output array in global memory.
+     */
+    if (threadIdx.x == 0) {
         if (tmp_idx > 0) {
             out_idx = atomicAdd(idx, tmp_idx);
         }
