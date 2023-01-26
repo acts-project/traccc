@@ -12,10 +12,10 @@ namespace traccc {
 
 namespace plot_helpers {
 
-binning::binning(){};
+binning::binning(){}
 
 binning::binning(std::string b_title, int bins, float b_min, float b_max)
-    : title(b_title), n_bins(bins), min(b_min), max(b_max){};
+    : title(b_title), n_bins(bins), min(b_min), max(b_max){}
 
 TH1F* book_histo(const char* hist_name, const char* hist_title,
                  const binning& var_binning) {
