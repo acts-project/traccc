@@ -5,7 +5,7 @@
 #Mozilla Public License Version 2.0
 
 #Project include(s).
-include(traccc - compiler - options - cpp)
+include(traccc-compiler-options-cpp)
 
 #Set up the build of the traccc::performance library.
     traccc_add_library(
@@ -54,10 +54,12 @@ include(traccc - compiler - options - cpp)
         target_link_libraries(
             traccc_performance
 
-                PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core
-                    traccc::io covfie::core) if (TRACCC_BUILD_CUDA)
-            find_package(CUDAToolkit) if (CUDAToolkit_FOUND) message("ingenile")
+            PUBLIC ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist traccc::core traccc::io covfie::core) 
+	    if (TRACCC_BUILD_CUDA)
+             find_package(CUDAToolkit) 
+	     if (CUDAToolkit_FOUND) 
                 target_link_libraries(traccc_performance PRIVATE CUDA::cudart)
-                    target_compile_definitions(
-                        traccc_performance PRIVATE TRACCC_HAVE_NVTX) endif()
-                        endif()
+                target_compile_definitions(
+                traccc_performance PRIVATE TRACCC_HAVE_NVTX) 
+	     endif()
+            endif()
