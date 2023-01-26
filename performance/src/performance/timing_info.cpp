@@ -21,7 +21,7 @@ std::chrono::nanoseconds timing_info::get_time(
 
     auto it = std::find_if(
         data.begin(), data.end(),
-        [&timer_name](timing_info_pair it) { return it.first == timer_name; });
+        [&timer_name](timing_info_pair iter) { return iter.first == timer_name; });
     if (it == data.end()) {
         throw std::invalid_argument("Unknown component name received");
     }
