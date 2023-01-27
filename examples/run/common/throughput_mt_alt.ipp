@@ -121,7 +121,7 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
                 ? static_cast<vecmem::memory_resource&>(
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
-        algs.push_back({alg_host_mr});
+        algs.push_back({alg_host_mr, throughput_cfg.max_cells_per_partition});
     }
 
     // Seed the random number generator.

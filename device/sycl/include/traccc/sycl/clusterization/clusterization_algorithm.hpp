@@ -40,8 +40,11 @@ class clusterization_algorithm
     /// @param mr is a struct of memory resources (shared or host & device)
     /// @param queue is a wrapper for the for the sycl queue for kernel
     /// invocation
+    /// @param max_cells_per_partition the maximum number of cells in each
+    /// partition
     clusterization_algorithm(const traccc::memory_resource& mr,
-                             queue_wrapper queue);
+                             queue_wrapper queue,
+                             const unsigned short max_cells_per_partition);
 
     /// @param cells        a collection of cells
     /// @param modules      a collection of modules
@@ -54,6 +57,9 @@ class clusterization_algorithm
         const override;
 
     private:
+    /// The maximum number of cells in each partition
+    unsigned short m_max_cells_per_partition;
+
     traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;
     std::unique_ptr<vecmem::copy> m_copy;

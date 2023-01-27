@@ -31,6 +31,12 @@ struct throughput_options {
     std::string detector_file;
     /// The file describing the detector digitization configuration
     std::string digitization_config_file;
+
+    /// The number of cells to put together in each partition.
+    /// Equal to the number of threads in the clusterization kernels.
+    /// Adapt to different GPUs' capabilities.
+    unsigned short max_cells_per_partition;
+
     /// The number of input events to load into memory
     std::size_t loaded_events = 10;
     /// The number of events to process during the job

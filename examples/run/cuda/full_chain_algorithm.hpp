@@ -43,8 +43,12 @@ class full_chain_algorithm
     ///
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
+    /// @param max_cells_per_partition The number of cells to put together in
+    /// each partition. Equal to the number of threads in the clusterization
+    /// kernels. Adapt to different GPUs' capabilities.
     ///
-    full_chain_algorithm(vecmem::memory_resource& host_mr);
+    full_chain_algorithm(vecmem::memory_resource& host_mr,
+                         const unsigned short max_cells_per_partiton);
 
     /// Copy constructor
     ///
@@ -83,6 +87,10 @@ class full_chain_algorithm
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
 
+    /// The number of cells to put together in each partition.
+    /// Equal to the number of threads in the clusterization kernels.
+    /// Adapt to different GPUs' capabilities.
+    unsigned short m_max_cells_per_partition;
     /// Partitioning algorithm
     partitioning_algorithm m_partitioning;
     /// Clusterization algorithm

@@ -12,13 +12,11 @@
 
 namespace traccc {
 
-namespace partitioning {
-// Define number of cells to put together in each partition. Equal to the number
-// of threads per block in the CCL kernel.
-static constexpr std::size_t MAX_CELLS_PER_PARTITION = 1024;
-}  // namespace partitioning
-
-/// Partition used for dividing collections into similarly sized fragments
+/// A partitioning point used for dividing collections into similarly sized
+/// fragments
+/// A partitioning vector should have 0 as the first element and the size of the
+/// collection to be partitioned as the last element, with the partitioning
+/// points in the middle sorted.
 using partition = unsigned int;
 
 /// Declare all partition collection types

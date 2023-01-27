@@ -43,9 +43,12 @@ class clusterization_algorithm
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
+    /// @param max_cells_per_partition the maximum number of cells in each
+    /// partition
     ///
     clusterization_algorithm(const traccc::memory_resource& mr,
-                             vecmem::copy& copy, stream& str);
+                             vecmem::copy& copy, stream& str,
+                             const unsigned short max_cells_per_partition);
 
     /// Callable operator for clusterization algorithm
     ///
@@ -60,6 +63,8 @@ class clusterization_algorithm
         const override;
 
     private:
+    /// The maximum number of cells in each partition
+    unsigned short m_max_cells_per_partition;
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use

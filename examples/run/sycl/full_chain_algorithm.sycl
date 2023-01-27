@@ -40,7 +40,9 @@ struct full_chain_algorithm_data {
 
 }  // namespace details
 
-full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
+full_chain_algorithm::full_chain_algorithm(
+    vecmem::memory_resource& host_mr,
+    const unsigned short max_cells_per_partition)
     : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
       m_host_mr(host_mr),
       m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(
@@ -48,9 +50,10 @@ full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
       m_copy(std::make_unique<vecmem::sycl::copy>(&(m_data->m_queue))),
-      m_partitioning(m_host_mr),
+      m_max_cells_per_partition(max_cells_per_partition),
+      m_partitioning(m_host_mr, m_max_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr},
-                       &(m_data->m_queue)),
+                       &(m_data->m_queue), m_max_cells_per_partition),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr},
                 &(m_data->m_queue)),
       m_track_parameter_estimation(
@@ -72,9 +75,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
       m_copy(std::make_unique<vecmem::sycl::copy>(&(m_data->m_queue))),
-      m_partitioning(m_host_mr),
+      m_max_cells_per_partition(parent.m_max_cells_per_partition),
+      m_partitioning(m_host_mr, m_max_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr},
-                       &(m_data->m_queue)),
+                       &(m_data->m_queue), m_max_cells_per_partition),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr},
                 &(m_data->m_queue)),
       m_track_parameter_estimation(

@@ -121,11 +121,11 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc,
     } while (__syncthreads_or(gf_changed));
 }
 
-__global__
-__launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
+__global__ void ccl_kernel(
     const alt_cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     const partition_collection_types::const_view partitions_view,
+    const unsigned short max_cells_per_partition,
     alt_measurement_collection_types::view measurements_view,
     unsigned int& measurement_count) {
 
@@ -138,7 +138,7 @@ __launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
     // Get partition for this thread group
     const partition start = partitions_device[blockIdx.x];
     const partition end = partitions_device[blockIdx.x + 1];
-    assert(end - start <= partitioning::MAX_CELLS_PER_PARTITION);
+    assert(end - start <= max_cells_per_partition);
 
     // Check if any work needs to be done
     if (tid >= end - start) {
@@ -176,8 +176,9 @@ __launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
      * shared memory is limited. These could always be moved to global memory,
      * but the algorithm would be decidedly slower in that case.
      */
-    __shared__ index_t f[partitioning::MAX_CELLS_PER_PARTITION];
-    __shared__ index_t f_next[partitioning::MAX_CELLS_PER_PARTITION];
+    extern __shared__ index_t shared_v[];
+    index_t* f = &shared_v[0];
+    index_t* f_next = &shared_v[max_cells_per_partition];
 
     /*
      * At the start, the values of f and f_next should be equal to the
@@ -249,10 +250,9 @@ __launch_bounds__(partitioning::MAX_CELLS_PER_PARTITION) void ccl_kernel(
 
     __syncthreads();
 
-    vecmem::data::vector_view<index_t> f_view(
-        partitioning::MAX_CELLS_PER_PARTITION, f);
-    vecmem::data::vector_view<index_t> f_next_view(
-        partitioning::MAX_CELLS_PER_PARTITION, f_next);
+    vecmem::data::vector_view<index_t> f_view(max_cells_per_partition, f);
+    vecmem::data::vector_view<index_t> f_next_view(max_cells_per_partition,
+                                                   f_next);
 
     if (f[tid] == tid) {
         /*
@@ -279,8 +279,12 @@ __global__ void form_spacepoints(
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str)
-    : m_mr(mr), m_copy(copy), m_stream(str) {}
+    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+    const unsigned short max_cells_per_partition)
+    : m_mr(mr),
+      m_copy(copy),
+      m_stream(str),
+      m_max_cells_per_partition(max_cells_per_partition) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const alt_cell_collection_types::const_view& cells,
@@ -308,10 +312,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         cudaMemset(num_measurements_device.get(), 0, sizeof(unsigned int)));
 
     // Launch ccl kernel. Each thread will handle a single cell.
-    kernels::ccl_kernel<<<num_partitions, partitioning::MAX_CELLS_PER_PARTITION,
-                          0, stream>>>(cells, modules, partitions,
-                                       measurements_buffer,
-                                       *num_measurements_device);
+    kernels::
+        ccl_kernel<<<num_partitions, m_max_cells_per_partition,
+                     2 * m_max_cells_per_partition * sizeof(index_t), stream>>>(
+            cells, modules, partitions, m_max_cells_per_partition,
+            measurements_buffer, *num_measurements_device);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
     m_stream.synchronize();
@@ -329,14 +334,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // For the following kernel, we can now use whatever the desired number of
     // threads
-    const unsigned int num_threads = partitioning::MAX_CELLS_PER_PARTITION;
     const unsigned int num_blocks =
-        (*num_measurements_host + num_threads - 1) / num_threads;
+        (*num_measurements_host + m_max_cells_per_partition - 1) /
+        m_max_cells_per_partition;
 
     // Turn 2D measurements into 3D spacepoints
-    kernels::form_spacepoints<<<num_blocks, num_threads, 0, stream>>>(
-        measurements_buffer, modules, *num_measurements_host,
-        spacepoints_buffer);
+    kernels::
+        form_spacepoints<<<num_blocks, m_max_cells_per_partition, 0, stream>>>(
+            measurements_buffer, modules, *num_measurements_host,
+            spacepoints_buffer);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
     m_stream.synchronize();

@@ -25,8 +25,9 @@ bool isFarEnough(const traccc::alt_cell& c1, const traccc::alt_cell& c2) {
 
 namespace traccc {
 
-partitioning_algorithm::partitioning_algorithm(vecmem::memory_resource& mr)
-    : m_mr(mr) {}
+partitioning_algorithm::partitioning_algorithm(
+    vecmem::memory_resource& mr, const unsigned short max_cells_per_partition)
+    : m_mr(mr), m_max_cells_per_partition(max_cells_per_partition) {}
 
 partitioning_algorithm::output_type partitioning_algorithm::operator()(
     const alt_cell_collection_types::host& cells,
@@ -42,18 +43,18 @@ partitioning_algorithm::output_type partitioning_algorithm::operator()(
     // Create result object
     partitioning_algorithm::output_type partitions{0, &(m_mr.get())};
     // Reserve the minimum possible size of the result object
-    partitions.reserve(num_cells / partitioning::MAX_CELLS_PER_PARTITION);
+    partitions.reserve(num_cells / m_max_cells_per_partition);
 
     // The first partition point is the beggining of the vector
     partitions.push_back(0);
 
-    while (num_cells_remaining > partitioning::MAX_CELLS_PER_PARTITION) {
+    while (num_cells_remaining > m_max_cells_per_partition) {
 
         bool broke = false;
         // Check if cell at a distance of max_cells_per_partition from last end
         // point can be used for partitioning. If not, look for nearest possible
         // previous cell.
-        for (unsigned int i = partitioning::MAX_CELLS_PER_PARTITION + last_end;
+        for (unsigned int i = m_max_cells_per_partition + last_end;
              i > last_end; --i) {
             if (isFarEnough(cells[i - 1], cells[i])) {
                 partitions.push_back(i);

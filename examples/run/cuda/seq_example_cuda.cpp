@@ -68,7 +68,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
-    traccc::partitioning_algorithm pa(host_mr);
+    traccc::partitioning_algorithm pa(host_mr,
+                                      common_opts.max_cells_per_partition);
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
@@ -79,7 +80,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::cuda::copy copy;
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
-    traccc::cuda::clusterization_algorithm ca_cuda{mr, async_copy, stream};
+    traccc::cuda::clusterization_algorithm ca_cuda(
+        mr, async_copy, stream, common_opts.max_cells_per_partition);
     traccc::cuda::seeding_algorithm sa_cuda(mr);
     traccc::cuda::track_params_estimation tp_cuda(mr);
 

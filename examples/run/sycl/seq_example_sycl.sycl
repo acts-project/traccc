@@ -95,7 +95,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::sycl::device_memory_resource device_mr{&q};
     traccc::memory_resource mr{device_mr, &host_mr};
 
-    traccc::partitioning_algorithm pa(host_mr);
+    traccc::partitioning_algorithm pa(host_mr,
+                                      common_opts.max_cells_per_partition);
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
@@ -103,7 +104,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     vecmem::sycl::copy copy{&q};
 
-    traccc::sycl::clusterization_algorithm ca_sycl(mr, &q);
+    traccc::sycl::clusterization_algorithm ca_sycl(
+        mr, &q, common_opts.max_cells_per_partition);
     traccc::sycl::seeding_algorithm sa_sycl(mr, &q);
     traccc::sycl::track_params_estimation tp_sycl(mr, &q);
 

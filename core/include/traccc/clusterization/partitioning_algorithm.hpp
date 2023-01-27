@@ -32,8 +32,11 @@ class partitioning_algorithm
     /// Partitioning algorithm constructor
     ///
     /// @param mr The memory resource to use for the result objects
+    /// @param max_cells_per_partition The number of cells to put together in
+    /// each partition
     ///
-    partitioning_algorithm(vecmem::memory_resource& mr);
+    partitioning_algorithm(vecmem::memory_resource& mr,
+                           const unsigned short max_cells_per_partition);
 
     /// Construct partitions for the cells
     ///
@@ -46,6 +49,8 @@ class partitioning_algorithm
         const cell_module_collection_types::host& modules) const override;
 
     private:
+    /// The number of cells to put together in each partition
+    unsigned short m_max_cells_per_partition;
     /// Reference to the host-accessible memory resource
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 

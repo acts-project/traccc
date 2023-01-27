@@ -27,16 +27,19 @@
 
 namespace traccc::cuda {
 
-full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
+full_chain_algorithm::full_chain_algorithm(
+    vecmem::memory_resource& host_mr,
+    const unsigned short max_cells_per_partition)
     : m_host_mr(host_mr),
       m_stream(),
       m_device_mr(),
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
-      m_partitioning(m_host_mr),
+      m_max_cells_per_partition(max_cells_per_partition),
+      m_partitioning(m_host_mr, m_max_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       m_stream),
+                       m_stream, m_max_cells_per_partition),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}) {
@@ -58,9 +61,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
-      m_partitioning(m_host_mr),
+      m_max_cells_per_partition(parent.m_max_cells_per_partition),
+      m_partitioning(m_host_mr, m_max_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       m_stream),
+                       m_stream, m_max_cells_per_partition),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}) {}
