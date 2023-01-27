@@ -10,7 +10,7 @@
 // traccc include(s).
 #include "traccc/edm/container.hpp"
 
-namespace traccc {
+namespace traccc::device {
 
 /// A partitioning point used for dividing collections into similarly sized
 /// fragments
@@ -22,4 +22,4 @@ using partition = unsigned int;
 /// Declare all partition collection types
 using partition_collection_types = collection_types<partition>;
 
-}  // namespace traccc
+}  // namespace traccc::device

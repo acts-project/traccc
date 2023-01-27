@@ -131,7 +131,7 @@ class ccl_kernel {
     ccl_kernel(
         const alt_cell_collection_types::const_view cells,
         const cell_module_collection_types::const_view modules,
-        const partition_collection_types::const_view partitions,
+        const device::partition_collection_types::const_view partitions,
         const unsigned short max_cells_per_partition,
         alt_measurement_collection_types::view measurements,
         unsigned int* num_measurements,
@@ -158,13 +158,15 @@ class ccl_kernel {
 
         const index_t tid = item.get_local_linear_id();
 
-        const partition_collection_types::const_device partitions_device(
-            partitions_view);
+        const device::partition_collection_types::const_device
+            partitions_device(partitions_view);
         assert(item.get_group_linear_id() < partitions_device.size());
 
         // Get partition for this thread group
-        const partition start = partitions_device[item.get_group_linear_id()];
-        const partition end = partitions_device[item.get_group_linear_id() + 1];
+        const device::partition start =
+            partitions_device[item.get_group_linear_id()];
+        const device::partition end =
+            partitions_device[item.get_group_linear_id() + 1];
         assert(end - start <= m_max_cells_per_partition);
         const unsigned short partition_size = end - start;
 
@@ -304,7 +306,7 @@ class ccl_kernel {
     const alt_cell_collection_types::const_view cells_view;
     const cell_module_collection_types::const_view modules_view;
     const unsigned short m_max_cells_per_partition;
-    const partition_collection_types::const_view partitions_view;
+    const device::partition_collection_types::const_view partitions_view;
     alt_measurement_collection_types::view measurements_view;
     unsigned int* m_measurement_count;
     ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
@@ -338,13 +340,13 @@ clusterization_algorithm::clusterization_algorithm(
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const alt_cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules,
-    const partition_collection_types::const_view& partitions) const {
+    const device::partition_collection_types::const_view& partitions) const {
 
     // Number of cells
     const alt_cell_collection_types::view::size_type num_cells =
         m_copy->get_size(cells);
     // Number of cell partitions
-    const partition_collection_types::view::size_type num_partitions =
+    const device::partition_collection_types::view::size_type num_partitions =
         m_copy->get_size(partitions) - 1;
 
     // Create result object for the CCL kernel with size overestimation

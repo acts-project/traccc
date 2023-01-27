@@ -124,20 +124,20 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc,
 __global__ void ccl_kernel(
     const alt_cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
-    const partition_collection_types::const_view partitions_view,
+    const device::partition_collection_types::const_view partitions_view,
     const unsigned short max_cells_per_partition,
     alt_measurement_collection_types::view measurements_view,
     unsigned int& measurement_count) {
 
     const index_t tid = threadIdx.x;
 
-    const partition_collection_types::const_device partitions_device(
+    const device::partition_collection_types::const_device partitions_device(
         partitions_view);
     assert(blockIdx.x < partitions_device.size());
 
     // Get partition for this thread group
-    const partition start = partitions_device[blockIdx.x];
-    const partition end = partitions_device[blockIdx.x + 1];
+    const device::partition start = partitions_device[blockIdx.x];
+    const device::partition end = partitions_device[blockIdx.x + 1];
     assert(end - start <= max_cells_per_partition);
 
     // Check if any work needs to be done
@@ -289,7 +289,7 @@ clusterization_algorithm::clusterization_algorithm(
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const alt_cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules,
-    const partition_collection_types::const_view& partitions) const {
+    const device::partition_collection_types::const_view& partitions) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -298,7 +298,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const alt_cell_collection_types::view::size_type num_cells =
         m_copy.get_size(cells);
     // Number of cell partitions
-    const partition_collection_types::view::size_type num_partitions =
+    const device::partition_collection_types::view::size_type num_partitions =
         m_copy.get_size(partitions) - 1;
 
     // Create result object for the CCL kernel with size overestimation

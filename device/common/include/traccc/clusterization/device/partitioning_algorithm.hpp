@@ -9,13 +9,13 @@
 
 // Library include(s).
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/partition.hpp"
+#include "traccc/edm/device/partition.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-namespace traccc {
+namespace traccc::device {
 
 /// Partitioning algorithm, dividing cells
 ///
@@ -25,8 +25,7 @@ namespace traccc {
 ///
 class partitioning_algorithm
     : public algorithm<partition_collection_types::host(
-          const alt_cell_collection_types::host&,
-          const cell_module_collection_types::host&)> {
+          const alt_cell_collection_types::host&)> {
 
     public:
     /// Partitioning algorithm constructor
@@ -41,12 +40,10 @@ class partitioning_algorithm
     /// Construct partitions for the cells
     ///
     /// @param cells A collection of all the cells in a event
-    /// @param modules The modules the cells belong to
     /// @return Similarly sized partitions for the given cells
     ///
     output_type operator()(
-        const alt_cell_collection_types::host& cells,
-        const cell_module_collection_types::host& modules) const override;
+        const alt_cell_collection_types::host& cells) const override;
 
     private:
     /// The number of cells to put together in each partition
@@ -56,4 +53,4 @@ class partitioning_algorithm
 
 };  // class clusterization_algorithm
 
-}  // namespace traccc
+}  // namespace traccc::device

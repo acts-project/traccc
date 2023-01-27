@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/partitioning_algorithm.hpp"
+#include "traccc/clusterization/device/partitioning_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
@@ -68,8 +68,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
-    traccc::partitioning_algorithm pa(host_mr,
-                                      common_opts.max_cells_per_partition);
+    traccc::device::partitioning_algorithm pa(
+        host_mr, common_opts.max_cells_per_partition);
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
@@ -102,7 +102,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // Instantiate host containers/collections
         traccc::cell_container_types::host cells_per_event;
         traccc::alt_cell_reader_output_t alt_read_out_per_event;
-        traccc::partition_collection_types::host partitions_per_event;
+        traccc::device::partition_collection_types::host partitions_per_event;
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
@@ -148,8 +148,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("Partitioning  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                partitions_per_event =
-                    pa(alt_cells_per_event, modules_per_event);
+                partitions_per_event = pa(alt_cells_per_event);
             }  // stop measuring partitioning timer
 
             /*-----------------------------
@@ -162,8 +161,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
             copy(vecmem::get_data(modules_per_event), modules_buffer);
-            traccc::partition_collection_types::buffer partitions_buffer(
-                partitions_per_event.size(), mr.main);
+            traccc::device::partition_collection_types::buffer
+                partitions_buffer(partitions_per_event.size(), mr.main);
             copy(vecmem::get_data(partitions_per_event), partitions_buffer);
 
             {

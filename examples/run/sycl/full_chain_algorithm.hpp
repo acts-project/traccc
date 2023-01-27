@@ -8,9 +8,9 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/clusterization/partitioning_algorithm.hpp"
+#include "traccc/clusterization/device/partitioning_algorithm.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/partition.hpp"
+#include "traccc/edm/device/partition.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
@@ -94,7 +94,7 @@ class full_chain_algorithm
     /// Adapt to different GPUs' capabilities.
     unsigned short m_max_cells_per_partition;
     /// Partitioning algorithm
-    partitioning_algorithm m_partitioning;
+    device::partitioning_algorithm m_partitioning;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Seeding algorithm

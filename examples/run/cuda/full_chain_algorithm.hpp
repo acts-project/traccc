@@ -8,14 +8,14 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/clusterization/partitioning_algorithm.hpp"
+#include "traccc/clusterization/device/partitioning_algorithm.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/partition.hpp"
+#include "traccc/edm/device/partition.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -92,7 +92,7 @@ class full_chain_algorithm
     /// Adapt to different GPUs' capabilities.
     unsigned short m_max_cells_per_partition;
     /// Partitioning algorithm
-    partitioning_algorithm m_partitioning;
+    device::partitioning_algorithm m_partitioning;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Seeding algorithm

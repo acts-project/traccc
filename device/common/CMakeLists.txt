@@ -22,7 +22,10 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    # EDM class(es).
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
+   "include/traccc/edm/device/partition.hpp"
    # Clusterization function(s).
+   "include/traccc/clusterization/device/partitioning_algorithm.hpp"
+   "src/clusterization/partitioning_algorithm.cpp"
    "include/traccc/clusterization/device/form_spacepoints.hpp"
    "include/traccc/clusterization/device/impl/form_spacepoints.ipp"
    "include/traccc/clusterization/device/reduce_problem_cell.hpp"

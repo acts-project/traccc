@@ -26,7 +26,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/seed.hpp"
   "include/traccc/edm/alt_seed.hpp"
   "include/traccc/edm/cell.hpp"
-  "include/traccc/edm/partition.hpp"
   "include/traccc/edm/track_candidate.hpp"
   "include/traccc/edm/track_state.hpp"
   "include/traccc/edm/alt_cell.hpp"
@@ -51,8 +50,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/spacepoint_formation.cpp"
   "include/traccc/clusterization/measurement_creation.hpp"
   "src/clusterization/measurement_creation.cpp"
-  "include/traccc/clusterization/partitioning_algorithm.hpp"
-  "src/clusterization/partitioning_algorithm.cpp"
   # Fitting algorithmic code
   "include/traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"

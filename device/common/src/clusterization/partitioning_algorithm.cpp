@@ -6,7 +6,7 @@
  */
 
 // Library include(s).
-#include "traccc/clusterization/partitioning_algorithm.hpp"
+#include "traccc/clusterization/device/partitioning_algorithm.hpp"
 
 // System include(s).
 #include <stdexcept>
@@ -23,15 +23,14 @@ bool isFarEnough(const traccc::alt_cell& c1, const traccc::alt_cell& c2) {
 }
 }  // namespace
 
-namespace traccc {
+namespace traccc::device {
 
 partitioning_algorithm::partitioning_algorithm(
     vecmem::memory_resource& mr, const unsigned short max_cells_per_partition)
-    : m_mr(mr), m_max_cells_per_partition(max_cells_per_partition) {}
+    : m_max_cells_per_partition(max_cells_per_partition), m_mr(mr) {}
 
 partitioning_algorithm::output_type partitioning_algorithm::operator()(
-    const alt_cell_collection_types::host& cells,
-    const cell_module_collection_types::host& modules) const {
+    const alt_cell_collection_types::host& cells) const {
 
     // Total number of cells
     const unsigned int num_cells = cells.size();
@@ -78,4 +77,4 @@ partitioning_algorithm::output_type partitioning_algorithm::operator()(
     return partitions;
 }
 
-}  // namespace traccc
+}  // namespace traccc::device

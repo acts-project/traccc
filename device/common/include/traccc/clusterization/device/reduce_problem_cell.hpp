@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/partition.hpp"
+#include "traccc/edm/device/partition.hpp"
 
 // System include(s).
 #include <cstddef>
