@@ -11,7 +11,7 @@
 #include "traccc/efficiency/duplication_plot_tool.hpp"
 #include "traccc/efficiency/eff_plot_tool.hpp"
 #include "traccc/efficiency/track_classification.hpp"
-#include "traccc/event/event_map.hpp"
+#include "traccc/io/event_map.hpp"
 #include "traccc/io/mapper.hpp"
 
 // ROOT

@@ -8,6 +8,8 @@
 // Project include(s).
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_particles.hpp"
@@ -69,6 +71,55 @@ TEST_F(io, csv_read_two_modules) {
     ASSERT_EQ(second_module_cells.at(7).channel1, 98u);
 
     ASSERT_EQ(second_module.module, 1u);
+}
+
+// This defines the local frame test suite
+TEST_F(io, csv_read_cells_alt) {
+
+    // Set event configuration
+    const std::size_t event = 0;
+    const std::string cells_directory = "tml_full/ttbar_mu200/";
+
+    // Memory resource used by the EDM.
+    vecmem::host_memory_resource host_mr;
+
+    // Read the surface transforms
+    auto surface_transforms =
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
+
+    // Read the digitization configuration file
+    auto digi_cfg = traccc::io::read_digitization_config(
+        "tml_detector/default-geometric-config-generic.json");
+
+    // Read csv file to cell item + module header container
+    traccc::cell_container_types::host cells_csv =
+        traccc::io::read_cells(event, cells_directory, traccc::data_format::csv,
+                               &surface_transforms, &digi_cfg, &host_mr);
+
+    // Read csv file to collection of cells + collection of modules
+    traccc::alt_cell_reader_output_t alt_cells_modules_csv =
+        traccc::io::read_cells_alt(event, cells_directory,
+                                   traccc::data_format::csv,
+                                   &surface_transforms, &digi_cfg, &host_mr);
+
+    const traccc::alt_cell_collection_types::host& alt_cells_csv =
+        alt_cells_modules_csv.cells;
+    const traccc::cell_module_collection_types::host& alt_modules_csv =
+        alt_cells_modules_csv.modules;
+
+    std::size_t k = 0;
+    for (std::size_t i = 0; i < cells_csv.size(); i++) {
+        const traccc::cell_module& cm = cells_csv.get_headers()[i];
+        for (std::size_t j = 0; j < cells_csv.get_items()[i].size(); ++j) {
+            const traccc::cell& c = cells_csv.get_items()[i][j];
+            if (k < alt_cells_csv.size()) {
+                EXPECT_EQ(cm, alt_modules_csv.at(alt_cells_csv[k].module_link));
+                EXPECT_EQ(c, alt_cells_csv[k].c);
+            }
+            k++;
+        }
+    }
+    EXPECT_EQ(k, alt_cells_csv.size());
 }
 
 // This reads in the tml pixel barrel first event

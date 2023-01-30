@@ -75,16 +75,26 @@ full_chain_algorithm::~full_chain_algorithm() {
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const cell_container_types::host& cells) const {
 
-    // Execute the algorithms.
+    // Copy the cells to the device (asynchronously).
+    cell_container_types::buffer hostCellBuffer;
+    cell_container_types::buffer deviceCellBuffer =
+        m_host2device(get_data(cells), hostCellBuffer);
+
+    // Run the clusterization (asynchronously).
     const clusterization_algorithm::output_type spacepoints =
-        m_clusterization(m_host2device(get_data(cells)));
+        m_clusterization(deviceCellBuffer);
+
+    // Wait for the asynchronous operations to finish, before running the
+    // synchronous algorithm(s).
     m_stream.synchronize();
+
+    // Run the rest of the algorithms (synchronously).
     const track_params_estimation::output_type track_params =
         m_track_parameter_estimation(spacepoints, m_seeding(spacepoints));
 
     // Get the final data back to the host.
     bound_track_parameters_collection_types::host result;
-    m_copy(track_params, result);
+    m_copy(track_params, result)->wait();
 
     // Return the host container.
     return result;
