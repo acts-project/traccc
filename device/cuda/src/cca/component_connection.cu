@@ -14,6 +14,7 @@
 #include "vecmem/containers/vector.hpp"
 #include "vecmem/memory/allocator.hpp"
 #include "vecmem/memory/binary_page_memory_resource.hpp"
+#include "vecmem/memory/cuda/device_memory_resource.hpp"
 #include "vecmem/memory/cuda/managed_memory_resource.hpp"
 
 namespace {
@@ -653,12 +654,15 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     aggregate_clusters(cells, out, f);
 }
 
-vecmem::vector<unsigned> partition(const cell_container_types::host& data,
-                                   vecmem::memory_resource& mem) {
-    vecmem::vector<unsigned> partitions(&mem);
+std::tuple<vecmem::unique_alloc_ptr<unsigned[]>, std::size_t> partition_cpu(
+    const cell_container_types::host& data, vecmem::memory_resource& mem,
+    const details::cell_container cells) {
+    vecmem::unique_alloc_ptr<unsigned[]> partitions =
+        vecmem::make_unique_alloc<unsigned[]>(mem, cells.size);
     std::size_t index = 0;
     std::size_t size = 0;
     std::size_t elements = 0;
+    std::size_t pidx = 0;
 
     /*
      * Iterate over every cell module in the current data set.
@@ -680,7 +684,7 @@ vecmem::vector<unsigned> partition(const cell_container_types::host& data,
              * guarantees that each thread handles later at least two cells.
              */
             if (c.channel1 > last_mid + 1 && size >= 2 * THREADS_PER_BLOCK) {
-                partitions.push_back(index);
+                partitions[pidx++] = index;
 
                 index += size;
                 size = 0;
@@ -699,7 +703,7 @@ vecmem::vector<unsigned> partition(const cell_container_types::host& data,
          * current partition if necessary here.
          */
         if (size >= 2 * THREADS_PER_BLOCK) {
-            partitions.push_back(index);
+            partitions[pidx++] = index;
 
             index += size;
             size = 0;
@@ -711,18 +715,324 @@ vecmem::vector<unsigned> partition(const cell_container_types::host& data,
      * modules and cells.
      */
     if (size > 0) {
-        partitions.push_back(index);
+        partitions[pidx++] = index;
     }
 
-    partitions.push_back(elements);
+    partitions[pidx++] = elements;
 
-    return partitions;
+    return {std::move(partitions), pidx};
+}
+
+__global__ void partition_kernel(const cell_container cells, unsigned* out,
+                                 unsigned long long int* idx, unsigned slots) {
+    /*
+     * We will use shared memory as intermediate storage for our partitions.
+     * All of this is mostly setup.
+     */
+    extern __shared__ unsigned tmp[];
+    __shared__ unsigned tmp_idx;
+    __shared__ unsigned out_idx;
+
+    if (threadIdx.x == 0) {
+        tmp_idx = 0;
+    }
+
+    __syncthreads();
+
+    /*
+     * In the first segment of the kernel, we will identify all cells for which
+     * the next cell skips a row, or is on a different module. This marks a
+     * valid partition point, even if this leads to an extremely fine
+     * partition.
+     */
+    for (unsigned cid = blockIdx.x * slots + threadIdx.x;
+         cid < (blockIdx.x + 1) * slots; cid += blockDim.x) {
+        if (cid == 0 || cid == cells.size) {
+            /*
+             * We always need a partition that starts at the beginning, and a
+             * trailing partition at the end. This clause ensures that.
+             */
+            tmp[atomicAdd(&tmp_idx, 1u)] = cid;
+        } else if (cid + 1 < cells.size &&
+                   (cells.channel1[cid + 1] > cells.channel1[cid] + 1 ||
+                    cells.module_id[cid + 1] != cells.module_id[cid])) {
+            /*
+             * In this case, we have found an intermediate partition point: a
+             * switch to a new module, or the next hit is more than a full row
+             * away!
+             */
+            tmp[atomicAdd(&tmp_idx, 1u)] = cid + 1;
+        }
+    }
+
+    __syncthreads();
+
+    /*
+     * We proceed with the next segment. The first segment finds partition
+     * points, but the GPU does not guarantee that warps execute in order, so
+     * the partitions may be scrambled. This implementation of odd-even sort
+     * quickly sorts them.
+     */
+    bool sorted;
+
+    do {
+        sorted = true;
+
+        /*
+         * Odd component.
+         */
+        for (uint32_t j = 2 * threadIdx.x + 1; j + 1 < tmp_idx;
+             j += 2 * blockDim.x) {
+
+            if (tmp[j] > tmp[j + 1]) {
+                unsigned k = tmp[j];
+                tmp[j] = tmp[j + 1];
+                tmp[j + 1] = k;
+                sorted = false;
+            }
+        }
+
+        __syncthreads();
+
+        /*
+         * Even component.
+         */
+        for (uint32_t j = 2 * threadIdx.x; j + 1 < tmp_idx;
+             j += 2 * blockDim.x) {
+            if (tmp[j] > tmp[j + 1]) {
+                unsigned k = tmp[j];
+                tmp[j] = tmp[j + 1];
+                tmp[j + 1] = k;
+                sorted = false;
+            }
+        }
+
+        /*
+         * We keep running until no thread reports that the array is unsorted!
+         */
+    } while (__syncthreads_or(!sorted));
+
+    /*
+     * Next, we will combine partitions to more evenly spread the load on the
+     * actual CCL kernel.
+     *
+     * This code works by overriding the existing array of partition indices.
+     * The `old_idx` variable denotes the end of the old array, the `base_idx`
+     * variable denotes the current starting index in the old array, and the
+     * `tmp_idx` variable denotes the index we write partitions to in the new
+     * array. The old and new array are actually the same memory, but the
+     * writing index for the new points will always be behind the reading
+     * indices in the old part, so this is safe!
+     */
+    const unsigned old_idx = tmp_idx;
+
+    __syncthreads();
+
+    /*
+     * Note that the first element always remains as it is, so we can simply
+     * start the process from index 1; that means the first element is never
+     * touched.
+     */
+    unsigned base_idx = 1;
+
+    if (threadIdx.x == 0) {
+        tmp_idx = 1;
+    }
+
+    __syncthreads();
+
+    /*
+     * Now, try to merge partitions. Note once again that the base index is the
+     * position we look at in the old array. If this reaches the old index, we
+     * have reached the final point in the array and we are done.
+     */
+    while (base_idx < old_idx) {
+        /*
+         * Retrieve the cell index of the last partition in the new segment
+         * of the array; we will compare against this point to check whether
+         * the size of the partition conforms with the maximum size.
+         */
+        unsigned base_val = tmp[tmp_idx - 1];
+
+        /*
+         * Each thread might need to check multiple partitions. We check in
+         * blocks starting from the beginning of the array and moving towards
+         * the end of it.
+         */
+        unsigned j = 0;
+        int rem;
+
+        do {
+            unsigned i = base_idx + j * blockDim.x + threadIdx.x;
+
+            /*
+             * Each thread computes whether the partition it is investigating
+             * lies within the boundaries of the permissible partition size.
+             * A useful consequence of this is that the number of threads that
+             * satisfy this condition is also the delta that we must apply to
+             * the index to find the first partition that does _not_ satify the
+             * requirement. This works because the array is sorted.
+             *
+             * In case all threads report that they are within reach, the split
+             * may be in the next chunk. Thus, we consider a return equal to
+             * the size of the block to mean that we need to try this process
+             * again.
+             */
+            rem = __syncthreads_count(
+                i + 1 < old_idx && tmp[i] < base_val + MAX_CELLS_PER_PARTITION);
+
+            ++j;
+        } while (rem == blockDim.x);
+
+        /*
+         * Compute the new base index.
+         */
+        base_idx += (j - 1) * blockDim.x + rem + 1;
+
+        /*
+         * The lead thread inserts the partition into the new array.
+         */
+        if (threadIdx.x == 0) {
+            tmp[tmp_idx++] = tmp[base_idx - 1];
+        }
+
+        __syncthreads();
+    }
+
+    /*
+     * Next, we reserve space in the output array in global memory.
+     */
+    if (threadIdx.x == 0) {
+        if (tmp_idx > 0) {
+            out_idx = atomicAdd(idx, tmp_idx);
+        }
+    }
+
+    __syncthreads();
+
+    /*
+     * The remaining threads now wake up, and all threads proceed to write the
+     * array of partitions from shared memory to global memory in a coalesced
+     * fashion.
+     */
+    for (unsigned i = threadIdx.x; i < tmp_idx; i += blockDim.x) {
+        out[out_idx + i] = tmp[i];
+    }
+}
+
+__global__ void partition_sorting_kernel(unsigned* out,
+                                         const unsigned long long int* count) {
+    /*
+     * This should only EVER be launched with a single block!
+     */
+    assert(gridDim.x == 1);
+
+    /*
+     * Another implementation of odd-even sorting. But can I say, despite its
+     * O(n^2) worst case performance it's perfect for sorting small arrays on
+     * parallel shared memory machines!
+     */
+    bool sorted;
+
+    do {
+        sorted = true;
+
+        for (uint32_t j = 2 * threadIdx.x + 1; j + 1 < *count;
+             j += 2 * blockDim.x) {
+
+            if (out[j] > out[j + 1]) {
+                unsigned k = out[j];
+                out[j] = out[j + 1];
+                out[j + 1] = k;
+                sorted = false;
+            }
+        }
+
+        __syncthreads();
+
+        for (uint32_t j = 2 * threadIdx.x; j + 1 < *count;
+             j += 2 * blockDim.x) {
+            if (out[j] > out[j + 1]) {
+                unsigned k = out[j];
+                out[j] = out[j + 1];
+                out[j + 1] = k;
+                sorted = false;
+            }
+        }
+    } while (__syncthreads_or(!sorted));
+}
+
+std::tuple<vecmem::unique_alloc_ptr<unsigned[]>, std::size_t> partition_gpu(
+    const cell_container_types::host& data, vecmem::memory_resource& mem,
+    const details::cell_container cells) {
+    /*
+     * First, we allocate memory for our partitions, as well as memory for
+     * an integer in which to store the partition counts.
+     */
+    vecmem::unique_alloc_ptr<unsigned[]> partitions =
+        vecmem::make_unique_alloc<unsigned[]>(mem, cells.size + 1);
+    vecmem::unique_alloc_ptr<unsigned long long int> pidx =
+        vecmem::make_unique_alloc<unsigned long long int>(mem);
+
+    /*
+     * The partition counter must be set to zero.
+     */
+    CUDA_ERROR_CHECK(cudaMemset(pidx.get(), 0, sizeof(unsigned long long int)));
+
+    /*
+     * The partitioning kernel merges partitions within the same thread block.
+     * This works better, in principle, if there are more partitions to
+     * examine, because it reduces fragmentation of partitions. This means that
+     * it is sometimes desirable to process more than one cell per thread. This
+     * slots variable determines the number of cells that is examined per
+     * block.
+     */
+    const unsigned slots = 512;
+
+    /*
+     * Launch the actual partitioning kernel and wait for it to finish.
+     */
+    const int grid_size =
+        std::max(1ul, cells.size / slots + (cells.size % slots == 0 ? 0 : 1));
+    const int blck_size = 256;
+    const int smem_size = slots * sizeof(unsigned);
+
+    partition_kernel<<<grid_size, blck_size, smem_size>>>(
+        cells, partitions.get(), pidx.get(), slots);
+
+    CUDA_ERROR_CHECK(cudaPeekAtLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
+    /*
+     * Next, we need to make sure that the partitions are sorted. Because there
+     * are usually very few partitions (less than 1000) we can do this fairly
+     * efficiently with a single block running odd-even sort.
+     */
+    partition_sorting_kernel<<<1, 1024>>>(partitions.get(), pidx.get());
+
+    CUDA_ERROR_CHECK(cudaPeekAtLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
+    /*
+     * Finally, we copy the number of partitions back to the host.
+     *
+     * TODO: Replace this with dynamic parallelism to obviate the need for the
+     * copy back to the host.
+     */
+    unsigned long long int hpidx;
+
+    CUDA_ERROR_CHECK(cudaMemcpy(&hpidx, pidx.get(),
+                                sizeof(unsigned long long int),
+                                cudaMemcpyDeviceToHost));
+
+    return {std::move(partitions), hpidx};
 }
 }  // namespace details
 
 component_connection::output_type component_connection::operator()(
     const cell_container_types::host& data) const {
     vecmem::cuda::managed_memory_resource upstream;
+    vecmem::cuda::device_memory_resource dmem;
     vecmem::binary_page_memory_resource mem(upstream);
 
     std::size_t total_cells = 0;
@@ -775,8 +1085,11 @@ component_connection::output_type component_connection::operator()(
      * of partitions based on the distance of the y-value between two
      * consecutive cells. If this distance is above a threshold, we have the
      * guarantee that the two cells belong not to the same cluster.
+     *
+     * Runs on the GPU, but a CPU implementation is also available!
      */
-    vecmem::vector<unsigned> partitions = details::partition(data, mem);
+    std::tuple<vecmem::unique_alloc_ptr<unsigned[]>, std::size_t> partitions =
+        details::partition_gpu(data, dmem, container);
 
     /*
      * Reserve space for the result of the algorithm. Currently, there is
@@ -804,10 +1117,13 @@ component_connection::output_type component_connection::operator()(
      *
      * This step includes the measurement (hit) creation for each cluster.
      */
-    ccl_kernel<<<partitions.size() - 1, THREADS_PER_BLOCK>>>(
-        container, partitions.data(), *mctnr);
+    if (std::get<1>(partitions) > 1) {
+        ccl_kernel<<<std::get<1>(partitions) - 1, THREADS_PER_BLOCK>>>(
+            container, std::get<0>(partitions).get(), *mctnr);
 
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+        CUDA_ERROR_CHECK(cudaPeekAtLastError());
+        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    }
 
     /*
      * Copy back the data from our flattened data structure into the traccc EDM.
