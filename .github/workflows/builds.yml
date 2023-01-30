@@ -28,6 +28,8 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2004_oneapi:v30
           - name: KOKKOS
             container: ghcr.io/acts-project/ubuntu2004:v30
+          - name: ALPAKA
+            container: ghcr.io/acts-project/ubuntu2204:v33
         build:
           - Release
           - Debug
