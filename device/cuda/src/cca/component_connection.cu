@@ -963,7 +963,7 @@ __global__ void partition_sorting_kernel(unsigned* out,
 }
 
 std::tuple<vecmem::unique_alloc_ptr<unsigned[]>, std::size_t> partition_gpu(
-    const cell_container_types::host& data, vecmem::memory_resource& mem,
+    const cell_container_types::host&, vecmem::memory_resource& mem,
     const details::cell_container cells) {
     /*
      * First, we allocate memory for our partitions, as well as memory for
