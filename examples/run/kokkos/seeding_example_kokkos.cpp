@@ -133,16 +133,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                     common_opts.input_data_format, &host_mr);
             }  // stop measuring hit reading timer
 
-            std::cout << "here " << __LINE__ << std::endl;
-
             {  // Spacepoin binning for kokkos
                 traccc::performance::timer t("Spacepoint binning (kokkos)",
                                              elapsedTimes);
                 m_spacepoint_binning(
                     vecmem::get_data(alt_spacepoints_per_event));
             }
-
-            std::cout << "here " << __LINE__ << std::endl;
 
             /*----------------------------
                 Seeding algorithm

@@ -25,10 +25,6 @@ struct alt_measurement {
     point2 local{0., 0.};
     /// Variance on the 2D coordinates of the measurement
     variance2 variance{0., 0.};
-    // TODO: We should consider removing the cluster link, as it is only used in
-    // a CI test.
-    /// Cluster link
-    std::size_t cluster_link = std::numeric_limits<std::size_t>::infinity();
 
     using link_type = cell_module_collection_types::view::size_type;
     link_type module_link;

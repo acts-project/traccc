@@ -94,9 +94,6 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         partitions.size(), *m_cached_device_mr);
     m_copy(vecmem::get_data(partitions), partitions_buffer);
 
-    // Synchronize assynchronous copies.
-    m_stream.synchronize();
-
     // Run the clusterization (asynchronously).
     const clusterization_algorithm::output_type spacepoints =
         m_clusterization(cells_buffer, modules_buffer, partitions_buffer);

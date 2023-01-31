@@ -16,10 +16,8 @@ namespace {
 // to different modules in order to be partitioned. This assumes sorting by
 // channel1 already done
 bool isFarEnough(const traccc::alt_cell& c1, const traccc::alt_cell& c2) {
-    if (c1.module_link != c2.module_link || c1.c.channel1 + 1 < c2.c.channel1) {
-        return true;
-    }
-    return false;
+    return (c1.module_link != c2.module_link ||
+            c1.c.channel1 + 1 < c2.c.channel1);
 }
 }  // namespace
 

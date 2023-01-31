@@ -251,8 +251,6 @@ __global__ void ccl_kernel(
     __syncthreads();
 
     vecmem::data::vector_view<index_t> f_view(max_cells_per_partition, f);
-    vecmem::data::vector_view<index_t> f_next_view(max_cells_per_partition,
-                                                   f_next);
 
     if (f[tid] == tid) {
         /*
@@ -319,7 +317,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
             measurements_buffer, *num_measurements_device);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     // Copy number of measurements to host
     vecmem::unique_alloc_ptr<unsigned int> num_measurements_host =
