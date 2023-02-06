@@ -129,8 +129,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 std::rand() % throughput_cfg.loaded_events;
 
             // Launch the processing of the event.
-            arena.execute([&]() {
-                group.run([&]() {
+            arena.execute([&, event]() {
+                group.run([&, event]() {
                     rec_track_params.fetch_add(
                         algs.at(tbb::this_task_arena::current_thread_index())(
                                 cells[event])
@@ -158,8 +158,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 std::rand() % throughput_cfg.loaded_events;
 
             // Launch the processing of the event.
-            arena.execute([&]() {
-                group.run([&]() {
+            arena.execute([&, event]() {
+                group.run([&, event]() {
                     rec_track_params.fetch_add(
                         algs.at(tbb::this_task_arena::current_thread_index())(
                                 cells[event])
