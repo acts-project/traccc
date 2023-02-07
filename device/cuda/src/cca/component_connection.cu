@@ -817,24 +817,25 @@ __global__ void partition_kernel(const cell_container cells, unsigned* out,
      * actual CCL kernel.
      *
      * This code works by overriding the existing array of partition indices.
-     * The `old_idx` variable denotes the end of the old array, the `base_idx`
+     * The `old_size` variable denotes the end of the old array, the `base_idx`
      * variable denotes the current starting index in the old array, and the
      * `tmp_idx` variable denotes the index we write partitions to in the new
      * array. The old and new array are actually the same memory, but the
      * writing index for the new points will always be behind the reading
      * indices in the old part, so this is safe!
      */
-    const unsigned old_idx = tmp_idx;
+    const unsigned old_size = tmp_idx;
 
     __syncthreads();
+
+    unsigned base_idx = 0;
+    unsigned base_val = tmp[0];
 
     /*
      * Note that the first element always remains as it is, so we can simply
      * start the process from index 1; that means the first element is never
      * touched.
      */
-    unsigned base_idx = 1;
-
     if (threadIdx.x == 0) {
         tmp_idx = 1;
     }
@@ -846,14 +847,7 @@ __global__ void partition_kernel(const cell_container cells, unsigned* out,
      * position we look at in the old array. If this reaches the old index, we
      * have reached the final point in the array and we are done.
      */
-    while (base_idx < old_idx) {
-        /*
-         * Retrieve the cell index of the last partition in the new segment
-         * of the array; we will compare against this point to check whether
-         * the size of the partition conforms with the maximum size.
-         */
-        unsigned base_val = tmp[tmp_idx - 1];
-
+    while (base_idx < old_size - 1) {
         /*
          * Each thread might need to check multiple partitions. We check in
          * blocks starting from the beginning of the array and moving towards
@@ -863,7 +857,7 @@ __global__ void partition_kernel(const cell_container cells, unsigned* out,
         int rem;
 
         do {
-            unsigned i = base_idx + j * blockDim.x + threadIdx.x;
+            unsigned i = base_idx + j * blockDim.x + threadIdx.x + 1;
 
             /*
              * Each thread computes whether the partition it is investigating
@@ -879,21 +873,24 @@ __global__ void partition_kernel(const cell_container cells, unsigned* out,
              * again.
              */
             rem = __syncthreads_count(
-                i + 1 < old_idx && tmp[i] < base_val + MAX_CELLS_PER_PARTITION);
+                i < old_size && tmp[i] < base_val + MAX_CELLS_PER_PARTITION);
 
             ++j;
         } while (rem == blockDim.x);
 
         /*
-         * Compute the new base index.
+         * Compute the new base index and its value. We will compare against
+         * this point to check whether the size of the following partition
+         * conforms with the maximum size.
          */
-        base_idx += (j - 1) * blockDim.x + rem + 1;
+        base_idx += (j - 1) * blockDim.x + rem;
+        base_val = tmp[base_idx];
 
         /*
          * The lead thread inserts the partition into the new array.
          */
         if (threadIdx.x == 0) {
-            tmp[tmp_idx++] = tmp[base_idx - 1];
+            tmp[tmp_idx++] = base_val;
         }
 
         __syncthreads();
@@ -986,8 +983,11 @@ std::tuple<vecmem::unique_alloc_ptr<unsigned[]>, std::size_t> partition_gpu(
      * it is sometimes desirable to process more than one cell per thread. This
      * slots variable determines the number of cells that is examined per
      * block.
+     * Slots should always be larger or equal to max_cells_per_partition.
      */
-    const unsigned slots = 512;
+    const float mult = 1.9;
+    assert(mult >= 1.);
+    const unsigned slots = MAX_CELLS_PER_PARTITION * mult;
 
     /*
      * Launch the actual partitioning kernel and wait for it to finish.
