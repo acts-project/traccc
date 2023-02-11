@@ -30,13 +30,17 @@ traccc_add_test(
     test_basic.cu
     test_cca.cpp
     test_copy_algs.cpp
+    test_kalman_filter.cpp
 
     LINK_LIBRARIES
     GTest::gtest
     vecmem::cuda
+    detray::core
+    detray::utils
     traccc::core
     traccc::device_common
     traccc::cuda
+    traccc::performance
     traccc::io
     traccc_tests_cuda_main
     traccc_tests_common

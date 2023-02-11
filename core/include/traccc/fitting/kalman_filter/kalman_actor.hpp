@@ -35,6 +35,13 @@ struct kalman_actor : detray::actor {
             m_it = m_track_states.begin();
         }
 
+        /// Constructor with the vector of track states
+        TRACCC_HOST_DEVICE
+        state(const vector_t<track_state_type>& track_states)
+            : m_track_states(track_states) {
+            m_it = m_track_states.begin();
+        }
+
         /// @return the reference of track state pointed by the iterator
         TRACCC_HOST_DEVICE
         track_state_type& operator()() { return *m_it; }

@@ -24,6 +24,10 @@ if( TRACCC_BUILD_CUDA )
     add_subdirectory( cuda )
 endif()
 
+if( TRACCC_BUILD_SYCL )
+    add_subdirectory( sycl )
+endif()
+
 if( TRACCC_BUILD_KOKKOS )
     add_subdirectory( kokkos )
 endif()

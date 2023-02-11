@@ -47,9 +47,9 @@ struct gain_matrix_updater {
 
         // Some identity matrices
         // @Note: Make constexpr work
-        static const matrix_type<6, 6> I66 =
+        const matrix_type<6, 6> I66 =
             matrix_operator().template identity<e_bound_size, e_bound_size>();
-        static const matrix_type<2, 2> I22 =
+        const matrix_type<2, 2> I22 =
             matrix_operator().template identity<2, 2>();
 
         // projection matrix
