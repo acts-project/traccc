@@ -42,11 +42,6 @@ class algorithm<R(A...)> {
 
     using function_type = R(A...);
 
-    static_assert(
-        std::conjunction<rvalue_or_const_lvalue<A>...>::value,
-        "All arguments must be either affine types (rvalue references), or "
-        "immutable constant types (const lvalue references).");
-
     virtual ~algorithm() {}
 
     virtual output_type operator()(A... args) const = 0;
