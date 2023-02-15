@@ -11,7 +11,7 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/edm/seed.hpp"
+#include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -28,8 +28,8 @@
 namespace traccc::sycl {
 
 // Sycl seeding function object
-class seed_finding : public algorithm<seed_collection_types::buffer(
-                         const spacepoint_container_types::const_view&,
+class seed_finding : public algorithm<alt_seed_collection_types::buffer(
+                         const spacepoint_collection_types::const_view&,
                          const sp_grid_const_view&)> {
 
     public:
@@ -51,8 +51,8 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     /// @param g2_view              is a view of the spacepoint grid
     /// @return                     a vector buffer of seeds
     ///
-    seed_collection_types::buffer operator()(
-        const spacepoint_container_types::const_view& spacepoints_view,
+    output_type operator()(
+        const spacepoint_collection_types::const_view& spacepoints_view,
         const sp_grid_const_view& g2_view) const override;
 
     private:

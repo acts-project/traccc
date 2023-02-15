@@ -29,6 +29,11 @@ struct internal_spacepoint {
 
     link_type m_link;
 
+    /// TODO: This is a *VERY* temporary variable which will be removed asap.
+    /// only here while transitioning from the jagged to non-jagged
+    /// clusterization and prevent even more code duplication
+    unsigned int m_link_alt;
+
     scalar m_x;
     scalar m_y;
     scalar m_z;
@@ -43,6 +48,17 @@ struct internal_spacepoint {
         const vector2& offsetXY)
         : m_link(sp_link) {
         const spacepoint_t& sp = sp_container.at(sp_link);
+        m_x = sp.global[0] - offsetXY[0];
+        m_y = sp.global[1] - offsetXY[1];
+        m_z = sp.global[2];
+        m_r = algebra::math::sqrt(m_x * m_x + m_y * m_y);
+        m_phi = algebra::math::atan2(m_y, m_x);
+    }
+
+    TRACCC_HOST_DEVICE internal_spacepoint(const spacepoint_t& sp,
+                                           const unsigned int sp_link,
+                                           const vector2& offsetXY)
+        : m_link_alt(sp_link) {
         m_x = sp.global[0] - offsetXY[0];
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];

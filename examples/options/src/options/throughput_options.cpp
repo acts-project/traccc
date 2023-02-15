@@ -28,6 +28,10 @@ throughput_options::throughput_options(po::options_description& desc) {
     desc.add_options()("digitization_config_file",
                        po::value<std::string>()->required(),
                        "Digitization configuration file");
+    desc.add_options()("max_cells_per_partition",
+                       po::value<unsigned short>()->default_value(1024),
+                       "Number of cells to merge in a partition. Equal to the "
+                       "number of threads in the clusterization kernels.");
     desc.add_options()("loaded_events",
                        po::value<std::size_t>()->default_value(10),
                        "Number of input events to load");
@@ -58,6 +62,8 @@ void throughput_options::read(const po::variables_map& vm) {
     input_directory = vm["input_directory"].as<std::string>();
     detector_file = vm["detector_file"].as<std::string>();
     digitization_config_file = vm["digitization_config_file"].as<std::string>();
+    max_cells_per_partition =
+        vm["max_cells_per_partition"].as<unsigned short>();
     loaded_events = vm["loaded_events"].as<std::size_t>();
     processed_events = vm["processed_events"].as<std::size_t>();
     cold_run_events = vm["cold_run_events"].as<std::size_t>();
@@ -66,13 +72,14 @@ void throughput_options::read(const po::variables_map& vm) {
 std::ostream& operator<<(std::ostream& out, const throughput_options& opt) {
 
     out << ">>> Throughput options <<<\n"
-        << "Input data format   : " << opt.input_data_format << "\n"
-        << "Input directory     : " << opt.input_directory << "\n"
-        << "Detector geometry   : " << opt.detector_file << "\n"
-        << "Digitization config : " << opt.digitization_config_file << "\n"
-        << "Loaded event(s)     : " << opt.loaded_events << "\n"
-        << "Cold run event(s)   : " << opt.cold_run_events << "\n"
-        << "Processed event(s)  : " << opt.processed_events;
+        << "Input data format       : " << opt.input_data_format << "\n"
+        << "Input directory         : " << opt.input_directory << "\n"
+        << "Detector geometry       : " << opt.detector_file << "\n"
+        << "Digitization config     : " << opt.digitization_config_file << "\n"
+        << "Max cells per partition : " << opt.max_cells_per_partition << "\n"
+        << "Loaded event(s)         : " << opt.loaded_events << "\n"
+        << "Cold run event(s)       : " << opt.cold_run_events << "\n"
+        << "Processed event(s)      : " << opt.processed_events;
     return out;
 }
 

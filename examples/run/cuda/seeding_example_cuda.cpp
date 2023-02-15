@@ -8,10 +8,10 @@
 // Project include(s).
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
@@ -54,8 +54,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     vecmem::cuda::copy copy;
 
-    traccc::device::container_h2d_copy_alg<traccc::spacepoint_container_types>
-        spacepoint_h2d{mr, copy};
     traccc::cuda::seeding_algorithm sa_cuda{mr};
     traccc::cuda::track_params_estimation tp_cuda{mr};
 
@@ -75,11 +73,13 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Instantiate host containers/collections
         traccc::spacepoint_container_types::host spacepoints_per_event;
+        traccc::spacepoint_collection_types::host alt_spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
         // Instantiate cuda containers/collections
-        traccc::seed_collection_types::buffer seeds_cuda_buffer(0, *(mr.host));
+        traccc::alt_seed_collection_types::buffer seeds_cuda_buffer(0,
+                                                                    *(mr.host));
         traccc::bound_track_parameters_collection_types::buffer
             params_cuda_buffer(0, *mr.host);
 
@@ -89,11 +89,21 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             /*-----------------
             hit file reading
             -----------------*/
-            {
+            if (run_cpu) {
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 spacepoints_per_event = traccc::io::read_spacepoints(
+                    event, common_opts.input_directory, surface_transforms,
+                    common_opts.input_data_format, &host_mr);
+
+            }  // stop measuring hit reading timer
+
+            {
+                traccc::performance::timer t("Alt hit reading  (cpu)",
+                                             elapsedTimes);
+                // Read the hits from the relevant event file
+                alt_spacepoints_per_event = traccc::io::read_spacepoints_alt(
                     event, common_opts.input_directory, surface_transforms,
                     common_opts.input_data_format, &host_mr);
 
@@ -106,9 +116,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             /// CUDA
 
             // Copy the spacepoint data to the device.
-            const traccc::spacepoint_container_types::buffer
-                spacepoints_cuda_buffer =
-                    spacepoint_h2d(traccc::get_data(spacepoints_per_event));
+            traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
+                alt_spacepoints_per_event.size(), mr.main);
+            copy(vecmem::get_data(alt_spacepoints_per_event),
+                 spacepoints_cuda_buffer);
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
@@ -149,7 +160,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ----------------------------------*/
 
         // Copy the seeds to the host for comparisons
-        traccc::seed_collection_types::host seeds_cuda;
+        traccc::alt_seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
         copy(seeds_cuda_buffer, seeds_cuda);
         copy(params_cuda_buffer, params_cuda);
@@ -159,12 +170,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
 
             // Compare the seeds made on the host and on the device
-            traccc::collection_comparator<traccc::seed> compare_seeds{
+            /* traccc::collection_comparator<traccc::seed> compare_seeds{
                 "seeds", traccc::details::comparator_factory<traccc::seed>{
                              traccc::get_data(spacepoints_per_event),
                              traccc::get_data(spacepoints_per_event)}};
             compare_seeds(vecmem::get_data(seeds),
-                          vecmem::get_data(seeds_cuda));
+                          vecmem::get_data(seeds_cuda)); */
 
             // Compare the track parameters made on the host and on the device.
             traccc::collection_comparator<traccc::bound_track_parameters>
@@ -185,28 +196,29 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
-        if (i_cfg.check_performance) {
+        /* if (i_cfg.check_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
             sd_performance_writer.write("CUDA", seeds_cuda,
                                         spacepoints_per_event, evt_map);
             if (run_cpu) {
-                sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
+                sd_performance_writer.write("CPU", seeds,
+                spacepoints_per_event,
                                             evt_map);
             }
-        }
+        } */
     }
 
-    if (i_cfg.check_performance) {
+    /* if (i_cfg.check_performance) {
         sd_performance_writer.finalize();
-    }
+    } */
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
     std::cout << "- created  (cpu)  " << n_seeds << " seeds" << std::endl;
-    std::cout << "- created (cuda) " << n_seeds_cuda << " seeds" << std::endl;
+    std::cout << "- created (cuda)  " << n_seeds_cuda << " seeds" << std::endl;
     std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;

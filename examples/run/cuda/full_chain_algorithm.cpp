@@ -27,16 +27,19 @@
 
 namespace traccc::cuda {
 
-full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& host_mr)
+full_chain_algorithm::full_chain_algorithm(
+    vecmem::memory_resource& host_mr,
+    const unsigned short max_cells_per_partition)
     : m_host_mr(host_mr),
       m_stream(),
       m_device_mr(),
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
-      m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
+      m_max_cells_per_partition(max_cells_per_partition),
+      m_partitioning(m_host_mr, m_max_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       m_stream),
+                       m_stream, m_max_cells_per_partition),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}) {
@@ -58,9 +61,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
-      m_host2device(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
+      m_max_cells_per_partition(parent.m_max_cells_per_partition),
+      m_partitioning(m_host_mr, m_max_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       m_stream),
+                       m_stream, m_max_cells_per_partition),
       m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}) {}
@@ -73,28 +77,33 @@ full_chain_algorithm::~full_chain_algorithm() {
 }
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
-    const cell_container_types::host& cells) const {
+    const alt_cell_collection_types::host& cells,
+    const cell_module_collection_types::host& modules) const {
 
-    // Copy the cells to the device (asynchronously).
-    cell_container_types::buffer hostCellBuffer;
-    cell_container_types::buffer deviceCellBuffer =
-        m_host2device(get_data(cells), hostCellBuffer);
+    // Execute the partitioning algorithm (on the host)
+    device::partition_collection_types::host partitions = m_partitioning(cells);
+
+    // Create device copy of input collections
+    alt_cell_collection_types::buffer cells_buffer(cells.size(),
+                                                   *m_cached_device_mr);
+    m_copy(vecmem::get_data(cells), cells_buffer);
+    cell_module_collection_types::buffer modules_buffer(modules.size(),
+                                                        *m_cached_device_mr);
+    m_copy(vecmem::get_data(modules), modules_buffer);
+    device::partition_collection_types::buffer partitions_buffer(
+        partitions.size(), *m_cached_device_mr);
+    m_copy(vecmem::get_data(partitions), partitions_buffer);
 
     // Run the clusterization (asynchronously).
     const clusterization_algorithm::output_type spacepoints =
-        m_clusterization(deviceCellBuffer);
-
-    // Wait for the asynchronous operations to finish, before running the
-    // synchronous algorithm(s).
-    m_stream.synchronize();
-
-    // Run the rest of the algorithms (synchronously).
+        m_clusterization(cells_buffer, modules_buffer, partitions_buffer);
     const track_params_estimation::output_type track_params =
         m_track_parameter_estimation(spacepoints, m_seeding(spacepoints));
 
     // Get the final data back to the host.
     bound_track_parameters_collection_types::host result;
-    m_copy(track_params, result)->wait();
+    m_copy(track_params, result);
+    m_stream.synchronize();
 
     // Return the host container.
     return result;

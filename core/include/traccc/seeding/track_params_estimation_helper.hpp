@@ -37,9 +37,9 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// @param seed is the input seed
 /// @param bfield is the magnetic field
 /// @param mass is the mass of particle
-template <typename spacepoint_container_t>
+template <typename spacepoint_container_t, typename seed_t>
 inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
-    const spacepoint_container_t& sp_container, const seed& seed,
+    const spacepoint_container_t& sp_container, const seed_t& seed,
     const vector3& bfield, const scalar mass) {
 
     bound_vector params;

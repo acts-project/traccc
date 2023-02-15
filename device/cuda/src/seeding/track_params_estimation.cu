@@ -19,8 +19,8 @@ namespace cuda {
 namespace kernels {
 /// CUDA kernel for running @c traccc::device::estimate_track_params
 __global__ void estimate_track_params(
-    spacepoint_container_types::const_view spacepoints_view,
-    seed_collection_types::const_view seed_view,
+    spacepoint_collection_types::const_view spacepoints_view,
+    alt_seed_collection_types::const_view seed_view,
     bound_track_parameters_collection_types::view params_view) {
 
     device::estimate_track_params(threadIdx.x + blockIdx.x * blockDim.x,
@@ -41,8 +41,8 @@ track_params_estimation::track_params_estimation(
 }
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const seed_collection_types::const_view& seeds_view) const {
+    const spacepoint_collection_types::const_view& spacepoints_view,
+    const alt_seed_collection_types::const_view& seeds_view) const {
 
     // Get the size of the seeds view
     const std::size_t seeds_size = m_copy->get_size(seeds_view);

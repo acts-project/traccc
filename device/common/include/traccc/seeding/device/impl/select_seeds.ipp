@@ -56,13 +56,13 @@ TRACCC_HOST_DEVICE void insertionSort(triplet* arr, const std::size_t begin_idx,
 TRACCC_HOST_DEVICE
 inline void select_seeds(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
-    const spacepoint_container_types::const_view& spacepoints_view,
+    const spacepoint_collection_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& dc_ps_view,
     const device::doublet_counter_container_types::const_view&
         doublet_counter_container,
     const triplet_container_types::const_view& triplet_view, triplet* data,
-    seed_collection_types::view seed_view) {
+    alt_seed_collection_types::view seed_view) {
 
     // Check if anything needs to be done.
     const vecmem::device_vector<const prefix_sum_element_t> dc_prefix_sum(
@@ -72,7 +72,7 @@ inline void select_seeds(
     }
 
     // Set up the device containers
-    const spacepoint_container_types::const_device spacepoints_device(
+    const spacepoint_collection_types::const_device spacepoints_device(
         spacepoints_view);
     const const_sp_grid_device internal_sp_device(internal_sp_view);
 
@@ -82,7 +82,7 @@ inline void select_seeds(
     device::doublet_counter_container_types::const_device
         doublet_counter_device(doublet_counter_container);
     triplet_container_types::const_device triplet_device(triplet_view);
-    seed_collection_types::device seed_device(seed_view);
+    alt_seed_collection_types::device seeds_device(seed_view);
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
@@ -171,10 +171,14 @@ inline void select_seeds(
                 const internal_spacepoint<spacepoint>& ispT2 =
                     internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
 
-                const spacepoint& spB1 = spacepoints_device.at(ispB1.m_link);
-                const spacepoint& spT1 = spacepoints_device.at(ispT1.m_link);
-                const spacepoint& spB2 = spacepoints_device.at(ispB2.m_link);
-                const spacepoint& spT2 = spacepoints_device.at(ispT2.m_link);
+                const spacepoint& spB1 =
+                    spacepoints_device.at(ispB1.m_link_alt);
+                const spacepoint& spT1 =
+                    spacepoints_device.at(ispT1.m_link_alt);
+                const spacepoint& spB2 =
+                    spacepoints_device.at(ispB2.m_link_alt);
+                const spacepoint& spT2 =
+                    spacepoints_device.at(ispT2.m_link_alt);
 
                 constexpr scalar exp = 2;
                 seed1_sum += std::pow(spB1.y(), exp) + std::pow(spB1.z(), exp);
@@ -204,8 +208,8 @@ inline void select_seeds(
             break;
         }
 
-        seed aSeed({spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
-                    aTriplet.z_vertex});
+        alt_seed aSeed({spB.m_link_alt, spM.m_link_alt, spT.m_link_alt,
+                        aTriplet.weight, aTriplet.z_vertex});
 
         // check if it is a good triplet
         if (seed_selecting_helper::cut_per_middle_sp(
@@ -214,7 +218,7 @@ inline void select_seeds(
 
             n_seeds_per_spM++;
 
-            seed_device.push_back(aSeed);
+            seeds_device.push_back(aSeed);
         }
     }
 }

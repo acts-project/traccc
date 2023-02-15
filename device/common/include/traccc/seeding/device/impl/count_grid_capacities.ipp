@@ -17,32 +17,25 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void count_grid_capacities(
-    std::size_t globalIndex, const seedfinder_config& config,
+    const std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>&
-        sp_prefix_sum_view,
+    const spacepoint_collection_types::const_view& spacepoints_view,
     vecmem::data::vector_view<unsigned int> grid_capacities_view) {
 
     // Check if anything needs to be done.
-    vecmem::device_vector<const prefix_sum_element_t> sp_prefix_sum(
-        sp_prefix_sum_view);
-    if (globalIndex >= sp_prefix_sum.size()) {
+    const spacepoint_collection_types::const_device spacepoints(
+        spacepoints_view);
+    if (globalIndex >= spacepoints.size()) {
         return;
     }
-
-    // Get the spacepoint that we need to look at.
-    const prefix_sum_element_t sp_idx = sp_prefix_sum[globalIndex];
-    const spacepoint_container_types::const_device spacepoints(
-        spacepoints_view);
-    const spacepoint sp = spacepoints.at(sp_idx);
+    const spacepoint sp = spacepoints.at(globalIndex);
 
     /// Check out if the spacepoint can be used for seeding.
     if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {
 
         // Find the grid bin that the spacepoint belongs to.
-        const internal_spacepoint<spacepoint> isp(
-            spacepoints, {sp_idx.first, sp_idx.second}, config.beamPos);
+        const internal_spacepoint<spacepoint> isp(sp, globalIndex,
+                                                  config.beamPos);
         const std::size_t bin_index =
             phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 

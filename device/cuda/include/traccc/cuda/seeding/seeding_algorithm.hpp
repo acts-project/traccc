@@ -12,7 +12,7 @@
 #include "traccc/cuda/seeding/spacepoint_binning.hpp"
 
 // Project include(s).
-#include "traccc/edm/seed.hpp"
+#include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -25,8 +25,8 @@
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
-class seeding_algorithm : public algorithm<seed_collection_types::buffer(
-                              const spacepoint_container_types::const_view&)> {
+class seeding_algorithm : public algorithm<alt_seed_collection_types::buffer(
+                              const spacepoint_collection_types::const_view&)> {
 
     public:
     /// Constructor for the seed finding algorithm
@@ -40,9 +40,8 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     /// @param spacepoints_view is a view of all spacepoints in the event
     /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
-    seed_collection_types::buffer operator()(
-        const spacepoint_container_types::const_view& spacepoints_view)
-        const override;
+    output_type operator()(const spacepoint_collection_types::const_view&
+                               spacepoints_view) const override;
 
     private:
     /// Sub-algorithm performing the spacepoint binning

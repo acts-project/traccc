@@ -77,8 +77,8 @@ seed_finding::seed_finding(const seedfinder_config& config,
     }
 }
 
-seed_collection_types::buffer seed_finding::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
+seed_finding::output_type seed_finding::operator()(
+    const spacepoint_collection_types::const_view& spacepoints_view,
     const sp_grid_const_view& g2_view) const {
 
     // Get the sizes from the grid view
@@ -288,9 +288,9 @@ seed_collection_types::buffer seed_finding::operator()(
     }
 
     // Create seed buffer object and its view
-    seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
+    alt_seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
     m_copy->setup(seed_buffer);
-    seed_collection_types::view seed_view(seed_buffer);
+    alt_seed_collection_types::view seed_view(seed_buffer);
 
     // Calculate the range to run the seed selecting for
     static constexpr unsigned int seedSelectingLocalSize = 32 * 2;
