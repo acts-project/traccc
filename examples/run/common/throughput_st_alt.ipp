@@ -95,7 +95,7 @@ int throughput_st_alt(std::string_view description, int argc, char* argv[],
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, throughput_cfg.max_cells_per_partition);
+        alg_host_mr, throughput_cfg.target_cells_per_partition);
 
     // Seed the random number generator.
     std::srand(std::time(0));

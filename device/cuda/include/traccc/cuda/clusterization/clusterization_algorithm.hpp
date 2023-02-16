@@ -13,7 +13,6 @@
 // Project include(s).
 #include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
-#include "traccc/edm/device/partition.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -33,8 +32,7 @@ namespace traccc::cuda {
 class clusterization_algorithm
     : public algorithm<spacepoint_collection_types::buffer(
           const alt_cell_collection_types::const_view&,
-          const cell_module_collection_types::const_view&,
-          const device::partition_collection_types::const_view&)> {
+          const cell_module_collection_types::const_view&)> {
 
     public:
     /// Constructor for clusterization algorithm
@@ -43,28 +41,25 @@ class clusterization_algorithm
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
-    /// @param max_cells_per_partition the maximum number of cells in each
+    /// @param target_cells_per_partition the average number of cells in each
     /// partition
     ///
     clusterization_algorithm(const traccc::memory_resource& mr,
                              vecmem::copy& copy, stream& str,
-                             const unsigned short max_cells_per_partition);
+                             const unsigned short target_cells_per_partition);
 
     /// Callable operator for clusterization algorithm
     ///
     /// @param cells        a collection of cells
     /// @param modules      a collection of modules
-    /// @param partitions   a collection of partitions on the cells collection
     /// @return a spacepoint collection (buffer)
     output_type operator()(
         const alt_cell_collection_types::const_view& cells,
-        const cell_module_collection_types::const_view& modules,
-        const device::partition_collection_types::const_view& partitions)
-        const override;
+        const cell_module_collection_types::const_view& modules) const override;
 
     private:
-    /// The maximum number of cells in each partition
-    unsigned short m_max_cells_per_partition;
+    /// The average number of cells in each partition
+    unsigned short m_target_cells_per_partition;
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use

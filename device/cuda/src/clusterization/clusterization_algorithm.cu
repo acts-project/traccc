@@ -25,10 +25,11 @@ namespace traccc::cuda {
 
 namespace {
 /// These indices in clusterization will only range from 0 to
-/// MAX_CELLS_PER_PARTITION, so we only need a short
+/// max_cells_per_partition, so we only need a short.
 using index_t = unsigned short;
 
-static constexpr int CELLS_PER_THREAD = 8;
+static constexpr int TARGET_CELLS_PER_THREAD = 8;
+static constexpr int MAX_CELLS_PER_THREAD = 12;
 }  // namespace
 
 namespace kernels {
@@ -52,8 +53,8 @@ namespace kernels {
 /// @param[in] tid      The thread index
 ///
 __device__ void fast_sv_1(index_t* f, index_t* gf,
-                          unsigned char adjc[CELLS_PER_THREAD],
-                          index_t adjv[CELLS_PER_THREAD][8], index_t tid,
+                          unsigned char adjc[MAX_CELLS_PER_THREAD],
+                          index_t adjv[MAX_CELLS_PER_THREAD][8], index_t tid,
                           const index_t blckDim) {
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
@@ -76,7 +77,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf,
          * cluster ID if it is lower than ours, essentially merging the two
          * together.
          */
-        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
             const index_t cid = tst * blckDim + tid;
 
             __builtin_assume(adjc[tst] <= 8);
@@ -97,7 +98,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf,
         __syncthreads();
 
 #pragma unroll
-        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
             const index_t cid = tst * blckDim + tid;
             /*
              * The second stage is shortcutting, which is an optimisation that
@@ -115,7 +116,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf,
         __syncthreads();
 
 #pragma unroll
-        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
             const index_t cid = tst * blckDim + tid;
             /*
              * Update the array for the next generation, keeping track of any
@@ -140,21 +141,66 @@ __device__ void fast_sv_1(index_t* f, index_t* gf,
 __global__ void ccl_kernel(
     const alt_cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
-    const device::partition_collection_types::const_view partitions_view,
     const unsigned short max_cells_per_partition,
+    const unsigned short target_cells_per_partition,
     alt_measurement_collection_types::view measurements_view,
     unsigned int& measurement_count) {
 
     const index_t tid = threadIdx.x;
     const index_t blckDim = blockDim.x;
 
-    const device::partition_collection_types::const_device partitions_device(
-        partitions_view);
-    assert(blockIdx.x + 1 < partitions_device.size());
+    const alt_cell_collection_types::const_device cells_device(cells_view);
+    const unsigned int num_cells = cells_device.size();
+    __shared__ unsigned int start, end;
+    /*
+     * This variable will be used to write to the output later.
+     */
+    __shared__ unsigned int outi;
 
-    // Get partition for this thread group
-    const device::partition start = partitions_device[blockIdx.x];
-    const device::partition end = partitions_device[blockIdx.x + 1];
+    /*
+     * First, we determine the exact range of cells that is to be examined by
+     * this block of threads. We start from an initial range determined by the
+     * block index multiplied by the target number of cells per block. We then
+     * shift both the start and the end of the block forward (to a later point
+     * in the array); start and end may be moved different amounts.
+     */
+    if (tid == 0) {
+        /*
+         * Initialize shared variables.
+         */
+        start = blockIdx.x * target_cells_per_partition;
+        assert(start < num_cells);
+        end = std::min(num_cells, start + target_cells_per_partition);
+        outi = 0;
+
+        /*
+         * Next, shift the starting point to a position further in the array;
+         * the purpose of this is to ensure that we are not operating on any
+         * cells that have been claimed by the previous block (if any).
+         */
+        while (start != 0 &&
+               cells_device[start - 1].module_link ==
+                   cells_device[start].module_link &&
+               cells_device[start].c.channel1 <=
+                   cells_device[start - 1].c.channel1 + 1) {
+            ++start;
+        }
+
+        /*
+         * Then, claim as many cells as we need past the naive end of the
+         * current block to ensure that we do not end our partition on a cell
+         * that is not a possible boundary!
+         */
+        while (end < num_cells &&
+               cells_device[end - 1].module_link ==
+                   cells_device[end].module_link &&
+               cells_device[end].c.channel1 <=
+                   cells_device[end - 1].c.channel1 + 1) {
+            ++end;
+        }
+    }
+    __syncthreads();
+
     const index_t size = end - start;
     assert(size <= max_cells_per_partition);
 
@@ -163,7 +209,6 @@ __global__ void ccl_kernel(
         return;
     }
 
-    const alt_cell_collection_types::const_device cells_device(cells_view);
     const cell_module_collection_types::const_device modules_device(
         modules_view);
 
@@ -171,7 +216,7 @@ __global__ void ccl_kernel(
         measurements_view);
 
     // Vector of indices of the adjacent cells
-    index_t adjv[CELLS_PER_THREAD][8];
+    index_t adjv[MAX_CELLS_PER_THREAD][8];
     /*
      * The number of adjacent cells for each cell must start at zero, to
      * avoid uninitialized memory. adjv does not need to be zeroed, as
@@ -179,10 +224,10 @@ __global__ void ccl_kernel(
      * is set.
      */
     // Number of adjacent cells
-    unsigned char adjc[CELLS_PER_THREAD];
+    unsigned char adjc[MAX_CELLS_PER_THREAD];
 
 #pragma unroll
-    for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+    for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
         adjc[tst] = 0;
     }
 
@@ -207,7 +252,7 @@ __global__ void ccl_kernel(
     index_t* f_next = &shared_v[max_cells_per_partition];
 
 #pragma unroll
-    for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+    for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
         const index_t cid = tst * blckDim + tid;
         /*
          * At the start, the values of f and f_next should be equal to the
@@ -228,18 +273,6 @@ __global__ void ccl_kernel(
      * cell belonging to the same cluster with the lowest index.
      */
     fast_sv_1(f, f_next, adjc, adjv, tid, blckDim);
-
-    /*
-     * This variable will be used to write to the output later.
-     */
-    __shared__ unsigned int outi;
-
-    /*
-     * Initialize the counter of clusters per thread block
-     */
-    if (tid == 0) {
-        outi = 0;
-    }
 
     __syncthreads();
 
@@ -313,16 +346,15 @@ __global__ void form_spacepoints(
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
-    const unsigned short max_cells_per_partition)
+    const unsigned short target_cells_per_partition)
     : m_mr(mr),
       m_copy(copy),
       m_stream(str),
-      m_max_cells_per_partition(max_cells_per_partition) {}
+      m_target_cells_per_partition(target_cells_per_partition) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const alt_cell_collection_types::const_view& cells,
-    const cell_module_collection_types::const_view& modules,
-    const device::partition_collection_types::const_view& partitions) const {
+    const cell_module_collection_types::const_view& modules) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -330,9 +362,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Number of cells
     const alt_cell_collection_types::view::size_type num_cells =
         m_copy.get_size(cells);
-    // Number of cell partitions
-    const device::partition_collection_types::view::size_type num_partitions =
-        m_copy.get_size(partitions) - 1;
 
     // Create result object for the CCL kernel with size overestimation
     alt_measurement_collection_types::buffer measurements_buffer(num_cells,
@@ -344,14 +373,24 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(
         cudaMemset(num_measurements_device.get(), 0, sizeof(unsigned int)));
 
+    const unsigned short max_cells_per_partition =
+        (m_target_cells_per_partition * MAX_CELLS_PER_THREAD +
+         TARGET_CELLS_PER_THREAD - 1) /
+        TARGET_CELLS_PER_THREAD;
     const unsigned int threads_per_partition =
-        (m_max_cells_per_partition + CELLS_PER_THREAD - 1) / CELLS_PER_THREAD;
+        (m_target_cells_per_partition + TARGET_CELLS_PER_THREAD - 1) /
+        TARGET_CELLS_PER_THREAD;
+    const unsigned int num_partitions =
+        (num_cells + m_target_cells_per_partition - 1) /
+        m_target_cells_per_partition;
+
     // Launch ccl kernel. Each thread will handle a single cell.
     kernels::
         ccl_kernel<<<num_partitions, threads_per_partition,
-                     2 * m_max_cells_per_partition * sizeof(index_t), stream>>>(
-            cells, modules, partitions, m_max_cells_per_partition,
-            measurements_buffer, *num_measurements_device);
+                     2 * max_cells_per_partition * sizeof(index_t), stream>>>(
+            cells, modules, max_cells_per_partition,
+            m_target_cells_per_partition, measurements_buffer,
+            *num_measurements_device);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -367,16 +406,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         *num_measurements_host, m_mr.main);
 
     // For the following kernel, we can now use whatever the desired number of
-    // threads
+    // threads per block.
+    auto spacepointsLocalSize = 1024;
     const unsigned int num_blocks =
-        (*num_measurements_host + m_max_cells_per_partition - 1) /
-        m_max_cells_per_partition;
+        (*num_measurements_host + spacepointsLocalSize - 1) /
+        spacepointsLocalSize;
 
     // Turn 2D measurements into 3D spacepoints
-    kernels::
-        form_spacepoints<<<num_blocks, m_max_cells_per_partition, 0, stream>>>(
-            measurements_buffer, modules, *num_measurements_host,
-            spacepoints_buffer);
+    kernels::form_spacepoints<<<num_blocks, spacepointsLocalSize, 0, stream>>>(
+        measurements_buffer, modules, *num_measurements_host,
+        spacepoints_buffer);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
     m_stream.synchronize();
