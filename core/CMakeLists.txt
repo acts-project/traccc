@@ -60,6 +60,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/detail/lin_circle.hpp"
   "include/traccc/seeding/detail/doublet.hpp"
   "include/traccc/seeding/detail/triplet.hpp"
+  "include/traccc/seeding/detail/doublet_spM.hpp"
+  "include/traccc/seeding/detail/triplet_spM.hpp"
   "include/traccc/seeding/detail/singlet.hpp"
   "include/traccc/seeding/detail/seeding_config.hpp"
   "include/traccc/seeding/detail/spacepoint_grid.hpp"

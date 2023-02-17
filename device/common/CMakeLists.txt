@@ -21,7 +21,9 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/device/impl/container_d2h_copy_alg.ipp"
    # EDM class(es).
    "include/traccc/edm/device/doublet_counter.hpp"
+   "include/traccc/edm/device/doublet_counter_spM.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
+   "include/traccc/edm/device/triplet_counter_spM.hpp"
    "include/traccc/edm/device/partition.hpp"
    # Clusterization function(s).
    "include/traccc/clusterization/device/partitioning_algorithm.hpp"
