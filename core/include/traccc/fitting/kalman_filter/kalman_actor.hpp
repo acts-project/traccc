@@ -87,8 +87,7 @@ struct kalman_actor : detray::actor {
         }
 
         // triggered only for sensitive surfaces
-        if (navigation.is_on_module() &&
-            navigation.current()->sf_id == detray::surface_id::e_sensitive) {
+        if (navigation.is_on_sensitive()) {
 
             auto& trk_state = actor_state();
 
