@@ -18,7 +18,7 @@ namespace traccc::device {
 namespace details {
 // Finding minimum element algorithm
 template <typename Comparator>
-TRACCC_HOST_DEVICE std::size_t min_elem(const triplet* arr,
+TRACCC_HOST_DEVICE std::size_t min_elem(const triplet_spM* arr,
                                         const std::size_t begin_idx,
                                         const std::size_t end_idx,
                                         Comparator comp) {
@@ -36,10 +36,11 @@ TRACCC_HOST_DEVICE std::size_t min_elem(const triplet* arr,
 
 // Sorting algorithm for sorting seeds in the local memory
 template <typename Comparator>
-TRACCC_HOST_DEVICE void insertionSort(triplet* arr, const std::size_t begin_idx,
+TRACCC_HOST_DEVICE void insertionSort(triplet_spM* arr,
+                                      const std::size_t begin_idx,
                                       const std::size_t n, Comparator comp) {
     int j = 0;
-    triplet key = arr[begin_idx];
+    triplet_spM key = arr[begin_idx];
     for (std::size_t i = 0; i < n; ++i) {
         key = arr[begin_idx + i];
         j = i - 1;
@@ -58,60 +59,46 @@ inline void select_seeds(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
     const spacepoint_collection_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>& dc_ps_view,
-    const device::doublet_counter_container_types::const_view&
-        doublet_counter_container,
-    const triplet_container_types::const_view& triplet_view, triplet* data,
+    const triplet_spM_container_types::const_view& tc_view, triplet* data,
     alt_seed_collection_types::view seed_view) {
 
     // Check if anything needs to be done.
-    const vecmem::device_vector<const prefix_sum_element_t> dc_prefix_sum(
-        dc_ps_view);
-    if (globalIndex >= dc_prefix_sum.size()) {
+    const triplet_spM_container_types::const_device triplets_device(
+        triplet_view);
+    if (globalIndex >= triplets_device.size()) {
         return;
     }
+
+    // Header of triplet: number of triplets per bin
+    // Item of triplet: triplet objects per bin
+    const unsigned int num_triplets_per_bin =
+        triplets_device.get_headers().at(globalIndex).n_triplets;
+    const triplet_spM_collection_types::const_device triplets_per_bin =
+        triplets_device.get_items().at(globalIndex);
+
+    // Current work item = middle spacepoint
+    const sp_location spM_loc =
+        triplets_device.get_headers().at(globalIndex).m_spM;
+    const internal_spacepoint<spacepoint> spM =
+        internal_sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
 
     // Set up the device containers
     const spacepoint_collection_types::const_device spacepoints_device(
         spacepoints_view);
     const const_sp_grid_device internal_sp_device(internal_sp_view);
 
-    const prefix_sum_element_t ps_idx = dc_prefix_sum[globalIndex];
-    const std::size_t bin_idx = ps_idx.first;
-
-    device::doublet_counter_container_types::const_device
-        doublet_counter_device(doublet_counter_container);
-    triplet_container_types::const_device triplet_device(triplet_view);
     alt_seed_collection_types::device seeds_device(seed_view);
-
-    // Header of triplet: number of triplets per bin
-    // Item of triplet: triplet objects per bin
-    const unsigned int num_triplets_per_bin =
-        triplet_device.get_headers().at(bin_idx).n_triplets;
-    const triplet_collection_types::const_device triplets_per_bin =
-        triplet_device.get_items().at(bin_idx);
-
-    // Current work item = middle spacepoint
-    const sp_location spM_loc =
-        doublet_counter_device.get_items().at(bin_idx)[ps_idx.second].m_spM;
-    const internal_spacepoint<spacepoint> spM =
-        internal_sp_device.bin(bin_idx)[spM_loc.sp_idx];
 
     // Number of triplets added for this spM
     unsigned int n_triplets_per_spM = 0;
 
     // iterate over the triplets in the bin
     for (unsigned int i = 0; i < num_triplets_per_bin; ++i) {
-        triplet aTriplet = triplets_per_bin[i];
-
-        // consider only the triplets with the same middle spacepoint
-        if (spM_loc != aTriplet.sp2) {
-            continue;
-        }
+        triplet_spM aTriplet = triplets_per_bin[i];
 
         // spacepoints bottom and top for this triplet
-        const sp_location& spB_loc = aTriplet.sp1;
-        const sp_location& spT_loc = aTriplet.sp3;
+        const sp_location& spB_loc = aTriplet.spB;
+        const sp_location& spT_loc = aTriplet.spT;
         const internal_spacepoint<spacepoint> spB =
             internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
         const internal_spacepoint<spacepoint> spT =
@@ -131,11 +118,11 @@ inline void select_seeds(
         // the triplet with the lowest weight is removed
         if (n_triplets_per_spM >= filter_config.max_triplets_per_spM) {
 
-            const int min_index =
-                details::min_elem(data, 0, filter_config.max_triplets_per_spM,
-                                  [](const triplet lhs, const triplet rhs) {
-                                      return lhs.weight > rhs.weight;
-                                  });
+            const int min_index = details::min_elem(
+                data, 0, filter_config.max_triplets_per_spM,
+                [](const triplet_spM lhs, const triplet_spM rhs) {
+                    return lhs.weight > rhs.weight;
+                });
 
             const scalar& min_weight = data[min_index].weight;
 
@@ -154,7 +141,7 @@ inline void select_seeds(
 
     // sort the triplets per spM
     details::insertionSort(
-        data, 0, n_triplets_per_spM, [&](triplet& lhs, triplet& rhs) {
+        data, 0, n_triplets_per_spM, [&](triplet_spM& lhs, triplet_spM& rhs) {
             if (lhs.weight != rhs.weight) {
                 return lhs.weight > rhs.weight;
             } else {
@@ -163,13 +150,13 @@ inline void select_seeds(
                 scalar seed2_sum = 0;
 
                 const internal_spacepoint<spacepoint>& ispB1 =
-                    internal_sp_device.bin(lhs.sp1.bin_idx)[lhs.sp1.sp_idx];
+                    internal_sp_device.bin(lhs.spB.bin_idx)[lhs.spB.sp_idx];
                 const internal_spacepoint<spacepoint>& ispT1 =
-                    internal_sp_device.bin(lhs.sp3.bin_idx)[lhs.sp3.sp_idx];
+                    internal_sp_device.bin(lhs.spT.bin_idx)[lhs.spT.sp_idx];
                 const internal_spacepoint<spacepoint>& ispB2 =
-                    internal_sp_device.bin(rhs.sp1.bin_idx)[rhs.sp1.sp_idx];
+                    internal_sp_device.bin(rhs.spB.bin_idx)[rhs.spB.sp_idx];
                 const internal_spacepoint<spacepoint>& ispT2 =
-                    internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
+                    internal_sp_device.bin(rhs.spT.bin_idx)[rhs.spT.sp_idx];
 
                 const spacepoint& spB1 =
                     spacepoints_device.at(ispB1.m_link_alt);
@@ -195,9 +182,9 @@ inline void select_seeds(
 
     // iterate over the good triplets for final selection of seeds
     for (unsigned int i = 0; i < n_triplets_per_spM; ++i) {
-        const triplet& aTriplet = data[i];
-        const sp_location& spB_loc = aTriplet.sp1;
-        const sp_location& spT_loc = aTriplet.sp3;
+        const triplet_spM& aTriplet = data[i];
+        const sp_location& spB_loc = aTriplet.spB;
+        const sp_location& spT_loc = aTriplet.spT;
         const internal_spacepoint<spacepoint>& spB =
             internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
         const internal_spacepoint<spacepoint>& spT =

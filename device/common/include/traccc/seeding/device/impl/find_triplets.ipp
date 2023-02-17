@@ -19,53 +19,57 @@ TRACCC_HOST_DEVICE
 inline void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
-    const doublet_container_types::const_view& mid_top_doublet_view,
-    const device::triplet_counter_container_types::const_view& tc_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>&
-        triplet_ps_view,
+    const doublet_spM_container_types::const_view& mid_top_doublet_view,
+    const device::triplet_counter_spM_container_types::const_view& tc_view,
+    const vecmem::data::vector_view<const prefix_sum_element_t>& tc_ps_view,
     triplet_container_types::view triplet_view) {
 
     // Check if anything needs to be done.
-    const vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
+    const vecmem::device_vector<const prefix_sum_element_t> tc_prefix_sum(
         triplet_ps_view);
-    if (globalIndex >= triplet_prefix_sum.size()) {
+    if (globalIndex >= tc_prefix_sum.size()) {
         return;
     }
 
     // Get device copy of input parameters
-    const doublet_container_types::const_device mid_top_doublet_device(
+    const doublet_spM_container_types::const_device mid_top_doublet_device(
         mid_top_doublet_view);
     const const_sp_grid_device sp_grid(sp_view);
 
     // Get the current work item
-    const prefix_sum_element_t ps_idx = triplet_prefix_sum[globalIndex];
-    const device::triplet_counter_container_types::const_device triplet_counts(
-        tc_view);
-    const device::triplet_counter mid_bot_counter =
+    const prefix_sum_element_t ps_idx = tc_prefix_sum[globalIndex];
+    const device::triplet_counter_spM_container_types::const_device
+        triplet_counts(tc_view);
+    const device::triplet_counter_spM mid_bot_counter =
         triplet_counts.get_items().at(ps_idx.first).at(ps_idx.second);
-    const doublet mid_bot_doublet = mid_bot_counter.m_midBotDoublet;
 
-    // middle spacepoint indexes
-    const unsigned int spM_bin = mid_bot_doublet.sp1.bin_idx;
-    const unsigned int spM_idx = mid_bot_doublet.sp1.sp_idx;
+    const sp_location spM_loc = mid_bot_header.m_spM;
+    const sp_location spB_loc = mid_bot_counter.m_spB;
+
     // middle spacepoint
     const traccc::internal_spacepoint<traccc::spacepoint> spM =
-        sp_grid.bin(spM_bin)[spM_idx];
-
-    // bottom spacepoint indexes
-    const unsigned int spB_bin = mid_bot_doublet.sp2.bin_idx;
-    const unsigned int spB_idx = mid_bot_doublet.sp2.sp_idx;
+        sp_grid.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
     // bottom spacepoint
     const traccc::internal_spacepoint<traccc::spacepoint> spB =
-        sp_grid.bin(spB_bin)[spB_idx];
+        sp_grid.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
 
-    // Header of doublet: number of mid_top doublets per bin
-    // Item of doublet: doublet objects per bin
-    const vecmem::device_vector<const doublet> mid_top_doublets_per_bin =
-        mid_top_doublet_device.get_items().at(spM_bin);
+    // Get mid top doublets for this bin
+    const doublet_spM_collection_types::const_device mid_top_doublets_per_bin =
+        mid_top_doublet_device.get_items().at(ps_idx.first);
 
     // Set up the device result container
-    triplet_container_types::device triplets(triplet_view);
+    triplet_spM_container_types::device triplets(triplet_view);
+
+    // Get the header for this bin.
+    triplets_per_spM& triplets_header = triplets.get_headers().at(ps_idx.first);
+    // We only need to update the spM information on the header once.
+    if (ps_idx.second == 0) {
+        triplets_header.m_spM = spM_ids;
+    }
+    // Atomic reference for the triplet summary value for the bin of the
+    // mid bottom doublet.
+    vecmem::device_atomic_ref<unsigned int> num_triplets_per_bin(
+        triplets_header.n_triplets);
 
     // Apply the conformal transformation to middle-bot doublet
     const traccc::lin_circle lb = doublet_finding_helper::transform_coordinates<
@@ -82,23 +86,21 @@ inline void find_triplets(
     // triplet_finding_helper::isCompatible but their values are irrelevant
     scalar curvature, impact_parameter;
 
-    // find the reference (start) index of the mid-top doublet container
-    // item vector, where the doublets are recorded
-    const unsigned int mt_start_idx = mid_bot_counter.m_mt_start_idx;
-    const unsigned int mt_end_idx = mid_bot_counter.m_mt_end_idx;
     const unsigned int triplets_mb_begin = mid_bot_counter.posTriplets;
     const unsigned int triplets_mb_end =
         triplets_mb_begin + mid_bot_counter.m_nTriplets;
+    // Find the reference (start) index where to fill these triplets into the
+    // result.
     unsigned int posTriplets = triplets_mb_begin;
 
-    // iterate over mid-top doublets
-    for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
-        const traccc::doublet mid_top_doublet = mid_top_doublets_per_bin[i];
+    const unsigned int mid_top_size = mid_top_doublet_device.size();
 
-        const unsigned int spT_bin = mid_top_doublet.sp2.bin_idx;
-        const unsigned int spT_idx = mid_top_doublet.sp2.sp_idx;
+    // iterate over mid-top doublets
+    for (unsigned int i = 0; i < mid_top_size; ++i) {
+        const sp_location spT_loc = mid_top_doublets_per_bin[i].sp2;
+
         const traccc::internal_spacepoint<traccc::spacepoint> spT =
-            sp_grid.bin(spT_bin)[spT_idx];
+            sp_grid.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
 
         // Apply the conformal transformation to middle-top doublet
         const traccc::lin_circle lt =
@@ -109,18 +111,15 @@ inline void find_triplets(
         if (triplet_finding_helper::isCompatible(
                 spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
                 impact_parameter)) {
-            // Atomic reference for the triplet summary value for the bin of the
-            // mid bottom doublet.
-            vecmem::device_atomic_ref<unsigned int> num_triplets_per_bin(
-                triplets.get_headers().at(spM_bin).n_triplets);
+
             num_triplets_per_bin.fetch_add(1);
 
             // Add triplet to jagged vector
-            triplets.get_items().at(spM_bin).at(posTriplets++) =
-                triplet({mid_bot_doublet.sp2, mid_bot_doublet.sp1,
-                         mid_top_doublet.sp2, curvature,
-                         -impact_parameter * filter_config.impactWeightFactor,
-                         lb.Zo(), triplets_mb_begin, triplets_mb_end});
+            triplets.get_items().at(ps_idx.first).at(posTriplets++) =
+                triplet_spM(
+                    {spB_ids, spT_ids, curvature,
+                     -impact_parameter * filter_config.impactWeightFactor,
+                     lb.Zo(), triplets_mb_begin, triplets_mb_end});
         }
     }
 }

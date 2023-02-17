@@ -18,7 +18,7 @@ inline void update_triplet_weights(
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
-    scalar* data, triplet_container_types::view triplet_view) {
+    scalar* data, triplet_spM_container_types::view triplet_view) {
 
     // Check if anything needs to be done.
     const vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
@@ -31,19 +31,18 @@ inline void update_triplet_weights(
     const const_sp_grid_device sp_grid(sp_view);
 
     const prefix_sum_element_t ps_idx = triplet_prefix_sum[globalIndex];
-    const unsigned int bin_idx = ps_idx.first;
 
-    triplet_container_types::device triplets(triplet_view);
-    vecmem::device_vector<triplet> triplets_per_bin =
-        triplets.get_items().at(bin_idx);
+    triplet_spM_container_types::device triplets_device(triplet_view);
+    triplet_spM_collection_types::device triplets_per_bin =
+        triplets_device.get_items().at(ps_idx.first);
 
     // Current work item
-    triplet this_triplet = triplets_per_bin[ps_idx.second];
+    triplet_spM this_triplet = triplets_per_bin[ps_idx.second];
 
-    const sp_location& spT_idx = this_triplet.sp3;
+    const sp_location& spT_loc = this_triplet.spT;
 
     const traccc::internal_spacepoint<traccc::spacepoint> current_spT =
-        sp_grid.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
+        sp_grid.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
 
     const scalar currentTop_r = current_spT.radius();
 
@@ -64,10 +63,10 @@ inline void update_triplet_weights(
             continue;
         }
 
-        const triplet& other_triplet = triplets_per_bin[i];
-        const sp_location other_spT_idx = other_triplet.sp3;
+        const triplet_spM& other_triplet = triplets_per_bin[i];
+        const sp_location other_spT_loc = other_triplet.spT;
         const traccc::internal_spacepoint<traccc::spacepoint> other_spT =
-            sp_grid.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx];
+            sp_grid.bin(other_spT_loc.bin_idx)[other_spT_loc.sp_idx];
 
         // compared top SP should have at least deltaRMin distance
         const scalar otherTop_r = other_spT.radius();
