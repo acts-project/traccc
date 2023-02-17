@@ -22,6 +22,10 @@ if (TRACCC_BUILD_KOKKOS)
   add_subdirectory(kokkos)
 endif()
 
+if (TRACCC_BUILD_ALPAKA)
+  add_subdirectory(alpaka)
+endif()
+
 find_package(OpenMP COMPONENTS CXX)
 if (OpenMP_CXX_FOUND)
     add_subdirectory(openmp)
