@@ -10,10 +10,11 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/edm/device/triplet_counter.hpp"
+#include "traccc/edm/device/doublet_counter_spM.hpp"
+#include "traccc/edm/device/triplet_counter_spM.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/seeding/detail/triplet_spM.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -27,20 +28,20 @@ namespace traccc::device {
 ///
 /// @param[in] globalIndex       The index of the current thread
 /// @param[in] config            Seedfinder configuration
+/// @param[in] filter_config     Seedfilter configuration
 /// @param[in] sp_view           The spacepoint grid to count triplets on
 /// @param[in] mid_top_doublet_view Container with the mid top doublets
 /// @param[in] tc_view           Container with the number of triplets to find
-/// @param[in] triplet_ps_view   Prefix sum for @c triplet_view
+/// @param[in] tc_ps_view        Prefix sum for @c tc_view
 /// @param[out] triplet_view     Container of triplets
 ///
 TRACCC_HOST_DEVICE
 inline void find_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
-    const doublet_container_types::const_view& mid_top_doublet_view,
-    const device::triplet_counter_container_types::const_view& tc_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>&
-        triplet_ps_view,
+    const doublet_spM_container_types::const_view& mid_top_doublet_view,
+    const device::triplet_counter_spM_container_types::const_view& tc_view,
+    const vecmem::data::vector_view<const prefix_sum_element_t>& tc_ps_view,
     triplet_container_types::view triplet_view);
 
 }  // namespace traccc::device

@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/doublet_counter_spM.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 
@@ -28,14 +28,14 @@ namespace traccc::device {
 /// @param[in] config        Seedfinder configuration
 /// @param[in] sp_view       The spacepoint grid to count doublets on
 /// @param[in] sp_ps_view    Prefix sum for iterating over the spacepoint grid
-/// @param[out] doublet_view Container storing the number of doublets
+/// @param[out] dc_view      Collection storing the number of doublets
 ///
 TRACCC_HOST_DEVICE
 inline void count_doublets(
-    std::size_t globalIndex, const seedfinder_config& config,
+    const std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& sp_ps_view,
-    doublet_counter_container_types::view doublet_view);
+    doublet_counter_spM_collection_types::view dc_view);
 
 }  // namespace traccc::device
 

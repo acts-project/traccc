@@ -8,7 +8,8 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/device/triplet_counter.hpp"
+#include "traccc/edm/device/triplet_counter_spM.hpp"
+#include "traccc/seeding/detail/doublet_spM.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -33,7 +34,9 @@ namespace traccc::device {
 /// @return A buffer usable by @c traccc::device::count_triplets
 ///
 triplet_counter_container_types::buffer make_triplet_counter_buffer(
-    const std::vector<std::size_t>& mb_doublet_sizes, vecmem::copy& copy,
-    vecmem::memory_resource& mr, vecmem::memory_resource* mr_host = nullptr);
+    const std::vector<doublet_spM_collection_types::view::size_type>&
+        mb_doublet_sizes,
+    vecmem::copy& copy, vecmem::memory_resource& mr,
+    vecmem::memory_resource* mr_host = nullptr);
 
 }  // namespace traccc::device

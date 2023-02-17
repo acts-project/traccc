@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/doublet_counter_spM.hpp"
 
 // Project include(s).
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -27,12 +27,10 @@ namespace traccc::device {
 /// @param grid_sizes vector of grid sizes
 /// @param copy The object to use for accessing @c spacepoint_grid
 /// @param mr The memory resource for the buffer
-/// @param mr_host The (optional) host-accessible memory resource for the
-///                buffer, in case @c mr is not host-accessible
 /// @return A buffer usable by @c traccc::device::count_doublets
 ///
-doublet_counter_container_types::buffer make_doublet_counter_buffer(
+doublet_counter_spM_collection_types::buffer make_doublet_counter_buffer(
     const std::vector<unsigned int>& grid_sizes, vecmem::copy& copy,
-    vecmem::memory_resource& mr, vecmem::memory_resource* mr_host = nullptr);
+    vecmem::memory_resource& mr);
 
 }  // namespace traccc::device

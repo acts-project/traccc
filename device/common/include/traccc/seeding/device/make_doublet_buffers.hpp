@@ -8,10 +8,10 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/doublet_counter_spM.hpp"
 
 // Project include(s).
-#include "traccc/seeding/detail/doublet.hpp"
+#include "traccc/seeding/detail/doublet_spM.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -20,11 +20,11 @@
 namespace traccc::device {
 
 /// Helper struct for the return type of @c traccc::device::make_doublet_buffer
-struct doublet_buffer_pair {
+struct doublet_spM_buffer_pair {
     /// Middle-bottom doublet buffer
-    doublet_container_types::buffer middleBottom;
+    doublet_spM_container_types::buffer middleBottom;
     /// Middle-top doublet buffer
-    doublet_container_types::buffer middleTop;
+    doublet_spM_container_types::buffer middleTop;
 };
 
 /// Create the doublet buffers
@@ -40,8 +40,8 @@ struct doublet_buffer_pair {
 ///                buffer, in case @c mr is not host-accessible
 /// @return Buffers usable by @c traccc::device::find_doublets
 ///
-doublet_buffer_pair make_doublet_buffers(
-    const doublet_counter_container_types::const_view& doublet_counter,
+doublet_spM_buffer_pair make_doublet_buffers(
+    const doublet_counter_spM_collection_types::const_view& doublet_counter,
     vecmem::copy& copy, vecmem::memory_resource& mr,
     vecmem::memory_resource* mr_host = nullptr);
 

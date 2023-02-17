@@ -10,10 +10,9 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/edm/device/triplet_counter.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/seeding/detail/triplet_spM.hpp"
 
 // System include(s)
 #include <cstddef>
@@ -36,7 +35,7 @@ inline void update_triplet_weights(
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>&
         triplet_ps_view,
-    scalar* data, triplet_container_types::view triplet_view);
+    scalar* data, triplet_spM_container_types::view triplet_view);
 
 }  // namespace traccc::device
 
