@@ -30,6 +30,8 @@ inline void reduce_problem_cell(
 
     const unsigned int pos = tid + start;
 
+    // Check if this code can benefit from changing to structs of arrays, as the
+    // recurring accesses to cell data in global memory is slow right now.
     const channel_id c0 = cells[pos].c.channel0;
     const channel_id c1 = cells[pos].c.channel1;
     const unsigned int mod_id = cells[pos].module_link;

@@ -28,6 +28,8 @@ namespace {
 /// These indices in clusterization will only range from 0 to
 /// MAX_CELLS_PER_PARTITION, so we only need a short
 using index_t = unsigned short;
+
+static constexpr int CELLS_PER_THREAD = 8;
 }  // namespace
 
 namespace kernels {
@@ -53,8 +55,9 @@ class form_spacepoints;
 /// @param[in] adjv     Vector of adjacent cells
 /// @param[in] tid      The thread index
 ///
-void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc, index_t adjv[8],
-               index_t tid, ::sycl::nd_item<1> item) {
+void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc[CELLS_PER_THREAD],
+               index_t adjv[CELLS_PER_THREAD][8], const index_t tid,
+               const index_t blockDim, ::sycl::nd_item<1> item) {
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
      * This varible will be set if a change is made, and dictates if another
@@ -76,13 +79,17 @@ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc, index_t adjv[8],
          * cluster ID if it is lower than ours, essentially merging the two
          * together.
          */
-        __builtin_assume(adjc <= 8);
-        for (unsigned char k = 0; k < adjc; ++k) {
-            index_t q = gf[adjv[k]];
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            const index_t cid = tst * blockDim + tid;
 
-            if (gf[tid] > q) {
-                f[f[tid]] = q;
-                f[tid] = q;
+            __builtin_assume(adjc[tst] <= 8);
+            for (unsigned char k = 0; k < adjc[tst]; ++k) {
+                index_t q = gf[adjv[tst][k]];
+
+                if (gf[cid] > q) {
+                    f[f[cid]] = q;
+                    f[cid] = q;
+                }
             }
         }
 
@@ -92,13 +99,17 @@ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc, index_t adjv[8],
          */
         item.barrier();
 
-        /*
-         * The second stage is shortcutting, which is an optimisation that
-         * allows us to look at any shortcuts in the cluster IDs that we
-         * can merge without adjacency information.
-         */
-        if (f[tid] > gf[tid]) {
-            f[tid] = gf[tid];
+#pragma unroll
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            const index_t cid = tst * blockDim + tid;
+            /*
+             * The second stage is shortcutting, which is an optimisation that
+             * allows us to look at any shortcuts in the cluster IDs that we
+             * can merge without adjacency information.
+             */
+            if (f[cid] > gf[cid]) {
+                f[cid] = gf[cid];
+            }
         }
 
         /*
@@ -106,13 +117,17 @@ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc, index_t adjv[8],
          */
         item.barrier();
 
-        /*
-         * Update the array for the next generation, keeping track of any
-         * changes we make.
-         */
-        if (gf[tid] != f[f[tid]]) {
-            gf[tid] = f[f[tid]];
-            gf_changed = true;
+#pragma unroll
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            const index_t cid = tst * blockDim + tid;
+            /*
+             * Update the array for the next generation, keeping track of any
+             * changes we make.
+             */
+            if (gf[cid] != f[f[cid]]) {
+                gf[cid] = f[f[cid]];
+                gf_changed = true;
+            }
         }
 
         /*
@@ -157,18 +172,18 @@ class ccl_kernel {
     void operator()(::sycl::nd_item<1> item) const {
 
         const index_t tid = item.get_local_linear_id();
+        const index_t blockDim = item.get_local_range(0);
+        const unsigned int blockIdx = item.get_group_linear_id();
 
         const device::partition_collection_types::const_device
             partitions_device(partitions_view);
-        assert(item.get_group_linear_id() < partitions_device.size());
+        assert(blockIdx + 1 < partitions_device.size());
 
         // Get partition for this thread group
-        const device::partition start =
-            partitions_device[item.get_group_linear_id()];
-        const device::partition end =
-            partitions_device[item.get_group_linear_id() + 1];
-        assert(end - start <= m_max_cells_per_partition);
-        const unsigned short partition_size = end - start;
+        const device::partition start = partitions_device[blockIdx];
+        const device::partition end = partitions_device[blockIdx + 1];
+        const index_t size = end - start;
+        assert(size <= m_max_cells_per_partition);
 
         const alt_cell_collection_types::const_device cells_device(cells_view);
         const cell_module_collection_types::const_device modules_device(
@@ -181,7 +196,7 @@ class ccl_kernel {
         unsigned int& measurement_count = m_measurement_count[0];
 
         // Vector of indices of the adjacent cells
-        index_t adjv[8];
+        index_t adjv[CELLS_PER_THREAD][8];
         /*
          * The number of adjacent cells for each cell must start at zero, to
          * avoid uninitialized memory. adjv does not need to be zeroed, as
@@ -189,25 +204,35 @@ class ccl_kernel {
          * is set.
          */
         // Number of adjacent cells
-        unsigned char adjc = 0;
+        unsigned char adjc[CELLS_PER_THREAD];
 
         // It seems that sycl runs into undefined behaviour when calling
         // any_of_group when some threads have already run into a return. So can
         // only do this after running the FastSV algorithm.
-        if (tid < partition_size) {
+
+#pragma unroll
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            adjc[tst] = 0;
+        }
+
+        for (index_t tst = 0, cid; (cid = tst * blockDim + tid) < size; ++tst) {
             /*
              * Look for adjacent cells to the current one.
              */
-            device::reduce_problem_cell(cells_device, tid, start, end, adjc,
-                                        adjv);
+            device::reduce_problem_cell(cells_device, cid, start, end,
+                                        adjc[tst], adjv[tst]);
         }
 
-        /*
-         * At the start, the values of f and f_next should be equal to the
-         * ID of the cell.
-         */
-        f[tid] = tid;
-        f_next[tid] = tid;
+#pragma unroll
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            const index_t cid = tst * blockDim + tid;
+            /*
+             * At the start, the values of f and f_next should be equal to the
+             * ID of the cell.
+             */
+            f[cid] = cid;
+            f_next[cid] = cid;
+        }
 
         /*
          * Now that the data has initialized, we synchronize again before we
@@ -219,10 +244,10 @@ class ccl_kernel {
          * Run FastSV algorithm, which will update the father index to that of
          * the cell belonging to the same cluster with the lowest index.
          */
-        fast_sv_1(&f[0], &f_next[0], adjc, adjv, tid, item);
+        fast_sv_1(&f[0], &f_next[0], adjc, adjv, tid, blockDim, item);
 
         // Now that we can use return, check if any work needs to be done
-        if (tid >= partition_size) {
+        if (tid >= size) {
             return;
         }
 
@@ -239,12 +264,15 @@ class ccl_kernel {
          * Count the number of clusters by checking how many cells have
          * themself assigned as a parent.
          */
-        if (f[tid] == tid) {
-            ::sycl::ext::oneapi::atomic_ref<
-                unsigned int, ::sycl::memory_order::relaxed,
-                ::sycl::memory_scope::work_group,
-                ::sycl::access::address_space::local_space>(outi)
-                .fetch_add(1);
+        for (index_t tst = 0, cid; (cid = tst * blockDim + tid) < size; ++tst) {
+
+            if (f[cid] == cid) {
+                ::sycl::ext::oneapi::atomic_ref<
+                    unsigned int, ::sycl::memory_order::relaxed,
+                    ::sycl::memory_scope::work_group,
+                    ::sycl::access::address_space::local_space>(outi)
+                    .fetch_add(1);
+            }
         }
 
         item.barrier();
@@ -284,21 +312,23 @@ class ccl_kernel {
         const vecmem::data::vector_view<unsigned short> f_view(
             m_max_cells_per_partition, &f[0]);
 
-        if (f[tid] == tid) {
-            /*
-             * If we are a cluster owner, atomically claim a position in the
-             * output array which we can write to.
-             */
-            const unsigned int id =
-                ::sycl::ext::oneapi::atomic_ref<
-                    unsigned int, ::sycl::memory_order::relaxed,
-                    ::sycl::memory_scope::work_group,
-                    ::sycl::access::address_space::local_space>(outi)
-                    .fetch_add(1);
+        for (index_t tst = 0, cid; (cid = tst * blockDim + tid) < size; ++tst) {
+            if (f[cid] == cid) {
+                /*
+                 * If we are a cluster owner, atomically claim a position in the
+                 * output array which we can write to.
+                 */
+                const unsigned int id =
+                    ::sycl::ext::oneapi::atomic_ref<
+                        unsigned int, ::sycl::memory_order::relaxed,
+                        ::sycl::memory_scope::work_group,
+                        ::sycl::access::address_space::local_space>(outi)
+                        .fetch_add(1);
 
-            device::aggregate_cluster(cells_device, modules_device, f_view,
-                                      start, end, tid,
-                                      measurements_device[groupPos + id]);
+                device::aggregate_cluster(cells_device, modules_device, f_view,
+                                          start, end, cid,
+                                          measurements_device[groupPos + id]);
+            }
         }
     }
 
@@ -363,9 +393,18 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         .wait_and_throw();
 
     const unsigned short max_cells_per_partition = m_max_cells_per_partition;
+    const unsigned int threads_per_partition =
+        (m_max_cells_per_partition + CELLS_PER_THREAD - 1) / CELLS_PER_THREAD;
     ::sycl::nd_range ndrange(
-        ::sycl::range<1>(num_partitions * max_cells_per_partition),
-        ::sycl::range<1>(max_cells_per_partition));
+        ::sycl::range<1>(num_partitions * threads_per_partition),
+        ::sycl::range<1>(threads_per_partition));
+
+    // Check if device is capable of allocating sufficient local memory
+    assert(sizeof(index_t) * 2 * max_cells_per_partition +
+               sizeof(unsigned int) <
+           details::get_queue(m_queue)
+               .get_device()
+               .get_info<::sycl::info::device::local_mem_size>());
 
     // Run ccl kernel
     details::get_queue(m_queue)

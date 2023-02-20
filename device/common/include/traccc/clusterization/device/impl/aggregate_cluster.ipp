@@ -35,9 +35,23 @@ inline void aggregate_cluster(
     const auto module_link = cells[tid + start].module_link;
     const cell_module this_module = modules.at(module_link);
     const unsigned short partition_size = end - start;
+
+    channel_id maxChannel1 = std::numeric_limits<channel_id>::min();
+
     for (unsigned short j = tid; j < partition_size; j++) {
 
         assert(j < f.size());
+
+        const unsigned int pos = j + start;
+        /*
+         * Terminate the process earlier if we have reached a cell sufficiently
+         * in a different module.
+         */
+        if (cells[pos].module_link != module_link) {
+            break;
+        }
+
+        const cell this_cell = cells[pos].c;
 
         /*
          * If the value of this cell is equal to our, that means it
@@ -45,8 +59,10 @@ inline void aggregate_cluster(
          * for position and add them to our accumulators.
          */
         if (f[j] == tid) {
-            const unsigned int pos = j + start;
-            const cell this_cell = cells[pos].c;
+
+            if (this_cell.channel1 > maxChannel1) {
+                maxChannel1 = this_cell.channel1;
+            }
 
             const float weight = traccc::detail::signal_cell_modelling(
                 this_cell.activation, this_module);
@@ -64,6 +80,14 @@ inline void aggregate_cluster(
                              weight * (diff[i]) * (cell_position[i] - mean[i]);
                 }
             }
+        }
+
+        /*
+         * Terminate the process earlier if we have reached a cell sufficiently
+         * far away from the cluster in the dominant axis.
+         */
+        if (this_cell.channel1 > maxChannel1 + 1) {
+            break;
         }
     }
     if (totalWeight > 0.) {

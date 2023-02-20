@@ -27,6 +27,8 @@ namespace {
 /// These indices in clusterization will only range from 0 to
 /// MAX_CELLS_PER_PARTITION, so we only need a short
 using index_t = unsigned short;
+
+static constexpr int CELLS_PER_THREAD = 8;
 }  // namespace
 
 namespace kernels {
@@ -49,8 +51,10 @@ namespace kernels {
 /// @param[in] adjv     Vector of adjacent cells
 /// @param[in] tid      The thread index
 ///
-__device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc,
-                          index_t adjv[8], index_t tid) {
+__device__ void fast_sv_1(index_t* f, index_t* gf,
+                          unsigned char adjc[CELLS_PER_THREAD],
+                          index_t adjv[CELLS_PER_THREAD][8], index_t tid,
+                          const index_t blckDim) {
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
      * This varible will be set if a change is made, and dictates if another
@@ -72,13 +76,17 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc,
          * cluster ID if it is lower than ours, essentially merging the two
          * together.
          */
-        __builtin_assume(adjc <= 8);
-        for (unsigned char k = 0; k < adjc; ++k) {
-            index_t q = gf[adjv[k]];
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            const index_t cid = tst * blckDim + tid;
 
-            if (gf[tid] > q) {
-                f[f[tid]] = q;
-                f[tid] = q;
+            __builtin_assume(adjc[tst] <= 8);
+            for (unsigned char k = 0; k < adjc[tst]; ++k) {
+                index_t q = gf[adjv[tst][k]];
+
+                if (gf[cid] > q) {
+                    f[f[cid]] = q;
+                    f[cid] = q;
+                }
             }
         }
 
@@ -88,13 +96,17 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc,
          */
         __syncthreads();
 
-        /*
-         * The second stage is shortcutting, which is an optimisation that
-         * allows us to look at any shortcuts in the cluster IDs that we
-         * can merge without adjacency information.
-         */
-        if (f[tid] > gf[tid]) {
-            f[tid] = gf[tid];
+#pragma unroll
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            const index_t cid = tst * blckDim + tid;
+            /*
+             * The second stage is shortcutting, which is an optimisation that
+             * allows us to look at any shortcuts in the cluster IDs that we
+             * can merge without adjacency information.
+             */
+            if (f[cid] > gf[cid]) {
+                f[cid] = gf[cid];
+            }
         }
 
         /*
@@ -102,13 +114,17 @@ __device__ void fast_sv_1(index_t* f, index_t* gf, unsigned char adjc,
          */
         __syncthreads();
 
-        /*
-         * Update the array for the next generation, keeping track of any
-         * changes we make.
-         */
-        if (gf[tid] != f[f[tid]]) {
-            gf[tid] = f[f[tid]];
-            gf_changed = true;
+#pragma unroll
+        for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+            const index_t cid = tst * blckDim + tid;
+            /*
+             * Update the array for the next generation, keeping track of any
+             * changes we make.
+             */
+            if (gf[cid] != f[f[cid]]) {
+                gf[cid] = f[f[cid]];
+                gf_changed = true;
+            }
         }
 
         /*
@@ -130,18 +146,20 @@ __global__ void ccl_kernel(
     unsigned int& measurement_count) {
 
     const index_t tid = threadIdx.x;
+    const index_t blckDim = blockDim.x;
 
     const device::partition_collection_types::const_device partitions_device(
         partitions_view);
-    assert(blockIdx.x < partitions_device.size());
+    assert(blockIdx.x + 1 < partitions_device.size());
 
     // Get partition for this thread group
     const device::partition start = partitions_device[blockIdx.x];
     const device::partition end = partitions_device[blockIdx.x + 1];
-    assert(end - start <= max_cells_per_partition);
+    const index_t size = end - start;
+    assert(size <= max_cells_per_partition);
 
     // Check if any work needs to be done
-    if (tid >= end - start) {
+    if (tid >= size) {
         return;
     }
 
@@ -153,7 +171,7 @@ __global__ void ccl_kernel(
         measurements_view);
 
     // Vector of indices of the adjacent cells
-    index_t adjv[8];
+    index_t adjv[CELLS_PER_THREAD][8];
     /*
      * The number of adjacent cells for each cell must start at zero, to
      * avoid uninitialized memory. adjv does not need to be zeroed, as
@@ -161,12 +179,20 @@ __global__ void ccl_kernel(
      * is set.
      */
     // Number of adjacent cells
-    unsigned char adjc = 0;
+    unsigned char adjc[CELLS_PER_THREAD];
 
-    /*
-     * Look for adjacent cells to the current one.
-     */
-    device::reduce_problem_cell(cells_device, tid, start, end, adjc, adjv);
+#pragma unroll
+    for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+        adjc[tst] = 0;
+    }
+
+    for (index_t tst = 0, cid; (cid = tst * blckDim + tid) < size; ++tst) {
+        /*
+         * Look for adjacent cells to the current one.
+         */
+        device::reduce_problem_cell(cells_device, cid, start, end, adjc[tst],
+                                    adjv[tst]);
+    }
 
     /*
      * These arrays are the meat of the pudding of this algorithm, and we
@@ -180,12 +206,16 @@ __global__ void ccl_kernel(
     index_t* f = &shared_v[0];
     index_t* f_next = &shared_v[max_cells_per_partition];
 
-    /*
-     * At the start, the values of f and f_next should be equal to the
-     * ID of the cell.
-     */
-    f[tid] = tid;
-    f_next[tid] = tid;
+#pragma unroll
+    for (index_t tst = 0; tst < CELLS_PER_THREAD; ++tst) {
+        const index_t cid = tst * blckDim + tid;
+        /*
+         * At the start, the values of f and f_next should be equal to the
+         * ID of the cell.
+         */
+        f[cid] = cid;
+        f_next[cid] = cid;
+    }
 
     /*
      * Now that the data has initialized, we synchronize again before we
@@ -197,7 +227,7 @@ __global__ void ccl_kernel(
      * Run FastSV algorithm, which will update the father index to that of the
      * cell belonging to the same cluster with the lowest index.
      */
-    fast_sv_1(f, f_next, adjc, adjv, tid);
+    fast_sv_1(f, f_next, adjc, adjv, tid, blckDim);
 
     /*
      * This variable will be used to write to the output later.
@@ -217,8 +247,10 @@ __global__ void ccl_kernel(
      * Count the number of clusters by checking how many cells have
      * themself assigned as a parent.
      */
-    if (f[tid] == tid) {
-        atomicAdd(&outi, 1);
+    for (index_t tst = 0, cid; (cid = tst * blckDim + tid) < size; ++tst) {
+        if (f[cid] == cid) {
+            atomicAdd(&outi, 1);
+        }
     }
 
     __syncthreads();
@@ -252,14 +284,17 @@ __global__ void ccl_kernel(
 
     vecmem::data::vector_view<index_t> f_view(max_cells_per_partition, f);
 
-    if (f[tid] == tid) {
-        /*
-         * If we are a cluster owner, atomically claim a position in the
-         * output array which we can write to.
-         */
-        const unsigned int id = atomicAdd(&outi, 1);
-        device::aggregate_cluster(cells_device, modules_device, f_view, start,
-                                  end, tid, measurements_device[groupPos + id]);
+    for (index_t tst = 0, cid; (cid = tst * blckDim + tid) < size; ++tst) {
+        if (f[cid] == cid) {
+            /*
+             * If we are a cluster owner, atomically claim a position in the
+             * output array which we can write to.
+             */
+            const unsigned int id = atomicAdd(&outi, 1);
+            device::aggregate_cluster(cells_device, modules_device, f_view,
+                                      start, end, cid,
+                                      measurements_device[groupPos + id]);
+        }
     }
 }
 
@@ -309,9 +344,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(
         cudaMemset(num_measurements_device.get(), 0, sizeof(unsigned int)));
 
+    const unsigned int threads_per_partition =
+        (m_max_cells_per_partition + CELLS_PER_THREAD - 1) / CELLS_PER_THREAD;
     // Launch ccl kernel. Each thread will handle a single cell.
     kernels::
-        ccl_kernel<<<num_partitions, m_max_cells_per_partition,
+        ccl_kernel<<<num_partitions, threads_per_partition,
                      2 * m_max_cells_per_partition * sizeof(index_t), stream>>>(
             cells, modules, partitions, m_max_cells_per_partition,
             measurements_buffer, *num_measurements_device);
