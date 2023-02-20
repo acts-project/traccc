@@ -18,8 +18,8 @@ make_doublet_counter_buffer(const std::vector<unsigned int>& grid_sizes,
                             vecmem::copy& copy, vecmem::memory_resource& mr) {
 
     // Calculate the capacities for the buffer.
-    const device::doublet_counter_spM_collection_types::buffer::size_type
-        buffer_size = std::accumulate(grid_sizes.begin(), grid_sizes.end(), 0);
+    const device::doublet_counter_spM_collection_types::buffer::size_type size =
+        std::accumulate(grid_sizes.begin(), grid_sizes.end(), 0);
 
     // Create the buffer object.
     device::doublet_counter_spM_collection_types::buffer buffer{size, 0, mr};

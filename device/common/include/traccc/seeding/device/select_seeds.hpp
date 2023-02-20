@@ -26,7 +26,7 @@ namespace traccc::device {
 /// @param[in] globalIndex   The index of the current thread
 /// @param[in] filter_config seed filter config
 /// @param[in] spacepoints_view collection of internal spacepoints
-/// @param[in] tc_view view on vecmem container for triplets
+/// @param[in] triplets_view view on vecmem container for triplets
 /// @param[in] data Array for temporary storage of triplets for
 /// comparison
 /// @param[out] seed_container vecmem container for seeds
@@ -36,8 +36,8 @@ inline void select_seeds(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
     const spacepoint_collection_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,
-    const triplet_spM_container_types::const_view& tc_view, triplet* data,
-    alt_seed_collection_types::view seed_view);
+    const triplet_spM_container_types::const_view& triplets_view,
+    triplet_spM* data, alt_seed_collection_types::view seed_view);
 
 }  // namespace traccc::device
 

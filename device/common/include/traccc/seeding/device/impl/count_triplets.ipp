@@ -47,7 +47,7 @@ inline void count_triplets(
         mid_bot_doublet_device.get_items().at(bin_idx).at(item_idx).sp2;
 
     // Create device copy of input parameters
-    const doublet_container_types::const_device mid_top_doublet_device(
+    const doublet_spM_container_types::const_device mid_top_doublet_device(
         mid_top_doublet_view);
 
     // Get internal spacepoints for current bin
@@ -91,6 +91,9 @@ inline void count_triplets(
 
     triplet_counter_spM_header& header =
         triplet_counter.get_headers().at(bin_idx);
+    if (item_idx == 0) {
+        header.m_spM = spM_loc;
+    }
 
     // iterate over mid-top doublets
     for (unsigned int i = 0; i < num_top; ++i) {
@@ -119,7 +122,7 @@ inline void count_triplets(
             nTriplets.fetch_add(num_triplets_per_mb);
 
         triplet_counter.get_items().at(bin_idx).push_back(
-            {spB_ids, num_triplets_per_mb, posTriplets});
+            {spB_loc, num_triplets_per_mb, posTriplets});
     }
 }
 

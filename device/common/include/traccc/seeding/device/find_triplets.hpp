@@ -42,7 +42,7 @@ inline void find_triplets(
     const doublet_spM_container_types::const_view& mid_top_doublet_view,
     const device::triplet_counter_spM_container_types::const_view& tc_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& tc_ps_view,
-    triplet_container_types::view triplet_view);
+    triplet_spM_container_types::view triplet_view);
 
 }  // namespace traccc::device
 

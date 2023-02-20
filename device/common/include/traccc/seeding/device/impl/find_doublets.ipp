@@ -31,7 +31,7 @@ inline void find_doublets(
     }
 
     // Get the middle spacepoint that we need to be looking at.
-    const device::doublet_counter middle_sp_counter =
+    const device::doublet_counter_spM middle_sp_counter =
         doublet_counts.at(globalIndex);
 
     // Set up the device containers.

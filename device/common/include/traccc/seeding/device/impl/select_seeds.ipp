@@ -59,15 +59,21 @@ inline void select_seeds(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
     const spacepoint_collection_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,
-    const triplet_spM_container_types::const_view& tc_view, triplet* data,
-    alt_seed_collection_types::view seed_view) {
+    const triplet_spM_container_types::const_view& triplets_view,
+    triplet_spM* data, alt_seed_collection_types::view seed_view) {
 
     // Check if anything needs to be done.
     const triplet_spM_container_types::const_device triplets_device(
-        triplet_view);
+        triplets_view);
     if (globalIndex >= triplets_device.size()) {
         return;
     }
+
+    // Set up the device containers
+    const spacepoint_collection_types::const_device spacepoints_device(
+        spacepoints_view);
+    const const_sp_grid_device internal_sp_device(internal_sp_view);
+    alt_seed_collection_types::device seeds_device(seed_view);
 
     // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
@@ -81,13 +87,6 @@ inline void select_seeds(
         triplets_device.get_headers().at(globalIndex).m_spM;
     const internal_spacepoint<spacepoint> spM =
         internal_sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
-
-    // Set up the device containers
-    const spacepoint_collection_types::const_device spacepoints_device(
-        spacepoints_view);
-    const const_sp_grid_device internal_sp_device(internal_sp_view);
-
-    alt_seed_collection_types::device seeds_device(seed_view);
 
     // Number of triplets added for this spM
     unsigned int n_triplets_per_spM = 0;
@@ -133,9 +132,8 @@ inline void select_seeds(
 
         // if the number of good triplets is below the threshold, add
         // the current triplet to the array
-        else if (n_triplets_per_spM < filter_config.max_triplets_per_spM) {
-            data[n_triplets_per_spM] = aTriplet;
-            n_triplets_per_spM++;
+        else {
+            data[n_triplets_per_spM++] = aTriplet;
         }
     }
 

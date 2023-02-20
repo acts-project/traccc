@@ -27,7 +27,7 @@ triplet_spM_container_types::buffer make_triplet_buffer(
     copy(triplet_counter.headers, triplet_counts);
 
     // Construct the size (vectors) for the buffers.
-    std::vector<triplet_container_types::buffer::item_vector::size_type>
+    std::vector<triplet_spM_container_types::buffer::item_vector::size_type>
         triplet_sizes(triplet_counts.size());
     std::transform(triplet_counts.begin(), triplet_counts.end(),
                    triplet_sizes.begin(),
@@ -47,6 +47,7 @@ triplet_spM_container_types::buffer make_triplet_buffer(
     copy.setup(result.items);
 
     // Make sure that the summary values are set to zero in the buffers.
+    /// TODO: This should not be necessary, but apparently is?!
     copy.memset(result.headers, 0);
 
     // Return the created buffers.

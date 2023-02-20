@@ -33,7 +33,7 @@ namespace traccc::device {
 ///                buffer, in case @c mr is not host-accessible
 /// @return A buffer usable by @c traccc::device::count_triplets
 ///
-triplet_counter_container_types::buffer make_triplet_counter_buffer(
+triplet_counter_spM_container_types::buffer make_triplet_counter_buffer(
     const std::vector<doublet_spM_collection_types::view::size_type>&
         mb_doublet_sizes,
     vecmem::copy& copy, vecmem::memory_resource& mr,
