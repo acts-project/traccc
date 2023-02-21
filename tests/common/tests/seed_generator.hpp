@@ -44,9 +44,7 @@ struct seed_generator {
             auto& navigation = propagation._navigation;
 
             // Abort if the surface is sensitive
-            if (navigation.is_on_module() &&
-                navigation.current()->sf_id ==
-                    detray::surface_id::e_sensitive) {
+            if (navigation.is_on_sensitive()) {
                 propagation._heartbeat &= navigation.abort();
             }
         }

@@ -54,6 +54,8 @@ struct track_state {
     using matrix_type =
         typename matrix_operator::template matrix_type<ROWS, COLS>;
 
+    track_state() = default;
+
     /// Construction with track candidate
     TRACCC_HOST_DEVICE
     track_state(const track_candidate& trk_cand)

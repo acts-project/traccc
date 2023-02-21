@@ -87,8 +87,8 @@ int simulate(std::string output_directory, unsigned int events, scalar p0,
 
     boost::filesystem::create_directories(full_path);
 
-    auto sim =
-        detray::simulator(events, det, generator, meas_smearer, full_path);
+    auto sim = detray::simulator(events, det, std::move(generator),
+                                 meas_smearer, full_path);
     sim.run();
 
     return 1;
