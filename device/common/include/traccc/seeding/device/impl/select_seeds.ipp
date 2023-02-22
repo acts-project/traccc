@@ -84,12 +84,10 @@ inline void select_seeds(
     triplet_container_types::const_device triplet_device(triplet_view);
     alt_seed_collection_types::device seeds_device(seed_view);
 
-    // Header of triplet: number of triplets per bin
     // Item of triplet: triplet objects per bin
-    const unsigned int num_triplets_per_bin =
-        triplet_device.get_headers().at(bin_idx).n_triplets;
     const triplet_collection_types::const_device triplets_per_bin =
         triplet_device.get_items().at(bin_idx);
+    const unsigned int num_triplets_per_bin = triplets_per_bin.size();
 
     // Current work item = middle spacepoint
     const sp_location spM_loc =

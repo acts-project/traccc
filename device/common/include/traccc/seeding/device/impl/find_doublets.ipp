@@ -57,20 +57,9 @@ inline void find_doublets(
     doublet_collection_types::device mt_doublets_in_bin =
         mt_doublets.get_items().at(middle_sp_counter.m_spM.bin_idx);
 
-    // Atomic references for the doublet summary values for the bin of the
-    // middle spacepoint.
-    vecmem::device_atomic_ref<unsigned int> mb_doublet_count(
-        mb_doublets.get_headers()
-            .at(middle_sp_counter.m_spM.bin_idx)
-            .n_doublets);
-    vecmem::device_atomic_ref<unsigned int> mt_doublet_count(
-        mt_doublets.get_headers()
-            .at(middle_sp_counter.m_spM.bin_idx)
-            .n_doublets);
-
     // Get the spacepoint that we're evaluating in this thread, and treat that
     // as the "middle" spacepoint.
-    const internal_spacepoint<spacepoint>& middle_sp =
+    const internal_spacepoint<spacepoint> middle_sp =
         sp_grid.bin(middle_sp_counter.m_spM.bin_idx)
             .at(middle_sp_counter.m_spM.sp_idx);
 
@@ -149,7 +138,6 @@ inline void find_doublets(
                         {other_bin_idx, other_sp_idx},
                         mid_top_start_idx,
                         mid_top_end_idx};
-                    mb_doublet_count.fetch_add(1);
                 }
                 // Check if this spacepoint is a compatible "top" spacepoint to
                 // the thread's "middle" spacepoint.
@@ -166,7 +154,6 @@ inline void find_doublets(
                          static_cast<unsigned int>(
                              middle_sp_counter.m_spM.sp_idx)},
                         {other_bin_idx, other_sp_idx}};
-                    mt_doublet_count.fetch_add(1);
                 }
             }
         }
