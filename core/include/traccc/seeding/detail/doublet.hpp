@@ -1,20 +1,19 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Project include(s).
 #include "traccc/seeding/detail/singlet.hpp"
 
-namespace traccc {
+// System include(s).
+#include <variant>
 
-/// Header: the number of doublets per spacepoint bin
-struct doublet_per_bin {
-    unsigned int n_doublets = 0;
-};
+namespace traccc {
 
 /// Item: doublet of middle-bottom or middle-top
 struct doublet {
@@ -40,6 +39,6 @@ inline TRACCC_HOST_DEVICE bool operator==(const doublet& lhs,
 using doublet_collection_types = collection_types<doublet>;
 
 /// Declare all doublet container types
-using doublet_container_types = container_types<doublet_per_bin, doublet>;
+using doublet_container_types = container_types<std::monostate, doublet>;
 
 }  // namespace traccc

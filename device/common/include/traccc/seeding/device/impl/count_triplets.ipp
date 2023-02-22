@@ -57,7 +57,6 @@ inline void count_triplets(
     // Get all spacepoints
     const const_sp_grid_device internal_sp_device(sp_view);
 
-    // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
     const vecmem::device_vector<const doublet> mid_top_doublets_per_bin =
         mid_top_doublet_device.get_items().at(bin_idx);

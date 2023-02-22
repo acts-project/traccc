@@ -59,7 +59,6 @@ inline void find_triplets(
     const traccc::internal_spacepoint<traccc::spacepoint> spB =
         sp_grid.bin(spB_bin)[spB_idx];
 
-    // Header of doublet: number of mid_top doublets per bin
     // Item of doublet: doublet objects per bin
     const vecmem::device_vector<const doublet> mid_top_doublets_per_bin =
         mid_top_doublet_device.get_items().at(spM_bin);
@@ -109,11 +108,6 @@ inline void find_triplets(
         if (triplet_finding_helper::isCompatible(
                 spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
                 impact_parameter)) {
-            // Atomic reference for the triplet summary value for the bin of the
-            // mid bottom doublet.
-            vecmem::device_atomic_ref<unsigned int> num_triplets_per_bin(
-                triplets.get_headers().at(spM_bin).n_triplets);
-            num_triplets_per_bin.fetch_add(1);
 
             // Add triplet to jagged vector
             triplets.get_items().at(spM_bin).at(posTriplets++) =
