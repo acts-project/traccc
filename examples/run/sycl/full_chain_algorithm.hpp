@@ -8,9 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/clusterization/device/partitioning_algorithm.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/device/partition.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
@@ -45,12 +43,11 @@ class full_chain_algorithm
     ///
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
-    /// @param max_cells_per_partition The number of cells to put together in
-    /// each partition. Equal to the number of threads in the clusterization
-    /// kernels. Adapt to different GPUs' capabilities.
+    /// @param target_cells_per_partition The average number of cells in each
+    /// partition.
     ///
     full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const unsigned short max_cells_per_partition);
+                         const unsigned short target_cells_per_partition);
 
     /// Copy constructor
     ///
@@ -90,11 +87,8 @@ class full_chain_algorithm
     /// @{
 
     /// The number of cells to put together in each partition.
-    /// Equal to the number of threads in the clusterization kernels.
     /// Adapt to different GPUs' capabilities.
-    unsigned short m_max_cells_per_partition;
-    /// Partitioning algorithm
-    device::partitioning_algorithm m_partitioning;
+    unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Seeding algorithm

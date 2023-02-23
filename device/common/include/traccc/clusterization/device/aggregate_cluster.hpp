@@ -11,7 +11,6 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
-#include "traccc/edm/device/partition.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -26,15 +25,15 @@ namespace traccc::device {
 /// @param[in] f        array of "parent" indices for all cells in this
 /// partition
 /// @param[in] start    partition start point this cell belongs to
-/// @param[in] end    partition end point this cell belongs to
-/// @param[in] tid      current thread id
+/// @param[in] end      partition end point this cell belongs to
+/// @param[in] cid      current cell id
 /// @param[out] out     cluster to fill
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const alt_cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
     const vecmem::data::vector_view<unsigned short> f_view,
-    const partition start, const partition end, const unsigned short tid,
+    const unsigned int start, const unsigned int end, const unsigned short cid,
     alt_measurement& out);
 
 }  // namespace traccc::device

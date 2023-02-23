@@ -10,19 +10,18 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/device/partition.hpp"
 
 // System include(s).
 #include <cstddef>
 
 namespace traccc::device {
 
-/// Function for looking for adjacent cells. The thread ids will range from 0 to
-/// partitioning::MAX_CELLS_PER_PARTITION and the number of blocks will equal
-/// the number of partitions, hence checking all cells.
+/// Function for looking for adjacent cells. The cell ids will range from 0 to
+/// max_cells_per_partition and the number of blocks will equal the number of
+/// partitions, hence checking all cells.
 ///
 /// @param[in] cells    Collection of cells
-/// @param[in] tid      Current thread id
+/// @param[in] cid      Current cell id
 /// @param[in] start    Current partition start point
 /// @param[in] end      Current partition end point
 /// @param[out] ajc     Number of adjacent cells
@@ -31,7 +30,7 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
     const alt_cell_collection_types::const_device& cells,
-    const unsigned short tid, const partition start, const partition end,
+    const unsigned short cid, const unsigned int start, const unsigned int end,
     unsigned char& adjc, unsigned short adjv[8]);
 
 }  // namespace traccc::device
