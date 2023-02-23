@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -178,9 +178,19 @@ seed_finding::output_type seed_finding::operator()(
         m_mr.host ? m_mr.host : &(m_mr.main));
     (*m_copy)(doublet_counter_buffer.headers, doublet_counts);
 
+    std::vector<unsigned int> mb_buffer_sizes(doublet_counts.size());
+    std::transform(
+        doublet_counts.begin(), doublet_counts.end(), mb_buffer_sizes.begin(),
+        [](const device::doublet_counter_header& dc) { return dc.m_nMidBot; });
+
+    std::vector<unsigned int> mt_buffer_sizes(doublet_counts.size());
+    std::transform(
+        doublet_counts.begin(), doublet_counts.end(), mt_buffer_sizes.begin(),
+        [](const device::doublet_counter_header& dc) { return dc.m_nMidTop; });
+
     // Set up the doublet buffers.
     device::doublet_buffer_pair doublet_buffers = device::make_doublet_buffers(
-        doublet_counter_buffer, *m_copy, m_mr.main, m_mr.host);
+        mb_buffer_sizes, mt_buffer_sizes, *m_copy, m_mr.main, m_mr.host);
 
     // Create prefix sum buffer
     vecmem::data::vector_buffer doublet_prefix_sum_buff = make_prefix_sum_buff(
@@ -199,19 +209,14 @@ seed_finding::output_type seed_finding::operator()(
         doublet_prefix_sum_buff, doublet_buffers.middleBottom,
         doublet_buffers.middleTop);
 
-    std::vector<std::size_t> mb_buffer_sizes(doublet_counts.size());
-    std::transform(
-        doublet_counts.begin(), doublet_counts.end(), mb_buffer_sizes.begin(),
-        [](const device::doublet_counter_header& dc) { return dc.m_nMidBot; });
-
     // Set up the triplet counter buffer
     device::triplet_counter_container_types::buffer triplet_counter_buffer =
         device::make_triplet_counter_buffer(mb_buffer_sizes, *m_copy, m_mr.main,
                                             m_mr.host);
 
     // Create prefix sum buffer
-    vecmem::data::vector_buffer mb_prefix_sum_buff = make_prefix_sum_buff(
-        m_copy->get_sizes(doublet_buffers.middleBottom.items), *m_copy, m_mr);
+    vecmem::data::vector_buffer mb_prefix_sum_buff =
+        make_prefix_sum_buff(mb_buffer_sizes, *m_copy, m_mr);
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
@@ -231,9 +236,22 @@ seed_finding::output_type seed_finding::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
+    // Get the number of triplets per geometric bin.
+    vecmem::vector<device::triplet_counter_header> triplet_counts(
+        m_mr.host ? m_mr.host : &(m_mr.main));
+    (*m_copy)(triplet_counter_buffer.headers, triplet_counts);
+
+    // Construct the size (vectors) for the buffers.
+    std::vector<unsigned int> triplet_sizes(triplet_counts.size());
+    std::transform(triplet_counts.begin(), triplet_counts.end(),
+                   triplet_sizes.begin(),
+                   [](const device::triplet_counter_header& tc) {
+                       return tc.m_nTriplets;
+                   });
+
     // Set up the triplet buffer.
     triplet_container_types::buffer triplet_buffer =
-        device::make_triplet_buffer(triplet_counter_buffer, *m_copy, m_mr.main,
+        device::make_triplet_buffer(triplet_sizes, *m_copy, m_mr.main,
                                     m_mr.host);
 
     // Create prefix sum buffer
@@ -255,8 +273,8 @@ seed_finding::output_type seed_finding::operator()(
         triplet_counter_prefix_sum_buff, triplet_buffer);
 
     // Create prefix sum buffer
-    vecmem::data::vector_buffer triplet_prefix_sum_buff = make_prefix_sum_buff(
-        m_copy->get_sizes(triplet_buffer.items), *m_copy, m_mr);
+    vecmem::data::vector_buffer triplet_prefix_sum_buff =
+        make_prefix_sum_buff(triplet_sizes, *m_copy, m_mr);
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
@@ -275,16 +293,9 @@ seed_finding::output_type seed_finding::operator()(
             nWeightUpdatingThreads>>>(m_seedfilter_config, g2_view,
                                       triplet_prefix_sum_buff, triplet_buffer);
 
-    // Take header of the triplet counter container buffer into host
-    vecmem::vector<device::triplet_counter_header> tcc_headers(
-        m_mr.host ? m_mr.host : &(m_mr.main));
-    (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
-
     // Get the number of seeds (triplets)
-    unsigned int n_triplets = 0;
-    for (const auto& h : tcc_headers) {
-        n_triplets += h.m_nTriplets;
-    }
+    unsigned int n_triplets =
+        std::accumulate(triplet_sizes.begin(), triplet_sizes.end(), 0);
 
     alt_seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
     m_copy->setup(seed_buffer);

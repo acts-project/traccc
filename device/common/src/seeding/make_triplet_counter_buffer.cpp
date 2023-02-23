@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,7 +11,7 @@
 namespace traccc::device {
 
 device::triplet_counter_container_types::buffer make_triplet_counter_buffer(
-    const std::vector<size_t>& mb_doublet_sizes, vecmem::copy& copy,
+    const std::vector<unsigned int>& mb_doublet_sizes, vecmem::copy& copy,
     vecmem::memory_resource& mr, vecmem::memory_resource* mr_host) {
 
     // Calculate the capacities for the buffer.
@@ -21,10 +21,8 @@ device::triplet_counter_container_types::buffer make_triplet_counter_buffer(
     // Create the buffer object.
     device::triplet_counter_container_types::buffer buffer{
         {buffer_size, mr},
-        {std::vector<std::size_t>(buffer_size, 0),
-         std::vector<std::size_t>(mb_doublet_sizes.begin(),
-                                  mb_doublet_sizes.end()),
-         mr, mr_host}};
+        {std::vector<unsigned int>(buffer_size, 0), mb_doublet_sizes, mr,
+         mr_host}};
     copy.setup(buffer.headers);
     copy.setup(buffer.items);
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -24,7 +24,7 @@ namespace traccc::device {
 /// This is a helper function to use for setting up the buffer that
 /// @c traccc::device::find_triplets would be able to fill.
 ///
-/// @param triplet_counter The triplet counter from
+/// @param triplet_sizes The number of counted triplets from
 ///                        @c traccc::device::count_triplets
 /// @param copy The object to use for accessing @c triplet_counter
 /// @param mr The memory resource for the buffer
@@ -33,8 +33,7 @@ namespace traccc::device {
 /// @return Buffer usable by @c traccc::device::find_triplets
 ///
 triplet_container_types::buffer make_triplet_buffer(
-    const triplet_counter_container_types::const_view& triplet_counter,
-    vecmem::copy& copy, vecmem::memory_resource& mr,
-    vecmem::memory_resource* mr_host = nullptr);
+    const std::vector<unsigned int>& triplet_sizes, vecmem::copy& copy,
+    vecmem::memory_resource& mr, vecmem::memory_resource* mr_host = nullptr);
 
 }  // namespace traccc::device

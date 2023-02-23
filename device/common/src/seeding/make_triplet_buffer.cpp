@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,22 +17,8 @@
 namespace traccc::device {
 
 triplet_container_types::buffer make_triplet_buffer(
-    const triplet_counter_container_types::const_view& triplet_counter,
-    vecmem::copy& copy, vecmem::memory_resource& mr,
-    vecmem::memory_resource* mr_host) {
-
-    // Get the number of triplets per geometric bin.
-    vecmem::vector<device::triplet_counter_header> triplet_counts(
-        (mr_host != nullptr) ? mr_host : &mr);
-    copy(triplet_counter.headers, triplet_counts);
-
-    // Construct the size (vectors) for the buffers.
-    std::vector<std::size_t> triplet_sizes(triplet_counts.size());
-    std::transform(triplet_counts.begin(), triplet_counts.end(),
-                   triplet_sizes.begin(),
-                   [](const device::triplet_counter_header& tc) {
-                       return tc.m_nTriplets;
-                   });
+    const std::vector<unsigned int>& triplet_sizes, vecmem::copy& copy,
+    vecmem::memory_resource& mr, vecmem::memory_resource* mr_host) {
 
     const triplet_container_types::buffer::header_vector::size_type
         triplets_size = triplet_sizes.size();

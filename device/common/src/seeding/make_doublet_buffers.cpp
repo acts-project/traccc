@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,25 +17,9 @@
 namespace traccc::device {
 
 doublet_buffer_pair make_doublet_buffers(
-    const doublet_counter_container_types::const_view& doublet_counter,
-    vecmem::copy& copy, vecmem::memory_resource& mr,
-    vecmem::memory_resource* mr_host) {
-
-    // Get the number of doublets per geometric bin.
-    vecmem::vector<device::doublet_counter_header> doublet_counts(
-        (mr_host != nullptr) ? mr_host : &mr);
-    copy(doublet_counter.headers, doublet_counts);
-
-    // Construct the size (vectors) for the buffers.
-    std::vector<std::size_t> mb_sizes(doublet_counts.size());
-    std::transform(
-        doublet_counts.begin(), doublet_counts.end(), mb_sizes.begin(),
-        [](const device::doublet_counter_header& dc) { return dc.m_nMidBot; });
-
-    std::vector<std::size_t> mt_sizes(doublet_counts.size());
-    std::transform(
-        doublet_counts.begin(), doublet_counts.end(), mt_sizes.begin(),
-        [](const device::doublet_counter_header& dc) { return dc.m_nMidTop; });
+    const std::vector<unsigned int>& mb_sizes,
+    const std::vector<unsigned int>& mt_sizes, vecmem::copy& copy,
+    vecmem::memory_resource& mr, vecmem::memory_resource* mr_host) {
 
     const doublet_container_types::buffer::header_vector::size_type mb_size =
         mb_sizes.size();
