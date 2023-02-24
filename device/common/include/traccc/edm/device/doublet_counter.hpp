@@ -20,10 +20,6 @@ namespace traccc::device {
 ///
 struct doublet_counter_header {
 
-    /// The total number of middle spacepoints in a given geometric bin for
-    /// which a compatible bottom- or top-doublet was found.
-    unsigned int m_nSpM = 0;
-
     /// The total number of middle-bottom spacepoint doublets in a given
     /// geometric bin.
     unsigned int m_nMidBot = 0;

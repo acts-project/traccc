@@ -20,10 +20,6 @@ namespace traccc::device {
 ///
 struct triplet_counter_header {
 
-    /// The total number of middle-bottom spacepoint doublets in a given
-    /// geometric bin.
-    unsigned int m_nMidBot = 0;
-
     /// The total number of Triplets in a given geometric bin
     unsigned int m_nTriplets = 0;
 
