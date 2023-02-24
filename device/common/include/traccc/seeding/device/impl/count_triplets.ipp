@@ -122,8 +122,6 @@ inline void count_triplets(
     if (num_triplets_per_mb > 0) {
         triplet_counter_header& header =
             triplet_counter.get_headers().at(bin_idx);
-        vecmem::device_atomic_ref<unsigned int> nMidBot(header.m_nMidBot);
-        nMidBot.fetch_add(1);
         vecmem::device_atomic_ref<unsigned int> nTriplets(header.m_nTriplets);
         const unsigned int posTriplets =
             nTriplets.fetch_add(num_triplets_per_mb);

@@ -114,8 +114,6 @@ inline void count_doublets(
         // Increment the summary values in the header object.
         doublet_counter_header& header =
             doublet_counter.get_headers().at(middle_sp_idx.first);
-        vecmem::device_atomic_ref<unsigned int> nSpM(header.m_nSpM);
-        nSpM.fetch_add(1);
         vecmem::device_atomic_ref<unsigned int> nMidBot(header.m_nMidBot);
         const unsigned int posBot = nMidBot.fetch_add(n_mb_cand);
         vecmem::device_atomic_ref<unsigned int> nMidTop(header.m_nMidTop);
