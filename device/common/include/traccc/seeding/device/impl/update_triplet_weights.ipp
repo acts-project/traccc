@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,31 +16,27 @@ TRACCC_HOST_DEVICE
 inline void update_triplet_weights(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
     const sp_grid_const_view& sp_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>&
-        triplet_ps_view,
-    scalar* data, triplet_container_types::view triplet_view) {
+    const triplet_counter_spM_collection_types::const_view& spM_tc_view,
+    const triplet_counter_collection_types::const_view& tc_view, scalar* data,
+    device_triplet_collection_types::view triplet_view) {
 
     // Check if anything needs to be done.
-    const vecmem::device_vector<const prefix_sum_element_t> triplet_prefix_sum(
-        triplet_ps_view);
-    if (globalIndex >= triplet_prefix_sum.size()) {
+    device_triplet_collection_types::device triplets(triplet_view);
+    if (globalIndex >= triplets.size()) {
         return;
     }
 
     // Set up the device containers
     const const_sp_grid_device sp_grid(sp_view);
-
-    const prefix_sum_element_t ps_idx = triplet_prefix_sum[globalIndex];
-    const unsigned int bin_idx = ps_idx.first;
-
-    triplet_container_types::device triplets(triplet_view);
-    vecmem::device_vector<triplet> triplets_per_bin =
-        triplets.get_items().at(bin_idx);
+    const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
+        spM_tc_view);
+    const triplet_counter_collection_types::const_device triplet_counts(
+        tc_view);
 
     // Current work item
-    triplet this_triplet = triplets_per_bin[ps_idx.second];
+    device_triplet this_triplet = triplets[globalIndex];
 
-    const sp_location& spT_idx = this_triplet.sp3;
+    const sp_location& spT_idx = this_triplet.spT;
 
     const traccc::internal_spacepoint<traccc::spacepoint> current_spT =
         sp_grid.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
@@ -56,16 +52,30 @@ inline void update_triplet_weights(
         this_triplet.curvature + filter_config.deltaInvHelixDiameter;
     std::size_t num_compat_seedR = 0;
 
+    const triplet_counter mb_count =
+        triplet_counts.at(this_triplet.counter_link);
+
+    // Check if anything needs to be done.
+    if (mb_count.m_nTriplets <= 1) {
+        return;
+    }
+
+    // Get the position of the triplets which share this sabe midBottom doublet
+    const unsigned int triplets_mb_begin =
+        mb_count.posTriplets +
+        triplet_counts_spM.at(mb_count.spM_counter_link).posTriplets;
+    const unsigned int triplets_mb_end =
+        triplets_mb_begin + mb_count.m_nTriplets;
+
     // iterate over triplets
-    for (unsigned int i = this_triplet.triplets_mb_begin;
-         i < this_triplet.triplets_mb_end; ++i) {
+    for (unsigned int i = triplets_mb_begin; i < triplets_mb_end; ++i) {
         // skip same triplet
-        if (i == ps_idx.second) {
+        if (i == globalIndex) {
             continue;
         }
 
-        const triplet& other_triplet = triplets_per_bin[i];
-        const sp_location other_spT_idx = other_triplet.sp3;
+        const device_triplet other_triplet = triplets[i];
+        const sp_location other_spT_idx = other_triplet.spT;
         const traccc::internal_spacepoint<traccc::spacepoint> other_spT =
             sp_grid.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx];
 
@@ -114,7 +124,7 @@ inline void update_triplet_weights(
         }
     }
 
-    triplets_per_bin[ps_idx.second].weight = this_triplet.weight;
+    triplets[globalIndex].weight = this_triplet.weight;
 }
 
 }  // namespace traccc::device
