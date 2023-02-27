@@ -38,8 +38,3 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
 target_link_libraries( traccc_sycl
   PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
   PRIVATE traccc::device_common vecmem::sycl )
-
-# Prevent Eigen from getting confused when building code for a
-# CUDA or HIP backend.
-target_compile_definitions( traccc_sycl
-  PRIVATE EIGEN_NO_CUDA EIGEN_NO_HIP )
