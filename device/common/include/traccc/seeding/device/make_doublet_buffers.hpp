@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,8 +32,8 @@ struct doublet_buffer_pair {
 /// This is a helper function to use for setting up the buffers that
 /// @c traccc::device::find_doublets would be able to fill.
 ///
-/// @param doublet_counter The doublet counter from
-///                        @c traccc::device::count_doublets
+/// @param mb_sizes the number of counted midBottom doublets
+/// @param mt_sizes the number of counted midTop doublets
 /// @param copy The object to use for accessing @c doublet_counter
 /// @param mr The memory resource for the buffer
 /// @param mr_host The (optional) host-accessible memory resource for the
@@ -41,8 +41,8 @@ struct doublet_buffer_pair {
 /// @return Buffers usable by @c traccc::device::find_doublets
 ///
 doublet_buffer_pair make_doublet_buffers(
-    const doublet_counter_container_types::const_view& doublet_counter,
-    vecmem::copy& copy, vecmem::memory_resource& mr,
-    vecmem::memory_resource* mr_host = nullptr);
+    const std::vector<unsigned int>& mb_sizes,
+    const std::vector<unsigned int>& mt_sizes, vecmem::copy& copy,
+    vecmem::memory_resource& mr, vecmem::memory_resource* mr_host = nullptr);
 
 }  // namespace traccc::device

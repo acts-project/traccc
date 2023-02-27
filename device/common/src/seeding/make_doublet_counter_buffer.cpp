@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,9 +21,7 @@ device::doublet_counter_container_types::buffer make_doublet_counter_buffer(
     // Create the buffer object.
     device::doublet_counter_container_types::buffer buffer{
         {buffer_size, mr},
-        {std::vector<std::size_t>(buffer_size, 0),
-         std::vector<std::size_t>(grid_sizes.begin(), grid_sizes.end()), mr,
-         mr_host}};
+        {std::vector<unsigned int>(buffer_size, 0), grid_sizes, mr, mr_host}};
     copy.setup(buffer.headers);
     copy.setup(buffer.items);
 
