@@ -54,6 +54,8 @@ class clusterization_algorithm
     private:
     /// The average number of cells in each partition
     unsigned short m_target_cells_per_partition;
+    /// The maximum number of threads in a work group
+    unsigned int m_max_work_group_size;
 
     traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;

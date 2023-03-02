@@ -391,6 +391,10 @@ clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, queue_wrapper queue,
     const unsigned short target_cells_per_partition)
     : m_target_cells_per_partition(target_cells_per_partition),
+      m_max_work_group_size(
+          details::get_queue(queue)
+              .get_device()
+              .get_info<::sycl::info::device::max_work_group_size>()),
       m_mr(mr),
       m_queue(queue) {
 
@@ -481,9 +485,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // For the following kernel, we can now use whatever the desired number of
     // threads per block.
-    auto spacepointsLocalSize = 1024;
     auto spacepointsRange = traccc::sycl::calculate1DimNdRange(
-        num_measurements_host, spacepointsLocalSize);
+        num_measurements_host, m_max_work_group_size);
 
     // Run form spacepoints kernel, turning 2D measurements into 3D spacepoints
     details::get_queue(m_queue)
