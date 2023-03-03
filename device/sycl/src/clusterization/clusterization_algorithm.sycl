@@ -152,6 +152,7 @@ class ccl_kernel {
         const index_t target_cells_per_partition,
         alt_measurement_collection_types::view measurements,
         unsigned int* num_measurements,
+        vecmem::data::vector_view<unsigned int> cell_links,
         ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
                          ::sycl::access::target::local>
             shared_uint,
@@ -164,6 +165,7 @@ class ccl_kernel {
           m_target_cells_per_partition(target_cells_per_partition),
           measurements_view(measurements),
           m_measurement_count(num_measurements),
+          cell_links_view(cell_links),
           m_shared_uint(shared_uint),
           m_shared_idx(shared_idx) {}
 
@@ -365,7 +367,8 @@ class ccl_kernel {
 
                 device::aggregate_cluster(cells_device, modules_device, f_view,
                                           start, end, cid,
-                                          measurements_device[groupPos + id]);
+                                          measurements_device[groupPos + id],
+                                          cell_links_view, groupPos + id);
             }
         }
     }
@@ -377,6 +380,7 @@ class ccl_kernel {
     const unsigned short m_target_cells_per_partition;
     alt_measurement_collection_types::view measurements_view;
     unsigned int* m_measurement_count;
+    vecmem::data::vector_view<unsigned int> cell_links_view;
     ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
                      ::sycl::access::target::local>
         m_shared_uint;
@@ -451,10 +455,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                .get_device()
                .get_info<::sycl::info::device::local_mem_size>());
 
+    // Create buffer for linking cells to their spacepoints.
+    vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
+
     // Run ccl kernel
     details::get_queue(m_queue)
         .submit([&ndrange, &cells, &modules, max_cells_per_partition,
-                 &target_cells_per_partition, &measurements_view,
+                 &target_cells_per_partition, &measurements_view, &cell_links,
                  &num_measurements_device](::sycl::handler& h) {
             ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
                              ::sycl::access::target::local>
@@ -464,11 +471,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                 shared_idx(2 * max_cells_per_partition, h);
 
             h.parallel_for<kernels::ccl_kernel>(
-                ndrange,
-                kernels::ccl_kernel(
-                    cells, modules, max_cells_per_partition,
-                    target_cells_per_partition, measurements_view,
-                    num_measurements_device.get(), shared_uint, shared_idx));
+                ndrange, kernels::ccl_kernel(
+                             cells, modules, max_cells_per_partition,
+                             target_cells_per_partition, measurements_view,
+                             num_measurements_device.get(), cell_links,
+                             shared_uint, shared_idx));
         })
         .wait_and_throw();
 
@@ -502,7 +509,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         })
         .wait_and_throw();
 
-    return spacepoints_buffer;
+    return {std::move(spacepoints_buffer), std::move(cell_links)};
 }
 
 }  // namespace traccc::sycl

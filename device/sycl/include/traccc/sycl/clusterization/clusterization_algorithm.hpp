@@ -28,7 +28,8 @@
 namespace traccc::sycl {
 
 class clusterization_algorithm
-    : public algorithm<spacepoint_collection_types::buffer(
+    : public algorithm<std::pair<spacepoint_collection_types::buffer,
+                                 vecmem::data::vector_buffer<unsigned int>>(
           const alt_cell_collection_types::const_view&,
           const cell_module_collection_types::const_view&)> {
 
@@ -46,7 +47,8 @@ class clusterization_algorithm
 
     /// @param cells        a collection of cells
     /// @param modules      a collection of modules
-    /// @return a spacepoint collection (buffer)
+    /// @return a spacepoint collection (buffer) and a collection (buffer) of
+    /// links from cells to the spacepoints they belong to.
     output_type operator()(
         const alt_cell_collection_types::const_view& cells,
         const cell_module_collection_types::const_view& modules) const override;

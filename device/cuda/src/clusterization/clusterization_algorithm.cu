@@ -144,7 +144,8 @@ __global__ void ccl_kernel(
     const unsigned short max_cells_per_partition,
     const unsigned short target_cells_per_partition,
     alt_measurement_collection_types::view measurements_view,
-    unsigned int& measurement_count) {
+    unsigned int& measurement_count,
+    vecmem::data::vector_view<unsigned int> cell_links) {
 
     const index_t tid = threadIdx.x;
     const index_t blckDim = blockDim.x;
@@ -324,9 +325,9 @@ __global__ void ccl_kernel(
              * output array which we can write to.
              */
             const unsigned int id = atomicAdd(&outi, 1);
-            device::aggregate_cluster(cells_device, modules_device, f_view,
-                                      start, end, cid,
-                                      measurements_device[groupPos + id]);
+            device::aggregate_cluster(
+                cells_device, modules_device, f_view, start, end, cid,
+                measurements_device[groupPos + id], cell_links, groupPos + id);
         }
     }
 }
@@ -384,13 +385,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         (num_cells + m_target_cells_per_partition - 1) /
         m_target_cells_per_partition;
 
+    // Create buffer for linking cells to their spacepoints.
+    vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
+
     // Launch ccl kernel. Each thread will handle a single cell.
     kernels::
         ccl_kernel<<<num_partitions, threads_per_partition,
                      2 * max_cells_per_partition * sizeof(index_t), stream>>>(
             cells, modules, max_cells_per_partition,
             m_target_cells_per_partition, measurements_buffer,
-            *num_measurements_device);
+            *num_measurements_device, cell_links);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -420,7 +424,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     m_stream.synchronize();
 
-    return spacepoints_buffer;
+    return {std::move(spacepoints_buffer), std::move(cell_links)};
 }
 
 }  // namespace traccc::cuda
