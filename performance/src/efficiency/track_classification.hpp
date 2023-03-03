@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -36,12 +36,12 @@ inline bool operator<(const particle_hit_count& lhs,
 template <template <typename, std::size_t> class array_t, std::size_t N>
 std::vector<particle_hit_count> identify_contributing_particles(
     const array_t<measurement, N>& measurements,
-    measurement_particle_map& m_p_map) {
+    const measurement_particle_map& m_p_map) {
 
     std::vector<particle_hit_count> result;
 
     for (const auto& meas : measurements) {
-        const auto& ptcs = m_p_map[meas];
+        const auto& ptcs = m_p_map.find(meas)->second;
 
         for (auto const& [ptc, count] : ptcs) {
             auto it = std::find(result.begin(), result.end(), ptc);

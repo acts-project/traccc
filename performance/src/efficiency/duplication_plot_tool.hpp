@@ -1,15 +1,21 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Local include(s).
+#include "../utils/helpers.hpp"
+
+// Project include(s).
 #include "traccc/edm/particle.hpp"
-#include "traccc/utils/helpers.hpp"
 #include "traccc/utils/unit_vectors.hpp"
+
+// System include(s).
+#include <string_view>
 
 namespace traccc {
 
@@ -33,14 +39,17 @@ class duplication_plot_tool {
 
     /// @brief Nested Cache struct
     struct duplication_plot_cache {
-        TProfile* n_duplicated_vs_pT;   ///< Number of duplicated tracks vs pT
-        TProfile* n_duplicated_vs_eta;  ///< Number of duplicated tracks vs eta
-        TProfile* n_duplicated_vs_phi;  ///< Number of duplicated tracks vs phi
-        TEfficiency*
+        std::unique_ptr<TProfile>
+            n_duplicated_vs_pT;  ///< Number of duplicated tracks vs pT
+        std::unique_ptr<TProfile>
+            n_duplicated_vs_eta;  ///< Number of duplicated tracks vs eta
+        std::unique_ptr<TProfile>
+            n_duplicated_vs_phi;  ///< Number of duplicated tracks vs phi
+        std::unique_ptr<TEfficiency>
             duplication_rate_vs_pT;  ///< Tracking duplication rate vs pT
-        TEfficiency*
+        std::unique_ptr<TEfficiency>
             duplication_rate_vs_eta;  ///< Tracking duplication rate vs eta
-        TEfficiency*
+        std::unique_ptr<TEfficiency>
             duplication_rate_vs_phi;  ///< Tracking duplication rate vs phi
     };
 
@@ -52,7 +61,7 @@ class duplication_plot_tool {
     /// @brief book the duplication plots
     ///
     /// @param duplicationPlotCache the cache for duplication plots
-    void book(std::string name, duplication_plot_cache& cache) const {
+    void book(std::string_view name, duplication_plot_cache& cache) const {
         plot_helpers::binning b_pt = m_cfg.var_binning.at("Pt");
         plot_helpers::binning b_eta = m_cfg.var_binning.at("Eta");
         plot_helpers::binning b_phi = m_cfg.var_binning.at("Phi");
@@ -97,12 +106,9 @@ class duplication_plot_tool {
         const auto t_pT =
             getter::perp(vector2{truth_particle.mom[0], truth_particle.mom[1]});
 
-        plot_helpers::fill_prof(cache.n_duplicated_vs_pT, t_pT,
-                                n_duplicated_tracks);
-        plot_helpers::fill_prof(cache.n_duplicated_vs_eta, t_eta,
-                                n_duplicated_tracks);
-        plot_helpers::fill_prof(cache.n_duplicated_vs_phi, t_phi,
-                                n_duplicated_tracks);
+        cache.n_duplicated_vs_pT->Fill(t_pT, n_duplicated_tracks);
+        cache.n_duplicated_vs_eta->Fill(t_eta, n_duplicated_tracks);
+        cache.n_duplicated_vs_phi->Fill(t_phi, n_duplicated_tracks);
     }
 
     /// @brief write the duplication plots to file
@@ -115,18 +121,6 @@ class duplication_plot_tool {
         cache.n_duplicated_vs_pT->Write();
         cache.n_duplicated_vs_eta->Write();
         cache.n_duplicated_vs_phi->Write();
-    }
-
-    /// @brief delete the duplication plots
-    ///
-    /// @param duplicationPlotCache cache object for duplication plots
-    void clear(duplication_plot_cache& cache) const {
-        delete cache.duplication_rate_vs_pT;
-        delete cache.duplication_rate_vs_eta;
-        delete cache.duplication_rate_vs_phi;
-        delete cache.n_duplicated_vs_pT;
-        delete cache.n_duplicated_vs_eta;
-        delete cache.n_duplicated_vs_phi;
     }
 
     private:
