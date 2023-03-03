@@ -88,6 +88,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     kernels::fit<fitter_t><<<nBlocks, nThreads>>>(det_view, navigation_buffer,
                                                   track_candidates_view,
                                                   track_states_buffer);
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
     return track_states_buffer;
 }
 
