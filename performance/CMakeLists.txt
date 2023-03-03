@@ -51,11 +51,22 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/throughput.hpp"
    "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
-   PUBLIC traccc::core traccc::io covfie::core
-   PRIVATE ROOT::Core ROOT::RIO ROOT::Hist )
+   PUBLIC traccc::core traccc::io covfie::core )
 
-find_package(CUDAToolkit)
-if(CUDAToolkit_FOUND)
-        target_link_libraries( traccc_performance PRIVATE CUDA::cudart )
-        target_compile_definitions( traccc_performance PRIVATE TRACCC_HAVE_NVTX)
+# Use ROOT in traccc::performance, if requested.
+if( TRACCC_USE_ROOT )
+   find_package( ROOT COMPONENTS Core RIO Hist REQUIRED )
+   target_link_libraries( traccc_performance
+      PRIVATE ROOT::Core ROOT::RIO ROOT::Hist )
+   target_compile_definitions( traccc_performance
+      PRIVATE TRACCC_HAVE_ROOT )
+endif()
+
+# Use CUDA/NVTX in traccc::performance, if it's available.
+find_package( CUDAToolkit )
+if( CUDAToolkit_FOUND )
+   target_link_libraries( traccc_performance
+      PRIVATE CUDA::cudart )
+   target_compile_definitions( traccc_performance
+      PRIVATE TRACCC_HAVE_NVTX )
 endif()

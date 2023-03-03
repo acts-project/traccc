@@ -34,12 +34,14 @@ class eff_plot_tool {
 
     /// @brief Nested Cache struct
     struct eff_plot_cache {
+#ifdef TRACCC_HAVE_ROOT
         std::unique_ptr<TEfficiency>
             track_eff_vs_pT;  ///< Tracking efficiency vs pT
         std::unique_ptr<TEfficiency>
             track_eff_vs_eta;  ///< Tracking efficiency vs eta
         std::unique_ptr<TEfficiency>
             track_eff_vs_phi;  ///< Tracking efficiency vs phi
+#endif                         // TRACCC_HAVE_ROOT
     };
 
     /// Constructor
@@ -57,6 +59,11 @@ class eff_plot_tool {
         plot_helpers::binning b_eta = m_cfg.var_binning.at("Eta");
         plot_helpers::binning b_pt = m_cfg.var_binning.at("Pt");
 
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)name;
+        (void)cache;
+
+#ifdef TRACCC_HAVE_ROOT
         // efficiency vs pT
         cache.track_eff_vs_pT = plot_helpers::book_eff(
             TString(name) + "_trackeff_vs_pT",
@@ -69,6 +76,7 @@ class eff_plot_tool {
         cache.track_eff_vs_phi = plot_helpers::book_eff(
             TString(name) + "_trackeff_vs_phi",
             "Tracking efficiency;Truth #phi;Efficiency", b_phi);
+#endif  // TRACCC_HAVE_ROOT
     }
 
     /// @brief fill efficiency plots
@@ -84,18 +92,33 @@ class eff_plot_tool {
         const auto t_pT =
             getter::perp(vector2{truth_particle.mom[0], truth_particle.mom[1]});
 
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)t_phi;
+        (void)t_eta;
+        (void)t_pT;
+        (void)cache;
+        (void)status;
+
+#ifdef TRACCC_HAVE_ROOT
         cache.track_eff_vs_pT->Fill(status, t_pT);
         cache.track_eff_vs_eta->Fill(status, t_eta);
         cache.track_eff_vs_phi->Fill(status, t_phi);
+#endif  // TRACCC_HAVE_ROOT
     }
 
     /// @brief write the efficiency plots to file
     ///
     /// @param effPlotCache cache object for efficiency plots
     void write(const eff_plot_cache& cache) const {
+
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)cache;
+
+#ifdef TRACCC_HAVE_ROOT
         cache.track_eff_vs_pT->Write();
         cache.track_eff_vs_eta->Write();
         cache.track_eff_vs_phi->Write();
+#endif  // TRACCC_HAVE_ROOT
     }
 
     private:

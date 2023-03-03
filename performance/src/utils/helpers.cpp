@@ -10,6 +10,8 @@
 
 namespace traccc::plot_helpers {
 
+#ifdef TRACCC_HAVE_ROOT
+
 std::unique_ptr<TH1> book_histo(std::string_view hist_name,
                                 std::string_view hist_title,
                                 const binning& var_binning) {
@@ -43,5 +45,7 @@ std::unique_ptr<TProfile> book_prof(std::string_view prof_name,
         var_x_binning.n_bins, var_x_binning.min, var_x_binning.max,
         var_y_binning.min, var_y_binning.max);
 }
+
+#endif  // TRACCC_HAVE_ROOT
 
 }  // namespace traccc::plot_helpers

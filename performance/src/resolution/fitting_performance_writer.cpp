@@ -11,9 +11,12 @@
 #include "res_plot_tool.hpp"
 
 // ROOT include(s).
+#ifdef TRACCC_HAVE_ROOT
 #include <TFile.h>
+#endif  // TRACCC_HAVE_ROOT
 
 // System include(s).
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 
@@ -45,6 +48,7 @@ fitting_performance_writer::~fitting_performance_writer() {}
 
 void fitting_performance_writer::finalize() {
 
+#ifdef TRACCC_HAVE_ROOT
     // Open the output file.
     std::unique_ptr<TFile> ofile(
         TFile::Open(m_cfg.file_path.c_str(), m_cfg.file_mode.c_str()));
@@ -54,6 +58,10 @@ void fitting_performance_writer::finalize() {
                                  m_cfg.file_mode + "\"");
     }
     ofile->cd();
+#else
+    std::cout << "ROOT file \"" << m_cfg.file_path << "\" is NOT created"
+              << std::endl;
+#endif  // TRACCC_HAVE_ROOT
 
     m_data->m_res_plot_tool.write(m_data->m_res_plot_cache);
 }

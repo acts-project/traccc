@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -56,8 +56,9 @@ option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
-# Flags controlling the meta-build system.
+# Flags controlling what traccc should use.
 option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
+option( TRACCC_USE_ROOT "Use ROOT in the build (if needed)" TRUE )
 
 # Clean up.
 unset( TRACCC_BUILD_CUDA_DEFAULT )
@@ -247,8 +248,7 @@ add_subdirectory( plugins )
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
    find_package( Boost REQUIRED COMPONENTS program_options filesystem)
-   # Find ROOT.
-   find_package( ROOT COMPONENTS Core RIO Tree Hist )
+
    add_subdirectory( performance )
    add_subdirectory( examples )
 endif()

@@ -14,6 +14,11 @@
 // Project include(s).
 #include "traccc/edm/track_parameters.hpp"
 
+// System include(s).
+#include <map>
+#include <memory>
+#include <string>
+
 namespace traccc {
 
 class res_plot_tool {
@@ -21,9 +26,11 @@ class res_plot_tool {
     public:
     /// @brief Nested Cache struct
     struct res_plot_cache {
+#ifdef TRACCC_HAVE_ROOT
         // Residuals and pulls for parameters
         std::map<std::string, std::unique_ptr<TH1> > residuals;
         std::map<std::string, std::unique_ptr<TH1> > pulls;
+#endif  // TRACCC_HAVE_ROOT
     };
 
     /// Constructor

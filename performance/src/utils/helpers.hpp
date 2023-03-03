@@ -11,15 +11,19 @@
 #include "traccc/utils/helpers.hpp"
 
 // ROOT include(s).
+#ifdef TRACCC_HAVE_ROOT
 #include <TEfficiency.h>
 #include <TH1.h>
 #include <TProfile.h>
+#endif  // TRACCC_HAVE_ROOT
 
 // System include(s).
 #include <memory>
 #include <string_view>
 
 namespace traccc::plot_helpers {
+
+#ifdef TRACCC_HAVE_ROOT
 
 /// @brief book a 1D histogram
 /// @param histName the name of histogram
@@ -45,5 +49,7 @@ std::unique_ptr<TProfile> book_prof(std::string_view prof_name,
                                     std::string_view prof_title,
                                     const binning& var_x_binning,
                                     const binning& var_y_binning);
+
+#endif  // TRACCC_HAVE_ROOT
 
 }  // namespace traccc::plot_helpers

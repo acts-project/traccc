@@ -39,6 +39,7 @@ class duplication_plot_tool {
 
     /// @brief Nested Cache struct
     struct duplication_plot_cache {
+#ifdef TRACCC_HAVE_ROOT
         std::unique_ptr<TProfile>
             n_duplicated_vs_pT;  ///< Number of duplicated tracks vs pT
         std::unique_ptr<TProfile>
@@ -51,6 +52,7 @@ class duplication_plot_tool {
             duplication_rate_vs_eta;  ///< Tracking duplication rate vs eta
         std::unique_ptr<TEfficiency>
             duplication_rate_vs_phi;  ///< Tracking duplication rate vs phi
+#endif                                // TRACCC_HAVE_ROOT
     };
 
     /// Constructor
@@ -62,11 +64,17 @@ class duplication_plot_tool {
     ///
     /// @param duplicationPlotCache the cache for duplication plots
     void book(std::string_view name, duplication_plot_cache& cache) const {
+
         plot_helpers::binning b_pt = m_cfg.var_binning.at("Pt");
         plot_helpers::binning b_eta = m_cfg.var_binning.at("Eta");
         plot_helpers::binning b_phi = m_cfg.var_binning.at("Phi");
         plot_helpers::binning b_num = m_cfg.var_binning.at("Num");
 
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)name;
+        (void)cache;
+
+#ifdef TRACCC_HAVE_ROOT
         // duplication rate vs pT
         cache.duplication_rate_vs_pT = plot_helpers::book_eff(
             TString(name) + "_duplicationRate_vs_pT",
@@ -92,6 +100,7 @@ class duplication_plot_tool {
         cache.n_duplicated_vs_phi = plot_helpers::book_prof(
             TString(name) + "_nDuplicated_vs_phi",
             "Number of duplicated track candidates", b_phi, b_num);
+#endif  // TRACCC_HAVE_ROOT
     }
 
     /// @brief fill number of duplicated tracks for a truth particle seed
@@ -106,21 +115,36 @@ class duplication_plot_tool {
         const auto t_pT =
             getter::perp(vector2{truth_particle.mom[0], truth_particle.mom[1]});
 
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)t_phi;
+        (void)t_eta;
+        (void)t_pT;
+        (void)cache;
+        (void)n_duplicated_tracks;
+
+#ifdef TRACCC_HAVE_ROOT
         cache.n_duplicated_vs_pT->Fill(t_pT, n_duplicated_tracks);
         cache.n_duplicated_vs_eta->Fill(t_eta, n_duplicated_tracks);
         cache.n_duplicated_vs_phi->Fill(t_phi, n_duplicated_tracks);
+#endif  // TRACCC_HAVE_ROOT
     }
 
     /// @brief write the duplication plots to file
     ///
     /// @param duplicationPlotCache cache object for duplication plots
     void write(const duplication_plot_cache& cache) const {
+
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)cache;
+
+#ifdef TRACCC_HAVE_ROOT
         cache.duplication_rate_vs_pT->Write();
         cache.duplication_rate_vs_eta->Write();
         cache.duplication_rate_vs_phi->Write();
         cache.n_duplicated_vs_pT->Write();
         cache.n_duplicated_vs_eta->Write();
         cache.n_duplicated_vs_phi->Write();
+#endif  // TRACCC_HAVE_ROOT
     }
 
     private:

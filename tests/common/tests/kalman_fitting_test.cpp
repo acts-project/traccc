@@ -16,11 +16,14 @@
 #include "kalman_fitting_test.hpp"
 
 // ROOT include(s).
+#ifdef TRACCC_HAVE_ROOT
 #include <TF1.h>
 #include <TFile.h>
 #include <TH1.h>
+#endif  // TRACCC_HAVE_ROOT
 
 // System include(s).
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 
@@ -30,6 +33,11 @@ void KalmanFittingTests::pull_value_tests(
     std::string_view file_name,
     const std::vector<std::string>& hist_names) const {
 
+    // Avoid unused variable warnings when building the code without ROOT.
+    (void)file_name;
+    (void)hist_names;
+
+#ifdef TRACCC_HAVE_ROOT
     // Open the file with the histograms.
     std::unique_ptr<TFile> ifile(TFile::Open(file_name.data(), "READ"));
     if ((!ifile) || ifile->IsZombie()) {
@@ -68,6 +76,9 @@ void KalmanFittingTests::pull_value_tests(
         // Sigma check
         EXPECT_NEAR(fit_par[2], 1, 0.1) << hname << " sigma value error";
     }
+#else
+    std::cout << "Pull value tests not performed without ROOT" << std::endl;
+#endif  // TRACCC_HAVE_ROOT
 }
 
 }  // namespace traccc
