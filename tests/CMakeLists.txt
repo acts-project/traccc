@@ -8,12 +8,20 @@
 include( traccc-compiler-options-cpp )
 
 # Set up a common library, shared by all of the tests.
-add_library( traccc_tests_common INTERFACE )
+add_library( traccc_tests_common STATIC
+    "common/tests/atlas_cuts.hpp"
+    "common/tests/cca_test.hpp"
+    "common/tests/data_test.hpp"
+    "common/tests/kalman_fitting_test.hpp"
+    "common/tests/kalman_fitting_test.cpp"
+    "common/tests/seed_generator.hpp"
+    "common/tests/space_point.hpp" )
 target_include_directories( traccc_tests_common
-    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/common )
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_tests_common
-    INTERFACE dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
-              traccc::core traccc::io )
+    PUBLIC dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
+           detray::core detray::utils covfie::core traccc::core traccc::io
+    PRIVATE ROOT::Core ROOT::RIO ROOT::Hist )
 
 # Add all of the test subdirectories.
 add_subdirectory( core )
