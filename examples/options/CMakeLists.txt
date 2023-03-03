@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022 CERN for the benefit of the ACTS project
+# (c) 2022-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -10,6 +10,8 @@ traccc_add_library( traccc_options options TYPE SHARED
   "include/traccc/options/common_options.hpp"
   "include/traccc/options/handle_argument_errors.hpp"
   "include/traccc/options/mt_options.hpp"
+  "include/traccc/options/options.hpp"
+  "include/traccc/options/particle_gen_options.hpp"
   "include/traccc/options/seeding_input_options.hpp"
   "include/traccc/options/full_tracking_input_options.hpp"   
   "include/traccc/options/throughput_options.hpp"

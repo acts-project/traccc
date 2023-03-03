@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,6 +11,8 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/options/options.hpp"
+#include "traccc/options/particle_gen_options.hpp"
 
 // detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
@@ -26,8 +28,13 @@
 using namespace traccc;
 namespace po = boost::program_options;
 
-int simulate(std::string output_directory, unsigned int events, scalar p0,
-             scalar phi0) {
+int simulate(std::string output_directory, unsigned int events,
+             const traccc::particle_gen_options<scalar>& pg_opts) {
+
+    // Use deterministic random number generator for testing
+    using uniform_gen_t =
+        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>,
+                               std::seed_seq>;
 
     // Memory resource
     vecmem::host_memory_resource host_mr;
@@ -65,25 +72,19 @@ int simulate(std::string output_directory, unsigned int events, scalar p0,
      * Generate simulation data
      ***************************/
 
-    constexpr unsigned int theta_steps{10};
-    constexpr unsigned int phi_steps{10};
-    const vector3 x0{0, 0, 0};
-
+    // Origin of particles
     auto generator =
-        detray::uniform_track_generator<traccc::free_track_parameters>(
-            theta_steps, phi_steps, x0, p0, {M_PI / 2., M_PI / 2.},
-            {phi0, phi0});
+        detray::random_track_generator<traccc::free_track_parameters,
+                                       uniform_gen_t>(
+            pg_opts.gen_nparticles, pg_opts.vertex, pg_opts.vertex_stddev,
+            pg_opts.mom_range, pg_opts.theta_range, pg_opts.phi_range);
 
     // Smearing value for measurements
     detray::measurement_smearer<scalar> meas_smearer(
         50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
 
     // Run simulator
-    std::string file_path =
-        std::to_string(p0) + "_GeV_" + std::to_string(phi0) + "_phi/";
-
-    const std::string full_path =
-        io::data_directory() + output_directory + "/" + file_path;
+    const std::string full_path = io::data_directory() + output_directory;
 
     boost::filesystem::create_directories(full_path);
 
@@ -106,9 +107,7 @@ int main(int argc, char* argv[]) {
                        "specify the directory of output data");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
-    desc.add_options()("p0", po::value<scalar>()->required(),
-                       "initial momentum in GeV/c");
-    desc.add_options()("phi0", po::value<scalar>()->required(), "initial phi");
+    traccc::particle_gen_options<scalar> pg_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -119,11 +118,10 @@ int main(int argc, char* argv[]) {
     // Read options
     auto output_directory = vm["output_directory"].as<std::string>();
     auto events = vm["events"].as<unsigned int>();
-    auto p0 = vm["p0"].as<scalar>();
-    auto phi0 = vm["phi0"].as<scalar>();
+    pg_opts.read(vm);
 
     std::cout << "Running " << argv[0] << " " << output_directory << " "
-              << events << "  " << p0 << "  " << phi0 << std::endl;
+              << events << std::endl;
 
-    return simulate(output_directory, events, p0, phi0);
+    return simulate(output_directory, events, pg_opts);
 }
