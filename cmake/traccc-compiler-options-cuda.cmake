@@ -31,6 +31,10 @@ traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
 # build.
 traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G" )
 
+# Ensure that line information is embedded in debugging builds so that
+# profilers have access to line data.
+traccc_add_flag( CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-lineinfo" )
+
 # More rigorous tests for the Debug builds.
 if( ( "${CUDAToolkit_VERSION}" VERSION_GREATER_EQUAL "10.2" ) AND
     ( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" ) )
