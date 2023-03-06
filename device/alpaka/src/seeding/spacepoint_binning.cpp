@@ -133,16 +133,6 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     auto bufAcc = ::alpaka::allocBuf<float, uint32_t>(devAcc, sp_size);
     std::cout << "Lets get started with " << sp_size << " space points ..." << std::endl;
 
-    // Kokkos::parallel_for(
-    //     "count_grid_capacities", team_policy(num_blocks, num_threads),
-    //     KOKKOS_LAMBDA(const member_type& team_member) {
-    //         device::count_grid_capacities(
-    //             team_member.league_rank() * team_member.team_size() +
-    //                 team_member.team_rank(),
-    //             m_config, m_axes.first, m_axes.second, spacepoints_view,
-    //             grid_capacities_view);
-    //     });
-
     ::alpaka::exec<Acc>(
             queue, workDiv,
             CountGridCapacityKernel{},
@@ -164,16 +154,6 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
         m_mr.main, m_mr.host);
     m_copy->setup(grid_buffer._buffer);
     sp_grid_view grid_view = grid_buffer;
-
-    // // Populate the grid.
-    // Kokkos::parallel_for(
-    //     "populate_grid", team_policy(num_blocks, num_threads),
-    //     KOKKOS_LAMBDA(const member_type& team_member) {
-    //         device::populate_grid(
-    //             team_member.league_rank() * team_member.team_size() +
-    //                 team_member.team_rank(),
-    //             m_config, spacepoints_view, grid_view);
-    //     });
 
     ::alpaka::exec<Acc>(
             queue, workDiv,
