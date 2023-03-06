@@ -771,9 +771,11 @@ component_connection::output_type component_connection::operator()(
      *
      * This step includes the measurement (hit) creation for each cluster.
      */
-    ccl_kernel<<<(total_cells / TARGET_CELLS_PER_PARTITION) +
-                     (total_cells % TARGET_CELLS_PER_PARTITION != 0 ? 1 : 0),
-                 THREADS_PER_BLOCK>>>(container, *mctnr, total_cells);
+    ccl_kernel<<<
+        std::max(1ul,
+                 (total_cells / TARGET_CELLS_PER_PARTITION) +
+                     (total_cells % TARGET_CELLS_PER_PARTITION != 0 ? 1 : 0)),
+        THREADS_PER_BLOCK>>>(container, *mctnr, total_cells);
 
     CUDA_ERROR_CHECK(cudaPeekAtLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
