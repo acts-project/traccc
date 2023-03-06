@@ -17,6 +17,7 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc::alpaka {
 
@@ -24,9 +25,16 @@ spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr)
     : m_config(config.toInternalUnits()),
-      m_axes(get_axes(grid_config.toInternalUnits(), *(mr.host))),
+      m_axes(get_axes(grid_config.toInternalUnits(),
+                      (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr) {
-    m_copy = std::make_unique<vecmem::copy>();
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::cuda::copy>();
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
 }
 
 // Grid Capacity Kernel
@@ -95,14 +103,15 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
 
     // Setup alpaka
     using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
+    using Host = ::alpaka::DevCpu;
     using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
     std::cout << "Using alpaka accelerator: " << ::alpaka::getAccName<Acc>() << std::endl;
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
+    auto devHost = ::alpaka::getDevByIdx<Host>(0u);
     auto queue = Queue{devAcc};
 
     // Get the spacepoint sizes from the view
     auto sp_size = m_copy->get_size(spacepoints_view);
-    const uint32_t n(spacepoints_view.size());
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
@@ -115,14 +124,14 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
         grid_capacities_buff;
 
     // Now define the Alpaka Work division
-    using WorkDiv = ::alpaka::WorkDivMembers<::alpaka::DimInt<1u>, uint32_t>;
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
     auto const threadsPerBlock = maxThreadsPerBlock;
-    auto const blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
+    auto const blocksPerGrid = (sp_size + threadsPerBlock - 1) / threadsPerBlock;
     auto const elementsPerThread = 1u;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    auto bufAcc = ::alpaka::allocBuf<float, uint32_t>(devAcc, n);
+    auto bufAcc = ::alpaka::allocBuf<float, uint32_t>(devAcc, sp_size);
+    std::cout << "Lets get started with " << sp_size << " space points ..." << std::endl;
 
     // Kokkos::parallel_for(
     //     "count_grid_capacities", team_policy(num_blocks, num_threads),
@@ -133,12 +142,14 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     //             m_config, m_axes.first, m_axes.second, spacepoints_view,
     //             grid_capacities_view);
     //     });
+
     ::alpaka::exec<Acc>(
             queue, workDiv,
             CountGridCapacityKernel{},
             m_config, m_axes.first, m_axes.second,
             spacepoints_view, grid_capacities_view
     );
+    ::alpaka::wait(queue);
 
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
@@ -154,7 +165,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     m_copy->setup(grid_buffer._buffer);
     sp_grid_view grid_view = grid_buffer;
 
-    // Populate the grid.
+    // // Populate the grid.
     // Kokkos::parallel_for(
     //     "populate_grid", team_policy(num_blocks, num_threads),
     //     KOKKOS_LAMBDA(const member_type& team_member) {
@@ -163,6 +174,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     //                 team_member.team_rank(),
     //             m_config, spacepoints_view, grid_view);
     //     });
+
     ::alpaka::exec<Acc>(
             queue, workDiv,
             PopulateGridKernel{},

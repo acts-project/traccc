@@ -21,6 +21,8 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <chrono>
@@ -81,10 +83,13 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    traccc::memory_resource mr{host_mr, &host_mr};
+    vecmem::cuda::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
 
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
+
+    vecmem::cuda::copy copy;
 
     // Alpaka Spacepoint Binning
     traccc::alpaka::spacepoint_binning m_spacepoint_binning(
@@ -133,11 +138,16 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                     common_opts.input_data_format, &host_mr);
             }  // stop measuring hit reading timer
 
+            // Copy the spacepoint data to the device.
+            traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
+                alt_spacepoints_per_event.size(), mr.main);
+            copy(vecmem::get_data(alt_spacepoints_per_event),
+                 spacepoints_cuda_buffer);
             {  // Spacepoint binning for alpaka
                 traccc::performance::timer t("Spacepoint binning (alpaka)",
                                              elapsedTimes);
                 m_spacepoint_binning(
-                    vecmem::get_data(alt_spacepoints_per_event));
+                    vecmem::get_data(spacepoints_cuda_buffer));
             }
 
             /*----------------------------

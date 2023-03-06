@@ -9,6 +9,8 @@ include( traccc-compiler-options-cpp )
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   enable_language(CUDA)
+  find_package( CUDAToolkit REQUIRED )
+
   include( traccc-compiler-options-cuda )
 
   set_source_files_properties(src/utils/make_prefix_sum_buff.cpp PROPERTIES LANGUAGE CUDA)
@@ -25,6 +27,12 @@ traccc_add_library( traccc_alpaka alpaka TYPE SHARED
   "src/seeding/spacepoint_binning.cpp"
 )
 
-target_link_libraries( traccc_alpaka
-  PUBLIC traccc::core vecmem::core
-  PRIVATE traccc::device_common alpaka::alpaka)
+if(alpaka_ACC_GPU_CUDA_ENABLE)
+    target_link_libraries( traccc_alpaka
+        PUBLIC traccc::core vecmem::core
+        PRIVATE CUDA::cudart traccc::device_common vecmem::cuda alpaka::alpaka)
+else()
+    target_link_libraries( traccc_alpaka
+        PUBLIC traccc::core vecmem::core
+        PRIVATE traccc::device_common alpaka::alpaka)
+endif()
