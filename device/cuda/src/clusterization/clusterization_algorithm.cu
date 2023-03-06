@@ -371,8 +371,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Counter for number of measurements
     vecmem::unique_alloc_ptr<unsigned int> num_measurements_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
-    CUDA_ERROR_CHECK(
-        cudaMemset(num_measurements_device.get(), 0, sizeof(unsigned int)));
+    CUDA_ERROR_CHECK(cudaMemsetAsync(num_measurements_device.get(), 0,
+                                     sizeof(unsigned int), stream));
 
     const unsigned short max_cells_per_partition =
         (m_target_cells_per_partition * MAX_CELLS_PER_THREAD +
