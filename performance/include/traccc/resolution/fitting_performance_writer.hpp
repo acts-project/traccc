@@ -8,17 +8,25 @@
 #pragma once
 
 // Library include(s).
+#include "traccc/resolution/res_plot_tool_config.hpp"
 
+// Project include(s).
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/io/event_map2.hpp"
 #include "traccc/io/mapper.hpp"
-#include "traccc/resolution/res_plot_tool.hpp"
 
-// ROOT include(s).
-#include <TFile.h>
-#include <TTree.h>
+// System include(s).
+#include <memory>
 
 namespace traccc {
+namespace details {
+
+/// Data members that should not pollute the API of
+/// @c traccc::fitting_performance_writer
+struct fitting_performance_writer_data;
+
+}  // namespace details
 
 class fitting_performance_writer {
 
@@ -29,11 +37,11 @@ class fitting_performance_writer {
         /// Output file mode
         std::string file_mode = "RECREATE";
         /// Plot tool configurations.
-        res_plot_tool::config res_plot_tool_config;
+        res_plot_tool_config config;
     };
 
     /// Constructor with writer config
-    fitting_performance_writer(config cfg);
+    fitting_performance_writer(const config& cfg);
 
     /// Destructor that closes the file
     ~fitting_performance_writer();
@@ -82,25 +90,23 @@ class fitting_performance_writer {
             ptc.charge / getter::norm(global_mom);
 
         // For the moment, only fill with the first measurements
-        m_res_plot_tool.fill(m_res_plot_cache, truth_param,
-                             trk_state.smoothed());
+        write_impl(truth_param, trk_state.smoothed());
     }
 
     /// Writing caches into the file
     void finalize();
 
-    /// Return the file pointer
-    ///
-    /// @return the file pointer
-    TFile* get_file() { return m_output_file.get(); }
-
     private:
-    config m_cfg;
-    std::unique_ptr<TFile> m_output_file{nullptr};
+    /// Non-templated part of the @c write(...) function
+    void write_impl(const bound_track_parameters& truth_param,
+                    const bound_track_parameters& fit_param);
 
-    /// Plot tool for resolution
-    res_plot_tool m_res_plot_tool;
-    res_plot_tool::res_plot_cache m_res_plot_cache;
-};
+    /// Configuration for the tool
+    config m_cfg;
+
+    /// Opaque data members for the class
+    std::unique_ptr<details::fitting_performance_writer_data> m_data;
+
+};  // class fitting_performance_writer
 
 }  // namespace traccc

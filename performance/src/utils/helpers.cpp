@@ -6,77 +6,46 @@
  */
 
 // Library include(s).
-#include "traccc/utils/helpers.hpp"
+#include "helpers.hpp"
 
-namespace traccc {
+namespace traccc::plot_helpers {
 
-namespace plot_helpers {
+#ifdef TRACCC_HAVE_ROOT
 
-binning::binning(){};
-
-binning::binning(std::string b_title, int bins, float b_min, float b_max)
-    : title(b_title), n_bins(bins), min(b_min), max(b_max){};
-
-TH1F* book_histo(const char* hist_name, const char* hist_title,
-                 const binning& var_binning) {
-    TH1F* hist = new TH1F(hist_name, hist_title, var_binning.n_bins,
-                          var_binning.min, var_binning.max);
-    hist->GetXaxis()->SetTitle(var_binning.title.c_str());
-    hist->GetYaxis()->SetTitle("Entries");
-    hist->Sumw2();
-    return hist;
+std::unique_ptr<TH1> book_histo(std::string_view hist_name,
+                                std::string_view hist_title,
+                                const binning& var_binning) {
+    auto result = std::make_unique<TH1F>(
+        hist_name.data(),
+        (std::string(hist_title) + ";" + var_binning.title + ";Entries")
+            .c_str(),
+        var_binning.n_bins, var_binning.min, var_binning.max);
+    result->Sumw2();
+    return result;
 }
 
-void fill_histo(TH1F* hist, float value, float weight) {
-    assert(hist != nullptr);
-    hist->Fill(value, weight);
+std::unique_ptr<TEfficiency> book_eff(std::string_view eff_name,
+                                      std::string_view eff_title,
+                                      const binning& var_binning) {
+    return std::make_unique<TEfficiency>(eff_name.data(), eff_title.data(),
+                                         var_binning.n_bins, var_binning.min,
+                                         var_binning.max);
 }
 
-void ana_histo(TH1D* input_hist, int j, TH1F* mean_hist, TH1F* width_hist) {
-    // evaluate mean and width via the Gauss fit
-    assert(input_hist != nullptr);
-    if (input_hist->GetEntries() > 0) {
-        TFitResultPtr r = input_hist->Fit("gaus", "QS0");
-        if (r.Get() and ((r->Status() % 1000) == 0)) {
-            // fill the mean and width into 'j'th bin of the meanHist and
-            // widthHist, respectively
-            mean_hist->SetBinContent(j, r->Parameter(1));
-            mean_hist->SetBinError(j, r->ParError(1));
-            width_hist->SetBinContent(j, r->Parameter(2));
-            width_hist->SetBinError(j, r->ParError(2));
-        }
-    }
+std::unique_ptr<TProfile> book_prof(std::string_view prof_name,
+                                    std::string_view prof_title,
+                                    const binning& var_x_binning,
+                                    const binning& var_y_binning) {
+
+    return std::make_unique<TProfile>(
+        prof_name.data(),
+        (std::string(prof_title) + ";" + var_x_binning.title + ";" +
+         var_y_binning.title)
+            .c_str(),
+        var_x_binning.n_bins, var_x_binning.min, var_x_binning.max,
+        var_y_binning.min, var_y_binning.max);
 }
 
-TEfficiency* book_eff(const char* eff_name, const char* eff_title,
-                      const binning& var_binning) {
-    TEfficiency* efficiency =
-        new TEfficiency(eff_name, eff_title, var_binning.n_bins,
-                        var_binning.min, var_binning.max);
-    return efficiency;
-}
+#endif  // TRACCC_HAVE_ROOT
 
-void fill_eff(TEfficiency* efficiency, float value, bool status) {
-    assert(efficiency != nullptr);
-    efficiency->Fill(status, value);
-}
-
-TProfile* book_prof(const char* prof_name, const char* prof_title,
-                    const binning& var_x_binning,
-                    const binning& var_y_binning) {
-    TProfile* prof = new TProfile(prof_name, prof_title, var_x_binning.n_bins,
-                                  var_x_binning.min, var_x_binning.max,
-                                  var_y_binning.min, var_y_binning.max);
-    prof->GetXaxis()->SetTitle(var_x_binning.title.c_str());
-    prof->GetYaxis()->SetTitle(var_y_binning.title.c_str());
-    return prof;
-}
-
-void fill_prof(TProfile* profile, float x_value, float y_value, float weight) {
-    assert(profile != nullptr);
-    profile->Fill(x_value, y_value, weight);
-}
-
-}  // namespace plot_helpers
-
-}  // namespace traccc
+}  // namespace traccc::plot_helpers

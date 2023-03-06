@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -8,12 +8,28 @@
 include( traccc-compiler-options-cpp )
 
 # Set up a common library, shared by all of the tests.
-add_library( traccc_tests_common INTERFACE )
+add_library( traccc_tests_common STATIC
+    "common/tests/atlas_cuts.hpp"
+    "common/tests/cca_test.hpp"
+    "common/tests/data_test.hpp"
+    "common/tests/kalman_fitting_test.hpp"
+    "common/tests/kalman_fitting_test.cpp"
+    "common/tests/seed_generator.hpp"
+    "common/tests/space_point.hpp" )
 target_include_directories( traccc_tests_common
-    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/common )
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_tests_common
-    INTERFACE dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
-              traccc::core traccc::io )
+    PUBLIC dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
+           detray::core detray::utils covfie::core traccc::core traccc::io )
+
+# Use ROOT in traccc_tests_common, if requested.
+if( TRACCC_USE_ROOT )
+   find_package( ROOT COMPONENTS Core RIO Hist REQUIRED )
+   target_link_libraries( traccc_tests_common
+      PRIVATE ROOT::Core ROOT::RIO ROOT::Hist )
+   target_compile_definitions( traccc_tests_common
+      PRIVATE TRACCC_HAVE_ROOT )
+endif()
 
 # Add all of the test subdirectories.
 add_subdirectory( core )

@@ -148,16 +148,9 @@ TEST_P(KalmanFittingTests, Run) {
      * Pull value test
      ********************/
 
-    std::array<std::string, 5> pull_names{"pull_d0", "pull_z0", "pull_phi",
-                                          "pull_theta", "pull_qop"};
-
-    auto f = fit_performance_writer.get_file();
-
-    for (auto name : pull_names) {
-
-        auto pull_dist = (TH1F*)f->Get(name.c_str());
-        pull_value_test(pull_dist);
-    }
+    static const std::vector<std::string> pull_names{
+        "pull_d0", "pull_z0", "pull_phi", "pull_theta", "pull_qop"};
+    pull_value_tests(writer_cfg.file_path, pull_names);
 }
 
 INSTANTIATE_TEST_SUITE_P(

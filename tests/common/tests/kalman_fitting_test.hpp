@@ -1,22 +1,29 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/common.hpp"
+#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+
 // detray include(s).
-#include "detray/detectors/detector_metadata.hpp"
-#include "detray/propagator/rk_stepper.hpp"
+#include <detray/core/detector.hpp>
+#include <detray/detectors/detector_metadata.hpp>
+#include <detray/propagator/navigator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
 
-// ROOT include(s).
-#include <TF1.h>
-#include <TFile.h>
+// System include(s).
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace traccc {
 
@@ -66,32 +73,13 @@ class KalmanFittingTests
         0.001 / detray::unit<scalar>::GeV,
         1 * detray::unit<scalar>::ns};
 
-    /// Verify that pull distribtion follows the normal distribution
+    /// Verify that pull distribtions follow the normal distribution
     ///
-    /// @param pull_dist the input histogram of pull values
-    void pull_value_test(TH1F* pull_dist) const {
-        TF1 gaus{"gaus", "gaus", -5, 5};
-        double fit_par[3];
-
-        // Set the mean seed to 0
-        gaus.SetParameters(1, 0.);
-        gaus.SetParLimits(1, -1., 1.);
-        // Set the standard deviation seed to 1
-        gaus.SetParameters(2, 1.0);
-        gaus.SetParLimits(2, 0.5, 2.);
-
-        auto res = pull_dist->Fit("gaus", "Q0S");
-
-        gaus.GetParameters(&fit_par[0]);
-
-        // Mean check
-        EXPECT_NEAR(fit_par[1], 0, 0.05)
-            << pull_dist->GetName() << " mean value error";
-
-        // Sigma check
-        EXPECT_NEAR(fit_par[2], 1, 0.1)
-            << pull_dist->GetName() << " sigma value error";
-    }
+    /// @param file_name The name of the file holding the distributions
+    /// @param hist_names The names of the histograms to process
+    ///
+    void pull_value_tests(std::string_view file_name,
+                          const std::vector<std::string>& hist_names) const;
 };
 
 }  // namespace traccc
