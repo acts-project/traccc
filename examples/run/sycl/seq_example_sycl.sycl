@@ -180,7 +180,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("Clusterization (sycl)",
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
-                spacepoints_sycl_buffer = ca_sycl(cells_buffer, modules_buffer);
+                spacepoints_sycl_buffer =
+                    ca_sycl(cells_buffer, modules_buffer).first;
             }  // stop measuring clusterization sycl timer
 
             if (run_cpu) {
