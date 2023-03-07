@@ -12,7 +12,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/container.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 
 // System include(s).
 #include <cmath>
@@ -29,7 +29,7 @@ struct spacepoint {
     /// The global position of the spacepoint in 3D space
     point3 global{0., 0., 0.};
     /// The local measurement of the spacepoint on the detector surface
-    measurement meas;
+    alt_measurement meas;
 
     TRACCC_HOST_DEVICE
     const scalar& x() const { return global[0]; }

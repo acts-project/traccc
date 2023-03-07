@@ -81,12 +81,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::cuda::track_params_estimation tp_cuda(mr);
 
     // performance writer
-    traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
-    if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-        sd_performance_writer.add_cache("CUDA");
-    }
+    // traccc::seeding_performance_writer sd_performance_writer(
+    //     traccc::seeding_performance_writer::config{});
+    // if (i_cfg.check_performance) {
+    //     sd_performance_writer.add_cache("CPU");
+    //     sd_performance_writer.add_cache("CUDA");
+    // }
 
     traccc::performance::timing_info elapsedTimes;
 

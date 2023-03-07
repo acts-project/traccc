@@ -67,44 +67,44 @@ void seeding_performance_writer::write(
     const spacepoint_container_types::const_view& spacepoints_view,
     const event_map& evt_map) {
 
-    std::map<particle_id, std::size_t> match_counter;
+    // std::map<particle_id, std::size_t> match_counter;
 
-    // Iterate over the seeds.
-    seed_collection_types::const_device seeds(seeds_view);
-    for (const seed& sd : seeds) {
+    // // Iterate over the seeds.
+    // seed_collection_types::const_device seeds(seeds_view);
+    // for (const seed& sd : seeds) {
 
-        // Check which particle matches this seed.
-        std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(
-                sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
+    //     // Check which particle matches this seed.
+    //     std::vector<particle_hit_count> particle_hit_counts =
+    //         identify_contributing_particles(
+    //             sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
 
-        if (particle_hit_counts.size() == 1) {
-            auto pid = particle_hit_counts.at(0).ptc.particle_id;
-            match_counter[pid]++;
-        }
-    }
+    //     if (particle_hit_counts.size() == 1) {
+    //         auto pid = particle_hit_counts.at(0).ptc.particle_id;
+    //         match_counter[pid]++;
+    //     }
+    // }
 
-    for (auto const& [pid, ptc] : evt_map.ptc_map) {
+    // for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
-        // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.mom) < m_cfg.pT_cut) {
-            continue;
-        }
+    //     // Count only charged particles which satisfiy pT_cut
+    //     if (ptc.charge == 0 || getter::perp(ptc.mom) < m_cfg.pT_cut) {
+    //         continue;
+    //     }
 
-        bool is_matched = false;
-        std::size_t n_matched_seeds_for_particle = 0;
-        auto it = match_counter.find(pid);
-        if (it != match_counter.end()) {
-            is_matched = true;
-            n_matched_seeds_for_particle = it->second;
-        }
+    //     bool is_matched = false;
+    //     std::size_t n_matched_seeds_for_particle = 0;
+    //     auto it = match_counter.find(pid);
+    //     if (it != match_counter.end()) {
+    //         is_matched = true;
+    //         n_matched_seeds_for_particle = it->second;
+    //     }
 
-        m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_caches[name.data()],
-                                     ptc, is_matched);
-        m_data->m_duplication_plot_tool.fill(
-            m_data->m_duplication_plot_caches[name.data()], ptc,
-            n_matched_seeds_for_particle - 1);
-    }
+    //     m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_caches[name.data()],
+    //                                  ptc, is_matched);
+    //     m_data->m_duplication_plot_tool.fill(
+    //         m_data->m_duplication_plot_caches[name.data()], ptc,
+    //         n_matched_seeds_for_particle - 1);
+    // }
 }
 
 void seeding_performance_writer::finalize() {

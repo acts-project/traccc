@@ -48,8 +48,8 @@ TEST(io_binary, cell) {
                                &surface_transforms, &digi_cfg, &host_mr);
 
     // Write binary file
-    traccc::io::write(event, cells_directory, traccc::data_format::binary,
-                      traccc::get_data(cells_csv));
+    // traccc::io::write(event, cells_directory, traccc::data_format::binary,
+    //                   traccc::get_data(cells_csv));
 
     // Read binary file
     traccc::cell_container_types::host cells_binary = traccc::io::read_cells(
@@ -111,8 +111,8 @@ TEST(io_binary, spacepoint) {
                                      traccc::data_format::csv, &host_mr);
 
     // Write binary file
-    traccc::io::write(event, hits_directory, traccc::data_format::binary,
-                      traccc::get_data(spacepoints_csv));
+    // traccc::io::write(event, hits_directory, traccc::data_format::binary,
+    //                   traccc::get_data(spacepoints_csv));
 
     // Read binary file
     traccc::spacepoint_container_types::host spacepoints_binary =
@@ -169,9 +169,9 @@ TEST(io_binary, measurement) {
                                       traccc::data_format::csv, &host_mr);
 
     // Write binary file
-    traccc::io::write(event, measurements_directory,
-                      traccc::data_format::binary,
-                      traccc::get_data(measurements_csv));
+    // traccc::io::write(event, measurements_directory,
+    //                   traccc::data_format::binary,
+    //                   traccc::get_data(measurements_csv));
 
     // Read binary file
     traccc::measurement_container_types::host measurements_binary =

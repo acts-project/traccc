@@ -124,9 +124,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             //     common_opts.input_directory, common_opts.input_directory,
             //     common_opts.input_directory, host_mr);
 
-            sd_performance_writer.write("CPU", vecmem::get_data(seeds),
-                                        traccc::get_data(spacepoints_per_event),
-                                        evt_map);
+            // sd_performance_writer.write("CPU", vecmem::get_data(seeds),
+            //                             traccc::get_data(spacepoints_per_event),
+            //                             evt_map);
         }
     }
 

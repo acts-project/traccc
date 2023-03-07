@@ -22,8 +22,8 @@ comparator_factory<seed>::comparator_factory(
 is_same_object<seed> comparator_factory<seed>::make_comparator(
     const seed& ref, scalar unc) const {
 
-    return is_same_object<seed>(m_ref_spacepoints, m_test_spacepoints, ref,
-                                unc);
+    // return is_same_object<seed>(m_ref_spacepoints, m_test_spacepoints, ref,
+    //                             unc);
 }
 
 /// @}

@@ -19,10 +19,10 @@ void write(std::size_t event, std::string_view directory,
 
     switch (format) {
         case data_format::binary:
-            details::write_binary_container(
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-cells.dat"),
-                traccc::cell_container_types::const_device{cells});
+            // details::write_binary_container(
+            //     data_directory() + directory.data() +
+            //         get_event_filename(event, "-cells.dat"),
+            //     traccc::cell_container_types::const_device{cells});
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
@@ -31,15 +31,15 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           spacepoint_container_types::const_view spacepoints) {
+           spacepoint_collection_types::const_view spacepoints) {
 
     switch (format) {
         case data_format::binary:
-            details::write_binary_container(
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-hits.dat"),
-                traccc::spacepoint_container_types::const_device{spacepoints});
-            break;
+            // details::write_binary_container(
+            //     data_directory() + directory.data() +
+            //         get_event_filename(event, "-hits.dat"),
+            //     traccc::spacepoint_collection_types::const_device{spacepoints});
+            // break;
         default:
             throw std::invalid_argument("Unsupported data format");
     }
@@ -47,15 +47,15 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           measurement_container_types::const_view measurements) {
+           alt_measurement_collection_types::const_view measurements) {
 
     switch (format) {
         case data_format::binary:
-            details::write_binary_container(
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.dat"),
-                traccc::measurement_container_types::const_device{
-                    measurements});
+            // details::write_binary_container(
+            //     data_directory() + directory.data() +
+            //         get_event_filename(event, "-measurements.dat"),
+            //     traccc::measurement_container_types::const_device{
+            //         measurements});
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

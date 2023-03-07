@@ -43,9 +43,9 @@ int create_binaries(const std::string& detector_file,
             &surface_transforms, &digi_cfg, &host_mr);
 
         // Write binary file
-        traccc::io::write(event, common_opts.input_directory,
-                          traccc::data_format::binary,
-                          traccc::get_data(cells_csv));
+        // traccc::io::write(event, common_opts.input_directory,
+        //                   traccc::data_format::binary,
+        //                   traccc::get_data(cells_csv));
 
         // Read the hits from the relevant event file
         traccc::spacepoint_container_types::host spacepoints_csv =
@@ -54,9 +54,9 @@ int create_binaries(const std::string& detector_file,
                 common_opts.input_data_format, &host_mr);
 
         // Write binary file
-        traccc::io::write(event, common_opts.input_directory,
-                          traccc::data_format::binary,
-                          traccc::get_data(spacepoints_csv));
+        // traccc::io::write(event, common_opts.input_directory,
+        //                   traccc::data_format::binary,
+        //                   traccc::get_data(spacepoints_csv));
 
         // Read the measurements from the relevant event file
         traccc::measurement_container_types::host measurements_csv =
@@ -65,9 +65,9 @@ int create_binaries(const std::string& detector_file,
                                           &host_mr);
 
         // Write binary file
-        traccc::io::write(event, common_opts.input_directory,
-                          traccc::data_format::binary,
-                          traccc::get_data(measurements_csv));
+        // traccc::io::write(event, common_opts.input_directory,
+        //                   traccc::data_format::binary,
+        //                   traccc::get_data(measurements_csv));
     }
 
     return 0;
