@@ -7,7 +7,6 @@
 
 // Local include(s).
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
-
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
@@ -102,12 +101,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {
 
     // Setup alpaka
-    using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
-    using Host = ::alpaka::DevCpu;
-    using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
-    std::cout << "Using alpaka accelerator: " << ::alpaka::getAccName<Acc>() << std::endl;
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
-    auto devHost = ::alpaka::getDevByIdx<Host>(0u);
     auto queue = Queue{devAcc};
 
     // Get the spacepoint sizes from the view
@@ -160,6 +154,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
             PopulateGridKernel{},
             m_config, spacepoints_view, grid_view
     );
+    ::alpaka::wait(queue);
 
     // Return the freshly filled buffer.
     return grid_buffer;

@@ -16,4 +16,8 @@ using Dim = ::alpaka::DimInt<1>;
 using Idx = uint32_t;
 using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
+using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
+using Host = ::alpaka::DevCpu;
+using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
+
 }  // namespace traccc::alpaka
