@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,7 +32,7 @@ inline void aggregate_cluster(
      * because no cell is ever a child of a cluster owned by a cell
      * with a higher ID.
      */
-    float totalWeight = 0.;
+    scalar totalWeight = 0.;
     point2 mean{0., 0.}, var{0., 0.};
     const auto module_link = cells[cid + start].module_link;
     const cell_module this_module = modules.at(module_link);
@@ -94,12 +94,13 @@ inline void aggregate_cluster(
             break;
         }
     }
-    if (totalWeight > 0.) {
+    if (totalWeight > static_cast<scalar>(0.)) {
         for (char i = 0; i < 2; ++i) {
             var[i] /= totalWeight;
         }
         const auto pitch = this_module.pixel.get_pitch();
-        var = var + point2{pitch[0] * pitch[0] / 12, pitch[1] * pitch[1] / 12};
+        var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
+                           pitch[1] * pitch[1] / static_cast<scalar>(12.)};
     }
 
     /*

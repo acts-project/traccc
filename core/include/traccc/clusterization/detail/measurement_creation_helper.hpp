@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -112,8 +112,9 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
         m.variance[1] = var[1] / totalWeight;
         // plus pitch^2 / 12
         const auto pitch = module.pixel.get_pitch();
-        m.variance = m.variance +
-                     point2{pitch[0] * pitch[0] / 12, pitch[1] * pitch[1] / 12};
+        m.variance =
+            m.variance + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
+                                pitch[1] * pitch[1] / static_cast<scalar>(12.)};
         // @todo add variance estimation
 
         measurements[module_link].header = module;
