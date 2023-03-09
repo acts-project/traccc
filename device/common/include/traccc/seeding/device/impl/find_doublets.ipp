@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -20,42 +20,26 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void find_doublets(
-    std::size_t globalIndex, const seedfinder_config& config,
+    const std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
-    const device::doublet_counter_container_types::const_view& doublet_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>&
-        doublet_ps_view,
-    doublet_container_types::view mb_doublets_view,
-    doublet_container_types::view mt_doublets_view) {
+    const doublet_counter_collection_types::const_view& dc_view,
+    device_doublet_collection_types::view mb_doublets_view,
+    device_doublet_collection_types::view mt_doublets_view) {
 
     // Check if anything needs to be done.
-    vecmem::device_vector<const prefix_sum_element_t> doublet_prefix_sum(
-        doublet_ps_view);
-    if (globalIndex >= doublet_prefix_sum.size()) {
+    const doublet_counter_collection_types::const_device doublet_counts(
+        dc_view);
+    if (globalIndex >= doublet_counts.size()) {
         return;
     }
 
     // Get the middle spacepoint that we need to be looking at.
-    const prefix_sum_element_t middle_sp_idx = doublet_prefix_sum[globalIndex];
-    const device::doublet_counter_container_types::const_device doublet_counts(
-        doublet_view);
-    const device::doublet_counter_collection_types::const_device
-        doublet_counts_in_bin =
-            doublet_counts.get_items().at(middle_sp_idx.first);
-    const device::doublet_counter middle_sp_counter =
-        doublet_counts_in_bin.at(middle_sp_idx.second);
+    const doublet_counter middle_sp_counter = doublet_counts.at(globalIndex);
 
     // Set up the device containers.
     const const_sp_grid_device sp_grid(sp_view);
-    doublet_container_types::device mb_doublets(mb_doublets_view);
-    doublet_container_types::device mt_doublets(mt_doublets_view);
-
-    // Get the doublet vectors just for the geometric bin of the middle
-    // spacepoint.
-    doublet_collection_types::device mb_doublets_in_bin =
-        mb_doublets.get_items().at(middle_sp_counter.m_spM.bin_idx);
-    doublet_collection_types::device mt_doublets_in_bin =
-        mt_doublets.get_items().at(middle_sp_counter.m_spM.bin_idx);
+    device_doublet_collection_types::device mb_doublets(mb_doublets_view);
+    device_doublet_collection_types::device mt_doublets(mt_doublets_view);
 
     // Get the spacepoint that we're evaluating in this thread, and treat that
     // as the "middle" spacepoint.
@@ -67,8 +51,6 @@ inline void find_doublets(
     // where the doublets are recorded.
     const unsigned int mid_bot_start_idx = middle_sp_counter.m_posMidBot;
     const unsigned int mid_top_start_idx = middle_sp_counter.m_posMidTop;
-    const unsigned int mid_top_end_idx =
-        middle_sp_counter.m_posMidTop + middle_sp_counter.m_nMidTop;
 
     // The running indices for the middle-bottom and middle-top pairs.
     unsigned int mid_bot_idx = 0, mid_top_idx = 0;
@@ -129,15 +111,10 @@ inline void find_doublets(
 
                     // Add it as a candidate to the middle-bottom container.
                     const unsigned int pos = mid_bot_start_idx + mid_bot_idx++;
-                    assert(pos < mb_doublets_in_bin.size());
-                    mb_doublets_in_bin.at(pos) = {
-                        {static_cast<unsigned int>(
-                             middle_sp_counter.m_spM.bin_idx),
-                         static_cast<unsigned int>(
-                             middle_sp_counter.m_spM.sp_idx)},
+                    assert(pos < mb_doublets.size());
+                    mb_doublets.at(pos) = {
                         {other_bin_idx, other_sp_idx},
-                        mid_top_start_idx,
-                        mid_top_end_idx};
+                        static_cast<unsigned int>(globalIndex)};
                 }
                 // Check if this spacepoint is a compatible "top" spacepoint to
                 // the thread's "middle" spacepoint.
@@ -147,13 +124,10 @@ inline void find_doublets(
 
                     // Add it as a candidate to the middle-top container.
                     const unsigned int pos = mid_top_start_idx + mid_top_idx++;
-                    assert(pos < mt_doublets_in_bin.size());
-                    mt_doublets_in_bin.at(pos) = {
-                        {static_cast<unsigned int>(
-                             middle_sp_counter.m_spM.bin_idx),
-                         static_cast<unsigned int>(
-                             middle_sp_counter.m_spM.sp_idx)},
-                        {other_bin_idx, other_sp_idx}};
+                    assert(pos < mt_doublets.size());
+                    mt_doublets.at(pos) = {
+                        {other_bin_idx, other_sp_idx},
+                        static_cast<unsigned int>(globalIndex)};
                 }
             }
         }

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,60 +19,47 @@ TRACCC_HOST_DEVICE
 inline void count_triplets(
     const std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>&
-        doublet_ps_view,
-    const doublet_container_types::const_view mid_bot_doublet_view,
-    const doublet_container_types::const_view mid_top_doublet_view,
-    triplet_counter_container_types::view triplet_view) {
+    const doublet_counter_collection_types::const_view& dc_view,
+    const device_doublet_collection_types::const_view& mid_bot_doublet_view,
+    const device_doublet_collection_types::const_view& mid_top_doublet_view,
+    triplet_counter_spM_collection_types::view spM_tc_view,
+    triplet_counter_collection_types::view mb_tc_view) {
 
     // Create device copy of input parameters
-    vecmem::device_vector<const prefix_sum_element_t> doublet_prefix_sum(
-        doublet_ps_view);
-
+    const device_doublet_collection_types::const_device mid_bot_doublet_device(
+        mid_bot_doublet_view);
     // Check if anything needs to be done.
-    if (globalIndex >= doublet_prefix_sum.size()) {
+    if (globalIndex >= mid_bot_doublet_device.size()) {
         return;
     }
 
-    // Create device copy of input parameters
-    const doublet_container_types::const_device mid_bot_doublet_device(
-        mid_bot_doublet_view);
-
-    // Get ids
-    const prefix_sum_element_t ps_idx = doublet_prefix_sum[globalIndex];
-    const unsigned int bin_idx = ps_idx.first;
-    const unsigned int item_idx = ps_idx.second;
-
     // Get current mid bottom doublet
-    const doublet mid_bot =
-        mid_bot_doublet_device.get_items().at(bin_idx).at(item_idx);
+    const device_doublet mid_bot = mid_bot_doublet_device.at(globalIndex);
 
     // Create device copy of input parameters
-    const doublet_container_types::const_device mid_top_doublet_device(
+    const device_doublet_collection_types::const_device mid_top_doublet_device(
         mid_top_doublet_view);
+    const doublet_counter_collection_types::const_device dc_device(dc_view);
 
-    // Create device copy of output parameter
-    triplet_counter_container_types::device triplet_counter(triplet_view);
+    // Create device copy of output parameterss
+    triplet_counter_collection_types::device mb_triplet_counter(mb_tc_view);
+    triplet_counter_spM_collection_types::device spM_triplet_counter(
+        spM_tc_view);
 
     // Get all spacepoints
     const const_sp_grid_device internal_sp_device(sp_view);
 
-    // Item of doublet: doublet objects per bin
-    const vecmem::device_vector<const doublet> mid_top_doublets_per_bin =
-        mid_top_doublet_device.get_items().at(bin_idx);
+    const unsigned int counter_link = mid_bot.counter_link;
+    const doublet_counter doublet_counts = dc_device.at(counter_link);
 
-    // middle spacepoint indexes
-    const unsigned int spM_bin = mid_bot.sp1.bin_idx;
-    const unsigned int spM_idx = mid_bot.sp1.sp_idx;
     // middle spacepoint
+    const sp_location spM_loc = doublet_counts.m_spM;
     const traccc::internal_spacepoint<traccc::spacepoint> spM =
-        internal_sp_device.bin(spM_bin)[spM_idx];
-    // bottom spacepoint indexes
-    const unsigned int spB_bin = mid_bot.sp2.bin_idx;
-    const unsigned int spB_idx = mid_bot.sp2.sp_idx;
+        internal_sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
+    const sp_location spB_loc = mid_bot.sp2;
     // bottom spacepoint
     const traccc::internal_spacepoint<traccc::spacepoint> spB =
-        internal_sp_device.bin(spB_bin)[spB_idx];
+        internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
 
     // Apply the conformal transformation to middle-bot doublet
     traccc::lin_circle lb = doublet_finding_helper::transform_coordinates<
@@ -90,20 +77,18 @@ inline void count_triplets(
 
     // find the reference (start) index of the mid-top doublet container
     // item vector, where the doublets are recorded
-    const unsigned int mt_start_idx = mid_bot.m_mt_start_idx;
-    const unsigned int mt_end_idx = mid_bot.m_mt_end_idx;
+    const unsigned int mt_start_idx = doublet_counts.m_posMidTop;
+    const unsigned int mt_end_idx = mt_start_idx + doublet_counts.m_nMidTop;
 
     // number of triplets per middle-bot doublet
     unsigned int num_triplets_per_mb = 0;
 
     // iterate over mid-top doublets
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
-        const traccc::doublet mid_top_doublet = mid_top_doublets_per_bin[i];
+        const traccc::sp_location spT_loc = mid_top_doublet_device[i].sp2;
 
-        const unsigned int spT_bin = mid_top_doublet.sp2.bin_idx;
-        const unsigned int spT_idx = mid_top_doublet.sp2.sp_idx;
         const traccc::internal_spacepoint<traccc::spacepoint> spT =
-            internal_sp_device.bin(spT_bin)[spT_idx];
+            internal_sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
 
         // Apply the conformal transformation to middle-top doublet
         traccc::lin_circle lt = doublet_finding_helper::transform_coordinates<
@@ -118,17 +103,15 @@ inline void count_triplets(
     }
 
     // if the number of triplets per mb is larger than 0, write the triplet
-    // counter into the container
+    // counter into the collection
     if (num_triplets_per_mb > 0) {
-        triplet_counter_header& header =
-            triplet_counter.get_headers().at(bin_idx);
+        triplet_counter_spM& header = spM_triplet_counter.at(counter_link);
         vecmem::device_atomic_ref<unsigned int> nTriplets(header.m_nTriplets);
         const unsigned int posTriplets =
             nTriplets.fetch_add(num_triplets_per_mb);
 
-        triplet_counter.get_items().at(bin_idx).push_back(
-            {mid_bot, num_triplets_per_mb, mt_start_idx, mt_end_idx,
-             posTriplets});
+        mb_triplet_counter.push_back(
+            {spB_loc, counter_link, num_triplets_per_mb, posTriplets});
     }
 }
 

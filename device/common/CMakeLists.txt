@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022 CERN for the benefit of the ACTS project
+# (c) 2022-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -20,8 +20,11 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/device/container_d2h_copy_alg.hpp"
    "include/traccc/device/impl/container_d2h_copy_alg.ipp"
    # EDM class(es).
+   "include/traccc/edm/device/seeding_global_counter.hpp"
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
+   "include/traccc/edm/device/device_doublet.hpp"
+   "include/traccc/edm/device/device_triplet.hpp"
    # Clusterization function(s).
    "include/traccc/clusterization/device/form_spacepoints.hpp"
    "include/traccc/clusterization/device/impl/form_spacepoints.ipp"
@@ -39,18 +42,12 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/seeding/device/impl/count_doublets.ipp"
    "include/traccc/seeding/device/find_doublets.hpp"
    "include/traccc/seeding/device/impl/find_doublets.ipp"
-   "include/traccc/seeding/device/make_doublet_counter_buffer.hpp"
-   "src/seeding/make_doublet_counter_buffer.cpp"
-   "include/traccc/seeding/device/make_doublet_buffers.hpp"
-   "src/seeding/make_doublet_buffers.cpp"
    "include/traccc/seeding/device/count_triplets.hpp"
    "include/traccc/seeding/device/impl/count_triplets.ipp"
+   "include/traccc/seeding/device/reduce_triplet_counts.hpp"
+   "include/traccc/seeding/device/impl/reduce_triplet_counts.ipp"
    "include/traccc/seeding/device/find_triplets.hpp"
    "include/traccc/seeding/device/impl/find_triplets.ipp"
-   "include/traccc/seeding/device/make_triplet_counter_buffer.hpp"
-   "src/seeding/make_triplet_counter_buffer.cpp"
-   "include/traccc/seeding/device/make_triplet_buffer.hpp"
-   "src/seeding/make_triplet_buffer.cpp"
    "include/traccc/seeding/device/update_triplet_weights.hpp"
    "include/traccc/seeding/device/impl/update_triplet_weights.ipp"
    "include/traccc/seeding/device/select_seeds.hpp"

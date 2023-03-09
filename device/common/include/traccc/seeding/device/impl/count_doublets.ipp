@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -20,10 +20,11 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void count_doublets(
-    std::size_t globalIndex, const seedfinder_config& config,
+    const std::size_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const vecmem::data::vector_view<const prefix_sum_element_t>& sp_ps_view,
-    doublet_counter_container_types::view doublet_view) {
+    doublet_counter_collection_types::view doublet_view, unsigned int& nMidBot,
+    unsigned int& nMidTop) {
 
     // Check if anything needs to be done.
     vecmem::device_vector<const prefix_sum_element_t> sp_prefix_sum(sp_ps_view);
@@ -36,11 +37,11 @@ inline void count_doublets(
 
     // Set up the device containers.
     const const_sp_grid_device sp_grid(sp_view);
-    doublet_counter_container_types::device doublet_counter(doublet_view);
+    doublet_counter_collection_types::device doublet_counter(doublet_view);
 
     // Get the spacepoint that we're evaluating in this thread, and treat that
     // as the "middle" spacepoint.
-    const internal_spacepoint<spacepoint>& middle_sp =
+    const internal_spacepoint<spacepoint> middle_sp =
         sp_grid.bin(middle_sp_idx.first).at(middle_sp_idx.second);
 
     // The the IDs of the neighbouring bins along the phi and Z axes of the
@@ -86,8 +87,7 @@ inline void count_doublets(
                 spacepoints = sp_grid.bin(phi_bin, z_bin);
 
             // Loop over all of those spacepoints.
-            for (const internal_spacepoint<spacepoint>& other_sp :
-                 spacepoints) {
+            for (const internal_spacepoint<spacepoint> other_sp : spacepoints) {
 
                 // Check if this spacepoint is a compatible "bottom" spacepoint
                 // to the thread's "middle" spacepoint.
@@ -112,22 +112,19 @@ inline void count_doublets(
     if ((n_mb_cand > 0) && (n_mt_cand > 0)) {
 
         // Increment the summary values in the header object.
-        doublet_counter_header& header =
-            doublet_counter.get_headers().at(middle_sp_idx.first);
-        vecmem::device_atomic_ref<unsigned int> nMidBot(header.m_nMidBot);
-        const unsigned int posBot = nMidBot.fetch_add(n_mb_cand);
-        vecmem::device_atomic_ref<unsigned int> nMidTop(header.m_nMidTop);
-        const unsigned int posTop = nMidTop.fetch_add(n_mt_cand);
+        vecmem::device_atomic_ref<unsigned int> numMidBot(nMidBot);
+        const unsigned int posBot = numMidBot.fetch_add(n_mb_cand);
+        vecmem::device_atomic_ref<unsigned int> numMidTop(nMidTop);
+        const unsigned int posTop = numMidTop.fetch_add(n_mt_cand);
 
         // Add the number of candidates for the "current bin".
-        doublet_counter.get_items()
-            .at(middle_sp_idx.first)
-            .push_back({{static_cast<unsigned int>(middle_sp_idx.first),
-                         static_cast<unsigned int>(middle_sp_idx.second)},
-                        n_mb_cand,
-                        n_mt_cand,
-                        posBot,
-                        posTop});
+        doublet_counter.push_back(
+            {{static_cast<unsigned int>(middle_sp_idx.first),
+              static_cast<unsigned int>(middle_sp_idx.second)},
+             n_mb_cand,
+             n_mt_cand,
+             posBot,
+             posTop});
     }
 }
 
