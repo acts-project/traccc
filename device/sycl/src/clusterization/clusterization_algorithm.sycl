@@ -254,8 +254,8 @@ class ccl_kernel {
         unsigned char adjc[MAX_CELLS_PER_THREAD];
 
         // It seems that sycl runs into undefined behaviour when calling
-        // any_of_group when some threads have already run into a return. So can
-        // only do this after running the FastSV algorithm.
+        // group synchronisation functions when some threads have already run
+        // into a return. As such, we cannot use returns in this kernel.
 
 #pragma unroll
         for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
@@ -294,11 +294,6 @@ class ccl_kernel {
         fast_sv_1(&f[0], &f_next[0], adjc, adjv, tid, blockDim, item);
 
         item.barrier();
-
-        // Now that we can use return, check if any work needs to be done
-        if (tid >= size) {
-            return;
-        }
 
         /*
          * Count the number of clusters by checking how many cells have
