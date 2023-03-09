@@ -29,7 +29,7 @@ traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
 
 # Make CUDA generate debug symbols for the device code as well in a debug
 # build.
-traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G" )
+traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G --keep -src-in-ptx" )
 
 # Ensure that line information is embedded in debugging builds so that
 # profilers have access to line data.
