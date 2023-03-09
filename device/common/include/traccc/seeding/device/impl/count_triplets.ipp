@@ -80,7 +80,7 @@ inline void count_triplets(
 
     // Calculate some physical quantities required for triplet compatibility
     // check
-    scalar iSinTheta2 = 1 + lb.cotTheta() * lb.cotTheta();
+    scalar iSinTheta2 = static_cast<scalar>(1.) + lb.cotTheta() * lb.cotTheta();
     scalar scatteringInRegion2 = config.maxScatteringAngle2 * iSinTheta2;
     scatteringInRegion2 *= config.sigmaScattering * config.sigmaScattering;
 
