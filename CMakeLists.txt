@@ -15,6 +15,10 @@ set( CMAKE_CUDA_STANDARD 17 CACHE STRING "The (CUDA) C++ standard to use" )
 set( CMAKE_CUDA_EXTENSIONS FALSE CACHE BOOL "Disable (CUDA) C++ extensions" )
 set( CMAKE_SYCL_STANDARD 17 CACHE STRING "The (SYCL) C++ standard to use" )
 
+# Flag controlling whether warnings should make the build fail.
+option( TRACCC_FAIL_ON_WARNINGS
+   "Make the build fail on compiler/linker warnings" FALSE )
+
 # Standard CMake include(s).
 include( GNUInstallDirs )
 

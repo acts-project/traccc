@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -35,10 +35,12 @@ traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G" )
 # profilers have access to line data.
 traccc_add_flag( CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-lineinfo" )
 
-# More rigorous tests for the Debug builds.
-if( ( "${CUDAToolkit_VERSION}" VERSION_GREATER_EQUAL "10.2" ) AND
-    ( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" ) )
-   traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-Werror all-warnings" )
-elseif( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "Clang" )
-   traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-Werror" )
+# Fail on warnings, if asked for that behaviour.
+if( TRACCC_FAIL_ON_WARNINGS )
+   if( ( "${CUDAToolkit_VERSION}" VERSION_GREATER_EQUAL "10.2" ) AND
+       ( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" ) )
+      traccc_add_flag( CMAKE_CUDA_FLAGS "-Werror all-warnings" )
+   elseif( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "Clang" )
+      traccc_add_flag( CMAKE_CUDA_FLAGS "-Werror" )
+   endif()
 endif()
