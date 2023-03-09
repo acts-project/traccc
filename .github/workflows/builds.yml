@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -47,7 +47,7 @@ jobs:
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DTRACCC_BUILD_${{ matrix.platform.name }}=TRUE -S ${GITHUB_WORKSPACE} -B build
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DTRACCC_BUILD_${{ matrix.platform.name }}=TRUE -DTRACCC_FAIL_ON_WARNINGS=TRUE -S ${GITHUB_WORKSPACE} -B build
       - name: Build
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
