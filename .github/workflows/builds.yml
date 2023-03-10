@@ -44,6 +44,8 @@ jobs:
         with:
           submodules: true
           lfs: true
+      - name: Unpack data files
+        run: data/extract_files.sh
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
