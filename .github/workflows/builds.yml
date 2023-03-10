@@ -58,3 +58,7 @@ jobs:
           cd build
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           ctest --output-on-failure
+      - name: FP64 Compliance
+        if: "matrix.platform.name == 'CUDA' && matrix.build == 'Debug'"
+        continue-on-error: true
+        run: ${GITHUB_WORKSPACE}/.github/find_f64_ptx.py --source ${GITHUB_WORKSPACE} --build build $(find build -name "*.ptx")
