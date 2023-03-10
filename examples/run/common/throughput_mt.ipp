@@ -32,6 +32,7 @@
 #include <atomic>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -189,6 +190,19 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
               << performance::throughput{throughput_cfg.processed_events, times,
                                          "Event processing"}
               << std::endl;
+
+    // Print results to log file
+    if (throughput_cfg.log_file != "\0") {
+        std::ofstream logFile;
+        logFile.open(throughput_cfg.log_file, std::fstream::app);
+        logFile << "\"" << throughput_cfg.input_directory << "\""
+                << "," << mt_cfg.threads << "," << throughput_cfg.loaded_events
+                << "," << throughput_cfg.cold_run_events << ","
+                << throughput_cfg.processed_events << ","
+                << times.get_time("Warm-up processing").count() << ","
+                << times.get_time("Event processing").count() << std::endl;
+        logFile.close();
+    }
 
     // Return gracefully.
     return 0;
