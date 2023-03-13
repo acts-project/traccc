@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -79,8 +79,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::clusterization_algorithm ca_cuda(
         mr, async_copy, stream, common_opts.target_cells_per_partition);
-    traccc::cuda::seeding_algorithm sa_cuda(mr);
-    traccc::cuda::track_params_estimation tp_cuda(mr);
+    traccc::cuda::seeding_algorithm sa_cuda(mr, async_copy, stream);
+    traccc::cuda::track_params_estimation tp_cuda(mr, async_copy, stream);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
