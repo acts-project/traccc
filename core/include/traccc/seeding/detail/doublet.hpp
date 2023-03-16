@@ -21,10 +21,6 @@ struct doublet {
     sp_location sp1;
     // bottom (or top) spacepoint location in internal spacepoint container
     sp_location sp2;
-
-    // Position of the mid top doublets for this which share this spM
-    unsigned int m_mt_start_idx = 0;
-    unsigned int m_mt_end_idx = 0;
 };
 
 inline TRACCC_HOST_DEVICE bool operator==(const doublet& lhs,
