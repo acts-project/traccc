@@ -87,6 +87,9 @@ jobs:
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
+          if [[ ${{ matrix.platform.name }} = CUDA && ${{ matrix.platform.container }} == *"ubuntu2204"* && ${{ matrix.platform.cxx_standard }} = 20 ]]; then
+            export CUDAFLAGS="-std=c++20 $CUDAFLAGS"
+          fi
           cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
             -DCMAKE_CXX_STANDARD=${{ matrix.platform.cxx_standard }} \
