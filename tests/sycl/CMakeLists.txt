@@ -22,6 +22,7 @@ traccc_add_test(
     test_cca.sycl
     test_sanity_contiguous_on.sycl
     test_sanity_ordered_on.sycl
+    test_sort.sycl
 
     LINK_LIBRARIES
     GTest::gtest_main
