@@ -30,10 +30,6 @@ struct triplet {
     scalar weight;
     // z origin of triplet
     scalar z_vertex;
-
-    /// Position of the triplets which share this mb doublet
-    unsigned int triplets_mb_begin = 0;
-    unsigned int triplets_mb_end = 0;
 };
 
 inline TRACCC_HOST_DEVICE bool operator==(const triplet& lhs,
