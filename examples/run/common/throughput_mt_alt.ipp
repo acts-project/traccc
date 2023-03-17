@@ -219,6 +219,7 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
                 << "," << mt_cfg.threads << "," << throughput_cfg.loaded_events
                 << "," << throughput_cfg.cold_run_events << ","
                 << throughput_cfg.processed_events << ","
+                << throughput_cfg.target_cells_per_partition << ","
                 << times.get_time("Warm-up processing").count() << ","
                 << times.get_time("Event processing").count() << std::endl;
         logFile.close();
