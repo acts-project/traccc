@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s)
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -30,7 +31,11 @@ struct track_params_estimation
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
-    track_params_estimation(const traccc::memory_resource& mr);
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
+    /// @param str The CUDA stream to perform the operations in
+    track_params_estimation(const traccc::memory_resource& mr,
+                            vecmem::copy& copy, stream& str);
 
     /// Callable operator for track_params_esitmation
     ///
@@ -45,8 +50,10 @@ struct track_params_estimation
     private:
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
-    /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
+    /// The copy object to use
+    vecmem::copy& m_copy;
+    /// The CUDA stream to use
+    stream& m_stream;
 };
 
 }  // namespace cuda

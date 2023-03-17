@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -58,10 +58,12 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
 
 namespace traccc::cuda {
 
-seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr)
+seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr,
+                                     vecmem::copy& copy, stream& str)
     : m_spacepoint_binning(default_seedfinder_config(),
-                           default_spacepoint_grid_config(), mr),
-      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr) {}
+                           default_spacepoint_grid_config(), mr, copy, str),
+      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr, copy,
+                     str) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {

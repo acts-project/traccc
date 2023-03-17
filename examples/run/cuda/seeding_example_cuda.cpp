@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,6 +23,7 @@
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
@@ -52,10 +53,13 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    vecmem::cuda::copy copy;
+    traccc::cuda::stream stream;
 
-    traccc::cuda::seeding_algorithm sa_cuda{mr};
-    traccc::cuda::track_params_estimation tp_cuda{mr};
+    vecmem::cuda::copy copy;
+    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
+
+    traccc::cuda::seeding_algorithm sa_cuda{mr, async_copy, stream};
+    traccc::cuda::track_params_estimation tp_cuda{mr, async_copy, stream};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
