@@ -181,7 +181,9 @@ and toolchains that are currently known to work (last updated 2022/01/24):
 
 ### Data directory
 
-The `data` directory is a submodule hosted as `git lfs` on `https://gitlab.cern.ch/acts/traccc-data`
+The `data` directory is a submodule hosted as `git lfs` on `https://gitlab.cern.ch/acts/traccc-data`.
+After cloning the submodule, you need to run the script `extract_files.sh`, that is located
+in the submodule checkout. It will unpack the `tar.gz` files which contain the test data.
 
 ### Prerequisites
 

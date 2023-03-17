@@ -46,6 +46,9 @@ struct throughput_options {
     /// them in the performance measurements
     std::size_t cold_run_events = 10;
 
+    /// Output log file
+    std::string log_file;
+
     /// Constructor on top of a common @c program_options object
     ///
     /// @param desc The program options to add to

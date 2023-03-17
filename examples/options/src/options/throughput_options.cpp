@@ -43,6 +43,10 @@ throughput_options::throughput_options(po::options_description& desc) {
     desc.add_options()("cold_run_events",
                        po::value<std::size_t>()->default_value(10),
                        "Number of events to run 'cold'");
+    desc.add_options()(
+        "log_file",
+        po::value<std::string>()->default_value(
+            "\0", "File where result logs will be printed (in append mode)."));
 }
 
 void throughput_options::read(const po::variables_map& vm) {
@@ -69,6 +73,7 @@ void throughput_options::read(const po::variables_map& vm) {
     loaded_events = vm["loaded_events"].as<std::size_t>();
     processed_events = vm["processed_events"].as<std::size_t>();
     cold_run_events = vm["cold_run_events"].as<std::size_t>();
+    log_file = vm["log_file"].as<std::string>();
 }
 
 std::ostream& operator<<(std::ostream& out, const throughput_options& opt) {
@@ -83,7 +88,8 @@ std::ostream& operator<<(std::ostream& out, const throughput_options& opt) {
         << "\n"
         << "Loaded event(s)            : " << opt.loaded_events << "\n"
         << "Cold run event(s)          : " << opt.cold_run_events << "\n"
-        << "Processed event(s)         : " << opt.processed_events;
+        << "Processed event(s)         : " << opt.processed_events << "\n"
+        << "Log_file                   : " << opt.log_file;
     return out;
 }
 
