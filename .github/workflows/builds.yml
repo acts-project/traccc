@@ -39,13 +39,13 @@ jobs:
         shell: bash
     steps:
       - name: Dependencies
-        run: apt-get install -y git-lfs
+        run: apt-get install -y git-lfs wget
       - uses: actions/checkout@v2
         with:
           submodules: true
           lfs: true
-      - name: Unpack data files
-        run: data/extract_files.sh
+      - name: Download data files
+        run: data/traccc_data_get_files.sh
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
