@@ -21,7 +21,7 @@
 namespace traccc {
 
 namespace {
-constexpr char s_separator = ':';
+const std::string s_separator = ":";
 }
 
 /// A fixed number of real values as one user option.
@@ -41,8 +41,7 @@ void parse_variable(std::istream& is, std::vector<value_t>& values,
     std::string buf;
     is >> buf;
     std::vector<std::string> stringValues;
-    boost::split(stringValues, buf,
-                 boost::is_any_of(std::string(&s_separator)));
+    boost::split(stringValues, buf, boost::is_any_of(s_separator));
     for (const std::string& stringValue : stringValues) {
         values.push_back(convert(stringValue));
     }
@@ -92,7 +91,7 @@ inline std::ostream& operator<<(std::ostream& os,
 
     for (size_t i = 0; i < kSize; ++i) {
         if (0u < i) {
-            os << s_separator;
+            os << s_separator.c_str();
         }
         os << data[i];
     }

@@ -16,7 +16,7 @@
 
 // detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
-#include "detray/simulation/track_generators.hpp"
+#include "detray/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -32,19 +32,17 @@ using namespace traccc;
 // This defines the local frame test suite
 TEST_P(KalmanFittingTests, Run) {
 
-    // Test Parameters
-    const scalar p0 = std::get<0>(GetParam());
-    const scalar phi0 = std::get<1>(GetParam());
+    const std::string dir = std::get<0>(GetParam());
+    const unsigned int n_truth_tracks = std::get<1>(GetParam());
+    const unsigned int n_events = std::get<2>(GetParam());
 
     // Input path
-    const std::string full_path = "detray_simulation/telescope/kf_validation/" +
-                                  std::to_string(p0) + "_GeV_" +
-                                  std::to_string(phi0) + "_phi/";
+    const std::string full_path =
+        "detray_simulation/telescope/kf_validation/" + dir + "/";
 
     // Performance writer
     traccc::fitting_performance_writer::config writer_cfg;
-    writer_cfg.file_path = "performance_track_fitting_" + std::to_string(p0) +
-                           "_GeV_" + std::to_string(phi0) + "_phi" + ".root";
+    writer_cfg.file_path = "performance_track_fitting_" + dir + ".root";
 
     traccc::fitting_performance_writer fit_performance_writer(writer_cfg);
 
@@ -55,11 +53,15 @@ TEST_P(KalmanFittingTests, Run) {
     // Memory resource
     vecmem::host_memory_resource host_mr;
 
+    // Use rectangle surfaces
+    detray::mask<detray::unbounded<detray::rectangle2D<>>> rectangle{
+        0u, 10000.f * detray::unit<scalar>::mm,
+        10000.f * detray::unit<scalar>::mm};
+
     const host_detector_type det = create_telescope_detector(
         host_mr,
         b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
-        plane_positions, traj, std::numeric_limits<scalar>::infinity(),
-        std::numeric_limits<scalar>::infinity(), mat, thickness);
+        rectangle, plane_positions, mat, thickness, traj);
 
     /***************
      * Run fitting
@@ -71,8 +73,6 @@ TEST_P(KalmanFittingTests, Run) {
     // Fitting algorithm object
     fitting_algorithm<host_fitter_type> fitting;
 
-    std::size_t n_events = 100;
-
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
         // Event map
@@ -83,7 +83,7 @@ TEST_P(KalmanFittingTests, Run) {
             evt_map.generate_truth_candidates(sg, host_mr);
 
         // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), 100);
+        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
         // Run fitting
         auto track_states = fitting(det, track_candidates);
@@ -92,12 +92,11 @@ TEST_P(KalmanFittingTests, Run) {
         const std::size_t n_tracks = track_states.size();
 
         // n_trakcs = 100
-        ASSERT_EQ(n_tracks, 100);
+        ASSERT_EQ(n_tracks, n_truth_tracks);
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
             const auto& track_states_per_track = track_states[i_trk].items;
-            ASSERT_EQ(track_states_per_track.size(),
-                      plane_positions.size() - 2);
+            ASSERT_EQ(track_states_per_track.size(), plane_positions.size());
 
             fit_performance_writer.write(track_states_per_track, det, evt_map);
         }
@@ -116,6 +115,6 @@ TEST_P(KalmanFittingTests, Run) {
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitValidation, KalmanFittingTests,
-    ::testing::Values(std::make_tuple(1 * detray::unit<scalar>::GeV, 0),
-                      std::make_tuple(10 * detray::unit<scalar>::GeV, 0),
-                      std::make_tuple(100 * detray::unit<scalar>::GeV, 0)));
+    ::testing::Values(std::make_tuple("1_GeV_0_phi", 100, 100),
+                      std::make_tuple("10_GeV_0_phi", 100, 100),
+                      std::make_tuple("100_GeV_0_phi", 100, 100)));

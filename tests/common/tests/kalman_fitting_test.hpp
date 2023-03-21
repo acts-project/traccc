@@ -17,6 +17,8 @@
 #include <detray/propagator/navigator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
+#include "detray/masks/unbounded.hpp"
+
 // GTest include(s).
 #include <gtest/gtest.h>
 
@@ -29,17 +31,20 @@ namespace traccc {
 
 /// Kalman Fitting Test with Telescope Geometry
 ///
-/// Tuple parameter made of (1) initial particle momentum and (2) initial phi
+/// Parameter for data directory
 class KalmanFittingTests
-    : public ::testing::TestWithParam<std::tuple<scalar, scalar>> {
+    : public ::testing::TestWithParam<
+          std::tuple<std::string, unsigned int, unsigned int>> {
 
     public:
     /// Type declarations
     using host_detector_type =
-        detray::detector<detray::detector_registry::telescope_detector,
+        detray::detector<detray::detector_registry::template telescope_detector<
+                             detray::unbounded<detray::rectangle2D<>>>,
                          covfie::field, detray::host_container_types>;
     using device_detector_type =
-        detray::detector<detray::detector_registry::telescope_detector,
+        detray::detector<detray::detector_registry::template telescope_detector<
+                             detray::unbounded<detray::rectangle2D<>>>,
                          covfie::field_view, detray::device_container_types>;
 
     using b_field_t = typename host_detector_type::bfield_type;
@@ -57,7 +62,7 @@ class KalmanFittingTests
         {0, 0, 0}, 0, {1, 0, 0}, -1};
     /// Position of planes (in mm unit)
     static const inline std::vector<scalar> plane_positions = {
-        -10., 20., 40., 60., 80., 100., 120., 140, 160, 180., 200.};
+        20., 40., 60., 80., 100., 120., 140, 160, 180.};
     /// B field value and its type
     static constexpr vector3 B{2 * detray::unit<scalar>::T, 0, 0};
     /// Plane material and thickness
