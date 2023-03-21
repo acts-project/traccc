@@ -378,7 +378,7 @@ class ccl_kernel {
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, queue_wrapper queue,
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
     const unsigned short target_cells_per_partition)
     : m_target_cells_per_partition(target_cells_per_partition),
       m_max_work_group_size(
@@ -386,14 +386,12 @@ clusterization_algorithm::clusterization_algorithm(
               .get_device()
               .get_info<::sycl::info::device::max_work_group_size>()),
       m_mr(mr),
-      m_queue(queue) {
+      m_queue(queue),
+      m_copy(copy) {
 
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
+    // This algorithm should only be called using an ordered queue
+    assert(details::get_queue(queue).has_property(
+        ::sycl::property::queue::in_order()));
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
@@ -402,7 +400,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Number of cells
     const alt_cell_collection_types::view::size_type num_cells =
-        m_copy->get_size(cells);
+        m_copy.get_size(cells);
 
     // Create result object for the CCL kernel with size overestimation
     alt_measurement_collection_types::buffer measurements_buffer(num_cells,
@@ -413,9 +411,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Counter for number of measurements
     vecmem::unique_alloc_ptr<unsigned int> num_measurements_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
-    details::get_queue(m_queue)
-        .memset(num_measurements_device.get(), 0, sizeof(unsigned int))
-        .wait_and_throw();
+    details::get_queue(m_queue).memset(num_measurements_device.get(), 0,
+                                       sizeof(unsigned int));
 
     const unsigned short max_cells_per_partition =
         (m_target_cells_per_partition * MAX_CELLS_PER_THREAD +
@@ -445,10 +442,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
 
     // Run ccl kernel
-    details::get_queue(m_queue)
-        .submit([&ndrange, &cells, &modules, max_cells_per_partition,
-                 &target_cells_per_partition, &measurements_view, &cell_links,
-                 &num_measurements_device](::sycl::handler& h) {
+    details::get_queue(m_queue).submit(
+        [&ndrange, &cells, &modules, max_cells_per_partition,
+         &target_cells_per_partition, &measurements_view, &cell_links,
+         &num_measurements_device](::sycl::handler& h) {
             ::sycl::local_accessor<unsigned int> shared_uint(3, h);
             ::sycl::local_accessor<index_t> shared_idx(
                 2 * max_cells_per_partition, h);
@@ -459,8 +456,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                              target_cells_per_partition, measurements_view,
                              num_measurements_device.get(), cell_links,
                              shared_uint, shared_idx));
-        })
-        .wait_and_throw();
+        });
 
     // Copy number of measurements to host
     unsigned int num_measurements_host;
@@ -479,18 +475,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         num_measurements_host, m_max_work_group_size);
 
     // Run form spacepoints kernel, turning 2D measurements into 3D spacepoints
-    details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
-            h.parallel_for<kernels::form_spacepoints>(
-                spacepointsRange,
-                [measurements_view, modules, num_measurements_host,
-                 spacepoints_view](::sycl::nd_item<1> item) {
-                    device::form_spacepoints(
-                        item.get_global_linear_id(), measurements_view, modules,
-                        num_measurements_host, spacepoints_view);
-                });
-        })
-        .wait_and_throw();
+    details::get_queue(m_queue).submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::form_spacepoints>(
+            spacepointsRange,
+            [measurements_view, modules, num_measurements_host,
+             spacepoints_view](::sycl::nd_item<1> item) {
+                device::form_spacepoints(
+                    item.get_global_linear_id(), measurements_view, modules,
+                    num_measurements_host, spacepoints_view);
+            });
+    });
 
     return {std::move(spacepoints_buffer), std::move(cell_links)};
 }

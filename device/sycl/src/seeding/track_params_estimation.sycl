@@ -25,15 +25,12 @@ class estimate_track_params;
 }  // namespace kernels
 
 track_params_estimation::track_params_estimation(
-    const traccc::memory_resource& mr, queue_wrapper queue)
-    : m_mr(mr), m_queue(queue) {
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue)
+    : m_mr(mr), m_queue(queue), m_copy(copy) {
 
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
+    // This algorithm should only be called using an ordered queue
+    assert(details::get_queue(m_queue).has_property(
+        ::sycl::property::queue::in_order()));
 }
 
 track_params_estimation::output_type track_params_estimation::operator()(
@@ -41,12 +38,12 @@ track_params_estimation::output_type track_params_estimation::operator()(
     const alt_seed_collection_types::const_view& seeds_view) const {
 
     // Get the size of the seeds view
-    auto seeds_size = m_copy->get_size(seeds_view);
+    auto seeds_size = m_copy.get_size(seeds_view);
 
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
                                                                   m_mr.main);
-    m_copy->setup(params_buffer);
+    m_copy.setup(params_buffer);
 
     // Check if anything needs to be done.
     if (seeds_size == 0) {
@@ -64,17 +61,15 @@ track_params_estimation::output_type track_params_estimation::operator()(
     auto trackParamsNdRange =
         traccc::sycl::calculate1DimNdRange(seeds_size, localSize);
 
-    details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
-            h.parallel_for<kernels::estimate_track_params>(
-                trackParamsNdRange, [spacepoints_view, seeds_view,
-                                     params_view](::sycl::nd_item<1> item) {
-                    device::estimate_track_params(item.get_global_linear_id(),
-                                                  spacepoints_view, seeds_view,
-                                                  params_view);
-                });
-        })
-        .wait_and_throw();
+    details::get_queue(m_queue).submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::estimate_track_params>(
+            trackParamsNdRange, [spacepoints_view, seeds_view,
+                                 params_view](::sycl::nd_item<1> item) {
+                device::estimate_track_params(item.get_global_linear_id(),
+                                              spacepoints_view, seeds_view,
+                                              params_view);
+            });
+    });
 
     return params_buffer;
 }

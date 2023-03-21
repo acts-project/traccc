@@ -37,10 +37,12 @@ struct track_params_estimation
     ///
     /// @param mr       is a struct of memory resources (shared or
     /// host & device)
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
     /// @param queue    is a wrapper for the sycl queue for kernel
     /// invocation
     track_params_estimation(const traccc::memory_resource& mr,
-                            queue_wrapper queue);
+                            vecmem::copy& copy, queue_wrapper queue);
 
     /// Callable operator for track_params_esitmation
     ///
@@ -56,7 +58,7 @@ struct track_params_estimation
     // Private member variables
     traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;
-    std::unique_ptr<vecmem::copy> m_copy;
+    vecmem::copy& m_copy;
 };
 
 }  // namespace traccc::sycl
