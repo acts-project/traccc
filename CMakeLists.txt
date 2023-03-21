@@ -116,6 +116,9 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
    "Extra options for configuring how Thrust should be used" )
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+if( ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.25.0" )
+    set_target_properties( traccc::Thrust PROPERTIES SYSTEM TRUE )
+endif()
 
 # Set up TBB.
 option( TRACCC_SETUP_TBB
