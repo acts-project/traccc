@@ -116,6 +116,13 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
    "Extra options for configuring how Thrust should be used" )
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+# Make sure that Thrust/CUB headers are treated as system headers.
+get_target_property( _thrustIncludeDir Thrust::Thrust INTERFACE_INCLUDE_DIRECTORIES )
+get_target_property( _cubIncludeDir CUB::CUB INTERFACE_INCLUDE_DIRECTORIES )
+target_include_directories( traccc::Thrust
+   SYSTEM INTERFACE ${_thrustIncludeDir} ${_cubIncludeDir} )
+unset( _thrustIncludeDir )
+unset( _cubIncludeDir )
 
 # Set up TBB.
 option( TRACCC_SETUP_TBB
