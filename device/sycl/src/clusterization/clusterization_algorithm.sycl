@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -145,20 +145,15 @@ void fast_sv_1(index_t* f, index_t* gf,
 
 class ccl_kernel {
     public:
-    ccl_kernel(
-        const alt_cell_collection_types::const_view cells,
-        const cell_module_collection_types::const_view modules,
-        const index_t max_cells_per_partition,
-        const index_t target_cells_per_partition,
-        alt_measurement_collection_types::view measurements,
-        unsigned int* num_measurements,
-        vecmem::data::vector_view<unsigned int> cell_links,
-        ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
-                         ::sycl::access::target::local>
-            shared_uint,
-        ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
-                         ::sycl::access::target::local>
-            shared_idx)
+    ccl_kernel(const alt_cell_collection_types::const_view cells,
+               const cell_module_collection_types::const_view modules,
+               const index_t max_cells_per_partition,
+               const index_t target_cells_per_partition,
+               alt_measurement_collection_types::view measurements,
+               unsigned int* num_measurements,
+               vecmem::data::vector_view<unsigned int> cell_links,
+               ::sycl::local_accessor<unsigned int> shared_uint,
+               ::sycl::local_accessor<index_t> shared_idx)
         : cells_view(cells),
           modules_view(modules),
           m_max_cells_per_partition(max_cells_per_partition),
@@ -302,10 +297,10 @@ class ccl_kernel {
         for (index_t tst = 0, cid; (cid = tst * blockDim + tid) < size; ++tst) {
 
             if (f[cid] == cid) {
-                ::sycl::ext::oneapi::atomic_ref<
-                    unsigned int, ::sycl::memory_order::relaxed,
-                    ::sycl::memory_scope::work_group,
-                    ::sycl::access::address_space::local_space>(outi)
+                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::work_group,
+                                   ::sycl::access::address_space::local_space>(
+                    outi)
                     .fetch_add(1);
             }
         }
@@ -321,12 +316,12 @@ class ccl_kernel {
          * amount of threads per block, this has no sever implications.
          */
         if (tid == 0) {
-            outi = ::sycl::ext::oneapi::atomic_ref<
-                       unsigned int, ::sycl::memory_order::relaxed,
-                       ::sycl::memory_scope::device,
-                       ::sycl::access::address_space::global_space>(
-                       measurement_count)
-                       .fetch_add(outi);
+            outi =
+                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
+                                   ::sycl::memory_scope::device,
+                                   ::sycl::access::address_space::global_space>(
+                    measurement_count)
+                    .fetch_add(outi);
         }
 
         item.barrier();
@@ -354,7 +349,7 @@ class ccl_kernel {
                  * output array which we can write to.
                  */
                 const unsigned int id =
-                    ::sycl::ext::oneapi::atomic_ref<
+                    ::sycl::atomic_ref<
                         unsigned int, ::sycl::memory_order::relaxed,
                         ::sycl::memory_scope::work_group,
                         ::sycl::access::address_space::local_space>(outi)
@@ -376,12 +371,8 @@ class ccl_kernel {
     alt_measurement_collection_types::view measurements_view;
     unsigned int* m_measurement_count;
     vecmem::data::vector_view<unsigned int> cell_links_view;
-    ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
-                     ::sycl::access::target::local>
-        m_shared_uint;
-    ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
-                     ::sycl::access::target::local>
-        m_shared_idx;
+    ::sycl::local_accessor<unsigned int> m_shared_uint;
+    ::sycl::local_accessor<index_t> m_shared_idx;
 };
 
 }  // namespace kernels
@@ -458,12 +449,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         .submit([&ndrange, &cells, &modules, max_cells_per_partition,
                  &target_cells_per_partition, &measurements_view, &cell_links,
                  &num_measurements_device](::sycl::handler& h) {
-            ::sycl::accessor<unsigned int, 1, ::sycl::access::mode::read_write,
-                             ::sycl::access::target::local>
-                shared_uint(3, h);
-            ::sycl::accessor<index_t, 1, ::sycl::access::mode::read_write,
-                             ::sycl::access::target::local>
-                shared_idx(2 * max_cells_per_partition, h);
+            ::sycl::local_accessor<unsigned int> shared_uint(3, h);
+            ::sycl::local_accessor<index_t> shared_idx(
+                2 * max_cells_per_partition, h);
 
             h.parallel_for<kernels::ccl_kernel>(
                 ndrange, kernels::ccl_kernel(
