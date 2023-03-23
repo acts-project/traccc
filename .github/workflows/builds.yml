@@ -26,17 +26,30 @@ jobs:
         platform:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v30
+            options:
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2004_cuda:v30
-          - name: SYCL
-            container: ghcr.io/acts-project/ubuntu2004_oneapi:v30
+            options: -DTRACCC_BUILD_CUDA=TRUE
           - name: KOKKOS
             container: ghcr.io/acts-project/ubuntu2004:v30
+            options: -DTRACCC_BUILD_KOKKOS=TRUE
           - name: ALPAKA
             container: ghcr.io/acts-project/ubuntu2204:v33
+            options: -DTRACCC_BUILD_ALPAKA=TRUE
         build:
           - Release
           - Debug
+        include:
+          - platform:
+              name: "SYCL"
+              container: "ghcr.io/acts-project/ubuntu2004_cuda_oneapi:v37"
+              options: -DTRACCC_BUILD_SYCL=TRUE -DTRACCC_BUILD_CUDA=FALSE -DVECMEM_BUILD_CUDA_LIBRARY=FALSE
+            build: Release
+          - platform:
+              name: "SYCL"
+              container: "ghcr.io/acts-project/ubuntu2004_rocm_oneapi:v37"
+              options: -DTRACCC_BUILD_SYCL=TRUE -DVECMEM_BUILD_HIP_LIBRARY=FALSE
+            build: Release
     # Use BASH as the shell from the images.
     defaults:
       run:
@@ -53,13 +66,13 @@ jobs:
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DTRACCC_BUILD_${{ matrix.platform.name }}=TRUE -DTRACCC_FAIL_ON_WARNINGS=TRUE -S ${GITHUB_WORKSPACE} -B build
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} ${{ matrix.platform.options }} -DTRACCC_FAIL_ON_WARNINGS=TRUE -S ${GITHUB_WORKSPACE} -B build
       - name: Build
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           cmake --build build
       - name: Test
-        if: "matrix.platform.name != 'CUDA'"
+        if: "matrix.platform.name == 'CPU'"
         run: |
           cd build
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
