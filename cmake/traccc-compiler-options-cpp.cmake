@@ -12,12 +12,6 @@ if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC" )
    traccc_add_flag( CMAKE_CXX_FLAGS "/Zc:__cplusplus" )
 endif()
 
-# Respect infinity expressions for IntelLLVM
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "IntelLLVM")
-   detray_add_flag(CMAKE_CXX_FLAGS "-fhonor-infinities")
-   detray_add_flag(CMAKE_CXX_FLAGS "-fno-finite-math-only")
-endif()
-
 # Turn on a number of warnings for the "known compilers".
 if( ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" ) OR
     ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) )

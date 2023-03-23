@@ -15,7 +15,7 @@
 TEST(event_map2, event_map2) {
 
     const std::string path =
-        "detray_simulation/telescope/kf_validation/1.000000_GeV_0.000000_phi/";
+        "detray_simulation/telescope/kf_validation/1_GeV_0_phi/";
     // Event map
     traccc::event_map2 evt_map(0, path, path, path);
 

@@ -21,7 +21,7 @@
 namespace traccc {
 
 namespace {
-const std::string s_separator = ":";
+static constexpr std::string_view s_separator = ":";
 }
 
 /// A fixed number of real values as one user option.
@@ -91,7 +91,7 @@ inline std::ostream& operator<<(std::ostream& os,
 
     for (size_t i = 0; i < kSize; ++i) {
         if (0u < i) {
-            os << s_separator.c_str();
+            os << s_separator;
         }
         os << data[i];
     }
