@@ -35,6 +35,7 @@ traccc_add_test(
     test_sync.cu
 
     LINK_LIBRARIES
+    CUDA::cudart
     GTest::gtest
     vecmem::cuda
     detray::core
