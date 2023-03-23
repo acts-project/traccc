@@ -1,0 +1,15 @@
+spack:
+  specs:
+    - "acts@21.1.0 +json"
+    - "detray@0.28.0 +vc +eigen"
+    - "covfie@0.5.0"
+    - "algebra-plugins@0.18.0 +vecmem +vc +eigen"
+    - "vecmem@0.22.0 +cuda"
+    - "kokkos@3.7.0:"
+    - "eigen@3.4.0:"
+    - "dfelibs@2021.10.29"
+    - "googletest@1.12.1:"
+    - "boost@1.78.0:"
+  concretizer:
+    unify: true
+  view: true

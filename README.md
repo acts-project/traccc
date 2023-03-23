@@ -196,12 +196,28 @@ cd traccc
 git submodule update --init
 ```
 
+### Setup up a Spack build environment (optional)
+
+Setting up dependencies in a Spack build environment greatly speeds up the
+compilation of traccc. In order to set up a spack environment, run the
+following commands:
+
+```sh
+spack env create traccc spack.yaml
+spack env activate traccc
+spack repo add --scope env:traccc repo/
+spack install
+```
+
 ### Build the project
 
 ```sh
 cmake -S . -B <build_directory>
 cmake --build <build_directory> <options>
 ```
+
+**Important**: If building in a Spack environment, add the
+`-DTRACCC_USE_SYSTEM_LIBS=On` flag to the first command!
 
 ### Build options
 
