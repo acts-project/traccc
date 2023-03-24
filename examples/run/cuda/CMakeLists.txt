@@ -29,7 +29,7 @@ target_link_libraries( traccc_examples_cuda
    PUBLIC CUDA::cudart vecmem::core vecmem::cuda traccc::core
           traccc::device_common traccc::cuda )
 
-traccc_add_executable( throughput_st_cuda "throughput_st.cpp"
+traccc_add_executable( throughput_st_cuda "throughput_st.cpp" "inst_nvtx.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options traccc_examples_cuda )
