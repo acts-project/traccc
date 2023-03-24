@@ -62,15 +62,15 @@ inline void aggregate_cluster(
          */
         if (f[j] == cid) {
 
-            if (this_cell.c.channel1 > maxChannel1) {
-                maxChannel1 = this_cell.c.channel1;
+            if (this_cell.channel1 > maxChannel1) {
+                maxChannel1 = this_cell.channel1;
             }
 
             const float weight = traccc::detail::signal_cell_modelling(
-                this_cell.c.activation, this_module);
+                this_cell.activation, this_module);
 
             if (weight > this_module.threshold) {
-                totalWeight += this_cell.c.activation;
+                totalWeight += this_cell.activation;
                 const point2 cell_position =
                     traccc::detail::position_from_cell(this_cell, this_module);
                 const point2 prev = mean;
@@ -90,7 +90,7 @@ inline void aggregate_cluster(
          * Terminate the process earlier if we have reached a cell sufficiently
          * far away from the cluster in the dominant axis.
          */
-        if (this_cell.c.channel1 > maxChannel1 + 1) {
+        if (this_cell.channel1 > maxChannel1 + 1) {
             break;
         }
     }

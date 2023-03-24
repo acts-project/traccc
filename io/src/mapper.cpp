@@ -154,9 +154,9 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
         if (it != link_map.end()) {
             link = (*it).second;
         }
-        result[hmap[iocell.hit_id]].push_back(alt_cell{
-            {iocell.channel0, iocell.channel1, iocell.value, iocell.timestamp},
-            link});
+        result[hmap[iocell.hit_id]].push_back(
+            alt_cell{iocell.channel0, iocell.channel1, iocell.value,
+                     iocell.timestamp, link});
     }
     return result;
 }

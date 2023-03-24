@@ -74,10 +74,8 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(ccl_vector_t& L,
 /// @return boolan to indicate 8-cell connectivity
 TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::alt_cell a,
                                            traccc::alt_cell b) {
-    return (a.c.channel0 - b.c.channel0) * (a.c.channel0 - b.c.channel0) <=
-               1 and
-           (a.c.channel1 - b.c.channel1) * (a.c.channel1 - b.c.channel1) <=
-               1 and
+    return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 and
+           (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1 and
            a.module_link == b.module_link;
 }
 
@@ -91,7 +89,7 @@ TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::alt_cell a,
 /// @return boolan to indicate !8-cell connectivity
 TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::alt_cell a,
                                              traccc::alt_cell b) {
-    return (a.c.channel1 - b.c.channel1) > 1 || a.module_link != b.module_link;
+    return (a.channel1 - b.channel1) > 1 || a.module_link != b.module_link;
 }
 
 /// Sparce CCL algorithm

@@ -8,9 +8,6 @@
 
 #include "traccc/cuda/cca/component_connection.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "vecmem/containers/vector.hpp"
 #include "vecmem/memory/allocator.hpp"
 #include "vecmem/memory/binary_page_memory_resource.hpp"
@@ -722,10 +719,10 @@ component_connection::output_type component_connection::operator()(
     module_link.reserve(total_cells);
 
     for (std::size_t i = 0; i < cells.size(); ++i) {
-        channel0.push_back(cells.at(i).c.channel0);
-        channel1.push_back(cells.at(i).c.channel1);
-        activation.push_back(cells.at(i).c.activation);
-        time.push_back(cells.at(i).c.time);
+        channel0.push_back(cells.at(i).channel0);
+        channel1.push_back(cells.at(i).channel1);
+        activation.push_back(cells.at(i).activation);
+        time.push_back(cells.at(i).time);
         module_link.push_back(cells.at(i).module_link);
     }
 

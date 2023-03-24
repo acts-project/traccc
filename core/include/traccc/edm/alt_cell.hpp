@@ -8,19 +8,49 @@
 #pragma once
 
 // traccc include(s).
-#include "traccc/edm/cell.hpp"
+#include "traccc/definitions/common.hpp"
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
+#include "traccc/geometry/pixel_data.hpp"
 
 namespace traccc {
 
-/// Alternative cell structure which contains both the cell and a link to its
-/// module (held in a separate collection).
+/// Definition of a detector module
 ///
-/// This can be used for storing all information in a single collection, whose
-/// objects need to have both the header and item information from the cell
-/// container types
+/// It is handled separately from the list of all of the cells belonging to
+/// the detector module, to be able to lay out the data in memory in a way
+/// that is more friendly towards accelerators.
+///
+struct cell_module {
+
+    geometry_id module = 0;
+    transform3 placement = transform3{};
+    scalar threshold = 0;
+
+    pixel_data pixel;
+
+};  // struct cell_module
+
+/// Declare all cell module collection types
+using cell_module_collection_types = collection_types<cell_module>;
+
+/// Equality operator for cell module
+TRACCC_HOST_DEVICE
+inline bool operator==(const cell_module& lhs, const cell_module& rhs) {
+    return lhs.module == rhs.module;
+}
+
+/// Definition for one detector cell
+///
+/// It comes with two integer channel identifiers, an "activation value",
+/// a time stamp and a link to its module (held in a separate collection).
+///
 struct alt_cell {
-    cell c;
+    channel_id channel0 = 0;
+    channel_id channel1 = 0;
+    scalar activation = 0.;
+    scalar time = 0.;
+
     using link_type = cell_module_collection_types::view::size_type;
     link_type module_link;
 };
@@ -33,12 +63,12 @@ inline bool operator<(const alt_cell& lhs, const alt_cell& rhs) {
 
     if (lhs.module_link != rhs.module_link) {
         return lhs.module_link < rhs.module_link;
-    } else if (lhs.c.channel0 != rhs.c.channel0) {
-        return (lhs.c.channel0 < rhs.c.channel0);
-    } else if (lhs.c.channel1 != rhs.c.channel1) {
-        return (lhs.c.channel1 < rhs.c.channel1);
+    } else if (lhs.channel0 != rhs.channel0) {
+        return (lhs.channel0 < rhs.channel0);
+    } else if (lhs.channel1 != rhs.channel1) {
+        return (lhs.channel1 < rhs.channel1);
     } else {
-        return lhs.c.activation < rhs.c.activation;
+        return lhs.activation < rhs.activation;
     }
 }
 
@@ -47,10 +77,9 @@ TRACCC_HOST_DEVICE
 inline bool operator==(const alt_cell& lhs, const alt_cell& rhs) {
 
     return ((lhs.module_link == rhs.module_link) &&
-            (lhs.c.channel0 == rhs.c.channel0) &&
-            (lhs.c.channel1 == rhs.c.channel1) &&
-            (std::abs(lhs.c.activation - rhs.c.activation) < float_epsilon) &&
-            (std::abs(lhs.c.time - rhs.c.time) < float_epsilon));
+            (lhs.channel0 == rhs.channel0) && (lhs.channel1 == rhs.channel1) &&
+            (std::abs(lhs.activation - rhs.activation) < float_epsilon) &&
+            (std::abs(lhs.time - rhs.time) < float_epsilon));
 }
 
 }  // namespace traccc
