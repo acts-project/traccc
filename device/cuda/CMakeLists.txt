@@ -46,7 +46,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/fitting/fitting_algorithm.cu")
   
 target_compile_options( traccc_cuda
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr -Xcompiler -finstrument-functions -fPIC -lnvToolsExt -lineinfo> )
+  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr -Xcompiler -finstrument-functions -fPIC -lnvToolsExt> )
 target_link_libraries( traccc_cuda
   PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
   PRIVATE CUDA::cudart traccc::device_common vecmem::cuda )
