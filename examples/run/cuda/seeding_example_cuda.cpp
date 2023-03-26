@@ -8,7 +8,10 @@
 // Project include(s).
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/seeding2/seed_finding.hpp"
+#include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/efficiency/track_filter.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/read_spacepoints_alt.hpp"
@@ -26,6 +29,9 @@
 #include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
+// ACTS include(s).
+#include <Acts/Definitions/Units.hpp>
+
 // System include(s).
 #include <exception>
 #include <iomanip>
@@ -34,7 +40,8 @@
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& i_cfg,
-            const traccc::common_options& common_opts, bool run_cpu) {
+            const traccc::common_options& common_opts, bool run_cpu,
+            bool use_alt_seeding) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
@@ -59,11 +66,18 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     traccc::cuda::seeding_algorithm sa_cuda{mr, async_copy, stream};
+    traccc::cuda::seed_finding2 sa_cuda_alt{mr};
     traccc::cuda::track_params_estimation tp_cuda{mr, async_copy, stream};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
+
+    traccc::nseed_performance_writer nsd_performance_writer(
+        "nseed_performance_",
+        std::make_unique<traccc::simple_charged_eta_pt_cut>(2.7f, 1._GeV),
+        std::make_unique<traccc::stepped_percentage>(0.6f));
+
     if (i_cfg.check_performance) {
         sd_performance_writer.add_cache("CPU");
         sd_performance_writer.add_cache("CUDA");
@@ -127,7 +141,11 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                if (use_alt_seeding) {
+                    seeds_cuda_buffer = sa_cuda_alt(spacepoints_cuda_buffer);
+                } else {
+                    seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                }
             }  // stop measuring seeding cuda timer
 
             // CPU
@@ -154,7 +172,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(std::move(spacepoints_per_event), seeds);
+                params = tp(spacepoints_per_event, seeds);
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
@@ -200,6 +218,23 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
+        if (i_cfg.check_performance) {
+            traccc::event_map evt_map(event, i_cfg.detector_file,
+                                      common_opts.input_directory,
+                                      common_opts.input_directory, host_mr);
+
+            std::vector<traccc::nseed<3>> nseeds;
+
+            std::transform(
+                seeds_cuda.cbegin(), seeds_cuda.cend(),
+                std::back_inserter(nseeds),
+                [](const traccc::alt_seed& s) { return traccc::nseed<3>(s); });
+
+            nsd_performance_writer.register_event(
+                event, nseeds.begin(), nseeds.end(),
+                alt_spacepoints_per_event.begin(), evt_map);
+        }
+
         /* if (i_cfg.check_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       common_opts.input_directory,
@@ -214,9 +249,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         } */
     }
 
-    /* if (i_cfg.check_performance) {
-        sd_performance_writer.finalize();
-    } */
+    if (i_cfg.check_performance) {
+        // sd_performance_writer.finalize();
+        nsd_performance_writer.finalize();
+
+        std::cout << nsd_performance_writer.generate_report_str();
+    }
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
@@ -241,6 +279,9 @@ int main(int argc, char* argv[]) {
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
+    desc.add_options()("alt", po::value<bool>()->default_value(false),
+                       "use alternative seeding algorithm");
+
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -256,5 +297,6 @@ int main(int argc, char* argv[]) {
               << " " << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    return seq_run(seeding_input_cfg, common_opts, run_cpu);
+    return seq_run(seeding_input_cfg, common_opts, run_cpu,
+                   vm["alt"].as<bool>());
 }
