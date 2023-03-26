@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/seeding2/seed_finding.hpp"
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_filter.hpp"
@@ -39,7 +40,8 @@
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& i_cfg,
-            const traccc::common_options& common_opts, bool run_cpu) {
+            const traccc::common_options& common_opts, bool run_cpu,
+            bool use_alt_seeding) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
@@ -64,6 +66,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     traccc::cuda::seeding_algorithm sa_cuda{mr, async_copy, stream};
+    traccc::cuda::seed_finding2 sa_cuda_alt{mr};
     traccc::cuda::track_params_estimation tp_cuda{mr, async_copy, stream};
 
     // performance writer
@@ -138,7 +141,11 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                if (use_alt_seeding) {
+                    seeds_cuda_buffer = sa_cuda_alt(spacepoints_cuda_buffer);
+                } else {
+                    seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                }
             }  // stop measuring seeding cuda timer
 
             // CPU
@@ -272,6 +279,9 @@ int main(int argc, char* argv[]) {
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
+    desc.add_options()("alt", po::value<bool>()->default_value(false),
+                       "use alternative seeding algorithm");
+
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -287,5 +297,6 @@ int main(int argc, char* argv[]) {
               << " " << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    return seq_run(seeding_input_cfg, common_opts, run_cpu);
+    return seq_run(seeding_input_cfg, common_opts, run_cpu,
+                   vm["alt"].as<bool>());
 }

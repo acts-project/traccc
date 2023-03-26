@@ -77,6 +77,11 @@ struct internal_spacepoint {
     }
 
     TRACCC_HOST_DEVICE
+    internal_spacepoint(scalar x, scalar y, scalar z, scalar r, scalar phi,
+                        unsigned int link)
+        : m_x(x), m_y(y), m_z(z), m_r(r), m_phi(phi), m_link_alt(link) {}
+
+    TRACCC_HOST_DEVICE
     static inline internal_spacepoint<spacepoint_t> invalid_value() {
 
         link_type l = {detray::detail::invalid_value<decltype(l.first)>(),

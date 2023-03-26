@@ -43,11 +43,16 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/clusterization/clusterization_algorithm.cu"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
-  "src/fitting/fitting_algorithm.cu")
-  
+  "src/fitting/fitting_algorithm.cu"
+  # Alternate seeding.
+  "src/seeding2/seed_finding2.cu"
+  "src/seeding2/kernels/seed_finding_kernel.cu"
+  "src/seeding2/kernels/kd_tree_kernel.cu"
+  "src/seeding2/kernels/write_output_kernel.cu"
+)
+
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
   PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
   PRIVATE CUDA::cudart traccc::device_common vecmem::cuda )
-
