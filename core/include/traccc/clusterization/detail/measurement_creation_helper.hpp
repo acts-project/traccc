@@ -10,9 +10,9 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
 
 namespace traccc::detail {
 
@@ -25,10 +25,11 @@ inline scalar signal_cell_modelling(scalar signal_in,
 
 /// Function for pixel segmentation
 TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(const cell& c, const cell_module& module) {
+inline vector2 position_from_cell(const alt_cell& cell,
+                                  const cell_module& module) {
     // Retrieve the specific values based on module idx
-    return {module.pixel.min_center_x + c.channel0 * module.pixel.pitch_x,
-            module.pixel.min_center_y + c.channel1 * module.pixel.pitch_y};
+    return {module.pixel.min_center_x + cell.c.channel0 * module.pixel.pitch_x,
+            module.pixel.min_center_y + cell.c.channel1 * module.pixel.pitch_y};
 }
 
 /// Function used for calculating the properties of the cluster during
@@ -42,21 +43,21 @@ inline vector2 position_from_cell(const cell& c, const cell_module& module) {
 /// @param[out] totalWeight The total weight of the cluster/measurement
 ///
 template <typename cell_collection_t>
-TRACCC_HOST_DEVICE inline void calc_cluster_properties(
+TRACCC_HOST inline void calc_cluster_properties(
     const cell_collection_t& cluster, const cell_module& module, point2& mean,
     point2& var, scalar& totalWeight) {
 
     // Loop over the cells of the cluster.
-    for (const cell& cell : cluster) {
+    for (const alt_cell& cell : cluster) {
 
         // Translate the cell readout value into a weight.
-        const scalar weight = signal_cell_modelling(cell.activation, module);
+        const scalar weight = signal_cell_modelling(cell.c.activation, module);
 
         // Only consider cells over a minimum threshold.
         if (weight > module.threshold) {
 
             // Update all output properties with this cell.
-            totalWeight += cell.activation;
+            totalWeight += cell.c.activation;
             const point2 cell_position = position_from_cell(cell, module);
             const point2 prev = mean;
             const point2 diff = cell_position - prev;
@@ -73,18 +74,16 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 /// Function used for calculating the properties of the cluster during
 /// measurement creation
 ///
-/// @param[out] measurements is the measurement container where the measurement
+/// @param[out] measurements is the measurement collection where the measurement
 /// object will be filled
 /// @param[in] cluster is the input cell vector
 /// @param[in] module is the cell module where the cluster belongs to
-/// @param[in] module_link is the module index of the cell container
-/// @param[in] cluster_link is the cluster index of the cluster container
+/// @param[in] module_link is the module index
 ///
-template <typename measurement_container_t, typename cell_collection_t>
-TRACCC_HOST_DEVICE inline void fill_measurement(
-    measurement_container_t& measurements, const cell_collection_t& cluster,
-    const cell_module& module, const std::size_t module_link,
-    const std::size_t cl_link) {
+TRACCC_HOST void fill_measurement(
+    alt_measurement_collection_types::host& measurements,
+    const alt_cell_collection_types::host& cluster, const cell_module& module,
+    const unsigned int module_link) {
 
     // To calculate the mean and variance with high numerical stability
     // we use a weighted variant of Welford's algorithm. This is a
@@ -102,9 +101,8 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     detail::calc_cluster_properties(cluster, module, mean, var, totalWeight);
 
     if (totalWeight > 0.) {
-        measurement m;
-        // cluster link
-        m.cluster_link = cl_link;
+        alt_measurement m;
+        m.module_link = module_link;
         // normalize the cell position
         m.local = mean;
         // normalize the variance
@@ -117,8 +115,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
                                 pitch[1] * pitch[1] / static_cast<scalar>(12.)};
         // @todo add variance estimation
 
-        measurements[module_link].header = module;
-        measurements[module_link].items.push_back(std::move(m));
+        measurements.push_back(std::move(m));
     }
 }
 

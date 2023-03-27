@@ -29,7 +29,7 @@ namespace traccc {
 template <typename FULL_CHAIN_ALG,
           typename HOST_MR = vecmem::host_memory_resource>
 int throughput_st_alt(std::string_view description, int argc, char* argv[],
-                      bool use_host_caching);
+                      bool use_host_caching = false);
 
 }  // namespace traccc
 

@@ -62,4 +62,29 @@ void write_binary_container(std::string_view filename,
     }
 }
 
+/// Function for writing a collection into a binary file
+///
+/// @param filename is the output filename which includes the path
+/// @param collection is the traccc collection to write
+///
+template <typename collection_t>
+void write_binary_collection(std::string_view filename,
+                             const collection_t& collection) {
+
+    // Make sure that the chosen types work.
+    static_assert(std::is_standard_layout_v<typename collection_t::value_type>,
+                  "Collection item type must have standard layout.");
+
+    // Open the output file.
+    std::ofstream out_file(filename.data(), std::ios::binary);
+
+    // Write the size of the vector.
+    const std::size_t size = collection.size();
+    out_file.write(reinterpret_cast<const char*>(&size), sizeof(std::size_t));
+
+    // Write the items.
+    out_file.write(reinterpret_cast<const char*>(collection.data()),
+                   size * sizeof(typename collection_t::value_type));
+}
+
 }  // namespace traccc::io::details

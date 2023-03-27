@@ -162,14 +162,10 @@ inline void select_seeds(
                 const internal_spacepoint<spacepoint>& ispT2 =
                     internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
 
-                const spacepoint& spB1 =
-                    spacepoints_device.at(ispB1.m_link_alt);
-                const spacepoint& spT1 =
-                    spacepoints_device.at(ispT1.m_link_alt);
-                const spacepoint& spB2 =
-                    spacepoints_device.at(ispB2.m_link_alt);
-                const spacepoint& spT2 =
-                    spacepoints_device.at(ispT2.m_link_alt);
+                const spacepoint& spB1 = spacepoints_device.at(ispB1.m_link);
+                const spacepoint& spT1 = spacepoints_device.at(ispT1.m_link);
+                const spacepoint& spB2 = spacepoints_device.at(ispB2.m_link);
+                const spacepoint& spT2 = spacepoints_device.at(ispT2.m_link);
 
                 constexpr scalar exp = 2;
                 seed1_sum += std::pow(spB1.y(), exp) + std::pow(spB1.z(), exp);
@@ -199,8 +195,8 @@ inline void select_seeds(
             break;
         }
 
-        alt_seed aSeed({spB.m_link_alt, spM.m_link_alt, spT.m_link_alt,
-                        aTriplet.weight, aTriplet.z_vertex});
+        alt_seed aSeed({spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
+                        aTriplet.z_vertex});
 
         // check if it is a good triplet
         if (seed_selecting_helper::cut_per_middle_sp(

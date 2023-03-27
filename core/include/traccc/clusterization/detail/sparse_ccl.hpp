@@ -9,7 +9,7 @@
 
 // Library include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/alt_cell.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -72,9 +72,13 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(ccl_vector_t& L,
 /// @param b the second cell
 ///
 /// @return boolan to indicate 8-cell connectivity
-TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::cell a, traccc::cell b) {
-    return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 and
-           (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1;
+TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::alt_cell a,
+                                           traccc::alt_cell b) {
+    return (a.c.channel0 - b.c.channel0) * (a.c.channel0 - b.c.channel0) <=
+               1 and
+           (a.c.channel1 - b.c.channel1) * (a.c.channel1 - b.c.channel1) <=
+               1 and
+           a.module_link == b.module_link;
 }
 
 /// Helper method to find define distance,
@@ -85,8 +89,9 @@ TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::cell a, traccc::cell b) {
 /// @param b the second cell
 ///
 /// @return boolan to indicate !8-cell connectivity
-TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::cell a, traccc::cell b) {
-    return (a.channel1 - b.channel1) > 1;
+TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::alt_cell a,
+                                             traccc::alt_cell b) {
+    return (a.c.channel1 - b.c.channel1) > 1 || a.module_link != b.module_link;
 }
 
 /// Sparce CCL algorithm
@@ -96,9 +101,9 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::cell a, traccc::cell b) {
 /// belongs to)
 /// @param labels is the number of clusters found
 /// @return number of clusters
-template <typename cell_container_t, typename ccl_vector_t>
-TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(const cell_container_t& cells,
-                                                  ccl_vector_t& L) {
+template <typename cell_collection_t, typename ccl_vector_t>
+TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
+    const cell_collection_t& cells, ccl_vector_t& L) {
 
     unsigned int labels = 0;
 
@@ -125,8 +130,8 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(const cell_container_t& cells,
     for (unsigned int i = 0; i < n_cells; ++i) {
         unsigned int l = 0;
         if (L[i] == i) {
-            ++labels;
             l = labels;
+            ++labels;
         } else {
             l = L[L[i]];
         }

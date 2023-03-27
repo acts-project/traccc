@@ -6,7 +6,7 @@
  */
 
 // io
-#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_cells_alt.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 
@@ -71,22 +71,26 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::cell_container_types::host cells_per_event =
-            traccc::io::read_cells(event, common_opts.input_directory,
-                                   common_opts.input_data_format,
-                                   &surface_transforms, &digi_cfg, &host_mr);
+        auto readOut = traccc::io::read_cells_alt(
+            event, common_opts.input_directory, common_opts.input_data_format,
+            &surface_transforms, &digi_cfg, &host_mr);
+        traccc::alt_cell_collection_types::host& cells_per_event =
+            readOut.cells;
+        traccc::cell_module_collection_types::host& modules_per_event =
+            readOut.modules;
 
         /*-------------------
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event);
+        auto measurements_per_event = ca(cells_per_event, modules_per_event);
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
-        auto spacepoints_per_event = sf(measurements_per_event);
+        auto spacepoints_per_event =
+            sf(measurements_per_event, modules_per_event);
 
         /*-----------------------
           Seeding algorithm
@@ -104,10 +108,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           Statistics
           ----------------------------*/
 
-        n_modules += cells_per_event.size();
-        n_cells += cells_per_event.total_size();
-        n_measurements += measurements_per_event.total_size();
-        n_spacepoints += spacepoints_per_event.total_size();
+        n_modules += modules_per_event.size();
+        n_cells += cells_per_event.size();
+        n_measurements += measurements_per_event.size();
+        n_spacepoints += spacepoints_per_event.size();
         n_seeds += seeds.size();
 
         /*------------
@@ -121,7 +125,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 common_opts.input_directory, host_mr);
 
             sd_performance_writer.write("CPU", vecmem::get_data(seeds),
-                                        traccc::get_data(spacepoints_per_event),
+                                        vecmem::get_data(spacepoints_per_event),
                                         evt_map);
         }
     }

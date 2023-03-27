@@ -28,12 +28,29 @@ struct alt_cell {
 /// Declare all cell collection types
 using alt_cell_collection_types = collection_types<alt_cell>;
 
-/// Type definition for the reading of cells into a vector of alt_cells and a
-/// vector of modules. The alt_cells hold a link to a position in the modules'
-/// vector.
-struct alt_cell_reader_output_t {
-    alt_cell_collection_types::host cells;
-    cell_module_collection_types::host modules;
-};
+TRACCC_HOST_DEVICE
+inline bool operator<(const alt_cell& lhs, const alt_cell& rhs) {
+
+    if (lhs.module_link != rhs.module_link) {
+        return lhs.module_link < rhs.module_link;
+    } else if (lhs.c.channel0 != rhs.c.channel0) {
+        return (lhs.c.channel0 < rhs.c.channel0);
+    } else if (lhs.c.channel1 != rhs.c.channel1) {
+        return (lhs.c.channel1 < rhs.c.channel1);
+    } else {
+        return lhs.c.activation < rhs.c.activation;
+    }
+}
+
+/// Equality operator for cells
+TRACCC_HOST_DEVICE
+inline bool operator==(const alt_cell& lhs, const alt_cell& rhs) {
+
+    return ((lhs.module_link == rhs.module_link) &&
+            (lhs.c.channel0 == rhs.c.channel0) &&
+            (lhs.c.channel1 == rhs.c.channel1) &&
+            (std::abs(lhs.c.activation - rhs.c.activation) < float_epsilon) &&
+            (std::abs(lhs.c.time - rhs.c.time) < float_epsilon));
+}
 
 }  // namespace traccc

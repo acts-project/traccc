@@ -20,7 +20,7 @@ namespace traccc {
 
 /// spacepoint binning
 class spacepoint_binning
-    : public algorithm<sp_grid(const spacepoint_container_types::host&)> {
+    : public algorithm<sp_grid(const spacepoint_collection_types::host&)> {
 
     public:
     /// Constructor for the spacepoint binning
@@ -35,11 +35,11 @@ class spacepoint_binning
 
     /// Operator executing the algorithm
     ///
-    /// @param sp_container All of the spacepoints of the event
+    /// @param sp_collection All of the spacepoints of the event
     /// @return The spacepoints arranged in a Phi-Z grid
     ///
     output_type operator()(
-        const spacepoint_container_types::host& sp_container) const override;
+        const spacepoint_collection_types::host& sp_collection) const override;
 
     private:
     seedfinder_config m_config;

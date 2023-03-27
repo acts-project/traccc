@@ -12,25 +12,41 @@
 
 // System include(s).
 #include <algorithm>
+#include <map>
 
 namespace traccc::io::csv {
 
-spacepoint_collection_types::host read_spacepoints_alt(
-    std::string_view filename, const geometry& geom,
-    vecmem::memory_resource* mr) {
+spacepoint_reader_output read_spacepoints_alt(std::string_view filename,
+                                              const geometry& geom,
+                                              vecmem::memory_resource* mr) {
 
     // Construct the spacepoint reader object.
     auto reader = make_hit_reader(filename);
 
     // Create the result collection.
-    spacepoint_collection_types::host result;
+    spacepoint_collection_types::host result_spacepoints;
+    cell_module_collection_types::host result_modules;
+
     if (mr != nullptr) {
-        result = spacepoint_collection_types::host{mr};
+        result_spacepoints = spacepoint_collection_types::host{mr};
+        result_modules = cell_module_collection_types::host{mr};
     }
+
+    std::map<geometry_id, unsigned int> m;
 
     // Read the spacepoints from the input file.
     hit iohit;
     while (reader.read(iohit)) {
+        unsigned int link;
+        auto it = m.find(iohit.geometry_id);
+        if (it != m.end()) {
+            link = (*it).second;
+        } else {
+            link = result_modules.size();
+            m[iohit.geometry_id] = link;
+            result_modules.push_back(
+                {iohit.geometry_id, geom[iohit.geometry_id]});
+        }
 
         // Find the local<->global transformation for the spacepoint's detector
         // module.
@@ -45,13 +61,13 @@ spacepoint_collection_types::host read_spacepoints_alt(
         // Create the spacepoint object (with its member measurement) from all
         // this information.
         const traccc::spacepoint sp{
-            pos, {point2{lpos[0], lpos[1]}, variance2{0., 0.}}};
+            pos, {point2{lpos[0], lpos[1]}, variance2{0., 0.}, link}};
 
-        result.push_back(sp);
+        result_spacepoints.push_back(sp);
     }
 
     // Return the container.
-    return result;
+    return {std::move(result_spacepoints), std::move(result_modules)};
 }
 
 }  // namespace traccc::io::csv
