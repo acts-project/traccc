@@ -16,8 +16,9 @@
 
 // detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/masks/unbounded.hpp"
+#include "detray/simulation/event_generator/track_generators.hpp"
 #include "detray/simulation/simulator.hpp"
-#include "detray/simulation/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -46,12 +47,13 @@ int simulate(std::string output_directory, unsigned int events,
     // Plane alignment direction (aligned to x-axis)
     detray::detail::ray<transform3> traj{{0, 0, 0}, 0, {1, 0, 0}, -1};
     // Position of planes (in mm unit)
-    std::vector<scalar> plane_positions = {-10., 20., 40., 60.,  80., 100.,
-                                           120., 140, 160, 180., 200.};
+    std::vector<scalar> plane_positions = {20.,  40., 60., 80., 100.,
+                                           120., 140, 160, 180.};
 
     // Detector type
     using detector_type =
-        detray::detector<detray::detector_registry::telescope_detector,
+        detray::detector<detray::detector_registry::template telescope_detector<
+                             detray::unbounded<detray::rectangle2D<>>>,
                          covfie::field>;
 
     // B field value and its type
@@ -62,11 +64,15 @@ int simulate(std::string output_directory, unsigned int events,
     const auto mat = detray::silicon_tml<scalar>();
     const scalar thickness = 0.5 * detray::unit<scalar>::mm;
 
+    // Use rectangle surfaces
+    detray::mask<detray::unbounded<detray::rectangle2D<>>> rectangle{
+        0u, 10000.f * detray::unit<scalar>::mm,
+        10000.f * detray::unit<scalar>::mm};
+
     const detector_type det = create_telescope_detector(
         host_mr,
         b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
-        plane_positions, traj, 100000. * detray::unit<scalar>::mm,
-        100000. * detray::unit<scalar>::mm, mat, thickness);
+        rectangle, plane_positions, mat, thickness, traj);
 
     /***************************
      * Generate simulation data

@@ -27,7 +27,7 @@ usage() {
 }
 
 # Default script arguments.
-TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v1"}
+TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v2"}
 TRACCC_WEB_DIRECTORY=${TRACCC_WEB_DIRECTORY:-"https://acts.web.cern.ch/traccc/data"}
 TRACCC_DATA_DIRECTORY=${TRACCC_DATA_DIRECTORY:-$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)}
 TRACCC_CMAKE_EXECUTABLE=${TRACCC_CMAKE_EXECUTABLE:-cmake}
@@ -72,11 +72,11 @@ done
 cd "${TRACCC_DATA_DIRECTORY}"
 
 # Download the TGZ and MD5 files.
-"${TRACCC_CURL_EXECUTABLE}" --retry 5 --retry-connrefused --retry-delay 10 \
-   --output "${TRACCC_DATA_NAME}.tar.gz"                                   \
+"${TRACCC_CURL_EXECUTABLE}" --retry 5 --retry-delay 10 \
+   --output "${TRACCC_DATA_NAME}.tar.gz"               \
    "${TRACCC_WEB_DIRECTORY}/${TRACCC_DATA_NAME}.tar.gz"
-"${TRACCC_CURL_EXECUTABLE}" --retry 5 --retry-connrefused --retry-delay 10 \
-   --output "${TRACCC_DATA_NAME}.md5"                                      \
+"${TRACCC_CURL_EXECUTABLE}" --retry 5 --retry-delay 10 \
+   --output "${TRACCC_DATA_NAME}.md5"                  \
    "${TRACCC_WEB_DIRECTORY}/${TRACCC_DATA_NAME}.md5"
 
 # Verify that the download succeeded.
