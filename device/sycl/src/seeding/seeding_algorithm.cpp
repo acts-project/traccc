@@ -59,10 +59,11 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
 namespace traccc::sycl {
 
 seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr,
+                                     vecmem::copy& copy,
                                      const queue_wrapper& queue)
     : m_spacepoint_binning(default_seedfinder_config(),
-                           default_spacepoint_grid_config(), mr, queue),
-      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr,
+                           default_spacepoint_grid_config(), mr, copy, queue),
+      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr, copy,
                      queue) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(

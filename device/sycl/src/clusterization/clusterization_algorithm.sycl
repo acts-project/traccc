@@ -378,7 +378,7 @@ class ccl_kernel {
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, queue_wrapper queue,
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
     const unsigned short target_cells_per_partition)
     : m_target_cells_per_partition(target_cells_per_partition),
       m_max_work_group_size(
@@ -386,15 +386,8 @@ clusterization_algorithm::clusterization_algorithm(
               .get_device()
               .get_info<::sycl::info::device::max_work_group_size>()),
       m_mr(mr),
-      m_queue(queue) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+      m_queue(queue),
+      m_copy(copy) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
@@ -402,7 +395,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Number of cells
     const cell_collection_types::view::size_type num_cells =
-        m_copy->get_size(cells);
+        m_copy.get_size(cells);
 
     // Create result object for the CCL kernel with size overestimation
     alt_measurement_collection_types::buffer measurements_buffer(num_cells,

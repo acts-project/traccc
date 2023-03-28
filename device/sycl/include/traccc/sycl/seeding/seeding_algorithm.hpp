@@ -19,6 +19,7 @@
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // traccc library include(s).
 #include "traccc/utils/memory_resource.hpp"
@@ -33,9 +34,11 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     /// Constructor for the seed finding algorithm
     ///
     /// @param mr is a struct of memory resources (shared or host & device)
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
     /// @param queue The SYCL queue to work with
     ///
-    seeding_algorithm(const traccc::memory_resource& mr,
+    seeding_algorithm(const traccc::memory_resource& mr, vecmem::copy& copy,
                       const queue_wrapper& queue);
 
     /// Operator executing the algorithm.

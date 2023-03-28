@@ -18,7 +18,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
-#include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/sycl/async_copy.hpp>
 
 // System include(s).
 #include <memory>
@@ -81,7 +81,7 @@ class full_chain_algorithm
     /// Device caching memory resource
     std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
     /// Memory copy object
-    mutable std::unique_ptr<vecmem::sycl::copy> m_copy;
+    mutable vecmem::sycl::async_copy m_copy;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
