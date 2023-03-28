@@ -7,17 +7,17 @@
 
 #pragma once
 
-#include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
 namespace traccc::io {
 
-/// Type definition for the reading of cells into a vector of alt_cells and a
-/// vector of modules. The alt_cells hold a link to a position in the modules'
+/// Type definition for the reading of cells into a vector of cells and a
+/// vector of modules. The cells hold a link to a position in the modules'
 /// vector.
 struct cell_reader_output {
-    alt_cell_collection_types::host cells;
+    cell_collection_types::host cells;
     cell_module_collection_types::host modules;
 };
 

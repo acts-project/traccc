@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
@@ -39,7 +39,7 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// @param mass is the mass of particle
 template <typename spacepoint_collection_t>
 inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
-    const spacepoint_collection_t& sp_collection, const alt_seed& seed,
+    const spacepoint_collection_t& sp_collection, const seed& seed,
     const vector3& bfield, const scalar mass) {
 
     bound_vector params;

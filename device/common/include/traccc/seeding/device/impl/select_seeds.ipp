@@ -61,7 +61,7 @@ inline void select_seeds(
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
-    triplet* data, alt_seed_collection_types::view seed_view) {
+    triplet* data, seed_collection_types::view seed_view) {
 
     // Check if anything needs to be done.
     const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
@@ -78,7 +78,7 @@ inline void select_seeds(
     const const_sp_grid_device internal_sp_device(internal_sp_view);
 
     device_triplet_collection_types::const_device triplets(triplet_view);
-    alt_seed_collection_types::device seeds_device(seed_view);
+    seed_collection_types::device seeds_device(seed_view);
 
     // Current work item = middle spacepoint
     const triplet_counter_spM spM_counter = triplet_counts_spM.at(globalIndex);
@@ -195,8 +195,8 @@ inline void select_seeds(
             break;
         }
 
-        alt_seed aSeed({spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
-                        aTriplet.z_vertex});
+        seed aSeed({spB.m_link, spM.m_link, spT.m_link, aTriplet.weight,
+                    aTriplet.z_vertex});
 
         // check if it is a good triplet
         if (seed_selecting_helper::cut_per_middle_sp(

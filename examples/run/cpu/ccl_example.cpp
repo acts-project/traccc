@@ -8,8 +8,8 @@
 
 // Project include(s).
 #include "traccc/clusterization/component_connection.hpp"
-#include "traccc/edm/alt_cell.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/edm/cell.hpp"
+#include "traccc/io/read_cells.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -29,7 +29,7 @@ double delta_ms(std::chrono::high_resolution_clock::time_point s,
 }
 }  // namespace
 
-void print_statistics(const traccc::alt_cell_collection_types::host& data) {
+void print_statistics(const traccc::cell_collection_types::host& data) {
     static std::vector<std::size_t> bins_edges = {
         0,   1,   2,    3,    4,    6,    8,    11,   16,
         23,  32,  45,   64,   91,   128,  181,  256,  362,
@@ -84,7 +84,7 @@ void print_statistics(const traccc::alt_cell_collection_types::host& data) {
 }
 
 void run_on_event(traccc::component_connection& cc,
-                  traccc::alt_cell_collection_types::host& data) {
+                  traccc::cell_collection_types::host& data) {
     traccc::cluster_container_types::host clusters = cc(data);
 }
 
@@ -105,8 +105,8 @@ int main(int argc, char* argv[]) {
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
-    traccc::alt_cell_collection_types::host data =
-        traccc::io::read_cells_alt(event_file).cells;
+    traccc::cell_collection_types::host data =
+        traccc::io::read_cells(event_file).cells;
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 

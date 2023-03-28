@@ -9,7 +9,7 @@
 
 // Library include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -72,8 +72,7 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(ccl_vector_t& L,
 /// @param b the second cell
 ///
 /// @return boolan to indicate 8-cell connectivity
-TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::alt_cell a,
-                                           traccc::alt_cell b) {
+TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::cell a, traccc::cell b) {
     return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 and
            (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1 and
            a.module_link == b.module_link;
@@ -87,8 +86,7 @@ TRACCC_HOST_DEVICE inline bool is_adjacent(traccc::alt_cell a,
 /// @param b the second cell
 ///
 /// @return boolan to indicate !8-cell connectivity
-TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::alt_cell a,
-                                             traccc::alt_cell b) {
+TRACCC_HOST_DEVICE inline bool is_far_enough(traccc::cell a, traccc::cell b) {
     return (a.channel1 - b.channel1) > 1 || a.module_link != b.module_link;
 }
 

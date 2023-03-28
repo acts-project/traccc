@@ -8,14 +8,14 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
 namespace traccc::details {
 
 /// @c traccc::details::comparator_factory specialisation for @c traccc::seed
 template <>
-class comparator_factory<alt_seed> {
+class comparator_factory<seed> {
 
     public:
     /// Constructor with all necessary arguments
@@ -24,8 +24,8 @@ class comparator_factory<alt_seed> {
         const spacepoint_collection_types::const_view& test_spacepoints);
 
     /// Instantiate an instance of a comparator object
-    is_same_object<alt_seed> make_comparator(const alt_seed& ref,
-                                             scalar unc = float_epsilon) const;
+    is_same_object<seed> make_comparator(const seed& ref,
+                                         scalar unc = float_epsilon) const;
 
     private:
     /// Spacepoint container for the reference seeds

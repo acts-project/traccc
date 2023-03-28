@@ -11,7 +11,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/container.hpp"
 
 // System include(s).

@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -28,7 +28,7 @@ namespace traccc {
 class track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::host(
           const spacepoint_collection_types::host&,
-          const alt_seed_collection_types::host&)> {
+          const seed_collection_types::host&)> {
 
     public:
     /// Constructor for track_params_estimation
@@ -44,7 +44,7 @@ class track_params_estimation
     ///
     output_type operator()(
         const spacepoint_collection_types::host& spacepoints,
-        const alt_seed_collection_types::host& seeds) const override;
+        const seed_collection_types::host& seeds) const override;
 
     private:
     /// The memory resource to use in the algorithm

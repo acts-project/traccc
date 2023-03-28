@@ -8,8 +8,8 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/demonstrator_alt_edm.hpp"
 
@@ -50,7 +50,7 @@ traccc::alt_demonstrator_result run(traccc::alt_demonstrator_input input_data,
 
 #pragma omp parallel for reduction (+:n_modules, n_cells, n_measurements, n_spacepoints)
     for (size_t event = 0; event < input_data.size(); ++event) {
-        traccc::alt_cell_collection_types::host& cells_per_event =
+        traccc::cell_collection_types::host& cells_per_event =
             input_data.operator[](event).cells;
 
         traccc::cell_module_collection_types::host& modules_per_event =

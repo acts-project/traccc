@@ -35,16 +35,16 @@ bool is_same_object<alt_measurement>::operator()(
 /// @name Implementation for @c traccc::details::is_same_object<seed>
 /// @{
 
-is_same_object<alt_seed>::is_same_object(
+is_same_object<seed>::is_same_object(
     const spacepoint_collection_types::const_view& ref_spacepoints,
     const spacepoint_collection_types::const_view& test_spacepoints,
-    const alt_seed& ref, scalar unc)
+    const seed& ref, scalar unc)
     : m_ref_spacepoints(ref.get_spacepoints(ref_spacepoints)),
       m_spacepoints(test_spacepoints),
       m_ref(ref),
       m_unc(unc) {}
 
-bool is_same_object<alt_seed>::operator()(const alt_seed& obj) const {
+bool is_same_object<seed>::operator()(const seed& obj) const {
 
     // Extract the spacepoints belonging to the tested seed.
     std::array<spacepoint, 3> test_spacepoints =

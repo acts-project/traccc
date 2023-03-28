@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/geometry/digitization_config.hpp"
 #include "traccc/geometry/geometry.hpp"
 #include "traccc/io/reader_edm.hpp"
@@ -27,11 +27,11 @@ namespace traccc::io::csv {
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
 /// @param mr The memory resource to create the host collection with
-/// @return A alt_cell (host) collection & a cell_module collection
+/// @return A cell (host) collection & a cell_module collection
 ///
-cell_reader_output read_cells_alt(std::string_view filename,
-                                  const geometry* geom = nullptr,
-                                  const digitization_config* dconfig = nullptr,
-                                  vecmem::memory_resource* mr = nullptr);
+cell_reader_output read_cells(std::string_view filename,
+                              const geometry* geom = nullptr,
+                              const digitization_config* dconfig = nullptr,
+                              vecmem::memory_resource* mr = nullptr);
 
 }  // namespace traccc::io::csv

@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/io/details/read_surfaces.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -28,7 +28,7 @@ class io : public traccc::tests::data_test {};
 // This defines the local frame test suite
 TEST_F(io, csv_read_single_module) {
 
-    auto single_module_cells = traccc::io::read_cells_alt(
+    auto single_module_cells = traccc::io::read_cells(
         get_datafile("single_module/cells.csv"), traccc::data_format::csv);
     auto& cells = single_module_cells.cells;
     auto& modules = single_module_cells.modules;
@@ -46,7 +46,7 @@ TEST_F(io, csv_read_single_module) {
 // This defines the local frame test suite
 TEST_F(io, csv_read_two_modules) {
 
-    auto two_module_cells = traccc::io::read_cells_alt(
+    auto two_module_cells = traccc::io::read_cells(
         get_datafile("two_modules/cells.csv"), traccc::data_format::csv);
     auto& cells = two_module_cells.cells;
     auto& modules = two_module_cells.modules;
@@ -87,7 +87,7 @@ TEST_F(io, csv_read_tml_transforms) {
 TEST_F(io, csv_read_tml_pixelbarrel) {
 
     auto tml_barrel_modules =
-        traccc::io::read_cells_alt(
+        traccc::io::read_cells(
             get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
             traccc::data_format::csv)
             .modules;

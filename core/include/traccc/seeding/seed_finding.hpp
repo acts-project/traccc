@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -21,7 +21,7 @@ namespace traccc {
 
 /// Seed finding
 class seed_finding
-    : public algorithm<alt_seed_collection_types::host(
+    : public algorithm<seed_collection_types::host(
           const spacepoint_collection_types::host&, const sp_grid&)> {
 
     public:

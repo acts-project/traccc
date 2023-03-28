@@ -8,12 +8,12 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 
@@ -63,11 +63,10 @@ int par_run(const std::string &detector_file,
     for (unsigned int event = 0; event < events; ++event) {
 
         // Read the cells from the relevant event file
-        auto readOut = traccc::io::read_cells_alt(
-            event, cells_dir, traccc::data_format::csv, &surface_transforms,
-            &digi_cfg, &resource);
-        traccc::alt_cell_collection_types::host &cells_per_event =
-            readOut.cells;
+        auto readOut =
+            traccc::io::read_cells(event, cells_dir, traccc::data_format::csv,
+                                   &surface_transforms, &digi_cfg, &resource);
+        traccc::cell_collection_types::host &cells_per_event = readOut.cells;
         traccc::cell_module_collection_types::host &modules_per_event =
             readOut.modules;
 

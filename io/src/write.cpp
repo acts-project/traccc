@@ -15,7 +15,7 @@ namespace traccc::io {
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           traccc::alt_cell_collection_types::const_view cells,
+           traccc::cell_collection_types::const_view cells,
            traccc::cell_module_collection_types::const_view modules) {
 
     switch (format) {
@@ -23,7 +23,7 @@ void write(std::size_t event, std::string_view directory,
             details::write_binary_collection(
                 data_directory() + directory.data() +
                     get_event_filename(event, "-cells.dat"),
-                traccc::alt_cell_collection_types::const_device{cells});
+                traccc::cell_collection_types::const_device{cells});
             details::write_binary_collection(
                 data_directory() + directory.data() +
                     get_event_filename(event, "-modules.dat"),

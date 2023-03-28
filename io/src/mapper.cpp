@@ -12,7 +12,7 @@
 #include "csv/make_hit_reader.hpp"
 #include "csv/make_measurement_hit_id_reader.hpp"
 #include "csv/make_particle_reader.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints_alt.hpp"
@@ -155,8 +155,8 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
             link = (*it).second;
         }
         result[hmap[iocell.hit_id]].push_back(
-            alt_cell{iocell.channel0, iocell.channel1, iocell.value,
-                     iocell.timestamp, link});
+            cell{iocell.channel0, iocell.channel1, iocell.value,
+                 iocell.timestamp, link});
     }
     return result;
 }
@@ -205,10 +205,9 @@ generate_measurement_cell_map(std::size_t event,
     auto digi_cfg = io::read_digitization_config(digi_config_file);
 
     // Read the cells from the relevant event file
-    auto readOut =
-        io::read_cells_alt(event, cells_dir, traccc::data_format::csv,
-                           &surface_transforms, &digi_cfg, &resource);
-    alt_cell_collection_types::host& cells_per_event = readOut.cells;
+    auto readOut = io::read_cells(event, cells_dir, traccc::data_format::csv,
+                                  &surface_transforms, &digi_cfg, &resource);
+    cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
     auto clusters_per_event = cc(cells_per_event);

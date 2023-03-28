@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "read_cells_alt.hpp"
+#include "read_cells.hpp"
 
 #include "make_cell_reader.hpp"
 
@@ -20,7 +20,7 @@ namespace {
 
 /// Comparator used for sorting cells. This sorting is one of the assumptions
 /// made in the clusterization algorithm
-const auto comp = [](const traccc::alt_cell& c1, const traccc::alt_cell& c2) {
+const auto comp = [](const traccc::cell& c1, const traccc::cell& c2) {
     return c1.channel1 < c2.channel1;
 };
 
@@ -75,10 +75,9 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
 
 namespace traccc::io::csv {
 
-cell_reader_output read_cells_alt(std::string_view filename,
-                                  const geometry* geom,
-                                  const digitization_config* dconfig,
-                                  vecmem::memory_resource* mr) {
+cell_reader_output read_cells(std::string_view filename, const geometry* geom,
+                              const digitization_config* dconfig,
+                              vecmem::memory_resource* mr) {
 
     // Construct the cell reader object.
     auto reader = make_cell_reader(filename);
@@ -132,11 +131,11 @@ cell_reader_output read_cells_alt(std::string_view filename,
     const unsigned int totalCells = allCells.size();
 
     // Construct the result collection.
-    alt_cell_collection_types::host result_cells;
+    cell_collection_types::host result_cells;
     if (mr != nullptr) {
-        result_cells = alt_cell_collection_types::host{totalCells, mr};
+        result_cells = cell_collection_types::host{totalCells, mr};
     } else {
-        result_cells = alt_cell_collection_types::host(totalCells);
+        result_cells = cell_collection_types::host(totalCells);
     }
 
     // Member "-1" of the prefix sum vector
@@ -150,8 +149,8 @@ cell_reader_output read_cells_alt(std::string_view filename,
 
         unsigned int& prefix_sum_previous =
             counterPos == 0 ? nCellsZero : cellCounts[counterPos - 1];
-        result_cells[prefix_sum_previous++] =
-            alt_cell{c.channel0, c.channel1, c.value, c.timestamp, counterPos};
+        result_cells[prefix_sum_previous++] = traccc::cell{
+            c.channel0, c.channel1, c.value, c.timestamp, counterPos};
     }
 
     if (cellCounts.size() == 0) {

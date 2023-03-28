@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -25,7 +25,7 @@
 namespace traccc::cuda {
 
 /// Seed finding for cuda
-class seed_finding : public algorithm<alt_seed_collection_types::buffer(
+class seed_finding : public algorithm<seed_collection_types::buffer(
                          const spacepoint_collection_types::const_view&,
                          const sp_grid_const_view&)> {
 

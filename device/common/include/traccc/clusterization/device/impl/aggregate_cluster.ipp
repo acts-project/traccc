@@ -16,7 +16,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
-    const alt_cell_collection_types::const_device& cells,
+    const cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
     const vecmem::data::vector_view<unsigned short> f_view,
     const unsigned int start, const unsigned int end, const unsigned short cid,
@@ -53,7 +53,7 @@ inline void aggregate_cluster(
             break;
         }
 
-        const alt_cell this_cell = cells[pos];
+        const cell this_cell = cells[pos];
 
         /*
          * If the value of this cell is equal to our, that means it

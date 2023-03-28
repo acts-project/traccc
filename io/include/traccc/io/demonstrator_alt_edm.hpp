@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/reader_edm.hpp"
 

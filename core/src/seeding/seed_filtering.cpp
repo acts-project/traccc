@@ -18,9 +18,9 @@ seed_filtering::seed_filtering(const seedfilter_config& config)
 void seed_filtering::operator()(
     const spacepoint_collection_types::host& sp_collection, const sp_grid& g2,
     triplet_collection_types::host& triplets,
-    alt_seed_collection_types::host& seeds) const {
+    seed_collection_types::host& seeds) const {
 
-    alt_seed_collection_types::host seeds_per_spM;
+    seed_collection_types::host seeds_per_spM;
 
     for (triplet& triplet : triplets) {
         // bottom
@@ -49,7 +49,7 @@ void seed_filtering::operator()(
 
     // sort seeds based on their weights
     std::sort(seeds_per_spM.begin(), seeds_per_spM.end(),
-              [&](alt_seed& seed1, alt_seed& seed2) {
+              [&](seed& seed1, seed& seed2) {
                   if (seed1.weight != seed2.weight) {
                       return seed1.weight > seed2.weight;
                   } else {
@@ -69,7 +69,7 @@ void seed_filtering::operator()(
                   }
               });
 
-    alt_seed_collection_types::host new_seeds;
+    seed_collection_types::host new_seeds;
     if (seeds_per_spM.size() > 1) {
         new_seeds.push_back(seeds_per_spM[0]);
 

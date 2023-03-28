@@ -45,7 +45,7 @@ flowchart LR
         track(Track);
     end
 
-    click cell href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/alt_cell.hpp";
+    click cell href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/cell.hpp";
     click cluster href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/cluster.hpp";
     click meas href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/measurement.hpp";
     click sp href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/spacepoint.hpp";

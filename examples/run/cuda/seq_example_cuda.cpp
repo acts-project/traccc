@@ -13,7 +13,7 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/options/common_options.hpp"
@@ -104,8 +104,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // Instantiate cuda containers/collections
         traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
             0, *mr.host);
-        traccc::alt_seed_collection_types::buffer seeds_cuda_buffer(0,
-                                                                    *mr.host);
+        traccc::seed_collection_types::buffer seeds_cuda_buffer(0, *mr.host);
         traccc::bound_track_parameters_collection_types::buffer
             params_cuda_buffer(0, *mr.host);
 
@@ -116,13 +115,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                alt_read_out_per_event = traccc::io::read_cells_alt(
+                alt_read_out_per_event = traccc::io::read_cells(
                     event, common_opts.input_directory,
                     common_opts.input_data_format, &surface_transforms,
                     &digi_cfg, &cuda_host_mr);
             }  // stop measuring file reading timer
 
-            const traccc::alt_cell_collection_types::host& alt_cells_per_event =
+            const traccc::cell_collection_types::host& cells_per_event =
                 alt_read_out_per_event.cells;
             const traccc::cell_module_collection_types::host&
                 modules_per_event = alt_read_out_per_event.modules;
@@ -131,9 +130,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 Clusterization and Spacepoint Creation (cuda)
             -----------------------------*/
             // Create device copy of input collections
-            traccc::alt_cell_collection_types::buffer cells_buffer(
-                alt_cells_per_event.size(), mr.main);
-            copy(vecmem::get_data(alt_cells_per_event), cells_buffer);
+            traccc::cell_collection_types::buffer cells_buffer(
+                cells_per_event.size(), mr.main);
+            copy(vecmem::get_data(cells_per_event), cells_buffer);
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
             copy(vecmem::get_data(modules_per_event), modules_buffer);
@@ -157,7 +156,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                     traccc::performance::timer t("Clusterization  (cpu)",
                                                  elapsedTimes);
                     measurements_per_event =
-                        ca(alt_cells_per_event, modules_per_event);
+                        ca(cells_per_event, modules_per_event);
                 }  // stop measuring clusterization cpu timer
 
                 /*---------------------------------
@@ -218,7 +217,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           ----------------------------------*/
 
         traccc::spacepoint_collection_types::host spacepoints_per_event_cuda;
-        traccc::alt_seed_collection_types::host seeds_cuda;
+        traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
         if (run_cpu || i_cfg.check_performance) {
             copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda);
@@ -238,8 +237,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                 vecmem::get_data(spacepoints_per_event_cuda));
 
             // Compare the seeds made on the host and on the device
-            traccc::collection_comparator<traccc::alt_seed> compare_seeds{
-                "seeds", traccc::details::comparator_factory<traccc::alt_seed>{
+            traccc::collection_comparator<traccc::seed> compare_seeds{
+                "seeds", traccc::details::comparator_factory<traccc::seed>{
                              vecmem::get_data(spacepoints_per_event),
                              vecmem::get_data(spacepoints_per_event_cuda)}};
             compare_seeds(vecmem::get_data(seeds),

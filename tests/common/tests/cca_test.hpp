@@ -9,10 +9,10 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -32,7 +32,7 @@
 
 using cca_function_t = std::function<
     std::map<traccc::geometry_id, vecmem::vector<traccc::alt_measurement>>(
-        const traccc::alt_cell_collection_types::host &,
+        const traccc::cell_collection_types::host &,
         const traccc::cell_module_collection_types::host &)>;
 
 class ConnectedComponentAnalysisTests
@@ -92,8 +92,8 @@ class ConnectedComponentAnalysisTests
         std::string file_truth =
             get_datafile("cca_test/" + file_prefix + "_truth.csv");
 
-        auto data = traccc::io::read_cells_alt(file_hits);
-        traccc::alt_cell_collection_types::host &cells = data.cells;
+        auto data = traccc::io::read_cells(file_hits);
+        traccc::cell_collection_types::host &cells = data.cells;
         traccc::cell_module_collection_types::host &modules = data.modules;
 
         for (std::size_t i = 0; i < modules.size(); i++) {
