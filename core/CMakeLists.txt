@@ -25,7 +25,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/internal_spacepoint.hpp"
   "include/traccc/edm/seed.hpp"
   "include/traccc/edm/alt_seed.hpp"
-  "include/traccc/edm/cell.hpp"
   "include/traccc/edm/track_candidate.hpp"
   "include/traccc/edm/track_state.hpp"
   "include/traccc/edm/alt_cell.hpp"

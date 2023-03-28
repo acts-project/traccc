@@ -21,7 +21,7 @@ namespace {
 /// Comparator used for sorting cells. This sorting is one of the assumptions
 /// made in the clusterization algorithm
 const auto comp = [](const traccc::alt_cell& c1, const traccc::alt_cell& c2) {
-    return c1.c.channel1 < c2.c.channel1;
+    return c1.channel1 < c2.channel1;
 };
 
 /// Helper function which finds module from csv::cell in the geometry and
@@ -151,8 +151,7 @@ cell_reader_output read_cells_alt(std::string_view filename,
         unsigned int& prefix_sum_previous =
             counterPos == 0 ? nCellsZero : cellCounts[counterPos - 1];
         result_cells[prefix_sum_previous++] =
-            alt_cell{.c = {c.channel0, c.channel1, c.value, c.timestamp},
-                     .module_link = counterPos};
+            alt_cell{c.channel0, c.channel1, c.value, c.timestamp, counterPos};
     }
 
     if (cellCounts.size() == 0) {

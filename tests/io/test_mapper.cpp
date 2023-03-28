@@ -116,20 +116,20 @@ TEST(mappper, hit_cell_map) {
     sp2.global = traccc::point3{90.4015808, 0.7420941, -1502.5};
 
     std::vector<traccc::alt_cell> cells0;
-    cells0.push_back({{1, 0, 0.0041470062, 0}, 0});
-    cells0.push_back({{0, 1, 0.00306466641, 0}, 0});
-    cells0.push_back({{1, 1, 0.00868905429, 0}, 0});
+    cells0.push_back({1, 0, 0.0041470062, 0, 0});
+    cells0.push_back({0, 1, 0.00306466641, 0, 0});
+    cells0.push_back({1, 1, 0.00868905429, 0, 0});
 
     std::vector<traccc::alt_cell> cells1;
-    cells1.push_back({{1, 1, 0.00886478275, 0}, 0});
-    cells1.push_back({{1, 2, 0.00580428448, 0}, 0});
-    cells1.push_back({{2, 1, 0.0016894876, 0}, 0});
-    cells1.push_back({{2, 2, 0.00199076766, 0}, 0});
+    cells1.push_back({1, 1, 0.00886478275, 0, 0});
+    cells1.push_back({1, 2, 0.00580428448, 0, 0});
+    cells1.push_back({2, 1, 0.0016894876, 0, 0});
+    cells1.push_back({2, 2, 0.00199076766, 0, 0});
 
     std::vector<traccc::alt_cell> cells2;
-    cells2.push_back({{5, 5, 0.00632160669, 0}, 0});
-    cells2.push_back({{5, 6, 0.00911649223, 0}, 0});
-    cells2.push_back({{5, 7, 0.00518329488, 0}, 0});
+    cells2.push_back({5, 5, 0.00632160669, 0, 0});
+    cells2.push_back({5, 6, 0.00911649223, 0, 0});
+    cells2.push_back({5, 7, 0.00518329488, 0, 0});
 
     EXPECT_EQ(h_c_map[sp0], cells0);
     EXPECT_EQ(h_c_map[sp1], cells1);
@@ -142,16 +142,16 @@ TEST(mappper, cell_particle_map) {
     auto c_p_map = traccc::generate_cell_particle_map(event, cells_dir,
                                                       hits_dir, particles_dir);
 
-    traccc::alt_cell cell0{{1, 0, 0.0041470062, 0}, 0};
-    traccc::alt_cell cell1{{0, 1, 0.00306466641, 0}, 0};
-    traccc::alt_cell cell2{{1, 1, 0.00868905429, 0}, 0};
-    traccc::alt_cell cell3{{1, 1, 0.00886478275, 0}, 0};
-    traccc::alt_cell cell4{{1, 2, 0.00580428448, 0}, 0};
-    traccc::alt_cell cell5{{2, 1, 0.0016894876, 0}, 0};
-    traccc::alt_cell cell6{{2, 2, 0.00199076766, 0}, 0};
-    traccc::alt_cell cell7{{5, 5, 0.00632160669, 0}, 0};
-    traccc::alt_cell cell8{{5, 6, 0.00911649223, 0}, 0};
-    traccc::alt_cell cell9{{5, 7, 0.00518329488, 0}, 0};
+    traccc::alt_cell cell0{1, 0, 0.0041470062, 0, 0};
+    traccc::alt_cell cell1{0, 1, 0.00306466641, 0, 0};
+    traccc::alt_cell cell2{1, 1, 0.00868905429, 0, 0};
+    traccc::alt_cell cell3{1, 1, 0.00886478275, 0, 0};
+    traccc::alt_cell cell4{1, 2, 0.00580428448, 0, 0};
+    traccc::alt_cell cell5{2, 1, 0.0016894876, 0, 0};
+    traccc::alt_cell cell6{2, 2, 0.00199076766, 0, 0};
+    traccc::alt_cell cell7{5, 5, 0.00632160669, 0, 0};
+    traccc::alt_cell cell8{5, 6, 0.00911649223, 0, 0};
+    traccc::alt_cell cell9{5, 7, 0.00518329488, 0, 0};
 
     EXPECT_EQ(c_p_map[cell0].particle_id, 4503599644147712);
     EXPECT_EQ(c_p_map[cell1].particle_id, 4503599644147712);
@@ -183,18 +183,18 @@ TEST(mappper, measurement_cell_map) {
     auto m_c_map = std::get<0>(m_c_map_pair);
 
     vecmem::vector<traccc::alt_cell> cells0;
-    cells0.push_back({{1, 0, 0.0041470062, 0}, 0});
-    cells0.push_back({{0, 1, 0.00306466641, 0}, 0});
-    cells0.push_back({{1, 1, 0.00868905429, 0}, 0});
-    cells0.push_back({{1, 1, 0.00886478275, 0}, 0});
-    cells0.push_back({{1, 2, 0.00580428448, 0}, 0});
-    cells0.push_back({{2, 1, 0.0016894876, 0}, 0});
-    cells0.push_back({{2, 2, 0.00199076766, 0}, 0});
+    cells0.push_back({1, 0, 0.0041470062, 0, 0});
+    cells0.push_back({0, 1, 0.00306466641, 0, 0});
+    cells0.push_back({1, 1, 0.00868905429, 0, 0});
+    cells0.push_back({1, 1, 0.00886478275, 0, 0});
+    cells0.push_back({1, 2, 0.00580428448, 0, 0});
+    cells0.push_back({2, 1, 0.0016894876, 0, 0});
+    cells0.push_back({2, 2, 0.00199076766, 0, 0});
 
     vecmem::vector<traccc::alt_cell> cells1;
-    cells1.push_back({{5, 5, 0.00632160669, 0}, 0});
-    cells1.push_back({{5, 6, 0.00911649223, 0}, 0});
-    cells1.push_back({{5, 7, 0.00518329488, 0}, 0});
+    cells1.push_back({5, 5, 0.00632160669, 0, 0});
+    cells1.push_back({5, 6, 0.00911649223, 0, 0});
+    cells1.push_back({5, 7, 0.00518329488, 0, 0});
 
     EXPECT_EQ(m_c_map.size(), 2);
 

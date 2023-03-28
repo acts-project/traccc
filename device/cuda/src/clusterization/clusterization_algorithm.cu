@@ -182,8 +182,8 @@ __global__ void ccl_kernel(
         while (start != 0 &&
                cells_device[start - 1].module_link ==
                    cells_device[start].module_link &&
-               cells_device[start].c.channel1 <=
-                   cells_device[start - 1].c.channel1 + 1) {
+               cells_device[start].channel1 <=
+                   cells_device[start - 1].channel1 + 1) {
             ++start;
         }
 
@@ -195,8 +195,8 @@ __global__ void ccl_kernel(
         while (end < num_cells &&
                cells_device[end - 1].module_link ==
                    cells_device[end].module_link &&
-               cells_device[end].c.channel1 <=
-                   cells_device[end - 1].c.channel1 + 1) {
+               cells_device[end].channel1 <=
+                   cells_device[end - 1].channel1 + 1) {
             ++end;
         }
     }

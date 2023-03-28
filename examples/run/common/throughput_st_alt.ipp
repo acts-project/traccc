@@ -12,12 +12,8 @@
 #include "traccc/options/throughput_options.hpp"
 
 // I/O include(s).
-/// TODO: I opted not to include an alternative "read" multiple events at once
-/// to make this already extensive PR shorter, just hardcodding it here.
 #include "traccc/io/demonstrator_alt_edm.hpp"
-#include "traccc/io/read_cells_alt.hpp"
-#include "traccc/io/read_digitization_config.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read.hpp"
 
 // Performance measurement include(s).
 #include "traccc/performance/throughput.hpp"
@@ -72,24 +68,17 @@ int throughput_st_alt(std::string_view description, int argc, char* argv[],
             ? static_cast<vecmem::memory_resource&>(*cached_host_mr)
             : static_cast<vecmem::memory_resource&>(uncached_host_mr);
 
-    // Read the surface transforms
-    auto surface_transforms =
-        traccc::io::read_geometry(throughput_cfg.detector_file);
-
-    // Read the digitization configuration file
-    auto digi_cfg = traccc::io::read_digitization_config(
-        throughput_cfg.digitization_config_file);
-
     // Read in all input events into memory.
     alt_demonstrator_input input;
     {
         performance::timer t{"File reading", times};
         for (unsigned int event = 0; event < throughput_cfg.loaded_events;
              ++event) {
-            input.push_back(io::read_cells_alt(
-                event, throughput_cfg.input_directory,
-                throughput_cfg.input_data_format, &surface_transforms,
-                &digi_cfg, &uncached_host_mr));
+            input = io::read(
+                throughput_cfg.loaded_events, throughput_cfg.input_directory,
+                throughput_cfg.detector_file,
+                throughput_cfg.digitization_config_file,
+                throughput_cfg.input_data_format, &uncached_host_mr);
         }
     }
 

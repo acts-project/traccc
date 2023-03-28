@@ -28,8 +28,8 @@ TRACCC_HOST_DEVICE
 inline vector2 position_from_cell(const alt_cell& cell,
                                   const cell_module& module) {
     // Retrieve the specific values based on module idx
-    return {module.pixel.min_center_x + cell.c.channel0 * module.pixel.pitch_x,
-            module.pixel.min_center_y + cell.c.channel1 * module.pixel.pitch_y};
+    return {module.pixel.min_center_x + cell.channel0 * module.pixel.pitch_x,
+            module.pixel.min_center_y + cell.channel1 * module.pixel.pitch_y};
 }
 
 /// Function used for calculating the properties of the cluster during
@@ -51,13 +51,13 @@ TRACCC_HOST inline void calc_cluster_properties(
     for (const alt_cell& cell : cluster) {
 
         // Translate the cell readout value into a weight.
-        const scalar weight = signal_cell_modelling(cell.c.activation, module);
+        const scalar weight = signal_cell_modelling(cell.activation, module);
 
         // Only consider cells over a minimum threshold.
         if (weight > module.threshold) {
 
             // Update all output properties with this cell.
-            totalWeight += cell.c.activation;
+            totalWeight += cell.activation;
             const point2 cell_position = position_from_cell(cell, module);
             const point2 prev = mean;
             const point2 diff = cell_position - prev;
