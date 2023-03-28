@@ -49,7 +49,7 @@ flowchart LR
     click cluster href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/cluster.hpp";
     click meas href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/measurement.hpp";
     click sp href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/spacepoint.hpp";
-    click seed href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/seed.hpp";
+    click seed href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/alt_seed.hpp";
     click ptrack href "https://github.com/acts-project/traccc/blob/main/core/include/traccc/edm/track_parameters.hpp";
 
     %% CPU CCL algorithm

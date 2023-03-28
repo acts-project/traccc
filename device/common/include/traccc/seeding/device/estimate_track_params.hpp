@@ -9,7 +9,6 @@
 
 // Project include(s).
 #include "traccc/edm/alt_seed.hpp"
-#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 

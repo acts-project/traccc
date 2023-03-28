@@ -9,7 +9,6 @@
 
 #include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/edm/seed.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 
 namespace traccc {
@@ -57,26 +56,6 @@ struct seed_selecting_helper {
         const internal_spacepoint<spacepoint>&, const scalar& triplet_weight) {
         return !(spB.radius() > filter_config.good_spB_min_radius &&
                  triplet_weight < filter_config.good_spB_min_weight);
-    }
-
-    /// Cut triplets with criteria
-    ///
-    /// @param filter_config is seed filtering configuration parameters
-    /// @param sp_container is spacepoint container
-    /// @param seed is seed
-    /// @param triplet_weight is the weight of triplet
-    ///
-    /// @return boolean value
-    template <typename spacepoint_container_t>
-    static TRACCC_HOST_DEVICE bool cut_per_middle_sp(
-        const seedfilter_config& filter_config,
-        const spacepoint_container_t& sp_container, const seed& seed,
-        const scalar& triplet_weight) {
-
-        const auto& spB = sp_container.at(seed.spB_link);
-
-        return (triplet_weight > filter_config.seed_min_weight ||
-                spB.radius() > filter_config.spB_min_radius);
     }
 
     /// Cut triplets with criteria

@@ -23,7 +23,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/track_parameters.hpp"
   "include/traccc/edm/container.hpp"
   "include/traccc/edm/internal_spacepoint.hpp"
-  "include/traccc/edm/seed.hpp"
   "include/traccc/edm/alt_seed.hpp"
   "include/traccc/edm/track_candidate.hpp"
   "include/traccc/edm/track_state.hpp"
