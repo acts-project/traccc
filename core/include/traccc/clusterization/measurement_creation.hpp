@@ -8,8 +8,8 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/utils/algorithm.hpp"
 

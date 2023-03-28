@@ -39,10 +39,10 @@ namespace traccc::io {
 /// @return A cell (host) collection & a cell_module collection
 ///
 cell_reader_output read_cells(std::size_t event, std::string_view directory,
-                                  data_format format = data_format::csv,
-                                  const geometry *geom = nullptr,
-                                  const digitization_config *dconfig = nullptr,
-                                  vecmem::memory_resource *mr = nullptr);
+                              data_format format = data_format::csv,
+                              const geometry *geom = nullptr,
+                              const digitization_config *dconfig = nullptr,
+                              vecmem::memory_resource *mr = nullptr);
 
 /// Read cell data into memory
 ///
@@ -56,9 +56,9 @@ cell_reader_output read_cells(std::size_t event, std::string_view directory,
 /// @return A cell (host) collection & a cell_module collection
 ///
 cell_reader_output read_cells(std::string_view filename,
-                                  data_format format = data_format::csv,
-                                  const geometry *geom = nullptr,
-                                  const digitization_config *dconfig = nullptr,
-                                  vecmem::memory_resource *mr = nullptr);
+                              data_format format = data_format::csv,
+                              const geometry *geom = nullptr,
+                              const digitization_config *dconfig = nullptr,
+                              vecmem::memory_resource *mr = nullptr);
 
 }  // namespace traccc::io

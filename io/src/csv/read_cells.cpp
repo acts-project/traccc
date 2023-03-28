@@ -75,10 +75,9 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
 
 namespace traccc::io::csv {
 
-cell_reader_output read_cells(std::string_view filename,
-                                  const geometry* geom,
-                                  const digitization_config* dconfig,
-                                  vecmem::memory_resource* mr) {
+cell_reader_output read_cells(std::string_view filename, const geometry* geom,
+                              const digitization_config* dconfig,
+                              vecmem::memory_resource* mr) {
 
     // Construct the cell reader object.
     auto reader = make_cell_reader(filename);
@@ -150,8 +149,8 @@ cell_reader_output read_cells(std::string_view filename,
 
         unsigned int& prefix_sum_previous =
             counterPos == 0 ? nCellsZero : cellCounts[counterPos - 1];
-        result_cells[prefix_sum_previous++] =
-            traccc::cell{c.channel0, c.channel1, c.value, c.timestamp, counterPos};
+        result_cells[prefix_sum_previous++] = traccc::cell{
+            c.channel0, c.channel1, c.value, c.timestamp, counterPos};
     }
 
     if (cellCounts.size() == 0) {

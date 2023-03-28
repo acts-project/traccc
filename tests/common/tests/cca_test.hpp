@@ -9,8 +9,8 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/io/read_cells.hpp"
 

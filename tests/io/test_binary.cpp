@@ -43,9 +43,9 @@ TEST(io_binary, cell) {
         "tml_detector/default-geometric-config-generic.json");
 
     // Read csv file
-    auto reader_csv = traccc::io::read_cells(
-        event, cells_directory, traccc::data_format::csv, &surface_transforms,
-        &digi_cfg, &host_mr);
+    auto reader_csv =
+        traccc::io::read_cells(event, cells_directory, traccc::data_format::csv,
+                               &surface_transforms, &digi_cfg, &host_mr);
     const traccc::cell_collection_types::host& cells_csv = reader_csv.cells;
     const traccc::cell_module_collection_types::host& modules_csv =
         reader_csv.modules;

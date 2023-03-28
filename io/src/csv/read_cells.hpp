@@ -30,8 +30,8 @@ namespace traccc::io::csv {
 /// @return A cell (host) collection & a cell_module collection
 ///
 cell_reader_output read_cells(std::string_view filename,
-                                  const geometry* geom = nullptr,
-                                  const digitization_config* dconfig = nullptr,
-                                  vecmem::memory_resource* mr = nullptr);
+                              const geometry* geom = nullptr,
+                              const digitization_config* dconfig = nullptr,
+                              vecmem::memory_resource* mr = nullptr);
 
 }  // namespace traccc::io::csv

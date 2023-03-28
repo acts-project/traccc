@@ -10,8 +10,8 @@
 // Library include(s).
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).

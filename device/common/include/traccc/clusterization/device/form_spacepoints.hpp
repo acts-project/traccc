@@ -10,8 +10,8 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 

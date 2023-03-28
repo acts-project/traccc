@@ -47,7 +47,7 @@ TEST_P(SurfaceBinningTests, Run) {
     // Read the cells from the relevant event file
     auto readOut =
         traccc::io::read_cells(event, data_dir, traccc::data_format::csv,
-                                   &surface_transforms, &digi_cfg, &host_mr);
+                               &surface_transforms, &digi_cfg, &host_mr);
 
     const traccc::cell_collection_types::host& cells_truth = readOut.cells;
     const traccc::cell_module_collection_types::host& modules = readOut.modules;

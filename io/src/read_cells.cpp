@@ -15,21 +15,21 @@
 namespace traccc::io {
 
 cell_reader_output read_cells(std::size_t event, std::string_view directory,
-                                  data_format format, const geometry* geom,
-                                  const digitization_config* dconfig,
-                                  vecmem::memory_resource* mr) {
+                              data_format format, const geometry* geom,
+                              const digitization_config* dconfig,
+                              vecmem::memory_resource* mr) {
 
     switch (format) {
         case data_format::csv:
             return read_cells(data_directory() + directory.data() +
-                                      get_event_filename(event, "-cells.csv"),
-                                  format, geom, dconfig, mr);
+                                  get_event_filename(event, "-cells.csv"),
+                              format, geom, dconfig, mr);
         case data_format::binary: {
-            auto cells = details::read_binary_collection<
-                cell_collection_types::host>(
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-cells.dat"),
-                mr);
+            auto cells =
+                details::read_binary_collection<cell_collection_types::host>(
+                    data_directory() + directory.data() +
+                        get_event_filename(event, "-cells.dat"),
+                    mr);
             auto modules = details::read_binary_collection<
                 cell_module_collection_types::host>(
                 data_directory() + directory.data() +
@@ -43,9 +43,9 @@ cell_reader_output read_cells(std::size_t event, std::string_view directory,
 }
 
 cell_reader_output read_cells(std::string_view filename, data_format format,
-                                  const geometry* geom,
-                                  const digitization_config* dconfig,
-                                  vecmem::memory_resource* mr) {
+                              const geometry* geom,
+                              const digitization_config* dconfig,
+                              vecmem::memory_resource* mr) {
 
     switch (format) {
         case data_format::csv:

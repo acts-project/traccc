@@ -10,8 +10,8 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 
 namespace traccc::detail {
@@ -25,8 +25,7 @@ inline scalar signal_cell_modelling(scalar signal_in,
 
 /// Function for pixel segmentation
 TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(const cell& cell,
-                                  const cell_module& module) {
+inline vector2 position_from_cell(const cell& cell, const cell_module& module) {
     // Retrieve the specific values based on module idx
     return {module.pixel.min_center_x + cell.channel0 * module.pixel.pitch_x,
             module.pixel.min_center_y + cell.channel1 * module.pixel.pitch_y};

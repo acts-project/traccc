@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
 namespace traccc::io {
