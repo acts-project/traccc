@@ -12,7 +12,7 @@
 #include "csv/make_hit_reader.hpp"
 #include "csv/make_measurement_hit_id_reader.hpp"
 #include "csv/make_particle_reader.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints_alt.hpp"
@@ -206,7 +206,7 @@ generate_measurement_cell_map(std::size_t event,
 
     // Read the cells from the relevant event file
     auto readOut =
-        io::read_cells_alt(event, cells_dir, traccc::data_format::csv,
+        io::read_cells(event, cells_dir, traccc::data_format::csv,
                            &surface_transforms, &digi_cfg, &resource);
     cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;

@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -43,7 +43,7 @@ TEST(io_binary, cell) {
         "tml_detector/default-geometric-config-generic.json");
 
     // Read csv file
-    auto reader_csv = traccc::io::read_cells_alt(
+    auto reader_csv = traccc::io::read_cells(
         event, cells_directory, traccc::data_format::csv, &surface_transforms,
         &digi_cfg, &host_mr);
     const traccc::cell_collection_types::host& cells_csv = reader_csv.cells;
@@ -56,7 +56,7 @@ TEST(io_binary, cell) {
                       vecmem::get_data(modules_csv));
 
     // Read binary file
-    auto reader_binary = traccc::io::read_cells_alt(
+    auto reader_binary = traccc::io::read_cells(
         event, cells_directory, traccc::data_format::binary,
         &surface_transforms, &digi_cfg, &host_mr);
     const traccc::cell_collection_types::host& cells_binary =

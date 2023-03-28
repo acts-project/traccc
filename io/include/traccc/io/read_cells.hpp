@@ -38,7 +38,7 @@ namespace traccc::io {
 /// @param mr The memory resource to create the host collection with
 /// @return A cell (host) collection & a cell_module collection
 ///
-cell_reader_output read_cells_alt(std::size_t event, std::string_view directory,
+cell_reader_output read_cells(std::size_t event, std::string_view directory,
                                   data_format format = data_format::csv,
                                   const geometry *geom = nullptr,
                                   const digitization_config *dconfig = nullptr,
@@ -55,7 +55,7 @@ cell_reader_output read_cells_alt(std::size_t event, std::string_view directory,
 /// @param mr The memory resource to create the host collection with
 /// @return A cell (host) collection & a cell_module collection
 ///
-cell_reader_output read_cells_alt(std::string_view filename,
+cell_reader_output read_cells(std::string_view filename,
                                   data_format format = data_format::csv,
                                   const geometry *geom = nullptr,
                                   const digitization_config *dconfig = nullptr,

@@ -12,7 +12,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -92,7 +92,7 @@ class ConnectedComponentAnalysisTests
         std::string file_truth =
             get_datafile("cca_test/" + file_prefix + "_truth.csv");
 
-        auto data = traccc::io::read_cells_alt(file_hits);
+        auto data = traccc::io::read_cells(file_hits);
         traccc::cell_collection_types::host &cells = data.cells;
         traccc::cell_module_collection_types::host &modules = data.modules;
 

@@ -11,7 +11,7 @@ find_package( OpenMP COMPONENTS CXX )
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
   "include/traccc/io/read.hpp"
-  "include/traccc/io/read_cells_alt.hpp"
+  "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_digitization_config.hpp"
   "include/traccc/io/read_geometry.hpp"
   "include/traccc/io/read_measurements.hpp"
@@ -32,7 +32,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/event_map2.cpp"
   "src/mapper.cpp"
   "src/read.cpp"
-  "src/read_cells_alt.cpp"
+  "src/read_cells.cpp"
   "src/read_digitization_config.cpp"
   "src/read_geometry.cpp"
   "src/read_measurements.cpp"
@@ -52,8 +52,8 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/cell.hpp"
   "src/csv/make_cell_reader.hpp"
   "src/csv/make_cell_reader.cpp"
-  "src/csv/read_cells_alt.hpp"
-  "src/csv/read_cells_alt.cpp"
+  "src/csv/read_cells.hpp"
+  "src/csv/read_cells.cpp"
   "src/csv/hit.hpp"
   "src/csv/make_hit_reader.hpp"
   "src/csv/make_hit_reader.cpp"

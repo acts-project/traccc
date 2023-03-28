@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints_alt.hpp"
@@ -46,7 +46,7 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Read the cells from the relevant event file
     auto readOut =
-        traccc::io::read_cells_alt(event, data_dir, traccc::data_format::csv,
+        traccc::io::read_cells(event, data_dir, traccc::data_format::csv,
                                    &surface_transforms, &digi_cfg, &host_mr);
 
     const traccc::cell_collection_types::host& cells_truth = readOut.cells;

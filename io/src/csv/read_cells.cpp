@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "read_cells_alt.hpp"
+#include "read_cells.hpp"
 
 #include "make_cell_reader.hpp"
 
@@ -75,7 +75,7 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
 
 namespace traccc::io::csv {
 
-cell_reader_output read_cells_alt(std::string_view filename,
+cell_reader_output read_cells(std::string_view filename,
                                   const geometry* geom,
                                   const digitization_config* dconfig,
                                   vecmem::memory_resource* mr) {

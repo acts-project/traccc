@@ -13,7 +13,7 @@
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 
@@ -63,7 +63,7 @@ int par_run(const std::string &detector_file,
     for (unsigned int event = 0; event < events; ++event) {
 
         // Read the cells from the relevant event file
-        auto readOut = traccc::io::read_cells_alt(
+        auto readOut = traccc::io::read_cells(
             event, cells_dir, traccc::data_format::csv, &surface_transforms,
             &digi_cfg, &resource);
         traccc::cell_collection_types::host &cells_per_event =

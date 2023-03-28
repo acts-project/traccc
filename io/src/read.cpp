@@ -8,7 +8,7 @@
 // Local include(s).
 #include "traccc/io/read.hpp"
 
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 
@@ -36,7 +36,7 @@ alt_demonstrator_input read(std::size_t events, std::string_view directory,
 #pragma omp parallel for
     for (std::size_t event = 0; event < events; ++event) {
         result[event] =
-            io::read_cells_alt(event, directory, format, &geom, &digi_cfg, mr);
+            io::read_cells(event, directory, format, &geom, &digi_cfg, mr);
     }
 
     // Return the container.

@@ -6,7 +6,7 @@
  */
 
 // io
-#include "traccc/io/read_cells_alt.hpp"
+#include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 
@@ -71,7 +71,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        auto readOut = traccc::io::read_cells_alt(
+        auto readOut = traccc::io::read_cells(
             event, common_opts.input_directory, common_opts.input_data_format,
             &surface_transforms, &digi_cfg, &host_mr);
         traccc::cell_collection_types::host& cells_per_event =
