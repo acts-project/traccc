@@ -13,17 +13,17 @@ namespace traccc::details {
 /// @name Implementation for @c traccc::details::comparator_factory<seed>
 /// @{
 
-comparator_factory<alt_seed>::comparator_factory(
+comparator_factory<seed>::comparator_factory(
     const spacepoint_collection_types::const_view& ref_spacepoints,
     const spacepoint_collection_types::const_view& test_spacepoints)
     : m_ref_spacepoints(ref_spacepoints),
       m_test_spacepoints(test_spacepoints) {}
 
-is_same_object<alt_seed> comparator_factory<alt_seed>::make_comparator(
-    const alt_seed& ref, scalar unc) const {
+is_same_object<seed> comparator_factory<seed>::make_comparator(
+    const seed& ref, scalar unc) const {
 
-    return is_same_object<alt_seed>(m_ref_spacepoints, m_test_spacepoints, ref,
-                                    unc);
+    return is_same_object<seed>(m_ref_spacepoints, m_test_spacepoints, ref,
+                                unc);
 }
 
 /// @}

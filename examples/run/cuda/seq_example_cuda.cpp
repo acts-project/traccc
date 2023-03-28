@@ -104,8 +104,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // Instantiate cuda containers/collections
         traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
             0, *mr.host);
-        traccc::alt_seed_collection_types::buffer seeds_cuda_buffer(0,
-                                                                    *mr.host);
+        traccc::seed_collection_types::buffer seeds_cuda_buffer(0, *mr.host);
         traccc::bound_track_parameters_collection_types::buffer
             params_cuda_buffer(0, *mr.host);
 
@@ -218,7 +217,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           ----------------------------------*/
 
         traccc::spacepoint_collection_types::host spacepoints_per_event_cuda;
-        traccc::alt_seed_collection_types::host seeds_cuda;
+        traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
         if (run_cpu || i_cfg.check_performance) {
             copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda);
@@ -238,8 +237,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                 vecmem::get_data(spacepoints_per_event_cuda));
 
             // Compare the seeds made on the host and on the device
-            traccc::collection_comparator<traccc::alt_seed> compare_seeds{
-                "seeds", traccc::details::comparator_factory<traccc::alt_seed>{
+            traccc::collection_comparator<traccc::seed> compare_seeds{
+                "seeds", traccc::details::comparator_factory<traccc::seed>{
                              vecmem::get_data(spacepoints_per_event),
                              vecmem::get_data(spacepoints_per_event_cuda)}};
             compare_seeds(vecmem::get_data(seeds),

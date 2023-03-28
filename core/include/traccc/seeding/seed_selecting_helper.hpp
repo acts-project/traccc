@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 
 namespace traccc {
@@ -69,7 +69,7 @@ struct seed_selecting_helper {
     template <typename spacepoint_collection_t>
     static TRACCC_HOST_DEVICE bool cut_per_middle_sp(
         const seedfilter_config& filter_config,
-        const spacepoint_collection_t& sp_collection, const alt_seed& seed,
+        const spacepoint_collection_t& sp_collection, const seed& seed,
         const scalar& triplet_weight) {
 
         const auto& spB = sp_collection.at(seed.spB_link);

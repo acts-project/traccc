@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/seed_finding.hpp"
 #include "traccc/seeding/spacepoint_binning.hpp"
@@ -20,7 +20,7 @@
 namespace traccc {
 
 /// Main algorithm for performing the track seeding on the CPU
-class seeding_algorithm : public algorithm<alt_seed_collection_types::host(
+class seeding_algorithm : public algorithm<seed_collection_types::host(
                               const spacepoint_collection_types::host&)> {
 
     public:

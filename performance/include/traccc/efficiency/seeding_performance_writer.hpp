@@ -11,7 +11,7 @@
 #include "traccc/utils/helpers.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/event_map.hpp"
 
@@ -63,7 +63,7 @@ class seeding_performance_writer {
     void add_cache(std::string_view name);
 
     void write(std::string_view name,
-               const alt_seed_collection_types::const_view& seeds_view,
+               const seed_collection_types::const_view& seeds_view,
                const spacepoint_collection_types::const_view& spacepoints_view,
                const event_map& evt_map);
 

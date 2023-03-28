@@ -11,7 +11,7 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -30,7 +30,7 @@ namespace traccc::sycl {
 struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const spacepoint_collection_types::const_view&,
-          const alt_seed_collection_types::const_view&)> {
+          const seed_collection_types::const_view&)> {
 
     public:
     /// Constructor for track_params_estimation
@@ -50,7 +50,7 @@ struct track_params_estimation
     ///
     output_type operator()(
         const spacepoint_collection_types::const_view& spacepoints_view,
-        const alt_seed_collection_types::const_view& seeds_view) const override;
+        const seed_collection_types::const_view& seeds_view) const override;
 
     private:
     // Private member variables

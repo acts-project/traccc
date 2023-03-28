@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -34,7 +34,7 @@ class seed_filtering {
     /// added
     void operator()(const spacepoint_collection_types::host& sp_collection,
                     const sp_grid& g2, triplet_collection_types::host& triplets,
-                    alt_seed_collection_types::host& seeds) const;
+                    seed_collection_types::host& seeds) const;
 
     private:
     /// Seed filter configuration

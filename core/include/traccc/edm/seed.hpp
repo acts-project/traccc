@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,7 +14,7 @@ namespace traccc {
 
 /// Seed consisting of three spacepoints, z origin and weight
 /// This differs from (non-alt) seed in the link_type definition
-struct alt_seed {
+struct seed {
 
     using link_type = spacepoint_collection_types::host::size_type;
 
@@ -45,6 +45,6 @@ struct alt_seed {
 };
 
 /// Declare all seed collection types
-using alt_seed_collection_types = collection_types<alt_seed>;
+using seed_collection_types = collection_types<seed>;
 
 }  // namespace traccc

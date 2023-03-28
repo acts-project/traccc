@@ -13,7 +13,7 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -26,7 +26,7 @@
 namespace traccc::sycl {
 
 /// Main algorithm for performing the track seeding using oneAPI/SYCL
-class seeding_algorithm : public algorithm<alt_seed_collection_types::buffer(
+class seeding_algorithm : public algorithm<seed_collection_types::buffer(
                               const spacepoint_collection_types::const_view&)> {
 
     public:

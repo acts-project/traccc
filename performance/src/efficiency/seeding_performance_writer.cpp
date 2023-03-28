@@ -63,16 +63,15 @@ void seeding_performance_writer::add_cache(std::string_view name) {
 }
 
 void seeding_performance_writer::write(
-    std::string_view name,
-    const alt_seed_collection_types::const_view& seeds_view,
+    std::string_view name, const seed_collection_types::const_view& seeds_view,
     const spacepoint_collection_types::const_view& spacepoints_view,
     const event_map& evt_map) {
 
     std::map<particle_id, std::size_t> match_counter;
 
     // Iterate over the seeds.
-    alt_seed_collection_types::const_device seeds(seeds_view);
-    for (const alt_seed& sd : seeds) {
+    seed_collection_types::const_device seeds(seeds_view);
+    for (const seed& sd : seeds) {
 
         // Check which particle matches this seed.
         std::vector<particle_hit_count> particle_hit_counts =

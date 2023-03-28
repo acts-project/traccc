@@ -23,7 +23,7 @@ namespace kernels {
 /// CUDA kernel for running @c traccc::device::estimate_track_params
 __global__ void estimate_track_params(
     spacepoint_collection_types::const_view spacepoints_view,
-    alt_seed_collection_types::const_view seed_view,
+    seed_collection_types::const_view seed_view,
     bound_track_parameters_collection_types::view params_view) {
 
     device::estimate_track_params(threadIdx.x + blockIdx.x * blockDim.x,
@@ -37,7 +37,7 @@ track_params_estimation::track_params_estimation(
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const alt_seed_collection_types::const_view& seeds_view) const {
+    const seed_collection_types::const_view& seeds_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
