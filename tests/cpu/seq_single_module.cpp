@@ -9,7 +9,7 @@
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -30,7 +30,7 @@ TEST(algorithms, seq_single_module) {
     traccc::measurement_creation mc(resource);
 
     /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
-    traccc::alt_cell_collection_types::host cells = {{{1, 0, 1., 0., 0},
+    traccc::cell_collection_types::host cells = {{{1, 0, 1., 0., 0},
                                                       {8, 4, 2., 0., 0},
                                                       {10, 4, 3., 0., 0},
                                                       {9, 5, 4., 0., 0},

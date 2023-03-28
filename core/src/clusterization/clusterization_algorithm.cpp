@@ -14,7 +14,7 @@ clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr)
     : m_cc(mr), m_mc(mr), m_mr(mr) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const alt_cell_collection_types::host& cells,
+    const cell_collection_types::host& cells,
     const cell_module_collection_types::host& modules) const {
 
     return m_mc(m_cc(cells), modules);

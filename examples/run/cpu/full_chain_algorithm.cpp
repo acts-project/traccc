@@ -18,7 +18,7 @@ full_chain_algorithm::full_chain_algorithm(vecmem::memory_resource& mr,
       m_track_parameter_estimation(mr) {}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
-    const alt_cell_collection_types::host& cells,
+    const cell_collection_types::host& cells,
     const cell_module_collection_types::host& modules) const {
 
     const spacepoint_formation::output_type spacepoints =

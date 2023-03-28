@@ -10,7 +10,7 @@
 // Library include(s).
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -29,7 +29,7 @@ namespace traccc {
 ///
 class clusterization_algorithm
     : public algorithm<alt_measurement_collection_types::host(
-          const alt_cell_collection_types::host&,
+          const cell_collection_types::host&,
           const cell_module_collection_types::host&)> {
 
     public:
@@ -46,7 +46,7 @@ class clusterization_algorithm
     /// @return The measurements reconstructed for every detector module
     ///
     output_type operator()(
-        const alt_cell_collection_types::host& cells,
+        const cell_collection_types::host& cells,
         const cell_module_collection_types::host& modules) const override;
 
     private:

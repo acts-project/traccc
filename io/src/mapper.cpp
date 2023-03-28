@@ -155,7 +155,7 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
             link = (*it).second;
         }
         result[hmap[iocell.hit_id]].push_back(
-            alt_cell{iocell.channel0, iocell.channel1, iocell.value,
+            cell{iocell.channel0, iocell.channel1, iocell.value,
                      iocell.timestamp, link});
     }
     return result;
@@ -208,7 +208,7 @@ generate_measurement_cell_map(std::size_t event,
     auto readOut =
         io::read_cells_alt(event, cells_dir, traccc::data_format::csv,
                            &surface_transforms, &digi_cfg, &resource);
-    alt_cell_collection_types::host& cells_per_event = readOut.cells;
+    cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
     auto clusters_per_event = cc(cells_per_event);

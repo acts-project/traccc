@@ -45,7 +45,7 @@ inline bool operator==(const cell_module& lhs, const cell_module& rhs) {
 /// It comes with two integer channel identifiers, an "activation value",
 /// a time stamp and a link to its module (held in a separate collection).
 ///
-struct alt_cell {
+struct cell {
     channel_id channel0 = 0;
     channel_id channel1 = 0;
     scalar activation = 0.;
@@ -56,10 +56,10 @@ struct alt_cell {
 };
 
 /// Declare all cell collection types
-using alt_cell_collection_types = collection_types<alt_cell>;
+using cell_collection_types = collection_types<cell>;
 
 TRACCC_HOST_DEVICE
-inline bool operator<(const alt_cell& lhs, const alt_cell& rhs) {
+inline bool operator<(const cell& lhs, const cell& rhs) {
 
     if (lhs.module_link != rhs.module_link) {
         return lhs.module_link < rhs.module_link;
@@ -74,7 +74,7 @@ inline bool operator<(const alt_cell& lhs, const alt_cell& rhs) {
 
 /// Equality operator for cells
 TRACCC_HOST_DEVICE
-inline bool operator==(const alt_cell& lhs, const alt_cell& rhs) {
+inline bool operator==(const cell& lhs, const cell& rhs) {
 
     return ((lhs.module_link == rhs.module_link) &&
             (lhs.channel0 == rhs.channel0) && (lhs.channel1 == rhs.channel1) &&

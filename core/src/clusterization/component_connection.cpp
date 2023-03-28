@@ -17,7 +17,7 @@
 namespace traccc {
 
 component_connection::output_type component_connection::operator()(
-    const alt_cell_collection_types::host& cells) const {
+    const cell_collection_types::host& cells) const {
 
     unsigned int num_clusters = 0;
     std::vector<unsigned int> CCL_indices(cells.size());

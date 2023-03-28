@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -31,7 +31,7 @@ namespace traccc {
 /// implementation internally.
 ///
 class component_connection : public algorithm<cluster_container_types::host(
-                                 const alt_cell_collection_types::host&)> {
+                                 const cell_collection_types::host&)> {
 
     public:
     /// Constructor for component_connection
@@ -51,7 +51,7 @@ class component_connection : public algorithm<cluster_container_types::host(
     /// @return a cluster collection
     ///
     output_type operator()(
-        const alt_cell_collection_types::host& cells) const override;
+        const cell_collection_types::host& cells) const override;
 
     /// @}
 

@@ -12,7 +12,7 @@
 #include "traccc/io/reader_edm.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/geometry/digitization_config.hpp"
 #include "traccc/geometry/geometry.hpp"
 
@@ -36,7 +36,7 @@ namespace traccc::io {
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
 /// @param mr The memory resource to create the host collection with
-/// @return A alt_cell (host) collection & a cell_module collection
+/// @return A cell (host) collection & a cell_module collection
 ///
 cell_reader_output read_cells_alt(std::size_t event, std::string_view directory,
                                   data_format format = data_format::csv,
@@ -53,7 +53,7 @@ cell_reader_output read_cells_alt(std::size_t event, std::string_view directory,
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
 /// @param mr The memory resource to create the host collection with
-/// @return A alt_cell (host) collection & a cell_module collection
+/// @return A cell (host) collection & a cell_module collection
 ///
 cell_reader_output read_cells_alt(std::string_view filename,
                                   data_format format = data_format::csv,

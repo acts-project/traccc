@@ -121,7 +121,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                     &digi_cfg, &cuda_host_mr);
             }  // stop measuring file reading timer
 
-            const traccc::alt_cell_collection_types::host& alt_cells_per_event =
+            const traccc::cell_collection_types::host& cells_per_event =
                 alt_read_out_per_event.cells;
             const traccc::cell_module_collection_types::host&
                 modules_per_event = alt_read_out_per_event.modules;
@@ -130,9 +130,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 Clusterization and Spacepoint Creation (cuda)
             -----------------------------*/
             // Create device copy of input collections
-            traccc::alt_cell_collection_types::buffer cells_buffer(
-                alt_cells_per_event.size(), mr.main);
-            copy(vecmem::get_data(alt_cells_per_event), cells_buffer);
+            traccc::cell_collection_types::buffer cells_buffer(
+                cells_per_event.size(), mr.main);
+            copy(vecmem::get_data(cells_per_event), cells_buffer);
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
             copy(vecmem::get_data(modules_per_event), modules_buffer);
@@ -156,7 +156,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                     traccc::performance::timer t("Clusterization  (cpu)",
                                                  elapsedTimes);
                     measurements_per_event =
-                        ca(alt_cells_per_event, modules_per_event);
+                        ca(cells_per_event, modules_per_event);
                 }  // stop measuring clusterization cpu timer
 
                 /*---------------------------------

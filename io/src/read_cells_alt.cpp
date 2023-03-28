@@ -26,7 +26,7 @@ cell_reader_output read_cells_alt(std::size_t event, std::string_view directory,
                                   format, geom, dconfig, mr);
         case data_format::binary: {
             auto cells = details::read_binary_collection<
-                alt_cell_collection_types::host>(
+                cell_collection_types::host>(
                 data_directory() + directory.data() +
                     get_event_filename(event, "-cells.dat"),
                 mr);

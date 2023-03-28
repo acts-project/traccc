@@ -49,7 +49,7 @@ TEST_P(SurfaceBinningTests, Run) {
         traccc::io::read_cells_alt(event, data_dir, traccc::data_format::csv,
                                    &surface_transforms, &digi_cfg, &host_mr);
 
-    const traccc::alt_cell_collection_types::host& cells_truth = readOut.cells;
+    const traccc::cell_collection_types::host& cells_truth = readOut.cells;
     const traccc::cell_module_collection_types::host& modules = readOut.modules;
 
     // Get Reconstructed Spacepoints

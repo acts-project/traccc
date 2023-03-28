@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cluster.hpp"
 
@@ -25,7 +25,7 @@ inline scalar signal_cell_modelling(scalar signal_in,
 
 /// Function for pixel segmentation
 TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(const alt_cell& cell,
+inline vector2 position_from_cell(const cell& cell,
                                   const cell_module& module) {
     // Retrieve the specific values based on module idx
     return {module.pixel.min_center_x + cell.channel0 * module.pixel.pitch_x,
@@ -48,7 +48,7 @@ TRACCC_HOST inline void calc_cluster_properties(
     point2& var, scalar& totalWeight) {
 
     // Loop over the cells of the cluster.
-    for (const alt_cell& cell : cluster) {
+    for (const cell& cell : cluster) {
 
         // Translate the cell readout value into a weight.
         const scalar weight = signal_cell_modelling(cell.activation, module);
@@ -82,7 +82,7 @@ TRACCC_HOST inline void calc_cluster_properties(
 ///
 TRACCC_HOST void fill_measurement(
     alt_measurement_collection_types::host& measurements,
-    const alt_cell_collection_types::host& cluster, const cell_module& module,
+    const cell_collection_types::host& cluster, const cell_module& module,
     const unsigned int module_link) {
 
     // To calculate the mean and variance with high numerical stability

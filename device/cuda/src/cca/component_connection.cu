@@ -695,7 +695,7 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
 }  // namespace details
 
 component_connection::output_type component_connection::operator()(
-    const alt_cell_collection_types::host& cells) const {
+    const cell_collection_types::host& cells) const {
     vecmem::cuda::managed_memory_resource upstream;
     vecmem::cuda::device_memory_resource dmem;
     vecmem::binary_page_memory_resource mem(upstream);

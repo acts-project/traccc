@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -29,7 +29,7 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
-    const alt_cell_collection_types::const_device& cells,
+    const cell_collection_types::const_device& cells,
     const unsigned short cid, const unsigned int start, const unsigned int end,
     unsigned char& adjc, unsigned short adjv[8]);
 

@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/data_format.hpp"
 
@@ -28,7 +28,7 @@ namespace traccc::io {
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           traccc::alt_cell_collection_types::const_view cells,
+           traccc::cell_collection_types::const_view cells,
            traccc::cell_module_collection_types::const_view modules);
 
 /// Function for hit file writing

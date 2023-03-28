@@ -74,7 +74,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         auto readOut = traccc::io::read_cells_alt(
             event, common_opts.input_directory, common_opts.input_data_format,
             &surface_transforms, &digi_cfg, &host_mr);
-        traccc::alt_cell_collection_types::host& cells_per_event =
+        traccc::cell_collection_types::host& cells_per_event =
             readOut.cells;
         traccc::cell_module_collection_types::host& modules_per_event =
             readOut.modules;

@@ -145,7 +145,7 @@ void fast_sv_1(index_t* f, index_t* gf,
 
 class ccl_kernel {
     public:
-    ccl_kernel(const alt_cell_collection_types::const_view cells,
+    ccl_kernel(const cell_collection_types::const_view cells,
                const cell_module_collection_types::const_view modules,
                const index_t max_cells_per_partition,
                const index_t target_cells_per_partition,
@@ -169,7 +169,7 @@ class ccl_kernel {
         const index_t tid = item.get_local_linear_id();
         const index_t blockDim = item.get_local_range(0);
 
-        const alt_cell_collection_types::const_device cells_device(cells_view);
+        const cell_collection_types::const_device cells_device(cells_view);
         const unsigned int num_cells = cells_device.size();
 
         unsigned int& start = m_shared_uint[0];
@@ -364,7 +364,7 @@ class ccl_kernel {
     }
 
     private:
-    const alt_cell_collection_types::const_view cells_view;
+    const cell_collection_types::const_view cells_view;
     const cell_module_collection_types::const_view modules_view;
     const unsigned short m_max_cells_per_partition;
     const unsigned short m_target_cells_per_partition;
@@ -397,11 +397,11 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const alt_cell_collection_types::const_view& cells,
+    const cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules) const {
 
     // Number of cells
-    const alt_cell_collection_types::view::size_type num_cells =
+    const cell_collection_types::view::size_type num_cells =
         m_copy->get_size(cells);
 
     // Create result object for the CCL kernel with size overestimation
