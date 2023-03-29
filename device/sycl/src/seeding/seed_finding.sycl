@@ -85,7 +85,7 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
         m_copy.get_size(sp_grid_prefix_sum_view), 0, m_mr.main};
-    m_copy.setup(doublet_counter_buffer);
+    m_copy.setup(doublet_counter_buffer)->wait();
 
     // Counter for the total number of doublets and triplets
     vecmem::unique_alloc_ptr<device::seeding_global_counter>
@@ -134,10 +134,10 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the doublet buffers.
     device::device_doublet_collection_types::buffer doublet_buffer_mb = {
         globalCounter_host.m_nMidBot, m_mr.main};
-    m_copy.setup(doublet_buffer_mb);
+    m_copy.setup(doublet_buffer_mb)->wait();
     device::device_doublet_collection_types::buffer doublet_buffer_mt = {
         globalCounter_host.m_nMidTop, m_mr.main};
-    m_copy.setup(doublet_buffer_mt);
+    m_copy.setup(doublet_buffer_mt)->wait();
 
     // Calculate the range to run the doublet finding for.
     static constexpr unsigned int doubletFindLocalSize = 32 * 2;
@@ -164,12 +164,12 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the triplet counter buffers and their views
     device::triplet_counter_spM_collection_types::buffer
         triplet_counter_spM_buffer = {doublet_counter_buffer_size, m_mr.main};
-    m_copy.setup(triplet_counter_spM_buffer);
-    m_copy.memset(triplet_counter_spM_buffer, 0);
+    m_copy.setup(triplet_counter_spM_buffer)->wait();
+    m_copy.memset(triplet_counter_spM_buffer, 0)->wait();
     device::triplet_counter_collection_types::buffer
         triplet_counter_midBot_buffer = {globalCounter_host.m_nMidBot, 0,
                                          m_mr.main};
-    m_copy.setup(triplet_counter_midBot_buffer);
+    m_copy.setup(triplet_counter_midBot_buffer)->wait();
 
     device::triplet_counter_spM_collection_types::view
         triplet_counter_spM_view = triplet_counter_spM_buffer;
@@ -230,7 +230,7 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the triplet buffer and its view
     device::device_triplet_collection_types::buffer triplet_buffer = {
         globalCounter_host.m_nTriplets, m_mr.main};
-    m_copy.setup(triplet_buffer);
+    m_copy.setup(triplet_buffer)->wait();
     device::device_triplet_collection_types::view triplet_view = triplet_buffer;
 
     // Calculate the range to run the triplet finding for
@@ -299,7 +299,7 @@ seed_finding::output_type seed_finding::operator()(
     // Create seed buffer object and its view
     seed_collection_types::buffer seed_buffer(globalCounter_host.m_nTriplets, 0,
                                               m_mr.main);
-    m_copy.setup(seed_buffer);
+    m_copy.setup(seed_buffer)->wait();
     seed_collection_types::view seed_view(seed_buffer);
 
     // Calculate the range to run the seed selecting for

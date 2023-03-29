@@ -52,8 +52,8 @@ sp_grid_buffer spacepoint_binning::operator()(
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
     vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
                                                                    m_mr.main);
-    m_copy.setup(grid_capacities_buff);
-    m_copy.memset(grid_capacities_buff, 0);
+    m_copy.setup(grid_capacities_buff)->wait();
+    m_copy.memset(grid_capacities_buff, 0)->wait();
     vecmem::data::vector_view<unsigned int> grid_capacities_view =
         grid_capacities_buff;
 
@@ -87,7 +87,7 @@ sp_grid_buffer spacepoint_binning::operator()(
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
         m_mr.main, m_mr.host);
-    m_copy.setup(grid_buffer._buffer);
+    m_copy.setup(grid_buffer._buffer)->wait();
     sp_grid_view grid_view = grid_buffer;
 
     // Populate the grid.
