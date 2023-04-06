@@ -7,7 +7,7 @@
 
 // io
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -57,10 +57,11 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the hits from the relevant event file
-        traccc::spacepoint_container_types::host spacepoints_per_event =
-            traccc::io::read_spacepoints(
-                event, common_opts.input_directory, surface_transforms,
-                common_opts.input_data_format, &host_mr);
+        auto readOut = traccc::io::read_spacepoints_alt(
+            event, common_opts.input_directory, surface_transforms,
+            common_opts.input_data_format, &host_mr);
+        traccc::spacepoint_collection_types::host& spacepoints_per_event =
+            readOut.spacepoints;
 
         /*----------------
              Seeding
@@ -72,7 +73,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
              Statistics
           ---------------*/
 
-        n_spacepoints += spacepoints_per_event.total_size();
+        n_spacepoints += spacepoints_per_event.size();
         n_seeds += seeds.size();
 
         /*------------
@@ -84,7 +85,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
             sd_performance_writer.write("CPU", vecmem::get_data(seeds),
-                                        traccc::get_data(spacepoints_per_event),
+                                        vecmem::get_data(spacepoints_per_event),
                                         evt_map);
         }
     }

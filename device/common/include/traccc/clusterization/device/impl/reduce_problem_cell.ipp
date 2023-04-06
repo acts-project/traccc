@@ -24,16 +24,16 @@ bool is_adjacent(channel_id ac0, channel_id ac1, channel_id bc0,
 
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
-    const alt_cell_collection_types::const_device& cells,
-    const unsigned short cid, const unsigned int start, const unsigned int end,
-    unsigned char& adjc, unsigned short adjv[8]) {
+    const cell_collection_types::const_device& cells, const unsigned short cid,
+    const unsigned int start, const unsigned int end, unsigned char& adjc,
+    unsigned short adjv[8]) {
 
     const unsigned int pos = cid + start;
 
     // Check if this code can benefit from changing to structs of arrays, as the
     // recurring accesses to cell data in global memory is slow right now.
-    const channel_id c0 = cells[pos].c.channel0;
-    const channel_id c1 = cells[pos].c.channel1;
+    const channel_id c0 = cells[pos].channel0;
+    const channel_id c1 = cells[pos].channel1;
     const unsigned int mod_id = cells[pos].module_link;
 
     /*
@@ -48,7 +48,7 @@ inline void reduce_problem_cell(
          * impossible for that cell to ever be adjacent to this one.
          * This is a small optimisation.
          */
-        if (cells[j].c.channel1 + 1 < c1 || cells[j].module_link != mod_id) {
+        if (cells[j].channel1 + 1 < c1 || cells[j].module_link != mod_id) {
             break;
         }
 
@@ -56,7 +56,7 @@ inline void reduce_problem_cell(
          * If the cell examined is adjacent to the current cell, save it
          * in the current cell's adjacency set.
          */
-        if (is_adjacent(c0, c1, cells[j].c.channel0, cells[j].c.channel1)) {
+        if (is_adjacent(c0, c1, cells[j].channel0, cells[j].channel1)) {
             adjv[adjc++] = j - start;
         }
     }
@@ -70,11 +70,11 @@ inline void reduce_problem_cell(
          * Note that this check now looks in the opposite direction! An
          * important difference.
          */
-        if (cells[j].c.channel1 > c1 + 1 || cells[j].module_link != mod_id) {
+        if (cells[j].channel1 > c1 + 1 || cells[j].module_link != mod_id) {
             break;
         }
 
-        if (is_adjacent(c0, c1, cells[j].c.channel0, cells[j].c.channel1)) {
+        if (is_adjacent(c0, c1, cells[j].channel0, cells[j].channel1)) {
             adjv[adjc++] = j - start;
         }
     }

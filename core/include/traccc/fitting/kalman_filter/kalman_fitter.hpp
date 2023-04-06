@@ -209,11 +209,10 @@ class kalman_fitter {
              it != track_states.rend(); ++it) {
 
             // Surface
-            const auto& surface =
-                m_detector.surface_by_index(it->surface_link());
+            const auto& surface = m_detector.surfaces(it->surface_link());
 
             // Run kalman smoother
-            mask_store.template call<gain_matrix_smoother<transform3_type>>(
+            mask_store.template visit<gain_matrix_smoother<transform3_type>>(
                 surface.mask(), *it, *(it - 1));
         }
     }

@@ -8,9 +8,9 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/device/device_triplet.hpp"
 #include "traccc/edm/device/triplet_counter.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
@@ -41,7 +41,7 @@ inline void select_seeds(
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
-    triplet* data, alt_seed_collection_types::view seed_view);
+    triplet* data, seed_collection_types::view seed_view);
 
 }  // namespace traccc::device
 

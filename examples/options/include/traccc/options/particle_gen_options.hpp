@@ -10,6 +10,9 @@
 // Project include(s).
 #include "traccc/options/options.hpp"
 
+// Detray include(s).
+#include "detray/definitions/units.hpp"
+
 // Boost
 #include <boost/program_options.hpp>
 
@@ -61,11 +64,16 @@ struct particle_gen_options {
         vertex = vm["gen-vertex-xyz-mm"].as<Reals<scalar_t, 3>>();
         vertex_stddev = vm["gen-vertex-xyz-std-mm"].as<Reals<scalar_t, 3>>();
         mom_range = vm["gen-mom-gev"].as<Reals<scalar_t, 2>>();
-        phi_range = vm["gen-phi-degree"].as<Reals<scalar_t, 2>>();
+        const auto phi_range_degree =
+            vm["gen-phi-degree"].as<Reals<scalar_t, 2>>();
         const auto eta_range = vm["gen-eta"].as<Reals<scalar_t, 2>>();
-        // TODO: remove the conversion here...
-        theta_range = {2 * std::atan(std::exp(-eta_range[0])),
-                       2 * std::atan(std::exp(-eta_range[1]))};
+        // @TODO: remove the conversion here...
+        // @NOTE: I put eta_range[0] into theta_range[1] and eta_range[1] into
+        // theta_range[0] on purpose because theta(minEta) > theta(maxEta)
+        theta_range = {2 * std::atan(std::exp(-eta_range[1])),
+                       2 * std::atan(std::exp(-eta_range[0]))};
+        phi_range = {phi_range_degree[0] * detray::unit<scalar_t>::degree,
+                     phi_range_degree[1] * detray::unit<scalar_t>::degree};
     }
 };
 

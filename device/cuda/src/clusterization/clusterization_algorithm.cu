@@ -139,7 +139,7 @@ __device__ void fast_sv_1(index_t* f, index_t* gf,
 }
 
 __global__ void ccl_kernel(
-    const alt_cell_collection_types::const_view cells_view,
+    const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     const unsigned short max_cells_per_partition,
     const unsigned short target_cells_per_partition,
@@ -150,7 +150,7 @@ __global__ void ccl_kernel(
     const index_t tid = threadIdx.x;
     const index_t blckDim = blockDim.x;
 
-    const alt_cell_collection_types::const_device cells_device(cells_view);
+    const cell_collection_types::const_device cells_device(cells_view);
     const unsigned int num_cells = cells_device.size();
     __shared__ unsigned int start, end;
     /*
@@ -182,8 +182,8 @@ __global__ void ccl_kernel(
         while (start != 0 &&
                cells_device[start - 1].module_link ==
                    cells_device[start].module_link &&
-               cells_device[start].c.channel1 <=
-                   cells_device[start - 1].c.channel1 + 1) {
+               cells_device[start].channel1 <=
+                   cells_device[start - 1].channel1 + 1) {
             ++start;
         }
 
@@ -195,8 +195,8 @@ __global__ void ccl_kernel(
         while (end < num_cells &&
                cells_device[end - 1].module_link ==
                    cells_device[end].module_link &&
-               cells_device[end].c.channel1 <=
-                   cells_device[end - 1].c.channel1 + 1) {
+               cells_device[end].channel1 <=
+                   cells_device[end - 1].channel1 + 1) {
             ++end;
         }
     }
@@ -354,14 +354,14 @@ clusterization_algorithm::clusterization_algorithm(
       m_target_cells_per_partition(target_cells_per_partition) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const alt_cell_collection_types::const_view& cells,
+    const cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Number of cells
-    const alt_cell_collection_types::view::size_type num_cells =
+    const cell_collection_types::view::size_type num_cells =
         m_copy.get_size(cells);
 
     // Create result object for the CCL kernel with size overestimation

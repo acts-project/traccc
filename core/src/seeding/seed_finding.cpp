@@ -18,7 +18,7 @@ seed_finding::seed_finding(const seedfinder_config& finder_config,
       m_seed_filtering(filter_config.toInternalUnits()) {}
 
 seed_finding::output_type seed_finding::operator()(
-    const spacepoint_container_types::host& sp_container,
+    const spacepoint_collection_types::host& sp_collection,
     const sp_grid& g2) const {
 
     // Run the algorithm
@@ -62,7 +62,7 @@ seed_finding::output_type seed_finding::operator()(
             }
 
             // seed filtering
-            m_seed_filtering(sp_container, g2, triplets_per_spM, seeds);
+            m_seed_filtering(sp_collection, g2, triplets_per_spM, seeds);
         }
     }
 

@@ -126,20 +126,4 @@ inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
     return detray::detail::invalid_value<size_t>();
 }
 
-template <typename spacepoint_container_t,
-          template <typename> class jagged_vector_type>
-inline TRACCC_HOST_DEVICE void fill_radius_bins(
-    const seedfinder_config& config, const spacepoint_container_t& sp_container,
-    const sp_location sp_loc, jagged_vector_type<sp_location>& r_bins) {
-
-    const spacepoint& sp =
-        sp_container.get_items()[sp_loc.bin_idx][sp_loc.sp_idx];
-
-    auto r_index = is_valid_sp(config, sp);
-
-    if (r_index != detray::detail::invalid_value<size_t>()) {
-        r_bins[r_index].push_back(sp_loc);
-    }
-}
-
 }  // namespace traccc

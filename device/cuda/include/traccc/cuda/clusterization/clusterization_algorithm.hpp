@@ -11,8 +11,8 @@
 #include "traccc/cuda/utils/stream.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_cell.hpp"
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -32,7 +32,7 @@ namespace traccc::cuda {
 class clusterization_algorithm
     : public algorithm<std::pair<spacepoint_collection_types::buffer,
                                  vecmem::data::vector_buffer<unsigned int>>(
-          const alt_cell_collection_types::const_view&,
+          const cell_collection_types::const_view&,
           const cell_module_collection_types::const_view&)> {
 
     public:
@@ -56,7 +56,7 @@ class clusterization_algorithm
     /// @return a spacepoint collection (buffer) and a collection (buffer) of
     /// links from cells to the spacepoints they belong to.
     output_type operator()(
-        const alt_cell_collection_types::const_view& cells,
+        const cell_collection_types::const_view& cells,
         const cell_module_collection_types::const_view& modules) const override;
 
     private:

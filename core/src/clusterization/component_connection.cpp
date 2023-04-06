@@ -17,45 +17,20 @@
 namespace traccc {
 
 component_connection::output_type component_connection::operator()(
-    const cell_container_types::host& cells) const {
+    const cell_collection_types::host& cells) const {
 
-    std::vector<std::size_t> num_clusters(cells.size(), 0);
-    std::vector<std::vector<unsigned int>> CCL_indices(cells.size());
+    unsigned int num_clusters = 0;
+    std::vector<unsigned int> CCL_indices(cells.size());
 
-    for (std::size_t i = 0; i < cells.size(); i++) {
-        const auto& cells_per_module = cells.get_items()[i];
-
-        CCL_indices[i] = std::vector<unsigned int>(cells_per_module.size());
-
-        // Run SparseCCL to fill CCL indices
-        num_clusters[i] = detail::sparse_ccl(cells_per_module, CCL_indices[i]);
-    }
-
-    // Get total number of clusters
-    const std::size_t N =
-        std::accumulate(num_clusters.begin(), num_clusters.end(), 0);
+    // Run SparseCCL to fill CCL indices
+    num_clusters = detail::sparse_ccl(cells, CCL_indices);
 
     // Create the result container.
-    output_type result(N, &(m_mr.get()));
+    output_type result(num_clusters, &(m_mr.get()));
 
-    std::size_t stack = 0;
-    for (std::size_t i = 0; i < cells.size(); i++) {
-
-        auto& cells_per_module = cells.get_items()[i];
-
-        // Fill the module link
-        std::fill(result.get_headers().begin() + stack,
-                  result.get_headers().begin() + stack + num_clusters[i], i);
-
-        // Full the cluster cells
-        for (std::size_t j = 0; j < CCL_indices[i].size(); j++) {
-
-            auto cindex = static_cast<unsigned int>(CCL_indices[i][j] - 1);
-
-            result.get_items()[stack + cindex].push_back(cells_per_module[j]);
-        }
-
-        stack += num_clusters[i];
+    // Add cells to their clusters
+    for (std::size_t i = 0; i < CCL_indices.size(); ++i) {
+        result.get_items()[CCL_indices[i]].push_back(cells[i]);
     }
 
     return result;

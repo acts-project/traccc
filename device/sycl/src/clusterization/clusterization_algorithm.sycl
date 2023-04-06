@@ -145,7 +145,7 @@ void fast_sv_1(index_t* f, index_t* gf,
 
 class ccl_kernel {
     public:
-    ccl_kernel(const alt_cell_collection_types::const_view cells,
+    ccl_kernel(const cell_collection_types::const_view cells,
                const cell_module_collection_types::const_view modules,
                const index_t max_cells_per_partition,
                const index_t target_cells_per_partition,
@@ -169,7 +169,7 @@ class ccl_kernel {
         const index_t tid = item.get_local_linear_id();
         const index_t blockDim = item.get_local_range(0);
 
-        const alt_cell_collection_types::const_device cells_device(cells_view);
+        const cell_collection_types::const_device cells_device(cells_view);
         const unsigned int num_cells = cells_device.size();
 
         unsigned int& start = m_shared_uint[0];
@@ -204,8 +204,8 @@ class ccl_kernel {
             while (start != 0 &&
                    cells_device[start - 1].module_link ==
                        cells_device[start].module_link &&
-                   cells_device[start].c.channel1 <=
-                       cells_device[start - 1].c.channel1 + 1) {
+                   cells_device[start].channel1 <=
+                       cells_device[start - 1].channel1 + 1) {
                 ++start;
             }
 
@@ -217,8 +217,8 @@ class ccl_kernel {
             while (end < num_cells &&
                    cells_device[end - 1].module_link ==
                        cells_device[end].module_link &&
-                   cells_device[end].c.channel1 <=
-                       cells_device[end - 1].c.channel1 + 1) {
+                   cells_device[end].channel1 <=
+                       cells_device[end - 1].channel1 + 1) {
                 ++end;
             }
         }
@@ -364,7 +364,7 @@ class ccl_kernel {
     }
 
     private:
-    const alt_cell_collection_types::const_view cells_view;
+    const cell_collection_types::const_view cells_view;
     const cell_module_collection_types::const_view modules_view;
     const unsigned short m_max_cells_per_partition;
     const unsigned short m_target_cells_per_partition;
@@ -378,7 +378,7 @@ class ccl_kernel {
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, queue_wrapper queue,
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
     const unsigned short target_cells_per_partition)
     : m_target_cells_per_partition(target_cells_per_partition),
       m_max_work_group_size(
@@ -386,27 +386,21 @@ clusterization_algorithm::clusterization_algorithm(
               .get_device()
               .get_info<::sycl::info::device::max_work_group_size>()),
       m_mr(mr),
-      m_queue(queue) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+      m_queue(queue),
+      m_copy(copy) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const alt_cell_collection_types::const_view& cells,
+    const cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules) const {
 
     // Number of cells
-    const alt_cell_collection_types::view::size_type num_cells =
-        m_copy->get_size(cells);
+    const cell_collection_types::view::size_type num_cells =
+        m_copy.get_size(cells);
 
     // Create result object for the CCL kernel with size overestimation
     alt_measurement_collection_types::buffer measurements_buffer(num_cells,
                                                                  m_mr.main);
+    m_copy.setup(measurements_buffer)->wait();
     alt_measurement_collection_types::view measurements_view(
         measurements_buffer);
 
@@ -471,6 +465,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     spacepoint_collection_types::buffer spacepoints_buffer(
         num_measurements_host, m_mr.main);
+    m_copy.setup(spacepoints_buffer)->wait();
     spacepoint_collection_types::view spacepoints_view(spacepoints_buffer);
 
     // For the following kernel, we can now use whatever the desired number of

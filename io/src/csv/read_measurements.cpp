@@ -15,60 +15,48 @@
 
 namespace traccc::io::csv {
 
-measurement_container_types::host read_measurements(
-    std::string_view filename, vecmem::memory_resource* mr) {
+measurement_reader_output read_measurements(std::string_view filename,
+                                            vecmem::memory_resource* mr) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
 
-    // Create the result container.
-    measurement_container_types::host result;
+    // Create the result collection.
+    alt_measurement_collection_types::host result_measurements;
+    cell_module_collection_types::host result_modules;
+
     if (mr != nullptr) {
-        result = measurement_container_types::host{mr};
+        result_measurements = alt_measurement_collection_types::host{mr};
+        result_modules = cell_module_collection_types::host{mr};
     }
+
+    std::map<geometry_id, unsigned int> m;
 
     // Read the measurements from the input file.
     csv::measurement iomeas;
     while (reader.read(iomeas)) {
 
-        // Construct the module ID for the measurement.
-        cell_module module;
-        module.module = iomeas.geometry_id;
+        unsigned int link;
+        auto it = m.find(iomeas.geometry_id);
+
+        if (it != m.end()) {
+            link = (*it).second;
+        } else {
+            link = result_modules.size();
+            m[iomeas.geometry_id] = link;
+            result_modules.push_back({iomeas.geometry_id});
+        }
 
         // Construct the measurement object.
-        const traccc::measurement meas{
+        const traccc::alt_measurement meas{
             point2{iomeas.local0, iomeas.local1},
-            variance2{iomeas.var_local0, iomeas.var_local1}};
+            variance2{iomeas.var_local0, iomeas.var_local1}, link};
 
-        // Find the detector module that this measurement belongs to.
-        const measurement_container_types::host::header_vector& headers =
-            result.get_headers();
-        auto rit = std::find(headers.rbegin(), headers.rend(), module);
-
-        // Add the measurement to the correct place in the container.
-        if (rit == headers.rend()) {
-            if (mr != nullptr) {
-                result.push_back(
-                    module,
-                    measurement_container_types::host::item_vector::value_type(
-                        {meas}, mr));
-            } else {
-                result.push_back(
-                    module,
-                    measurement_container_types::host::item_vector::value_type(
-                        {meas}));
-            }
-        } else {
-            // The reverse iterator.base() returns the equivalent normal
-            // iterator shifted by 1, so that the (r)end and (r)begin iterators
-            // match consistently, due to the extra past-the-last element
-            auto idx = std::distance(headers.begin(), rit.base()) - 1;
-            result.at(idx).items.push_back(meas);
-        }
+        result_measurements.push_back(meas);
     }
 
     // Return the container.
-    return result;
+    return {std::move(result_measurements), std::move(result_modules)};
 }
 
 }  // namespace traccc::io::csv

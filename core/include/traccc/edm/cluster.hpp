@@ -15,10 +15,11 @@
 
 // System include(s).
 #include <cstddef>
+#include <variant>
 
 namespace traccc {
 
 /// Declare all cluster container types
-using cluster_container_types = container_types<std::size_t, cell>;
+using cluster_container_types = container_types<std::monostate, cell>;
 
 }  // namespace traccc

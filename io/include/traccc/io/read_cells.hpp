@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "traccc/io/data_format.hpp"
+#include "traccc/io/reader_edm.hpp"
 
 // Project include(s).
 #include "traccc/edm/cell.hpp"
@@ -34,14 +35,14 @@ namespace traccc::io {
 /// @param format The format of the cell data files (to read)
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
-/// @param mr The memory resource to create the host container with
-/// @return A cell (host) container
+/// @param mr The memory resource to create the host collection with
+/// @return A cell (host) collection & a cell_module collection
 ///
-cell_container_types::host read_cells(
-    std::size_t event, std::string_view directory,
-    data_format format = data_format::csv, const geometry *geom = nullptr,
-    const digitization_config *dconfig = nullptr,
-    vecmem::memory_resource *mr = nullptr);
+cell_reader_output read_cells(std::size_t event, std::string_view directory,
+                              data_format format = data_format::csv,
+                              const geometry *geom = nullptr,
+                              const digitization_config *dconfig = nullptr,
+                              vecmem::memory_resource *mr = nullptr);
 
 /// Read cell data into memory
 ///
@@ -51,13 +52,13 @@ cell_container_types::host read_cells(
 /// @param format The format of the cell data files (to read)
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
-/// @param mr The memory resource to create the host container with
-/// @return A cell (host) container
+/// @param mr The memory resource to create the host collection with
+/// @return A cell (host) collection & a cell_module collection
 ///
-cell_container_types::host read_cells(
-    std::string_view filename, data_format format = data_format::csv,
-    const geometry *geom = nullptr,
-    const digitization_config *dconfig = nullptr,
-    vecmem::memory_resource *mr = nullptr);
+cell_reader_output read_cells(std::string_view filename,
+                              data_format format = data_format::csv,
+                              const geometry *geom = nullptr,
+                              const digitization_config *dconfig = nullptr,
+                              vecmem::memory_resource *mr = nullptr);
 
 }  // namespace traccc::io

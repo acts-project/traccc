@@ -17,12 +17,12 @@ measurement_creation::measurement_creation(vecmem::memory_resource &mr)
     : m_mr(mr) {}
 
 measurement_creation::output_type measurement_creation::operator()(
-    const cell_container_types::host &cells,
-    const cluster_container_types::host &clusters) const {
+    const cluster_container_types::host &clusters,
+    const cell_module_collection_types::host &modules) const {
 
     // Create the result object.
     output_type result(&(m_mr.get()));
-    result.reserve(cells.size());
+    result.reserve(clusters.size());
 
     // Process the clusters one-by-one.
     for (std::size_t i = 0; i < clusters.size(); ++i) {
@@ -36,16 +36,6 @@ measurement_creation::output_type measurement_creation::operator()(
         // [2] The Art of Computer Programming, Donald E. Knuth, second
         //     edition, chapter 4.2.2.
 
-        // Get the cell module
-        const auto &module_link = clusters.at(i).header;
-        const auto &module = cells.at(module_link).header;
-
-        if (result.size() == 0 ||
-            result.get_headers().back().module != module.module) {
-            result.push_back(cell_module(module),
-                             measurement_collection_types::host(&(m_mr.get())));
-        }
-
         // Get the cluster.
         cluster_container_types::host::item_vector::const_reference cluster =
             clusters.at(i).items;
@@ -53,8 +43,12 @@ measurement_creation::output_type measurement_creation::operator()(
         // A security check.
         assert(cluster.empty() == false);
 
+        // Get the cell module
+        const auto module_link = cluster.at(0).module_link;
+        const auto &module = modules.at(module_link);
+
         // Fill measurement from cluster
-        detail::fill_measurement(result, cluster, module, module_link, i);
+        detail::fill_measurement(result, cluster, module, module_link);
     }
 
     return result;

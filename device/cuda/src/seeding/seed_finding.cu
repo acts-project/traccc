@@ -125,7 +125,7 @@ __global__ void select_seeds(
     device::triplet_counter_spM_collection_types::const_view spM_tc,
     device::triplet_counter_collection_types::const_view midBot_tc,
     device::device_triplet_collection_types::view triplet_view,
-    alt_seed_collection_types::view seed_view) {
+    seed_collection_types::view seed_view) {
 
     // Array for temporary storage of triplets for comparing within seed
     // selecting kernel
@@ -319,8 +319,8 @@ seed_finding::output_type seed_finding::operator()(
                   triplet_counter_midBot_buffer, triplet_buffer);
 
     // Create result object: collection of seeds
-    alt_seed_collection_types::buffer seed_buffer(
-        globalCounter_host.m_nTriplets, 0, m_mr.main);
+    seed_collection_types::buffer seed_buffer(globalCounter_host.m_nTriplets, 0,
+                                              m_mr.main);
     m_copy.setup(seed_buffer);
 
     // Calculate the number of threads and thread blocks to run the seed

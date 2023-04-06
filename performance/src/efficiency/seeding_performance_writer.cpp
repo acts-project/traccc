@@ -64,7 +64,7 @@ void seeding_performance_writer::add_cache(std::string_view name) {
 
 void seeding_performance_writer::write(
     std::string_view name, const seed_collection_types::const_view& seeds_view,
-    const spacepoint_container_types::const_view& spacepoints_view,
+    const spacepoint_collection_types::const_view& spacepoints_view,
     const event_map& evt_map) {
 
     std::map<particle_id, std::size_t> match_counter;

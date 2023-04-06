@@ -13,12 +13,13 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // traccc library include(s).
 #include "traccc/utils/memory_resource.hpp"
@@ -26,16 +27,18 @@
 namespace traccc::sycl {
 
 /// Main algorithm for performing the track seeding using oneAPI/SYCL
-class seeding_algorithm : public algorithm<alt_seed_collection_types::buffer(
+class seeding_algorithm : public algorithm<seed_collection_types::buffer(
                               const spacepoint_collection_types::const_view&)> {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
     /// @param mr is a struct of memory resources (shared or host & device)
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
     /// @param queue The SYCL queue to work with
     ///
-    seeding_algorithm(const traccc::memory_resource& mr,
+    seeding_algorithm(const traccc::memory_resource& mr, vecmem::copy& copy,
                       const queue_wrapper& queue);
 
     /// Operator executing the algorithm.

@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_cell.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
@@ -18,7 +18,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
-#include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/sycl/async_copy.hpp>
 
 // System include(s).
 #include <memory>
@@ -35,7 +35,7 @@ struct full_chain_algorithm_data;
 ///
 class full_chain_algorithm
     : public algorithm<bound_track_parameters_collection_types::host(
-          const alt_cell_collection_types::host&,
+          const cell_collection_types::host&,
           const cell_module_collection_types::host&)> {
 
     public:
@@ -68,7 +68,7 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const alt_cell_collection_types::host& cells,
+        const cell_collection_types::host& cells,
         const cell_module_collection_types::host& modules) const override;
 
     private:
@@ -81,7 +81,7 @@ class full_chain_algorithm
     /// Device caching memory resource
     std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
     /// Memory copy object
-    mutable std::unique_ptr<vecmem::sycl::copy> m_copy;
+    mutable vecmem::sycl::async_copy m_copy;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

@@ -103,12 +103,11 @@ struct kalman_actor : detray::actor {
             const auto& mask_store = det->mask_store();
 
             // Surface
-            const auto& surface =
-                det->surface_by_index(trk_state.surface_link());
+            const auto& surface = det->surfaces(trk_state.surface_link());
 
             // Run kalman updater
-            mask_store.template call<gain_matrix_updater<algebra_t>>(
-                surface.mask(), trk_state, propagation);
+            mask_store.template visit<gain_matrix_updater<algebra_t>>(
+                surface.mask(), trk_state, propagation._stepping._bound_params);
 
             // Update iterator
             actor_state.next();
