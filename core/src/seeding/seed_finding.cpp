@@ -24,9 +24,6 @@ seed_finding::output_type seed_finding::operator()(
     // Run the algorithm
     output_type seeds;
 
-    const bool bottom = true;
-    const bool top = false;
-
     for (unsigned int i = 0; i < g2.nbins(); i++) {
         auto& spM_collection = g2.bin(i);
 
