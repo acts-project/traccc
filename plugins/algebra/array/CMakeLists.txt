@@ -8,6 +8,6 @@
 traccc_add_library( traccc_array array TYPE INTERFACE
   "include/traccc/plugins/algebra/array_definitions.hpp" )
 target_link_libraries( traccc_array
-  INTERFACE algebra::array_cmath detray::array vecmem::core )
+  INTERFACE algebra::array_cmath detray::algebra_array vecmem::core )
 target_compile_definitions( traccc_array
   INTERFACE TRACCC_CUSTOM_SCALARTYPE=${TRACCC_CUSTOM_SCALARTYPE} )

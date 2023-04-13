@@ -59,7 +59,7 @@ class fitting_performance_writer {
 
         // Get the track state at the first surface
         const auto& trk_state = track_states_per_track[0];
-        const measurement_link meas_link{trk_state.surface_link(),
+        const measurement_link meas_link{trk_state.surface_link().value(),
                                          trk_state.get_measurement()};
 
         // Find the contributing particle
