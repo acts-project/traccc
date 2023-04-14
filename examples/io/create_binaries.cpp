@@ -10,7 +10,7 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
-#include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 #include "traccc/io/write.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
@@ -38,36 +38,37 @@ int create_binaries(const std::string& detector_file,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::cell_container_types::host cells_csv = traccc::io::read_cells(
+        auto cells_csv = traccc::io::read_cells(
             event, common_opts.input_directory, common_opts.input_data_format,
             &surface_transforms, &digi_cfg, &host_mr);
 
         // Write binary file
         traccc::io::write(event, common_opts.input_directory,
                           traccc::data_format::binary,
-                          traccc::get_data(cells_csv));
+                          vecmem::get_data(cells_csv.cells),
+                          vecmem::get_data(cells_csv.modules));
 
         // Read the hits from the relevant event file
-        traccc::spacepoint_container_types::host spacepoints_csv =
-            traccc::io::read_spacepoints(
-                event, common_opts.input_directory, surface_transforms,
-                common_opts.input_data_format, &host_mr);
+        auto spacepoints_csv = traccc::io::read_spacepoints_alt(
+            event, common_opts.input_directory, surface_transforms,
+            common_opts.input_data_format, &host_mr);
 
         // Write binary file
         traccc::io::write(event, common_opts.input_directory,
                           traccc::data_format::binary,
-                          traccc::get_data(spacepoints_csv));
+                          vecmem::get_data(spacepoints_csv.spacepoints),
+                          vecmem::get_data(spacepoints_csv.modules));
 
         // Read the measurements from the relevant event file
-        traccc::measurement_container_types::host measurements_csv =
-            traccc::io::read_measurements(event, common_opts.input_directory,
-                                          common_opts.input_data_format,
-                                          &host_mr);
+        auto measurements_csv = traccc::io::read_measurements(
+            event, common_opts.input_directory, common_opts.input_data_format,
+            &host_mr);
 
         // Write binary file
         traccc::io::write(event, common_opts.input_directory,
                           traccc::data_format::binary,
-                          traccc::get_data(measurements_csv));
+                          vecmem::get_data(measurements_csv.measurements),
+                          vecmem::get_data(measurements_csv.modules));
     }
 
     return 0;

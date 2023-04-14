@@ -8,7 +8,6 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -26,7 +25,7 @@ TRACCC_HOST_DEVICE
 inline void estimate_track_params(
     const std::size_t globalIndex,
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const alt_seed_collection_types::const_view& seeds_view,
+    const seed_collection_types::const_view& seeds_view,
     bound_track_parameters_collection_types::view params_view);
 
 }  // namespace traccc::device

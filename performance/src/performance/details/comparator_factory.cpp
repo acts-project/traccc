@@ -14,8 +14,8 @@ namespace traccc::details {
 /// @{
 
 comparator_factory<seed>::comparator_factory(
-    const spacepoint_container_types::const_view& ref_spacepoints,
-    const spacepoint_container_types::const_view& test_spacepoints)
+    const spacepoint_collection_types::const_view& ref_spacepoints,
+    const spacepoint_collection_types::const_view& test_spacepoints)
     : m_ref_spacepoints(ref_spacepoints),
       m_test_spacepoints(test_spacepoints) {}
 

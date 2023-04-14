@@ -8,9 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/clusterization/device/partitioning_algorithm.hpp"
-#include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/device/partition.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
@@ -20,7 +18,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
-#include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/sycl/async_copy.hpp>
 
 // System include(s).
 #include <memory>
@@ -37,7 +35,7 @@ struct full_chain_algorithm_data;
 ///
 class full_chain_algorithm
     : public algorithm<bound_track_parameters_collection_types::host(
-          const alt_cell_collection_types::host&,
+          const cell_collection_types::host&,
           const cell_module_collection_types::host&)> {
 
     public:
@@ -45,12 +43,11 @@ class full_chain_algorithm
     ///
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
-    /// @param max_cells_per_partition The number of cells to put together in
-    /// each partition. Equal to the number of threads in the clusterization
-    /// kernels. Adapt to different GPUs' capabilities.
+    /// @param target_cells_per_partition The average number of cells in each
+    /// partition.
     ///
     full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const unsigned short max_cells_per_partition);
+                         const unsigned short target_cells_per_partition);
 
     /// Copy constructor
     ///
@@ -71,7 +68,7 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const alt_cell_collection_types::host& cells,
+        const cell_collection_types::host& cells,
         const cell_module_collection_types::host& modules) const override;
 
     private:
@@ -84,17 +81,14 @@ class full_chain_algorithm
     /// Device caching memory resource
     std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
     /// Memory copy object
-    mutable std::unique_ptr<vecmem::sycl::copy> m_copy;
+    mutable vecmem::sycl::async_copy m_copy;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
 
     /// The number of cells to put together in each partition.
-    /// Equal to the number of threads in the clusterization kernels.
     /// Adapt to different GPUs' capabilities.
-    unsigned short m_max_cells_per_partition;
-    /// Partitioning algorithm
-    device::partitioning_algorithm m_partitioning;
+    unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Seeding algorithm

@@ -16,7 +16,7 @@ track_params_estimation::track_params_estimation(vecmem::memory_resource& mr)
     : m_mr(mr) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const spacepoint_container_types::host& spacepoints,
+    const spacepoint_collection_types::host& spacepoints,
     const seed_collection_types::host& seeds) const {
 
     output_type result(&m_mr.get());

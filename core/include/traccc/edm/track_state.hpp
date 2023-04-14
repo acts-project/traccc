@@ -54,6 +54,8 @@ struct track_state {
     using matrix_type =
         typename matrix_operator::template matrix_type<ROWS, COLS>;
 
+    track_state() = default;
+
     /// Construction with track candidate
     TRACCC_HOST_DEVICE
     track_state(const track_candidate& trk_cand)
@@ -65,7 +67,9 @@ struct track_state {
 
     /// @return the surface link
     TRACCC_HOST_DEVICE
-    inline std::size_t surface_link() const { return m_surface_link; }
+    inline detray::geometry::barcode surface_link() const {
+        return m_surface_link;
+    }
 
     /// @return the measurement
     TRACCC_HOST_DEVICE
@@ -145,7 +149,7 @@ struct track_state {
     }
 
     private:
-    std::size_t m_surface_link;
+    detray::geometry::barcode m_surface_link;
     measurement m_measurement;
     bound_matrix m_jacobian =
         matrix_operator().template zero<e_bound_size, e_bound_size>();

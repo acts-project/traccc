@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,41 +9,40 @@
 
 // Project include(s).
 #include "traccc/edm/container.hpp"
-#include "traccc/seeding/detail/doublet.hpp"
+#include "traccc/seeding/detail/singlet.hpp"
 
 namespace traccc::device {
 
-/// Header type for the "triplet counter container"
-///
-/// The header stores summary information about the number of triplets found in
-/// a given geometric bin.
-///
-struct triplet_counter_header {
+/// Number of triplets for one specific middle spacepoint.
+struct triplet_counter_spM {
 
-    /// The total number of middle-bottom spacepoint doublets in a given
-    /// geometric bin.
-    unsigned int m_nMidBot = 0;
+    /// Middle spacepoint location in internal spacepoint container
+    sp_location spM;
 
-    /// The total number of Triplets in a given geometric bin
+    /// The number of triplets for this middle spacepoint
     unsigned int m_nTriplets = 0;
 
-};  // struct triplet_counter_header
+    /// The position in which these triplets will be added
+    unsigned int posTriplets = 0;
 
-/// Item type for the "triplet counter container"
-///
-/// It stores the number of triplets for one specific Mid Bottom Doublet.
-///
+};  // struct triplet_counter_spM
+
+/// Declare all triplet counter spM collection types
+using triplet_counter_spM_collection_types =
+    collection_types<triplet_counter_spM>;
+
+/// Number of triplets for one specific Mid-Bottom Doublet.
 struct triplet_counter {
 
-    /// indices of two spacepoints of midbot doublet
-    doublet m_midBotDoublet;
+    /// Bottom spacepoint location in internal spacepoint container
+    sp_location spB;
 
-    /// The number of compatible triplets for a the midbot doublet
+    using link_type = triplet_counter_spM_collection_types::host::size_type;
+    /// Link to the triplet counter per middle spacepoint
+    link_type spM_counter_link;
+
+    /// The number of compatible triplets for this midbot doublet
     unsigned int m_nTriplets = 0;
-
-    /// The position of the middle top doublets with this spM
-    unsigned int m_mt_start_idx = 0;
-    unsigned int m_mt_end_idx;
 
     /// The position in which these triplets will be added
     unsigned int posTriplets = 0;
@@ -52,8 +51,5 @@ struct triplet_counter {
 
 /// Declare all triplet counter collection types
 using triplet_counter_collection_types = collection_types<triplet_counter>;
-/// Declare all triplet counter container types
-using triplet_counter_container_types =
-    container_types<triplet_counter_header, triplet_counter>;
 
 }  // namespace traccc::device

@@ -8,9 +8,9 @@
 #pragma once
 
 // Library include(s).
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -27,9 +27,10 @@ namespace traccc {
 /// for all of the clusters that were identified in that one detector
 /// module.
 ///
-class measurement_creation : public algorithm<measurement_container_types::host(
-                                 const cell_container_types::host &,
-                                 const cluster_container_types::host &)> {
+class measurement_creation
+    : public algorithm<alt_measurement_collection_types::host(
+          const cluster_container_types::host &,
+          const cell_module_collection_types::host &)> {
 
     public:
     /// Measurement_creation algorithm constructor
@@ -41,17 +42,17 @@ class measurement_creation : public algorithm<measurement_container_types::host(
     /// Callable operator for the connected component, based on one single
     /// module
     ///
-    /// @param clusters are the input cells into the connected component, they
-    /// are
-    ///              per module and unordered
+    /// @param clusters Container of cells. Each subvector of cells corresponds
+    /// to a cluster
+    /// @param modules Collection of detector modules the clusters link to.
     ///
     /// C++20 piping interface
     ///
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
     output_type operator()(
-        const cell_container_types::host &cells,
-        const cluster_container_types::host &clusters) const override;
+        const cluster_container_types::host &clusters,
+        const cell_module_collection_types::host &modules) const override;
 
     private:
     /// The memory resource used by the algorithm

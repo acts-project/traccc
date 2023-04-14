@@ -20,8 +20,8 @@ class comparator_factory<seed> {
     public:
     /// Constructor with all necessary arguments
     comparator_factory(
-        const spacepoint_container_types::const_view& ref_spacepoints,
-        const spacepoint_container_types::const_view& test_spacepoints);
+        const spacepoint_collection_types::const_view& ref_spacepoints,
+        const spacepoint_collection_types::const_view& test_spacepoints);
 
     /// Instantiate an instance of a comparator object
     is_same_object<seed> make_comparator(const seed& ref,
@@ -29,9 +29,9 @@ class comparator_factory<seed> {
 
     private:
     /// Spacepoint container for the reference seeds
-    const spacepoint_container_types::const_view m_ref_spacepoints;
+    const spacepoint_collection_types::const_view m_ref_spacepoints;
     /// Spacepoint container for the test seeds
-    const spacepoint_container_types::const_view m_test_spacepoints;
+    const spacepoint_collection_types::const_view m_test_spacepoints;
 
 };  // class comparator_factory
 

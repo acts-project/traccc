@@ -35,6 +35,13 @@ struct kalman_actor : detray::actor {
             m_it = m_track_states.begin();
         }
 
+        /// Constructor with the vector of track states
+        TRACCC_HOST_DEVICE
+        state(const vector_t<track_state_type>& track_states)
+            : m_track_states(track_states) {
+            m_it = m_track_states.begin();
+        }
+
         /// @return the reference of track state pointed by the iterator
         TRACCC_HOST_DEVICE
         track_state_type& operator()() { return *m_it; }
@@ -80,8 +87,7 @@ struct kalman_actor : detray::actor {
         }
 
         // triggered only for sensitive surfaces
-        if (navigation.is_on_module() &&
-            navigation.current()->sf_id == detray::surface_id::e_sensitive) {
+        if (navigation.is_on_sensitive()) {
 
             auto& trk_state = actor_state();
 
@@ -97,12 +103,11 @@ struct kalman_actor : detray::actor {
             const auto& mask_store = det->mask_store();
 
             // Surface
-            const auto& surface =
-                det->surface_by_index(trk_state.surface_link());
+            const auto& surface = det->surfaces(trk_state.surface_link());
 
             // Run kalman updater
-            mask_store.template call<gain_matrix_updater<algebra_t>>(
-                surface.mask(), trk_state, propagation);
+            mask_store.template visit<gain_matrix_updater<algebra_t>>(
+                surface.mask(), trk_state, propagation._stepping._bound_params);
 
             // Update iterator
             actor_state.next();

@@ -9,7 +9,7 @@
 
 // Local include(s).
 #include "traccc/io/data_format.hpp"
-#include "traccc/io/demonstrator_edm.hpp"
+#include "traccc/io/demonstrator_alt_edm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -32,10 +32,10 @@ namespace traccc::io {
 /// @param mr The memory resource to allocate the container(s) with
 /// @return An object with the requested events worth of input
 ///
-demonstrator_input read(std::size_t events, std::string_view directory,
-                        std::string_view detector_file,
-                        std::string_view digi_config_file,
-                        data_format format = data_format::csv,
-                        vecmem::memory_resource *mr = nullptr);
+alt_demonstrator_input read(std::size_t events, std::string_view directory,
+                            std::string_view detector_file,
+                            std::string_view digi_config_file,
+                            data_format format = data_format::csv,
+                            vecmem::memory_resource *mr = nullptr);
 
 }  // namespace traccc::io

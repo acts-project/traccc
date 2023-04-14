@@ -1,20 +1,24 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Library include(s).
-#include "traccc/resolution/res_plot_tool.hpp"
+#include "res_plot_tool.hpp"
 
 namespace traccc {
 
-res_plot_tool::res_plot_tool(const config& cfg) : m_cfg(cfg) {}
+res_plot_tool::res_plot_tool(const res_plot_tool_config& cfg) : m_cfg(cfg) {}
 
-void res_plot_tool::book(res_plot_tool::res_plot_cache& cache) const {
+void res_plot_tool::book(res_plot_cache& cache) const {
 
     plot_helpers::binning b_pull = m_cfg.var_binning.at("pull");
+
+    // Avoid unused variable warnings when building the code without ROOT.
+    (void)cache;
+    (void)b_pull;
 
     for (std::size_t idx = 0; idx < e_bound_size; idx++) {
         std::string par_name = m_cfg.param_names.at(idx);
@@ -23,6 +27,10 @@ void res_plot_tool::book(res_plot_tool::res_plot_cache& cache) const {
         std::string par_residual = "residual_" + par_name;
         plot_helpers::binning b_residual = m_cfg.var_binning.at(par_residual);
 
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)b_residual;
+
+#ifdef TRACCC_HAVE_ROOT
         // residual distributions
         cache.residuals[par_name] = plot_helpers::book_histo(
             Form("res_%s", par_name.c_str()),
@@ -32,12 +40,16 @@ void res_plot_tool::book(res_plot_tool::res_plot_cache& cache) const {
         cache.pulls[par_name] = plot_helpers::book_histo(
             Form("pull_%s", par_name.c_str()),
             Form("Pull of %s", par_name.c_str()), b_pull);
+#endif  // TRACCC_HAVE_ROOT
     }
 }
 
-void res_plot_tool::fill(res_plot_tool::res_plot_cache& cache,
+void res_plot_tool::fill(res_plot_cache& cache,
                          const bound_track_parameters& truth_param,
                          const bound_track_parameters& fit_param) const {
+
+    // Avoid unused variable warnings when building the code without ROOT.
+    (void)cache;
 
     for (std::size_t idx = 0; idx < e_bound_size; idx++) {
         std::string par_name = m_cfg.param_names.at(idx);
@@ -48,25 +60,30 @@ void res_plot_tool::fill(res_plot_tool::res_plot_cache& cache,
         const auto pull = residual / std::sqrt(getter::element(
                                          fit_param.covariance(), idx, idx));
 
-        plot_helpers::fill_histo(cache.residuals.at(par_name), residual);
-        plot_helpers::fill_histo(cache.pulls.at(par_name), pull);
+        // Avoid unused variable warnings when building the code without ROOT.
+        (void)residual;
+        (void)pull;
+
+#ifdef TRACCC_HAVE_ROOT
+        cache.residuals.at(par_name)->Fill(residual);
+        cache.pulls.at(par_name)->Fill(pull);
+#endif  // TRACCC_HAVE_ROOT
     }
 }
 
-void res_plot_tool::write(const res_plot_tool::res_plot_cache& cache) const {
-    for (std::size_t idx = 0; idx < e_bound_size; idx++) {
-        std::string par_name = m_cfg.param_names.at(idx);
-        cache.residuals.at(par_name)->Write();
-        cache.pulls.at(par_name)->Write();
-    }
-}
+void res_plot_tool::write(const res_plot_cache& cache) const {
 
-void res_plot_tool::clear(const res_plot_tool::res_plot_cache& cache) const {
-    for (std::size_t idx = 0; idx < e_bound_size; idx++) {
-        std::string par_name = m_cfg.param_names.at(idx);
-        delete cache.residuals.at(par_name);
-        delete cache.pulls.at(par_name);
+    // Avoid unused variable warnings when building the code without ROOT.
+    (void)cache;
+
+#ifdef TRACCC_HAVE_ROOT
+    for (const auto& residual : cache.residuals) {
+        residual.second->Write();
     }
+    for (const auto& pull : cache.pulls) {
+        pull.second->Write();
+    }
+#endif  // TRACCC_HAVE_ROOT
 }
 
 }  // namespace traccc

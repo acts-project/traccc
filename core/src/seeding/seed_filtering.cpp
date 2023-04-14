@@ -16,7 +16,7 @@ seed_filtering::seed_filtering(const seedfilter_config& config)
     : m_filter_config(config) {}
 
 void seed_filtering::operator()(
-    const spacepoint_container_types::host& sp_container, const sp_grid& g2,
+    const spacepoint_collection_types::host& sp_collection, const sp_grid& g2,
     triplet_collection_types::host& triplets,
     seed_collection_types::host& seeds) const {
 
@@ -55,10 +55,10 @@ void seed_filtering::operator()(
                   } else {
                       scalar seed1_sum = 0;
                       scalar seed2_sum = 0;
-                      auto& spB1 = sp_container.at(seed1.spB_link);
-                      auto& spT1 = sp_container.at(seed1.spT_link);
-                      auto& spB2 = sp_container.at(seed2.spB_link);
-                      auto& spT2 = sp_container.at(seed2.spT_link);
+                      auto& spB1 = sp_collection.at(seed1.spB_link);
+                      auto& spT1 = sp_collection.at(seed1.spT_link);
+                      auto& spB2 = sp_collection.at(seed2.spB_link);
+                      auto& spT2 = sp_collection.at(seed2.spT_link);
 
                       seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
                       seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
@@ -78,7 +78,7 @@ void seed_filtering::operator()(
         // don't cut first element
         for (size_t i = 1; i < itLength; i++) {
             if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config, sp_container, seeds_per_spM[i],
+                    m_filter_config, sp_collection, seeds_per_spM[i],
                     seeds_per_spM[i].weight)) {
                 new_seeds.push_back(std::move(seeds_per_spM[i]));
             }

@@ -1,3 +1,0 @@
-[submodule "data"]
-	path = data
-	url = https://gitlab.cern.ch/acts/traccc-data.git

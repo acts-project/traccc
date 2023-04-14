@@ -64,7 +64,7 @@ struct gain_matrix_smoother {
         const matrix_type<6, 6>& cur_filtered_cov = cur_filtered.covariance();
 
         // Regularization matrix for numerical stability
-        static constexpr double epsilon = 1e-13;
+        static constexpr scalar epsilon = 1e-13;
         const matrix_type<6, 6> regularization =
             matrix_operator().template identity<e_bound_size, e_bound_size>() *
             epsilon;
