@@ -242,9 +242,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::seed_collection_types::host seeds_sycl;
         traccc::bound_track_parameters_collection_types::host params_sycl;
         if (run_cpu || i_cfg.check_performance) {
-            copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl);
-            copy(seeds_sycl_buffer, seeds_sycl);
-            copy(params_sycl_buffer, params_sycl);
+            copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl)->wait();
+            copy(seeds_sycl_buffer, seeds_sycl)->wait();
+            copy(params_sycl_buffer, params_sycl)->wait();
         }
 
         if (run_cpu) {

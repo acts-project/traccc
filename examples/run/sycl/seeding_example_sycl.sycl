@@ -168,8 +168,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         // Copy the seeds to the host for comparison.
         traccc::seed_collection_types::host seeds_sycl;
         traccc::bound_track_parameters_collection_types::host params_sycl;
-        copy(seeds_sycl_buffer, seeds_sycl);
-        copy(params_sycl_buffer, params_sycl);
+        copy(seeds_sycl_buffer, seeds_sycl)->wait();
+        copy(params_sycl_buffer, params_sycl)->wait();
 
         if (run_cpu && i_cfg.check_performance) {
             // Show which event we are currently presenting the results for.
