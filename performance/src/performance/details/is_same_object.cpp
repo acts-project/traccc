@@ -16,15 +16,18 @@ namespace traccc::details {
 /// @name Implementation for @c traccc::details::is_same_object<measurement>
 /// @{
 
-is_same_object<measurement>::is_same_object(const measurement& ref, scalar unc)
+is_same_object<alt_measurement>::is_same_object(const alt_measurement& ref,
+                                                scalar unc)
     : m_ref(ref), m_unc(unc) {}
 
-bool is_same_object<measurement>::operator()(const measurement& obj) const {
+bool is_same_object<alt_measurement>::operator()(
+    const alt_measurement& obj) const {
 
     return (is_same_scalar(obj.local[0], m_ref.get().local[0], m_unc) &&
             is_same_scalar(obj.local[1], m_ref.get().local[1], m_unc) &&
             is_same_scalar(obj.variance[0], m_ref.get().variance[0], m_unc) &&
-            is_same_scalar(obj.variance[1], m_ref.get().variance[1], m_unc));
+            is_same_scalar(obj.variance[1], m_ref.get().variance[1], m_unc) &&
+            obj.module_link == m_ref.get().module_link);
 }
 
 /// @}
@@ -33,8 +36,8 @@ bool is_same_object<measurement>::operator()(const measurement& obj) const {
 /// @{
 
 is_same_object<seed>::is_same_object(
-    const spacepoint_container_types::const_view& ref_spacepoints,
-    const spacepoint_container_types::const_view& test_spacepoints,
+    const spacepoint_collection_types::const_view& ref_spacepoints,
+    const spacepoint_collection_types::const_view& test_spacepoints,
     const seed& ref, scalar unc)
     : m_ref_spacepoints(ref.get_spacepoints(ref_spacepoints)),
       m_spacepoints(test_spacepoints),
@@ -71,7 +74,7 @@ bool is_same_object<spacepoint>::operator()(const spacepoint& obj) const {
     return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
             is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
             is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
-            is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
+            is_same_object<alt_measurement>(m_ref.get().meas, m_unc)(obj.meas));
 }
 
 /// @}

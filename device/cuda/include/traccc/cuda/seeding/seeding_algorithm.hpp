@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,14 +10,15 @@
 // Library include(s).
 #include "traccc/cuda/seeding/seed_finding.hpp"
 #include "traccc/cuda/seeding/spacepoint_binning.hpp"
+#include "traccc/cuda/utils/stream.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // traccc library include(s).
 #include "traccc/utils/memory_resource.hpp"
@@ -25,15 +26,20 @@
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
-class seeding_algorithm : public algorithm<alt_seed_collection_types::buffer(
+class seeding_algorithm : public algorithm<seed_collection_types::buffer(
                               const spacepoint_collection_types::const_view&)> {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
     /// @param mr The memory resource to use
+    /// @param mr The memory resource(s) to use in the algorithm
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
+    /// @param str The CUDA stream to perform the operations in
     ///
-    seeding_algorithm(const traccc::memory_resource& mr);
+    seeding_algorithm(const traccc::memory_resource& mr, vecmem::copy& copy,
+                      stream& str);
 
     /// Operator executing the algorithm.
     ///

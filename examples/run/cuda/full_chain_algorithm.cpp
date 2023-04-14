@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,20 +29,20 @@ namespace traccc::cuda {
 
 full_chain_algorithm::full_chain_algorithm(
     vecmem::memory_resource& host_mr,
-    const unsigned short max_cells_per_partition)
+    const unsigned short target_cells_per_partition)
     : m_host_mr(host_mr),
       m_stream(),
       m_device_mr(),
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
-      m_max_cells_per_partition(max_cells_per_partition),
-      m_partitioning(m_host_mr, m_max_cells_per_partition),
+      m_target_cells_per_partition(target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       m_stream, m_max_cells_per_partition),
-      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
+                       m_stream, m_target_cells_per_partition),
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                m_stream),
       m_track_parameter_estimation(
-          memory_resource{*m_cached_device_mr, &m_host_mr}) {
+          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream) {
 
     // Tell the user what device is being used.
     int device = 0;
@@ -61,13 +61,13 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
-      m_max_cells_per_partition(parent.m_max_cells_per_partition),
-      m_partitioning(m_host_mr, m_max_cells_per_partition),
+      m_target_cells_per_partition(parent.m_target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       m_stream, m_max_cells_per_partition),
-      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}),
+                       m_stream, m_target_cells_per_partition),
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                m_stream),
       m_track_parameter_estimation(
-          memory_resource{*m_cached_device_mr, &m_host_mr}) {}
+          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream) {}
 
 full_chain_algorithm::~full_chain_algorithm() {
 
@@ -77,28 +77,23 @@ full_chain_algorithm::~full_chain_algorithm() {
 }
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
-    const alt_cell_collection_types::host& cells,
+    const cell_collection_types::host& cells,
     const cell_module_collection_types::host& modules) const {
 
-    // Execute the partitioning algorithm (on the host)
-    device::partition_collection_types::host partitions = m_partitioning(cells);
-
     // Create device copy of input collections
-    alt_cell_collection_types::buffer cells_buffer(cells.size(),
-                                                   *m_cached_device_mr);
+    cell_collection_types::buffer cells_buffer(cells.size(),
+                                               *m_cached_device_mr);
     m_copy(vecmem::get_data(cells), cells_buffer);
     cell_module_collection_types::buffer modules_buffer(modules.size(),
                                                         *m_cached_device_mr);
     m_copy(vecmem::get_data(modules), modules_buffer);
-    device::partition_collection_types::buffer partitions_buffer(
-        partitions.size(), *m_cached_device_mr);
-    m_copy(vecmem::get_data(partitions), partitions_buffer);
 
     // Run the clusterization (asynchronously).
     const clusterization_algorithm::output_type spacepoints =
-        m_clusterization(cells_buffer, modules_buffer, partitions_buffer);
+        m_clusterization(cells_buffer, modules_buffer);
     const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints, m_seeding(spacepoints));
+        m_track_parameter_estimation(spacepoints.first,
+                                     m_seeding(spacepoints.first));
 
     // Get the final data back to the host.
     bound_track_parameters_collection_types::host result;

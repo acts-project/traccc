@@ -10,8 +10,8 @@
 // Library include(s).
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -28,8 +28,9 @@ namespace traccc {
 /// module from the cells of the modules.
 ///
 class clusterization_algorithm
-    : public algorithm<measurement_container_types::host(
-          const cell_container_types::host&)> {
+    : public algorithm<alt_measurement_collection_types::host(
+          const cell_collection_types::host&,
+          const cell_module_collection_types::host&)> {
 
     public:
     /// Clusterization algorithm constructor
@@ -41,10 +42,12 @@ class clusterization_algorithm
     /// Construct measurements for each detector module
     ///
     /// @param cells The cells for every detector module in the event
+    /// @param modules A collection of detector modules
     /// @return The measurements reconstructed for every detector module
     ///
     output_type operator()(
-        const cell_container_types::host& cells) const override;
+        const cell_collection_types::host& cells,
+        const cell_module_collection_types::host& modules) const override;
 
     private:
     /// @name Sub-algorithms used by this algorithm

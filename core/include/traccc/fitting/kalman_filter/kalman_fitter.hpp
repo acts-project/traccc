@@ -32,6 +32,13 @@ class kalman_fitter {
     // scalar type
     using scalar_type = typename stepper_t::scalar_type;
 
+    // vector type
+    template <typename T>
+    using vector_type = typename navigator_t::template vector_type<T>;
+
+    // navigator candidate type
+    using intersection_type = typename navigator_t::intersection_type;
+
     // Kalman fitter configuration
     struct config {
         std::size_t n_iterations = 1;
@@ -50,7 +57,7 @@ class kalman_fitter {
     using aborter = detray::pathlimit_aborter;
     using transporter = detray::parameter_transporter<transform3_type>;
     using interactor = detray::pointwise_material_interactor<transform3_type>;
-    using fit_actor = traccc::kalman_actor<transform3_type, vecmem::vector>;
+    using fit_actor = traccc::kalman_actor<transform3_type, vector_type>;
     using resetter = detray::parameter_resetter<transform3_type>;
 
     using actor_chain_type =
@@ -64,6 +71,7 @@ class kalman_fitter {
     /// Constructor with a detector
     ///
     /// @param det the detector object
+    TRACCC_HOST_DEVICE
     kalman_fitter(const detector_type& det) : m_detector(det) {}
 
     /// Kalman fitter state
@@ -72,10 +80,19 @@ class kalman_fitter {
         /// State constructor
         ///
         /// @param track_states the vector of track states
-        state(vecmem::vector<track_state<transform3_type>>&& track_states)
+        TRACCC_HOST_DEVICE
+        state(vector_type<track_state<transform3_type>>&& track_states)
             : m_fit_actor_state(std::move(track_states)) {}
 
+        /// State constructor
+        ///
+        /// @param track_states the vector of track states
+        TRACCC_HOST_DEVICE
+        state(const vector_type<track_state<transform3_type>>& track_states)
+            : m_fit_actor_state(track_states) {}
+
         /// @return the actor chain state
+        TRACCC_HOST_DEVICE
         typename actor_chain_type::state operator()() {
             return std::tie(m_aborter_state, m_transporter_state,
                             m_interactor_state, m_fit_actor_state,
@@ -100,7 +117,9 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    void fit(const seed_parameters_t& seed_params, state& fitter_state) {
+    TRACCC_HOST_DEVICE void fit(
+        const seed_parameters_t& seed_params, state& fitter_state,
+        vector_type<intersection_type>&& nav_candidates = {}) {
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -109,7 +128,7 @@ class kalman_fitter {
             fitter_state.m_fit_actor_state.reset();
 
             if (i == 0) {
-                filter(seed_params, fitter_state);
+                filter(seed_params, fitter_state, std::move(nav_candidates));
             }
             // From the second iteration, seed parameter is the smoothed track
             // parameter at the first surface
@@ -117,7 +136,8 @@ class kalman_fitter {
                 const auto& new_seed_params =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
 
-                filter(new_seed_params, fitter_state);
+                filter(new_seed_params, fitter_state,
+                       std::move(nav_candidates));
             }
         }
     }
@@ -129,7 +149,9 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    void filter(const seed_parameters_t& seed_params, state& fitter_state) {
+    TRACCC_HOST_DEVICE void filter(
+        const seed_parameters_t& seed_params, state& fitter_state,
+        vector_type<intersection_type>&& nav_candidates = {}) {
 
         // Create propagator
         propagator_type propagator({}, {});
@@ -139,7 +161,8 @@ class kalman_fitter {
 
         // Create propagator state
         typename propagator_type::state propagation(
-            seed_params, m_detector.get().get_bfield(), m_detector.get());
+            seed_params, m_detector.get_bfield(), m_detector,
+            std::move(nav_candidates));
 
         // Set overstep tolerance and stepper constraint
         propagation._stepping().set_overstep_tolerance(
@@ -163,6 +186,7 @@ class kalman_fitter {
     /// track and vertex fitting", R.Frühwirth, NIM A.
     ///
     /// @param fitter_state the state of kalman fitter
+    TRACCC_HOST_DEVICE
     void smooth(state& fitter_state) {
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
@@ -177,26 +201,25 @@ class kalman_fitter {
         last.smoothed().set_vector(last.filtered().vector());
         last.smoothed().set_covariance(last.filtered().covariance());
 
-        const auto& mask_store = m_detector.get().mask_store();
+        const auto& mask_store = m_detector.mask_store();
 
-        for (typename vecmem::vector<
+        for (typename vector_type<
                  track_state<transform3_type>>::reverse_iterator it =
                  track_states.rbegin() + 1;
              it != track_states.rend(); ++it) {
 
             // Surface
-            const auto& surface =
-                m_detector.get().surface_by_index(it->surface_link());
+            const auto& surface = m_detector.surfaces(it->surface_link());
 
             // Run kalman smoother
-            mask_store.template call<gain_matrix_smoother<transform3_type>>(
+            mask_store.template visit<gain_matrix_smoother<transform3_type>>(
                 surface.mask(), *it, *(it - 1));
         }
     }
 
     private:
     // Detector object
-    std::reference_wrapper<detector_type> m_detector;
+    const detector_type& m_detector;
     // Configuration object
     config m_cfg;
 };

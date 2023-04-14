@@ -27,7 +27,7 @@ namespace traccc {
 ///
 class track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::host(
-          const spacepoint_container_types::host&,
+          const spacepoint_collection_types::host&,
           const seed_collection_types::host&)> {
 
     public:
@@ -43,7 +43,7 @@ class track_params_estimation
     /// @return A vector of bound track parameters
     ///
     output_type operator()(
-        const spacepoint_container_types::host& spacepoints,
+        const spacepoint_collection_types::host& spacepoints,
         const seed_collection_types::host& seeds) const override;
 
     private:

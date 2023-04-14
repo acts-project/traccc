@@ -15,6 +15,7 @@ enable_language( SYCL )
 traccc_add_library( traccc_sycl sycl TYPE SHARED
   # header files
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
+  "include/traccc/sycl/fitting/fitting_algorithm.hpp"
   "include/traccc/sycl/seeding/seeding_algorithm.hpp"
   "include/traccc/sycl/seeding/seed_finding.hpp"
   "include/traccc/sycl/seeding/spacepoint_binning.hpp"
@@ -24,6 +25,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
   # implementation files
   "src/clusterization/clusterization_algorithm.sycl"
+  "src/fitting/fitting_algorithm.sycl"
   "src/seeding/seed_finding.sycl"
   "src/seeding/seeding_algorithm.cpp"
   "src/seeding/spacepoint_binning.sycl"
@@ -34,10 +36,5 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/utils/calculate1DimNdRange.sycl"
   "src/utils/make_prefix_sum_buff.sycl" )
 target_link_libraries( traccc_sycl
-  PUBLIC vecmem::core traccc::core
+  PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
   PRIVATE traccc::device_common vecmem::sycl )
-
-# Prevent Eigen from getting confused when building code for a
-# CUDA or HIP backend.
-target_compile_definitions( traccc_sycl
-  PRIVATE EIGEN_NO_CUDA EIGEN_NO_HIP )

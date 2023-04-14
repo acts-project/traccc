@@ -112,7 +112,8 @@ lin_circle doublet_finding_helper::transform_coordinates(
     scalar x = deltaX * cosPhiM + deltaY * sinPhiM;
     scalar y = deltaY * cosPhiM - deltaX * sinPhiM;
     // 1/(length of M -> SP)
-    scalar iDeltaR2 = 1. / (deltaX * deltaX + deltaY * deltaY);
+    scalar iDeltaR2 =
+        static_cast<scalar>(1.) / (deltaX * deltaX + deltaY * deltaY);
     scalar iDeltaR = std::sqrt(iDeltaR2);
     // cot_theta = (deltaZ/deltaR)
     scalar cot_theta = deltaZ * iDeltaR;

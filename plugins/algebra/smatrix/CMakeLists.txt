@@ -8,6 +8,6 @@
 traccc_add_library( traccc_smatrix smatrix TYPE INTERFACE
   "include/traccc/plugins/algebra/smatrix_definitions.hpp" )
 target_link_libraries( traccc_smatrix
-  INTERFACE algebra::smatrix_smatrix detray::smatrix vecmem::core )
+  INTERFACE algebra::smatrix_smatrix detray::algebra_smatrix vecmem::core )
 target_compile_definitions( traccc_smatrix
   INTERFACE TRACCC_CUSTOM_SCALARTYPE=${TRACCC_CUSTOM_SCALARTYPE} )

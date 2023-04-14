@@ -92,10 +92,12 @@ TEST(mappper, hit_map) {
     auto h_map = traccc::generate_hit_map(event, hits_dir);
 
     EXPECT_EQ(h_map.size(), 3);
-
-    h_map[0].global = traccc::point3{39.2037048, 0.352969825, -1502.5};
-    h_map[1].global = traccc::point3{-269.925323, 419.792511, -480.266479};
-    h_map[2].global = traccc::point3{-878.646667, -10.9199247, 2952.5};
+    traccc::point3 p0{39.2037048, 0.352969825, -1502.5};
+    traccc::point3 p1{31.5048428, 5.16000509, -1502.5};
+    traccc::point3 p2{90.4015808, 0.7420941, -1502.5};
+    EXPECT_EQ(h_map[0].global, p0);
+    EXPECT_EQ(h_map[1].global, p1);
+    EXPECT_EQ(h_map[2].global, p2);
 }
 
 // Test generate_hit_cell_map function
@@ -114,20 +116,20 @@ TEST(mappper, hit_cell_map) {
     sp2.global = traccc::point3{90.4015808, 0.7420941, -1502.5};
 
     std::vector<traccc::cell> cells0;
-    cells0.push_back({1, 0, 0.0041470062, 0});
-    cells0.push_back({0, 1, 0.00306466641, 0});
-    cells0.push_back({1, 1, 0.00868905429, 0});
+    cells0.push_back({1, 0, 0.0041470062, 0, 0});
+    cells0.push_back({0, 1, 0.00306466641, 0, 0});
+    cells0.push_back({1, 1, 0.00868905429, 0, 0});
 
     std::vector<traccc::cell> cells1;
-    cells1.push_back({1, 1, 0.00886478275, 0});
-    cells1.push_back({1, 2, 0.00580428448, 0});
-    cells1.push_back({2, 1, 0.0016894876, 0});
-    cells1.push_back({2, 2, 0.00199076766, 0});
+    cells1.push_back({1, 1, 0.00886478275, 0, 0});
+    cells1.push_back({1, 2, 0.00580428448, 0, 0});
+    cells1.push_back({2, 1, 0.0016894876, 0, 0});
+    cells1.push_back({2, 2, 0.00199076766, 0, 0});
 
     std::vector<traccc::cell> cells2;
-    cells2.push_back({5, 5, 0.00632160669, 0});
-    cells2.push_back({5, 6, 0.00911649223, 0});
-    cells2.push_back({5, 7, 0.00518329488, 0});
+    cells2.push_back({5, 5, 0.00632160669, 0, 0});
+    cells2.push_back({5, 6, 0.00911649223, 0, 0});
+    cells2.push_back({5, 7, 0.00518329488, 0, 0});
 
     EXPECT_EQ(h_c_map[sp0], cells0);
     EXPECT_EQ(h_c_map[sp1], cells1);
@@ -140,17 +142,16 @@ TEST(mappper, cell_particle_map) {
     auto c_p_map = traccc::generate_cell_particle_map(event, cells_dir,
                                                       hits_dir, particles_dir);
 
-    std::vector<traccc::cell> cells;
-    traccc::cell cell0{1, 0, 0.0041470062, 0};
-    traccc::cell cell1{0, 1, 0.00306466641, 0};
-    traccc::cell cell2{1, 1, 0.00868905429, 0};
-    traccc::cell cell3{1, 1, 0.00886478275, 0};
-    traccc::cell cell4{1, 2, 0.00580428448, 0};
-    traccc::cell cell5{2, 1, 0.0016894876, 0};
-    traccc::cell cell6{2, 2, 0.00199076766, 0};
-    traccc::cell cell7{5, 5, 0.00632160669, 0};
-    traccc::cell cell8{5, 6, 0.00911649223, 0};
-    traccc::cell cell9{5, 7, 0.00518329488, 0};
+    traccc::cell cell0{1, 0, 0.0041470062, 0, 0};
+    traccc::cell cell1{0, 1, 0.00306466641, 0, 0};
+    traccc::cell cell2{1, 1, 0.00868905429, 0, 0};
+    traccc::cell cell3{1, 1, 0.00886478275, 0, 0};
+    traccc::cell cell4{1, 2, 0.00580428448, 0, 0};
+    traccc::cell cell5{2, 1, 0.0016894876, 0, 0};
+    traccc::cell cell6{2, 2, 0.00199076766, 0, 0};
+    traccc::cell cell7{5, 5, 0.00632160669, 0, 0};
+    traccc::cell cell8{5, 6, 0.00911649223, 0, 0};
+    traccc::cell cell9{5, 7, 0.00518329488, 0, 0};
 
     EXPECT_EQ(c_p_map[cell0].particle_id, 4503599644147712);
     EXPECT_EQ(c_p_map[cell1].particle_id, 4503599644147712);
@@ -177,22 +178,23 @@ TEST(mappper, measurement_cell_map) {
 
     vecmem::host_memory_resource resource;
 
-    auto m_c_map = traccc::generate_measurement_cell_map(
+    auto m_c_map_pair = traccc::generate_measurement_cell_map(
         event, detector_file, digi_config_file, cells_dir, resource);
+    auto m_c_map = std::get<0>(m_c_map_pair);
 
     vecmem::vector<traccc::cell> cells0;
-    cells0.push_back({1, 0, 0.0041470062, 0});
-    cells0.push_back({0, 1, 0.00306466641, 0});
-    cells0.push_back({1, 1, 0.00868905429, 0});
-    cells0.push_back({1, 1, 0.00886478275, 0});
-    cells0.push_back({1, 2, 0.00580428448, 0});
-    cells0.push_back({2, 1, 0.0016894876, 0});
-    cells0.push_back({2, 2, 0.00199076766, 0});
+    cells0.push_back({1, 0, 0.0041470062, 0, 0});
+    cells0.push_back({0, 1, 0.00306466641, 0, 0});
+    cells0.push_back({1, 1, 0.00868905429, 0, 0});
+    cells0.push_back({1, 1, 0.00886478275, 0, 0});
+    cells0.push_back({1, 2, 0.00580428448, 0, 0});
+    cells0.push_back({2, 1, 0.0016894876, 0, 0});
+    cells0.push_back({2, 2, 0.00199076766, 0, 0});
 
     vecmem::vector<traccc::cell> cells1;
-    cells1.push_back({5, 5, 0.00632160669, 0});
-    cells1.push_back({5, 6, 0.00911649223, 0});
-    cells1.push_back({5, 7, 0.00518329488, 0});
+    cells1.push_back({5, 5, 0.00632160669, 0, 0});
+    cells1.push_back({5, 6, 0.00911649223, 0, 0});
+    cells1.push_back({5, 7, 0.00518329488, 0, 0});
 
     EXPECT_EQ(m_c_map.size(), 2);
 

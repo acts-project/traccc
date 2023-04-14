@@ -8,14 +8,12 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/clusterization/device/partitioning_algorithm.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/edm/alt_cell.hpp"
-#include "traccc/edm/device/partition.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -35,7 +33,7 @@ namespace traccc::cuda {
 ///
 class full_chain_algorithm
     : public algorithm<bound_track_parameters_collection_types::host(
-          const alt_cell_collection_types::host&,
+          const cell_collection_types::host&,
           const cell_module_collection_types::host&)> {
 
     public:
@@ -43,12 +41,11 @@ class full_chain_algorithm
     ///
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
-    /// @param max_cells_per_partition The number of cells to put together in
-    /// each partition. Equal to the number of threads in the clusterization
-    /// kernels. Adapt to different GPUs' capabilities.
+    /// @param target_cells_per_partition The average number of cells in each
+    /// partition.
     ///
     full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const unsigned short max_cells_per_partiton);
+                         const unsigned short target_cells_per_partiton);
 
     /// Copy constructor
     ///
@@ -69,7 +66,7 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const alt_cell_collection_types::host& cells,
+        const cell_collection_types::host& cells,
         const cell_module_collection_types::host& modules) const override;
 
     private:
@@ -87,12 +84,9 @@ class full_chain_algorithm
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
 
-    /// The number of cells to put together in each partition.
-    /// Equal to the number of threads in the clusterization kernels.
+    /// The average number of cells in each partition.
     /// Adapt to different GPUs' capabilities.
-    unsigned short m_max_cells_per_partition;
-    /// Partitioning algorithm
-    device::partitioning_algorithm m_partitioning;
+    unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Seeding algorithm

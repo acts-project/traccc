@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
+#include "traccc/edm/track_state.hpp"
 
 namespace traccc {
 
@@ -18,7 +19,6 @@ template <typename algebra_t>
 struct gain_matrix_updater {
 
     // Type declarations
-    using output_type = bool;
     using matrix_operator = typename algebra_t::matrix_actor;
     using size_type = typename matrix_operator::size_ty;
     template <size_type ROWS, size_type COLS>
@@ -33,23 +33,20 @@ struct gain_matrix_updater {
     /// @param mask_group mask group that contains the mask of surface
     /// @param index mask index of surface
     /// @param trk_state track state of the surface
-    /// @param propagation propagator state
+    /// @param bound_params bound parameter
     ///
     /// @return true if the update succeeds
-    template <typename mask_group_t, typename index_t,
-              typename propagator_state_t>
-    TRACCC_HOST_DEVICE inline output_type operator()(
+    template <typename mask_group_t, typename index_t>
+    TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& mask_group, const index_t& index,
         track_state<algebra_t>& trk_state,
-        propagator_state_t& propagation) const {
-
-        auto& stepping = propagation._stepping;
+        bound_track_parameters& bound_params) const {
 
         // Some identity matrices
         // @Note: Make constexpr work
-        static const matrix_type<6, 6> I66 =
+        const matrix_type<6, 6> I66 =
             matrix_operator().template identity<e_bound_size, e_bound_size>();
-        static const matrix_type<2, 2> I22 =
+        const matrix_type<2, 2> I22 =
             matrix_operator().template identity<2, 2>();
 
         // projection matrix
@@ -60,12 +57,10 @@ struct gain_matrix_updater {
         const matrix_type<2, 1>& meas_local = trk_state.measurement_local();
 
         // Predicted vector of bound track parameters
-        const matrix_type<6, 1>& predicted_vec =
-            stepping._bound_params.vector();
+        const matrix_type<6, 1>& predicted_vec = bound_params.vector();
 
         // Predicted covaraince of bound track parameters
-        const matrix_type<6, 6>& predicted_cov =
-            stepping._bound_params.covariance();
+        const matrix_type<6, 6>& predicted_cov = bound_params.covariance();
 
         // Set track state parameters
         trk_state.predicted().set_vector(predicted_vec);
@@ -96,8 +91,8 @@ struct gain_matrix_updater {
                                        matrix_operator().inverse(R) * residual;
 
         // Set the stepper parameter
-        stepping._bound_params.set_vector(filtered_vec);
-        stepping._bound_params.set_covariance(filtered_cov);
+        bound_params.set_vector(filtered_vec);
+        bound_params.set_covariance(filtered_cov);
 
         // Set the track state parameters
         trk_state.filtered().set_vector(filtered_vec);

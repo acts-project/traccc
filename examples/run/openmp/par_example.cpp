@@ -8,9 +8,9 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 #include "traccc/io/read_cells.hpp"
@@ -63,30 +63,34 @@ int par_run(const std::string &detector_file,
     for (unsigned int event = 0; event < events; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::cell_container_types::host cells_per_event =
+        auto readOut =
             traccc::io::read_cells(event, cells_dir, traccc::data_format::csv,
                                    &surface_transforms, &digi_cfg, &resource);
+        traccc::cell_collection_types::host &cells_per_event = readOut.cells;
+        traccc::cell_module_collection_types::host &modules_per_event =
+            readOut.modules;
 
         /*-------------------
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event);
+        auto measurements_per_event = ca(cells_per_event, modules_per_event);
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
-        auto spacepoints_per_event = sf(measurements_per_event);
+        auto spacepoints_per_event =
+            sf(measurements_per_event, modules_per_event);
 
         /*----------------------------
           Statistics
           ----------------------------*/
 
-        n_modules += cells_per_event.size();
-        n_cells += cells_per_event.total_size();
-        n_measurements += measurements_per_event.total_size();
-        n_spacepoints += spacepoints_per_event.total_size();
+        n_modules += modules_per_event.size();
+        n_cells += cells_per_event.size();
+        n_measurements += measurements_per_event.size();
+        n_spacepoints += spacepoints_per_event.size();
     }
 
 #pragma omp critical

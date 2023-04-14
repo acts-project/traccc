@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/geometry.hpp"
+#include "traccc/io/reader_edm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -26,7 +27,7 @@ namespace traccc::io::csv {
 /// @param mr The memory resource to create the host collection with
 /// @return A spacepoint (host) collection
 ///
-spacepoint_collection_types::host read_spacepoints_alt(
+spacepoint_reader_output read_spacepoints_alt(
     std::string_view filename, const geometry& geom,
     vecmem::memory_resource* mr = nullptr);
 

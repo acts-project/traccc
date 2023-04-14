@@ -10,168 +10,172 @@
 
 #include "make_cell_reader.hpp"
 
-// VecMem include(s).
-#include <vecmem/containers/vector.hpp>
-
 // System include(s).
 #include <algorithm>
 #include <cassert>
+#include <utility>
 #include <vector>
 
 namespace {
 
-/// Type used for counting the number of cells per detector module
-struct cell_counter {
-    uint64_t module = 0;
-    std::size_t nCells = 0;
+/// Comparator used for sorting cells. This sorting is one of the assumptions
+/// made in the clusterization algorithm
+const auto comp = [](const traccc::cell& c1, const traccc::cell& c2) {
+    return c1.channel1 < c2.channel1;
 };
+
+/// Helper function which finds module from csv::cell in the geometry and
+/// digitization config, and initializes the modules limits with the cell's
+/// properties
+traccc::cell_module get_module(traccc::io::csv::cell c,
+                               const traccc::geometry* geom,
+                               const traccc::digitization_config* dconfig) {
+
+    traccc::cell_module result;
+
+    result.module = c.geometry_id;
+
+    // Find/set the 3D position of the detector module.
+    if (geom != nullptr) {
+
+        // Check if the module ID is known.
+        if (!geom->contains(result.module)) {
+            throw std::runtime_error(
+                "Could not find placement for geometry ID " +
+                std::to_string(result.module));
+        }
+
+        // Set the value on the module description.
+        result.placement = (*geom)[result.module];
+    }
+
+    // Find/set the digitization configuration of the detector module.
+    if (dconfig != nullptr) {
+
+        // Check if the module ID is known.
+        const traccc::digitization_config::Iterator geo_it =
+            dconfig->find(result.module);
+        if (geo_it == dconfig->end()) {
+            throw std::runtime_error(
+                "Could not find digitization config for geometry ID " +
+                std::to_string(result.module));
+        }
+
+        // Set the value on the module description.
+        const auto& binning_data = geo_it->segmentation.binningData();
+        assert(binning_data.size() >= 2);
+        result.pixel = {binning_data[0].min, binning_data[1].min,
+                        binning_data[0].step, binning_data[1].step};
+    }
+
+    return result;
+}
 
 }  // namespace
 
 namespace traccc::io::csv {
 
-cell_container_types::host read_cells(std::string_view filename,
-                                      const geometry* geom,
-                                      const digitization_config* dconfig,
-                                      vecmem::memory_resource* mr) {
+cell_reader_output read_cells(std::string_view filename, const geometry* geom,
+                              const digitization_config* dconfig,
+                              vecmem::memory_resource* mr) {
 
     // Construct the cell reader object.
     auto reader = make_cell_reader(filename);
 
     // Create cell counter vector.
-    std::vector<cell_counter> cell_counts;
-    cell_counts.reserve(5000);
+    std::vector<unsigned int> cellCounts;
+    cellCounts.reserve(5000);
 
-    // Create a cell collection, which holds on to a flat list of all the cells.
-    std::vector<csv::cell> allCells;
+    cell_module_collection_types::host result_modules;
+    if (mr != nullptr) {
+        result_modules = cell_module_collection_types::host{0, mr};
+    } else {
+        result_modules = cell_module_collection_types::host(0);
+    }
+    result_modules.reserve(5000);
+
+    // Create a cell collection, which holds on to a flat list of all the cells
+    // and the position of their respective cell counter & module.
+    std::vector<std::pair<csv::cell, unsigned int>> allCells;
     allCells.reserve(50000);
 
     // Read all cells from input file.
     csv::cell iocell;
     while (reader.read(iocell)) {
 
-        // Hold on to this cell.
-        allCells.push_back(iocell);
-
-        // Increment the appropriate counter.
-        auto rit = std::find_if(cell_counts.rbegin(), cell_counts.rend(),
-                                [&iocell](const cell_counter& cc) {
-                                    return cc.module == iocell.geometry_id;
+        // Look for current module in cell counter vector.
+        auto rit = std::find_if(result_modules.rbegin(), result_modules.rend(),
+                                [&iocell](const cell_module& mod) {
+                                    return mod.module == iocell.geometry_id;
                                 });
-        if (rit == cell_counts.rend()) {
-            cell_counts.push_back({iocell.geometry_id, 1});
+        if (rit == result_modules.rend()) {
+            // Add new cell and new cell counter if a new module is found
+            const cell_module mod = get_module(iocell, geom, dconfig);
+            allCells.push_back({iocell, result_modules.size()});
+            result_modules.push_back(mod);
+            cellCounts.push_back(1);
         } else {
-            ++(rit->nCells);
+            // Add a new cell and update cell counter if repeat module is found
+            const unsigned int pos =
+                std::distance(result_modules.begin(), rit.base()) - 1;
+            allCells.push_back({iocell, pos});
+            ++(cellCounts[pos]);
         }
     }
 
-    // The number of modules that have cells in them.
-    const std::size_t size = cell_counts.size();
+    // Transform the cellCounts vector into a prefix sum for accessing
+    // positions in the result vector.
+    std::partial_sum(cellCounts.begin(), cellCounts.end(), cellCounts.begin());
 
-    // Construct the result container, and set up its headers.
-    cell_container_types::host result;
+    // The total number cells.
+    const unsigned int totalCells = allCells.size();
+
+    // Construct the result collection.
+    cell_collection_types::host result_cells;
     if (mr != nullptr) {
-        result = cell_container_types::host{size, mr};
+        result_cells = cell_collection_types::host{totalCells, mr};
     } else {
-        result = cell_container_types::host{
-            cell_container_types::host::header_vector{size},
-            cell_container_types::host::item_vector{size}};
-    }
-    for (std::size_t i = 0; i < size; ++i) {
-
-        // Make sure that we would have just the right amount of space available
-        // for the cells.
-        result.get_items().at(i).reserve(cell_counts[i].nCells);
-
-        // Construct the description of the detector module.
-        cell_module& module = result.get_headers().at(i);
-        module.module = cell_counts[i].module;
-
-        // Find/set the 3D position of the detector module.
-        if (geom != nullptr) {
-
-            // Check if the module ID is known.
-            if (!geom->contains(module.module)) {
-                throw std::runtime_error(
-                    "Could not find placement for geometry ID " +
-                    std::to_string(module.module));
-            }
-
-            // Set the value on the module description.
-            module.placement = (*geom)[module.module];
-        }
-
-        // Find/set the digitization configuration of the detector module.
-        if (dconfig != nullptr) {
-
-            // Check if the module ID is known.
-            const digitization_config::Iterator geo_it =
-                dconfig->find(module.module);
-            if (geo_it == dconfig->end()) {
-                throw std::runtime_error(
-                    "Could not find digitization config for geometry ID " +
-                    std::to_string(module.module));
-            }
-
-            // Set the value on the module description.
-            const auto& binning_data = geo_it->segmentation.binningData();
-            assert(binning_data.size() >= 2);
-            module.pixel = {binning_data[0].min, binning_data[1].min,
-                            binning_data[0].step, binning_data[1].step};
-        }
+        result_cells = cell_collection_types::host(totalCells);
     }
 
-    // Now loop over all the cells, and put them into the appropriate modules.
-    std::size_t last_module_index = 0;
-    for (const csv::cell& iocell : allCells) {
+    // Member "-1" of the prefix sum vector
+    unsigned int nCellsZero = 0;
+    // Fill the result object with the read csv cells
+    for (unsigned int i = 0; i < totalCells; ++i) {
+        const csv::cell& c = allCells[i].first;
 
-        // Check if this cell belongs to the same module as the last cell did.
-        if (iocell.geometry_id ==
-            result.get_headers().at(last_module_index).module) {
+        // The position of the cell counter this cell belongs to
+        const unsigned int& counterPos = allCells[i].second;
 
-            // If so, nothing needs to be done.
-        }
-        // If not, then it likely belongs to the next one.
-        else if ((result.size() > (last_module_index + 1)) &&
-                 (iocell.geometry_id ==
-                  result.get_headers().at(last_module_index + 1).module)) {
-
-            // If so, just increment the module index by one.
-            ++last_module_index;
-        }
-        // If not that, then look for the appropriate module with a generic
-        // search.
-        else {
-            auto rit = std::find_if(
-                result.get_headers().rbegin(), result.get_headers().rend(),
-                [&iocell](const cell_module& module) {
-                    return module.module == iocell.geometry_id;
-                });
-            assert(rit != result.get_headers().rend());
-            last_module_index =
-                std::distance(result.get_headers().begin(), rit.base()) - 1;
-        }
-
-        // Add the cell to the appropriate module.
-        result.get_items()
-            .at(last_module_index)
-            .push_back({iocell.channel0, iocell.channel1, iocell.value,
-                        iocell.timestamp});
+        unsigned int& prefix_sum_previous =
+            counterPos == 0 ? nCellsZero : cellCounts[counterPos - 1];
+        result_cells[prefix_sum_previous++] = traccc::cell{
+            c.channel0, c.channel1, c.value, c.timestamp, counterPos};
     }
 
-    // Do some post-processing on the cells.
-    for (std::size_t i = 0; i < result.size(); ++i) {
+    if (cellCounts.size() == 0) {
+        return {result_cells, result_modules};
+    }
+    /* This is might look a bit overcomplicated, and could be made simpler by
+     * having a copy of the prefix sum vector before incrementing its value when
+     * filling the vector. however this seems more efficient, but requires
+     * manually setting the 1st & 2nd modules instead of just the 1st.
+     */
 
-        // Sort the cells of this module. (Not sure why this is needed. :-/)
-        std::sort(result.get_items().at(i).begin(),
-                  result.get_items().at(i).end(),
-                  [](const traccc::cell& c1, const traccc::cell& c2) {
-                      return c1.channel1 < c2.channel1;
-                  });
+    // Sort the cells belonging to the first module.
+    std::sort(result_cells.begin(), result_cells.begin() + nCellsZero, comp);
+    // Sort the cells belonging to the second module.
+    std::sort(result_cells.begin() + nCellsZero,
+              result_cells.begin() + cellCounts[0], comp);
+
+    // Sort cells belonging to all other modules.
+    for (unsigned int i = 1; i < cellCounts.size() - 1; ++i) {
+        std::sort(result_cells.begin() + cellCounts[i - 1],
+                  result_cells.begin() + cellCounts[i], comp);
     }
 
-    // Return the prepared object.
-    return result;
+    // Return the two collections.
+    return {result_cells, result_modules};
 }
 
 }  // namespace traccc::io::csv

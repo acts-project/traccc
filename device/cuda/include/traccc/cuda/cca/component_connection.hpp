@@ -8,13 +8,13 @@
 
 #pragma once
 
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 namespace traccc::cuda {
-struct component_connection : algorithm<measurement_container_types::host(
-                                  const cell_container_types::host& cells)> {
-    output_type operator()(const cell_container_types::host& cells) const;
+struct component_connection : algorithm<alt_measurement_collection_types::host(
+                                  const cell_collection_types::host& data)> {
+    output_type operator()(const cell_collection_types::host& data) const;
 };
 }  // namespace traccc::cuda

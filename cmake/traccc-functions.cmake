@@ -1,8 +1,11 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
+
+# DISCOVERY_TIMEOUT in gtest_discover_tests(...) requires at least CMake 3.10.
+cmake_minimum_required( VERSION 3.10 )
 
 # Guard against multiple includes.
 include_guard( GLOBAL )
@@ -117,7 +120,8 @@ function( traccc_add_test name )
    # CTest tests. All the while ensuring that they would find their data files.
    gtest_discover_tests( ${test_exe_name}
       PROPERTIES ENVIRONMENT
-                 TRACCC_TEST_DATA_DIR=${PROJECT_SOURCE_DIR}/data )
+                 TRACCC_TEST_DATA_DIR=${PROJECT_SOURCE_DIR}/data
+      DISCOVERY_TIMEOUT 20 )
 
 endfunction( traccc_add_test )
 

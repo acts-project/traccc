@@ -9,9 +9,9 @@
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 
@@ -30,25 +30,24 @@ TEST(algorithms, seq_single_module) {
     traccc::measurement_creation mc(resource);
 
     /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
-    traccc::cell_collection_types::host cells_per_module = {{{1, 0, 1., 0.},
-                                                             {8, 4, 2., 0.},
-                                                             {10, 4, 3., 0.},
-                                                             {9, 5, 4., 0.},
-                                                             {10, 5, 5., 0},
-                                                             {12, 12, 6, 0},
-                                                             {3, 13, 7, 0},
-                                                             {11, 13, 8, 0},
-                                                             {4, 14, 9, 0}},
-                                                            &resource};
+    traccc::cell_collection_types::host cells = {{{1, 0, 1., 0., 0},
+                                                  {8, 4, 2., 0., 0},
+                                                  {10, 4, 3., 0., 0},
+                                                  {9, 5, 4., 0., 0},
+                                                  {10, 5, 5., 0, 0},
+                                                  {12, 12, 6, 0, 0},
+                                                  {3, 13, 7, 0, 0},
+                                                  {11, 13, 8, 0, 0},
+                                                  {4, 14, 9, 0, 0}},
+                                                 &resource};
     traccc::cell_module module;
-
-    traccc::cell_container_types::host cells;
-    cells.push_back(module, cells_per_module);
+    traccc::cell_module_collection_types::host modules(&resource);
+    modules.push_back(module);
 
     auto clusters = cc(cells);
     EXPECT_EQ(clusters.size(), 4u);
 
-    auto measurements = mc(cells, clusters);
+    auto measurements = mc(clusters, modules);
 
-    EXPECT_EQ(measurements.at(0).items.size(), 4u);
+    EXPECT_EQ(measurements.size(), 4u);
 }
