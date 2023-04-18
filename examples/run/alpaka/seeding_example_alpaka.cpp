@@ -109,8 +109,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-        traccc::spacepoint_container_types::host spacepoints_per_event;
-        traccc::spacepoint_collection_types::host alt_spacepoints_per_event;
+        traccc::io::spacepoint_reader_output reader_output;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -120,29 +119,25 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             /*-----------------
             hit file reading
             -----------------*/
-            if (run_cpu) {
+            {
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                spacepoints_per_event = traccc::io::read_spacepoints(
+                reader_output = traccc::io::read_spacepoints_alt(
                     event, common_opts.input_directory, surface_transforms,
                     common_opts.input_data_format, &host_mr);
             }  // stop measuring hit reading timer
 
-            {
-                traccc::performance::timer t("Alt hit reading  (cpu)",
-                                             elapsedTimes);
-                // Read the hits from the relevant event file
-                alt_spacepoints_per_event = traccc::io::read_spacepoints_alt(
-                    event, common_opts.input_directory, surface_transforms,
-                    common_opts.input_data_format, &host_mr);
-            }  // stop measuring hit reading timer
+            traccc::spacepoint_collection_types::host& spacepoints_per_event =
+                reader_output.spacepoints;
+
 
             // Copy the spacepoint data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
-                alt_spacepoints_per_event.size(), mr.main);
-            copy(vecmem::get_data(alt_spacepoints_per_event),
+                spacepoints_per_event.size(), mr.main);
+            copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_cuda_buffer);
+
             {  // Spacepoint binning for alpaka
                 traccc::performance::timer t("Spacepoint binning (alpaka)",
                                              elapsedTimes);

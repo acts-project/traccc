@@ -148,10 +148,10 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
 
     // Create the grid buffer.
     sp_grid_buffer grid_buffer(
-        m_axes.first, m_axes.second, std::vector<std::size_t>(grid_bins, 0),
+        m_axes.first, m_axes.second,
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
-        m_mr.main, m_mr.host);
+        m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable);
     m_copy->setup(grid_buffer._buffer);
     sp_grid_view grid_view = grid_buffer;
 
