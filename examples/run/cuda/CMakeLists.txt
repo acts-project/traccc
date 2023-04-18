@@ -27,12 +27,12 @@ add_library( traccc_examples_cuda STATIC
    "full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cuda
    PUBLIC CUDA::cudart vecmem::core vecmem::cuda traccc::core
-          traccc::device_common traccc::cuda ${CMAKE_DL_LIBS})
+          traccc::device_common traccc::cuda )
 
 traccc_add_executable( throughput_st_cuda "throughput_st.cpp" "inst_nvtx.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
-                  traccc::options traccc_examples_cuda )
+                  traccc::options traccc_examples_cuda ${CMAKE_DL_LIBS})
 
     traccc_add_executable( throughput_mt_cuda "throughput_mt.cpp"
    LINK_LIBRARIES TBB::tbb vecmem::core vecmem::cuda traccc::io traccc::performance
