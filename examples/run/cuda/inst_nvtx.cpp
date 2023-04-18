@@ -29,7 +29,7 @@
 #include <dlfcn.h>
 #include <cxxabi.h>
 #include "nvtx3/nvToolsExt.h"
-
+#define UNUSED(x) (void)(x)
 const char* const default_name = "Unknown";
 
 const uint32_t colors[] = { 0xff00ff00, 0xff0000ff, 0xffffff00, 0xffff00ff, 0xff00ffff, 0xffff0000, 0xffffffff };
@@ -44,6 +44,8 @@ void rangePop() __attribute__((no_instrument_function));
 
 extern "C" void __cyg_profile_func_enter(void *this_fn, void *call_site)
 {
+    (void)this_fn;
+    (void)call_site;
 	Dl_info this_fn_info;
 	if ( dladdr( this_fn, &this_fn_info ) )
 	{
@@ -58,18 +60,23 @@ extern "C" void __cyg_profile_func_enter(void *this_fn, void *call_site)
 
 extern "C" void __cyg_profile_func_exit(void *this_fn, void *call_site)
 {
+        (void)this_fn;
+        (void)call_site;
 	rangePop();
 } /* __cyg_profile_func_enter */
 
 void rangePush(const char* const name )
 {
-	nvtxEventAttributes_t eventAttrib = {0};
+	nvtxEventAttributes_t eventAttrib ;
 	eventAttrib.version = NVTX_VERSION;
 	eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
 	eventAttrib.colorType = NVTX_COLOR_ARGB;
 	eventAttrib.color = colors[color_id];
 	color_id = (color_id+1)%num_colors;
 	eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
+        eventAttrib.category = 3;
+        eventAttrib.message.ascii = "Example Range";
+//        nvtxRangeId_t rangeId = nvtxRangeStartEx(&eventAttrib);
 	if ( name != 0 )
 	{
 		eventAttrib.message.ascii = name;
