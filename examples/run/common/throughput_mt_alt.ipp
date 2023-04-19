@@ -21,6 +21,13 @@
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
 
+// Baseline chain include(s).
+#include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/performance/collection_comparator.hpp"
+#include "traccc/seeding/seeding_algorithm.hpp"
+#include "traccc/seeding/track_params_estimation.hpp"
+
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
@@ -95,7 +102,7 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
 
     // Set up cached memory resources on top of the host memory resource
     // separately for each CPU thread.
-    std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
+    std::vector<std::unique_ptr<vecmem::binary_page_memory_resource>>
         cached_host_mrs{mt_cfg.threads + 1};
 
     // Set up the full-chain algorithm(s). One for each thread.
@@ -153,6 +160,13 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
     // Reset the dummy counter.
     rec_track_params = 0;
 
+    constexpr std::size_t intervalStoredResults = 1000;
+    std::vector<std::pair<std::size_t, typename FULL_CHAIN_ALG::output_type>>
+        storedResults;
+    storedResults.reserve(
+        (throughput_cfg.processed_events + intervalStoredResults - 1) /
+        intervalStoredResults);
+
     {
         // Measure the total time of execution.
         performance::timer t{"Event processing", times};
@@ -164,16 +178,17 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
             const std::size_t event =
                 std::rand() % throughput_cfg.loaded_events;
 
-            // std::cout << "running event " << i << " : " << event <<
-            // std::endl;
-
             // Launch the processing of the event.
-            arena.execute([&, event]() {
-                group.run([&, event]() {
-                    rec_track_params.fetch_add(
+            arena.execute([&, event, i]() {
+                group.run([&, event, i]() {
+                    auto track_params =
                         algs.at(tbb::this_task_arena::current_thread_index())(
-                                input[event].cells, input[event].modules)
-                            .size());
+                            input[event].cells, input[event].modules);
+                    rec_track_params.fetch_add(track_params.size());
+                    if (i % intervalStoredResults == 0) {
+                        storedResults.push_back(
+                            {event, std::move(track_params)});
+                    }
                 });
             });
         }
@@ -182,10 +197,31 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
         group.wait();
     }
 
+    std::cout << "Finished event processing." << std::endl;
+
     // Delete the algorithms and host memory caches explicitly before their
     // parent object would go out of scope.
     algs.clear();
     cached_host_mrs.clear();
+
+    // Memory resource used by the EDM.
+    traccc::clusterization_algorithm ca(uncached_host_mr);
+    traccc::spacepoint_formation sf(uncached_host_mr);
+    traccc::seeding_algorithm sa(uncached_host_mr);
+    traccc::track_params_estimation tp(uncached_host_mr);
+
+    for (std::size_t i = 0; i < storedResults.size(); ++i) {
+        auto sp = sf(ca(input[storedResults[i].first].cells,
+                        input[storedResults[i].first].modules),
+                     input[storedResults[i].first].modules);
+        auto trackParams = tp(sp, sa(sp));
+        // Compare the track parameters made on the host and on the device.
+        traccc::collection_comparator<traccc::bound_track_parameters>
+            compare_track_parameters{"track parameters", {},        "baseline",
+                                     "throughput run",   std::cout, {0.0001}};
+        compare_track_parameters(vecmem::get_data(trackParams),
+                                 vecmem::get_data(storedResults[i].second));
+    }
 
     // Print some results.
     std::cout << "Reconstructed track parameters: " << rec_track_params.load()
