@@ -166,7 +166,8 @@ seed_finding::output_type seed_finding::operator()(
 
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
-        m_copy.get_size(sp_grid_prefix_sum_buff), 0, m_mr.main};
+        m_copy.get_size(sp_grid_prefix_sum_buff), m_mr.main,
+        vecmem::data::buffer_type::resizable};
     m_copy.setup(doublet_counter_buffer);
 
     // Calculate the number of threads and thread blocks to run the doublet
@@ -231,8 +232,9 @@ seed_finding::output_type seed_finding::operator()(
     m_copy.setup(triplet_counter_spM_buffer);
     m_copy.memset(triplet_counter_spM_buffer, 0);
     device::triplet_counter_collection_types::buffer
-        triplet_counter_midBot_buffer = {globalCounter_host.m_nMidBot, 0,
-                                         m_mr.main};
+        triplet_counter_midBot_buffer = {globalCounter_host.m_nMidBot,
+                                         m_mr.main,
+                                         vecmem::data::buffer_type::resizable};
     m_copy.setup(triplet_counter_midBot_buffer);
 
     // Calculate the number of threads and thread blocks to run the doublet
@@ -319,8 +321,9 @@ seed_finding::output_type seed_finding::operator()(
                   triplet_counter_midBot_buffer, triplet_buffer);
 
     // Create result object: collection of seeds
-    seed_collection_types::buffer seed_buffer(globalCounter_host.m_nTriplets, 0,
-                                              m_mr.main);
+    seed_collection_types::buffer seed_buffer(
+        globalCounter_host.m_nTriplets, m_mr.main,
+        vecmem::data::buffer_type::resizable);
     m_copy.setup(seed_buffer);
 
     // Calculate the number of threads and thread blocks to run the seed
