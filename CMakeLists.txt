@@ -237,7 +237,7 @@ if( TRACCC_SETUP_GOOGLETEST )
 endif()
 
 option( TRACCC_SETUP_PROFILER
-        "Use instrument functions to enable fine grained profiling" TRUE )
+        "Use instrument functions to enable fine grained profiling" FALSE )
 
 # option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
 set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the build")
