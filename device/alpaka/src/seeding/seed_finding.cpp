@@ -13,15 +13,17 @@
 #include "traccc/alpaka/utils/make_prefix_sum_buff.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/device/make_prefix_sum_buffer.hpp"
+#include "traccc/edm/device/device_doublet.hpp"
+#include "traccc/edm/device/device_triplet.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/doublet_counter.hpp"
+#include "traccc/edm/device/seeding_global_counter.hpp"
+#include "traccc/edm/device/triplet_counter.hpp"
 #include "traccc/seeding/device/count_doublets.hpp"
 #include "traccc/seeding/device/count_triplets.hpp"
 #include "traccc/seeding/device/find_doublets.hpp"
 #include "traccc/seeding/device/find_triplets.hpp"
-#include "traccc/seeding/device/make_doublet_buffers.hpp"
-#include "traccc/seeding/device/make_doublet_counter_buffer.hpp"
-#include "traccc/seeding/device/make_triplet_buffer.hpp"
-#include "traccc/seeding/device/make_triplet_counter_buffer.hpp"
+#include "traccc/seeding/device/reduce_triplet_counts.hpp"
 #include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
 
@@ -42,11 +44,12 @@ struct CountDoubletsKernel {
         Acc const& acc,
         seedfinder_config config, sp_grid_const_view sp_grid,
         vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
-        device::doublet_counter_container_types::view doublet_counter
+        device::doublet_counter_collection_types::view doublet_counter,
+        unsigned int& nMidBot, unsigned int& nMidTop
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::count_doublets(globalThreadIdx, config, sp_grid, sp_prefix_sum, doublet_counter);
+        device::count_doublets(globalThreadIdx, config, sp_grid, sp_prefix_sum, doublet_counter, nMidBot, nMidTop);
     }
 };
 
@@ -56,18 +59,14 @@ struct FindDoubletsKernel {
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         seedfinder_config config, sp_grid_const_view sp_grid,
-        device::doublet_counter_container_types::const_view doublet_counter,
-        vecmem::data::vector_view<const device::prefix_sum_element_t>
-            doublet_prefix_sum,
-        doublet_container_types::view mb_doublets,
-        doublet_container_types::view mt_doublets
+        device::doublet_counter_collection_types::const_view doublet_counter,
+        device::device_doublet_collection_types::view mb_doublets,
+        device::device_doublet_collection_types::view mt_doublets
     ) const
     {
 
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::find_doublets(threadIdx.x + blockIdx.x * blockDim.x, config,
-                              sp_grid, doublet_counter, doublet_prefix_sum,
-                              mb_doublets, mt_doublets);
+        device::find_doublets(globalThreadIdx, config, sp_grid, doublet_counter, mb_doublets, mt_doublets);
     }
 };
 
@@ -77,18 +76,33 @@ struct CountTripletsKernel {
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         seedfinder_config config, sp_grid_const_view sp_grid,
-        vecmem::data::vector_view<const device::prefix_sum_element_t>
-            doublet_prefix_sum,
-        doublet_container_types::const_view mb_doublets,
-        doublet_container_types::const_view mt_doublets,
-        device::triplet_counter_container_types::view triplet_view
+        device::doublet_counter_collection_types::const_view doublet_counter,
+        device::device_doublet_collection_types::const_view mb_doublets,
+        device::device_doublet_collection_types::const_view mt_doublets,
+        device::triplet_counter_spM_collection_types::view spM_counter,
+        device::triplet_counter_collection_types::view midBot_counter
     ) const
     {
 
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
         device::count_triplets(globalThreadIdx, config, sp_grid,
-                               doublet_prefix_sum, mb_doublets, mt_doublets,
-                               triplet_view);
+                               doublet_counter, mb_doublets, mt_doublets,
+                               spM_counter, midBot_counter);
+    }
+};
+
+// Kernel for running @c traccc::device::reduce_triplet_counts
+struct ReduceTripletCounts {
+    template <typename Acc>
+    ALPAKA_FN_ACC void operator()(
+        Acc const& acc,
+        device::doublet_counter_collection_types::const_view doublet_counter,
+        device::triplet_counter_spM_collection_types::view spM_counter,
+        unsigned int& num_triplets
+    ) const
+    {
+        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        device::reduce_triplet_counts(globalThreadIdx, doublet_counter, spM_counter, num_triplets);
     }
 };
 
@@ -97,19 +111,20 @@ struct FindTripletsKernel {
     template <typename Acc>
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
-    seedfinder_config config, seedfilter_config filter_config,
-    sp_grid_const_view sp_grid, doublet_container_types::const_view mt_doublets,
-    device::triplet_counter_container_types::const_view tc_view,
-    vecmem::data::vector_view<const device::prefix_sum_element_t>
-        triplet_prefix_sum,
-    triplet_container_types::view triplet_view
+        seedfinder_config config, seedfilter_config filter_config,
+        sp_grid_const_view sp_grid,
+        device::doublet_counter_collection_types::const_view doublet_counter,
+        device::device_doublet_collection_types::const_view mt_doublets,
+        device::triplet_counter_spM_collection_types::const_view spM_tc,
+        device::triplet_counter_collection_types::const_view midBot_tc,
+        device::device_triplet_collection_types::view triplet_view
     ) const
     {
 
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::find_triplets(globalThreadIdx, config, filter_config, sp_grid,
-                              mt_doublets, tc_view, triplet_prefix_sum,
-                              triplet_view);
+        device::find_triplets(globalThreadIdx, config,
+                              filter_config, sp_grid, doublet_counter, mt_doublets,
+                              spM_tc, midBot_tc, triplet_view);
     }
 };
 
@@ -119,9 +134,9 @@ struct UpdateTripletWeightsKernel {
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         seedfilter_config filter_config, sp_grid_const_view sp_grid,
-        vecmem::data::vector_view<const device::prefix_sum_element_t>
-            triplet_prefix_sum,
-        triplet_container_types::view triplet_view
+        device::triplet_counter_spM_collection_types::const_view spM_tc,
+        device::triplet_counter_collection_types::const_view midBot_tc,
+        device::device_triplet_collection_types::view triplet_view
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
@@ -148,11 +163,10 @@ struct SelectSeedsKernel {
         seedfilter_config filter_config,
         spacepoint_collection_types::const_view spacepoints_view,
         sp_grid_const_view internal_sp_view,
-        vecmem::data::vector_view<const device::prefix_sum_element_t> dc_ps_view,
-        device::doublet_counter_container_types::const_view
-            doublet_counter_container,
-        triplet_container_types::const_view tc_view,
-        alt_seed_collection_types::view seed_view
+        device::triplet_counter_spM_collection_types::const_view spM_tc,
+        device::triplet_counter_collection_types::const_view midBot_tc,
+        device::device_triplet_collection_types::view triplet_view,
+        seed_collection_types::view seed_view
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
@@ -175,18 +189,12 @@ struct SelectSeedsKernel {
 
 seed_finding::seed_finding(const seedfinder_config& config,
                            const seedfilter_config& filter_config,
-                           const traccc::memory_resource& mr)
+                           const traccc::memory_resource& mr,
+                           vecmem::copy& copy)
     : m_seedfinder_config(config.toInternalUnits()),
       m_seedfilter_config(filter_config.toInternalUnits()),
-      m_mr(mr) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::cuda::copy>();
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+      m_mr(mr),
+      m_copy(copy) {}
 
 seed_finding::output_type seed_finding::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
@@ -222,9 +230,8 @@ seed_finding::output_type seed_finding::operator()(
     //     doublet_counter_buffer);
 
     // // Get the summary values per bin.
-    // vecmem::vector<device::doublet_counter_header> doublet_counts(
-    //     m_mr.host ? m_mr.host : &(m_mr.main));
-    // (*m_copy)(doublet_counter_buffer.headers, doublet_counts);
+    // TODO: Copy to device.
+    device::seeding_global_counter globalCounter_host;
 
     // // Set up the doublet buffers.
     // device::doublet_buffer_pair doublet_buffers = device::make_doublet_buffers(
@@ -321,13 +328,15 @@ seed_finding::output_type seed_finding::operator()(
     // (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
 
     // Get the number of seeds (triplets)
-    unsigned int n_triplets = 0;
+    // unsigned int n_triplets = 0;
     // for (const auto& h : tcc_headers) {
     //     n_triplets += h.m_nTriplets;
     // }
 
-    alt_seed_collection_types::buffer seed_buffer(n_triplets, 0, m_mr.main);
-    m_copy->setup(seed_buffer);
+    seed_collection_types::buffer seed_buffer(
+        globalCounter_host.m_nTriplets, m_mr.main,
+        vecmem::data::buffer_type::resizable);
+    m_copy.setup(seed_buffer);
 
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.

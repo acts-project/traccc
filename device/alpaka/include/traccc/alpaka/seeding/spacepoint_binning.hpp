@@ -32,7 +32,8 @@ class spacepoint_binning
     /// Constructor for the algorithm
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
-                       const traccc::memory_resource& mr);
+                       const traccc::memory_resource& mr,
+                       vecmem::copy& copy);
 
     /// Function executing the algorithm with a view of spacepoints
     output_type operator()(const spacepoint_collection_types::const_view&
@@ -43,7 +44,7 @@ class spacepoint_binning
     seedfinder_config m_config;
     std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;
     traccc::memory_resource m_mr;
-    std::unique_ptr<vecmem::copy> m_copy;
+    vecmem::copy& m_copy;
 
 };  // class spacepoint_binning
 

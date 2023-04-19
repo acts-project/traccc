@@ -59,10 +59,11 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
 
 namespace traccc::alpaka {
 
-seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr)
+seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr,
+                                     vecmem::copy& copy)
     : m_spacepoint_binning(default_seedfinder_config(),
-                           default_spacepoint_grid_config(), mr),
-      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr) {}
+                           default_spacepoint_grid_config(), mr, copy),
+      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr, copy) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {

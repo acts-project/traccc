@@ -12,7 +12,7 @@
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -25,7 +25,7 @@
 namespace traccc::alpaka {
 
 /// Main algorithm for performing the track seeding on in alpaka
-class seeding_algorithm : public algorithm<alt_seed_collection_types::buffer(
+class seeding_algorithm : public algorithm<seed_collection_types::buffer(
                               const spacepoint_collection_types::const_view&)> {
 
     public:
@@ -33,7 +33,7 @@ class seeding_algorithm : public algorithm<alt_seed_collection_types::buffer(
     ///
     /// @param mr The memory resource to use
     ///
-    seeding_algorithm(const traccc::memory_resource& mr);
+    seeding_algorithm(const traccc::memory_resource& mr, vecmem::copy& copy);
 
     /// Operator executing the algorithm.
     ///

@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_seed.hpp"
+#include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -24,7 +24,7 @@
 namespace traccc::alpaka {
 
 /// Seed finding for alpaka
-class seed_finding : public algorithm<alt_seed_collection_types::buffer(
+class seed_finding : public algorithm<seed_collection_types::buffer(
                          const spacepoint_collection_types::const_view&,
                          const sp_grid_const_view&)> {
 
@@ -35,9 +35,11 @@ class seed_finding : public algorithm<alt_seed_collection_types::buffer(
     /// @param filter_config is seed filter configuration parameters
     /// @param sp_grid spacepoint grid
     /// @param mr vecmem memory resource
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
     seed_finding(const seedfinder_config& config,
                  const seedfilter_config& filter_config,
-                 const traccc::memory_resource& mr);
+                 const traccc::memory_resource& mr, vecmem::copy& copy);
 
     /// Callable operator for the seed finding
     ///
@@ -53,7 +55,7 @@ class seed_finding : public algorithm<alt_seed_collection_types::buffer(
     seedfinder_config m_seedfinder_config;
     seedfilter_config m_seedfilter_config;
     traccc::memory_resource m_mr;
-    std::unique_ptr<vecmem::copy> m_copy;
+    vecmem::copy& m_copy;
 };
 
 }  // namespace traccc::alpaka

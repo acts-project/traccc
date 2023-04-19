@@ -93,7 +93,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     // Alpaka Spacepoint Binning
     traccc::alpaka::spacepoint_binning m_spacepoint_binning(
-        default_seedfinder_config(), default_spacepoint_grid_config(), mr);
+        default_seedfinder_config(), default_spacepoint_grid_config(), mr, copy);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(

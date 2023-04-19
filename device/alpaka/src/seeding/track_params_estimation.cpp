@@ -20,7 +20,7 @@ struct EstimateTrackParamsKernel {
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         spacepoint_collection_types::const_view spacepoints_view,
-        alt_seed_collection_types::const_view seed_view,
+        seed_collection_types::const_view seed_view,
         bound_track_parameters_collection_types::view params_view
     ) const
     {
@@ -30,28 +30,21 @@ struct EstimateTrackParamsKernel {
 };
 
 track_params_estimation::track_params_estimation(
-    const traccc::memory_resource& mr)
-    : m_mr(mr) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::cuda::copy>();
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+    const traccc::memory_resource& mr, vecmem::copy& copy)
+    : m_mr(mr),
+      m_copy(copy) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const alt_seed_collection_types::const_view& seeds_view) const {
+    const seed_collection_types::const_view& seeds_view) const {
 
     // Get the size of the seeds view
-    const std::size_t seeds_size = m_copy->get_size(seeds_view);
+    const std::size_t seeds_size = m_copy.get_size(seeds_view);
 
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
                                                                   m_mr.main);
-    m_copy->setup(params_buffer);
+    m_copy.setup(params_buffer);
 
     // Check if anything needs to be done.
     if (seeds_size == 0) {
