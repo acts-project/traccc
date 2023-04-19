@@ -38,11 +38,20 @@ traccc_add_executable(
 #
 # Set up the "throughput applications".
 #
+<<<<<<< HEAD
 add_library(traccc_examples_cuda STATIC "full_chain_algorithm.hpp"
                                         "full_chain_algorithm.cpp")
 target_link_libraries(
   traccc_examples_cuda PUBLIC CUDA::cudart vecmem::core vecmem::cuda
                               traccc::core traccc::device_common traccc::cuda)
+=======
+add_library( traccc_examples_cuda STATIC
+   "full_chain_algorithm.hpp"
+   "full_chain_algorithm.cpp" )
+target_link_libraries( traccc_examples_cuda
+   PUBLIC CUDA::cudart vecmem::core vecmem::cuda traccc::core
+          traccc::device_common traccc::cuda )
+>>>>>>> parent of 21767d0 (fixing problem with undefined reference to symbol 'dlclose@@GLIB_2.2.5)
 
 traccc_add_executable(
   throughput_st_cuda
