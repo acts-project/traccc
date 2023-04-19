@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -51,6 +51,7 @@ class fitting_algorithm
             // Make a vector of track state
             auto& cands = track_candidates[i].items;
             vecmem::vector<track_state<transform3_type>> input_states;
+            input_states.reserve(cands.size());
             for (auto& cand : cands) {
                 input_states.emplace_back(cand);
             }
