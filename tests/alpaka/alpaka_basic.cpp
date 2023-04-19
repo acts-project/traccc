@@ -39,7 +39,7 @@ void testResult(TQueue& queue, TBufAcc& bufAcc)
     auto const* result = alpaka::getPtrNative(bufHost);
     bool testPassed = true;
     for(uint32_t i = 0u; i < n; i++)
-        testPassed = testPassed && (std::abs(result[i] - process(devHost, i)) < 1e-3);
+        testPassed = testPassed && (std::abs(result[i] - std::sin(i)) < 1e-3);
     std::cout << (testPassed ? "Test passed.\n" : "Test failed.\n");
 }
 
