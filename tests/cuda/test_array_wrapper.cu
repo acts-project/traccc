@@ -63,7 +63,7 @@ __global__ void fillWrapperKernel(
 TEST(CUDAArrayWrapper, SoALayout) {
     vecmem::cuda::device_memory_resource mr;
 
-    uint32_t n = 1024u * 1024u * 1024u;
+    uint32_t n = 1024u * 1024u;
 
     traccc::array_wrapper<traccc::soa, vector>::owner o(mr, n);
 
@@ -96,7 +96,7 @@ TEST(CUDAArrayWrapper, SoALayout) {
 TEST(CUDAArrayWrapper, AoSLayout) {
     vecmem::cuda::device_memory_resource mr;
 
-    uint32_t n = 1024u * 1024u * 1024u;
+    uint32_t n = 1024u * 1024u;
 
     traccc::array_wrapper<traccc::aos, vector>::owner o(mr, n);
 
