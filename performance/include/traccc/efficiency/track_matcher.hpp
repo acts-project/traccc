@@ -38,6 +38,10 @@ struct track_matcher {
      */
     virtual std::optional<uint64_t> operator()(
         const std::vector<std::vector<uint64_t>>& v) const = 0;
+    /**
+     * @brief Default destructor
+     */
+    virtual ~track_matcher() = default;
 };
 
 /**
