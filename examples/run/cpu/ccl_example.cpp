@@ -9,7 +9,7 @@
 // Project include(s).
 #include "traccc/clusterization/component_connection.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/io/csv.hpp"
+#include "traccc/io/read_cells.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -29,7 +29,7 @@ double delta_ms(std::chrono::high_resolution_clock::time_point s,
 }
 }  // namespace
 
-void print_statistics(const traccc::cell_container_types::host& data) {
+void print_statistics(const traccc::cell_collection_types::host& data) {
     static std::vector<std::size_t> bins_edges = {
         0,   1,   2,    3,    4,    6,    8,    11,   16,
         23,  32,  45,   64,   91,   128,  181,  256,  362,
@@ -39,15 +39,21 @@ void print_statistics(const traccc::cell_container_types::host& data) {
 
     std::vector<std::size_t> bins(bins_edges.size());
 
+    unsigned int last = std::numeric_limits<unsigned int>::max();
+    std::size_t count = 0;
     for (std::size_t i = 0; i < data.size(); ++i) {
-        std::size_t count = data.at(i).items.size();
-
-        for (std::size_t j = 0; j < bins_edges.size(); ++j) {
-            if (count >= bins_edges[j] &&
-                (j + 1 >= bins_edges.size() || count < bins_edges[j + 1])) {
-                ++bins[j];
-                break;
+        if (last == data.at(i).module_link) {
+            count++;
+        } else {
+            for (std::size_t j = 0; j < bins_edges.size(); ++j) {
+                if (count >= bins_edges[j] &&
+                    (j + 1 >= bins_edges.size() || count < bins_edges[j + 1])) {
+                    ++bins[j];
+                    break;
+                }
             }
+            count = 1;
+            last = data.at(i).module_link;
         }
     }
 
@@ -78,7 +84,7 @@ void print_statistics(const traccc::cell_container_types::host& data) {
 }
 
 void run_on_event(traccc::component_connection& cc,
-                  traccc::cell_container_types::host& data) {
+                  traccc::cell_collection_types::host& data) {
     traccc::cluster_container_types::host clusters = cc(data);
 }
 
@@ -99,9 +105,8 @@ int main(int argc, char* argv[]) {
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
-    traccc::cell_reader creader(event_file, {"geometry_id", "hit_id", "cannel0",
-                                             "channel1", "activation", "time"});
-    traccc::cell_container_types::host data = traccc::read_cells(creader, mem);
+    traccc::cell_collection_types::host data =
+        traccc::io::read_cells(event_file).cells;
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 

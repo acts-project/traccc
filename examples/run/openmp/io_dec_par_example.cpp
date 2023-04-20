@@ -8,11 +8,13 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/io/demonstrator_edm.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/demonstrator_alt_edm.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -28,8 +30,8 @@
 
 namespace po = boost::program_options;
 
-traccc::demonstrator_result run(traccc::demonstrator_input input_data,
-                                vecmem::host_memory_resource resource) {
+traccc::alt_demonstrator_result run(traccc::alt_demonstrator_input input_data,
+                                    vecmem::host_memory_resource resource) {
 
     // Algorithms
     traccc::clusterization_algorithm ca(resource);
@@ -43,38 +45,42 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 
     auto startAlgorithms = std::chrono::system_clock::now();
 
-    traccc::demonstrator_result aggregated_results(input_data.size(),
-                                                   &resource);
+    traccc::alt_demonstrator_result aggregated_results(input_data.size(),
+                                                       &resource);
 
 #pragma omp parallel for reduction (+:n_modules, n_cells, n_measurements, n_spacepoints)
     for (size_t event = 0; event < input_data.size(); ++event) {
-        traccc::cell_container_types::host cells_per_event =
-            input_data.operator[](event);
+        traccc::cell_collection_types::host& cells_per_event =
+            input_data.operator[](event).cells;
+
+        traccc::cell_module_collection_types::host& modules_per_event =
+            input_data.operator[](event).modules;
 
         /*-------------------
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event);
+        auto measurements_per_event = ca(cells_per_event, modules_per_event);
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
-        auto spacepoints_per_event = sf(measurements_per_event);
+        auto spacepoints_per_event =
+            sf(measurements_per_event, modules_per_event);
 
         /*----------------------------
           Statistics
           ----------------------------*/
 
-        n_modules += cells_per_event.size();
-        n_cells += cells_per_event.total_size();
-        n_measurements += measurements_per_event.total_size();
-        n_spacepoints += spacepoints_per_event.total_size();
+        n_modules += modules_per_event.size();
+        n_cells += cells_per_event.size();
+        n_measurements += measurements_per_event.size();
+        n_spacepoints += spacepoints_per_event.size();
 
 #pragma omp critical
         aggregated_results[event] =
-            traccc::result({measurements_per_event, spacepoints_per_event});
+            traccc::alt_result({measurements_per_event, spacepoints_per_event});
     }
 
     auto endAlgorithms = std::chrono::system_clock::now();
@@ -93,7 +99,7 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
 }
 
 // The main routine
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 
     // Set up the program options.
     po::options_description desc("Allowed options");
@@ -118,7 +124,7 @@ int main(int argc, char *argv[]) {
     // Handle any and all errors.
     try {
         po::notify(vm);
-    } catch (const std::exception &ex) {
+    } catch (const std::exception& ex) {
         std::cerr << "Couldn't interpret command line options because of:\n\n"
                   << ex.what() << "\n\n"
                   << desc << std::endl;

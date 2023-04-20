@@ -6,7 +6,13 @@
  */
 
 // Project include(s).
-#include "traccc/io/csv.hpp"
+#include "traccc/io/details/read_surfaces.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_digitization_config.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
+#include "traccc/io/read_particles.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -21,78 +27,101 @@ class io : public traccc::tests::data_test {};
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_single_module) {
-    std::string file = get_datafile("single_module/cells.csv");
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
 
-    vecmem::host_memory_resource resource;
-    auto single_module_cells = traccc::read_cells(creader, resource);
-    ASSERT_EQ(single_module_cells.size(), 1u);
-    auto module_cells = single_module_cells.at(0).items;
-    auto module = single_module_cells.at(0).header;
+    auto single_module_cells = traccc::io::read_cells(
+        get_datafile("single_module/cells.csv"), traccc::data_format::csv);
+    auto& cells = single_module_cells.cells;
+    auto& modules = single_module_cells.modules;
+    ASSERT_EQ(cells.size(), 6u);
+    ASSERT_EQ(modules.size(), 1u);
+    auto module = single_module_cells.modules.at(0);
 
     ASSERT_EQ(module.module, 0u);
-    ASSERT_EQ(module.range0[0], 123u);
-    ASSERT_EQ(module.range0[1], 174u);
-    ASSERT_EQ(module.range1[0], 32u);
-    ASSERT_EQ(module.range1[1], 880u);
-    ASSERT_EQ(module_cells.size(), 6u);
+    ASSERT_EQ(cells.at(0).channel0, 123u);
+    ASSERT_EQ(cells.at(0).channel1, 32u);
+    ASSERT_EQ(cells.at(5).channel0, 174u);
+    ASSERT_EQ(cells.at(5).channel1, 880u);
 }
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_two_modules) {
-    std::string file = get_datafile("two_modules/cells.csv");
 
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
-    vecmem::host_memory_resource resource;
-    auto two_module_cells = traccc::read_cells(creader, resource);
-    ASSERT_EQ(two_module_cells.size(), 2u);
+    auto two_module_cells = traccc::io::read_cells(
+        get_datafile("two_modules/cells.csv"), traccc::data_format::csv);
+    auto& cells = two_module_cells.cells;
+    auto& modules = two_module_cells.modules;
+    ASSERT_EQ(modules.size(), 2u);
+    ASSERT_EQ(cells.size(), 14u);
 
-    auto first_module_cells = two_module_cells.at(0).items;
-    auto first_module = two_module_cells.at(0).header;
+    // Check cells in first module
+    ASSERT_EQ(cells.at(0).channel0, 123u);
+    ASSERT_EQ(cells.at(0).channel1, 32u);
+    ASSERT_EQ(cells.at(0).module_link, 0u);
+    ASSERT_EQ(cells.at(5).channel0, 174u);
+    ASSERT_EQ(cells.at(5).channel1, 880u);
+    ASSERT_EQ(cells.at(5).module_link, 0u);
 
-    ASSERT_EQ(first_module_cells.size(), 6u);
+    ASSERT_EQ(modules.at(0u).module, 0u);
 
-    ASSERT_EQ(first_module.module, 0u);
-    ASSERT_EQ(first_module.range0[0], 123u);
-    ASSERT_EQ(first_module.range0[1], 174u);
-    ASSERT_EQ(first_module.range1[0], 32u);
-    ASSERT_EQ(first_module.range1[1], 880u);
+    // Check cells in second module
+    ASSERT_EQ(cells.at(6).channel0, 0u);
+    ASSERT_EQ(cells.at(6).channel1, 4u);
+    ASSERT_EQ(cells.at(6).module_link, 1u);
+    ASSERT_EQ(cells.at(13).channel0, 5u);
+    ASSERT_EQ(cells.at(13).channel1, 98u);
+    ASSERT_EQ(cells.at(13).module_link, 1u);
 
-    auto second_module_cells = two_module_cells.at(1).items;
-    auto second_module = two_module_cells.at(1).header;
-
-    ASSERT_EQ(second_module_cells.size(), 8u);
-
-    ASSERT_EQ(second_module.module, 1u);
-    EXPECT_EQ(second_module.range0[0], 0u);
-    EXPECT_EQ(second_module.range0[1], 22u);
-    EXPECT_EQ(second_module.range1[0], 4u);
-    EXPECT_EQ(second_module.range1[1], 98u);
+    ASSERT_EQ(modules.at(1u).module, 1u);
 }
 
 // This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_transforms) {
     std::string file = get_datafile("tml_detector/trackml-detector.csv");
 
-    traccc::surface_reader sreader(
-        file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw",
-               "rot_zu", "rot_zv", "rot_zw"});
-    auto tml_barrel_transforms = traccc::read_surfaces(sreader);
+    auto tml_barrel_transforms = traccc::io::details::read_surfaces(file);
 
     ASSERT_EQ(tml_barrel_transforms.size(), 18791u);
 }
 
 // This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_pixelbarrel) {
-    std::string file =
-        get_datafile("tml_pixel_barrel/event000000000-cells.csv");
 
-    traccc::cell_reader creader(
-        file, {"module", "cannel0", "channel1", "activation", "time"});
-    vecmem::host_memory_resource resource;
-    auto tml_barrel_modules = traccc::read_cells(creader, resource);
+    auto tml_barrel_modules =
+        traccc::io::read_cells(
+            get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
+            traccc::data_format::csv)
+            .modules;
 
     ASSERT_EQ(tml_barrel_modules.size(), 2382u);
+}
+
+// This checks if hit and measurement container from the first single muon event
+TEST_F(io, csv_read_tml_single_muon) {
+    vecmem::host_memory_resource resource;
+
+    // Read the surface transforms
+    auto surface_transforms =
+        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
+
+    // Read the hits from the relevant event file
+    auto spacepoints_per_event = traccc::io::read_spacepoints_alt(
+        0, "tml_full/single_muon/", surface_transforms,
+        traccc::data_format::csv, &resource);
+
+    // Read the measurements from the relevant event file
+    auto measurements_per_event = traccc::io::read_measurements(
+        0, "tml_full/single_muon/", traccc::data_format::csv, &resource);
+
+    // Read the particles from the relevant event file
+    traccc::particle_collection_types::host particles_per_event =
+        traccc::io::read_particles(0, "tml_full/single_muon/",
+                                   traccc::data_format::csv, &resource);
+
+    ASSERT_EQ(spacepoints_per_event.modules.size(), 11u);
+    ASSERT_EQ(measurements_per_event.modules.size(), 11u);
+
+    ASSERT_EQ(spacepoints_per_event.spacepoints.size(), 11u);
+    ASSERT_EQ(measurements_per_event.measurements.size(), 11u);
+
+    ASSERT_EQ(particles_per_event.size(), 1u);
 }

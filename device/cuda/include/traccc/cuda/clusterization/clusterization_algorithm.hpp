@@ -7,45 +7,67 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/cuda/utils/stream.hpp"
+
 // Project include(s).
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
-
-//// Traccc library include(s).
-//#include "traccc/utils/memory_resource.hpp"
 
 namespace traccc::cuda {
 
+/// Algorithm performing hit clusterization in a naive way
+///
+/// This algorithm implements a very trivial parallelization for the hit
+/// clusterization. Simply handling every detector module in its own thread.
+/// Which is a fairly simple way of translating the single-threaded CPU
+/// algorithm, but also a pretty bad algorithm for a GPU.
+///
 class clusterization_algorithm
-    : public algorithm<spacepoint_container_types::buffer(
-          const cell_container_types::host&)> {
+    : public algorithm<std::pair<spacepoint_collection_types::buffer,
+                                 vecmem::data::vector_buffer<unsigned int>>(
+          const cell_collection_types::const_view&,
+          const cell_module_collection_types::const_view&)> {
 
     public:
     /// Constructor for clusterization algorithm
     ///
-    /// @param mr is a memory resource (device)
-    clusterization_algorithm(const traccc::memory_resource& mr);
+    /// @param mr The memory resource(s) to use in the algorithm
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
+    /// @param str The CUDA stream to perform the operations in
+    /// @param target_cells_per_partition the average number of cells in each
+    /// partition
+    ///
+    clusterization_algorithm(const traccc::memory_resource& mr,
+                             vecmem::copy& copy, stream& str,
+                             const unsigned short target_cells_per_partition);
 
     /// Callable operator for clusterization algorithm
     ///
-    /// @param cells_per_event is a container with cell modules as headers
-    /// and cells as the items
-    /// @return a spacepoint container (buffer) - jagged vector of spacepoints
-    /// per module.
+    /// @param cells        a collection of cells
+    /// @param modules      a collection of modules
+    /// @return a spacepoint collection (buffer) and a collection (buffer) of
+    /// links from cells to the spacepoints they belong to.
     output_type operator()(
-        const cell_container_types::host& cells_per_event) const override;
+        const cell_collection_types::const_view& cells,
+        const cell_module_collection_types::const_view& modules) const override;
 
     private:
+    /// The average number of cells in each partition
+    unsigned short m_target_cells_per_partition;
+    /// The memory resource(s) to use
     traccc::memory_resource m_mr;
-    std::unique_ptr<vecmem::copy> m_copy;
+    /// The copy object to use
+    vecmem::copy& m_copy;
+    /// The CUDA stream to use
+    stream& m_stream;
 };
 
 }  // namespace traccc::cuda

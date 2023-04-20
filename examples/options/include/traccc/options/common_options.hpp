@@ -20,6 +20,7 @@ struct common_options {
     std::string input_directory;
     unsigned int events;
     int skip;
+    unsigned short target_cells_per_partition;
 
     common_options(po::options_description& desc);
     void read(const po::variables_map& vm);

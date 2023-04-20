@@ -41,10 +41,11 @@ bool triplet_finding_helper::isCompatible(
     const lin_circle& lt, const seedfinder_config& config,
     const scalar& iSinTheta2, const scalar& scatteringInRegion2,
     scalar& curvature, scalar& impact_parameter) {
+
     // add errors of spB-spM and spM-spT pairs and add the correlation term
     // for errors on spM
     scalar error2 = lt.Er() + lb.Er() +
-                    2 *
+                    static_cast<scalar>(2.f) *
                         (lb.cotTheta() * lt.cotTheta() * spM.varianceR() +
                          spM.varianceZ()) *
                         lb.iDeltaR() * lt.iDeltaR();
@@ -60,8 +61,8 @@ bool triplet_finding_helper::isCompatible(
         deltaCotTheta = std::abs(deltaCotTheta);
         // if deltaTheta larger than the scattering for the lower pT cut, skip
         error = std::sqrt(error2);
-        dCotThetaMinusError2 =
-            deltaCotTheta2 + error2 - 2 * deltaCotTheta * error;
+        dCotThetaMinusError2 = deltaCotTheta2 + error2 -
+                               static_cast<scalar>(2.) * deltaCotTheta * error;
         // avoid taking root of scatteringInRegion
         // if left side of ">" is positive, both sides of unequality can be
         // squared
@@ -73,14 +74,14 @@ bool triplet_finding_helper::isCompatible(
 
     // protects against division by 0
     scalar dU = lt.U() - lb.U();
-    if (dU == 0.) {
+    if (dU == static_cast<scalar>(0.)) {
         return false;
     }
 
     // A and B are evaluated as a function of the circumference parameters
     // x_0 and y_0
     scalar A = (lt.V() - lb.V()) / dU;
-    scalar S2 = 1. + A * A;
+    scalar S2 = static_cast<scalar>(1.) + A * A;
     scalar B = lb.V() - A * lb.U();
     scalar B2 = B * B;
     // sqrt(S2)/B = 2 * helixradius
@@ -92,10 +93,12 @@ bool triplet_finding_helper::isCompatible(
     // 1/helixradius: (B/sqrt(S2))*2 (we leave everything squared)
     scalar iHelixDiameter2 = B2 / S2;
     // calculate scattering for p(T) calculated from seed curvature
-    scalar pT2scatter = 4 * iHelixDiameter2 * config.pT2perRadius;
+    scalar pT2scatter =
+        static_cast<scalar>(4.) * iHelixDiameter2 * config.pT2perRadius;
     // if pT > maxPtScattering, calculate allowed scattering angle using
     // maxPtScattering instead of pt.
-    scalar pT = config.pTPerHelixRadius * std::sqrt(S2 / B2) / 2.;
+    scalar pT =
+        config.pTPerHelixRadius * std::sqrt(S2 / B2) / static_cast<scalar>(2.);
     if (pT > config.maxPtScattering) {
         scalar pTscatter = config.highland / config.maxPtScattering;
         pT2scatter = pTscatter * pTscatter;
@@ -104,7 +107,7 @@ bool triplet_finding_helper::isCompatible(
     // from rad to deltaCotTheta
     scalar p2scatter = pT2scatter * iSinTheta2;
     // if deltaTheta larger than allowed scattering for calculated pT, skip
-    if ((deltaCotTheta2 - error2 > 0) &&
+    if ((deltaCotTheta2 - error2 > static_cast<scalar>(0.)) &&
         (dCotThetaMinusError2 >
          p2scatter * config.sigmaScattering * config.sigmaScattering)) {
         return false;

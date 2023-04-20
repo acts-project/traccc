@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -54,64 +54,51 @@ TRACCC_HOST_DEVICE void insertionSort(triplet* arr, const std::size_t begin_idx,
 
 // Select seeds kernel
 TRACCC_HOST_DEVICE
-void select_seeds(
+inline void select_seeds(
     const std::size_t globalIndex, const seedfilter_config& filter_config,
-    const spacepoint_container_types::const_view& spacepoints_view,
+    const spacepoint_collection_types::const_view& spacepoints_view,
     const sp_grid_const_view& internal_sp_view,
-    const vecmem::data::vector_view<const prefix_sum_element_t>& dc_ps_view,
-    const device::doublet_counter_container_types::const_view&
-        doublet_counter_container,
-    const triplet_container_view& triplet_view, triplet* data,
-    vecmem::data::vector_view<seed> seed_view) {
+    const triplet_counter_spM_collection_types::const_view& spM_tc_view,
+    const triplet_counter_collection_types::const_view& tc_view,
+    const device_triplet_collection_types::const_view& triplet_view,
+    triplet* data, seed_collection_types::view seed_view) {
 
     // Check if anything needs to be done.
-    const vecmem::device_vector<const prefix_sum_element_t> dc_prefix_sum(
-        dc_ps_view);
-    if (globalIndex >= dc_prefix_sum.size()) {
+    const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
+        spM_tc_view);
+    if (globalIndex >= triplet_counts_spM.size()) {
         return;
     }
 
     // Set up the device containers
-    const spacepoint_container_types::const_device spacepoints_device(
+    const triplet_counter_collection_types::const_device triplet_counts(
+        tc_view);
+    const spacepoint_collection_types::const_device spacepoints_device(
         spacepoints_view);
     const const_sp_grid_device internal_sp_device(internal_sp_view);
 
-    const prefix_sum_element_t ps_idx = dc_prefix_sum[globalIndex];
-    const std::size_t bin_idx = ps_idx.first;
-
-    device::doublet_counter_container_types::const_device
-        doublet_counter_device(doublet_counter_container);
-    device_triplet_container triplet_device(triplet_view);
-    device_seed_collection seed_device(seed_view);
-
-    // Header of triplet: number of triplets per bin
-    // Item of triplet: triplet objects per bin
-    const unsigned int num_triplets_per_bin =
-        triplet_device.get_headers().at(bin_idx).n_triplets;
-    const vecmem::device_vector<triplet> triplets_per_bin =
-        triplet_device.get_items().at(bin_idx);
+    device_triplet_collection_types::const_device triplets(triplet_view);
+    seed_collection_types::device seeds_device(seed_view);
 
     // Current work item = middle spacepoint
-    const sp_location spM_loc =
-        doublet_counter_device.get_items().at(bin_idx)[ps_idx.second].m_spM;
+    const triplet_counter_spM spM_counter = triplet_counts_spM.at(globalIndex);
+    const sp_location spM_loc = spM_counter.spM;
     const internal_spacepoint<spacepoint> spM =
-        internal_sp_device.bin(bin_idx)[spM_loc.sp_idx];
+        internal_sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
 
     // Number of triplets added for this spM
     unsigned int n_triplets_per_spM = 0;
 
+    const unsigned int end_triplets_spM =
+        spM_counter.posTriplets + spM_counter.m_nTriplets;
     // iterate over the triplets in the bin
-    for (unsigned int i = 0; i < num_triplets_per_bin; ++i) {
-        triplet aTriplet = triplets_per_bin[i];
-
-        // consider only the triplets with the same middle spacepoint
-        if (spM_loc != aTriplet.sp2) {
-            continue;
-        }
+    for (unsigned int i = spM_counter.posTriplets; i < end_triplets_spM; ++i) {
+        device_triplet aTriplet = triplets[i];
 
         // spacepoints bottom and top for this triplet
-        const sp_location& spB_loc = aTriplet.sp1;
-        const sp_location& spT_loc = aTriplet.sp3;
+        const sp_location spB_loc =
+            triplet_counts.at(aTriplet.counter_link).spB;
+        const sp_location spT_loc = aTriplet.spT;
         const internal_spacepoint<spacepoint> spB =
             internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
         const internal_spacepoint<spacepoint> spT =
@@ -140,14 +127,18 @@ void select_seeds(
             const scalar& min_weight = data[min_index].weight;
 
             if (aTriplet.weight > min_weight) {
-                data[min_index] = aTriplet;
+                data[min_index] = {spB_loc,         spM_loc,
+                                   spT_loc,         aTriplet.curvature,
+                                   aTriplet.weight, aTriplet.z_vertex};
             }
         }
 
         // if the number of good triplets is below the threshold, add
         // the current triplet to the array
         else if (n_triplets_per_spM < filter_config.max_triplets_per_spM) {
-            data[n_triplets_per_spM] = aTriplet;
+            data[n_triplets_per_spM] = {spB_loc,         spM_loc,
+                                        spT_loc,         aTriplet.curvature,
+                                        aTriplet.weight, aTriplet.z_vertex};
             n_triplets_per_spM++;
         }
     }
@@ -214,7 +205,7 @@ void select_seeds(
 
             n_seeds_per_spM++;
 
-            seed_device.push_back(aSeed);
+            seeds_device.push_back(aSeed);
         }
     }
 }

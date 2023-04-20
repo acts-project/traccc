@@ -8,12 +8,17 @@
 cmake_minimum_required( VERSION 3.14 )
 include( FetchContent )
 
+# Silence FetchContent warnings with CMake >=3.24.
+if( POLICY CMP0135 )
+   cmake_policy( SET CMP0135 NEW )
+endif()
+
 # Tell the user what's happening.
 message( STATUS "Building VecMem as part of the TRACCC project" )
 
 # Declare where to get VecMem from.
 set( TRACCC_VECMEM_SOURCE
-   "URL;https://github.com/acts-project/vecmem/archive/refs/tags/v0.17.0.tar.gz;URL_MD5;4911795b54045159ac0428688f900210"
+   "URL;https://github.com/acts-project/vecmem/archive/refs/tags/v0.24.0.tar.gz;URL_MD5;f6936ea57921d7e5110606c7a9e9a371"
    CACHE STRING "Source for VecMem, when built as part of this project" )
 mark_as_advanced( TRACCC_VECMEM_SOURCE )
 FetchContent_Declare( VecMem ${TRACCC_VECMEM_SOURCE} )

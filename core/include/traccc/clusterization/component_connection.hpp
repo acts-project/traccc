@@ -31,7 +31,7 @@ namespace traccc {
 /// implementation internally.
 ///
 class component_connection : public algorithm<cluster_container_types::host(
-                                 const cell_container_types::host&)> {
+                                 const cell_collection_types::host&)> {
 
     public:
     /// Constructor for component_connection
@@ -45,15 +45,13 @@ class component_connection : public algorithm<cluster_container_types::host(
     /// Callable operator for the connected component, based on one single
     /// module
     ///
-    /// @param cells are the input cells into the connected component, they are
-    ///              per module and unordered
-    /// @param module The description of the module that the cells belong to
+    /// @param cells Collection of input cells sorted by module
     ///
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
     output_type operator()(
-        const cell_container_types::host& cells) const override;
+        const cell_collection_types::host& cells) const override;
 
     /// @}
 

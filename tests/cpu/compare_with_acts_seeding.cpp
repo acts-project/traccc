@@ -6,10 +6,8 @@
  */
 
 // io
-#include "traccc/io/csv.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/utils.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 
 // algorithms
 #include "traccc/seeding/seed_finding.hpp"
@@ -30,11 +28,14 @@
 #include "Acts/Seeding/InternalSpacePoint.hpp"
 #include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
-#include "Acts/Seeding/Seedfinder.hpp"
+#include "Acts/Seeding/SeedFinder.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Surfaces/DiscSurface.hpp"
 #include "Acts/Surfaces/PlaneSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
+
+// VecMem
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -62,15 +63,16 @@ inline bool operator==(const traccc::spacepoint& traccc_sp,
 inline bool operator==(const Acts::BoundVector& acts_vec,
                        const traccc::bound_vector& traccc_vec) {
     if (std::abs(acts_vec[Acts::eBoundLoc0] -
-                 traccc_vec[traccc::e_bound_loc0]) <
+                 traccc::getter::element(traccc_vec, traccc::e_bound_loc0, 0)) <
             traccc::float_epsilon * 10 &&
         std::abs(acts_vec[Acts::eBoundLoc1] -
-                 traccc_vec[traccc::e_bound_loc1]) <
+                 traccc::getter::element(traccc_vec, traccc::e_bound_loc1, 0)) <
             traccc::float_epsilon * 10 &&
         std::abs(acts_vec[Acts::eBoundTheta] -
-                 traccc_vec[traccc::e_bound_theta]) <
-            traccc::float_epsilon * 10 &&
-        std::abs(acts_vec[Acts::eBoundPhi] - traccc_vec[traccc::e_bound_phi]) <
+                 traccc::getter::element(traccc_vec, traccc::e_bound_theta,
+                                         0)) < traccc::float_epsilon * 10 &&
+        std::abs(acts_vec[Acts::eBoundPhi] -
+                 traccc::getter::element(traccc_vec, traccc::e_bound_phi, 0)) <
             traccc::float_epsilon * 10) {
         return true;
     }
@@ -95,17 +97,17 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc::seedfinder_config traccc_config;
     traccc::spacepoint_grid_config grid_config;
 
+    traccc::seedfinder_config config_copy = traccc_config.toInternalUnits();
     traccc_config.highland =
-        13.6 * std::sqrt(traccc_config.radLengthPerSeed) *
-        (1 + 0.038 * std::log(traccc_config.radLengthPerSeed));
-    float maxScatteringAngle = traccc_config.highland / traccc_config.minPt;
+        13.6 * std::sqrt(config_copy.radLengthPerSeed) *
+        (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
+    float maxScatteringAngle = traccc_config.highland / config_copy.minPt;
     traccc_config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
     // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
     // and millimeter
-    // TODO: change using ACTS units
-    traccc_config.pTPerHelixRadius = 300. * traccc_config.bFieldInZ;
+    traccc_config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
     traccc_config.minHelixDiameter2 =
-        std::pow(traccc_config.minPt * 2 / traccc_config.pTPerHelixRadius, 2);
+        std::pow(config_copy.minPt * 2 / traccc_config.pTPerHelixRadius, 2);
     traccc_config.pT2perRadius =
         std::pow(traccc_config.highland / traccc_config.pTPerHelixRadius, 2);
 
@@ -116,6 +118,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     grid_config.zMin = traccc_config.zMin;
     grid_config.deltaRMax = traccc_config.deltaRMax;
     grid_config.cotThetaMax = traccc_config.cotThetaMax;
+    grid_config.impactMax = traccc_config.impactMax;
 
     // Declare algorithms
     traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
@@ -123,14 +126,17 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc::track_params_estimation tp(host_mr);
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(detector_file);
+    auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the hits from the relevant event file
-    traccc::spacepoint_container_types::host spacepoints_per_event =
-        traccc::read_spacepoints_from_event(event, hits_dir,
-                                            traccc::data_format::csv,
-                                            surface_transforms, host_mr);
+    auto reader_output =
+        traccc::io::read_spacepoints_alt(event, hits_dir, surface_transforms,
+                                         traccc::data_format::csv, &host_mr);
 
+    traccc::spacepoint_collection_types::host& spacepoints_per_event =
+        reader_output.spacepoints;
+    traccc::cell_module_collection_types::host& modules_per_event =
+        reader_output.modules;
     /*--------------------------------
       TRACCC seeding
       --------------------------------*/
@@ -151,37 +157,30 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // copy traccc::spacepoint into SpacePoint
     std::vector<const SpacePoint*> spVec;
-    for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
-        auto& items = spacepoints_per_event.get_items()[i_h];
-        for (auto& sp : items) {
-
-            SpacePoint* acts_sp =
-                new SpacePoint{static_cast<float>(sp.global[0]),
-                               static_cast<float>(sp.global[1]),
-                               static_cast<float>(sp.global[2]),
-                               std::hypot(static_cast<float>(sp.global[0]),
-                                          static_cast<float>(sp.global[1])),
-                               0,
-                               0,
-                               0};
-            spVec.push_back(acts_sp);
-        }
+    for (auto& sp : spacepoints_per_event) {
+        SpacePoint* acts_sp =
+            new SpacePoint{static_cast<float>(sp.global[0]),
+                           static_cast<float>(sp.global[1]),
+                           static_cast<float>(sp.global[2]),
+                           std::hypot(static_cast<float>(sp.global[0]),
+                                      static_cast<float>(sp.global[1])),
+                           0,
+                           0,
+                           0};
+        spVec.push_back(acts_sp);
     }
 
     // spacepoint equality check
     int n_sp_match = 0;
-    for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
-        auto& items = spacepoints_per_event.get_items()[i_h];
-        for (auto& sp : items) {
-            if (std::find(spVec.begin(), spVec.end(), sp) != spVec.end()) {
-                n_sp_match++;
-            }
+    for (auto& sp : spacepoints_per_event) {
+        if (std::find(spVec.begin(), spVec.end(), sp) != spVec.end()) {
+            n_sp_match++;
         }
     }
-    EXPECT_EQ(spacepoints_per_event.total_size(), n_sp_match);
+    EXPECT_EQ(spacepoints_per_event.size(), n_sp_match);
     EXPECT_EQ(spVec.size(), n_sp_match);
 
-    Acts::SeedfinderConfig<SpacePoint> acts_config;
+    Acts::SeedFinderConfig<SpacePoint> acts_config;
 
     // silicon detector max
     acts_config.phiMin = traccc_config.phiMin;
@@ -190,7 +189,11 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.rMin = traccc_config.rMin;
     acts_config.rMax = traccc_config.rMax;
     acts_config.deltaRMin = traccc_config.deltaRMin;
+    acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
+    acts_config.deltaRMinBottomSP = traccc_config.deltaRMin;
     acts_config.deltaRMax = traccc_config.deltaRMax;
+    acts_config.deltaRMaxTopSP = traccc_config.deltaRMax;
+    acts_config.deltaRMaxBottomSP = traccc_config.deltaRMax;
     acts_config.collisionRegionMin = traccc_config.collisionRegionMin;
     acts_config.collisionRegionMax = traccc_config.collisionRegionMax;
 
@@ -223,7 +226,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     Acts::ATLASCuts<SpacePoint> atlasCuts = Acts::ATLASCuts<SpacePoint>();
     acts_config.seedFilter = std::make_unique<Acts::SeedFilter<SpacePoint>>(
         Acts::SeedFilter<SpacePoint>(sfconf, &atlasCuts));
-    Acts::Seedfinder<SpacePoint> a(acts_config);
+    Acts::SeedFinder<SpacePoint> a(acts_config);
 
     // covariance tool, sets covariances per spacepoint as required
     auto ct = [=](const SpacePoint& sp, float, float,
@@ -235,6 +238,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // setup spacepoint grid config
     Acts::SpacePointGridConfig gridConf;
+
     gridConf.bFieldInZ = acts_config.bFieldInZ;
     gridConf.minPt = acts_config.minPt;
     gridConf.rMax = acts_config.rMax;
@@ -242,13 +246,49 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     gridConf.zMin = acts_config.zMin;
     gridConf.deltaRMax = acts_config.deltaRMax;
     gridConf.cotThetaMax = acts_config.cotThetaMax;
+    gridConf.impactMax = acts_config.impactMax;
+    gridConf.phiMin = acts_config.phiMin;
+    gridConf.phiMax = acts_config.phiMax;
+    gridConf.phiBinDeflectionCoverage = traccc_config.phiBinDeflectionCoverage;
 
     // create grid with bin sizes according to the configured geometry
     std::unique_ptr<Acts::SpacePointGrid<SpacePoint>> grid =
         Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf);
+
+    // Currently traccc is using grid2. check if acts grid dimensionality is the
+    // same
+    EXPECT_EQ(grid->numLocalBins().size(), 2);
+
+    detray::axis::circular axis0 = internal_spacepoints_per_event.axis_p0();
+    detray::axis::regular axis1 = internal_spacepoints_per_event.axis_p1();
+
+    auto acts_axis0 = grid->axes()[0];
+    auto acts_axis1 = grid->axes()[1];
+
+    EXPECT_EQ(axis0.bins(), acts_axis0->getNBins());
+    EXPECT_EQ(axis1.bins(), acts_axis1->getNBins());
+
+    auto axis0_borders = axis0.all_borders();
+    auto axis1_borders = axis1.all_borders();
+    auto acts_axis0_borders = acts_axis0->getBinEdges();
+    auto acts_axis1_borders = acts_axis1->getBinEdges();
+
+    EXPECT_EQ(axis0_borders.size(), axis0.bins() + 1);
+    EXPECT_EQ(axis1_borders.size(), axis1.bins() + 1);
+
+    EXPECT_EQ(axis0_borders.size(), acts_axis0_borders.size());
+    EXPECT_EQ(axis1_borders.size(), acts_axis1_borders.size());
+
+    for (unsigned int i = 0; i < axis0.bins() + 1; ++i) {
+        EXPECT_NEAR(axis0_borders[i], acts_axis0_borders[i], 0.01);
+    }
+    for (unsigned int i = 0; i < axis1.bins() + 1; ++i) {
+        EXPECT_NEAR(axis1_borders[i], acts_axis1_borders[i], 0.01);
+    }
+
     auto spGroup = Acts::BinnedSPGroup<SpacePoint>(
         spVec.begin(), spVec.end(), ct, bottomBinFinder, topBinFinder,
-        std::move(grid), acts_config);
+        std::move(grid), Acts::Extent(), acts_config);
 
     auto groupIt = spGroup.begin();
     auto endOfGroups = spGroup.end();
@@ -320,12 +360,10 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         // find geometry id
         auto spB = spacePoints[0];
         traccc::geometry_id geo_id = 0;
-        for (std::size_t i_h = 0; i_h < spacepoints_per_event.size(); i_h++) {
-            auto& items = spacepoints_per_event.get_items()[i_h];
-            if (std::find(items.begin(), items.end(), spB) != items.end()) {
-                geo_id = spacepoints_per_event.get_headers()[i_h];
-                break;
-            }
+        auto it = std::find(spacepoints_per_event.begin(),
+                            spacepoints_per_event.end(), spB);
+        if (it != spacepoints_per_event.end()) {
+            geo_id = modules_per_event.at((*it).meas.module_link).module;
         }
 
         EXPECT_TRUE(geo_id != 0);

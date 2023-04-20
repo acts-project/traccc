@@ -1,0 +1,121 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Local include(s).
+#include "full_chain_algorithm.hpp"
+
+// SYCL include(s).
+#include <CL/sycl.hpp>
+
+// System include(s).
+#include <exception>
+#include <iostream>
+
+namespace {
+
+/// Simple asynchronous handler function
+auto handle_async_error = [](::sycl::exception_list elist) {
+    for (auto& e : elist) {
+        try {
+            std::rethrow_exception(e);
+        } catch (::sycl::exception& e) {
+            std::cout << "ASYNC EXCEPTION!!\n";
+            std::cout << e.what() << "\n";
+        }
+    }
+};
+
+}  // namespace
+
+namespace traccc::sycl {
+namespace details {
+
+struct full_chain_algorithm_data {
+    ::sycl::queue m_queue;
+};
+
+}  // namespace details
+
+full_chain_algorithm::full_chain_algorithm(
+    vecmem::memory_resource& host_mr,
+    const unsigned short target_cells_per_partition)
+    : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
+      m_host_mr(host_mr),
+      m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(
+          &(m_data->m_queue))),
+      m_cached_device_mr(
+          std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
+      m_copy(&(m_data->m_queue)),
+      m_target_cells_per_partition(target_cells_per_partition),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                       &(m_data->m_queue), m_target_cells_per_partition),
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                &(m_data->m_queue)),
+      m_track_parameter_estimation(
+          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+          &(m_data->m_queue)) {
+
+    // Tell the user what device is being used.
+    std::cout
+        << "Using SYCL device: "
+        << m_data->m_queue.get_device().get_info<::sycl::info::device::name>()
+        << std::endl;
+}
+
+full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
+    : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
+      m_host_mr(parent.m_host_mr),
+      m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(
+          &(m_data->m_queue))),
+      m_cached_device_mr(
+          std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
+      m_copy(&(m_data->m_queue)),
+      m_target_cells_per_partition(parent.m_target_cells_per_partition),
+      m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                       &(m_data->m_queue), m_target_cells_per_partition),
+      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+                &(m_data->m_queue)),
+      m_track_parameter_estimation(
+          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+          &(m_data->m_queue)) {}
+
+full_chain_algorithm::~full_chain_algorithm() {
+    // Need to ensure that objects would be deleted in the correct order.
+    m_cached_device_mr.reset();
+    m_device_mr.reset();
+    delete m_data;
+}
+
+full_chain_algorithm::output_type full_chain_algorithm::operator()(
+    const cell_collection_types::host& cells,
+    const cell_module_collection_types::host& modules) const {
+
+    // Create device copy of input collections
+    cell_collection_types::buffer cells_buffer(cells.size(),
+                                               *m_cached_device_mr);
+    (m_copy)(vecmem::get_data(cells), cells_buffer)->wait();
+    cell_module_collection_types::buffer modules_buffer(modules.size(),
+                                                        *m_cached_device_mr);
+    (m_copy)(vecmem::get_data(modules), modules_buffer)->wait();
+
+    // Execute the algorithms.
+    const clusterization_algorithm::output_type spacepoints =
+        m_clusterization(cells_buffer, modules_buffer);
+    const track_params_estimation::output_type track_params =
+        m_track_parameter_estimation(spacepoints.first,
+                                     m_seeding(spacepoints.first));
+
+    // Get the final data back to the host.
+    bound_track_parameters_collection_types::host result;
+    (m_copy)(track_params, result);
+    m_data->m_queue.wait_and_throw();
+
+    // Return the host container.
+    return result;
+}
+
+}  // namespace traccc::sycl

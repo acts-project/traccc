@@ -16,8 +16,8 @@ track_params_estimation::track_params_estimation(vecmem::memory_resource& mr)
     : m_mr(mr) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const spacepoint_container_types::host& spacepoints,
-    const host_seed_collection& seeds) const {
+    const spacepoint_collection_types::host& spacepoints,
+    const seed_collection_types::host& seeds) const {
 
     output_type result(&m_mr.get());
 
@@ -27,8 +27,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     for (const auto& seed : seeds) {
         bound_track_parameters track_params;
-        track_params.vector() =
-            seed_to_bound_vector(spacepoints, seed, bfield, PION_MASS_MEV);
+        track_params.set_vector(
+            seed_to_bound_vector(spacepoints, seed, bfield, PION_MASS_MEV));
 
         result.push_back(track_params);
     }

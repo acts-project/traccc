@@ -12,19 +12,17 @@ namespace traccc {
 
 seed_finding::seed_finding(const seedfinder_config& finder_config,
                            const seedfilter_config& filter_config)
-    : m_doublet_finding(finder_config),
-      m_triplet_finding(finder_config),
-      m_seed_filtering(filter_config) {}
+    : m_midBot_finding(finder_config.toInternalUnits()),
+      m_midTop_finding(finder_config.toInternalUnits()),
+      m_triplet_finding(finder_config.toInternalUnits()),
+      m_seed_filtering(filter_config.toInternalUnits()) {}
 
 seed_finding::output_type seed_finding::operator()(
-    const spacepoint_container_types::host& sp_container,
+    const spacepoint_collection_types::host& sp_collection,
     const sp_grid& g2) const {
 
     // Run the algorithm
     output_type seeds;
-
-    const bool bottom = true;
-    const bool top = false;
 
     for (unsigned int i = 0; i < g2.nbins(); i++) {
         auto& spM_collection = g2.bin(i);
@@ -34,18 +32,18 @@ seed_finding::output_type seed_finding::operator()(
             sp_location spM_location({i, j});
 
             // middule-bottom doublet search
-            auto mid_bot = m_doublet_finding(g2, spM_location, bottom);
+            auto mid_bot = m_midBot_finding(g2, spM_location);
 
             if (mid_bot.first.empty())
                 continue;
 
             // middule-top doublet search
-            auto mid_top = m_doublet_finding(g2, spM_location, top);
+            auto mid_top = m_midTop_finding(g2, spM_location);
 
             if (mid_top.first.empty())
                 continue;
 
-            host_triplet_collection triplets_per_spM;
+            triplet_collection_types::host triplets_per_spM;
 
             // triplet search from the combinations of two doublets which
             // share middle spacepoint
@@ -53,7 +51,7 @@ seed_finding::output_type seed_finding::operator()(
                 auto& doublet_mb = mid_bot.first[k];
                 auto& lb = mid_bot.second[k];
 
-                host_triplet_collection triplets = m_triplet_finding(
+                triplet_collection_types::host triplets = m_triplet_finding(
                     g2, doublet_mb, lb, mid_top.first, mid_top.second);
 
                 triplets_per_spM.insert(std::end(triplets_per_spM),
@@ -61,7 +59,7 @@ seed_finding::output_type seed_finding::operator()(
             }
 
             // seed filtering
-            m_seed_filtering(sp_container, g2, triplets_per_spM, seeds);
+            m_seed_filtering(sp_collection, g2, triplets_per_spM, seeds);
         }
     }
 

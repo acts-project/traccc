@@ -37,16 +37,16 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// @param seed is the input seed
 /// @param bfield is the magnetic field
 /// @param mass is the mass of particle
-template <typename spacepoint_container_t>
+template <typename spacepoint_collection_t>
 inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
-    const spacepoint_container_t& sp_container, const seed& seed,
+    const spacepoint_collection_t& sp_collection, const seed& seed,
     const vector3& bfield, const scalar mass) {
 
     bound_vector params;
 
-    const auto& spB = sp_container.at(seed.spB_link);
-    const auto& spM = sp_container.at(seed.spM_link);
-    const auto& spT = sp_container.at(seed.spT_link);
+    const auto& spB = sp_collection.at(seed.spB_link);
+    const auto& spM = sp_collection.at(seed.spM_link);
+    const auto& spT = sp_collection.at(seed.spT_link);
 
     darray<vector3, 3> sp_global_positions;
     sp_global_positions[0] = spB.global;
@@ -99,24 +99,25 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
         transform3::rotate(trans._data, vector::normalize(transDirection));
 
     // The estimated phi and theta
-    params[e_bound_phi] = getter::phi(direction);
-    params[e_bound_theta] = getter::theta(direction);
+    getter::element(params, e_bound_phi, 0) = getter::phi(direction);
+    getter::element(params, e_bound_theta, 0) = getter::theta(direction);
 
     // The measured loc0 and loc1
     const auto& meas_for_spB = spB.meas;
-    params[e_bound_loc0] = meas_for_spB.local[0];
-    params[e_bound_loc1] = meas_for_spB.local[1];
+    getter::element(params, e_bound_loc0, 0) = meas_for_spB.local[0];
+    getter::element(params, e_bound_loc1, 0) = meas_for_spB.local[1];
 
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)
     scalar qOverPt = rho * (static_cast<scalar>(Acts::UnitConstants::m)) /
                      (0.3f * getter::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
-    params[e_bound_qoverp] = qOverPt / getter::perp(vector2{1., invTanTheta});
+    getter::element(params, e_bound_qoverp, 0) =
+        qOverPt / getter::perp(vector2{1., invTanTheta});
 
     // The estimated momentum, and its projection along the magnetic
     // field diretion
-    scalar pInGeV = std::abs(1.0f / params[e_bound_qoverp]);
+    scalar pInGeV = std::abs(1.0f / getter::element(params, e_bound_qoverp, 0));
     scalar pzInGeV = 1.0f / std::abs(qOverPt) * invTanTheta;
     scalar massInGeV = mass / static_cast<scalar>(Acts::UnitConstants::GeV);
 
@@ -132,9 +133,10 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     // The estimated time (use path length along magnetic field only if
     // it's not zero)
     if (pathz != 0) {
-        params[e_bound_time] = pathz / vz;
+        getter::element(params, e_bound_time, 0) = pathz / vz;
     } else {
-        params[e_bound_time] = getter::norm(sp_global_positions[0]) / v;
+        getter::element(params, e_bound_time, 0) =
+            getter::norm(sp_global_positions[0]) / v;
     }
 
     return params;

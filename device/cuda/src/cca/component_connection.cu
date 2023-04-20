@@ -8,30 +8,21 @@
 
 #include "traccc/cuda/cca/component_connection.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "vecmem/containers/vector.hpp"
 #include "vecmem/memory/allocator.hpp"
 #include "vecmem/memory/binary_page_memory_resource.hpp"
+#include "vecmem/memory/cuda/device_memory_resource.hpp"
 #include "vecmem/memory/cuda/managed_memory_resource.hpp"
 
 namespace {
 static constexpr std::size_t MAX_CELLS_PER_PARTITION = 2048;
+static constexpr std::size_t TARGET_CELLS_PER_PARTITION = 1024;
 static constexpr std::size_t THREADS_PER_BLOCK = 256;
 using index_t = unsigned short;
 }  // namespace
 
 namespace traccc::cuda {
 namespace details {
-
-/*
- * Structure that defines the start point of a partition and its size.
- */
-struct ccl_partition {
-    std::size_t start;
-    std::size_t size;
-};
 
 /*
  * Convenience structure to work with flattened data arrays instead of
@@ -43,7 +34,7 @@ struct cell_container {
     channel_id* channel1 = nullptr;
     scalar* activation = nullptr;
     scalar* time = nullptr;
-    geometry_id* module_id = nullptr;
+    unsigned int* module_link = nullptr;
 };
 
 /*
@@ -56,7 +47,7 @@ struct measurement_container {
     scalar* channel1 = nullptr;
     scalar* variance0 = nullptr;
     scalar* variance1 = nullptr;
-    geometry_id* module_id = nullptr;
+    unsigned int* module_link = nullptr;
 };
 
 /*
@@ -83,7 +74,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
 
     channel_id c0 = cells.channel0[tid];
     channel_id c1 = cells.channel1[tid];
-    geometry_id gid = cells.module_id[tid];
+    unsigned int mlink = cells.module_link[tid];
 
     /*
      * First, we traverse the cells backwards, starting from the current
@@ -97,7 +88,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
          * impossible for that cell to ever be adjacent to this one.
          * This is a small optimisation.
          */
-        if (cells.channel1[j] + 1 < c1 || cells.module_id[j] != gid) {
+        if (cells.channel1[j] + 1 < c1 || cells.module_link[j] != mlink) {
             break;
         }
 
@@ -119,7 +110,7 @@ __device__ void reduce_problem_cell(cell_container& cells, index_t tid,
          * Note that this check now looks in the opposite direction! An
          * important difference.
          */
-        if (cells.channel1[j] > c1 + 1 || cells.module_id[j] != gid) {
+        if (cells.channel1[j] > c1 + 1 || cells.module_link[j] != mlink) {
             break;
         }
 
@@ -511,15 +502,56 @@ __device__ void aggregate_clusters(const cell_container& cells,
             out.channel1[id] = my;
             out.variance0[id] = vx / sw;
             out.variance1[id] = vy / sw;
-            out.module_id[id] = cells.module_id[tid];
+            out.module_link[id] = cells.module_link[tid];
         }
     }
 }
 
 __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
-    const cell_container container, const ccl_partition* partitions,
-    measurement_container& _out_ctnr) {
-    const ccl_partition& partition = partitions[blockIdx.x];
+    const cell_container container, measurement_container& _out_ctnr,
+    unsigned long num_cells) {
+    __shared__ unsigned start, end;
+
+    /*
+     * First, we determine the exact range of cells that is to be examined by
+     * this block of threads. We start from an initial range determined by the
+     * block index multiplied by the target number of cells per block. We then
+     * shift both the start and the end of the block forward (to a later point
+     * in the array); start and end may be moved different amounts.
+     */
+    if (threadIdx.x == 0) {
+        /*
+         * Start off by naively determining the size of this block's partition.
+         */
+        start = blockIdx.x * TARGET_CELLS_PER_PARTITION;
+        end =
+            std::min(num_cells, (blockIdx.x + 1) * TARGET_CELLS_PER_PARTITION);
+
+        /*
+         * Next, shift the starting point to a position further in the array;
+         * the purpose of this is to ensure that we are not operating on any
+         * cells that have been claimed by the previous block (if any).
+         */
+        while (start != 0 &&
+               container.module_link[start - 1] ==
+                   container.module_link[start] &&
+               container.channel1[start] <= container.channel1[start - 1] + 1) {
+            ++start;
+        }
+
+        /*
+         * Then, claim as many cells as we need past the naive end of the
+         * current block to ensure that we do not end our partition on a cell
+         * that is not a possible boundary!
+         */
+        while (end < num_cells &&
+               container.module_link[end - 1] == container.module_link[end] &&
+               container.channel1[end] <= container.channel1[end - 1] + 1) {
+            ++end;
+        }
+    }
+
+    __syncthreads();
 
     /*
      * Seek the correct cell region in the input data. Again, this is all a
@@ -529,12 +561,12 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
      * module, and we have its size.
      */
     cell_container cells;
-    cells.size = partition.size;
-    cells.channel0 = &container.channel0[partition.start];
-    cells.channel1 = &container.channel1[partition.start];
-    cells.activation = &container.activation[partition.start];
-    cells.time = &container.time[partition.start];
-    cells.module_id = &container.module_id[partition.start];
+    cells.size = end - start;
+    cells.channel0 = &container.channel0[start];
+    cells.channel1 = &container.channel1[start];
+    cells.activation = &container.activation[start];
+    cells.time = &container.time[start];
+    cells.module_link = &container.module_link[start];
 
     assert(cells.size <= MAX_CELLS_PER_PARTITION);
 
@@ -656,87 +688,19 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void ccl_kernel(
     out.channel1 = &_out_ctnr.channel1[outi];
     out.variance0 = &_out_ctnr.variance0[outi];
     out.variance1 = &_out_ctnr.variance1[outi];
-    out.module_id = &_out_ctnr.module_id[outi];
+    out.module_link = &_out_ctnr.module_link[outi];
 
     aggregate_clusters(cells, out, f);
-}
-
-vecmem::vector<details::ccl_partition> partition(
-    const cell_container_types::host& data, vecmem::memory_resource& mem) {
-    vecmem::vector<details::ccl_partition> partitions(&mem);
-    std::size_t index = 0;
-    std::size_t size = 0;
-
-    /*
-     * Iterate over every cell module in the current data set.
-     */
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        /*
-         * We start at 0 since this is the origin of the local coordinate
-         * system within a cell module.
-         */
-        channel_id last_mid = 0;
-
-        for (const cell& c : data.at(i).items) {
-            /*
-             * Create a new partition if an "empty" row is detected. A row
-             * is considered "empty" if the channel1 value between two
-             * consecutive cells have a difference > 1.
-             * To prevent creating many small partitions, the current partition
-             * must have at least twice the size of threads per block. This
-             * guarantees that each thread handles later at least two cells.
-             */
-            if (c.channel1 > last_mid + 1 && size >= 2 * THREADS_PER_BLOCK) {
-                partitions.push_back(
-                    details::ccl_partition{.start = index, .size = size});
-
-                index += size;
-                size = 0;
-            }
-
-            last_mid = c.channel1;
-            size += 1;
-        }
-
-        /*
-         * If a cell module has many activations and therefore no empty
-         * rows, it is possible that partitions reach a considerable
-         * size. To prevent very big partitions, we check at the end of each
-         * module if the current partition is not above a threshold, and end the
-         * current partition if necessary here.
-         */
-        if (size >= 2 * THREADS_PER_BLOCK) {
-            partitions.push_back(
-                details::ccl_partition{.start = index, .size = size});
-
-            index += size;
-            size = 0;
-        }
-    }
-
-    /*
-     * Create the very last partition after having iterated over all cell
-     * modules and cells.
-     */
-    if (size > 0) {
-        partitions.push_back(
-            details::ccl_partition{.start = index, .size = size});
-    }
-
-    return partitions;
 }
 }  // namespace details
 
 component_connection::output_type component_connection::operator()(
-    const cell_container_types::host& data) const {
+    const cell_collection_types::host& cells) const {
     vecmem::cuda::managed_memory_resource upstream;
+    vecmem::cuda::device_memory_resource dmem;
     vecmem::binary_page_memory_resource mem(upstream);
 
-    std::size_t total_cells = 0;
-
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        total_cells += data.at(i).items.size();
-    }
+    std::size_t total_cells = cells.size();
 
     /*
      * Flatten the data to handle memory access (fetch and cache)
@@ -751,17 +715,15 @@ component_connection::output_type component_connection::operator()(
     activation.reserve(total_cells);
     vecmem::vector<scalar> time(&mem);
     time.reserve(total_cells);
-    vecmem::vector<geometry_id> module_id(&mem);
-    module_id.reserve(total_cells);
+    vecmem::vector<unsigned int> module_link(&mem);
+    module_link.reserve(total_cells);
 
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        for (std::size_t j = 0; j < data.at(i).items.size(); ++j) {
-            channel0.push_back(data.at(i).items.at(j).channel0);
-            channel1.push_back(data.at(i).items.at(j).channel1);
-            activation.push_back(data.at(i).items.at(j).activation);
-            time.push_back(data.at(i).items.at(j).time);
-            module_id.push_back(data.at(i).header.module);
-        }
+    for (std::size_t i = 0; i < cells.size(); ++i) {
+        channel0.push_back(cells.at(i).channel0);
+        channel1.push_back(cells.at(i).channel1);
+        activation.push_back(cells.at(i).activation);
+        time.push_back(cells.at(i).time);
+        module_link.push_back(cells.at(i).module_link);
     }
 
     /*
@@ -773,18 +735,7 @@ component_connection::output_type component_connection::operator()(
     container.channel1 = channel1.data();
     container.activation = activation.data();
     container.time = time.data();
-    container.module_id = module_id.data();
-
-    /*
-     * Separate the problem into various subproblems (partitions).
-     * We know that the input data is sorted primarily on channel1 (y-axis),
-     * and secondarily on channel0 (x-axis). This allows the cheap creation
-     * of partitions based on the distance of the y-value between two
-     * consecutive cells. If this distance is above a threshold, we have the
-     * guarantee that the two cells belong not to the same cluster.
-     */
-    vecmem::vector<details::ccl_partition> partitions =
-        details::partition(data, mem);
+    container.module_link = module_link.data();
 
     /*
      * Reserve space for the result of the algorithm. Currently, there is
@@ -804,39 +755,35 @@ component_connection::output_type component_connection::operator()(
         alloc.allocate_bytes(total_cells * sizeof(scalar)));
     mctnr->variance1 = static_cast<scalar*>(
         alloc.allocate_bytes(total_cells * sizeof(scalar)));
-    mctnr->module_id = static_cast<geometry_id*>(
-        alloc.allocate_bytes(total_cells * sizeof(geometry_id)));
+    mctnr->module_link = static_cast<unsigned int*>(
+        alloc.allocate_bytes(total_cells * sizeof(unsigned int)));
 
     /*
      * Run the connected component labeling algorithm to retrieve the clusters.
      *
      * This step includes the measurement (hit) creation for each cluster.
      */
-    ccl_kernel<<<partitions.size(), THREADS_PER_BLOCK>>>(
-        container, partitions.data(), *mctnr);
+    ccl_kernel<<<
+        std::max(1ul,
+                 (total_cells / TARGET_CELLS_PER_PARTITION) +
+                     (total_cells % TARGET_CELLS_PER_PARTITION != 0 ? 1 : 0)),
+        THREADS_PER_BLOCK>>>(container, *mctnr, total_cells);
 
+    CUDA_ERROR_CHECK(cudaPeekAtLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     /*
-     * Copy back the data from our flattened data structure into the traccc EDM.
+     * Copy back the data from our SoA data structure into the traccc EDM.
      */
     output_type out;
 
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        vecmem::vector<measurement> v(&mem);
+    for (std::size_t i = 0; i < mctnr->size; ++i) {
+        alt_measurement m;
+        m.local = {mctnr->channel0[i], mctnr->channel1[i]};
+        m.variance = {mctnr->variance0[i], mctnr->variance1[i]};
+        m.module_link = mctnr->module_link[i];
 
-        for (std::size_t j = 0; j < mctnr->size; ++j) {
-            if (mctnr->module_id[j] == data.at(i).header.module) {
-                measurement m;
-
-                m.local = {mctnr->channel0[j], mctnr->channel1[j]};
-                m.variance = {mctnr->variance0[j], mctnr->variance1[j]};
-
-                v.push_back(m);
-            }
-        }
-
-        out.push_back(cell_module(data.at(i).header), std::move(v));
+        out.push_back(m);
     }
 
     return out;

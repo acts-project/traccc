@@ -7,17 +7,14 @@
 
 // Local include(s).
 #include "traccc/sycl/seeding/spacepoint_binning.hpp"
+#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 
 // Local include(s).
 #include "../utils/get_queue.hpp"
 
 // Project include(s).
-#include "traccc/device/get_prefix_sum.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
-
-// VecMem include(s).
-#include <vecmem/utils/sycl/copy.hpp>
 
 // SYCL include(s).
 #include <CL/sycl.hpp>
@@ -36,70 +33,33 @@ class populate_grid;
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    const traccc::memory_resource& mr, queue_wrapper queue)
-    : m_config(config),
-      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue)
+    : m_config(config.toInternalUnits()),
+      m_axes(get_axes(grid_config.toInternalUnits(),
+                      (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
-      m_queue(queue) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+      m_queue(queue),
+      m_copy(copy) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view) const {
+    const spacepoint_collection_types::const_view& spacepoints_view) const {
 
     // Get the spacepoint sizes from the view
-    auto sp_sizes = m_copy->get_sizes(spacepoints_view.items);
-
-    return this->operator()(spacepoints_view, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::buffer& spacepoints_buffer) const {
-
-    // Get the spacepoint sizes from the buffer
-    auto sp_sizes = m_copy->get_sizes(spacepoints_buffer.items);
-
-    return this->operator()(spacepoints_buffer, sp_sizes);
-}
-
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_container_types::const_view& spacepoints_view,
-    const std::vector<unsigned int>& sp_sizes) const {
-
-    // Get the prefix sum for the spacepoints using buffer.
-    const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
-        sp_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
-
-    // Set up the buffer of the prefix sum and its view
-    vecmem::data::vector_buffer<device::prefix_sum_element_t>
-        sp_prefix_sum_buff(sp_prefix_sum.size(), m_mr.main);
-    m_copy->setup(sp_prefix_sum_buff);
-    (*m_copy)(vecmem::get_data(sp_prefix_sum), sp_prefix_sum_buff,
-              vecmem::copy::type::copy_type::host_to_device);
-    vecmem::data::vector_view<device::prefix_sum_element_t> sp_prefix_sum_view =
-        sp_prefix_sum_buff;
+    auto sp_size = m_copy.get_size(spacepoints_view);
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
     vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
                                                                    m_mr.main);
-    m_copy->setup(grid_capacities_buff);
-    m_copy->memset(grid_capacities_buff, 0);
+    m_copy.setup(grid_capacities_buff)->wait();
+    m_copy.memset(grid_capacities_buff, 0)->wait();
     vecmem::data::vector_view<unsigned int> grid_capacities_view =
         grid_capacities_buff;
 
     // Calculate the range to run the kernels for.
     static constexpr unsigned int localSize = 32 * 4;
-    const unsigned int nGroups = sp_prefix_sum.size() / localSize + 1;
-    const unsigned int globalSize = nGroups * localSize;
-    ::sycl::nd_range<1> range(globalSize, localSize);
+    auto range = traccc::sycl::calculate1DimNdRange(sp_size, localSize);
 
     // Fill the grid capacity container.
     details::get_queue(m_queue)
@@ -107,12 +67,11 @@ sp_grid_buffer spacepoint_binning::operator()(
             h.parallel_for<kernels::count_grid_capacities>(
                 range, [config = m_config, phi_axis = m_axes.first,
                         z_axis = m_axes.second, spacepoints = spacepoints_view,
-                        sp_prefix_sum = sp_prefix_sum_view,
                         grid_capacities =
                             grid_capacities_view](::sycl::nd_item<1> item) {
-                    device::count_grid_capacities(
-                        item.get_global_linear_id(), config, phi_axis, z_axis,
-                        spacepoints, sp_prefix_sum, grid_capacities);
+                    device::count_grid_capacities(item.get_global_linear_id(),
+                                                  config, phi_axis, z_axis,
+                                                  spacepoints, grid_capacities);
                 });
         })
         .wait_and_throw();
@@ -120,15 +79,15 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
                                                                 : &(m_mr.main));
-    (*m_copy)(grid_capacities_buff, grid_capacities_host);
+    m_copy(grid_capacities_buff, grid_capacities_host)->wait();
 
     // Create the grid buffer and its view
     sp_grid_buffer grid_buffer(
-        m_axes.first, m_axes.second, std::vector<std::size_t>(grid_bins, 0),
+        m_axes.first, m_axes.second,
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
-        m_mr.main, m_mr.host);
-    m_copy->setup(grid_buffer._buffer);
+        m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable);
+    m_copy.setup(grid_buffer._buffer)->wait();
     sp_grid_view grid_view = grid_buffer;
 
     // Populate the grid.
@@ -136,10 +95,9 @@ sp_grid_buffer spacepoint_binning::operator()(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::populate_grid>(
                 range, [config = m_config, spacepoints = spacepoints_view,
-                        sp_prefix_sum = sp_prefix_sum_view,
                         grid = grid_view](::sycl::nd_item<1> item) {
                     device::populate_grid(item.get_global_linear_id(), config,
-                                          spacepoints, sp_prefix_sum, grid);
+                                          spacepoints, grid);
                 });
         })
         .wait_and_throw();

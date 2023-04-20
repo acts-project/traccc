@@ -14,8 +14,10 @@ traccc_add_library(
     TYPE SHARED
     "src/context.cpp"
     "src/component_connection.cpp"
+    "src/spacepoint_formation.cpp"
     "include/traccc/futhark/context.hpp"
     "include/traccc/futhark/component_connection.hpp"
+    "include/traccc/futhark/spacepoint_formation.hpp"
     "include/traccc/futhark/utils.hpp"
     "include/traccc/futhark/wrapper.hpp"
 )
@@ -40,4 +42,5 @@ add_futhark_to_library(
     src/maybe.fut
     src/zip.fut
     src/measurement_creation.fut
+    src/spacepoint_formation.fut
 )

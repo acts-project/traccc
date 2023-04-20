@@ -7,11 +7,19 @@
 
 #pragma once
 
+// System include(s).
+#include <iosfwd>
+
 namespace traccc {
 
+/// Format for an input or output file
 enum data_format : int {
     csv = 0,
     binary = 1,
+    json = 2,
 };
+
+/// Printout helper for @c traccc::data_format
+std::ostream& operator<<(std::ostream& out, data_format format);
 
 }  // namespace traccc

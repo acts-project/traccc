@@ -9,7 +9,8 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/get_prefix_sum.hpp"
+#include "traccc/device/fill_prefix_sum.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -25,21 +26,20 @@ namespace traccc::device {
 
 /// Function for creating 3D spacepoints out of 2D measurements
 ///
-/// @param[in] globalIndex                  The index for the current thread
-/// @param[in] measurements_view            Container storing the created
-/// measurements for each module
-/// @param[in] measurements_prefix_sum_view Prefix sum for iterating over all
-/// measurements
-/// @param[out] spacepoints_view            Container storing #D spacepoints for
-/// each module
+/// @param[in] globalIndex          The index for the current thread
+/// @param[in] measurements_view    Collection of measurements
+/// @param[in] modules_view         Collection of modules (which the
+/// measurements link to)
+/// @param[in] measurement_count    Number of measurements
+/// @param[out] spacepoints_view    Collection of spacepoints
 ///
 TRACCC_HOST_DEVICE
-void form_spacepoints(
-    std::size_t globalIndex,
-    measurement_container_types::const_view measurements_view,
-    vecmem::data::vector_view<const device::prefix_sum_element_t>
-        measurements_prefix_sum_view,
-    spacepoint_container_types::view spacepoints_view);
+inline void form_spacepoints(
+    const std::size_t globalIndex,
+    alt_measurement_collection_types::const_view measurements_view,
+    cell_module_collection_types::const_view modules_view,
+    const unsigned int measurement_count,
+    spacepoint_collection_types::view spacepoints_view);
 
 }  // namespace traccc::device
 

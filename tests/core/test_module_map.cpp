@@ -9,11 +9,15 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/module_map.hpp"
-#include "traccc/io/csv.hpp"
-#include "traccc/io/reader.hpp"
+#include "traccc/io/details/read_surfaces.hpp"
+#include "traccc/io/utils.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>
+
+// System include(s).
+#include <map>
+#include <string>
 
 /*
  * Simple test of this map using integers and strings.
@@ -131,18 +135,15 @@ TEST(geometry, module_map_failure) {
  */
 TEST(geometry, module_map_read_trackml) {
 
-    std::string file = traccc::data_directory() +
-                       std::string("tml_detector/trackml-detector.csv");
+    const std::string file =
+        traccc::io::data_directory() + "tml_detector/trackml-detector.csv";
 
     /*
      * Next, we read the surfaces from the TrackML data file, and we get back a
      * std::map.
      */
-    traccc::surface_reader sreader(
-        file, {"geometry_id", "cx", "cy", "cz", "rot_xu", "rot_xv", "rot_xw",
-               "rot_zu", "rot_zv", "rot_zw"});
     std::map<traccc::geometry_id, traccc::transform3> inp =
-        traccc::read_surfaces(sreader);
+        traccc::io::details::read_surfaces(file);
 
     /*
      * Convert the old-style map to a module map.

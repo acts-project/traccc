@@ -16,40 +16,30 @@ namespace traccc {
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     vecmem::memory_resource& mr)
-    : m_config(config),
-      m_grid_config(grid_config),
-      m_axes(get_axes(grid_config, mr)),
+    : m_config(config.toInternalUnits()),
+      m_grid_config(grid_config.toInternalUnits()),
+      m_axes(get_axes(grid_config.toInternalUnits(), mr)),
       m_mr(mr) {}
 
 spacepoint_binning::output_type spacepoint_binning::operator()(
-    const spacepoint_container_types::host& sp_container) const {
+    const spacepoint_collection_types::host& sp_collection) const {
 
     output_type g2(m_axes.first, m_axes.second, m_mr.get());
 
-    djagged_vector<sp_location> rbins(m_config.get_num_rbins());
+    auto& phi_axis = g2.axis_p0();
+    auto& z_axis = g2.axis_p1();
 
-    for (unsigned int i = 0; i < sp_container.size(); i++) {
-        for (unsigned int j = 0; j < sp_container.get_items()[i].size(); j++) {
-            sp_location sp_loc{i, j};
-            fill_radius_bins<spacepoint_container_types::host, djagged_vector>(
-                m_config, sp_container, sp_loc, rbins);
+    for (unsigned int i = 0; i < sp_collection.size(); i++) {
+        const spacepoint& sp = sp_collection[i];
+        internal_spacepoint<spacepoint> isp(sp, i, m_config.beamPos);
+
+        if (is_valid_sp(m_config, sp) !=
+            detray::detail::invalid_value<size_t>()) {
+            const std::size_t bin_index =
+                phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
+            g2.bin(bin_index).push_back(std::move(isp));
         }
     }
-
-    // fill rbins into grid such that each grid bin is sorted in r
-    // space points with delta r < rbin size can be out of order
-    for (auto& rbin : rbins) {
-        for (auto& sp_loc : rbin) {
-
-            auto isp = internal_spacepoint<spacepoint>(
-                sp_container, {sp_loc.bin_idx, sp_loc.sp_idx},
-                m_config.beamPos);
-
-            point2 sp_position = {isp.phi(), isp.z()};
-            g2.populate(sp_position, std::move(isp));
-        }
-    }
-
     return g2;
 }
 

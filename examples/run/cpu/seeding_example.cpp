@@ -6,9 +6,8 @@
  */
 
 // io
-#include "traccc/io/csv.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_spacepoints_alt.hpp"
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -22,6 +21,9 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
+
 // System include(s).
 #include <iostream>
 
@@ -31,7 +33,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -55,10 +57,11 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the hits from the relevant event file
-        traccc::spacepoint_container_types::host spacepoints_per_event =
-            traccc::read_spacepoints_from_event(
-                event, common_opts.input_directory,
-                common_opts.input_data_format, surface_transforms, host_mr);
+        auto readOut = traccc::io::read_spacepoints_alt(
+            event, common_opts.input_directory, surface_transforms,
+            common_opts.input_data_format, &host_mr);
+        traccc::spacepoint_collection_types::host& spacepoints_per_event =
+            readOut.spacepoints;
 
         /*----------------
              Seeding
@@ -70,7 +73,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
              Statistics
           ---------------*/
 
-        n_spacepoints += spacepoints_per_event.total_size();
+        n_spacepoints += spacepoints_per_event.size();
         n_seeds += seeds.size();
 
         /*------------
@@ -81,7 +84,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
-            sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
+            sd_performance_writer.write("CPU", vecmem::get_data(seeds),
+                                        vecmem::get_data(spacepoints_per_event),
                                         evt_map);
         }
     }

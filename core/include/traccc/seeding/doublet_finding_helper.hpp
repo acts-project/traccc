@@ -11,6 +11,7 @@
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/lin_circle.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/detail/spacepoint_type.hpp"
 
 namespace traccc {
 
@@ -21,74 +22,77 @@ struct doublet_finding_helper {
     /// @param sp1 is middle spacepoint
     /// @param sp2 is bottom or top spacepoint
     /// @param config is configuration parameter
-    /// @param bottom is whether it is for middle-bottom or middle-top doublet
+    /// @tparam otherSpType is whether it is for middle-bottom or middle-top
+    /// doublet
     ///
     /// @return boolean value for compatibility
+    template <details::spacepoint_type otherSpType>
     static inline TRACCC_HOST_DEVICE bool isCompatible(
         const internal_spacepoint<spacepoint>& sp1,
         const internal_spacepoint<spacepoint>& sp2,
-        const seedfinder_config& config, bool bottom);
+        const seedfinder_config& config);
 
     /// Do the conformal transformation on doublet's coordinate
     ///
     /// @param sp1 is middle spacepoint
     /// @param sp2 is bottom or top spacepoint
-    /// @param bottom is whether it is for middle-bottom or middle-top doublet
+    /// @tparam otherSpType is whether it is for middle-bottom or middle-top
+    /// doublet
     ///
     /// @reutrn lin_circle which contains the transformed coordinate information
-    static inline TRACCC_HOST_DEVICE lin_circle transform_coordinates(
-        const internal_spacepoint<spacepoint>& sp1,
-        const internal_spacepoint<spacepoint>& sp2, bool bottom);
+    template <details::spacepoint_type otherSpType>
+    static inline TRACCC_HOST_DEVICE lin_circle
+    transform_coordinates(const internal_spacepoint<spacepoint>& sp1,
+                          const internal_spacepoint<spacepoint>& sp2);
 };
 
+template <details::spacepoint_type otherSpType>
 bool doublet_finding_helper::isCompatible(
     const internal_spacepoint<spacepoint>& sp1,
-    const internal_spacepoint<spacepoint>& sp2, const seedfinder_config& config,
-    bool bottom) {
-    if (bottom) {
+    const internal_spacepoint<spacepoint>& sp2,
+    const seedfinder_config& config) {
+
+    static_assert(otherSpType == details::spacepoint_type::bottom ||
+                  otherSpType == details::spacepoint_type::top);
+
+    if constexpr (otherSpType == details::spacepoint_type::bottom) {
+        // check if R distance is too small, because bins are not R-sorted
         scalar deltaR = sp1.radius() - sp2.radius();
-        // if r-distance is too big, try next SP in bin
-        if (deltaR > config.deltaRMax) {
+        // actually cotTheta * deltaR to avoid division by 0 statements
+        scalar cotTheta = sp1.z() - sp2.z();
+        // actually zOrigin * deltaR to avoid division by 0 statements
+        scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
+        if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
+            std::fabs(cotTheta) > config.cotThetaMax * deltaR ||
+            zOrigin < config.collisionRegionMin * deltaR ||
+            zOrigin > config.collisionRegionMax * deltaR) {
             return false;
         }
-        // if r-distance is too small, continue because bins are NOT r-sorted
-        if (deltaR < config.deltaRMin) {
-            return false;
-        }
-        scalar cotTheta = (sp1.z() - sp2.z()) / deltaR;
-        if (std::fabs(cotTheta) > config.cotThetaMax) {
-            return false;
-        }
-        scalar zOrigin = sp1.z() - sp1.radius() * cotTheta;
-        if (zOrigin < config.collisionRegionMin ||
-            zOrigin > config.collisionRegionMax) {
-            return false;
-        }
-    } else if (!bottom) {
+    } else {
+        // check if R distance is too small, because bins are not R-sorted
         scalar deltaR = sp2.radius() - sp1.radius();
-        if (deltaR > config.deltaRMax) {
-            return false;
-        }
-        // if r-distance is too small, continue because bins are NOT r-sorted
-        if (deltaR < config.deltaRMin) {
-            return false;
-        }
-        scalar cotTheta = (sp2.z() - sp1.z()) / deltaR;
-        if (std::fabs(cotTheta) > config.cotThetaMax) {
-            return false;
-        }
-        scalar zOrigin = sp1.z() - sp1.radius() * cotTheta;
-        if (zOrigin < config.collisionRegionMin ||
-            zOrigin > config.collisionRegionMax) {
+        // actually cotTheta * deltaR to avoid division by 0 statements
+        scalar cotTheta = (sp2.z() - sp1.z());
+        // actually zOrigin * deltaR to avoid division by 0 statements
+        scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
+        if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
+            std::fabs(cotTheta) > config.cotThetaMax * deltaR ||
+            zOrigin < config.collisionRegionMin * deltaR ||
+            zOrigin > config.collisionRegionMax * deltaR) {
             return false;
         }
     }
     return true;
 }
 
+template <details::spacepoint_type otherSpType>
 lin_circle doublet_finding_helper::transform_coordinates(
     const internal_spacepoint<spacepoint>& sp1,
-    const internal_spacepoint<spacepoint>& sp2, bool bottom) {
+    const internal_spacepoint<spacepoint>& sp2) {
+
+    static_assert(otherSpType == details::spacepoint_type::bottom ||
+                  otherSpType == details::spacepoint_type::top);
+
     const scalar& xM = sp1.x();
     const scalar& yM = sp1.y();
     const scalar& zM = sp1.z();
@@ -108,12 +112,14 @@ lin_circle doublet_finding_helper::transform_coordinates(
     scalar x = deltaX * cosPhiM + deltaY * sinPhiM;
     scalar y = deltaY * cosPhiM - deltaX * sinPhiM;
     // 1/(length of M -> SP)
-    scalar iDeltaR2 = 1. / (deltaX * deltaX + deltaY * deltaY);
+    scalar iDeltaR2 =
+        static_cast<scalar>(1.) / (deltaX * deltaX + deltaY * deltaY);
     scalar iDeltaR = std::sqrt(iDeltaR2);
-    //
-    int bottomFactor = 1 * (int(!bottom)) - 1 * (int(bottom));
     // cot_theta = (deltaZ/deltaR)
-    scalar cot_theta = deltaZ * iDeltaR * bottomFactor;
+    scalar cot_theta = deltaZ * iDeltaR;
+    if constexpr (otherSpType == details::spacepoint_type::bottom) {
+        cot_theta = -cot_theta;
+    }
     // VERY frequent (SP^3) access
     lin_circle l;
     l.m_cotTheta = cot_theta;

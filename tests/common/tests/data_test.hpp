@@ -9,7 +9,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/io/reader.hpp"
+#include "traccc/io/utils.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -34,7 +34,9 @@ class data_test : public ::testing::Test {
     protected:
     std::string data_directory;
 
-    virtual void SetUp() override { data_directory = traccc::data_directory(); }
+    virtual void SetUp() override {
+        data_directory = traccc::io::data_directory();
+    }
 
     std::string get_datafile(std::string name) { return data_directory + name; }
 };

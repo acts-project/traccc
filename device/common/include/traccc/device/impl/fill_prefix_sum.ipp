@@ -10,7 +10,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-void fill_prefix_sum(
+inline void fill_prefix_sum(
     const std::size_t globalIndex,
     const vecmem::data::vector_view<const prefix_sum_size_t>& sizes_view,
     vecmem::data::vector_view<prefix_sum_element_t> ps_view) {

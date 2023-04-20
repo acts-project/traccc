@@ -8,6 +8,11 @@
 cmake_minimum_required( VERSION 3.14 )
 include( FetchContent )
 
+# Silence FetchContent warnings with CMake >=3.24.
+if( POLICY CMP0135 )
+   cmake_policy( SET CMP0135 NEW )
+endif()
+
 # Tell the user what's happening.
 message( STATUS "Building Eigen3 as part of the TRACCC project" )
 

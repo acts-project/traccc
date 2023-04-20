@@ -9,21 +9,31 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/io/read_cells.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
 
+// VecMem include(s).
+#include <vecmem/containers/vector.hpp>
+
 // GTest include(s).
 #include <gtest/gtest.h>
+
+// DFE include(s).
+#include <dfe/dfe_io_dsv.hpp>
+#include <dfe/dfe_namedtuple.hpp>
 
 // System include(s).
 #include <functional>
 
 using cca_function_t = std::function<
-    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
-        const traccc::cell_container_types::host &)>;
+    std::map<traccc::geometry_id, vecmem::vector<traccc::alt_measurement>>(
+        const traccc::cell_collection_types::host &,
+        const traccc::cell_module_collection_types::host &)>;
 
 class ConnectedComponentAnalysisTests
     : public traccc::tests::data_test,
@@ -82,18 +92,16 @@ class ConnectedComponentAnalysisTests
         std::string file_truth =
             get_datafile("cca_test/" + file_prefix + "_truth.csv");
 
-        traccc::cell_reader creader(file_hits);
+        auto data = traccc::io::read_cells(file_hits);
+        traccc::cell_collection_types::host &cells = data.cells;
+        traccc::cell_module_collection_types::host &modules = data.modules;
 
-        vecmem::host_memory_resource resource;
-        traccc::cell_container_types::host data =
-            traccc::read_cells(creader, resource);
-
-        for (std::size_t i = 0; i < data.size(); i++) {
-            data.at(i).header.pixel = traccc::pixel_data{0, 0, 1, 1};
+        for (std::size_t i = 0; i < modules.size(); i++) {
+            modules.at(i).pixel = traccc::pixel_data{0, 0, 1, 1};
         }
 
-        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
-            result = f(data);
+        std::map<traccc::geometry_id, vecmem::vector<traccc::alt_measurement>>
+            result = f(cells, modules);
 
         std::size_t total_truth = 0, total_found = 0;
 
@@ -107,7 +115,7 @@ class ConnectedComponentAnalysisTests
         while (truth_reader.read(io_truth)) {
             ASSERT_TRUE(result.find(io_truth.geometry_id) != result.end());
 
-            const vecmem::vector<traccc::measurement> &meas =
+            const vecmem::vector<traccc::alt_measurement> &meas =
                 result.at(io_truth.geometry_id);
 
             traccc::scalar tol = std::max(
@@ -115,7 +123,7 @@ class ConnectedComponentAnalysisTests
 
             auto match = std::find_if(
                 meas.begin(), meas.end(),
-                [&io_truth, tol](const traccc::measurement &i) {
+                [&io_truth, tol](const traccc::alt_measurement &i) {
                     return std::abs(i.local[0] - io_truth.channel0) < tol &&
                            std::abs(i.local[1] - io_truth.channel1) < tol;
                 });

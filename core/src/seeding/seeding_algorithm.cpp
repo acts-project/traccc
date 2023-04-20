@@ -19,16 +19,16 @@ namespace {
 traccc::seedfinder_config default_seedfinder_config() {
 
     traccc::seedfinder_config config;
-    config.highland = 13.6 * std::sqrt(config.radLengthPerSeed) *
-                      (1 + 0.038 * std::log(config.radLengthPerSeed));
-    float maxScatteringAngle = config.highland / config.minPt;
+    traccc::seedfinder_config config_copy = config.toInternalUnits();
+    config.highland = 13.6 * std::sqrt(config_copy.radLengthPerSeed) *
+                      (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
+    float maxScatteringAngle = config.highland / config_copy.minPt;
     config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
     // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
     // and millimeter
-    // TODO: change using ACTS units
-    config.pTPerHelixRadius = 300. * config.bFieldInZ;
+    config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
     config.minHelixDiameter2 =
-        std::pow(config.minPt * 2 / config.pTPerHelixRadius, 2);
+        std::pow(config_copy.minPt * 2 / config.pTPerHelixRadius, 2);
     config.pT2perRadius =
         std::pow(config.highland / config.pTPerHelixRadius, 2);
     return config;
@@ -46,6 +46,10 @@ traccc::spacepoint_grid_config default_spacepoint_grid_config() {
     grid_config.zMin = config.zMin;
     grid_config.deltaRMax = config.deltaRMax;
     grid_config.cotThetaMax = config.cotThetaMax;
+    grid_config.impactMax = config.impactMax;
+    grid_config.phiMax = config.phiMax;
+    grid_config.phiMin = config.phiMin;
+    grid_config.phiBinDeflectionCoverage = config.phiBinDeflectionCoverage;
     return grid_config;
 }
 
@@ -59,7 +63,7 @@ seeding_algorithm::seeding_algorithm(vecmem::memory_resource& mr)
       m_seed_finding(default_seedfinder_config(), seedfilter_config()) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
-    const spacepoint_container_types::host& spacepoints) const {
+    const spacepoint_collection_types::host& spacepoints) const {
 
     return m_seed_finding(spacepoints, m_spacepoint_binning(spacepoints));
 }

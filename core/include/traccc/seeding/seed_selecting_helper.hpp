@@ -60,19 +60,19 @@ struct seed_selecting_helper {
 
     /// Cut triplets with criteria
     ///
-    /// @param filter_config is seed filtering configuration parameters
-    /// @param sp_container is spacepoint container
-    /// @param seed is seed
-    /// @param triplet_weight is the weight of triplet
+    /// @param filter_config    seed filtering configuration parameters
+    /// @param sp_collection    spacepoint collection
+    /// @param seed             current seed to possibly cut
+    /// @param triplet_weight   triplets' weight
     ///
     /// @return boolean value
-    template <typename spacepoint_container_t>
+    template <typename spacepoint_collection_t>
     static TRACCC_HOST_DEVICE bool cut_per_middle_sp(
         const seedfilter_config& filter_config,
-        const spacepoint_container_t& sp_container, const seed& seed,
+        const spacepoint_collection_t& sp_collection, const seed& seed,
         const scalar& triplet_weight) {
 
-        const auto& spB = sp_container.at(seed.spB_link);
+        const auto& spB = sp_collection.at(seed.spB_link);
 
         return (triplet_weight > filter_config.seed_min_weight ||
                 spB.radius() > filter_config.spB_min_radius);

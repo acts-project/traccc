@@ -6,10 +6,9 @@
  */
 
 // io
-#include "traccc/io/csv.hpp"
-#include "traccc/io/reader.hpp"
-#include "traccc/io/utils.hpp"
-#include "traccc/io/writer.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_digitization_config.hpp"
+#include "traccc/io/read_geometry.hpp"
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
@@ -25,6 +24,9 @@
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
+
 // System include(s).
 #include <exception>
 #include <iostream>
@@ -35,11 +37,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =
-        traccc::read_digitization_config(i_cfg.digitization_config_file);
+        traccc::io::read_digitization_config(i_cfg.digitization_config_file);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -69,23 +71,25 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::cell_container_types::host cells_per_event =
-            traccc::read_cells_from_event(event, common_opts.input_directory,
-                                          common_opts.input_data_format,
-                                          surface_transforms, digi_cfg,
-                                          host_mr);
+        auto readOut = traccc::io::read_cells(
+            event, common_opts.input_directory, common_opts.input_data_format,
+            &surface_transforms, &digi_cfg, &host_mr);
+        traccc::cell_collection_types::host& cells_per_event = readOut.cells;
+        traccc::cell_module_collection_types::host& modules_per_event =
+            readOut.modules;
 
         /*-------------------
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event);
+        auto measurements_per_event = ca(cells_per_event, modules_per_event);
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
-        auto spacepoints_per_event = sf(measurements_per_event);
+        auto spacepoints_per_event =
+            sf(measurements_per_event, modules_per_event);
 
         /*-----------------------
           Seeding algorithm
@@ -103,10 +107,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           Statistics
           ----------------------------*/
 
-        n_modules += cells_per_event.size();
-        n_cells += cells_per_event.total_size();
-        n_measurements += measurements_per_event.total_size();
-        n_spacepoints += spacepoints_per_event.total_size();
+        n_modules += modules_per_event.size();
+        n_cells += cells_per_event.size();
+        n_measurements += measurements_per_event.size();
+        n_spacepoints += spacepoints_per_event.size();
         n_seeds += seeds.size();
 
         /*------------
@@ -119,7 +123,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 common_opts.input_directory, common_opts.input_directory,
                 common_opts.input_directory, host_mr);
 
-            sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
+            sd_performance_writer.write("CPU", vecmem::get_data(seeds),
+                                        vecmem::get_data(spacepoints_per_event),
                                         evt_map);
         }
     }

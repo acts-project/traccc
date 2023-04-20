@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/internal_spacepoint.hpp"
+#include "traccc/edm/spacepoint.hpp"
 
 // detray core
 #include <detray/definitions/indexing.hpp>

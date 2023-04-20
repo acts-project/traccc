@@ -1,20 +1,19 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Project include(s).
 #include "traccc/seeding/detail/singlet.hpp"
 
-namespace traccc {
+// System include(s).
+#include <variant>
 
-/// Header: the number of doublets per spacepoint bin
-struct doublet_per_bin {
-    unsigned int n_doublets = 0;
-};
+namespace traccc {
 
 /// Item: doublet of middle-bottom or middle-top
 struct doublet {
@@ -32,33 +31,10 @@ inline TRACCC_HOST_DEVICE bool operator==(const doublet& lhs,
             lhs.sp2.sp_idx == rhs.sp2.sp_idx);
 }
 
-/// Container of doublet belonging to one detector module
-template <template <typename> class vector_t>
-using doublet_collection = vector_t<doublet>;
+/// Declare all doublet collection types
+using doublet_collection_types = collection_types<doublet>;
 
-/// Convenience declaration for the doublet collection type to use in host code
-using host_doublet_collection = doublet_collection<vecmem::vector>;
-
-/// Convenience declaration for the doublet collection type to use in device
-/// code
-using device_doublet_collection = doublet_collection<vecmem::device_vector>;
-
-/// Convenience declaration for the doublet container type to use in host code
-using host_doublet_container = host_container<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container type to use in device code
-using device_doublet_container = device_container<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container data type to use in host
-/// code
-using doublet_container_data = container_data<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container buffer type to use in host
-/// code
-using doublet_container_buffer = container_buffer<doublet_per_bin, doublet>;
-
-/// Convenience declaration for the doublet container view type to use in host
-/// code
-using doublet_container_view = container_view<doublet_per_bin, doublet>;
+/// Declare all doublet container types
+using doublet_container_types = container_types<std::monostate, doublet>;
 
 }  // namespace traccc

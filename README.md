@@ -6,14 +6,14 @@ Demonstrator tracking chain for accelerators.
 
 | Category           | Algorithms             | CPU | CUDA | SYCL | Futhark |
 | ------------------ | ---------------------- | --- | ---- | ---- | ------- |
-| **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   | ✅      |
-|                    | Measurement creation   | ✅  | 🟡   | 🟡   | ✅      |
-|                    | Spacepoint formation   | ✅  | 🟡   | 🟡   | ⚪      |
+| **Clusterization** | CCL                    | ✅  | ✅   | ✅   | ✅      |
+|                    | Measurement creation   | ✅  | ✅   | ✅   | ✅      |
+|                    | Spacepoint formation   | ✅  | ✅   | ✅   | ⚪      |
 | **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
 |                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
 |                    | Track param estimation | ✅  | ✅   | ✅   | ⚪      |
-|                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   | ⚪      |
-| **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   | ⚪      |
+|                    | Combinatorial KF       | 🟡  | 🟡   | ⚪   | ⚪      |
+| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
@@ -57,91 +57,111 @@ flowchart LR
     linkStyle 0 stroke: black;
 
     %% SYCL CCL algorithm
-    cell -.->|CCL| cluster;
+    cell -->|CCL| cluster;
     linkStyle 1 stroke: blue;
+
+    %% CUDA CCL algorithm
+    cell -->|CCL| cluster;
+    linkStyle 2 stroke: green;
 
     %% CPU clusterization
     cluster -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/clusterization/measurement_creation.hpp'>Agg.</a>| meas;
-    linkStyle 2 stroke: black;
+    linkStyle 3 stroke: black;
 
     %% SYCL clusterization
-    cluster -.->|Agg.| meas;
-    linkStyle 3 stroke: blue;
+    cluster -->|Agg.| meas;
+    linkStyle 4 stroke: blue;
+
+    %% CUDA clusterization
+    cluster -->|Agg.| meas;
+    linkStyle 5 stroke: green;
 
     %% CUDA CCA
-    cell -.->|CCA| meas;
-    linkStyle 4 stroke: green;
+    cell -->|CCA| meas;
+    linkStyle 6 stroke: green;
 
     %% CPU local to global
     meas -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/clusterization/spacepoint_formation.hpp'>L2G</a>| sp;
-    linkStyle 5 stroke: black;
+    linkStyle 7 stroke: black;
 
     %% SYCL local to global
-    meas -.->|L2G| sp;
-    linkStyle 6 stroke: blue;
+    meas -->|L2G| sp;
+    linkStyle 8 stroke: blue;
 
     %% CUDA local to global
-    meas -.->|L2G| sp;
-    linkStyle 7 stroke: green;
+    meas -->|L2G| sp;
+    linkStyle 9 stroke: green;
 
     %% CPU binning
     sp -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/spacepoint_binning.hpp'>Binning</a>| bin;
-    linkStyle 8 stroke: black;
+    linkStyle 10 stroke: black;
 
     %% CUDA binning
     sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/spacepoint_binning.hpp'>Binning</a>| bin;
-    linkStyle 9 stroke: green;
+    linkStyle 11 stroke: green;
 
     %% CPU seeding
-    bin -.->|Seeding| seed;
-    linkStyle 10 stroke: black;
+    bin -->|Seeding| seed;
+    linkStyle 12 stroke: black;
 
     %% SYCL seeding
     bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/seed_finding.hpp'>Seeding</a>| seed;
-    linkStyle 11 stroke: blue;
+    linkStyle 13 stroke: blue;
 
     %% CUDA seeding
     bin -->|<a href='https://github.com/acts-project/traccc/tree/main/device/cuda/include/traccc/cuda/seeding'>Seeding</a>| seed;
-    linkStyle 12 stroke: green;
+    linkStyle 14 stroke: green;
 
     %% CUDA binless seeding
     sp -.->|Seeding| seed;
-    linkStyle 13 stroke: green;
+    linkStyle 15 stroke: green;
 
     %% CPU param est.
     seed -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
-    linkStyle 14 stroke: black;
+    linkStyle 16 stroke: black;
 
     %% CUDA param est.
     seed -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
-    linkStyle 15 stroke: green;
+    linkStyle 17 stroke: green;
 
     %% CPU CKF
     ptrack -.->|CKF| track;
-    linkStyle 16 stroke: black;
+    linkStyle 18 stroke: black;
 
     %% CPU Kalman filter
-    track -.->|Kalman filter| track;
-    linkStyle 17 stroke: black;
+    track -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/fitting/fitting_algorithm.hpp'>Kalman filter</a>| track;
+    linkStyle 19 stroke: black;
 
-    %% CUDA kalman filter
-    track -.->|Kalman filter| track;
-    linkStyle 18 stroke: green;
+    %% CUDA Kalman filter
+    track -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/fitting/fitting_algorithm.hpp'>Kalman filter</a>| track;
+    linkStyle 20 stroke: green;
 
     %% SYCL binning
     sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/spacepoint_binning.hpp'>Binning</a>| bin;
-    linkStyle 19 stroke: blue;
+    linkStyle 21 stroke: blue;
 
     %% SYCL track parameter est.
     seed -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
-    linkStyle 20 stroke: blue;
+    linkStyle 22 stroke: blue;
 
     %% Futhark measurement creation
     cell -->|<a href='https://github.com/acts-project/traccc/blob/main/device/futhark/src/measurement_creation.fut'>CCA</a>| meas;
-    linkStyle 21 stroke: brown;
+    linkStyle 23 stroke: brown;
+
+    %% Futhark spacepoint creation
+    meas -->|<a href='https://github.com/acts-project/traccc/blob/main/device/futhark/src/spacepoint_formation.fut'>L2G</a>| sp;
+    linkStyle 24 stroke: brown;
+
+    %% SYCL Kalman filter
+    track -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/fitting/fitting_algorithm.hpp'>Kalman filter</a>| track;
+    linkStyle 25 stroke: blue;
+
+    %% CUDA CKF
+    ptrack -.->|CKF| track;
+    linkStyle 26 stroke: green;
 ```
 
-## Requirements and dependencies 
+## Requirements and dependencies
 
 ### OS & compilers:
 
@@ -163,29 +183,26 @@ In addition, the following requirements hold when CUDA is enabled:
 The following table lists currently combinations of builds, compilers,
 and toolchains that are currently known to work (last updated 2022/01/24):
 
-| Build | OS | gcc | cuda | comment |
+| Build | OS | gcc | CUDA | comment |
 | --- | --- | --- | --- | --- |
 | CUDA | Ubuntu 20.04   | 9.3.0 | 11.5 | runs on CI |
 
-### Data directory
-
-The `data` directory is a submodule hosted as `git lfs` on `https://gitlab.cern.ch/acts/traccc-data`
-
-### Prerequisites
+### Dependencies
 
 - [Boost](https://www.boost.org/): program_options
-- [ROOT](https://root.cern/): RIO, Hist, Tree
+- [CMake](https://cmake.org/)
+- (Optional) [ROOT](https://root.cern/): RIO, Hist, Tree
 
 ## Getting started
 
 ### Clone the repository
 
-Clone the repository and setup up the submodules, this requires `git-lfs` for the data from the `traccc-data` repository.
+Clone the repository and setup the data directory.
 
 ```sh
 git clone git@github.com:acts-project/traccc.git
 cd traccc
-git submodule update --init
+./traccc_data_get_files.sh
 ```
 
 ### Build the project
@@ -197,7 +214,7 @@ cmake --build <build_directory> <options>
 
 ### Build options
 
-| Option | Description | 
+| Option | Description |
 | --- | --- |
 | TRACCC_BUILD_CUDA  | Build the CUDA sources included in traccc |
 | TRACCC_BUILD_SYCL  | Build the SYCL sources included in traccc |
@@ -210,21 +227,36 @@ cmake --build <build_directory> <options>
 | TRACCC_USE_SYSTEM_DETRAY | Pick up an existing installation of Detray from the build environment |
 | TRACCC_USE_SYSTEM_ACTS | Pick up an existing installation of Acts from the build environment |
 | TRACCC_USE_SYSTEM_GOOGLETEST | Pick up an existing installation of GoogleTest from the build environment |
+| TRACCC_USE_ROOT | Build physics performance analysis code using an existing installation of ROOT from the build environment |
 
 ## Examples
 
-### cpu reconstruction chain
+### CPU reconstruction chain
 
 ```sh
-<build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 
+<build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10
+
+<build_directory>/bin/traccc_throughput_mt --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
 ```
 
-### cuda reconstruction chain
+### CUDA reconstruction chain
 
-- Users can generate cuda examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
+- Users can generate CUDA examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
 
 ```sh
 <build_directory>/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 --run_cpu=1
+
+<build_directory>/bin/traccc_throughput_mt_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
+```
+
+### SYCL reconstruction chain
+
+- Users can generate SYCL examples by adding `-DTRACCC_BUILD_SYCL=ON` to cmake options
+
+```sh
+<build_directory>/bin/traccc_seq_example_sycl --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 --run_cpu=1
+
+<build_directory>/bin/traccc_throughput_mt_sycl --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
 ```
 
 ## Troubleshooting

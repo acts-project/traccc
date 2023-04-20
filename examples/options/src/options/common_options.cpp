@@ -18,6 +18,11 @@ traccc::common_options::common_options(po::options_description& desc) {
                        "number of events");
     desc.add_options()("skip", po::value<int>()->default_value(0),
                        "number of events to skip");
+    desc.add_options()("target_cells_per_partition",
+                       po::value<unsigned short>()->default_value(1024),
+                       "Number of cells to merge in a partition. Equal to the "
+                       "number of threads multiplied by CELLS_PER_THREAD "
+                       "defined in clusterization.");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -30,4 +35,6 @@ void traccc::common_options::read(const po::variables_map& vm) {
     input_directory = vm["input_directory"].as<std::string>();
     events = vm["events"].as<unsigned int>();
     skip = vm["skip"].as<int>();
+    target_cells_per_partition =
+        vm["target_cells_per_partition"].as<unsigned short>();
 }
