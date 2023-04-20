@@ -32,10 +32,7 @@ test_cuda:
     - git clone $CLONE_URL src
     - cd src
     - git checkout $HEAD_SHA
-    - git submodule init 
-    - git clone -n $(git config submodule.data.url) data
-    - git -C data sparse-checkout set cca_test tml_detector
-    - time git -C data reset --hard
+    - data/traccc_data_get_files.sh
     - cd ..
     - cd build
     - nvidia-smi
