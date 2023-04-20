@@ -28,7 +28,6 @@ test_cuda:
   needs: 
     - build_cuda
   script:
-    - apt-get update && apt-get install -y git-lfs
     - git clone $CLONE_URL src
     - cd src
     - git checkout $HEAD_SHA
