@@ -26,7 +26,6 @@
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
 
 // ACTS include(s).
 #include <Acts/Definitions/Units.hpp>
@@ -60,11 +59,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     traccc::cuda::stream stream;
 
-    vecmem::cuda::copy copy;
-    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::cuda::seeding_algorithm sa_cuda{mr, async_copy, stream};
-    traccc::cuda::track_params_estimation tp_cuda{mr, async_copy, stream};
+    traccc::cuda::seeding_algorithm sa_cuda{mr, copy, stream};
+    traccc::cuda::track_params_estimation tp_cuda{mr, copy, stream};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -169,8 +167,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         // Copy the seeds to the host for comparisons
         traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
-        copy(seeds_cuda_buffer, seeds_cuda);
-        copy(params_cuda_buffer, params_cuda);
+        copy(seeds_cuda_buffer, seeds_cuda)->wait();
+        copy(params_cuda_buffer, params_cuda)->wait();
 
         if (run_cpu) {
             // Show which event we are currently presenting the results for.

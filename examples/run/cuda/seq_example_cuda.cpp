@@ -30,7 +30,6 @@
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <exception>
@@ -72,13 +71,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::stream stream;
 
-    vecmem::cuda::copy copy;
-    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     traccc::cuda::clusterization_algorithm ca_cuda(
-        mr, async_copy, stream, common_opts.target_cells_per_partition);
-    traccc::cuda::seeding_algorithm sa_cuda(mr, async_copy, stream);
-    traccc::cuda::track_params_estimation tp_cuda(mr, async_copy, stream);
+        mr, copy, stream, common_opts.target_cells_per_partition);
+    traccc::cuda::seeding_algorithm sa_cuda(mr, copy, stream);
+    traccc::cuda::track_params_estimation tp_cuda(mr, copy, stream);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -220,9 +218,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
         if (run_cpu || i_cfg.check_performance) {
-            copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda);
-            copy(seeds_cuda_buffer, seeds_cuda);
-            copy(params_cuda_buffer, params_cuda);
+            copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
+            copy(seeds_cuda_buffer, seeds_cuda)->wait();
+            copy(params_cuda_buffer, params_cuda)->wait();
         }
 
         if (run_cpu) {
