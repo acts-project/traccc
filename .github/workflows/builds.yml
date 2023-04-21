@@ -55,12 +55,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Dependencies
-        run: apt-get install -y git-lfs wget
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-          lfs: true
+      - uses: actions/checkout@v3
       - name: Download data files
         run: data/traccc_data_get_files.sh
       - name: Configure
