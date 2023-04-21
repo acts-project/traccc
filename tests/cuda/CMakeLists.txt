@@ -37,6 +37,7 @@ traccc_add_test(
     test_thrust.cu
     test_sync.cu
     test_array_wrapper.cu
+    test_full_chain.cpp
 
     LINK_LIBRARIES
     CUDA::cudart

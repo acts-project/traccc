@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -43,45 +43,54 @@ void collection_comparator<TYPE>::operator()(
     const typename collection_types<TYPE>::const_view& lhs,
     const typename collection_types<TYPE>::const_view& rhs) const {
 
-    // Create device collections on top of the views.
-    const typename collection_types<TYPE>::const_device lhs_coll{lhs},
-        rhs_coll{rhs};
-
     // Print some basic output.
-    m_out.get() << "Number of " << m_type_name << ": " << lhs_coll.size()
-                << " (" << m_lhs_type << "), " << rhs_coll.size() << " ("
-                << m_rhs_type << ")\n";
+    m_out.get() << "Number of " << m_type_name << ": " << lhs.size() << " ("
+                << m_lhs_type << "), " << rhs.size() << " (" << m_rhs_type
+                << ")\n";
 
     // Calculate the agreements at various uncertainties.
     std::vector<scalar> agreements;
     agreements.reserve(m_uncertainties.size());
     for (scalar uncertainty : m_uncertainties) {
-        // The number of matched items between the containers.
-        std::size_t matched = 0;
-        // Iterate over all elements of the LHS collection.
-        for (const TYPE& obj : lhs_coll) {
-            // Check if there's an equivalent element in the RHS collection.
-            if (std::find_if(rhs_coll.begin(), rhs_coll.end(),
-                             m_comp_factory.make_comparator(
-                                 obj, uncertainty)) != rhs_coll.end()) {
-                ++matched;
-            }
-        }
-        // Calculate the agreement value.
-        agreements.push_back(
-            static_cast<scalar>(matched) /
-            static_cast<scalar>(std::max(lhs_coll.size(), rhs_coll.size())) *
-            100.);
+        agreements.push_back(compare(lhs, rhs, uncertainty));
     }
     assert(agreements.size() == m_uncertainties.size());
 
     // Now print them.
     m_out.get() << "  Matching rate(s):\n";
     for (std::size_t i = 0; i < m_uncertainties.size(); ++i) {
-        m_out.get() << "    - " << agreements.at(i) << "% at "
+        m_out.get() << "    - " << agreements.at(i) * 100. << "% at "
                     << m_uncertainties.at(i) * 100. << "% uncertainty\n";
     }
     m_out.get() << std::flush;
+}
+
+template <typename TYPE>
+scalar collection_comparator<TYPE>::compare(
+    const typename collection_types<TYPE>::const_view& lhs,
+    const typename collection_types<TYPE>::const_view& rhs,
+    scalar uncertainty) const {
+
+    // Create device collections on top of the views.
+    const typename collection_types<TYPE>::const_device lhs_coll{lhs},
+        rhs_coll{rhs};
+
+    // The number of matched items between the containers.
+    std::size_t matched = 0;
+
+    // Iterate over all elements of the LHS collection.
+    for (const TYPE& obj : lhs_coll) {
+        // Check if there's an equivalent element in the RHS collection.
+        if (std::find_if(rhs_coll.begin(), rhs_coll.end(),
+                         m_comp_factory.make_comparator(obj, uncertainty)) !=
+            rhs_coll.end()) {
+            ++matched;
+        }
+    }
+
+    // Calculate the agreement value.
+    return (static_cast<scalar>(matched) /
+            static_cast<scalar>(std::max(lhs_coll.size(), rhs_coll.size())));
 }
 
 }  // namespace traccc
