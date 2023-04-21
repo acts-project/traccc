@@ -19,6 +19,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/definitions.hpp"
   "include/traccc/cuda/utils/make_prefix_sum_buff.hpp"
+  "include/traccc/cuda/utils/barrier.hpp"
   "src/utils/make_prefix_sum_buff.cu"
   "include/traccc/cuda/utils/stream.hpp"
   "src/utils/stream.cpp"
