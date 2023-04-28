@@ -9,7 +9,6 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
 #include "traccc/kokkos/seeding/spacepoint_binning.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
@@ -118,7 +117,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                reader_output = traccc::io::read_spacepoints_alt(
+                reader_output = traccc::io::read_spacepoints(
                     event, common_opts.input_directory, surface_transforms,
                     common_opts.input_data_format, &host_mr);
             }  // stop measuring hit reading timer

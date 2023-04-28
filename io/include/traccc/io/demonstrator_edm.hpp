@@ -12,11 +12,11 @@
 #include "traccc/io/reader_edm.hpp"
 
 namespace traccc {
-struct alt_result {
+struct result {
     alt_measurement_collection_types::host measurements;
     spacepoint_collection_types::host spacepoints;
 };
 
-using alt_demonstrator_input = vecmem::vector<io::cell_reader_output>;
-using alt_demonstrator_result = vecmem::vector<alt_result>;
+using demonstrator_input = vecmem::vector<io::cell_reader_output>;
+using demonstrator_result = vecmem::vector<result>;
 }  // namespace traccc

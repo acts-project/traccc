@@ -13,7 +13,6 @@
 namespace traccc {
 
 /// Seed consisting of three spacepoints, z origin and weight
-/// This differs from (non-alt) seed in the link_type definition
 struct seed {
 
     using link_type = spacepoint_collection_types::host::size_type;

@@ -10,7 +10,7 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/write.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
@@ -49,7 +49,7 @@ int create_binaries(const std::string& detector_file,
                           vecmem::get_data(cells_csv.modules));
 
         // Read the hits from the relevant event file
-        auto spacepoints_csv = traccc::io::read_spacepoints_alt(
+        auto spacepoints_csv = traccc::io::read_spacepoints(
             event, common_opts.input_directory, surface_transforms,
             common_opts.input_data_format, &host_mr);
 

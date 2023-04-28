@@ -15,7 +15,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/utils.hpp"
 
 // Project include(s).
@@ -268,9 +268,8 @@ measurement_particle_map generate_measurement_particle_map(
     auto surface_transforms = io::read_geometry(detector_file);
 
     // Read the spacepoints from the relevant event file
-    auto readOut =
-        io::read_spacepoints_alt(event, hits_dir, surface_transforms,
-                                 traccc::data_format::csv, &resource);
+    auto readOut = io::read_spacepoints(event, hits_dir, surface_transforms,
+                                        traccc::data_format::csv, &resource);
     spacepoint_collection_types::host& spacepoints_per_event =
         readOut.spacepoints;
     cell_module_collection_types::host& modules = readOut.modules;

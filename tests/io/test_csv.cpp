@@ -12,7 +12,7 @@
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_particles.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -104,7 +104,7 @@ TEST_F(io, csv_read_tml_single_muon) {
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the hits from the relevant event file
-    auto spacepoints_per_event = traccc::io::read_spacepoints_alt(
+    auto spacepoints_per_event = traccc::io::read_spacepoints(
         0, "tml_full/single_muon/", surface_transforms,
         traccc::data_format::csv, &resource);
 

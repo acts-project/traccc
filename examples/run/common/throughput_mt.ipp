@@ -13,7 +13,7 @@
 #include "traccc/options/throughput_options.hpp"
 
 // I/O include(s).
-#include "traccc/io/demonstrator_alt_edm.hpp"
+#include "traccc/io/demonstrator_edm.hpp"
 #include "traccc/io/read.hpp"
 
 // Performance measurement include(s).
@@ -41,8 +41,8 @@
 namespace traccc {
 
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
-int throughput_mt_alt(std::string_view description, int argc, char* argv[],
-                      bool use_host_caching) {
+int throughput_mt(std::string_view description, int argc, char* argv[],
+                  bool use_host_caching) {
 
     // Convenience typedef.
     namespace po = boost::program_options;
@@ -80,7 +80,7 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
     HOST_MR uncached_host_mr;
 
     // Read in all input events into memory.
-    alt_demonstrator_input input;
+    demonstrator_input input;
     {
         performance::timer t{"File reading", times};
         for (unsigned int event = 0; event < throughput_cfg.loaded_events;

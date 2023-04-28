@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "traccc/io/data_format.hpp"
+#include "traccc/io/reader_edm.hpp"
 
 // Project include(s).
 #include "traccc/edm/spacepoint.hpp"
@@ -32,10 +33,10 @@ namespace traccc::io {
 /// @param directory The directory holding the cell data files
 /// @param geom The description of the detector geometry
 /// @param format The format of the cell data files (to read)
-/// @param mr The memory resource to create the host container with
-/// @return A cell (host) container
+/// @param mr The memory resource to create the host collection with
+/// @return A cell (host) collection
 ///
-spacepoint_container_types::host read_spacepoints(
+spacepoint_reader_output read_spacepoints(
     std::size_t event, std::string_view directory, const geometry &geom,
     data_format format = data_format::csv,
     vecmem::memory_resource *mr = nullptr);
@@ -47,10 +48,10 @@ spacepoint_container_types::host read_spacepoints(
 /// @param filename The file to read the cell data from
 /// @param geom The description of the detector geometry
 /// @param format The format of the cell data files (to read)
-/// @param mr The memory resource to create the host container with
-/// @return A cell (host) container
+/// @param mr The memory resource to create the host collection with
+/// @return A cell (host) collection
 ///
-spacepoint_container_types::host read_spacepoints(
+spacepoint_reader_output read_spacepoints(
     std::string_view filename, const geometry &geom,
     data_format format = data_format::csv,
     vecmem::memory_resource *mr = nullptr);

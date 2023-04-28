@@ -10,7 +10,7 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/io/write.hpp"
 
@@ -111,9 +111,9 @@ TEST(io_binary, spacepoint) {
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read csv file
-    auto reader_csv = traccc::io::read_spacepoints_alt(
-        event, hits_directory, surface_transforms, traccc::data_format::csv,
-        &host_mr);
+    auto reader_csv =
+        traccc::io::read_spacepoints(event, hits_directory, surface_transforms,
+                                     traccc::data_format::csv, &host_mr);
     const traccc::spacepoint_collection_types::host& spacepoints_csv =
         reader_csv.spacepoints;
     const traccc::cell_module_collection_types::host& modules_csv =
@@ -125,9 +125,9 @@ TEST(io_binary, spacepoint) {
                       vecmem::get_data(modules_csv));
 
     // Read binary file
-    auto reader_binary = traccc::io::read_spacepoints_alt(
-        event, hits_directory, surface_transforms, traccc::data_format::binary,
-        &host_mr);
+    auto reader_binary =
+        traccc::io::read_spacepoints(event, hits_directory, surface_transforms,
+                                     traccc::data_format::binary, &host_mr);
     const traccc::spacepoint_collection_types::host& spacepoints_binary =
         reader_binary.spacepoints;
     const traccc::cell_module_collection_types::host& modules_binary =
