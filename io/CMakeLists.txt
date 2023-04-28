@@ -20,7 +20,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/data_format.hpp"
   "include/traccc/io/event_map.hpp"
   "include/traccc/io/event_map2.hpp"
-  "include/traccc/io/demonstrator_alt_edm.hpp"
+  "include/traccc/io/demonstrator_edm.hpp"
   "include/traccc/io/mapper.hpp"
   "include/traccc/io/write.hpp"
   "include/traccc/io/utils.hpp"

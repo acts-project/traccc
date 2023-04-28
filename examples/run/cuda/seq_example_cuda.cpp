@@ -93,7 +93,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::cell_reader_output alt_read_out_per_event;
+        traccc::io::cell_reader_output read_out_per_event;
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
@@ -113,16 +113,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                alt_read_out_per_event = traccc::io::read_cells(
+                read_out_per_event = traccc::io::read_cells(
                     event, common_opts.input_directory,
                     common_opts.input_data_format, &surface_transforms,
                     &digi_cfg, &cuda_host_mr);
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
-                alt_read_out_per_event.cells;
+                read_out_per_event.cells;
             const traccc::cell_module_collection_types::host&
-                modules_per_event = alt_read_out_per_event.modules;
+                modules_per_event = read_out_per_event.modules;
 
             /*-----------------------------
                 Clusterization and Spacepoint Creation (cuda)
@@ -249,8 +249,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                      vecmem::get_data(params_cuda));
 
             /// Statistics
-            n_modules += alt_read_out_per_event.modules.size();
-            n_cells += alt_read_out_per_event.cells.size();
+            n_modules += read_out_per_event.modules.size();
+            n_cells += read_out_per_event.cells.size();
             n_measurements += measurements_per_event.size();
             n_spacepoints += spacepoints_per_event.size();
             n_spacepoints_cuda += spacepoints_per_event_cuda.size();
