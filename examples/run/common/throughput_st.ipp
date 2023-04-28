@@ -32,8 +32,8 @@
 namespace traccc {
 
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
-int throughput_st_alt(std::string_view description, int argc, char* argv[],
-                      bool use_host_caching) {
+int throughput_st(std::string_view description, int argc, char* argv[],
+                  bool use_host_caching) {
 
     // Convenience typedef.
     namespace po = boost::program_options;

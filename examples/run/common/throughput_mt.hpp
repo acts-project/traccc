@@ -28,10 +28,10 @@ namespace traccc {
 ///
 template <typename FULL_CHAIN_ALG,
           typename HOST_MR = vecmem::host_memory_resource>
-int throughput_mt_alt(std::string_view description, int argc, char* argv[],
-                      bool use_host_caching = false);
+int throughput_mt(std::string_view description, int argc, char* argv[],
+                  bool use_host_caching = false);
 
 }  // namespace traccc
 
 // Local include(s).
-#include "throughput_mt_alt.ipp"
+#include "throughput_mt.ipp"
