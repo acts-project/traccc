@@ -67,10 +67,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // run the kernel
     kernels::estimate_track_params<<<num_blocks, num_threads, 0, stream>>>(
         spacepoints_view, seeds_view, params_buffer);
-
-    // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     return params_buffer;
 }

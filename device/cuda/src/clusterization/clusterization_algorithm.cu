@@ -152,7 +152,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         spacepoints_buffer);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     return {std::move(spacepoints_buffer), std::move(cell_links)};
 }
