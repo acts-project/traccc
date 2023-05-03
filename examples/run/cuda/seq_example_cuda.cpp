@@ -178,6 +178,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                stream.synchronize();
             }  // stop measuring seeding cuda timer
 
             // CPU
@@ -198,6 +199,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                              elapsedTimes);
                 params_cuda_buffer =
                     tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
+                stream.synchronize();
             }  // stop measuring track params timer
 
             // CPU
