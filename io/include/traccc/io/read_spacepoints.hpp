@@ -15,45 +15,38 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/geometry.hpp"
 
-// VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
-
 // System include(s).
 #include <cstddef>
 #include <string_view>
 
 namespace traccc::io {
 
-/// Read cell data into memory
+/// Read spacepoint data into memory
 ///
 /// The file to read is selected according the naming conventions used in
 /// our data.
 ///
+/// @param out A spacepoint & a cell_module (host) collections
 /// @param event The event ID to read in the cells for
 /// @param directory The directory holding the cell data files
 /// @param geom The description of the detector geometry
 /// @param format The format of the cell data files (to read)
-/// @param mr The memory resource to create the host collection with
-/// @return A cell (host) collection
 ///
-spacepoint_reader_output read_spacepoints(
-    std::size_t event, std::string_view directory, const geometry &geom,
-    data_format format = data_format::csv,
-    vecmem::memory_resource *mr = nullptr);
+void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
+                      std::string_view directory, const geometry& geom,
+                      data_format format = data_format::csv);
 
-/// Read cell data into memory
+/// Read spacepoint data into memory
 ///
 /// The file name is selected explicitly by the user.
 ///
+/// @param out A spacepoint & a cell_module (host) collections
 /// @param filename The file to read the cell data from
 /// @param geom The description of the detector geometry
 /// @param format The format of the cell data files (to read)
-/// @param mr The memory resource to create the host collection with
-/// @return A cell (host) collection
 ///
-spacepoint_reader_output read_spacepoints(
-    std::string_view filename, const geometry &geom,
-    data_format format = data_format::csv,
-    vecmem::memory_resource *mr = nullptr);
+void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+                      const geometry& geom,
+                      data_format format = data_format::csv);
 
 }  // namespace traccc::io

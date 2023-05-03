@@ -205,8 +205,9 @@ generate_measurement_cell_map(std::size_t event,
     auto digi_cfg = io::read_digitization_config(digi_config_file);
 
     // Read the cells from the relevant event file
-    auto readOut = io::read_cells(event, cells_dir, traccc::data_format::csv,
-                                  &surface_transforms, &digi_cfg, &resource);
+    traccc::io::cell_reader_output readOut(&resource);
+    io::read_cells(readOut, event, cells_dir, traccc::data_format::csv,
+                   &surface_transforms, &digi_cfg);
     cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
@@ -268,8 +269,9 @@ measurement_particle_map generate_measurement_particle_map(
     auto surface_transforms = io::read_geometry(detector_file);
 
     // Read the spacepoints from the relevant event file
-    auto readOut = io::read_spacepoints(event, hits_dir, surface_transforms,
-                                        traccc::data_format::csv, &resource);
+    traccc::io::spacepoint_reader_output readOut(&resource);
+    io::read_spacepoints(readOut, event, hits_dir, surface_transforms,
+                         traccc::data_format::csv);
     spacepoint_collection_types::host& spacepoints_per_event =
         readOut.spacepoints;
     cell_module_collection_types::host& modules = readOut.modules;

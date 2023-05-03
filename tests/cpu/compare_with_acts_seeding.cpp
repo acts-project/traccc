@@ -129,9 +129,9 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the hits from the relevant event file
-    auto reader_output =
-        traccc::io::read_spacepoints(event, hits_dir, surface_transforms,
-                                     traccc::data_format::csv, &host_mr);
+    traccc::io::spacepoint_reader_output reader_output(&host_mr);
+    traccc::io::read_spacepoints(reader_output, event, hits_dir,
+                                 surface_transforms, traccc::data_format::csv);
 
     traccc::spacepoint_collection_types::host& spacepoints_per_event =
         reader_output.spacepoints;

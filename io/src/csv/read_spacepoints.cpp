@@ -16,21 +16,15 @@
 
 namespace traccc::io::csv {
 
-spacepoint_reader_output read_spacepoints(std::string_view filename,
-                                          const geometry& geom,
-                                          vecmem::memory_resource* mr) {
+void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+                      const geometry& geom) {
 
     // Construct the spacepoint reader object.
     auto reader = make_hit_reader(filename);
 
     // Create the result collection.
-    spacepoint_collection_types::host result_spacepoints;
-    cell_module_collection_types::host result_modules;
-
-    if (mr != nullptr) {
-        result_spacepoints = spacepoint_collection_types::host{mr};
-        result_modules = cell_module_collection_types::host{mr};
-    }
+    spacepoint_collection_types::host& result_spacepoints = out.spacepoints;
+    cell_module_collection_types::host& result_modules = out.modules;
 
     std::map<geometry_id, unsigned int> m;
 
@@ -67,9 +61,6 @@ spacepoint_reader_output read_spacepoints(std::string_view filename,
 
         result_spacepoints.push_back(sp);
     }
-
-    // Return the container.
-    return {std::move(result_spacepoints), std::move(result_modules)};
 }
 
 }  // namespace traccc::io::csv

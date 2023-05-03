@@ -137,32 +137,34 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         .wait_and_throw();
 
     // Copy number of measurements to host
-    unsigned int num_measurements_host;
+    vecmem::unique_alloc_ptr<unsigned int> num_measurements_host =
+        vecmem::make_unique_alloc<unsigned int>(
+            (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
     details::get_queue(m_queue)
-        .memcpy(&num_measurements_host, num_measurements_device.get(),
+        .memcpy(num_measurements_host.get(), num_measurements_device.get(),
                 sizeof(unsigned int))
         .wait_and_throw();
 
     spacepoint_collection_types::buffer spacepoints_buffer(
-        num_measurements_host, m_mr.main);
+        *num_measurements_host, m_mr.main);
     m_copy.setup(spacepoints_buffer)->wait();
     spacepoint_collection_types::view spacepoints_view(spacepoints_buffer);
 
     // For the following kernel, we can now use whatever the desired number of
     // threads per block.
     auto spacepointsRange = traccc::sycl::calculate1DimNdRange(
-        num_measurements_host, m_max_work_group_size);
+        *num_measurements_host, m_max_work_group_size);
 
     // Run form spacepoints kernel, turning 2D measurements into 3D spacepoints
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::form_spacepoints>(
                 spacepointsRange,
-                [measurements_view, modules, num_measurements_host,
+                [measurements_view, modules, aux_num_measurements_device,
                  spacepoints_view](::sycl::nd_item<1> item) {
                     device::form_spacepoints(
                         item.get_global_linear_id(), measurements_view, modules,
-                        num_measurements_host, spacepoints_view);
+                        *aux_num_measurements_device, spacepoints_view);
                 });
         })
         .wait_and_throw();

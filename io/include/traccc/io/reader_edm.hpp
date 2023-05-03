@@ -19,6 +19,9 @@ namespace traccc::io {
 struct cell_reader_output {
     cell_collection_types::host cells;
     cell_module_collection_types::host modules;
+
+    cell_reader_output() {}
+    cell_reader_output(vecmem::memory_resource* mr) : cells(mr), modules(mr) {}
 };
 
 /// Type definition for the reading of measurements into a vector of
@@ -27,6 +30,10 @@ struct cell_reader_output {
 struct measurement_reader_output {
     alt_measurement_collection_types::host measurements;
     cell_module_collection_types::host modules;
+
+    measurement_reader_output() {}
+    measurement_reader_output(vecmem::memory_resource* mr)
+        : measurements(mr), modules(mr) {}
 };
 
 /// Type definition for the reading of spacepoints into a vector of spacepoitns
@@ -35,6 +42,10 @@ struct measurement_reader_output {
 struct spacepoint_reader_output {
     spacepoint_collection_types::host spacepoints;
     cell_module_collection_types::host modules;
+
+    spacepoint_reader_output() {}
+    spacepoint_reader_output(vecmem::memory_resource* mr)
+        : spacepoints(mr), modules(mr) {}
 };
 
 }  // namespace traccc::io

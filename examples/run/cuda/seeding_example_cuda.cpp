@@ -23,6 +23,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
@@ -50,8 +51,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
+    traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
@@ -85,7 +87,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::spacepoint_reader_output reader_output;
+        traccc::io::spacepoint_reader_output reader_output(mr.host);
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -93,8 +95,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         traccc::seed_collection_types::buffer seeds_cuda_buffer(0, *(mr.host));
         traccc::bound_track_parameters_collection_types::buffer
             params_cuda_buffer(0, *mr.host);
-
-        traccc::spacepoint_collection_types::host spacepoints_per_event;
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -106,12 +106,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                reader_output = traccc::io::read_spacepoints(
-                    event, common_opts.input_directory, surface_transforms,
-                    common_opts.input_data_format, &host_mr);
+                traccc::io::read_spacepoints(
+                    reader_output, event, common_opts.input_directory,
+                    surface_transforms, common_opts.input_data_format);
             }  // stop measuring hit reading timer
 
-            spacepoints_per_event = reader_output.spacepoints;
+            auto& spacepoints_per_event = reader_output.spacepoints;
 
             /*----------------------------
                 Seeding algorithm
@@ -216,7 +216,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
             nsd_performance_writer.register_event(
                 event, nseeds.begin(), nseeds.end(),
-                spacepoints_per_event.begin(), evt_map);
+                reader_output.spacepoints.begin(), evt_map);
 
             sd_performance_writer.write(
                 "CUDA", vecmem::get_data(seeds_cuda),

@@ -93,7 +93,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::cell_reader_output read_out_per_event;
+        traccc::io::cell_reader_output read_out_per_event(mr.host);
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
@@ -113,10 +113,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                read_out_per_event = traccc::io::read_cells(
-                    event, common_opts.input_directory,
-                    common_opts.input_data_format, &surface_transforms,
-                    &digi_cfg, &cuda_host_mr);
+                traccc::io::read_cells(read_out_per_event, event,
+                                       common_opts.input_directory,
+                                       common_opts.input_data_format,
+                                       &surface_transforms, &digi_cfg);
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =

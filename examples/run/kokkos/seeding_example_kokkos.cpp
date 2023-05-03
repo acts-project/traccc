@@ -103,7 +103,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-        traccc::io::spacepoint_reader_output reader_output;
+        traccc::io::spacepoint_reader_output reader_output(&host_mr);
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -117,9 +117,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                reader_output = traccc::io::read_spacepoints(
-                    event, common_opts.input_directory, surface_transforms,
-                    common_opts.input_data_format, &host_mr);
+                traccc::io::read_spacepoints(
+                    reader_output, event, common_opts.input_directory,
+                    surface_transforms, common_opts.input_data_format);
             }  // stop measuring hit reading timer
 
             traccc::spacepoint_collection_types::host& spacepoints_per_event =

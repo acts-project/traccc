@@ -195,8 +195,11 @@ seed_finding::output_type seed_finding::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Get the summary values.
-    device::seeding_global_counter globalCounter_host;
-    CUDA_ERROR_CHECK(cudaMemcpyAsync(&globalCounter_host,
+    vecmem::unique_alloc_ptr<device::seeding_global_counter>
+        globalCounter_host =
+            vecmem::make_unique_alloc<device::seeding_global_counter>(
+                (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
+    CUDA_ERROR_CHECK(cudaMemcpyAsync(globalCounter_host.get(),
                                      globalCounter_device.get(),
                                      sizeof(device::seeding_global_counter),
                                      cudaMemcpyDeviceToHost, stream));
@@ -204,10 +207,10 @@ seed_finding::output_type seed_finding::operator()(
 
     // Set up the doublet counter buffers.
     device::device_doublet_collection_types::buffer doublet_buffer_mb = {
-        globalCounter_host.m_nMidBot, m_mr.main};
+        globalCounter_host->m_nMidBot, m_mr.main};
     m_copy.setup(doublet_buffer_mb);
     device::device_doublet_collection_types::buffer doublet_buffer_mt = {
-        globalCounter_host.m_nMidTop, m_mr.main};
+        globalCounter_host->m_nMidTop, m_mr.main};
     m_copy.setup(doublet_buffer_mt);
 
     // Calculate the number of threads and thread blocks to run the doublet
@@ -232,7 +235,7 @@ seed_finding::output_type seed_finding::operator()(
     m_copy.setup(triplet_counter_spM_buffer);
     m_copy.memset(triplet_counter_spM_buffer, 0);
     device::triplet_counter_collection_types::buffer
-        triplet_counter_midBot_buffer = {globalCounter_host.m_nMidBot,
+        triplet_counter_midBot_buffer = {globalCounter_host->m_nMidBot,
                                          m_mr.main,
                                          vecmem::data::buffer_type::resizable};
     m_copy.setup(triplet_counter_midBot_buffer);
@@ -241,7 +244,7 @@ seed_finding::output_type seed_finding::operator()(
     // counting kernel for.
     const unsigned int nTripletCountThreads = WARP_SIZE * 2;
     const unsigned int nTripletCountBlocks =
-        (globalCounter_host.m_nMidBot + nTripletCountThreads - 1) /
+        (globalCounter_host->m_nMidBot + nTripletCountThreads - 1) /
         nTripletCountThreads;
 
     // Count the number of triplets that we need to produce.
@@ -266,7 +269,7 @@ seed_finding::output_type seed_finding::operator()(
         (*globalCounter_device).m_nTriplets);
     CUDA_ERROR_CHECK(cudaGetLastError());
 
-    CUDA_ERROR_CHECK(cudaMemcpyAsync(&globalCounter_host,
+    CUDA_ERROR_CHECK(cudaMemcpyAsync(globalCounter_host.get(),
                                      globalCounter_device.get(),
                                      sizeof(device::seeding_global_counter),
                                      cudaMemcpyDeviceToHost, stream));
@@ -274,7 +277,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Set up the triplet buffer.
     device::device_triplet_collection_types::buffer triplet_buffer = {
-        globalCounter_host.m_nTriplets, m_mr.main};
+        globalCounter_host->m_nTriplets, m_mr.main};
     m_copy.setup(triplet_buffer);
 
     // Calculate the number of threads and thread blocks to run the triplet
@@ -298,7 +301,7 @@ seed_finding::output_type seed_finding::operator()(
     // updating kernel for.
     const unsigned int nWeightUpdatingThreads = WARP_SIZE * 2;
     const unsigned int nWeightUpdatingBlocks =
-        (globalCounter_host.m_nTriplets + nWeightUpdatingThreads - 1) /
+        (globalCounter_host->m_nTriplets + nWeightUpdatingThreads - 1) /
         nWeightUpdatingThreads;
 
     // Update the weights of all spacepoint triplets.
@@ -312,7 +315,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Create result object: collection of seeds
     seed_collection_types::buffer seed_buffer(
-        globalCounter_host.m_nTriplets, m_mr.main,
+        globalCounter_host->m_nTriplets, m_mr.main,
         vecmem::data::buffer_type::resizable);
     m_copy.setup(seed_buffer);
 
