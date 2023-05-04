@@ -45,9 +45,22 @@ traccc_add_library(traccc_cuda cuda TYPE SHARED
         "include/traccc/cuda/fitting/fitting_algorithm.hpp"
         "src/fitting/fitting_algorithm.cu")
 
+if(TRACCC_SETUP_PROFILER)
 target_compile_options(traccc_cuda PRIVATE
-        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr
-        $<$<BOOL:${TRACCC_SETUP_PROFILER}>:-Xcompiler -finstrument-functions -fPIC>>)
+        $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -finstrument-functions 
+        $<$<COMPILE_LANGUAGE:CPP>:-finstrument-functions>>)
+elseif()
+    target_compile_options(traccc_cuda
+            PRIVATE $<$<COMPILE_LANGUAGE:CPP>:--expt-relaxed-constexpr>>)
+    endif()
 target_link_libraries(traccc_cuda PUBLIC
         traccc::core detray::core detray::utils vecmem::core covfie::core
-        PRIVATE CUDA::cudart traccc::device_common vecmem::cuda nvToolsExt)
+        PRIVATE CUDA::cudart traccc::device_common vecmem::cuda CUDA::nvToolsExt)
+
+
+#target_compile_options(traccc_cuda PRIVATE
+#        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr
+#        $<$<BOOL:${TRACCC_SETUP_PROFILER}>:-Xcompiler -finstrument-functions -fPIC>>)
+#target_link_libraries(traccc_cuda PUBLIC
+#        traccc::core detray::core detray::utils vecmem::core covfie::core
+#        PRIVATE CUDA::cudart traccc::device_common vecmem::cuda nvToolsExt)
