@@ -22,12 +22,13 @@
 
 namespace traccc::cuda {
 
-/// Algorithm performing hit clusterization in a naive way
+/// Algorithm performing hit clusterization
 ///
-/// This algorithm implements a very trivial parallelization for the hit
-/// clusterization. Simply handling every detector module in its own thread.
-/// Which is a fairly simple way of translating the single-threaded CPU
-/// algorithm, but also a pretty bad algorithm for a GPU.
+/// This algorithm implements hit clusterization in a massively-parallel
+/// approach. Each thread handles a pre-determined number of detector cells.
+///
+/// This algorithm returns a buffer which is not necessarily filled yet. A
+/// synchronisation statement is required before destroying this buffer.
 ///
 class clusterization_algorithm
     : public algorithm<std::pair<spacepoint_collection_types::buffer,
