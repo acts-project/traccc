@@ -25,6 +25,10 @@
 namespace traccc::cuda {
 
 /// Seed finding for cuda
+///
+/// This algorithm returns a buffer which is not necessarily filled yet. A
+/// synchronisation statement is required before destroying this buffer.
+///
 class seed_finding : public algorithm<seed_collection_types::buffer(
                          const spacepoint_collection_types::const_view&,
                          const sp_grid_const_view&)> {

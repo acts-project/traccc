@@ -102,7 +102,6 @@ sp_grid_buffer spacepoint_binning::operator()(
     kernels::populate_grid<<<num_blocks, num_threads, 0, stream>>>(
         m_config, spacepoints_view, grid_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     // Return the freshly filled buffer.
     return grid_buffer;

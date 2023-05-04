@@ -168,6 +168,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 // Reconstruct it into spacepoints on the device.
                 spacepoints_sycl_buffer =
                     ca_sycl(cells_buffer, modules_buffer).first;
+                q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 
             if (run_cpu) {
@@ -203,6 +204,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             {
                 traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
                 seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                q.wait_and_throw();
             }  // stop measuring seeding sycl timer
 
             // CPU
@@ -222,6 +224,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                              elapsedTimes);
                 params_sycl_buffer =
                     tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
+                q.wait_and_throw();
             }  // stop measuring track params timer
 
             // CPU

@@ -193,7 +193,6 @@ seed_finding::output_type seed_finding::operator()(
         doublet_counter_buffer, (*globalCounter_device).m_nMidBot,
         (*globalCounter_device).m_nMidTop);
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     // Get the summary values.
     device::seeding_global_counter globalCounter_host;
@@ -225,6 +224,7 @@ seed_finding::output_type seed_finding::operator()(
         find_doublets<<<nDoubletFindBlocks, nDoubletFindThreads, 0, stream>>>(
             m_seedfinder_config, g2_view, doublet_counter_buffer,
             doublet_buffer_mb, doublet_buffer_mt);
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Set up the triplet counter buffers
     device::triplet_counter_spM_collection_types::buffer
@@ -244,16 +244,13 @@ seed_finding::output_type seed_finding::operator()(
         (globalCounter_host.m_nMidBot + nTripletCountThreads - 1) /
         nTripletCountThreads;
 
-    // Wait here for the find doublets kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
-
     // Count the number of triplets that we need to produce.
     kernels::count_triplets<<<nTripletCountBlocks, nTripletCountThreads, 0,
                               stream>>>(
         m_seedfinder_config, g2_view, doublet_counter_buffer, doublet_buffer_mb,
         doublet_buffer_mt, triplet_counter_spM_buffer,
         triplet_counter_midBot_buffer);
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Calculate the number of threads and thread blocks to run the triplet
     // count reduction kernel for.
@@ -262,17 +259,12 @@ seed_finding::output_type seed_finding::operator()(
         (doublet_counter_buffer_size + nTcReductionThreads - 1) /
         nTcReductionThreads;
 
-    // Wait here for the count triplets kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
-
     // Reduce the triplet counts per spM.
     kernels::reduce_triplet_counts<<<nTcReductionBlocks, nTcReductionThreads, 0,
                                      stream>>>(
         doublet_counter_buffer, triplet_counter_spM_buffer,
         (*globalCounter_device).m_nTriplets);
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     CUDA_ERROR_CHECK(cudaMemcpyAsync(&globalCounter_host,
                                      globalCounter_device.get(),
@@ -300,6 +292,7 @@ seed_finding::output_type seed_finding::operator()(
             doublet_counter_buffer, doublet_buffer_mt,
             triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
             triplet_buffer);
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
@@ -308,10 +301,6 @@ seed_finding::output_type seed_finding::operator()(
         (globalCounter_host.m_nTriplets + nWeightUpdatingThreads - 1) /
         nWeightUpdatingThreads;
 
-    // Wait here for the find triplets kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
-
     // Update the weights of all spacepoint triplets.
     kernels::update_triplet_weights<<<
         nWeightUpdatingBlocks, nWeightUpdatingThreads,
@@ -319,6 +308,7 @@ seed_finding::output_type seed_finding::operator()(
             nWeightUpdatingThreads,
         stream>>>(m_seedfilter_config, g2_view, triplet_counter_spM_buffer,
                   triplet_counter_midBot_buffer, triplet_buffer);
+    CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Create result object: collection of seeds
     seed_collection_types::buffer seed_buffer(
@@ -333,10 +323,6 @@ seed_finding::output_type seed_finding::operator()(
         (doublet_counter_buffer_size + nSeedSelectingThreads - 1) /
         nSeedSelectingThreads;
 
-    // Wait here for the update triplet weights kernel to finish
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
-
     // Create seeds out of selected triplets
     kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads,
                             sizeof(triplet) *
@@ -347,7 +333,6 @@ seed_finding::output_type seed_finding::operator()(
                                       triplet_counter_midBot_buffer,
                                       triplet_buffer, seed_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     return seed_buffer;
 }
