@@ -47,7 +47,7 @@ traccc_add_library(traccc_cuda cuda TYPE SHARED
 
 if(TRACCC_SETUP_PROFILER)
 target_compile_options(traccc_cuda PRIVATE
-        $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -finstrument-functions 
+        $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -finstrument-functions
         $<$<COMPILE_LANGUAGE:CPP>:-finstrument-functions>>)
 elseif()
     target_compile_options(traccc_cuda

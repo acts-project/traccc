@@ -24,12 +24,20 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+#ifdef TRACCC_HAVE_CXXABI_H
+extern "C" {
 #include <cxxabi.h>
+}
+#endif // TRACCC_HAVE_CXX_ABI_H
 #include <dlfcn.h>
 #include <stdio.h>
 
+#include <array>
+#include <exception>
+#include <iostream>
+
 #include "nvtx3/nvToolsExt.h"
+
 #define UNUSED(x) (void)(x)
 const char *const default_name = "Unknown";
 
@@ -45,14 +53,46 @@ extern "C" void __cyg_profile_func_exit(void *this_fn, void *call_site)
 
 void rangePush(const char *const name) __attribute__((no_instrument_function));
 void rangePop() __attribute__((no_instrument_function));
+Dl_info this_fn_info;
+
+
+
+
+
+
 
 extern "C" void __cyg_profile_func_enter(void *this_fn, void *call_site) {
     (void)this_fn;
     (void)call_site;
-    Dl_info this_fn_info;
     if (dladdr(this_fn, &this_fn_info)) {
-        int status = 0;
-        rangePush(abi::__cxa_demangle(this_fn_info.dli_sname, 0, 0, &status));
+#ifdef TRACCC_HAVE_CXXABI_H
+        std::array<char const*, 4> lookup =
+            {{
+                "The demangling operation succeeded",
+                "A memory allocation failure occurred",
+                "mangled_name is not a valid name under the C++ ABI mangling rules",
+                "One of the arguments is invalid"
+            }};
+
+        std::size_t sz = 17;
+        char* buffer = static_cast<char*>(std::malloc(sz));
+        int status=0;
+        std::bad_exception x;
+        std::exception & e = x;
+        char *realname = abi::__cxa_demangle(e.what(), buffer, &sz, &status);
+        char * fname = abi::__cxa_demangle(this_fn_info.dli_sname, 0, 0, &status);
+        if (status==0) {
+            std::cout << e.what() << "\t=> `" << realname << "'\t: " << status
+                      << '\n';
+            buffer = realname;
+        } else {
+            std::cout << "demangle for `" << e.what() << "' failed due to `"
+                      << lookup[std::abs(status)] << "'\n";
+        }
+#else
+        const char* fname = this_fn_info.dli_sname;
+#endif
+        rangePush(fname);
     } else {
         rangePush(default_name);
     }
@@ -86,3 +126,7 @@ void rangePush(const char *const name) {
 void rangePop() {
     nvtxRangePop();
 }
+
+#ifdef TRACCC_HAVE_CXX_ABI_H
+free(fname);
+#endif
