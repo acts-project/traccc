@@ -57,40 +57,45 @@ class fitting_performance_writer {
 
         auto& m_p_map = evt_map.meas_ptc_map;
 
-        // Get the track state at the first surface
-        const auto& trk_state = track_states_per_track[0];
-        const measurement_link meas_link{trk_state.surface_link().value(),
-                                         trk_state.get_measurement()};
+        for (std::size_t i = 0u; i < track_states_per_track.size(); i++) {
 
-        // Find the contributing particle
-        // @todo: Use identify_contributing_particles function
-        std::map<particle, uint64_t> contributing_particles =
-            m_p_map[meas_link];
+            // Get the track state at the first surface
+            const auto& trk_state = track_states_per_track[i];
+            const measurement_link meas_link{trk_state.surface_link().value(),
+                                             trk_state.get_measurement()};
 
-        const particle ptc = contributing_particles.begin()->first;
+            // Find the contributing particle
+            // @todo: Use identify_contributing_particles function
+            std::map<particle, uint64_t> contributing_particles =
+                m_p_map[meas_link];
 
-        // Find the truth global position and momentum
-        const auto global_pos = evt_map.meas_xp_map[meas_link].first;
-        const auto global_mom = evt_map.meas_xp_map[meas_link].second;
+            const particle ptc = contributing_particles.begin()->first;
 
-        const auto truth_local = det.global_to_local(
-            meas_link.surface_link, global_pos, vector::normalize(global_mom));
+            // Find the truth global position and momentum
+            const auto global_pos = evt_map.meas_xp_map[meas_link].first;
+            const auto global_mom = evt_map.meas_xp_map[meas_link].second;
 
-        // Return value
-        bound_track_parameters truth_param;
-        auto& truth_vec = truth_param.vector();
-        getter::element(truth_vec, e_bound_loc0, 0) = truth_local[0];
-        getter::element(truth_vec, e_bound_loc1, 0) = truth_local[1];
-        getter::element(truth_vec, e_bound_phi, 0) = getter::phi(global_mom);
-        getter::element(truth_vec, e_bound_theta, 0) =
-            getter::theta(global_mom);
-        // @todo: Assign a proper value to time
-        getter::element(truth_vec, e_bound_time, 0) = 0.;
-        getter::element(truth_vec, e_bound_qoverp, 0) =
-            ptc.charge / getter::norm(global_mom);
+            const auto truth_local = det.global_to_local(
+                detray::geometry::barcode(meas_link.surface_link), global_pos,
+                vector::normalize(global_mom));
 
-        // For the moment, only fill with the first measurements
-        write_impl(truth_param, trk_state.smoothed());
+            // Return value
+            bound_track_parameters truth_param;
+            auto& truth_vec = truth_param.vector();
+            getter::element(truth_vec, e_bound_loc0, 0) = truth_local[0];
+            getter::element(truth_vec, e_bound_loc1, 0) = truth_local[1];
+            getter::element(truth_vec, e_bound_phi, 0) =
+                getter::phi(global_mom);
+            getter::element(truth_vec, e_bound_theta, 0) =
+                getter::theta(global_mom);
+            // @todo: Assign a proper value to time
+            getter::element(truth_vec, e_bound_time, 0) = 0.;
+            getter::element(truth_vec, e_bound_qoverp, 0) =
+                ptc.charge / getter::norm(global_mom);
+
+            // For the moment, only fill with the first measurements
+            write_impl(truth_param, trk_state.smoothed());
+        }
     }
 
     /// Writing caches into the file

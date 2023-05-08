@@ -86,8 +86,9 @@ struct gain_matrix_smoother {
         cur_state.smoothed().set_covariance(smt_cov);
 
         // projection matrix
-        const matrix_type<2, 6> H =
-            mask_group[index].template projection_matrix<e_bound_size>();
+        // @TODO: Need to check if it is right to put the filtered state here
+        const typename mask_group_t::value_type::projection_matrix_type H =
+            mask_group[index].projection_matrix(cur_filtered);
 
         // Calculate smoothed chi square
         const matrix_type<2, 1>& meas_local = cur_state.measurement_local();

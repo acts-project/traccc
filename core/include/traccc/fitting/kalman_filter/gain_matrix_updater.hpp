@@ -50,8 +50,8 @@ struct gain_matrix_updater {
             matrix_operator().template identity<2, 2>();
 
         // projection matrix
-        const matrix_type<2, 6> H =
-            mask_group[index].template projection_matrix<e_bound_size>();
+        const typename mask_group_t::value_type::projection_matrix_type H =
+            mask_group[index].projection_matrix(bound_params);
 
         // Measurement data on surface
         const matrix_type<2, 1>& meas_local = trk_state.measurement_local();

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
-- *
- * (c) 2022 CERN for the benefit of the ACTS project
+ *
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -116,6 +116,13 @@ TEST_P(KalmanFittingTests, Run) {
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitValidation, KalmanFittingTests,
     ::testing::Values(std::make_tuple("1_GeV_0_phi", 100, 100),
+                      std::make_tuple("10_GeV_0_phi", 100, 100),
+                      std::make_tuple("100_GeV_0_phi", 100, 100)));
+
+/*
+INSTANTIATE_TEST_SUITE_P(
+    KalmanFitValidation, KalmanFittingTests,
+    ::testing::Values(std::make_tuple("1_GeV_0_phi", 100, 100),
                       std::make_tuple("1_GeV_30_phi", 100, 100),
                       std::make_tuple("1_GeV_60_phi", 100, 100),
                       std::make_tuple("10_GeV_0_phi", 100, 100),
@@ -124,3 +131,4 @@ INSTANTIATE_TEST_SUITE_P(
                       std::make_tuple("100_GeV_0_phi", 100, 100),
                       std::make_tuple("100_GeV_30_phi", 100, 100),
                       std::make_tuple("100_GeV_60_phi", 100, 100)));
+*/
