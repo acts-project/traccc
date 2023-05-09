@@ -24,6 +24,7 @@ namespace traccc::io::details {
 /// @param filename The full input filename
 /// @param mr Is the memory resource to create the result container with
 ///
+/// TODO: Change container reading to not own its result object
 template <typename container_t>
 container_t read_binary_container(std::string_view filename,
                                   vecmem::memory_resource* mr = nullptr) {
@@ -72,8 +73,7 @@ container_t read_binary_container(std::string_view filename,
 /// @param mr Is the memory resource to create the result collection with
 ///
 template <typename collection_t>
-collection_t read_binary_collection(std::string_view filename,
-                                    vecmem::memory_resource* mr = nullptr) {
+void read_binary_collection(collection_t& result, std::string_view filename) {
 
     // Make sure that the chosen types work.
     static_assert(std::is_standard_layout_v<typename collection_t::value_type>,
@@ -86,15 +86,12 @@ collection_t read_binary_collection(std::string_view filename,
     std::size_t size;
     in_file.read(reinterpret_cast<char*>(&size), sizeof(std::size_t));
 
-    // Create the result collection, and set it to the correct size.
-    collection_t result(size, mr);
+    // Set result to the correct size.
+    result.resize(size);
 
     // Read the items into memory.
     in_file.read(reinterpret_cast<char*>(result.data()),
                  size * sizeof(typename collection_t::value_type));
-
-    // Return the newly created container.
-    return result;
 }
 
 }  // namespace traccc::io::details

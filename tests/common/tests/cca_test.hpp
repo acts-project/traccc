@@ -92,7 +92,8 @@ class ConnectedComponentAnalysisTests
         std::string file_truth =
             get_datafile("cca_test/" + file_prefix + "_truth.csv");
 
-        auto data = traccc::io::read_cells(file_hits);
+        traccc::io::cell_reader_output data;
+        traccc::io::read_cells(data, file_hits);
         traccc::cell_collection_types::host &cells = data.cells;
         traccc::cell_module_collection_types::host &modules = data.modules;
 

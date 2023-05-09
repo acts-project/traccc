@@ -70,10 +70,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
+        traccc::io::cell_reader_output readOut(&host_mr);
+
         // Read the cells from the relevant event file
-        auto readOut = traccc::io::read_cells(
-            event, common_opts.input_directory, common_opts.input_data_format,
-            &surface_transforms, &digi_cfg, &host_mr);
+        traccc::io::read_cells(readOut, event, common_opts.input_directory,
+                               common_opts.input_data_format,
+                               &surface_transforms, &digi_cfg);
         traccc::cell_collection_types::host& cells_per_event = readOut.cells;
         traccc::cell_module_collection_types::host& modules_per_event =
             readOut.modules;

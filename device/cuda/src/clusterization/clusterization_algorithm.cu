@@ -129,7 +129,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Copy number of measurements to host
     vecmem::unique_alloc_ptr<unsigned int> num_measurements_host =
-        vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
+        vecmem::make_unique_alloc<unsigned int>(
+            (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
     CUDA_ERROR_CHECK(cudaMemcpyAsync(
         num_measurements_host.get(), num_measurements_device.get(),
         sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));

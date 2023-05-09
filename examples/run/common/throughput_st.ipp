@@ -69,17 +69,19 @@ int throughput_st(std::string_view description, int argc, char* argv[],
             : static_cast<vecmem::memory_resource&>(uncached_host_mr);
 
     // Read in all input events into memory.
-    demonstrator_input input;
+    demonstrator_input input(&uncached_host_mr);
+
     {
         performance::timer t{"File reading", times};
-        for (unsigned int event = 0; event < throughput_cfg.loaded_events;
-             ++event) {
-            input = io::read(
-                throughput_cfg.loaded_events, throughput_cfg.input_directory,
-                throughput_cfg.detector_file,
-                throughput_cfg.digitization_config_file,
-                throughput_cfg.input_data_format, &uncached_host_mr);
+        // Create empty inputs using the correct memory resource
+        for (std::size_t i = 0; i < throughput_cfg.loaded_events; ++i) {
+            input.push_back(demonstrator_input::value_type(&uncached_host_mr));
         }
+        // Read event data into input vector
+        io::read(input, throughput_cfg.loaded_events,
+                 throughput_cfg.input_directory, throughput_cfg.detector_file,
+                 throughput_cfg.digitization_config_file,
+                 throughput_cfg.input_data_format);
     }
 
     // Set up the full-chain algorithm.
