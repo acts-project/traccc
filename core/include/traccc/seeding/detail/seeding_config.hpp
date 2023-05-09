@@ -105,7 +105,7 @@ struct seedfinder_config {
     // (and you want to cover the full phi-range of minPT), leave this at 1.
     int phiBinDeflectionCoverage = 1;
 
-    darray<unsigned long, 2> neighbor_scope{1, 1};
+    darray<unsigned int, 2> neighbor_scope{1, 1};
 
     TRACCC_HOST_DEVICE
     size_t get_num_rbins() const {

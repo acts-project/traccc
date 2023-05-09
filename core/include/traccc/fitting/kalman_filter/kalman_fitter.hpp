@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,6 +21,9 @@
 #include "detray/propagator/actors/parameter_transporter.hpp"
 #include "detray/propagator/actors/pointwise_material_interactor.hpp"
 #include "detray/propagator/propagator.hpp"
+
+// System include(s).
+#include <limits>
 
 namespace traccc {
 
@@ -44,7 +47,7 @@ class kalman_fitter {
         std::size_t n_iterations = 1;
         scalar_type pathlimit = std::numeric_limits<scalar>::max();
         scalar_type overstep_tolerance = -10 * detray::unit<scalar>::um;
-        scalar_type step_constraint = 5. * detray::unit<scalar>::mm;
+        scalar_type step_constraint = std::numeric_limits<scalar_type>::max();
     };
 
     // transform3 type
