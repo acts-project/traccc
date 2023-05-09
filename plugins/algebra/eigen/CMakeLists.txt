@@ -8,6 +8,6 @@
 traccc_add_library( traccc_eigen eigen TYPE INTERFACE
   "include/traccc/plugins/algebra/eigen_definitions.hpp" )
 target_link_libraries( traccc_eigen
-  INTERFACE algebra::eigen_eigen detray::eigen vecmem::core )
+  INTERFACE algebra::eigen_eigen detray::algebra_eigen vecmem::core )
 target_compile_definitions( traccc_eigen
   INTERFACE TRACCC_CUSTOM_SCALARTYPE=${TRACCC_CUSTOM_SCALARTYPE} )

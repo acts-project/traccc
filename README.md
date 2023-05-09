@@ -12,8 +12,8 @@ Demonstrator tracking chain for accelerators.
 | **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
 |                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
 |                    | Track param estimation | ✅  | ✅   | ✅   | ⚪      |
-|                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   | ⚪      |
-| **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   | ⚪      |
+|                    | Combinatorial KF       | 🟡  | 🟡   | ⚪   | ⚪      |
+| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
@@ -129,11 +129,11 @@ flowchart LR
     linkStyle 18 stroke: black;
 
     %% CPU Kalman filter
-    track -.->|Kalman filter| track;
+    track -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/fitting/fitting_algorithm.hpp'>Kalman filter</a>| track;
     linkStyle 19 stroke: black;
 
-    %% CUDA kalman filter
-    track -.->|Kalman filter| track;
+    %% CUDA Kalman filter
+    track -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/fitting/fitting_algorithm.hpp'>Kalman filter</a>| track;
     linkStyle 20 stroke: green;
 
     %% SYCL binning
@@ -151,6 +151,14 @@ flowchart LR
     %% Futhark spacepoint creation
     meas -->|<a href='https://github.com/acts-project/traccc/blob/main/device/futhark/src/spacepoint_formation.fut'>L2G</a>| sp;
     linkStyle 24 stroke: brown;
+
+    %% SYCL Kalman filter
+    track -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/fitting/fitting_algorithm.hpp'>Kalman filter</a>| track;
+    linkStyle 25 stroke: blue;
+
+    %% CUDA CKF
+    ptrack -.->|CKF| track;
+    linkStyle 26 stroke: green;
 ```
 
 ## Requirements and dependencies
@@ -175,25 +183,26 @@ In addition, the following requirements hold when CUDA is enabled:
 The following table lists currently combinations of builds, compilers,
 and toolchains that are currently known to work (last updated 2022/01/24):
 
-| Build | OS | gcc | cuda | comment |
+| Build | OS | gcc | CUDA | comment |
 | --- | --- | --- | --- | --- |
 | CUDA | Ubuntu 20.04   | 9.3.0 | 11.5 | runs on CI |
 
-### Prerequisites
+### Dependencies
 
 - [Boost](https://www.boost.org/): program_options
-- [ROOT](https://root.cern/): RIO, Hist, Tree
+- [CMake](https://cmake.org/)
+- (Optional) [ROOT](https://root.cern/): RIO, Hist, Tree
 
 ## Getting started
 
 ### Clone the repository
 
-Clone the repository and setup up the submodules, this requires `git-lfs` for the data from the `traccc-data` repository.
+Clone the repository and setup the data directory.
 
 ```sh
 git clone git@github.com:acts-project/traccc.git
 cd traccc
-git submodule update --init
+./traccc_data_get_files.sh
 ```
 
 ### Build the project
@@ -218,21 +227,36 @@ cmake --build <build_directory> <options>
 | TRACCC_USE_SYSTEM_DETRAY | Pick up an existing installation of Detray from the build environment |
 | TRACCC_USE_SYSTEM_ACTS | Pick up an existing installation of Acts from the build environment |
 | TRACCC_USE_SYSTEM_GOOGLETEST | Pick up an existing installation of GoogleTest from the build environment |
+| TRACCC_USE_ROOT | Build physics performance analysis code using an existing installation of ROOT from the build environment |
 
 ## Examples
 
-### cpu reconstruction chain
+### CPU reconstruction chain
 
 ```sh
 <build_directory>/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10
+
+<build_directory>/bin/traccc_throughput_mt --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
 ```
 
-### cuda reconstruction chain
+### CUDA reconstruction chain
 
-- Users can generate cuda examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
+- Users can generate CUDA examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
 
 ```sh
 <build_directory>/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 --run_cpu=1
+
+<build_directory>/bin/traccc_throughput_mt_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
+```
+
+### SYCL reconstruction chain
+
+- Users can generate SYCL examples by adding `-DTRACCC_BUILD_SYCL=ON` to cmake options
+
+```sh
+<build_directory>/bin/traccc_seq_example_sycl --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 --run_cpu=1
+
+<build_directory>/bin/traccc_throughput_mt_sycl --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
 ```
 
 ## Troubleshooting

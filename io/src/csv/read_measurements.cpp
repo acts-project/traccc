@@ -44,7 +44,9 @@ measurement_reader_output read_measurements(std::string_view filename,
         } else {
             link = result_modules.size();
             m[iomeas.geometry_id] = link;
-            result_modules.push_back({iomeas.geometry_id});
+            cell_module mod;
+            mod.module = iomeas.geometry_id;
+            result_modules.push_back(mod);
         }
 
         // Construct the measurement object.

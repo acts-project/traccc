@@ -44,8 +44,10 @@ spacepoint_reader_output read_spacepoints_alt(std::string_view filename,
         } else {
             link = result_modules.size();
             m[iohit.geometry_id] = link;
-            result_modules.push_back(
-                {iohit.geometry_id, geom[iohit.geometry_id]});
+            cell_module mod;
+            mod.module = iohit.geometry_id;
+            mod.placement = geom[iohit.geometry_id];
+            result_modules.push_back(mod);
         }
 
         // Find the local<->global transformation for the spacepoint's detector

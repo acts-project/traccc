@@ -60,10 +60,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
-        {std::vector<std::size_t>(n_tracks),
-         std::vector<std::size_t>(candidate_sizes.begin(),
-                                  candidate_sizes.end()),
-         m_mr.main, m_mr.host}};
+        {candidate_sizes, m_mr.main, m_mr.host,
+         vecmem::data::buffer_type::resizable}};
 
     m_copy->setup(track_states_buffer.headers);
     m_copy->setup(track_states_buffer.items);
