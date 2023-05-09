@@ -28,7 +28,7 @@
 extern "C" {
 #include <cxxabi.h>
 }
-#endif // TRACCC_HAVE_CXX_ABI_H
+#endif  // TRACCC_HAVE_CXX_ABI_H
 #include <dlfcn.h>
 #include <stdio.h>
 
@@ -55,33 +55,27 @@ void rangePush(const char *const name) __attribute__((no_instrument_function));
 void rangePop() __attribute__((no_instrument_function));
 Dl_info this_fn_info;
 
-
-
-
-
-
-
 extern "C" void __cyg_profile_func_enter(void *this_fn, void *call_site) {
     (void)this_fn;
     (void)call_site;
     if (dladdr(this_fn, &this_fn_info)) {
 #ifdef TRACCC_HAVE_CXXABI_H
-        std::array<char const*, 4> lookup =
-            {{
-                "The demangling operation succeeded",
-                "A memory allocation failure occurred",
-                "mangled_name is not a valid name under the C++ ABI mangling rules",
-                "One of the arguments is invalid"
-            }};
+        std::array<char const *, 4> lookup = {
+            {"The demangling operation succeeded",
+             "A memory allocation failure occurred",
+             "mangled_name is not a valid name under the C++ ABI mangling "
+             "rules",
+             "One of the arguments is invalid"}};
 
         std::size_t sz = 17;
-        char* buffer = static_cast<char*>(std::malloc(sz));
-        int status=0;
+        char *buffer = static_cast<char *>(std::malloc(sz));
+        int status = 0;
         std::bad_exception x;
-        std::exception & e = x;
+        std::exception &e = x;
         char *realname = abi::__cxa_demangle(e.what(), buffer, &sz, &status);
-        char * fname = abi::__cxa_demangle(this_fn_info.dli_sname, 0, 0, &status);
-        if (status!=0) {
+        char *fname =
+            abi::__cxa_demangle(this_fn_info.dli_sname, 0, 0, &status);
+        if (status != 0) {
             std::cout << e.what() << "\t=> `" << realname << "'\t: " << status
                       << '\n';
             buffer = realname;
@@ -90,7 +84,7 @@ extern "C" void __cyg_profile_func_enter(void *this_fn, void *call_site) {
                       << lookup[std::abs(status)] << "'\n";
         }
 #else
-        const char* fname = this_fn_info.dli_sname;
+        const char *fname = this_fn_info.dli_sname;
 #endif
         rangePush(fname);
     } else {
