@@ -81,7 +81,7 @@ extern "C" void __cyg_profile_func_enter(void *this_fn, void *call_site) {
         std::exception & e = x;
         char *realname = abi::__cxa_demangle(e.what(), buffer, &sz, &status);
         char * fname = abi::__cxa_demangle(this_fn_info.dli_sname, 0, 0, &status);
-        if (status==0) {
+        if (status!=0) {
             std::cout << e.what() << "\t=> `" << realname << "'\t: " << status
                       << '\n';
             buffer = realname;
