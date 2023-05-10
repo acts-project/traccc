@@ -23,6 +23,9 @@ namespace traccc::cuda {
 /// vector's elements in device Example: Jagged vector with sizes = {3,2,1,...}
 /// Returns: {[0,0], [0,1], [0,2], [1,0], [1,1], [2,0], ...}
 ///
+/// This algorithm returns a buffer which is not necessarily filled yet. A
+/// synchronisation statement is required before or destroying this buffer.
+///
 /// @param[in] sizes       The sizes of the jagged vector
 /// @param copy A "copy object" capable of dealing with the view
 /// @param mr   The memory resource to create the buffer with
@@ -35,6 +38,9 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
 /// Function that returns vector of prefix_sum_element_t for accessing a jagged
 /// vector's elements in device Example: Jagged vector with sizes = {3,2,1,...}
 /// Returns: {[0,0], [0,1], [0,2], [1,0], [1,1], [2,0], ...}
+///
+/// This algorithm returns a buffer which is not necessarily filled yet. A
+/// synchronisation statement is required before or destroying this buffer.
 ///
 /// @param[in] sizes       The sizes of the jagged vector
 /// @param copy A "copy object" capable of dealing with the view

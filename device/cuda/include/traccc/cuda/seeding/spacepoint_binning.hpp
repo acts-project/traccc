@@ -25,6 +25,10 @@
 namespace traccc::cuda {
 
 /// Spacepoing binning executed on a CUDA device
+///
+/// This algorithm returns a buffer which is not necessarily filled yet. A
+/// synchronisation statement is required before destroying this buffer.
+///
 class spacepoint_binning
     : public algorithm<sp_grid_buffer(
           const spacepoint_collection_types::const_view&)> {

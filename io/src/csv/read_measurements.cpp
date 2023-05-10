@@ -15,20 +15,16 @@
 
 namespace traccc::io::csv {
 
-measurement_reader_output read_measurements(std::string_view filename,
-                                            vecmem::memory_resource* mr) {
+void read_measurements(measurement_reader_output& out,
+                       std::string_view filename) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
 
     // Create the result collection.
-    alt_measurement_collection_types::host result_measurements;
-    cell_module_collection_types::host result_modules;
-
-    if (mr != nullptr) {
-        result_measurements = alt_measurement_collection_types::host{mr};
-        result_modules = cell_module_collection_types::host{mr};
-    }
+    alt_measurement_collection_types::host& result_measurements =
+        out.measurements;
+    cell_module_collection_types::host& result_modules = out.modules;
 
     std::map<geometry_id, unsigned int> m;
 
@@ -56,9 +52,6 @@ measurement_reader_output read_measurements(std::string_view filename,
 
         result_measurements.push_back(meas);
     }
-
-    // Return the container.
-    return {std::move(result_measurements), std::move(result_modules)};
 }
 
 }  // namespace traccc::io::csv

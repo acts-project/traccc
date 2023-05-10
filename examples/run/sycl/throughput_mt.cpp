@@ -6,7 +6,8 @@
  */
 
 // Local include(s).
-#include "../common/throughput_mt_alt.hpp"
+#include "../common/throughput_mt.hpp"
+
 #include "full_chain_algorithm.hpp"
 
 // VecMem include(s).
@@ -16,7 +17,8 @@ int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
     static const bool use_host_caching = true;
-    return traccc::throughput_mt_alt<traccc::sycl::full_chain_algorithm>(
+    return traccc::throughput_mt<traccc::sycl::full_chain_algorithm,
+                                 vecmem::sycl::host_memory_resource>(
         "Multi-threaded SYCL GPU throughput tests", argc, argv,
         use_host_caching);
 }

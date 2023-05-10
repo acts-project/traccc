@@ -17,7 +17,6 @@
 // io
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
 
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -32,6 +31,7 @@
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
+#include <vecmem/memory/sycl/host_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 
 // System include(s).
@@ -60,8 +60,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::sycl::host_memory_resource sycl_host_mr{&q};
     vecmem::sycl::device_memory_resource device_mr{&q};
-    traccc::memory_resource mr{device_mr, &host_mr};
+    traccc::memory_resource mr{device_mr, &sycl_host_mr};
 
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
@@ -86,7 +87,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::spacepoint_reader_output reader_output;
+        traccc::io::spacepoint_reader_output reader_output(mr.host);
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -106,9 +107,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                reader_output = traccc::io::read_spacepoints_alt(
-                    event, common_opts.input_directory, surface_transforms,
-                    common_opts.input_data_format, &host_mr);
+                traccc::io::read_spacepoints(
+                    reader_output, event, common_opts.input_directory,
+                    surface_transforms, common_opts.input_data_format);
 
             }  // stop measuring hit reading timer
 
@@ -168,8 +169,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         // Copy the seeds to the host for comparison.
         traccc::seed_collection_types::host seeds_sycl;
         traccc::bound_track_parameters_collection_types::host params_sycl;
-        copy(seeds_sycl_buffer, seeds_sycl);
-        copy(params_sycl_buffer, params_sycl);
+        copy(seeds_sycl_buffer, seeds_sycl)->wait();
+        copy(params_sycl_buffer, params_sycl)->wait();
 
         if (run_cpu && i_cfg.check_performance) {
             // Show which event we are currently presenting the results for.

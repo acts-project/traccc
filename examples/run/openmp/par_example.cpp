@@ -63,9 +63,10 @@ int par_run(const std::string &detector_file,
     for (unsigned int event = 0; event < events; ++event) {
 
         // Read the cells from the relevant event file
-        auto readOut =
-            traccc::io::read_cells(event, cells_dir, traccc::data_format::csv,
-                                   &surface_transforms, &digi_cfg, &resource);
+        traccc::io::cell_reader_output readOut(&resource);
+        traccc::io::read_cells(readOut, event, cells_dir,
+                               traccc::data_format::csv, &surface_transforms,
+                               &digi_cfg);
         traccc::cell_collection_types::host &cells_per_event = readOut.cells;
         traccc::cell_module_collection_types::host &modules_per_event =
             readOut.modules;

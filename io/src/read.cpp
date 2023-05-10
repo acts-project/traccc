@@ -19,28 +19,22 @@
 
 namespace traccc::io {
 
-alt_demonstrator_input read(std::size_t events, std::string_view directory,
-                            std::string_view detector_file,
-                            std::string_view digi_config_file,
-                            data_format format, vecmem::memory_resource *mr) {
+void read(demonstrator_input& out, std::size_t events,
+          std::string_view directory, std::string_view detector_file,
+          std::string_view digi_config_file, data_format format) {
 
     // Read in the detector configuration.
     const geometry geom = io::read_geometry(detector_file);
     const digitization_config digi_cfg =
         io::read_digitization_config(digi_config_file);
 
-    // Construct the result object.
-    alt_demonstrator_input result{events, mr};
+    assert(out.size() >= events);
 
     // Read in the cell data for all events. In parallel if possible.
 #pragma omp parallel for
     for (std::size_t event = 0; event < events; ++event) {
-        result[event] =
-            io::read_cells(event, directory, format, &geom, &digi_cfg, mr);
+        io::read_cells(out[event], event, directory, format, &geom, &digi_cfg);
     }
-
-    // Return the container.
-    return result;
 }
 
 }  // namespace traccc::io

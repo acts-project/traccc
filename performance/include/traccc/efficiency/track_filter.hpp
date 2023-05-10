@@ -34,6 +34,11 @@ struct track_filter {
      * @return false if the particle does not pass the cut.
      */
     virtual bool operator()(const particle &p) const = 0;
+
+    /**
+     * @brief Default destructor
+     */
+    virtual ~track_filter() = default;
 };
 
 /**

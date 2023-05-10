@@ -105,8 +105,9 @@ int main(int argc, char* argv[]) {
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
-    traccc::cell_collection_types::host data =
-        traccc::io::read_cells(event_file).cells;
+    traccc::io::cell_reader_output readOut(&mem);
+    traccc::io::read_cells(readOut, event_file);
+    traccc::cell_collection_types::host data = readOut.cells;
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 

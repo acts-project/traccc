@@ -22,6 +22,10 @@ namespace traccc {
 namespace cuda {
 
 /// track parameter estimation for cuda
+///
+/// This algorithm returns a buffer which is not necessarily filled yet. A
+/// synchronisation statement is required before destroying this buffer.
+///
 struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const spacepoint_collection_types::const_view&,

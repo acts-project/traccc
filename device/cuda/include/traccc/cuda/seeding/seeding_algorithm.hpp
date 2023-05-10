@@ -26,6 +26,10 @@
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
+///
+/// This algorithm returns a buffer which is not necessarily filled yet. A
+/// synchronisation statement is required before destroying this buffer.
+///
 class seeding_algorithm : public algorithm<seed_collection_types::buffer(
                               const spacepoint_collection_types::const_view&)> {
 

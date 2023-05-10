@@ -75,9 +75,8 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
 
 namespace traccc::io::csv {
 
-cell_reader_output read_cells(std::string_view filename, const geometry* geom,
-                              const digitization_config* dconfig,
-                              vecmem::memory_resource* mr) {
+void read_cells(cell_reader_output& out, std::string_view filename,
+                const geometry* geom, const digitization_config* dconfig) {
 
     // Construct the cell reader object.
     auto reader = make_cell_reader(filename);
@@ -86,12 +85,7 @@ cell_reader_output read_cells(std::string_view filename, const geometry* geom,
     std::vector<unsigned int> cellCounts;
     cellCounts.reserve(5000);
 
-    cell_module_collection_types::host result_modules;
-    if (mr != nullptr) {
-        result_modules = cell_module_collection_types::host{0, mr};
-    } else {
-        result_modules = cell_module_collection_types::host(0);
-    }
+    cell_module_collection_types::host& result_modules = out.modules;
     result_modules.reserve(5000);
 
     // Create a cell collection, which holds on to a flat list of all the cells
@@ -131,12 +125,8 @@ cell_reader_output read_cells(std::string_view filename, const geometry* geom,
     const unsigned int totalCells = allCells.size();
 
     // Construct the result collection.
-    cell_collection_types::host result_cells;
-    if (mr != nullptr) {
-        result_cells = cell_collection_types::host{totalCells, mr};
-    } else {
-        result_cells = cell_collection_types::host(totalCells);
-    }
+    cell_collection_types::host& result_cells = out.cells;
+    result_cells.resize(totalCells);
 
     // Member "-1" of the prefix sum vector
     unsigned int nCellsZero = 0;
@@ -154,7 +144,7 @@ cell_reader_output read_cells(std::string_view filename, const geometry* geom,
     }
 
     if (cellCounts.size() == 0) {
-        return {result_cells, result_modules};
+        return;
     }
     /* This is might look a bit overcomplicated, and could be made simpler by
      * having a copy of the prefix sum vector before incrementing its value when
@@ -173,9 +163,6 @@ cell_reader_output read_cells(std::string_view filename, const geometry* geom,
         std::sort(result_cells.begin() + cellCounts[i - 1],
                   result_cells.begin() + cellCounts[i], comp);
     }
-
-    // Return the two collections.
-    return {result_cells, result_modules};
 }
 
 }  // namespace traccc::io::csv

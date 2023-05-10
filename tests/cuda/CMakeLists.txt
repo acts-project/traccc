@@ -32,6 +32,7 @@ traccc_add_test(
     test_kalman_filter.cpp
     test_thrust.cu
     test_sync.cu
+    test_array_wrapper.cu
 
     LINK_LIBRARIES
     CUDA::cudart

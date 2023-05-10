@@ -11,7 +11,7 @@
 #include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/io/demonstrator_alt_edm.hpp"
+#include "traccc/io/demonstrator_edm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -30,8 +30,8 @@
 
 namespace po = boost::program_options;
 
-traccc::alt_demonstrator_result run(traccc::alt_demonstrator_input input_data,
-                                    vecmem::host_memory_resource resource) {
+traccc::demonstrator_result run(traccc::demonstrator_input input_data,
+                                vecmem::host_memory_resource resource) {
 
     // Algorithms
     traccc::clusterization_algorithm ca(resource);
@@ -45,8 +45,8 @@ traccc::alt_demonstrator_result run(traccc::alt_demonstrator_input input_data,
 
     auto startAlgorithms = std::chrono::system_clock::now();
 
-    traccc::alt_demonstrator_result aggregated_results(input_data.size(),
-                                                       &resource);
+    traccc::demonstrator_result aggregated_results(input_data.size(),
+                                                   &resource);
 
 #pragma omp parallel for reduction (+:n_modules, n_cells, n_measurements, n_spacepoints)
     for (size_t event = 0; event < input_data.size(); ++event) {
@@ -80,7 +80,7 @@ traccc::alt_demonstrator_result run(traccc::alt_demonstrator_input input_data,
 
 #pragma omp critical
         aggregated_results[event] =
-            traccc::alt_result({measurements_per_event, spacepoints_per_event});
+            traccc::result({measurements_per_event, spacepoints_per_event});
     }
 
     auto endAlgorithms = std::chrono::system_clock::now();
