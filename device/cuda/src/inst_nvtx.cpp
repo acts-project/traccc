@@ -32,6 +32,7 @@
 
 #include <dlfcn.h>
 
+#include <cstring>
 #include <memory>
 #include <optional>
 #include <string>
@@ -41,10 +42,9 @@
 namespace {
 uint32_t __attribute__((no_instrument_function)) djb2(const std::string &str) {
     uint32_t hash = 5381u;
-    int c;
 
     for (auto &chr : str) {
-        hash = 33u * hash + static_cast<uint32_t>(c);
+        hash = 33u * hash + static_cast<uint32_t>(chr);
     }
 
     return hash;
@@ -52,7 +52,8 @@ uint32_t __attribute__((no_instrument_function)) djb2(const std::string &str) {
 
 void __attribute__((no_instrument_function))
 nvtxRangePushWrapper(const std::optional<std::string> &name) {
-    nvtxEventAttributes_t eventAttrib = {0};
+    nvtxEventAttributes_t eventAttrib;
+    std::memset(&eventAttrib, 0, sizeof(nvtxEventAttributes_t));
 
     eventAttrib.version = NVTX_VERSION;
     eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
