@@ -44,39 +44,41 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")
-  
+
+if(TRACCC_ENABLE_NVTX_PROFILING)
+    traccc_add_library(
+            nvtx_instrumentation
+            TYPE OBJECT
+            "src/inst_nvtx.cpp"
+    )
+
+    set_target_properties(
+            nvtx_instrumentation
+            PROPERTIES
+            POSITION_INDEPENDENT_CODE ON
+    )
+
+    target_link_libraries(
+            nvtx_instrumentation
+            PUBLIC CUDA::cudart CUDA::nvToolsExt ${CMAKE_DL_LIBS}
+    )
+
+    target_compile_options(
+            traccc_cuda
+            PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -finstrument-functions
+            $<$<COMPILE_LANGUAGE:CPP>:-finstrument-functions>>)
+
+    target_link_libraries(
+            traccc_cuda
+            PUBLIC
+            nvtx_instrumentation
+    )
+endif()
+
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
   PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
   PRIVATE CUDA::cudart traccc::device_common vecmem::cuda )
 
-if(TRACCC_ENABLE_NVTX_PROFILING)
-    traccc_add_library(
-        nvtx_instrumentation
-        TYPE OBJECT
-        "src/inst_nvtx.cpp"
-    )
 
-    set_target_properties(
-        nvtx_instrumentation
-        PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-    )
-
-    target_link_libraries(
-        nvtx_instrumentation
-        PUBLIC CUDA::cudart CUDA::nvToolsExt ${CMAKE_DL_LIBS}
-    )
-
-    target_compile_options(
-        traccc_cuda
-        PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -finstrument-functions
-        $<$<COMPILE_LANGUAGE:CPP>:-finstrument-functions>>)
-
-    target_link_libraries(
-        traccc_cuda
-        PUBLIC
-        nvtx_instrumentation
-    )
-endif()
