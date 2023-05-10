@@ -83,12 +83,12 @@ __cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
             this_fn_info.dli_sname, nullptr, nullptr, &status));
 
         if (status == 0 && fname) {
-            nvtxRangePushA(fname.get());
+            nvtxRangePushWrapper(fname.get());
         } else {
-            nvtxRangePushA({});
+            nvtxRangePushWrapper({});
         }
 #else
-        nvtxRangePushA(this_fn_info.dli_sname);
+        nvtxRangePushWrapper(this_fn_info.dli_sname);
 #endif
 
     } else {
