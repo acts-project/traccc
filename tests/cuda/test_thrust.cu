@@ -16,6 +16,7 @@
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
+#include <thrust/fill.h>
 #include <thrust/scan.h>
 #include <thrust/sort.h>
 
@@ -72,4 +73,29 @@ TEST(thrust, scan) {
     ASSERT_EQ(host_vector[2], 6);
     ASSERT_EQ(host_vector[3], 14);
     ASSERT_EQ(host_vector[4], 18);
+}
+
+TEST(thrust, fill) {
+
+    vecmem::vector<unsigned int> host_vector{{1, 1, 1, 1, 1, 1, 1},
+                                             &host_resource};
+
+    auto host_buffer = vecmem::get_data(host_vector);
+    auto device_buffer = copy.to(vecmem::get_data(host_vector), device_resource,
+                                 vecmem::copy::type::host_to_device);
+
+    vecmem::device_vector<unsigned int> device_vector(device_buffer);
+
+    thrust::fill(thrust::device, device_vector.begin(), device_vector.end(),
+                 112);
+
+    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+
+    ASSERT_EQ(host_vector[0], 112);
+    ASSERT_EQ(host_vector[1], 112);
+    ASSERT_EQ(host_vector[2], 112);
+    ASSERT_EQ(host_vector[3], 112);
+    ASSERT_EQ(host_vector[4], 112);
+    ASSERT_EQ(host_vector[5], 112);
+    ASSERT_EQ(host_vector[6], 112);
 }
