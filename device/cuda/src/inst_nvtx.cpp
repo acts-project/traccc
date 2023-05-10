@@ -33,6 +33,8 @@
 #include <dlfcn.h>
 
 #include <memory>
+#include <string>
+#include <optional>
 
 #include "nvtx3/nvToolsExt.h"
 
@@ -41,6 +43,36 @@ void __cyg_profile_func_enter(void *, void *)
     __attribute__((no_instrument_function));
 void __cyg_profile_func_exit(void *, void *)
     __attribute__((no_instrument_function));
+
+uint32_t djb2(unsigned char *str) {
+    uint32_t hash = 5381;
+    int c;
+
+    for (auto &chr : str) {
+        hash = 33u * hash + static_cast<uint32_t>(c);
+    }
+
+    return hash;
+}
+
+void nvtxRangePushWrapper(const std::optional<std::string> & name) {
+    nvtxEventAttributes_t eventAttrib = {0};
+
+    eventAttrib.version = NVTX_VERSION;
+    eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
+
+    if (name) {
+        eventAttrib.colorType = NVTX_COLOR_ARGB;
+        eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
+        eventAttrib.color = 0xFF000000 | (djb2(*name) & 0x00FFFFFF);
+        eventAttrib.message.ascii = "my push/pop range";
+    } else {
+        eventAttrib.colorType = NVTX_COLOR_UNKNOWN;
+        eventAttrib.messageType = NVTX_MESSAGE_UNKNOWN;
+    }
+
+    nvtxRangePushEx(&eventAttrib);
+}
 
 void __cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
     constexpr static char default_name[] = "Unknown";
@@ -56,14 +88,14 @@ void __cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
         if (status == 0 && fname) {
             nvtxRangePushA(fname.get());
         } else {
-            nvtxRangePushA(default_name);
+            nvtxRangePushA({});
         }
 #else
         nvtxRangePushA(this_fn_info.dli_sname);
 #endif
 
     } else {
-        nvtxRangePushA(default_name);
+        nvtxRangePushWrapper({});
     }
 }
 
