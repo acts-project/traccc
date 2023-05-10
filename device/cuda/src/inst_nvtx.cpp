@@ -33,19 +33,14 @@
 #include <dlfcn.h>
 
 #include <memory>
-#include <string>
 #include <optional>
+#include <string>
 
 #include "nvtx3/nvToolsExt.h"
 
-extern "C" {
-void __cyg_profile_func_enter(void *, void *)
-    __attribute__((no_instrument_function));
-void __cyg_profile_func_exit(void *, void *)
-    __attribute__((no_instrument_function));
-
-uint32_t djb2(unsigned char *str) {
-    uint32_t hash = 5381;
+namespace {
+uint32_t __attribute__((no_instrument_function)) djb2(const std::string &str) {
+    uint32_t hash = 5381u;
     int c;
 
     for (auto &chr : str) {
@@ -55,7 +50,8 @@ uint32_t djb2(unsigned char *str) {
     return hash;
 }
 
-void nvtxRangePushWrapper(const std::optional<std::string> & name) {
+void __attribute__((no_instrument_function))
+nvtxRangePushWrapper(const std::optional<std::string> &name) {
     nvtxEventAttributes_t eventAttrib = {0};
 
     eventAttrib.version = NVTX_VERSION;
@@ -65,7 +61,7 @@ void nvtxRangePushWrapper(const std::optional<std::string> & name) {
         eventAttrib.colorType = NVTX_COLOR_ARGB;
         eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
         eventAttrib.color = 0xFF000000 | (djb2(*name) & 0x00FFFFFF);
-        eventAttrib.message.ascii = "my push/pop range";
+        eventAttrib.message.ascii = name->c_str();
     } else {
         eventAttrib.colorType = NVTX_COLOR_UNKNOWN;
         eventAttrib.messageType = NVTX_MESSAGE_UNKNOWN;
@@ -73,10 +69,11 @@ void nvtxRangePushWrapper(const std::optional<std::string> & name) {
 
     nvtxRangePushEx(&eventAttrib);
 }
+}  // namespace
 
-void __cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
-    constexpr static char default_name[] = "Unknown";
-
+extern "C" {
+void __attribute__((no_instrument_function))
+__cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
     Dl_info this_fn_info;
 
     if (dladdr(this_fn, &this_fn_info)) {
@@ -99,7 +96,8 @@ void __cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
     }
 }
 
-void __cyg_profile_func_exit(void *, void *) {
+void __attribute__((no_instrument_function))
+__cyg_profile_func_exit(void *, void *) {
     nvtxRangePop();
 }
 }
