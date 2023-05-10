@@ -36,13 +36,13 @@
 
 #include "nvtx3/nvToolsExt.h"
 
-extern "C" void __cyg_profile_func_enter(void *, void *)
+extern "C" {
+void __cyg_profile_func_enter(void *, void *)
     __attribute__((no_instrument_function));
-extern "C" void __cyg_profile_func_exit(void *, void *)
+void __cyg_profile_func_exit(void *, void *)
     __attribute__((no_instrument_function));
 
-extern "C" void __cyg_profile_func_enter([[maybe_unused]] void *this_fn,
-                                         void *) {
+void __cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
     constexpr static char default_name[] = "Unknown";
 
     Dl_info this_fn_info;
@@ -67,6 +67,7 @@ extern "C" void __cyg_profile_func_enter([[maybe_unused]] void *this_fn,
     }
 }
 
-extern "C" void __cyg_profile_func_exit(void *, void *) {
+void __cyg_profile_func_exit(void *, void *) {
     nvtxRangePop();
+}
 }
