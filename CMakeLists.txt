@@ -180,6 +180,20 @@ if( TRACCC_SETUP_ALGEBRA_PLUGINS )
    endif()
 endif()
 
+# Set up covfie.
+option( TRACCC_SETUP_COVFIE
+   "Set up the covfie target(s) explicitly" TRUE )
+option( TRACCC_USE_SYSTEM_COVFIE
+   "Pick up an existing installation of covfie from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_COVFIE )
+   if( TRACCC_USE_SYSTEM_COVFIE )
+      find_package( covfie REQUIRED )
+   else()
+      add_subdirectory( extern/covfie )
+   endif()
+endif()
+
 # Set up dfelibs.
 option( TRACCC_SETUP_DFELIBS
    "Set up the dfelibs target(s) explicitly" TRUE )
