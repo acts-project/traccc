@@ -202,7 +202,7 @@ Clone the repository and setup the data directory.
 ```sh
 git clone git@github.com:acts-project/traccc.git
 cd traccc
-./traccc_data_get_files.sh
+./data/traccc_data_get_files.sh
 ```
 
 ### Build the project
