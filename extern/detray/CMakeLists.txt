@@ -47,6 +47,8 @@ set( DETRAY_SETUP_BENCHMARK FALSE CACHE BOOL
    "Do not set up Google Benchmark as part of Detray" )
 set( DETRAY_SETUP_THRUST FALSE CACHE BOOL
    "Do not set up Thrust as part of Detray" )
+set( DETRAY_SETUP_COVFIE FALSE CACHE BOOL
+   "Do not set up covfie as part of Detray" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Detray )
