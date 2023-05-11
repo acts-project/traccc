@@ -98,7 +98,7 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 // Explicit template instantiation
 using device_detector_type =
     detray::detector<detray::detector_registry::template telescope_detector<
-                         detray::unbounded<detray::rectangle2D<>>>,
+                         detray::rectangle2D<>>,
                      covfie::field_view, detray::device_container_types>;
 using rk_stepper_type = detray::rk_stepper<
     covfie::field<device_detector_type::bfield_backend_type>::view_t,
