@@ -59,7 +59,11 @@ struct event_map2 {
 
             for (const auto& meas_link : measurements) {
 
-                candidates.push_back({meas_link.surface_link, meas_link.meas});
+                track_candidate cand = {
+                    detray::geometry::barcode{meas_link.surface_link},
+                    meas_link.meas};
+
+                candidates.push_back(cand);
             }
 
             track_candidates.push_back(std::move(seed_params),
