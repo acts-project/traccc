@@ -9,6 +9,7 @@
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
 #include "res_plot_tool.hpp"
+#include "stat_plot_tool.hpp"
 
 // ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT
@@ -28,11 +29,14 @@ struct fitting_performance_writer_data {
     /// Constructor
     fitting_performance_writer_data(
         const fitting_performance_writer::config& cfg)
-        : m_res_plot_tool(cfg.config) {}
+        : m_res_plot_tool(cfg.res_config), m_stat_plot_tool(cfg.stat_config) {}
 
     /// Plot tool for resolution
     res_plot_tool m_res_plot_tool;
     res_plot_tool::res_plot_cache m_res_plot_cache;
+    /// Plot tool for statistics
+    stat_plot_tool m_stat_plot_tool;
+    stat_plot_tool::stat_plot_cache m_stat_plot_cache;
 };
 
 }  // namespace details
@@ -42,6 +46,7 @@ fitting_performance_writer::fitting_performance_writer(const config& cfg)
       m_data(std::make_unique<details::fitting_performance_writer_data>(cfg)) {
 
     m_data->m_res_plot_tool.book(m_data->m_res_plot_cache);
+    m_data->m_stat_plot_tool.book(m_data->m_stat_plot_cache);
 }
 
 fitting_performance_writer::~fitting_performance_writer() {}
@@ -64,14 +69,21 @@ void fitting_performance_writer::finalize() {
 #endif  // TRACCC_HAVE_ROOT
 
     m_data->m_res_plot_tool.write(m_data->m_res_plot_cache);
+    m_data->m_stat_plot_tool.write(m_data->m_stat_plot_cache);
 }
 
-void fitting_performance_writer::write_impl(
+void fitting_performance_writer::write_res(
     const bound_track_parameters& truth_param,
     const bound_track_parameters& fit_param) {
 
     m_data->m_res_plot_tool.fill(m_data->m_res_plot_cache, truth_param,
                                  fit_param);
+}
+
+void fitting_performance_writer::write_stat(
+    const fitter_info<transform3>& fit_info) {
+
+    m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, fit_info);
 }
 
 }  // namespace traccc

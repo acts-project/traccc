@@ -156,8 +156,10 @@ TEST_P(KalmanFittingTests, Run) {
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
             auto& device_states = track_states_cuda[i_trk].items;
-
-            fit_performance_writer.write(device_states, host_det, evt_map);
+            const auto& fit_info = track_states_cuda[i_trk].header;
+            ASSERT_FLOAT_EQ(fit_info.ndf, 2 * plane_positions.size() - 5.f);
+            fit_performance_writer.write(device_states, fit_info, host_det,
+                                         evt_map);
         }
     }
 
