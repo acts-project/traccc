@@ -26,6 +26,8 @@ class stat_plot_tool {
         std::unique_ptr<TH1> ndf_hist;
         // Histogram for the chi sqaure
         std::unique_ptr<TH1> chi2_hist;
+        // Histogram for the chi2/ndf
+        std::unique_ptr<TH1> reduced_chi2_hist;
         // Histogram for the pvalue
         std::unique_ptr<TH1> pval_hist;
 #endif  // TRACCC_HAVE_ROOT

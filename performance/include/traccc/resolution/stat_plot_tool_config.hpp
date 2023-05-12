@@ -23,6 +23,7 @@ struct stat_plot_tool_config {
     std::map<std::string, plot_helpers::binning> var_binning = {
         {"ndf", plot_helpers::binning("ndf", 10, 0., 0.)},
         {"chi2", plot_helpers::binning("chi2", 100, 0., 50.)},
+        {"reduced_chi2", plot_helpers::binning("chi2/ndf", 100, 0., 10.)},
         {"pval", plot_helpers::binning("pval", 100, 0., 1.)}};
 };
 
