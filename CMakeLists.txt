@@ -140,7 +140,7 @@ endif()
 
 # Set up Kokkos.
 option( TRACCC_SETUP_KOKKOS
-   "Set up the Kokkos library" TRUE )
+   "Set up the Kokkos library" ${TRACCC_BUILD_KOKKOS} )
 option( TRACCC_USE_SYSTEM_KOKKOS
    "Pick up an existing installation of Kokkos from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
@@ -237,8 +237,12 @@ if( TRACCC_SETUP_ACTS )
 endif()
 
 # Set up GoogleTest.
+include( CTest )
+if (BUILD_TESTING AND TRACCC_BUILD_TESTING)
+set (TRACCC_DEFAULT_SETUP_GOOGLETEST TRUE)
+endif ()
 option( TRACCC_SETUP_GOOGLETEST
-   "Set up the GoogleTest target(s) explicitly" TRUE )
+   "Set up the GoogleTest target(s) explicitly" ${TRACCC_DEFAULT_SETUP_GOOGLETEST} )
 option( TRACCC_USE_SYSTEM_GOOGLETEST
    "Pick up an existing installation of GoogleTest from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
@@ -282,7 +286,6 @@ if ( TRACCC_BUILD_EXAMPLES )
 endif()
 
 # Set up the test(s).
-include( CTest )
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    add_subdirectory( tests )
 endif()
