@@ -18,7 +18,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-   "URL;https://github.com/acts-project/detray/archive/refs/tags/v0.30.0.tar.gz;URL_MD5;b70821a32f96e429e6407cca0f8d9aad"
+   "URL;https://github.com/acts-project/detray/archive/refs/tags/v0.31.0.tar.gz;URL_MD5;477273df340f668197cf6fea9d9a9246"
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
@@ -47,6 +47,8 @@ set( DETRAY_SETUP_BENCHMARK FALSE CACHE BOOL
    "Do not set up Google Benchmark as part of Detray" )
 set( DETRAY_SETUP_THRUST FALSE CACHE BOOL
    "Do not set up Thrust as part of Detray" )
+set( DETRAY_SETUP_COVFIE FALSE CACHE BOOL
+   "Do not set up covfie as part of Detray" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Detray )
