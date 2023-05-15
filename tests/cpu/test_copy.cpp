@@ -44,10 +44,13 @@ TEST(ContainerCopy, HostToHost) {
 
     const auto& host_items = host_copy.get_items();
     ASSERT_EQ(host_items.size(), 3u);
+    ASSERT_EQ(host_items[0].size(), 2u);
     ASSERT_EQ(host_items[0][0], 0);
     ASSERT_EQ(host_items[0][1], 1);
+    ASSERT_EQ(host_items[1].size(), 2u);
     ASSERT_EQ(host_items[1][0], 1);
     ASSERT_EQ(host_items[1][1], 2);
+    ASSERT_EQ(host_items[2].size(), 2u);
     ASSERT_EQ(host_items[2][0], 2);
     ASSERT_EQ(host_items[2][1], 3);
 }
