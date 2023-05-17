@@ -11,7 +11,7 @@
 #include "traccc/io/data_format.hpp"
 
 // Project include(s).
-#include "traccc/geometry/digitization_config.hpp"
+#include "traccc/io/digitization_config.hpp"
 
 // System include(s).
 #include <string_view>
