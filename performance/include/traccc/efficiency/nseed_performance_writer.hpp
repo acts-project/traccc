@@ -19,7 +19,6 @@
 #include <traccc/efficiency/track_filter.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
 #include <traccc/io/event_map.hpp>
-#include <traccc/utils/unit_vectors.hpp>
 
 using namespace Acts::UnitLiterals;
 
@@ -89,8 +88,8 @@ class nseed_performance_writer {
                 }
             }
 
-            const scalar eta = traccc::eta(ptc.mom);
-            const scalar phi = traccc::phi(ptc.mom);
+            const scalar eta = getter::eta(ptc.mom);
+            const scalar phi = getter::phi(ptc.mom);
             const scalar pT = getter::perp(ptc.mom);
 
             write_track_row(ev, ptc.particle_id, pass, ptc.charge, eta, phi,

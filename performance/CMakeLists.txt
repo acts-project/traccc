@@ -23,6 +23,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/resolution/res_plot_tool.hpp"
    "src/resolution/res_plot_tool.cpp"
    # Utils
+   "include/traccc/utils/ranges.hpp"
    "include/traccc/utils/helpers.hpp"
    "src/utils/helpers.hpp"
    "src/utils/helpers.cpp"
