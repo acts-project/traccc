@@ -23,4 +23,5 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/options/full_tracking_input_options.cpp"
   "src/options/throughput_options.cpp"
   )
-target_link_libraries( traccc_options PUBLIC traccc::io Boost::program_options)
+target_link_libraries( traccc_options PUBLIC traccc::io 
+                       traccc::performance Boost::program_options)

@@ -11,7 +11,7 @@
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
-#include "traccc/utils/unit_vectors.hpp"
+#include "traccc/utils/ranges.hpp"
 
 // Test include(s).
 #include "tests/kalman_fitting_test.hpp"

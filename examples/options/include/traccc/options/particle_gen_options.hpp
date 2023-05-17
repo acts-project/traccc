@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/options/options.hpp"
-#include "traccc/utils/unit_vectors.hpp"
+#include "traccc/utils/ranges.hpp"
 
 // Detray include(s).
 #include "detray/definitions/units.hpp"

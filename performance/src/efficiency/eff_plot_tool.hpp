@@ -12,7 +12,6 @@
 
 // Project include(s).
 #include "traccc/edm/particle.hpp"
-#include "traccc/utils/unit_vectors.hpp"
 
 // System include(s).
 #include <string_view>
@@ -87,8 +86,8 @@ class eff_plot_tool {
     void fill(eff_plot_cache& cache, const particle& truth_particle,
               bool status) const {
 
-        const auto t_phi = phi(truth_particle.mom);
-        const auto t_eta = eta(truth_particle.mom);
+        const auto t_phi = getter::phi(truth_particle.mom);
+        const auto t_eta = getter::eta(truth_particle.mom);
         const auto t_pT =
             getter::perp(vector2{truth_particle.mom[0], truth_particle.mom[1]});
 
