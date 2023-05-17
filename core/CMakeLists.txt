@@ -35,7 +35,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
   "include/traccc/utils/type_traits.hpp"
-  "include/traccc/utils/unit_vectors.hpp"
   "include/traccc/utils/memory_resource.hpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/measurement_creation_helper.hpp"
