@@ -9,7 +9,6 @@
 #include <traccc/definitions/primitives.hpp>
 #include <traccc/edm/particle.hpp>
 #include <traccc/efficiency/track_filter.hpp>
-#include <traccc/utils/unit_vectors.hpp>
 
 namespace traccc {
 simple_charged_eta_pt_cut::simple_charged_eta_pt_cut(scalar eta, scalar pt)
@@ -23,7 +22,7 @@ std::string simple_charged_eta_pt_cut::get_name() const {
 }
 
 bool simple_charged_eta_pt_cut::operator()(const particle& p) const {
-    const scalar eta = traccc::eta(p.mom);
+    const scalar eta = getter::eta(p.mom);
     const scalar pT = getter::perp(p.mom);
 
     return p.charge != 0 && std::abs(eta) <= m_eta && pT >= m_pT;

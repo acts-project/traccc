@@ -16,6 +16,7 @@
 #include "traccc/performance/details/is_same_object.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/ranges.hpp"
 
 // Test include(s).
 #include "tests/kalman_fitting_test.hpp"
