@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/definitions/common.hpp"
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_filter.hpp"
@@ -71,7 +72,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     traccc::nseed_performance_writer nsd_performance_writer(
         "nseed_performance_",
-        std::make_unique<traccc::simple_charged_eta_pt_cut>(2.7f, 1._GeV),
+        std::make_unique<traccc::simple_charged_eta_pt_cut>(
+            2.7f, 1.f * traccc::unit<traccc::scalar>::GeV),
         std::make_unique<traccc::stepped_percentage>(0.6f));
 
     if (i_cfg.check_performance) {

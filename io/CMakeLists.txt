@@ -10,6 +10,7 @@ find_package( OpenMP COMPONENTS CXX )
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
+  "include/traccc/io/digitization_config.hpp"
   "include/traccc/io/read.hpp"
   "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_digitization_config.hpp"
@@ -71,7 +72,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/read_particles.hpp"
   "src/csv/read_particles.cpp" )
 target_link_libraries( traccc_io
-  PUBLIC vecmem::core traccc::core
+  PUBLIC vecmem::core traccc::core ActsCore
   PRIVATE dfelibs::dfelibs ActsPluginJson )
 target_compile_definitions( traccc_io
   PRIVATE TRACCC_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data" )

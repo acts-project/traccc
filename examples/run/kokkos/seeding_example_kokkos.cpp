@@ -32,40 +32,6 @@
 
 namespace po = boost::program_options;
 
-/// Helper function that would produce a default seed-finder configuration
-traccc::seedfinder_config default_seedfinder_config() {
-
-    traccc::seedfinder_config config;
-    traccc::seedfinder_config config_copy = config.toInternalUnits();
-    config.highland = 13.6 * std::sqrt(config_copy.radLengthPerSeed) *
-                      (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
-    float maxScatteringAngle = config.highland / config_copy.minPt;
-    config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
-    // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
-    // and millimeter
-    config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
-    config.minHelixDiameter2 =
-        std::pow(config_copy.minPt * 2 / config.pTPerHelixRadius, 2);
-    config.pT2perRadius =
-        std::pow(config.highland / config.pTPerHelixRadius, 2);
-    return config;
-}
-
-/// Helper function that would produce a default spacepoint grid configuration
-traccc::spacepoint_grid_config default_spacepoint_grid_config() {
-
-    traccc::seedfinder_config config = default_seedfinder_config();
-    traccc::spacepoint_grid_config grid_config;
-    grid_config.bFieldInZ = config.bFieldInZ;
-    grid_config.minPt = config.minPt;
-    grid_config.rMax = config.rMax;
-    grid_config.zMax = config.zMax;
-    grid_config.zMin = config.zMin;
-    grid_config.deltaRMax = config.deltaRMax;
-    grid_config.cotThetaMax = config.cotThetaMax;
-    return grid_config;
-}
-
 int seq_run(const traccc::seeding_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
@@ -85,9 +51,14 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config;
+    finder_config.setup();
+    grid_config.setup(finder_config);
+
     // KOKKOS Spacepoint Binning
-    traccc::kokkos::spacepoint_binning m_spacepoint_binning(
-        default_seedfinder_config(), default_spacepoint_grid_config(), mr);
+    traccc::kokkos::spacepoint_binning m_spacepoint_binning(finder_config,
+                                                            grid_config, mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(

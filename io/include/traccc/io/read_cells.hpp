@@ -13,8 +13,8 @@
 
 // Project include(s).
 #include "traccc/edm/cell.hpp"
-#include "traccc/geometry/digitization_config.hpp"
 #include "traccc/geometry/geometry.hpp"
+#include "traccc/io/digitization_config.hpp"
 
 // System include(s).
 #include <cstddef>

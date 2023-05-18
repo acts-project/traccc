@@ -10,19 +10,42 @@
 
 #include "traccc/definitions/common.hpp"
 
+// gamma and related functions from Cephes library
+// see:  http://www.netlib.org/cephes
+//
+// Copyright 1985, 1987, 2000 by Stephen L. Moshier
 namespace traccc::detail {
 
-/* left tail of incomplete gamma function:
- *
- *          inf.      k
- *   a  -x   -       x
- *  x  e     >   ----------
- *           -     -
- *          k=0   | (a+k+1)
- *
+static constexpr double kMAXLGM = 2.556348e305;
+static constexpr double kMACHEP = 1.11022302462515654042363166809e-16;
+static constexpr double kMAXLOG = 709.782712893383973096206318587;
+static constexpr double kBig = 4.503599627370496e15;
+static constexpr double kBiginv = 2.22044604925031308085e-16;
+/* log( sqrt( 2*pi ) ) */
+static constexpr double LS2PI = 0.91893853320467274178;
+
+/* Logarithm of gamma function */
+/* A[]: Stirling's formula expansion of log gamma
+ * B[], C[]: log gamma function between 2 and 3
  */
 
-double igam(double a, double x) {
+static constexpr double A[] = {
+    8.11614167470508450300E-4, -5.95061904284301438324E-4,
+    7.93650340457716943945E-4, -2.77777777730099687205E-3,
+    8.33333333333331927722E-2};
+
+static constexpr double B[] = {
+    -1.37825152569120859100E3, -3.88016315134637840924E4,
+    -3.31612992738871184744E5, -1.16237097492762307383E6,
+    -1.72173700820839662146E6, -8.53555664245765465627E5};
+
+static constexpr double C[] = {
+    /* 1.00000000000000000000E0, */
+    -3.51815701436523470549E2, -1.70642106651881159223E4,
+    -2.20528590553854454839E5, -1.13933444367982507207E6,
+    -2.53252307177582951285E6, -2.01889141433532773231E6};
+
+double igam(const double a, const double x) {
     double ans, ax, c, r;
 
     // LM: for negative values returns 1.0 instead of zero
@@ -57,12 +80,7 @@ double igam(double a, double x) {
     return (ans * ax / a);
 }
 
-// incomplete regularized upper gamma function (complement integral)
-// In this implementation both arguments must be positive.
-// The integral is evaluated by either a power series or
-// continued fraction expansion, depending on the relative
-// values of a and x.
-double igamc(double a, double x) {
+double igamc(const double a, const double x) {
 
     double ans, ax, c, yc, r, t, y, z;
     double pk, pkm1, pkm2, qk, qkm1, qkm2;
@@ -122,28 +140,7 @@ double igamc(double a, double x) {
     return (ans * ax);
 }
 
-/*---------------------------------------------------------------------------*/
-
-/* Logarithm of gamma function */
-/* A[]: Stirling's formula expansion of log gamma
- * B[], C[]: log gamma function between 2 and 3
- */
-
-static double A[] = {8.11614167470508450300E-4, -5.95061904284301438324E-4,
-                     7.93650340457716943945E-4, -2.77777777730099687205E-3,
-                     8.33333333333331927722E-2};
-
-static double B[] = {-1.37825152569120859100E3, -3.88016315134637840924E4,
-                     -3.31612992738871184744E5, -1.16237097492762307383E6,
-                     -1.72173700820839662146E6, -8.53555664245765465627E5};
-
-static double C[] = {
-    /* 1.00000000000000000000E0, */
-    -3.51815701436523470549E2, -1.70642106651881159223E4,
-    -2.20528590553854454839E5, -1.13933444367982507207E6,
-    -2.53252307177582951285E6, -2.01889141433532773231E6};
-
-double lgam(double x) {
+double lgam(const double x) {
     double p, q, u, w, z;
     int i;
 
@@ -223,16 +220,23 @@ double lgam(double x) {
     return (q);
 }
 
-/*
- * calculates a value of a polynomial of the form:
- * a[0]x^N+a[1]x^(N-1) + ... + a[N]
- */
-double Polynomialeval(double x, double* a, unsigned int N) {
+double Polynomialeval(const double x, const double* a, const unsigned int N) {
     if (N == 0)
         return a[0];
     else {
         double pom = a[0];
         for (unsigned int i = 1; i <= N; i++)
+            pom = pom * x + a[i];
+        return pom;
+    }
+}
+
+double Polynomial1eval(const double x, const double* a, const unsigned int N) {
+    if (N == 0)
+        return a[0];
+    else {
+        double pom = x + a[0];
+        for (unsigned int i = 1; i < N; i++)
             pom = pom * x + a[i];
         return pom;
     }
