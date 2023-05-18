@@ -10,10 +10,15 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 
+// Detray include(s).
+#include "detray/definitions/math.hpp"
+
 // Acts include(s).
 #include <Acts/Definitions/Units.hpp>
 
 namespace traccc {
+
+namespace math_ns = detray::math_ns;
 
 // epsilon for float variables
 constexpr scalar float_epsilon = 1e-5;

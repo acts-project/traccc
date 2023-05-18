@@ -10,6 +10,7 @@ traccc_add_test(cpu
     "seq_single_module.cpp"
     "test_cca.cpp"
     "test_clusterization_resolution.cpp"
+    "test_gamma_funtions.cpp"
     "test_kalman_fitter.cpp"
     "test_ranges.cpp"
     LINK_LIBRARIES GTest::gtest_main vecmem::core 

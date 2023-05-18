@@ -48,6 +48,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/clusterization/measurement_creation.hpp"
   "src/clusterization/measurement_creation.cpp"
   # Fitting algorithmic code
+  "include/traccc/fitting/detail/gamma_functions.hpp"
+  "src/fitting/detail/gamma_functions.cpp"
   "include/traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
   "include/traccc/fitting/kalman_filter/kalman_actor.hpp"
