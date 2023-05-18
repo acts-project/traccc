@@ -11,11 +11,14 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
+// Detray include(s).
+#include "detray/geometry/barcode.hpp"
+
 namespace traccc {
 
 /// Track candidate contains the measurement object and its surface link
 struct track_candidate {
-    geometry_id surface_link;
+    detray::geometry::barcode surface_link;
     measurement meas;
 };
 
