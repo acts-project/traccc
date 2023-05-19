@@ -33,14 +33,17 @@ namespace traccc {
 ///
 /// Test parameters:
 /// (1) name
-/// (2) momentum range
-/// (3) eta range
-/// (4) phi range
-/// (5) number of tracks per event
-/// (6) number of events
+/// (2) origin
+/// (3) origin stddev
+/// (4) momentum range
+/// (5) eta range
+/// (6) phi range
+/// (7) number of tracks per event
+/// (8) number of events
 class KalmanFittingTests
     : public ::testing::TestWithParam<std::tuple<
-          std::string, std::array<scalar, 2u>, std::array<scalar, 2u>,
+          std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
+          std::array<scalar, 2u>, std::array<scalar, 2u>,
           std::array<scalar, 2u>, unsigned int, unsigned int>> {
 
     public:
@@ -68,10 +71,6 @@ class KalmanFittingTests
     using uniform_gen_t =
         detray::random_numbers<scalar, std::uniform_real_distribution<scalar>,
                                std::seed_seq>;
-
-    // Origin of particles
-    static const inline point3 origin{0.f, 0.f, 0.f};
-    static const inline point3 origin_stddev{0.f, 0.f, 0.f};
 
     /// Plane alignment direction (aligned to x-axis)
     static const inline detray::detail::ray<transform3> traj{
