@@ -203,31 +203,48 @@ seed_finding::output_type seed_finding::operator()(
     // Setup alpaka
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
     auto queue = Queue{devAcc};
+    auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
+    auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
+    auto const threadsPerBlock = maxThreadsPerBlock;
 
-    // // Get the sizes from the grid view
-    // auto grid_sizes = m_copy->get_sizes(g2_view._data_view);
+    // Get the sizes from the grid view
+    auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
 
-    // // Create prefix sum buffer
+    // Create prefix sum buffer
     // vecmem::data::vector_buffer sp_grid_prefix_sum_buff =
-    //     make_prefix_sum_buff(grid_sizes, *m_copy, m_mr);
-    // auto sp_size = sp_grid_prefix_sum_buff.size();
+    //     make_prefix_sum_buff<Acc, Queue>(
+    //         grid_sizes, m_copy, m_mr, queue
+    //     );
 
-    // // // Set up the doublet counter buffer.
-    // device::doublet_counter_container_types::buffer doublet_counter_buffer =
-    //     device::make_doublet_counter_buffer(grid_sizes, *m_copy, m_mr.main,
-                                            // m_mr.host);
+    // // Set up the doublet counter buffer.
+    // device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
+    //     m_copy.get_size(sp_grid_prefix_sum_buff), m_mr.main,
+    //     vecmem::data::buffer_type::resizable};
+    // m_copy.setup(doublet_counter_buffer);
 
-    // Calculate the number of threads and thread blocks to run the doublet
-    // counting kernel for.
-    // const unsigned int nDoubletCountThreads = WARP_SIZE * 2;
-    // const unsigned int nDoubletCountBlocks =
-    //     (sp_grid_prefix_sum_buff.size() + nDoubletCountThreads - 1) /
-    //     nDoubletCountThreads;
+    // // Calculate the number of threads and thread blocks to run the doublet
+    // // counting kernel for.
+    // auto const blocksPerGrid = (sp_grid_prefix_sum_buff.size() + threadsPerBlock - 1) / threadsPerBlock;
+    // auto const elementsPerThread = 1u;
+    // auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    // std::cout << "Doublet counter buffer of size" << sp_grid_prefix_sum_buff.size() << std::endl;
 
-    // Count the number of doublets that we need to produce.
-    // kernels::count_doublets<<<nDoubletCountBlocks, nDoubletCountThreads>>>(
-    //     m_seedfinder_config, g2_view, sp_grid_prefix_sum_buff,
-    //     doublet_counter_buffer);
+    // // Counter for the total number of doublets and triplets
+    // vecmem::unique_alloc_ptr<device::seeding_global_counter>
+    //     globalCounter_device =
+    //         vecmem::make_unique_alloc<device::seeding_global_counter>(
+    //             m_mr.main);
+    // // m_copy(globalCounter_device);
+
+    // // Count the number of doublets that we need to produce.
+    // ::alpaka::exec<Acc>(
+    //         queue, workDiv,
+    //         CountDoubletsKernel{},
+    //         m_seedfinder_config, g2_view, sp_grid_prefix_sum_buff,
+    //         doublet_counter_buffer, (*globalCounter_device).m_nMidBot,
+    //         (*globalCounter_device).m_nMidTop
+    // );
+    // ::alpaka::wait(queue);
 
     // // Get the summary values per bin.
     // TODO: Copy to device.
@@ -333,10 +350,10 @@ seed_finding::output_type seed_finding::operator()(
     //     n_triplets += h.m_nTriplets;
     // }
 
-    seed_collection_types::buffer seed_buffer(
-        globalCounter_host.m_nTriplets, m_mr.main,
-        vecmem::data::buffer_type::resizable);
-    m_copy.setup(seed_buffer);
+    // seed_collection_types::buffer seed_buffer(
+    //     globalCounter_host.m_nTriplets, m_mr.main,
+    //     vecmem::data::buffer_type::resizable);
+    // m_copy.setup(seed_buffer);
 
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.
@@ -353,7 +370,8 @@ seed_finding::output_type seed_finding::operator()(
     //     m_seedfilter_config, spacepoints_view, g2_view, doublet_prefix_sum_buff,
     //     doublet_counter_buffer, triplet_buffer, seed_buffer);
 
-    return seed_buffer;
+    // return seed_buffer;
+    return seed_collection_types::buffer();
 }
 
 }  // namespace traccc::alpaka
