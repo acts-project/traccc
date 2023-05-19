@@ -23,6 +23,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/utils/queue_wrapper.hpp"
   "include/traccc/sycl/utils/calculate1DimNdRange.hpp"
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
+  "include/traccc/sycl/utils/barrier.hpp"
   # implementation files
   "src/clusterization/clusterization_algorithm.sycl"
   "src/fitting/fitting_algorithm.sycl"

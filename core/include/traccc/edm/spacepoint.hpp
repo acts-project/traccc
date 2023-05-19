@@ -68,7 +68,5 @@ inline bool operator==(const spacepoint& lhs, const spacepoint& rhs) {
 
 /// Declare all spacepoint collection types
 using spacepoint_collection_types = collection_types<spacepoint>;
-/// Declare all spacepoint container types
-using spacepoint_container_types = container_types<geometry_id, spacepoint>;
 
 }  // namespace traccc

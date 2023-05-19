@@ -11,6 +11,7 @@ traccc_add_test(cpu
     "test_cca.cpp"
     "test_clusterization_resolution.cpp"
     "test_kalman_fitter.cpp"
+    "test_ranges.cpp"
     LINK_LIBRARIES GTest::gtest_main vecmem::core 
     traccc_tests_common traccc::core traccc::io traccc::performance
     detray::core detray::utils covfie::core )

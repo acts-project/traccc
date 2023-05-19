@@ -8,10 +8,11 @@
 // Project include(s).
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/efficiency/track_filter.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
@@ -22,9 +23,12 @@
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
+
+// ACTS include(s).
+#include <Acts/Definitions/Units.hpp>
 
 // System include(s).
 #include <exception>
@@ -47,26 +51,33 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
+    traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     traccc::cuda::stream stream;
 
-    vecmem::cuda::copy copy;
-    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::cuda::seeding_algorithm sa_cuda{mr, async_copy, stream};
-    traccc::cuda::track_params_estimation tp_cuda{mr, async_copy, stream};
+    traccc::cuda::seeding_algorithm sa_cuda{mr, copy, stream};
+    traccc::cuda::track_params_estimation tp_cuda{mr, copy, stream};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
+
+    traccc::nseed_performance_writer nsd_performance_writer(
+        "nseed_performance_",
+        std::make_unique<traccc::simple_charged_eta_pt_cut>(2.7f, 1._GeV),
+        std::make_unique<traccc::stepped_percentage>(0.6f));
+
     if (i_cfg.check_performance) {
         sd_performance_writer.add_cache("CPU");
         sd_performance_writer.add_cache("CUDA");
+        nsd_performance_writer.initialize();
     }
 
     traccc::performance::timing_info elapsedTimes;
@@ -76,7 +87,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::spacepoint_reader_output reader_output;
+        traccc::io::spacepoint_reader_output reader_output(mr.host);
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -95,13 +106,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                reader_output = traccc::io::read_spacepoints_alt(
-                    event, common_opts.input_directory, surface_transforms,
-                    common_opts.input_data_format, &host_mr);
+                traccc::io::read_spacepoints(
+                    reader_output, event, common_opts.input_directory,
+                    surface_transforms, common_opts.input_data_format);
             }  // stop measuring hit reading timer
 
-            traccc::spacepoint_collection_types::host& spacepoints_per_event =
-                reader_output.spacepoints;
+            auto& spacepoints_per_event = reader_output.spacepoints;
 
             /*----------------------------
                 Seeding algorithm
@@ -118,6 +128,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
                 seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                stream.synchronize();
             }  // stop measuring seeding cuda timer
 
             // CPU
@@ -138,13 +149,14 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                                              elapsedTimes);
                 params_cuda_buffer =
                     tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
+                stream.synchronize();
             }  // stop measuring track params cuda timer
             // CPU
 
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(std::move(spacepoints_per_event), seeds);
+                params = tp(spacepoints_per_event, seeds);
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
@@ -156,8 +168,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         // Copy the seeds to the host for comparisons
         traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
-        copy(seeds_cuda_buffer, seeds_cuda);
-        copy(params_cuda_buffer, params_cuda);
+        copy(seeds_cuda_buffer, seeds_cuda)->wait();
+        copy(params_cuda_buffer, params_cuda)->wait();
 
         if (run_cpu) {
             // Show which event we are currently presenting the results for.
@@ -194,6 +206,18 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
+
+            std::vector<traccc::nseed<3>> nseeds;
+
+            std::transform(
+                seeds_cuda.cbegin(), seeds_cuda.cend(),
+                std::back_inserter(nseeds),
+                [](const traccc::seed& s) { return traccc::nseed<3>(s); });
+
+            nsd_performance_writer.register_event(
+                event, nseeds.begin(), nseeds.end(),
+                reader_output.spacepoints.begin(), evt_map);
+
             sd_performance_writer.write(
                 "CUDA", vecmem::get_data(seeds_cuda),
                 vecmem::get_data(reader_output.spacepoints), evt_map);
@@ -207,6 +231,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     if (i_cfg.check_performance) {
         sd_performance_writer.finalize();
+        nsd_performance_writer.finalize();
+
+        std::cout << nsd_performance_writer.generate_report_str();
     }
 
     std::cout << "==> Statistics ... " << std::endl;

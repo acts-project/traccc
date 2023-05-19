@@ -89,8 +89,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::sycl::host_memory_resource sycl_host_mr{&q};
     vecmem::sycl::device_memory_resource device_mr{&q};
-    traccc::memory_resource mr{device_mr, &host_mr};
+    traccc::memory_resource mr{device_mr, &sycl_host_mr};
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
@@ -119,7 +120,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::cell_reader_output alt_read_out_per_event;
+        traccc::io::cell_reader_output read_out_per_event(mr.host);
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
@@ -139,16 +140,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                alt_read_out_per_event = traccc::io::read_cells(
-                    event, common_opts.input_directory,
-                    common_opts.input_data_format, &surface_transforms,
-                    &digi_cfg, &host_mr);
+                traccc::io::read_cells(read_out_per_event, event,
+                                       common_opts.input_directory,
+                                       common_opts.input_data_format,
+                                       &surface_transforms, &digi_cfg);
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
-                alt_read_out_per_event.cells;
+                read_out_per_event.cells;
             const traccc::cell_module_collection_types::host&
-                modules_per_event = alt_read_out_per_event.modules;
+                modules_per_event = read_out_per_event.modules;
 
             /*---------------------------------------------------
                 Clusterization & Spacepoint formation (SYCL)
@@ -168,6 +169,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 // Reconstruct it into spacepoints on the device.
                 spacepoints_sycl_buffer =
                     ca_sycl(cells_buffer, modules_buffer).first;
+                q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 
             if (run_cpu) {
@@ -203,6 +205,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             {
                 traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
                 seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                q.wait_and_throw();
             }  // stop measuring seeding sycl timer
 
             // CPU
@@ -222,6 +225,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                              elapsedTimes);
                 params_sycl_buffer =
                     tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
+                q.wait_and_throw();
             }  // stop measuring track params timer
 
             // CPU
@@ -242,9 +246,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::seed_collection_types::host seeds_sycl;
         traccc::bound_track_parameters_collection_types::host params_sycl;
         if (run_cpu || i_cfg.check_performance) {
-            copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl);
-            copy(seeds_sycl_buffer, seeds_sycl);
-            copy(params_sycl_buffer, params_sycl);
+            copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl)->wait();
+            copy(seeds_sycl_buffer, seeds_sycl)->wait();
+            copy(params_sycl_buffer, params_sycl)->wait();
         }
 
         if (run_cpu) {
@@ -273,8 +277,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                      vecmem::get_data(params_sycl));
 
             /// Statistics
-            n_modules += alt_read_out_per_event.modules.size();
-            n_cells += alt_read_out_per_event.cells.size();
+            n_modules += read_out_per_event.modules.size();
+            n_cells += read_out_per_event.cells.size();
             n_measurements += measurements_per_event.size();
             n_spacepoints += spacepoints_per_event.size();
             n_spacepoints_sycl += spacepoints_per_event_sycl.size();

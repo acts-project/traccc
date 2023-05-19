@@ -14,37 +14,38 @@
 
 namespace traccc::io {
 
-spacepoint_container_types::host read_spacepoints(std::size_t event,
-                                                  std::string_view directory,
-                                                  const geometry& geom,
-                                                  data_format format,
-                                                  vecmem::memory_resource* mr) {
+void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
+                      std::string_view directory, const geometry& geom,
+                      data_format format) {
 
     switch (format) {
-        case data_format::csv:
-            return read_spacepoints(data_directory() + directory.data() +
-                                        get_event_filename(event, "-hits.csv"),
-                                    geom, format, mr);
-        case data_format::binary:
-            return read_spacepoints(data_directory() + directory.data() +
-                                        get_event_filename(event, "-hits.dat"),
-                                    geom, format, mr);
+        case data_format::csv: {
+            read_spacepoints(out,
+                             data_directory() + directory.data() +
+                                 get_event_filename(event, "-hits.csv"),
+                             geom, format);
+            break;
+        }
+        case data_format::binary: {
+            details::read_binary_collection<spacepoint_collection_types::host>(
+                out.spacepoints, data_directory() + directory.data() +
+                                     get_event_filename(event, "-hits.dat"));
+            details::read_binary_collection<cell_module_collection_types::host>(
+                out.modules, data_directory() + directory.data() +
+                                 get_event_filename(event, "-modules.dat"));
+            break;
+        }
         default:
             throw std::invalid_argument("Unsupported data format");
     }
 }
 
-spacepoint_container_types::host read_spacepoints(std::string_view filename,
-                                                  const geometry& geom,
-                                                  data_format format,
-                                                  vecmem::memory_resource* mr) {
+void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+                      const geometry& geom, data_format format) {
 
     switch (format) {
         case data_format::csv:
-            return csv::read_spacepoints(filename, geom, mr);
-        case data_format::binary:
-            return details::read_binary_container<
-                spacepoint_container_types::host>(filename, mr);
+            return csv::read_spacepoints(out, filename, geom);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

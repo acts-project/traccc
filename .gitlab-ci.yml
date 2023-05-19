@@ -1,0 +1,39 @@
+stages:
+  - build
+  - test
+
+
+build_cuda:
+  tags: [docker]
+  stage: build
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  artifacts:
+    paths: 
+      - build
+  script:
+      - git clone $CLONE_URL src
+      - git -C src checkout $HEAD_SHA
+      - >
+        cmake -S src -B build -GNinja
+        -DCMAKE_BUILD_TYPE=Release
+        -DTRACCC_BUILD_TESTING=ON
+        -DTRACCC_BUILD_CUDA=ON
+      - cmake --build build
+
+
+test_cuda:
+  stage: test
+  tags: [docker-gpu-nvidia]
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  needs: 
+    - build_cuda
+  script:
+    - git clone $CLONE_URL src
+    - cd src
+    - git checkout $HEAD_SHA
+    - data/traccc_data_get_files.sh
+    - cd ..
+    - cd build
+    - nvidia-smi
+    - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
+

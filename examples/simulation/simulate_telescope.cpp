@@ -86,7 +86,7 @@ int simulate(std::string output_directory, unsigned int events,
             pg_opts.mom_range, pg_opts.theta_range, pg_opts.phi_range);
 
     // Smearing value for measurements
-    detray::measurement_smearer<scalar> meas_smearer(
+    detray::measurement_smearer<transform3> meas_smearer(
         50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
 
     // Run simulator
