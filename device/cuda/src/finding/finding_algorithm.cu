@@ -485,7 +485,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     track_candidate_container_types::buffer track_candidates_buffer{
         {n_tips_total, m_mr.main},
         {std::vector<std::size_t>(n_tips_total,
-                                  m_cfg.max_num_branches_per_surface),
+                                  m_cfg.max_track_candidates_per_track),
          m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
 
     m_copy->setup(track_candidates_buffer.headers);
