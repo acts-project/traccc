@@ -15,6 +15,9 @@ namespace traccc {
 /// Combinatorial Kalman Finding Test with Sparse tracks
 class CkfSparseTrackTests : public KalmanFittingTests {};
 
+/// Combinatorial Kalman Finding Test with Sparse tracks
+class CkfSparseTrackTestsAlt : public KalmanFittingTests {};
+
 /// Combinatorial Kalman Finding Test with Dense tracks
 class CkfDenseTrackTests : public KalmanFittingTests {};
 

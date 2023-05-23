@@ -9,9 +9,9 @@
 #include "traccc/cuda/finding_alt/finding_algorithm_alt.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/finding/device/make_module_map.hpp"
 #include "traccc/finding_alt/device/build_tracks.hpp"
 #include "traccc/finding_alt/device/find_tracks.hpp"
-#include "traccc/finding_alt/device/make_module_map.hpp"
 
 // detray include(s).
 #include "detray/core/detector.hpp"
@@ -34,7 +34,7 @@ namespace traccc::cuda {
 namespace kernels {
 
 /// CUDA kernel for running @c traccc::device::make_module_map
-__global__ void make_module_map(
+__global__ void make_module_map_alt(
     measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<thrust::pair<geometry_id, unsigned int>>
         module_map_view) {
@@ -118,8 +118,8 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
 
     unsigned int nThreads = WARP_SIZE * 2;
     unsigned int nBlocks = (module_map_buffer.size() + nThreads - 1) / nThreads;
-    kernels::make_module_map<<<nBlocks, nThreads>>>(measurements,
-                                                    module_map_buffer);
+    kernels::make_module_map_alt<<<nBlocks, nThreads>>>(measurements,
+                                                        module_map_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
@@ -131,38 +131,35 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
      * Kernel2: Find tracks
      *****************************************************************/
 
-    /*
-    bound_track_parameters_collection_types::buffer params_buffer(1000,
-                                                                  m_mr.main);
     vecmem::data::vector_buffer<const candidate_link_alt> links_buffer(
-        10000, m_mr.main);
+        10000, m_mr.main, vecmem::data::buffer_type::resizable);
     vecmem::data::vector_buffer<const candidate_link_alt::link_index_type>
-        tips_buffer(1000, m_mr.main);
+        tips_buffer(1000, m_mr.main, vecmem::data::buffer_type::resizable);
 
     const unsigned int n_seeds = m_copy->get_size(seeds_buffer);
     if (n_seeds > 0) {
         nThreads = WARP_SIZE * 2;
         nBlocks = (n_seeds + nThreads - 1) / nThreads;
 
-        kernels::find_tracks<<<nBlocks, nThreads>>>(
-            det_view, measurements, module_map_buffer, seeds_buffer,
-            links_buffer, tips_buffer, params_buffer);
+        kernels::find_tracks<propagator_type, config_type>
+            <<<nBlocks, nThreads>>>(m_cfg, det_view, measurements,
+                                    module_map_buffer, seeds_buffer,
+                                    links_buffer, tips_buffer);
 
         CUDA_ERROR_CHECK(cudaGetLastError());
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     }
-    */
 
     /*****************************************************************
      * Kernel3: Build tracks
      *****************************************************************/
 
-    /*
+    const unsigned int n_tips = m_copy->get_size(tips_buffer);
+
     // Create track candidate buffer
     track_candidate_container_types::buffer track_candidates_buffer{
-        {n_tips_total, m_mr.main},
-        {std::vector<std::size_t>(n_tips_total,
-                                  m_cfg.max_track_candidates_per_track),
+        {n_tips, m_mr.main},
+        {std::vector<std::size_t>(n_tips, m_cfg.max_track_candidates_per_track),
          m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
 
     m_copy->setup(track_candidates_buffer.headers);
@@ -170,9 +167,9 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
-    if (n_tips_total > 0) {
+    if (n_tips > 0) {
         nThreads = WARP_SIZE * 2;
-        nBlocks = (n_tips_total + nThreads - 1) / nThreads;
+        nBlocks = (n_tips + nThreads - 1) / nThreads;
         kernels::build_tracks<<<nBlocks, nThreads>>>(measurements, seeds_buffer,
                                                      links_buffer, tips_buffer,
                                                      track_candidates_buffer);
@@ -182,7 +179,6 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
     }
 
     return track_candidates_buffer;
-    */
 }
 
 // Explicit template instantiation

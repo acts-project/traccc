@@ -71,6 +71,11 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/finding/device/impl/find_tracks.ipp"
    "include/traccc/finding/device/impl/make_module_map.ipp"
    "include/traccc/finding/device/impl/propagate_to_next_surface.ipp"
+
+   "include/traccc/finding_alt/device/build_tracks.hpp"
+   "include/traccc/finding_alt/device/find_tracks.hpp"
+   "include/traccc/finding_alt/device/impl/build_tracks.ipp"
+   "include/traccc/finding_alt/device/impl/find_tracks.ipp"
    # Track fitting funtions(s).
    "include/traccc/fitting/device/fit.hpp"
    "include/traccc/fitting/device/impl/fit.ipp"
