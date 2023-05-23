@@ -9,6 +9,7 @@
 #include "traccc/cuda/finding_alt/finding_algorithm_alt.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/device/finding_global_counter_alt.hpp"
 #include "traccc/finding/device/make_module_map.hpp"
 #include "traccc/finding_alt/device/build_tracks.hpp"
 #include "traccc/finding_alt/device/find_tracks.hpp"
@@ -132,10 +133,34 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
      * Kernel2: Find tracks
      *****************************************************************/
 
+    // Global counter object in Device memory
+    vecmem::unique_alloc_ptr<device::finding_global_counter_alt>
+        global_counter_device =
+            vecmem::make_unique_alloc<device::finding_global_counter_alt>(
+                m_mr.main);
+
+    // Reset the global counter
+    CUDA_ERROR_CHECK(cudaMemset(global_counter_device.get(), 0,
+                                sizeof(device::finding_global_counter_alt)));
+
+    const unsigned int plz_fix_me = 10000u;
+
+    // Create a buffer for the number of measurements per parameter
+    vecmem::data::vector_buffer<unsigned int> n_measurements_buffer(plz_fix_me,
+                                                                    m_mr.main);
+
+    // Create a buffer for bound track parameters
+    bound_track_parameters_collection_types::buffer params_buffer(plz_fix_me,
+                                                                  m_mr.main);
+
+    // Create a buffer for the candidate link
     vecmem::data::vector_buffer<candidate_link_alt> links_buffer(
-        10000, m_mr.main, vecmem::data::buffer_type::resizable);
+        plz_fix_me, m_mr.main, vecmem::data::buffer_type::resizable);
+
+    // Create a buffer for the tip link
     vecmem::data::vector_buffer<candidate_link_alt::link_index_type>
-        tips_buffer(1000, m_mr.main, vecmem::data::buffer_type::resizable);
+        tips_buffer(plz_fix_me, m_mr.main,
+                    vecmem::data::buffer_type::resizable);
 
     const unsigned int n_seeds = m_copy->get_size(seeds_buffer);
     if (n_seeds > 0) {
