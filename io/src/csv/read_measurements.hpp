@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/io/reader_edm.hpp"
 
 // System include(s).
@@ -23,5 +24,8 @@ namespace traccc::io::csv {
 ///
 void read_measurements(measurement_reader_output& out,
                        std::string_view filename);
+
+measurement_container_types::host read_measurements_container(
+    std::string_view filename, vecmem::memory_resource* mr = nullptr);
 
 }  // namespace traccc::io::csv
