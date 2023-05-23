@@ -19,13 +19,14 @@ template <typename propagator_t, typename config_t>
 TRACCC_DEVICE inline void find_tracks(
     std::size_t globalIndex, const config_t cfg,
     typename propagator_t::detector_type::detector_view_type det_data,
+    vecmem::data::jagged_vector_view<typename propagator_t::intersection_type>
+        nav_candidates_buffer,
     measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const thrust::pair<geometry_id, unsigned int>>
         module_map_view,
     bound_track_parameters_collection_types::const_view seeds_view,
-    vecmem::data::vector_view<const candidate_link_alt> links_view,
-    vecmem::data::vector_view<
-        const typename candidate_link_alt::link_index_type>
+    vecmem::data::vector_view<candidate_link_alt> links_view,
+    vecmem::data::vector_view<typename candidate_link_alt::link_index_type>
         tips_view);
 
 }  // namespace traccc::device

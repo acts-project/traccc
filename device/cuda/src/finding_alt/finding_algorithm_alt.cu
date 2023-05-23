@@ -49,20 +49,21 @@ template <typename propagator_t, typename config_t>
 __global__ void find_tracks(
     const config_t cfg,
     typename propagator_t::detector_type::detector_view_type det_data,
+    vecmem::data::jagged_vector_view<typename propagator_t::intersection_type>
+        nav_candidates_buffer,
     measurement_container_types::const_view measurements_view,
     vecmem::data::vector_view<const thrust::pair<geometry_id, unsigned int>>
         module_map_view,
     bound_track_parameters_collection_types::const_view seeds_view,
-    vecmem::data::vector_view<const candidate_link_alt> links_view,
-    vecmem::data::vector_view<
-        const typename candidate_link_alt::link_index_type>
+    vecmem::data::vector_view<candidate_link_alt> links_view,
+    vecmem::data::vector_view<typename candidate_link_alt::link_index_type>
         tips_view) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
     device::find_tracks<propagator_t, config_t>(
-        gid, cfg, det_data, measurements_view, module_map_view, seeds_view,
-        links_view, tips_view);
+        gid, cfg, det_data, nav_candidates_buffer, measurements_view,
+        module_map_view, seeds_view, links_view, tips_view);
 }
 
 /// CUDA kernel for running @c traccc::device::build_tracks
@@ -131,9 +132,9 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
      * Kernel2: Find tracks
      *****************************************************************/
 
-    vecmem::data::vector_buffer<const candidate_link_alt> links_buffer(
+    vecmem::data::vector_buffer<candidate_link_alt> links_buffer(
         10000, m_mr.main, vecmem::data::buffer_type::resizable);
-    vecmem::data::vector_buffer<const candidate_link_alt::link_index_type>
+    vecmem::data::vector_buffer<candidate_link_alt::link_index_type>
         tips_buffer(1000, m_mr.main, vecmem::data::buffer_type::resizable);
 
     const unsigned int n_seeds = m_copy->get_size(seeds_buffer);
@@ -142,9 +143,9 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
         nBlocks = (n_seeds + nThreads - 1) / nThreads;
 
         kernels::find_tracks<propagator_type, config_type>
-            <<<nBlocks, nThreads>>>(m_cfg, det_view, measurements,
-                                    module_map_buffer, seeds_buffer,
-                                    links_buffer, tips_buffer);
+            <<<nBlocks, nThreads>>>(m_cfg, det_view, navigation_buffer,
+                                    measurements, module_map_buffer,
+                                    seeds_buffer, links_buffer, tips_buffer);
 
         CUDA_ERROR_CHECK(cudaGetLastError());
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
