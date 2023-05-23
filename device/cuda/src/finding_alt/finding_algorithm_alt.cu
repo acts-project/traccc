@@ -9,6 +9,16 @@
 #include "traccc/cuda/finding_alt/finding_algorithm_alt.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/finding_alt/device/build_tracks.hpp"
+#include "traccc/finding_alt/device/find_tracks.hpp"
+#include "traccc/finding_alt/device/make_module_map.hpp"
+
+// detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/detectors/detector_metadata.hpp"
+#include "detray/masks/unbounded.hpp"
+#include "detray/propagator/navigator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
@@ -18,6 +28,60 @@
 
 // System include(s).
 #include <vector>
+
+namespace traccc::cuda {
+
+namespace kernels {
+
+/// CUDA kernel for running @c traccc::device::make_module_map
+__global__ void make_module_map(
+    measurement_container_types::const_view measurements_view,
+    vecmem::data::vector_view<thrust::pair<geometry_id, unsigned int>>
+        module_map_view) {
+
+    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    device::make_module_map(gid, measurements_view, module_map_view);
+}
+
+/// CUDA kernel for running @c traccc::device::find_tracks
+template <typename propagator_t, typename config_t>
+__global__ void find_tracks(
+    const config_t cfg,
+    typename propagator_t::detector_type::detector_view_type det_data,
+    measurement_container_types::const_view measurements_view,
+    vecmem::data::vector_view<const thrust::pair<geometry_id, unsigned int>>
+        module_map_view,
+    bound_track_parameters_collection_types::const_view seeds_view,
+    vecmem::data::vector_view<const candidate_link_alt> links_view,
+    vecmem::data::vector_view<
+        const typename candidate_link_alt::link_index_type>
+        tips_view) {
+
+    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    device::find_tracks<propagator_t, config_t>(
+        gid, cfg, det_data, measurements_view, module_map_view, seeds_view,
+        links_view, tips_view);
+}
+
+/// CUDA kernel for running @c traccc::device::build_tracks
+__global__ void build_tracks(
+    measurement_container_types::const_view measurements_view,
+    bound_track_parameters_collection_types::const_view seeds_view,
+    vecmem::data::vector_view<const candidate_link_alt> links_view,
+    vecmem::data::vector_view<
+        const typename candidate_link_alt::link_index_type>
+        tips_view,
+    track_candidate_container_types::view track_candidates_view) {
+
+    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    device::build_tracks(gid, measurements_view, seeds_view, links_view,
+                         tips_view, track_candidates_view);
+}
+
+}  // namespace kernels
 
 template <typename stepper_t, typename navigator_t>
 finding_algorithm_alt<stepper_t, navigator_t>::finding_algorithm_alt(
@@ -45,13 +109,6 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
     m_copy->setup(seeds_buffer);
     m_copy->setup(navigation_buffer);
 
-    // Prepare input parameters with seeds
-    bound_track_parameters_collection_types::buffer in_params_buffer(
-        m_copy->get_size(seeds_buffer), m_mr.main);
-    bound_track_parameters_collection_types::device in_params(in_params_buffer);
-    bound_track_parameters_collection_types::device seeds(seeds_buffer);
-    thrust::copy(thrust::device, seeds.begin(), seeds.end(), in_params.begin());
-
     /*****************************************************************
      * Kernel1: Create module map
      *****************************************************************/
@@ -74,15 +131,38 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
      * Kernel2: Find tracks
      *****************************************************************/
 
+    /*
+    bound_track_parameters_collection_types::buffer params_buffer(1000,
+                                                                  m_mr.main);
+    vecmem::data::vector_buffer<const candidate_link_alt> links_buffer(
+        10000, m_mr.main);
+    vecmem::data::vector_buffer<const candidate_link_alt::link_index_type>
+        tips_buffer(1000, m_mr.main);
+
+    const unsigned int n_seeds = m_copy->get_size(seeds_buffer);
+    if (n_seeds > 0) {
+        nThreads = WARP_SIZE * 2;
+        nBlocks = (n_seeds + nThreads - 1) / nThreads;
+
+        kernels::find_tracks<<<nBlocks, nThreads>>>(
+            det_view, measurements, module_map_buffer, seeds_buffer,
+            links_buffer, tips_buffer, params_buffer);
+
+        CUDA_ERROR_CHECK(cudaGetLastError());
+        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    }
+    */
+
     /*****************************************************************
      * Kernel3: Build tracks
      *****************************************************************/
 
+    /*
     // Create track candidate buffer
     track_candidate_container_types::buffer track_candidates_buffer{
         {n_tips_total, m_mr.main},
         {std::vector<std::size_t>(n_tips_total,
-                                  m_cfg.max_num_branches_per_surface),
+                                  m_cfg.max_track_candidates_per_track),
          m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
 
     m_copy->setup(track_candidates_buffer.headers);
@@ -93,13 +173,27 @@ finding_algorithm_alt<stepper_t, navigator_t>::operator()(
     if (n_tips_total > 0) {
         nThreads = WARP_SIZE * 2;
         nBlocks = (n_tips_total + nThreads - 1) / nThreads;
-        kernels::build_tracks<<<nBlocks, nThreads>>>(
-            measurements, seeds_buffer, links_buffer, param_to_link_buffer,
-            tips_buffer, track_candidates_buffer);
+        kernels::build_tracks<<<nBlocks, nThreads>>>(measurements, seeds_buffer,
+                                                     links_buffer, tips_buffer,
+                                                     track_candidates_buffer);
 
         CUDA_ERROR_CHECK(cudaGetLastError());
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     }
 
     return track_candidates_buffer;
+    */
 }
+
+// Explicit template instantiation
+using device_detector_type =
+    detray::detector<detray::detector_registry::template telescope_detector<
+                         detray::rectangle2D<>>,
+                     covfie::field_view, detray::device_container_types>;
+using rk_stepper_type = detray::rk_stepper<
+    covfie::field<device_detector_type::bfield_backend_type>::view_t,
+    transform3, detray::constrained_step<>>;
+using device_navigator_type = detray::navigator<const device_detector_type>;
+template class finding_algorithm_alt<rk_stepper_type, device_navigator_type>;
+
+}  // namespace traccc::cuda

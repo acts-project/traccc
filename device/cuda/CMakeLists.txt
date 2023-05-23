@@ -45,6 +45,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Finding
   "include/traccc/cuda/finding/finding_algorithm.hpp"
   "src/finding/finding_algorithm.cu"  
+  "include/traccc/cuda/finding_alt/finding_algorithm_alt.hpp"
+  "src/finding_alt/finding_algorithm_alt.cu"    
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")
