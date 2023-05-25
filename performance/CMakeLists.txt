@@ -19,9 +19,12 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    # Resolution calculation code.
    "include/traccc/resolution/fitting_performance_writer.hpp"
    "include/traccc/resolution/res_plot_tool_config.hpp"
+   "include/traccc/resolution/stat_plot_tool_config.hpp"
    "src/resolution/fitting_performance_writer.cpp"
    "src/resolution/res_plot_tool.hpp"
    "src/resolution/res_plot_tool.cpp"
+   "src/resolution/stat_plot_tool.hpp"
+   "src/resolution/stat_plot_tool.cpp"
    # Utils
    "include/traccc/utils/ranges.hpp"
    "include/traccc/utils/helpers.hpp"

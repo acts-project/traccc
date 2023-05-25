@@ -119,8 +119,11 @@ TEST_P(KalmanFittingTests, Run) {
 
             const auto& track_states_per_track = track_states[i_trk].items;
             ASSERT_EQ(track_states_per_track.size(), plane_positions.size());
+            const auto& fit_info = track_states[i_trk].header;
+            ASSERT_FLOAT_EQ(fit_info.ndf, 2 * plane_positions.size() - 5.f);
 
-            fit_performance_writer.write(track_states_per_track, det, evt_map);
+            fit_performance_writer.write(track_states_per_track, fit_info, det,
+                                         evt_map);
         }
     }
 
