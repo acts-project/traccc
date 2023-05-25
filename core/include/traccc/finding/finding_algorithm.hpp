@@ -11,7 +11,9 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_state.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -25,22 +27,19 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
 
 // Thrust Library
 #include <thrust/pair.h>
 
-namespace traccc::cuda {
+namespace traccc {
 
 /// Track Finding algorithm for a set of tracks
 template <typename stepper_t, typename navigator_t>
 class finding_algorithm
-    : public algorithm<track_candidate_container_types::buffer(
-          const typename navigator_t::detector_type::detector_view_type&,
-          const vecmem::data::jagged_vector_view<
-              typename navigator_t::intersection_type>&,
-          const typename measurement_container_types::const_view&,
-          bound_track_parameters_collection_types::buffer&&)> {
+    : public algorithm<track_candidate_container_types::host(
+          const typename navigator_t::detector_type&,
+          const measurement_container_types::host&,
+          const bound_track_parameters_collection_types::host&)> {
 
     /// Transform3 type
     using transform3_type = typename stepper_t::transform3_type;
@@ -49,6 +48,7 @@ class finding_algorithm
     using detector_type = typename navigator_t::detector_type;
 
     /// Actor types
+    using transporter = detray::parameter_transporter<transform3_type>;
     using interactor = detray::pointwise_material_interactor<transform3_type>;
 
     /// scalar type
@@ -56,12 +56,18 @@ class finding_algorithm
 
     /// Actor chain for propagate to the next surface and its propagator type
     using actor_type =
-        detray::actor_chain<std::tuple, detray::pathlimit_aborter,
-                            detray::parameter_transporter<transform3_type>,
+        detray::actor_chain<std::tuple, detray::pathlimit_aborter, transporter,
                             detray::next_surface_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;
+
+    using intersection_type =
+        detray::intersection2D<typename detector_type::surface_type,
+                               transform3_type>;
+
+    using interactor_type =
+        detray::pointwise_material_interactor<transform3_type>;
 
     public:
     /// Configuration type
@@ -71,31 +77,29 @@ class finding_algorithm
     ///
     /// @param cfg  Configuration object
     /// @param mr   The memory resource to use
-    finding_algorithm(const config_type& cfg,
-                      const traccc::memory_resource& mr);
+    finding_algorithm(const config_type& cfg, const traccc::memory_resource& mr)
+        : m_cfg(cfg), m_mr(mr) {}
 
     /// Get config object (const access)
     const finding_config<scalar_type>& get_config() const { return m_cfg; }
 
     /// Run the algorithm
     ///
-    /// @param det_view  Detector view object
-    /// @param navigation_buffer  Buffer for navigation candidates
-    /// @param seeds     Input seeds
-    track_candidate_container_types::buffer operator()(
-        const typename detector_type::detector_view_type& det_view,
-        const vecmem::data::jagged_vector_view<
-            typename navigator_t::intersection_type>& navigation_buffer,
-        const typename measurement_container_types::const_view& measurements,
-        bound_track_parameters_collection_types::buffer&& seeds) const override;
+    /// @param det    Detector
+    /// @param measurements  Input measurements
+    /// @param seeds  Input seeds
+    track_candidate_container_types::host operator()(
+        const detector_type& det,
+        const measurement_container_types::host& measurements,
+        const bound_track_parameters_collection_types::host& seeds) const;
 
     private:
-    /// Memory resource used by the algorithm
-    traccc::memory_resource m_mr;
-    /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
     /// Config object
     config_type m_cfg;
+    /// Memory resource used by the algorithm
+    traccc::memory_resource m_mr;
 };
 
-}  // namespace traccc::cuda
+}  // namespace traccc
+
+#include "traccc/finding/finding_algorithm.ipp"

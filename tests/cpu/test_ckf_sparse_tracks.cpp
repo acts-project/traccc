@@ -6,20 +6,16 @@
  */
 
 // Project include(s).
-#include "tests/seed_generator.hpp"
-#include "traccc/cuda/finding/finding_algorithm.hpp"
-#include "traccc/cuda/fitting/fitting_algorithm.hpp"
-#include "traccc/device/container_d2h_copy_alg.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
-#include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
 #include "tests/combinatorial_kalman_finding_test.hpp"
+#include "tests/seed_generator.hpp"
 
 // detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
@@ -28,10 +24,7 @@
 #include "detray/simulation/simulator.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -66,17 +59,12 @@ TEST_P(CkfSparseTrackTests, Run) {
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
-    vecmem::cuda::managed_memory_resource mng_mr;
+    traccc::memory_resource mr{host_mr};
 
     host_detector_type host_det = create_telescope_detector(
-        mng_mr,
+        host_mr,
         b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
         rectangle, plane_positions, mat, thickness, traj);
-
-    // Detector view object
-    auto det_view = detray::get_data(host_det);
 
     /***************************
      * Generate simulation data
@@ -104,34 +92,21 @@ TEST_P(CkfSparseTrackTests, Run) {
      * Do the reconstruction
      *****************************/
 
-    // Copy objects
-    vecmem::cuda::copy copy;
-
-    traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
-        measurement_h2d{mr, copy};
-
-    traccc::device::container_d2h_copy_alg<
-        traccc::track_candidate_container_types>
-        track_candidate_d2h{mr, copy};
-
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
-
     // Seed generator
     seed_generator<rk_stepper_type, host_navigator_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::cuda::finding_algorithm<
-        rk_stepper_type, device_navigator_type>::config_type cfg;
+    typename traccc::finding_algorithm<rk_stepper_type,
+                                       host_navigator_type>::config_type cfg;
     // few tracks (~1 out of 1000 tracks) are missed when chi2_max = 15
     cfg.chi2_max = 30.f;
 
     // Finding algorithm object
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr);
+    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
+        host_finding(cfg, mr);
 
     // Fitting algorithm object
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(mr);
+    traccc::fitting_algorithm<host_fitter_type> host_fitting;
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -140,71 +115,37 @@ TEST_P(CkfSparseTrackTests, Run) {
         traccc::event_map2 evt_map(i_evt, path, path, path);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map.generate_truth_candidates(sg, mng_mr);
+            evt_map.generate_truth_candidates(sg, host_mr);
 
         ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
 
         // Prepare truth seeds
-        traccc::bound_track_parameters_collection_types::host seeds(mr.host);
+        traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
             seeds.push_back(truth_track_candidates.at(i_trk).header);
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
-        traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
-            static_cast<unsigned int>(seeds.size()), mr.main};
-        copy.setup(seeds_buffer);
-        copy(vecmem::get_data(seeds), seeds_buffer,
-             vecmem::copy::type::host_to_device);
-
         // Read measurements
         traccc::measurement_container_types::host measurements_per_event =
             traccc::io::read_measurements_container(
                 i_evt, path, traccc::data_format::csv, &host_mr);
-        traccc::measurement_container_types::buffer measurements_buffer =
-            measurement_h2d(traccc::get_data(measurements_per_event));
-
-        // Instantiate output cuda containers/collections
-        traccc::track_candidate_container_types::buffer
-            track_candidates_cuda_buffer{{{}, *(mr.host)},
-                                         {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers);
-        copy.setup(track_candidates_cuda_buffer.items);
-
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding.get_config().max_num_branches_per_seed *
-                seeds.size(),
-            mr.main, mr.host);
 
         // Run finding
-        track_candidates_cuda_buffer =
-            device_finding(det_view, navigation_buffer, measurements_buffer,
-                           std::move(seeds_buffer));
+        auto track_candidates =
+            host_finding(host_det, measurements_per_event, seeds);
 
-        traccc::track_candidate_container_types::host track_candidates_cuda =
-            track_candidate_d2h(track_candidates_cuda_buffer);
-
-        ASSERT_EQ(track_candidates_cuda.size(), n_truth_tracks);
-
-        // Instantiate cuda containers/collections
-        traccc::track_state_container_types::buffer track_states_cuda_buffer{
-            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
         // Run fitting
-        track_states_cuda_buffer = device_fitting(det_view, navigation_buffer,
-                                                  track_candidates_cuda_buffer);
+        auto track_states = host_fitting(host_det, track_candidates);
 
-        traccc::track_state_container_types::host track_states_cuda =
-            track_state_d2h(track_states_cuda_buffer);
-
-        ASSERT_EQ(track_states_cuda.size(), n_truth_tracks);
+        ASSERT_EQ(track_states.size(), n_truth_tracks);
 
         for (unsigned int i = 0; i < n_truth_tracks; i++) {
-            const auto& trk_states_per_track = track_states_cuda.at(i).items;
+            const auto& trk_states_per_track = track_states.at(i).items;
             ASSERT_EQ(trk_states_per_track.size(), plane_positions.size());
-            const auto& fit_info = track_states_cuda[i].header;
+            const auto& fit_info = track_states[i].header;
             ASSERT_FLOAT_EQ(fit_info.ndf, 2 * plane_positions.size() - 5.f);
 
             fit_performance_writer.write(trk_states_per_track, fit_info,
