@@ -12,6 +12,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/interaction_register.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -58,6 +59,7 @@ class finding_algorithm
     using actor_type =
         detray::actor_chain<std::tuple, detray::pathlimit_aborter,
                             detray::parameter_transporter<transform3_type>,
+                            interaction_register<interactor>, interactor,
                             detray::next_surface_aborter>;
 
     using propagator_type =

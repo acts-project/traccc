@@ -13,6 +13,7 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/interaction_register.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -57,6 +58,7 @@ class finding_algorithm
     /// Actor chain for propagate to the next surface and its propagator type
     using actor_type =
         detray::actor_chain<std::tuple, detray::pathlimit_aborter, transporter,
+                            interaction_register<interactor>, interactor,
                             detray::next_surface_aborter>;
 
     using propagator_type =

@@ -52,6 +52,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/finding/candidate_link.hpp"
   "include/traccc/finding/finding_algorithm.hpp"
   "include/traccc/finding/finding_config.hpp"
+  "include/traccc/finding/interaction_register.hpp"
   # Fitting algorithmic code
   "include/traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"

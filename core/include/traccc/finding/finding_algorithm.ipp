@@ -174,23 +174,25 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     typename detray::pathlimit_aborter::state s0;
                     typename detray::parameter_transporter<
                         transform3_type>::state s1;
-                    typename detray::next_surface_aborter::state s2{
+                    typename interactor::state s3;
+                    typename interaction_register<interactor>::state s2{s3};
+                    typename detray::next_surface_aborter::state s4{
                         m_cfg.min_step_length_for_surface_aborter};
 
                     // Propagate to the next surface
                     propagator.propagate_sync(propagation,
-                                              std::tie(s0, s1, s2));
+                                              std::tie(s0, s1, s2, s3, s4));
 
                     // If a surface found, add the parameter for the next
                     // step
-                    if (s2.success) {
+                    if (s4.success) {
                         out_params.push_back(
                             propagation._stepping._bound_params);
                         param_to_link[step].push_back(cur_link_id);
                     }
                     // Unless the track found a surface, it is considered a
                     // tip
-                    else if (!s2.success &&
+                    else if (!s4.success &&
                              step >= m_cfg.min_track_candidates_per_track - 1) {
                         tips.push_back({step, cur_link_id});
                     }
