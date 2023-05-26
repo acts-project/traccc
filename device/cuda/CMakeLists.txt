@@ -44,7 +44,11 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/clusterization/clusterization_algorithm.cu"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
-  "src/fitting/fitting_algorithm.cu")
+  "src/fitting/fitting_algorithm.cu"
+  # Seed merging code
+  "include/traccc/cuda/seed_merging/seed_merging.hpp"
+  "src/seed_merging/seed_merging.cu"
+  )
 
 if(TRACCC_ENABLE_NVTX_PROFILING)
     traccc_add_library(

@@ -10,6 +10,7 @@
 #include <traccc/edm/container.hpp>
 #include <traccc/edm/seed.hpp>
 #include <traccc/edm/spacepoint.hpp>
+#include <traccc/definitions/qualifiers.hpp>
 
 namespace traccc {
 /**
@@ -32,18 +33,20 @@ struct nseed {
      */
     using link_type = spacepoint_collection_types::host::size_type;
 
+    nseed() = default;
+
     /**
      * @brief Construct a new n-seed object from a 3-seed object.
      *
      * @param s A 3-seed.
      */
-    nseed(const seed& s)
+    TRACCC_HOST_DEVICE nseed(const seed& s)
         : _size(3), _sps({s.spB_link, s.spM_link, s.spT_link}) {}
 
     /**
      * @brief Get the size of the seed.
      */
-    std::size_t size() const { return _size; }
+    TRACCC_HOST_DEVICE std::size_t size() const { return _size; }
 
     /**
      * @brief Get the first space point identifier in the seed.
@@ -55,7 +58,7 @@ struct nseed {
      */
     const link_type* cend() const { return &_sps[_size]; }
 
-    private:
+    public:
     std::size_t _size;
     std::array<link_type, N> _sps;
 };
