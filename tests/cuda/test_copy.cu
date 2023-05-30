@@ -87,6 +87,32 @@ TEST(CUDAContainerCopy, DeviceToHost) {
     ASSERT_EQ(host_items[2][1], 2);
 }
 
+TEST(CUDAContainerCopy, DeviceToHostResizableBuffer) {
+
+    // Create cuda container with a resizable jagged buffer
+    test_container_types::buffer device_buffer{
+        {3, mr.main},
+        {{1, 3, 2}, mr.main, mr.host, vecmem::data::buffer_type::resizable}};
+
+    test_container_types::buffer device_buffer{
+        {3, mr.main},
+        {{1, 3, 2}, mr.main, mr.host, vecmem::data::buffer_type::resizable}};
+
+    // Device-to-Host Copy
+    test_container_types::host host_copy = d2h(device_buffer);
+
+    const auto& host_headers = host_copy.get_headers();
+    ASSERT_EQ(host_headers.size(), 3u);
+
+    const auto& host_items = host_copy.get_items();
+    ASSERT_EQ(host_items.size(), 3u);
+
+    // Check if each vector of the jagged vector is empty
+    ASSERT_EQ(host_items[0].size(), 0u);
+    ASSERT_EQ(host_items[1].size(), 0u);
+    ASSERT_EQ(host_items[2].size(), 0u);
+}
+
 TEST(CUDAContainerCopy, HostToDeviceToHost) {
 
     // Create a host container

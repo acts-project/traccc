@@ -38,7 +38,8 @@ container_d2h_copy_alg<CONTAINER_TYPES>::operator()(input_type input) const {
     std::vector<std::size_t> capacities(size, 0);
     std::transform(input.items.host_ptr(), input.items.host_ptr() + size,
                    capacities.begin(),
-                   [](const auto& view) { return view.capacity(); });
+                   [](const auto& view) { return view.size(); });
+
     typename CONTAINER_TYPES::buffer hostBuffer{{size, *host_mr},
                                                 {capacities, *host_mr}};
     m_hostCopy.setup(hostBuffer.headers);
