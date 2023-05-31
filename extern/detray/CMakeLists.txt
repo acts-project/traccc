@@ -18,7 +18,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-   "URL;https://github.com/acts-project/detray/archive/refs/tags/v0.31.0.tar.gz;URL_MD5;477273df340f668197cf6fea9d9a9246"
+   "URL;https://github.com/acts-project/detray/archive/refs/tags/v0.32.0.tar.gz;URL_MD5;400243f34c708305bdc8209bf8b4d76d"
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
@@ -30,6 +30,8 @@ set( DETRAY_CUSTOM_SCALARTYPE "float" CACHE STRING
 
 set( DETRAY_BUILD_TESTING FALSE CACHE BOOL
    "Turn off the build of the Detray unit tests" )
+set( DETRAY_BUILD_TUTORIALS FALSE CACHE BOOL
+   "Turn off the build of the Detray tutorials" )   
 set( DETRAY_EIGEN_PLUGIN TRUE CACHE BOOL
    "Turn on the build of the Detray Eigen code" )
 set( DETRAY_VC_PLUGIN TRUE CACHE BOOL
