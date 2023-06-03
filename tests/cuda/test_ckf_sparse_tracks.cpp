@@ -204,9 +204,11 @@ TEST_P(CkfSparseTrackTests, Run) {
         for (unsigned int i = 0; i < n_truth_tracks; i++) {
             const auto& trk_states_per_track = track_states_cuda.at(i).items;
             ASSERT_EQ(trk_states_per_track.size(), plane_positions.size());
+            const auto& fit_info = track_states_cuda[i].header;
+            ASSERT_FLOAT_EQ(fit_info.ndf, 2 * plane_positions.size() - 5.f);
 
-            fit_performance_writer.write(trk_states_per_track, host_det,
-                                         evt_map);
+            fit_performance_writer.write(trk_states_per_track, fit_info,
+                                         host_det, evt_map);
         }
     }
 
