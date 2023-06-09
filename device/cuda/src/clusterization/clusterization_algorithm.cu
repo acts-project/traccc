@@ -91,6 +91,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::view::size_type num_cells =
         m_copy.get_size(cells);
 
+    if (num_cells == 0) {
+        return {output_type::first_type{0, m_mr.main},
+                output_type::second_type{0, m_mr.main}};
+    }
+
     // Create result object for the CCL kernel with size overestimation
     alt_measurement_collection_types::buffer measurements_buffer(num_cells,
                                                                  m_mr.main);
