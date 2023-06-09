@@ -1,4 +1,4 @@
-### traccc extras
+# traccc extras
 
 This directory is designed to hold miscellaneous bits and bobs that are
 relevant to the traccc project. Examples include small scripts, write-ups,
@@ -10,7 +10,7 @@ Collect throughput measurements using `traccc_throughput_mt_profiler.sh`
 
 ## Plotting throughput measurements
 
-# Matplotlib based plotter
+### Matplotlib based plotter
 This python script easily does data preparation and plotting from raw output logfiles obtained through the throughput executables.
 It does so using matplotlib. If you alternatively prefer to use ROOT for plotting, another script using PyROOT is available.
 
