@@ -58,6 +58,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
+    // Configs
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config(finder_config);
+    traccc::seedfilter_config filter_config;
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::host_memory_resource cuda_host_mr;
@@ -66,7 +71,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(host_mr);
+    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
+                                 host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     traccc::cuda::stream stream;
@@ -75,7 +81,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::clusterization_algorithm ca_cuda(
         mr, copy, stream, common_opts.target_cells_per_partition);
-    traccc::cuda::seeding_algorithm sa_cuda(mr, copy, stream);
+    traccc::cuda::seeding_algorithm sa_cuda(finder_config, grid_config,
+                                            filter_config, mr, copy, stream);
     traccc::cuda::track_params_estimation tp_cuda(mr, copy, stream);
 
     // performance writer

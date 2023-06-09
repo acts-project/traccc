@@ -11,6 +11,7 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/mt_options.hpp"
 #include "traccc/options/throughput_options.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
 
 // I/O include(s).
 #include "traccc/io/demonstrator_edm.hpp"
@@ -67,6 +68,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
               << mt_cfg << "\n"
               << std::endl;
 
+    // Set seeding config
+    // @FIXME: Seeding config should be configured by options
+    seedfinder_config finder_config;
+    spacepoint_grid_config grid_config(finder_config);
+    seedfilter_config filter_config;
+
     // Set up the timing info holder.
     performance::timing_info times;
 
@@ -113,8 +120,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 ? static_cast<vecmem::memory_resource&>(
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
-        algs.push_back(
-            {alg_host_mr, throughput_cfg.target_cells_per_partition});
+        algs.push_back({alg_host_mr, throughput_cfg.target_cells_per_partition,
+                        finder_config, grid_config, filter_config});
     }
 
     // Seed the random number generator.

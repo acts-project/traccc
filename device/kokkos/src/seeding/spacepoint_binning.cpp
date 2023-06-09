@@ -22,9 +22,7 @@ namespace traccc::kokkos {
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr)
-    : m_config(config.toInternalUnits()),
-      m_axes(get_axes(grid_config.toInternalUnits(), *(mr.host))),
-      m_mr(mr) {
+    : m_config(config), m_axes(get_axes(grid_config, *(mr.host))), m_mr(mr) {
     m_copy = std::make_unique<vecmem::copy>();
 }
 

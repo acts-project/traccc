@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <Acts/Definitions/Units.hpp>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -19,8 +18,6 @@
 #include <traccc/efficiency/track_filter.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
 #include <traccc/io/event_map.hpp>
-
-using namespace Acts::UnitLiterals;
 
 namespace traccc {
 class nseed_performance_writer {
