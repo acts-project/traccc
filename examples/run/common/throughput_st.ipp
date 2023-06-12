@@ -55,6 +55,12 @@ int throughput_st(std::string_view description, int argc, char* argv[],
               << throughput_cfg << "\n"
               << std::endl;
 
+    // Set seeding config
+    // @FIXME: Seeding config should be configured by options
+    seedfinder_config finder_config;
+    spacepoint_grid_config grid_config(finder_config);
+    seedfilter_config filter_config;
+
     // Set up the timing info holder.
     performance::timing_info times;
 
@@ -86,7 +92,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, throughput_cfg.target_cells_per_partition);
+        alg_host_mr, throughput_cfg.target_cells_per_partition, finder_config,
+        grid_config, filter_config);
 
     // Seed the random number generator.
     std::srand(std::time(0));

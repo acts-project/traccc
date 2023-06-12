@@ -14,56 +14,15 @@
 // System include(s).
 #include <cmath>
 
-namespace {
-
-/// Helper function that would produce a default seed-finder configuration
-traccc::seedfinder_config default_seedfinder_config() {
-
-    traccc::seedfinder_config config;
-    traccc::seedfinder_config config_copy = config.toInternalUnits();
-    config.highland = 13.6 * std::sqrt(config_copy.radLengthPerSeed) *
-                      (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
-    float maxScatteringAngle = config.highland / config_copy.minPt;
-    config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
-    // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
-    // and millimeter
-    config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
-    config.minHelixDiameter2 =
-        std::pow(config_copy.minPt * 2 / config.pTPerHelixRadius, 2);
-    config.pT2perRadius =
-        std::pow(config.highland / config.pTPerHelixRadius, 2);
-    return config;
-}
-
-/// Helper function that would produce a default spacepoint grid configuration
-traccc::spacepoint_grid_config default_spacepoint_grid_config() {
-
-    traccc::seedfinder_config config = default_seedfinder_config();
-    traccc::spacepoint_grid_config grid_config;
-    grid_config.bFieldInZ = config.bFieldInZ;
-    grid_config.minPt = config.minPt;
-    grid_config.rMax = config.rMax;
-    grid_config.zMax = config.zMax;
-    grid_config.zMin = config.zMin;
-    grid_config.deltaRMax = config.deltaRMax;
-    grid_config.cotThetaMax = config.cotThetaMax;
-    grid_config.impactMax = config.impactMax;
-    grid_config.phiMax = config.phiMax;
-    grid_config.phiMin = config.phiMin;
-    grid_config.phiBinDeflectionCoverage = config.phiBinDeflectionCoverage;
-    return grid_config;
-}
-
-}  // namespace
-
 namespace traccc::cuda {
 
-seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr,
+seeding_algorithm::seeding_algorithm(const seedfinder_config& finder_config,
+                                     const spacepoint_grid_config& grid_config,
+                                     const seedfilter_config& filter_config,
+                                     const traccc::memory_resource& mr,
                                      vecmem::copy& copy, stream& str)
-    : m_spacepoint_binning(default_seedfinder_config(),
-                           default_spacepoint_grid_config(), mr, copy, str),
-      m_seed_finding(default_seedfinder_config(), seedfilter_config(), mr, copy,
-                     str) {}
+    : m_spacepoint_binning(finder_config, grid_config, mr, copy, str),
+      m_seed_finding(finder_config, filter_config, mr, copy, str) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {

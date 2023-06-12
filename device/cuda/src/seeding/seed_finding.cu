@@ -144,8 +144,8 @@ seed_finding::seed_finding(const seedfinder_config& config,
                            const seedfilter_config& filter_config,
                            const traccc::memory_resource& mr,
                            vecmem::copy& copy, stream& str)
-    : m_seedfinder_config(config.toInternalUnits()),
-      m_seedfilter_config(filter_config.toInternalUnits()),
+    : m_seedfinder_config(config),
+      m_seedfilter_config(filter_config),
       m_mr(mr),
       m_copy(copy),
       m_stream(str) {}
