@@ -12,7 +12,9 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
+#include "traccc/fitting/kalman_filter/statistics_updater.hpp"
 
 // detray include(s).
 #include "detray/propagator/actor_chain.hpp"
@@ -180,7 +182,8 @@ class kalman_fitter {
         // Run smoothing
         smooth(fitter_state);
 
-        //@todo: Write track info
+        // Update track fitting qualities
+        update_statistics(fitter_state);
     }
 
     /// Run smoothing after kalman filtering
@@ -218,6 +221,29 @@ class kalman_fitter {
             mask_store.template visit<gain_matrix_smoother<transform3_type>>(
                 surface.mask(), *it, *(it - 1));
         }
+    }
+
+    TRACCC_HOST_DEVICE
+    void update_statistics(state& fitter_state) {
+        auto& fit_info = fitter_state.m_fit_info;
+        auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
+        const auto& mask_store = m_detector.mask_store();
+
+        // Fit parameter = smoothed track parameter at the first surface
+        fit_info.fit_params = track_states[0].smoothed();
+
+        for (const auto& trk_state : track_states) {
+
+            // Surface
+            const auto& surface = m_detector.surfaces(trk_state.surface_link());
+
+            // Update NDoF and Chi2
+            mask_store.template visit<statistics_updater<transform3_type>>(
+                surface.mask(), fit_info, trk_state);
+        }
+
+        // Subtract the NDoF with the degree of freedom of the bound track (=5)
+        fit_info.ndf = fit_info.ndf - 5.f;
     }
 
     private:

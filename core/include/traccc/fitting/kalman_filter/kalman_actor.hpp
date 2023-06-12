@@ -10,7 +10,6 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 
 // detray include(s).
@@ -95,6 +94,9 @@ struct kalman_actor : detray::actor {
             if (navigation.current_object() != trk_state.surface_link()) {
                 propagation._heartbeat &= navigation.abort();
             }
+
+            // This track state is not a hole
+            trk_state.is_hole = false;
 
             // Set full jacobian
             trk_state.jacobian() = stepping._full_jacobian;
