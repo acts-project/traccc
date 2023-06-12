@@ -38,7 +38,10 @@ class full_chain_algorithm
     /// algorithm.
     ///
 
-    full_chain_algorithm(vecmem::memory_resource& mr, unsigned int dummy);
+    full_chain_algorithm(vecmem::memory_resource& mr, unsigned int dummy,
+                         const seedfinder_config& finder_config,
+                         const spacepoint_grid_config& grid_config,
+                         const seedfilter_config& filter_config);
 
     /// Reconstruct track parameters in the entire detector
     ///
@@ -61,6 +64,11 @@ class full_chain_algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm
     track_params_estimation m_track_parameter_estimation;
+
+    /// Configs
+    seedfinder_config m_finder_config;
+    spacepoint_grid_config m_grid_config;
+    seedfilter_config m_filter_config;
 
     /// @}
 
