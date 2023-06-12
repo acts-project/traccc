@@ -12,10 +12,10 @@ namespace traccc {
 
 seed_finding::seed_finding(const seedfinder_config& finder_config,
                            const seedfilter_config& filter_config)
-    : m_midBot_finding(finder_config.toInternalUnits()),
-      m_midTop_finding(finder_config.toInternalUnits()),
-      m_triplet_finding(finder_config.toInternalUnits()),
-      m_seed_filtering(filter_config.toInternalUnits()) {}
+    : m_midBot_finding(finder_config),
+      m_midTop_finding(finder_config),
+      m_triplet_finding(finder_config),
+      m_seed_filtering(filter_config) {}
 
 seed_finding::output_type seed_finding::operator()(
     const spacepoint_collection_types::host& sp_collection,

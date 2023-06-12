@@ -109,8 +109,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
 
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)
-    scalar qOverPt = rho * (static_cast<scalar>(Acts::UnitConstants::m)) /
-                     (0.3f * getter::norm(bfield));
+    scalar qOverPt = rho / getter::norm(bfield);
     // The estimated q/p in [GeV/c]^-1
     getter::element(params, e_bound_qoverp, 0) =
         qOverPt / getter::perp(vector2{1., invTanTheta});
@@ -119,7 +118,7 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     // field diretion
     scalar pInGeV = std::abs(1.0f / getter::element(params, e_bound_qoverp, 0));
     scalar pzInGeV = 1.0f / std::abs(qOverPt) * invTanTheta;
-    scalar massInGeV = mass / static_cast<scalar>(Acts::UnitConstants::GeV);
+    scalar massInGeV = mass / unit<scalar>::GeV;
 
     // The estimated velocity, and its projection along the magnetic
     // field diretion
