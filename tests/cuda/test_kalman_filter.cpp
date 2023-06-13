@@ -47,12 +47,14 @@ TEST_P(KalmanFittingTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
-    const std::array<scalar, 2u> mom_range = std::get<1>(GetParam());
-    const std::array<scalar, 2u> eta_range = std::get<2>(GetParam());
+    const std::array<scalar, 3u> origin = std::get<1>(GetParam());
+    const std::array<scalar, 3u> origin_stddev = std::get<2>(GetParam());
+    const std::array<scalar, 2u> mom_range = std::get<3>(GetParam());
+    const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
-    const std::array<scalar, 2u> phi_range = std::get<3>(GetParam());
-    const unsigned int n_truth_tracks = std::get<4>(GetParam());
-    const unsigned int n_events = std::get<5>(GetParam());
+    const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
+    const unsigned int n_truth_tracks = std::get<6>(GetParam());
+    const unsigned int n_events = std::get<7>(GetParam());
 
     // Performance writer
     traccc::fitting_performance_writer::config writer_cfg;
@@ -177,21 +179,26 @@ TEST_P(KalmanFittingTests, Run) {
     std::filesystem::remove_all(full_path);
 }
 
-INSTANTIATE_TEST_SUITE_P(KalmanFitValidation0, KalmanFittingTests,
-                         ::testing::Values(std::make_tuple(
-                             "1_GeV_0_phi", std::array<scalar, 2u>{1.f, 1.f},
-                             std::array<scalar, 2u>{0.f, 0.f},
-                             std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
+INSTANTIATE_TEST_SUITE_P(
+    KalmanFitValidation0, KalmanFittingTests,
+    ::testing::Values(std::make_tuple(
+        "1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
+        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f}, 100,
+        100)));
 
-INSTANTIATE_TEST_SUITE_P(KalmanFitValidation1, KalmanFittingTests,
-                         ::testing::Values(std::make_tuple(
-                             "10_GeV_0_phi", std::array<scalar, 2u>{10.f, 10.f},
-                             std::array<scalar, 2u>{0.f, 0.f},
-                             std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
+INSTANTIATE_TEST_SUITE_P(
+    KalmanFitValidation1, KalmanFittingTests,
+    ::testing::Values(std::make_tuple(
+        "10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
 
-INSTANTIATE_TEST_SUITE_P(KalmanFitValidation2, KalmanFittingTests,
-                         ::testing::Values(std::make_tuple(
-                             "100_GeV_0_phi",
-                             std::array<scalar, 2u>{100.f, 100.f},
-                             std::array<scalar, 2u>{0.f, 0.f},
-                             std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
+INSTANTIATE_TEST_SUITE_P(
+    KalmanFitValidation2, KalmanFittingTests,
+    ::testing::Values(std::make_tuple(
+        "100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
