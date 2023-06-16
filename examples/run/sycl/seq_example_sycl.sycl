@@ -231,7 +231,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("Track params (sycl)",
                                              elapsedTimes);
                 params_sycl_buffer =
-                    tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer);
+                    tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer,
+                            {0.f, 0.f, finder_config.bFieldInZ});
                 q.wait_and_throw();
             }  // stop measuring track params timer
 
@@ -240,7 +241,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(spacepoints_per_event, seeds);
+                params = tp(spacepoints_per_event, seeds,
+                            {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // stop measuring wall time
