@@ -5,6 +5,8 @@ import argparse
 import pathlib
 import os
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+from numpy import log2
 import pickle
 
 
@@ -55,6 +57,12 @@ def clearScreen():
         _ = os.system("clear")
 
 
+def myLog2Format(x, pos):
+    decimalplaces = int(max(-log2(x), 0))  # =0 for numbers >=1
+    formatstring = "{{:.{:1d}f}}".format(decimalplaces)
+    return formatstring.format(x)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="throughput data plotting")
 
@@ -89,10 +97,11 @@ if __name__ == "__main__":
     while True:
         clearScreen()
         print(
-            'To edit the displayed names of data by writing "<index> <displayed name> [ENTER]". Or just hit [ENTER] when finished.\n'
+            'To edit the displayed names of data by writing "<index> <displayed name> [ENTER]". Or just hit [ENTER] when finished.\n\n'
+            + "index | file | displayed name | index"
         )
         for i in range(len(inputs)):
-            print("{} {}".format(i, displayNames[inputs[i]]))
+            print("{} {} {} {}".format(i, inputs[i], displayNames[inputs[i]], i))
         print("\n\n")
         inpt = input().split(" ")
         if len(inpt) <= 1:
@@ -101,6 +110,9 @@ if __name__ == "__main__":
 
     with open(".plot_data_dictionary.pkl", "wb") as f:
         pickle.dump(displayNames, f)
+
+    markers = [".", "x", "v", "s", "*", "^", "o", "d", "p", "H"]
+    linestyles = ["-", "--", "-.", ":"]
 
     print("Printing per-hardware performance")
     for inpt in inputs:
@@ -113,38 +125,53 @@ if __name__ == "__main__":
                 label="mu{}".format(str(mu)),
             )
         plt.legend(loc="lower right", fontsize="6")
+        plt.title(displayNames[inpt])
+        plt.xlabel("Threads")
+        plt.ylabel("Throughput (events/s)")
         plt.savefig(args.output.joinpath("{}.pdf".format(displayNames[inpt])))
         plt.close()
 
     print("Printing across-hardware performance")
     for mu in df.index.get_level_values("mu").unique():
-        for inpt in inputs:
-            this_df = df[df["input_csv"] == inpt].loc[mu,]
+        fig, ax = plt.subplots()
+        for i in range(len(inputs)):
+            this_df = df[df["input_csv"] == inputs[i]].loc[mu,]
             if len(this_df.index) > 0:
                 plt.errorbar(
                     x=this_df.index,
                     y=this_df[[("throughput (events/s)", "mean")]].values[:, 0],
                     yerr=this_df[[("throughput (events/s)", "stddev")]].values[:, 0],
-                    label=displayNames[inpt],
+                    label=displayNames[inputs[i]],
+                    marker=markers[i % len(markers)],
+                    markersize=5,
+                    linestyle=linestyles[i % len(linestyles)],
                 )
         plt.legend(loc="lower right", fontsize="6")
+        plt.title("mu{}".format(mu))
+        plt.xlabel("Threads")
+        plt.ylabel("Throughput (events/s)")
         plt.savefig(args.output.joinpath("allHardware_mu{}.pdf".format(str(mu))))
         plt.xscale("log", base=2)
+        ax.xaxis.set_major_formatter(FuncFormatter(myLog2Format))
         plt.savefig(args.output.joinpath("allHardware_mu{}_xlog2.pdf".format(str(mu))))
         plt.close()
 
     print("Printing across-hardware peak performance")
-    for inpt in inputs:
-        if inpt in peaks:
-            plt.errorbar(
-                x=peaks.index,
-                y=peaks[[inpt]].values[:, 0],
-                yerr=peaks[["stddev_{}".format(inpt)]].values[:, 0],
-                label=displayNames[inpt],
-            )
+    for i in range(len(inputs)):
+        plt.errorbar(
+            x=peaks.index,
+            y=peaks[[inputs[i]]].values[:, 0],
+            yerr=peaks[["stddev_{}".format(inputs[i])]].values[:, 0],
+            label=displayNames[inputs[i]],
+            marker=markers[i % len(markers)],
+            markersize=5,
+            linestyle=linestyles[i % len(linestyles)],
+        )
     plt.legend(loc="upper right", fontsize="6")
+    plt.title("Maximum throughput across hardware")
+    plt.xlabel("ttbar pile-up")
+    plt.ylabel("Throughput (events/s)")
     plt.savefig(args.output.joinpath("peaks.pdf"))
     plt.yscale("log")
     plt.savefig(args.output.joinpath("peaks_ylog.pdf"))
     plt.close()
-
