@@ -86,9 +86,10 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     // The projection of the top space point on the transverse plane of
     // the new frame
     scalar rn = local2[0] * local2[0] + local2[1] * local2[1];
-    // The (1/tanTheta) of momentum in the new frame,
+    // The (1/tanTheta) of momentum in the new frame
+    static constexpr scalar G = static_cast<scalar>(1.f / 24.f);
     scalar invTanTheta =
-        local2[2] * std::sqrt(1.f / rn) / (1.f + rho * rho * rn);
+        local2[2] * std::sqrt(1.f / rn) / (1.f + G * rho * rho * rn);
 
     // The momentum direction in the new frame (the center of the circle
     // has the coordinate (-1.*A/(2*B), 1./(2*B)))

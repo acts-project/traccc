@@ -104,7 +104,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         m_clusterization(cells_buffer, modules_buffer);
     const track_params_estimation::output_type track_params =
         m_track_parameter_estimation(spacepoints.first,
-                                     m_seeding(spacepoints.first));
+                                     m_seeding(spacepoints.first),
+                                     {0.f, 0.f, m_finder_config.bFieldInZ});
 
     // Get the final data back to the host.
     bound_track_parameters_collection_types::host result(&m_host_mr);
