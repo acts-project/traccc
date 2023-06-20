@@ -47,7 +47,10 @@ class full_chain_algorithm
     /// partition.
     ///
     full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const unsigned short target_cells_per_partition);
+                         const unsigned short target_cells_per_partition,
+                         const seedfinder_config& finder_config,
+                         const spacepoint_grid_config& grid_config,
+                         const seedfilter_config& filter_config);
 
     /// Copy constructor
     ///
@@ -95,6 +98,11 @@ class full_chain_algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm
     track_params_estimation m_track_parameter_estimation;
+
+    /// Configs
+    seedfinder_config m_finder_config;
+    spacepoint_grid_config m_grid_config;
+    seedfilter_config m_filter_config;
 
     /// @}
 

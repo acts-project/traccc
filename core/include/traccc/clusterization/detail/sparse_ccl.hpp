@@ -110,7 +110,7 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     unsigned int start_j = 0;
     for (unsigned int i = 0; i < n_cells; ++i) {
         L[i] = i;
-        int ai = i;
+        unsigned int ai = i;
         if (i > 0) {
             for (unsigned int j = start_j; j < i; ++j) {
                 if (is_adjacent(cells[i], cells[j])) {

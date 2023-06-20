@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Projection include(s).
+#include "traccc/seeding/detail/seeding_config.hpp"
+
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
