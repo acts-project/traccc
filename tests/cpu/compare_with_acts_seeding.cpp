@@ -179,6 +179,11 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     acts_config.zMin = traccc_config.zMin;
     acts_config.zMax = traccc_config.zMax;
+
+    // z of last layers to avoid iterations
+    acts_config.zOutermostLayers =
+        std::make_pair(traccc_config.zMin, traccc_config.zMax);
+
     acts_config.maxSeedsPerSpM = traccc_config.maxSeedsPerSpM;
 
     // 2.7 eta
