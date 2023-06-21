@@ -6,7 +6,6 @@
  */
 
 // Project include(s).
-#include "tests/seed_generator.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
@@ -17,6 +16,7 @@
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
+#include "traccc/utils/seed_generator.hpp"
 
 // Test include(s).
 #include "tests/combinatorial_kalman_finding_test.hpp"
@@ -118,7 +118,7 @@ TEST_P(CkfSparseTrackTests, Run) {
         track_state_d2h{mr, copy};
 
     // Seed generator
-    seed_generator<rk_stepper_type, host_navigator_type> sg(host_det, stddevs);
+    seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
     typename traccc::cuda::finding_algorithm<
@@ -131,7 +131,10 @@ TEST_P(CkfSparseTrackTests, Run) {
         device_finding(cfg, mr);
 
     // Fitting algorithm object
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(mr);
+    typename traccc::cuda::fitting_algorithm<device_fitter_type>::config_type
+        fit_cfg;
+    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
+                                                                       mr);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

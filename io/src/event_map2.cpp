@@ -56,7 +56,15 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
 
     traccc::io::csv::particle io_particle;
     while (preader.read(io_particle)) {
+        point3 pos{io_particle.vx, io_particle.vy, io_particle.vz};
+        vector3 mom{io_particle.px, io_particle.py, io_particle.pz};
+
         particles.push_back(io_particle);
+        ptc_map[io_particle.particle_id] =
+            particle{io_particle.particle_id, io_particle.particle_type,
+                     io_particle.process,     pos,
+                     io_particle.vt,          mom,
+                     io_particle.m,           io_particle.q};
     }
 
     traccc::io::csv::hit io_hit;

@@ -12,6 +12,7 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
@@ -44,13 +45,8 @@ class kalman_fitter {
     // navigator candidate type
     using intersection_type = typename navigator_t::intersection_type;
 
-    // Kalman fitter configuration
-    struct config {
-        std::size_t n_iterations = 1;
-        scalar_type pathlimit = std::numeric_limits<scalar>::max();
-        scalar_type overstep_tolerance = -10 * detray::unit<scalar>::um;
-        scalar_type step_constraint = std::numeric_limits<scalar_type>::max();
-    };
+    /// Configuration type
+    using config_type = fitting_config<scalar_type>;
 
     // transform3 type
     using transform3_type = typename stepper_t::transform3_type;
@@ -77,7 +73,8 @@ class kalman_fitter {
     ///
     /// @param det the detector object
     TRACCC_HOST_DEVICE
-    kalman_fitter(const detector_type& det) : m_detector(det) {}
+    kalman_fitter(const detector_type& det, const config_type& cfg)
+        : m_detector(det), m_cfg(cfg) {}
 
     /// Kalman fitter state
     struct state {
@@ -169,6 +166,10 @@ class kalman_fitter {
             seed_params, m_detector.get_bfield(), m_detector,
             std::move(nav_candidates));
 
+        // @TODO: Should be removed once detray is fixed to set the
+        // volume in the constructor
+        propagation._navigation.set_volume(seed_params.surface_link().volume());
+
         // Set overstep tolerance and stepper constraint
         propagation._stepping().set_overstep_tolerance(
             m_cfg.overstep_tolerance);
@@ -250,7 +251,7 @@ class kalman_fitter {
     // Detector object
     const detector_type& m_detector;
     // Configuration object
-    config m_cfg;
+    config_type m_cfg;
 };
 
 }  // namespace traccc
