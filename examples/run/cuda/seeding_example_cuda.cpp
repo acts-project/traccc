@@ -206,6 +206,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ---------------*/
 
         n_spacepoints += reader_output.spacepoints.size();
+        n_modules += reader_output.modules.size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
 

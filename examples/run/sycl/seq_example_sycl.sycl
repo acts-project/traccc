@@ -254,11 +254,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::spacepoint_collection_types::host spacepoints_per_event_sycl;
         traccc::seed_collection_types::host seeds_sycl;
         traccc::bound_track_parameters_collection_types::host params_sycl;
-        if (run_cpu || i_cfg.check_performance) {
-            copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl)->wait();
-            copy(seeds_sycl_buffer, seeds_sycl)->wait();
-            copy(params_sycl_buffer, params_sycl)->wait();
-        }
+        copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl)->wait();
+        copy(seeds_sycl_buffer, seeds_sycl)->wait();
+        copy(params_sycl_buffer, params_sycl)->wait();
 
         if (run_cpu) {
 
@@ -284,16 +282,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_sycl));
-
-            /// Statistics
-            n_modules += read_out_per_event.modules.size();
-            n_cells += read_out_per_event.cells.size();
-            n_measurements += measurements_per_event.size();
-            n_spacepoints += spacepoints_per_event.size();
-            n_spacepoints_sycl += spacepoints_per_event_sycl.size();
-            n_seeds_sycl += seeds_sycl.size();
-            n_seeds += seeds.size();
         }
+
+        /// Statistics
+        n_modules += read_out_per_event.modules.size();
+        n_cells += read_out_per_event.cells.size();
+        n_measurements += measurements_per_event.size();
+        n_spacepoints += spacepoints_per_event.size();
+        n_spacepoints_sycl += spacepoints_per_event_sycl.size();
+        n_seeds_sycl += seeds_sycl.size();
+        n_seeds += seeds.size();
 
         if (i_cfg.check_performance) {
 
@@ -318,13 +316,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_spacepoints << " spacepoints from "
-              << n_modules << " modules" << std::endl;
-    std::cout << "- created        " << n_cells << " cells           "
+    std::cout << "- read    " << n_cells << " cells from " << n_modules
+              << " modules" << std::endl;
+    std::cout << "- created (cpu)  " << n_measurements << " measurements"
               << std::endl;
-    std::cout << "- created        " << n_measurements << " measurements     "
-              << std::endl;
-    std::cout << "- created        " << n_spacepoints << " spacepoints     "
+    std::cout << "- created (cpu)  " << n_spacepoints << " spacepoints"
               << std::endl;
     std::cout << "- created (sycl) " << n_spacepoints_sycl
               << " spacepoints     " << std::endl;

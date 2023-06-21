@@ -111,27 +111,22 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     for (unsigned int i = 0; i < n_cells; ++i) {
         L[i] = i;
         unsigned int ai = i;
-        if (i > 0) {
-            for (unsigned int j = start_j; j < i; ++j) {
-                if (is_adjacent(cells[i], cells[j])) {
-                    ai = make_union(L, ai, find_root(L, j));
-                } else if (is_far_enough(cells[i], cells[j])) {
-                    ++start_j;
-                }
+        for (unsigned int j = start_j; j < i; ++j) {
+            if (is_adjacent(cells[i], cells[j])) {
+                ai = make_union(L, ai, find_root(L, j));
+            } else if (is_far_enough(cells[i], cells[j])) {
+                ++start_j;
             }
         }
     }
 
     // second scan: transitive closure
     for (unsigned int i = 0; i < n_cells; ++i) {
-        unsigned int l = 0;
         if (L[i] == i) {
-            l = labels;
-            ++labels;
+            L[i] = labels++;
         } else {
-            l = L[L[i]];
+            L[i] = L[L[i]];
         }
-        L[i] = l;
     }
 
     return labels;
