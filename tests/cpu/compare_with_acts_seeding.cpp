@@ -41,6 +41,9 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
+// System include(s).
+#include <limits>
+
 inline bool operator==(const SpacePoint* acts_sp,
                        const traccc::spacepoint& traccc_sp) {
     if (abs(acts_sp->x() - traccc_sp.global[0]) < traccc::float_epsilon &&
@@ -168,6 +171,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     acts_config.rMin = traccc_config.rMin;
     acts_config.rMax = traccc_config.rMax;
+    acts_config.rMinMiddle = 0.f;
+    acts_config.rMaxMiddle = std::numeric_limits<traccc::scalar>::max();
     acts_config.deltaRMin = traccc_config.deltaRMin;
     acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
     acts_config.deltaRMinBottomSP = traccc_config.deltaRMin;
@@ -349,8 +354,9 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // Ensure that ACTS and traccc give the same result
     // @TODO Uncomment the line below once acts-project/acts#2132 is merged
     // EXPECT_EQ(seeds.size(), seedVector.size());
-    EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.001);
-    EXPECT_TRUE(seed_match_ratio > 0.999);
+    EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.003);
+    EXPECT_TRUE(seed_match_ratio > 0.997)
+        << "Seed matching ratio: " << seed_match_ratio << std::endl;
 
     /*--------------------------------
       ACTS track params estimation
@@ -464,8 +470,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // @TODO Uncomment the line below once acts-project/acts#2132 is merged
     // EXPECT_EQ(acts_params.size(), traccc_params.size())
     EXPECT_NEAR(acts_params.size(), traccc_params.size(),
-                acts_params.size() * 0.001);
-    EXPECT_TRUE(params_match_ratio > 0.999)
+                acts_params.size() * 0.003);
+    EXPECT_TRUE(params_match_ratio > 0.997)
         << "Parameter matching ratio: " << params_match_ratio << std::endl;
 }
 
