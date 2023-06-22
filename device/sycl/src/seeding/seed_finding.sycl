@@ -85,10 +85,14 @@ seed_finding::output_type seed_finding::operator()(
     vecmem::data::vector_view<device::prefix_sum_element_t>
         sp_grid_prefix_sum_view = sp_grid_prefix_sum_buff;
 
+    const auto num_spacepoints = m_copy.get_size(sp_grid_prefix_sum_view);
+    if (num_spacepoints == 0) {
+        return {0, m_mr.main};
+    }
+
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
-        m_copy.get_size(sp_grid_prefix_sum_view), m_mr.main,
-        vecmem::data::buffer_type::resizable};
+        num_spacepoints, m_mr.main, vecmem::data::buffer_type::resizable};
     m_copy.setup(doublet_counter_buffer)->wait();
 
     // Counter for the total number of doublets and triplets
@@ -105,7 +109,7 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the range to run the doublet counting for.
     static constexpr unsigned int doubletCountLocalSize = 32 * 2;
     auto doubletCountRange = traccc::sycl::calculate1DimNdRange(
-        m_copy.get_size(sp_grid_prefix_sum_view), doubletCountLocalSize);
+        num_spacepoints, doubletCountLocalSize);
 
     // Count the number of doublets that we need to produce.
     device::doublet_counter_collection_types::view doublet_counter_view =
@@ -137,6 +141,11 @@ seed_finding::output_type seed_finding::operator()(
         .memcpy(globalCounter_host.get(), globalCounter_device.get(),
                 sizeof(device::seeding_global_counter))
         .wait_and_throw();
+
+    if (globalCounter_host->m_nMidBot == 0 ||
+        globalCounter_host->m_nMidTop == 0) {
+        return {0, m_mr.main};
+    }
 
     // Set up the doublet buffers.
     device::device_doublet_collection_types::buffer doublet_buffer_mb = {
@@ -234,6 +243,10 @@ seed_finding::output_type seed_finding::operator()(
         .memcpy(globalCounter_host.get(), globalCounter_device.get(),
                 sizeof(device::seeding_global_counter))
         .wait_and_throw();
+
+    if (globalCounter_host->m_nTriplets == 0) {
+        return {0, m_mr.main};
+    }
 
     // Set up the triplet buffer and its view
     device::device_triplet_collection_types::buffer triplet_buffer = {

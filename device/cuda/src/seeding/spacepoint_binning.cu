@@ -60,7 +60,11 @@ sp_grid_buffer spacepoint_binning::operator()(
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Get the spacepoint sizes from the view
-    auto sp_size = m_copy.get_size(spacepoints_view);
+    const auto sp_size = m_copy.get_size(spacepoints_view);
+
+    if (sp_size == 0) {
+        return {m_axes.first, m_axes.second, {}, m_mr.main, m_mr.host};
+    }
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
