@@ -20,6 +20,7 @@
 // Vecmem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/sycl/local_accessor.hpp>
 
 // System include(s).
 #include <algorithm>
@@ -112,8 +113,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Run ccl kernel
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
-            ::sycl::local_accessor<unsigned int> shared_uint(3, h);
-            ::sycl::local_accessor<index_t> shared_idx(
+            vecmem::sycl::local_accessor<unsigned int> shared_uint(3, h);
+            vecmem::sycl::local_accessor<index_t> shared_idx(
                 2 * max_cells_per_partition, h);
 
             h.parallel_for<kernels::ccl_kernel>(

@@ -31,6 +31,9 @@
 #include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
 
+// VecMem include(s).
+#include <vecmem/utils/sycl/local_accessor.hpp>
+
 namespace traccc::sycl {
 namespace kernels {
 
@@ -281,7 +284,7 @@ seed_finding::output_type seed_finding::operator()(
         details::get_queue(m_queue).submit([&](::sycl::handler& h) {
             // Array for temporary storage of triplet weights for comparing
             // within kernel
-            ::sycl::local_accessor<scalar> local_mem(
+            vecmem::sycl::local_accessor<scalar> local_mem(
                 m_seedfilter_config.compatSeedLimit * weightUpdatingLocalSize,
                 h);
 
@@ -328,7 +331,7 @@ seed_finding::output_type seed_finding::operator()(
         .submit([&](::sycl::handler& h) {
             // Array for temporary storage of triplets for comparing within
             // kernel
-            ::sycl::local_accessor<triplet> local_mem(
+            vecmem::sycl::local_accessor<triplet> local_mem(
                 m_seedfilter_config.max_triplets_per_spM *
                     seedSelectingLocalSize,
                 h);
