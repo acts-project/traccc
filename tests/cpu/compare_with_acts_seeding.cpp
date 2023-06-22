@@ -352,8 +352,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     float seed_match_ratio = float(n_seed_match) / seeds.size();
 
     // Ensure that ACTS and traccc give the same result
-    // @TODO Uncomment the line below once acts-project/acts#2132 is merged
-    // EXPECT_EQ(seeds.size(), seedVector.size());
     EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.003);
     EXPECT_TRUE(seed_match_ratio > 0.997)
         << "Seed matching ratio: " << seed_match_ratio << std::endl;
@@ -467,8 +465,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     }
 
     float params_match_ratio = float(n_params_match) / traccc_params.size();
-    // @TODO Uncomment the line below once acts-project/acts#2132 is merged
-    // EXPECT_EQ(acts_params.size(), traccc_params.size())
     EXPECT_NEAR(acts_params.size(), traccc_params.size(),
                 acts_params.size() * 0.003);
     EXPECT_TRUE(params_match_ratio > 0.997)
