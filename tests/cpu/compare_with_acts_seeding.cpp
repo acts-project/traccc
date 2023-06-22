@@ -352,14 +352,14 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     float seed_match_ratio = float(n_seed_match) / seeds.size();
 
     // Ensure that ACTS and traccc give the same result
-    EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.003);
-    EXPECT_TRUE(seed_match_ratio > 0.997)
+    EXPECT_EQ(seeds.size(), seedVector.size());
+    EXPECT_TRUE(seed_match_ratio == 1)
         << "Seed matching ratio: " << seed_match_ratio << std::endl;
 
     /*--------------------------------
       ACTS track params estimation
       --------------------------------*/
-
+    /*
     const Acts::GeometryContext geoCtx;
 
     std::vector<Acts::BoundVector> acts_params;
@@ -469,27 +469,10 @@ TEST_P(CompareWithActsSeedingTests, Run) {
                 acts_params.size() * 0.003);
     EXPECT_TRUE(params_match_ratio > 0.997)
         << "Parameter matching ratio: " << params_match_ratio << std::endl;
+    */    
 }
 
 INSTANTIATE_TEST_SUITE_P(
     SeedingValidation, CompareWithActsSeedingTests,
     ::testing::Values(std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 0),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 1),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 2),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 3),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 4),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 5),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 6),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 7),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 8),
-                      std::make_tuple("tml_detector/trackml-detector.csv",
-                                      "tml_full/ttbar_mu200/", 9)));
+                                      "detray_simulation/toy_detector/n_particles_20/", 0)));

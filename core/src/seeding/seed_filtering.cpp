@@ -9,7 +9,7 @@
 #include "traccc/seeding/seed_filtering.hpp"
 
 #include "traccc/seeding/seed_selecting_helper.hpp"
-
+#include <iostream>
 namespace traccc {
 
 seed_filtering::seed_filtering(const seedfilter_config& config)
@@ -70,6 +70,9 @@ void seed_filtering::operator()(
               });
 
     seed_collection_types::host new_seeds;
+
+    std::cout << "traccc before: " << seeds_per_spM.size() << std::endl;
+
     if (seeds_per_spM.size() > 1) {
         new_seeds.push_back(seeds_per_spM[0]);
 
@@ -85,6 +88,8 @@ void seed_filtering::operator()(
         }
         seeds_per_spM = std::move(new_seeds);
     }
+
+    std::cout << "traccc after: " << seeds_per_spM.size() << std::endl;
 
     unsigned int maxSeeds = seeds_per_spM.size();
 

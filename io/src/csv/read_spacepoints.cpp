@@ -40,24 +40,24 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
             m[iohit.geometry_id] = link;
             cell_module mod;
             mod.module = iohit.geometry_id;
-            mod.placement = geom[iohit.geometry_id];
+            //mod.placement = geom[iohit.geometry_id];
             result_modules.push_back(mod);
         }
 
         // Find the local<->global transformation for the spacepoint's detector
         // module.
-        const transform3& placement = geom[iohit.geometry_id];
+        //const transform3& placement = geom[iohit.geometry_id];
 
         // Construct the global 3D position of the spacepoint.
         const point3 pos{iohit.tx, iohit.ty, iohit.tz};
 
         // Construct the local 3D(2D) position of the measurement.
-        const point3 lpos = placement.point_to_local(pos);
+        //const point3 lpos = placement.point_to_local(pos);
 
         // Create the spacepoint object (with its member measurement) from all
         // this information.
         const traccc::spacepoint sp{
-            pos, {point2{lpos[0], lpos[1]}, variance2{0., 0.}, link}};
+            pos, {point2{0.,0.}, variance2{0., 0.}, link}};
 
         result_spacepoints.push_back(sp);
     }
