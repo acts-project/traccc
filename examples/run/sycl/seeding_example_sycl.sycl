@@ -181,7 +181,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         copy(seeds_sycl_buffer, seeds_sycl)->wait();
         copy(params_sycl_buffer, params_sycl)->wait();
 
-        if (run_cpu && i_cfg.check_performance) {
+        if (run_cpu) {
             // Show which event we are currently presenting the results for.
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
 
@@ -205,6 +205,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ---------------*/
 
         n_spacepoints += reader_output.spacepoints.size();
+        n_modules += reader_output.modules.size();
         n_seeds_sycl += seeds_sycl.size();
         n_seeds += seeds.size();
 
