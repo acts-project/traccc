@@ -228,11 +228,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::spacepoint_collection_types::host spacepoints_per_event_cuda;
         traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
-        if (run_cpu || i_cfg.check_performance) {
-            copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
-            copy(seeds_cuda_buffer, seeds_cuda)->wait();
-            copy(params_cuda_buffer, params_cuda)->wait();
-        }
+        copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
+        copy(seeds_cuda_buffer, seeds_cuda)->wait();
+        copy(params_cuda_buffer, params_cuda)->wait();
 
         if (run_cpu) {
 
@@ -258,16 +256,17 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_cuda));
-
-            /// Statistics
-            n_modules += read_out_per_event.modules.size();
-            n_cells += read_out_per_event.cells.size();
-            n_measurements += measurements_per_event.size();
-            n_spacepoints += spacepoints_per_event.size();
-            n_spacepoints_cuda += spacepoints_per_event_cuda.size();
-            n_seeds_cuda += seeds_cuda.size();
-            n_seeds += seeds.size();
         }
+
+        /// Statistics
+        n_modules += read_out_per_event.modules.size();
+        n_cells += read_out_per_event.cells.size();
+        n_measurements += measurements_per_event.size();
+        n_spacepoints += spacepoints_per_event.size();
+        n_seeds += seeds.size();
+        n_spacepoints_cuda += spacepoints_per_event_cuda.size();
+        n_seeds_cuda += seeds_cuda.size();
+
         if (i_cfg.check_performance) {
 
             traccc::event_map evt_map(
@@ -291,12 +290,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_spacepoints << " spacepoints from "
-              << n_modules << " modules" << std::endl;
-    std::cout << "- created        " << n_cells << " cells" << std::endl;
-    std::cout << "- created        " << n_measurements << " measurements     "
+    std::cout << "- read    " << n_cells << " cells from " << n_modules
+              << " modules" << std::endl;
+    std::cout << "- created (cpu)  " << n_measurements << " measurements     "
               << std::endl;
-    std::cout << "- created        " << n_spacepoints << " spacepoints     "
+    std::cout << "- created (cpu)  " << n_spacepoints << " spacepoints     "
               << std::endl;
     std::cout << "- created (cuda) " << n_spacepoints_cuda
               << " spacepoints     " << std::endl;

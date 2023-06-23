@@ -164,18 +164,21 @@ seed_finding::output_type seed_finding::operator()(
     vecmem::data::vector_buffer sp_grid_prefix_sum_buff =
         make_prefix_sum_buff(grid_sizes, m_copy, m_mr, m_stream);
 
+    const auto num_spacepoints = m_copy.get_size(sp_grid_prefix_sum_buff);
+    if (num_spacepoints == 0) {
+        return {0, m_mr.main};
+    }
+
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
-        m_copy.get_size(sp_grid_prefix_sum_buff), m_mr.main,
-        vecmem::data::buffer_type::resizable};
+        num_spacepoints, m_mr.main, vecmem::data::buffer_type::resizable};
     m_copy.setup(doublet_counter_buffer);
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
     const unsigned int nDoubletCountThreads = WARP_SIZE * 2;
     const unsigned int nDoubletCountBlocks =
-        (m_copy.get_size(sp_grid_prefix_sum_buff) + nDoubletCountThreads - 1) /
-        nDoubletCountThreads;
+        (num_spacepoints + nDoubletCountThreads - 1) / nDoubletCountThreads;
 
     // Counter for the total number of doublets and triplets
     vecmem::unique_alloc_ptr<device::seeding_global_counter>
@@ -204,6 +207,11 @@ seed_finding::output_type seed_finding::operator()(
                                      sizeof(device::seeding_global_counter),
                                      cudaMemcpyDeviceToHost, stream));
     m_stream.synchronize();
+
+    if (globalCounter_host->m_nMidBot == 0 ||
+        globalCounter_host->m_nMidTop == 0) {
+        return {0, m_mr.main};
+    }
 
     // Set up the doublet counter buffers.
     device::device_doublet_collection_types::buffer doublet_buffer_mb = {
@@ -274,6 +282,10 @@ seed_finding::output_type seed_finding::operator()(
                                      sizeof(device::seeding_global_counter),
                                      cudaMemcpyDeviceToHost, stream));
     m_stream.synchronize();
+
+    if (globalCounter_host->m_nTriplets == 0) {
+        return {0, m_mr.main};
+    }
 
     // Set up the triplet buffer.
     device::device_triplet_collection_types::buffer triplet_buffer = {
