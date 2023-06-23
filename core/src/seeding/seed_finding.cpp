@@ -7,7 +7,6 @@
 
 // Library include(s).
 #include "traccc/seeding/seed_finding.hpp"
-
 namespace traccc {
 
 seed_finding::seed_finding(const seedfinder_config& finder_config,

@@ -38,9 +38,7 @@ struct spacepoint {
     TRACCC_HOST_DEVICE
     const scalar& z() const { return global[2]; }
     TRACCC_HOST_DEVICE
-    scalar radius() const {
-        return std::sqrt(global[0] * global[0] + global[1] * global[1]);
-    }
+    scalar radius() const { return std::hypot(global[0], global[1]); }
 };
 
 /// Comparison / ordering operator for spacepoints
