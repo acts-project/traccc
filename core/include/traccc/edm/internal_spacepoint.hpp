@@ -41,7 +41,7 @@ struct internal_spacepoint {
         m_x = sp.global[0] - offsetXY[0];
         m_y = sp.global[1] - offsetXY[1];
         m_z = sp.global[2];
-        m_r = std::hypot(m_x, m_y);
+        m_r = algebra::math::sqrt(m_x * m_x + m_y * m_y);
         m_phi = algebra::math::atan2(m_y, m_x);
     }
 
