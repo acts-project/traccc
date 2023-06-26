@@ -8,16 +8,19 @@
 // Local include(s).
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/utils/barrier.hpp"
 #include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/aggregate_cluster.hpp"
+#include "traccc/clusterization/device/ccl_kernel.hpp"
 #include "traccc/clusterization/device/form_spacepoints.hpp"
 #include "traccc/clusterization/device/reduce_problem_cell.hpp"
 
 // Vecmem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/sycl/local_accessor.hpp>
 
 // System include(s).
 #include <algorithm>
@@ -35,345 +38,11 @@ static constexpr int MAX_CELLS_PER_THREAD = 12;
 
 namespace kernels {
 
+/// Class identifying the kernel running @c traccc::device::ccl_kernel
+class ccl_kernel;
+
 /// Class identifying the kernel running @c traccc::device::form_spacepoints
 class form_spacepoints;
-
-/// Implementation of a FastSV algorithm with the following steps:
-///   1) mix of stochastic and aggressive hooking
-///   2) shortcutting
-///
-/// The implementation corresponds to an adapted versiion of Algorithm 3 of
-/// the following paper:
-/// https://www.sciencedirect.com/science/article/pii/S0743731520302689
-///
-/// @param[inout] f     array holding the parent cell ID for the current
-/// iteration.
-/// @param[inout] gf    array holding grandparent cell ID from the previous
-/// iteration.
-///                     This array only gets updated at the end of the iteration
-///                     to prevent race conditions.
-/// @param[in] adjc     The number of adjacent cells
-/// @param[in] adjv     Vector of adjacent cells
-/// @param[in] tid      The thread index
-///
-void fast_sv_1(index_t* f, index_t* gf,
-               unsigned char adjc[MAX_CELLS_PER_THREAD],
-               index_t adjv[MAX_CELLS_PER_THREAD][8], const index_t tid,
-               const index_t blockDim, ::sycl::nd_item<1> item) {
-    /*
-     * The algorithm finishes if an iteration leaves the arrays unchanged.
-     * This varible will be set if a change is made, and dictates if another
-     * loop is necessary.
-     */
-    bool gf_changed;
-
-    do {
-        /*
-         * Reset the end-parameter to false, so we can set it to true if we
-         * make a change to the gf array.
-         */
-        gf_changed = false;
-
-        /*
-         * The algorithm executes in a loop of three distinct parallel
-         * stages. In this first one, a mix of stochastic and aggressive
-         * hooking, we examine adjacent cells and copy their grand parents
-         * cluster ID if it is lower than ours, essentially merging the two
-         * together.
-         */
-        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
-            const index_t cid = tst * blockDim + tid;
-
-            __builtin_assume(adjc[tst] <= 8);
-            for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                index_t q = gf[adjv[tst][k]];
-
-                if (gf[cid] > q) {
-                    f[f[cid]] = q;
-                    f[cid] = q;
-                }
-            }
-        }
-
-        /*
-         * Each stage in this algorithm must be preceded by a
-         * synchronization barrier!
-         */
-        item.barrier();
-
-#pragma unroll
-        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
-            const index_t cid = tst * blockDim + tid;
-            /*
-             * The second stage is shortcutting, which is an optimisation that
-             * allows us to look at any shortcuts in the cluster IDs that we
-             * can merge without adjacency information.
-             */
-            if (f[cid] > gf[cid]) {
-                f[cid] = gf[cid];
-            }
-        }
-
-        /*
-         * Synchronize before the final stage.
-         */
-        item.barrier();
-
-#pragma unroll
-        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
-            const index_t cid = tst * blockDim + tid;
-            /*
-             * Update the array for the next generation, keeping track of any
-             * changes we make.
-             */
-            if (gf[cid] != f[f[cid]]) {
-                gf[cid] = f[f[cid]];
-                gf_changed = true;
-            }
-        }
-
-        /*
-         * To determine whether we need another iteration, we use block
-         * voting mechanics. Each thread checks if it has made any changes
-         * to the arrays, and votes. If any thread votes true, all threads
-         * will return a true value and go to the next iteration. Only if
-         * all threads return false will the loop exit.
-         */
-    } while (item.barrier(),
-             ::sycl::any_of_group(item.get_group(), gf_changed));
-}
-
-class ccl_kernel {
-    public:
-    ccl_kernel(const cell_collection_types::const_view cells,
-               const cell_module_collection_types::const_view modules,
-               const index_t max_cells_per_partition,
-               const index_t target_cells_per_partition,
-               alt_measurement_collection_types::view measurements,
-               unsigned int* num_measurements,
-               vecmem::data::vector_view<unsigned int> cell_links,
-               ::sycl::local_accessor<unsigned int> shared_uint,
-               ::sycl::local_accessor<index_t> shared_idx)
-        : cells_view(cells),
-          modules_view(modules),
-          m_max_cells_per_partition(max_cells_per_partition),
-          m_target_cells_per_partition(target_cells_per_partition),
-          measurements_view(measurements),
-          m_measurement_count(num_measurements),
-          cell_links_view(cell_links),
-          m_shared_uint(shared_uint),
-          m_shared_idx(shared_idx) {}
-
-    void operator()(::sycl::nd_item<1> item) const {
-
-        const index_t tid = item.get_local_linear_id();
-        const index_t blockDim = item.get_local_range(0);
-
-        const cell_collection_types::const_device cells_device(cells_view);
-        const unsigned int num_cells = cells_device.size();
-
-        unsigned int& start = m_shared_uint[0];
-        unsigned int& end = m_shared_uint[1];
-        /*
-         * This variable will be used to write to the output later.
-         */
-        unsigned int& outi = m_shared_uint[2];
-
-        index_t* f = &m_shared_idx[0];
-        index_t* f_next = &m_shared_idx[m_max_cells_per_partition];
-        /*
-         * First, we determine the exact range of cells that is to be examined
-         * by this block of threads. We start from an initial range determined
-         * by the block index multiplied by the target number of cells per
-         * block. We then shift both the start and the end of the block forward
-         * (to a later point in the array); start and end may be moved different
-         * amounts.
-         */
-        if (tid == 0) {
-            start = item.get_group_linear_id() * m_target_cells_per_partition;
-            assert(start < num_cells);
-            end = std::min(num_cells, start + m_target_cells_per_partition);
-            outi = 0;
-
-            /*
-             * Next, shift the starting point to a position further in the
-             * array; the purpose of this is to ensure that we are not operating
-             * on any cells that have been claimed by the previous block (if
-             * any).
-             */
-            while (start != 0 &&
-                   cells_device[start - 1].module_link ==
-                       cells_device[start].module_link &&
-                   cells_device[start].channel1 <=
-                       cells_device[start - 1].channel1 + 1) {
-                ++start;
-            }
-
-            /*
-             * Then, claim as many cells as we need past the naive end of the
-             * current block to ensure that we do not end our partition on a
-             * cell that is not a possible boundary!
-             */
-            while (end < num_cells &&
-                   cells_device[end - 1].module_link ==
-                       cells_device[end].module_link &&
-                   cells_device[end].channel1 <=
-                       cells_device[end - 1].channel1 + 1) {
-                ++end;
-            }
-        }
-
-        item.barrier();
-
-        // Get partition for this thread group
-        const index_t size = end - start;
-        assert(size <= m_max_cells_per_partition);
-
-        const cell_module_collection_types::const_device modules_device(
-            modules_view);
-
-        alt_measurement_collection_types::device measurements_device(
-            measurements_view);
-
-        unsigned int& measurement_count = m_measurement_count[0];
-
-        // Vector of indices of the adjacent cells
-        index_t adjv[MAX_CELLS_PER_THREAD][8];
-        /*
-         * The number of adjacent cells for each cell must start at zero, to
-         * avoid uninitialized memory. adjv does not need to be zeroed, as
-         * we will only access those values if adjc indicates that the value
-         * is set.
-         */
-        // Number of adjacent cells
-        unsigned char adjc[MAX_CELLS_PER_THREAD];
-
-        // It seems that sycl runs into undefined behaviour when calling
-        // group synchronisation functions when some threads have already run
-        // into a return. As such, we cannot use returns in this kernel.
-
-#pragma unroll
-        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
-            adjc[tst] = 0;
-        }
-
-        for (index_t tst = 0, cid; (cid = tst * blockDim + tid) < size; ++tst) {
-            /*
-             * Look for adjacent cells to the current one.
-             */
-            device::reduce_problem_cell(cells_device, cid, start, end,
-                                        adjc[tst], adjv[tst]);
-        }
-
-#pragma unroll
-        for (index_t tst = 0; tst < MAX_CELLS_PER_THREAD; ++tst) {
-            const index_t cid = tst * blockDim + tid;
-            /*
-             * At the start, the values of f and f_next should be equal to the
-             * ID of the cell.
-             */
-            f[cid] = cid;
-            f_next[cid] = cid;
-        }
-
-        /*
-         * Now that the data has initialized, we synchronize again before we
-         * move onto the actual processing part.
-         */
-        item.barrier();
-
-        /*
-         * Run FastSV algorithm, which will update the father index to that of
-         * the cell belonging to the same cluster with the lowest index.
-         */
-        fast_sv_1(&f[0], &f_next[0], adjc, adjv, tid, blockDim, item);
-
-        item.barrier();
-
-        /*
-         * Count the number of clusters by checking how many cells have
-         * themself assigned as a parent.
-         */
-        for (index_t tst = 0, cid; (cid = tst * blockDim + tid) < size; ++tst) {
-
-            if (f[cid] == cid) {
-                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
-                                   ::sycl::memory_scope::work_group,
-                                   ::sycl::access::address_space::local_space>(
-                    outi)
-                    .fetch_add(1);
-            }
-        }
-
-        item.barrier();
-
-        /*
-         * Add the number of clusters of each thread block to the total
-         * number of clusters. At the same time, a cluster id is retrieved
-         * for the next data processing step.
-         * Note that this might be not the same cluster as has been treated
-         * previously. However, since each thread block spawns a the maximum
-         * amount of threads per block, this has no sever implications.
-         */
-        if (tid == 0) {
-            outi =
-                ::sycl::atomic_ref<unsigned int, ::sycl::memory_order::relaxed,
-                                   ::sycl::memory_scope::device,
-                                   ::sycl::access::address_space::global_space>(
-                    measurement_count)
-                    .fetch_add(outi);
-        }
-
-        item.barrier();
-
-        /*
-         * Get the position to fill the measurements found in this thread group.
-         */
-        const unsigned int groupPos = outi;
-
-        item.barrier();
-
-        if (tid == 0) {
-            outi = 0;
-        }
-
-        item.barrier();
-
-        const vecmem::data::vector_view<unsigned short> f_view(
-            m_max_cells_per_partition, &f[0]);
-
-        for (index_t tst = 0, cid; (cid = tst * blockDim + tid) < size; ++tst) {
-            if (f[cid] == cid) {
-                /*
-                 * If we are a cluster owner, atomically claim a position in the
-                 * output array which we can write to.
-                 */
-                const unsigned int id =
-                    ::sycl::atomic_ref<
-                        unsigned int, ::sycl::memory_order::relaxed,
-                        ::sycl::memory_scope::work_group,
-                        ::sycl::access::address_space::local_space>(outi)
-                        .fetch_add(1);
-
-                device::aggregate_cluster(cells_device, modules_device, f_view,
-                                          start, end, cid,
-                                          measurements_device[groupPos + id],
-                                          cell_links_view, groupPos + id);
-            }
-        }
-    }
-
-    private:
-    const cell_collection_types::const_view cells_view;
-    const cell_module_collection_types::const_view modules_view;
-    const unsigned short m_max_cells_per_partition;
-    const unsigned short m_target_cells_per_partition;
-    alt_measurement_collection_types::view measurements_view;
-    unsigned int* m_measurement_count;
-    vecmem::data::vector_view<unsigned int> cell_links_view;
-    ::sycl::local_accessor<unsigned int> m_shared_uint;
-    ::sycl::local_accessor<index_t> m_shared_idx;
-};
 
 }  // namespace kernels
 
@@ -396,6 +65,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Number of cells
     const cell_collection_types::view::size_type num_cells =
         m_copy.get_size(cells);
+
+    if (num_cells == 0) {
+        return {output_type::first_type{0, m_mr.main},
+                output_type::second_type{0, m_mr.main}};
+    }
 
     // Create result object for the CCL kernel with size overestimation
     alt_measurement_collection_types::buffer measurements_buffer(num_cells,
@@ -424,7 +98,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const unsigned int target_cells_per_partition =
         m_target_cells_per_partition;
 
-    ::sycl::nd_range ndrange(
+    ::sycl::nd_range cclKernelRange(
         ::sycl::range<1>(num_partitions * threads_per_partition),
         ::sycl::range<1>(threads_per_partition));
 
@@ -437,52 +111,66 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Create buffer for linking cells to their spacepoints.
     vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
+    m_copy.setup(cell_links)->wait();
+    vecmem::data::vector_view<unsigned int> cell_links_view(cell_links);
 
+    auto aux_num_measurements_device = num_measurements_device.get();
     // Run ccl kernel
     details::get_queue(m_queue)
-        .submit([&ndrange, &cells, &modules, max_cells_per_partition,
-                 &target_cells_per_partition, &measurements_view, &cell_links,
-                 &num_measurements_device](::sycl::handler& h) {
-            ::sycl::local_accessor<unsigned int> shared_uint(3, h);
-            ::sycl::local_accessor<index_t> shared_idx(
+        .submit([&](::sycl::handler& h) {
+            vecmem::sycl::local_accessor<unsigned int> shared_uint(3, h);
+            vecmem::sycl::local_accessor<index_t> shared_idx(
                 2 * max_cells_per_partition, h);
 
             h.parallel_for<kernels::ccl_kernel>(
-                ndrange, kernels::ccl_kernel(
-                             cells, modules, max_cells_per_partition,
-                             target_cells_per_partition, measurements_view,
-                             num_measurements_device.get(), cell_links,
-                             shared_uint, shared_idx));
+                cclKernelRange, [=](::sycl::nd_item<1> item) {
+                    index_t* f = &shared_idx[0];
+                    index_t* f_next = &shared_idx[max_cells_per_partition];
+                    unsigned int& partition_start = shared_uint[0];
+                    unsigned int& partition_end = shared_uint[1];
+                    unsigned int& outi = shared_uint[2];
+                    traccc::sycl::barrier barry_r(item);
+
+                    device::ccl_kernel(
+                        item.get_local_linear_id(), item.get_local_range(0),
+                        item.get_group_linear_id(), cells, modules,
+                        max_cells_per_partition, target_cells_per_partition,
+                        partition_start, partition_end, outi, f, f_next,
+                        barry_r, measurements_view,
+                        *aux_num_measurements_device, cell_links_view);
+                });
         })
         .wait_and_throw();
 
     // Copy number of measurements to host
-    unsigned int num_measurements_host;
+    vecmem::unique_alloc_ptr<unsigned int> num_measurements_host =
+        vecmem::make_unique_alloc<unsigned int>(
+            (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
     details::get_queue(m_queue)
-        .memcpy(&num_measurements_host, num_measurements_device.get(),
+        .memcpy(num_measurements_host.get(), num_measurements_device.get(),
                 sizeof(unsigned int))
         .wait_and_throw();
 
     spacepoint_collection_types::buffer spacepoints_buffer(
-        num_measurements_host, m_mr.main);
+        *num_measurements_host, m_mr.main);
     m_copy.setup(spacepoints_buffer)->wait();
     spacepoint_collection_types::view spacepoints_view(spacepoints_buffer);
 
     // For the following kernel, we can now use whatever the desired number of
     // threads per block.
     auto spacepointsRange = traccc::sycl::calculate1DimNdRange(
-        num_measurements_host, m_max_work_group_size);
+        *num_measurements_host, m_max_work_group_size);
 
     // Run form spacepoints kernel, turning 2D measurements into 3D spacepoints
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::form_spacepoints>(
                 spacepointsRange,
-                [measurements_view, modules, num_measurements_host,
+                [measurements_view, modules, aux_num_measurements_device,
                  spacepoints_view](::sycl::nd_item<1> item) {
                     device::form_spacepoints(
                         item.get_global_linear_id(), measurements_view, modules,
-                        num_measurements_host, spacepoints_view);
+                        *aux_num_measurements_device, spacepoints_view);
                 });
         })
         .wait_and_throw();

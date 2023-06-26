@@ -10,15 +10,18 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 
-// Acts include(s).
-#include <Acts/Definitions/Units.hpp>
+// Detray include(s).
+#include "detray/definitions/units.hpp"
 
 namespace traccc {
+
+template <typename scalar_t>
+using unit = detray::unit<scalar_t>;
 
 // epsilon for float variables
 constexpr scalar float_epsilon = 1e-5;
 
 // pion mass for track parameter estimation
-constexpr scalar PION_MASS_MEV = 139.57018 * Acts::UnitConstants::MeV;
+constexpr scalar PION_MASS_MEV = 139.57018 * unit<scalar>::MeV;
 
 }  // namespace traccc

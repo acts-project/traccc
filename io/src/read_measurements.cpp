@@ -14,42 +14,68 @@
 
 namespace traccc::io {
 
-measurement_reader_output read_measurements(std::size_t event,
-                                            std::string_view directory,
-                                            data_format format,
-                                            vecmem::memory_resource* mr) {
+void read_measurements(measurement_reader_output& out, std::size_t event,
+                       std::string_view directory, data_format format) {
 
     switch (format) {
-        case data_format::csv:
-            return read_measurements(
+        case data_format::csv: {
+            read_measurements(
+                out,
                 data_directory() + directory.data() +
                     get_event_filename(event, "-measurements.csv"),
-                format, mr);
+                format);
+            break;
+        }
         case data_format::binary: {
-            auto measurements = details::read_binary_collection<
+
+            details::read_binary_collection<
                 alt_measurement_collection_types::host>(
+                out.measurements,
                 data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.dat"),
-                mr);
-            auto modules = details::read_binary_collection<
-                cell_module_collection_types::host>(
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-modules.dat"),
-                mr);
-            return {std::move(measurements), std::move(modules)};
+                    get_event_filename(event, "-measurements.dat"));
+            details::read_binary_collection<cell_module_collection_types::host>(
+                out.modules, data_directory() + directory.data() +
+                                 get_event_filename(event, "-modules.dat"));
+            break;
         }
         default:
             throw std::invalid_argument("Unsupported data format");
     }
 }
 
-measurement_reader_output read_measurements(std::string_view filename,
-                                            data_format format,
-                                            vecmem::memory_resource* mr) {
+void read_measurements(measurement_reader_output& out,
+                       std::string_view filename, data_format format) {
 
     switch (format) {
         case data_format::csv:
-            return csv::read_measurements(filename, mr);
+            return csv::read_measurements(out, filename);
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+measurement_container_types::host read_measurements_container(
+    std::size_t event, std::string_view directory, data_format format,
+    vecmem::memory_resource* mr) {
+
+    switch (format) {
+        case data_format::csv:
+            return read_measurements_container(
+                data_directory() + directory.data() +
+                    get_event_filename(event, "-measurements.csv"),
+                format, mr);
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+measurement_container_types::host read_measurements_container(
+    std::string_view filename, data_format format,
+    vecmem::memory_resource* mr) {
+
+    switch (format) {
+        case data_format::csv:
+            return csv::read_measurements_container(filename, mr);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

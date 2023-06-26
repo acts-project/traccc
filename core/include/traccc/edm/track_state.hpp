@@ -24,20 +24,14 @@ template <typename algebra_t>
 struct fitter_info {
     using scalar_type = typename algebra_t::scalar_type;
 
-    /// Seed track parameter
-    detray::bound_track_parameters<algebra_t> seed_params;
-
     /// Fitted track parameter
     detray::bound_track_parameters<algebra_t> fit_params;
 
     /// Number of degree of freedoms of fitted track
-    scalar_type ndf;
+    scalar_type ndf{0};
 
     /// Chi square of fitted track
-    scalar_type chi2;
-
-    /// P-value of fitted track
-    scalar_type p_val;
+    scalar_type chi2{0};
 };
 
 /// Fitting result per measurement
@@ -147,6 +141,9 @@ struct track_state {
     inline const bound_track_parameters_type& smoothed() const {
         return m_smoothed;
     }
+
+    public:
+    bool is_hole{true};
 
     private:
     detray::geometry::barcode m_surface_link;

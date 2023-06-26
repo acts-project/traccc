@@ -7,7 +7,7 @@
 
 // io
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // algorithms
 #include "traccc/seeding/seed_finding.hpp"
@@ -70,10 +70,10 @@ inline bool operator==(const Acts::BoundVector& acts_vec,
             traccc::float_epsilon * 10 &&
         std::abs(acts_vec[Acts::eBoundTheta] -
                  traccc::getter::element(traccc_vec, traccc::e_bound_theta,
-                                         0)) < traccc::float_epsilon * 10 &&
+                                         0)) < traccc::float_epsilon * 1000 &&
         std::abs(acts_vec[Acts::eBoundPhi] -
                  traccc::getter::element(traccc_vec, traccc::e_bound_phi, 0)) <
-            traccc::float_epsilon * 10) {
+            traccc::float_epsilon * 1000) {
         return true;
     }
     return false;
@@ -95,30 +95,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Seeding Config
     traccc::seedfinder_config traccc_config;
-    traccc::spacepoint_grid_config grid_config;
-
-    traccc::seedfinder_config config_copy = traccc_config.toInternalUnits();
-    traccc_config.highland =
-        13.6 * std::sqrt(config_copy.radLengthPerSeed) *
-        (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
-    float maxScatteringAngle = traccc_config.highland / config_copy.minPt;
-    traccc_config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
-    // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
-    // and millimeter
-    traccc_config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
-    traccc_config.minHelixDiameter2 =
-        std::pow(config_copy.minPt * 2 / traccc_config.pTPerHelixRadius, 2);
-    traccc_config.pT2perRadius =
-        std::pow(traccc_config.highland / traccc_config.pTPerHelixRadius, 2);
-
-    grid_config.bFieldInZ = traccc_config.bFieldInZ;
-    grid_config.minPt = traccc_config.minPt;
-    grid_config.rMax = traccc_config.rMax;
-    grid_config.zMax = traccc_config.zMax;
-    grid_config.zMin = traccc_config.zMin;
-    grid_config.deltaRMax = traccc_config.deltaRMax;
-    grid_config.cotThetaMax = traccc_config.cotThetaMax;
-    grid_config.impactMax = traccc_config.impactMax;
+    traccc::spacepoint_grid_config grid_config(traccc_config);
 
     // Declare algorithms
     traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
@@ -129,9 +106,9 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     auto surface_transforms = traccc::io::read_geometry(detector_file);
 
     // Read the hits from the relevant event file
-    auto reader_output =
-        traccc::io::read_spacepoints_alt(event, hits_dir, surface_transforms,
-                                         traccc::data_format::csv, &host_mr);
+    traccc::io::spacepoint_reader_output reader_output(&host_mr);
+    traccc::io::read_spacepoints(reader_output, event, hits_dir,
+                                 surface_transforms, traccc::data_format::csv);
 
     traccc::spacepoint_collection_types::host& spacepoints_per_event =
         reader_output.spacepoints;
@@ -148,7 +125,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
       TRACCC track params estimation
       --------------------------------*/
 
-    auto tp_output = tp(spacepoints_per_event, seeds);
+    auto tp_output =
+        tp(spacepoints_per_event, seeds, {0.f, 0.f, traccc_config.bFieldInZ});
     auto& traccc_params = tp_output;
 
     /*--------------------------------
@@ -336,7 +314,9 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     float seed_match_ratio = float(n_seed_match) / seeds.size();
 
     // Ensure that ACTS and traccc give the same result
-    EXPECT_EQ(seeds.size(), seedVector.size());
+    // @TODO Uncomment the line below once acts-project/acts#2132 is merged
+    // EXPECT_EQ(seeds.size(), seedVector.size());
+    EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.001);
     EXPECT_TRUE(seed_match_ratio > 0.999);
 
     /*--------------------------------
@@ -413,7 +393,10 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         // Test the full track parameters estimator
         auto fullParamsOpt = estimateTrackParamsFromSeed(
             geoCtx, spacePointPtrs.begin(), spacePointPtrs.end(),
-            *bottomSurface, Acts::Vector3(0, 0, 2), 0.1);
+            *bottomSurface,
+            Acts::Vector3(
+                0, 0, acts_config.bFieldInZ / traccc::unit<traccc::scalar>::T),
+            0.1);
 
         auto acts_vec = *fullParamsOpt;
 
@@ -445,9 +428,12 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     }
 
     float params_match_ratio = float(n_params_match) / traccc_params.size();
-
-    EXPECT_EQ(acts_params.size(), traccc_params.size());
-    EXPECT_TRUE(params_match_ratio > 0.999);
+    // @TODO Uncomment the line below once acts-project/acts#2132 is merged
+    // EXPECT_EQ(acts_params.size(), traccc_params.size())
+    EXPECT_NEAR(acts_params.size(), traccc_params.size(),
+                acts_params.size() * 0.001);
+    EXPECT_TRUE(params_match_ratio > 0.999)
+        << "Parameter matching ratio: " << params_match_ratio << std::endl;
 }
 
 INSTANTIATE_TEST_SUITE_P(

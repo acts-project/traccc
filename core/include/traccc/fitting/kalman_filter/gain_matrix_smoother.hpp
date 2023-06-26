@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_state.hpp"
 
 // detray include(s).
 #include "detray/propagator/navigator.hpp"
@@ -22,12 +23,12 @@ template <typename algebra_t>
 struct gain_matrix_smoother {
 
     // Type declarations
-    using output_type = bool;
     using matrix_operator = typename algebra_t::matrix_actor;
     using size_type = typename matrix_operator::size_ty;
     template <size_type ROWS, size_type COLS>
     using matrix_type =
         typename matrix_operator::template matrix_type<ROWS, COLS>;
+    using scalar_type = typename algebra_t::scalar_type;
 
     /// Gain matrix smoother operation
     ///
@@ -42,7 +43,7 @@ struct gain_matrix_smoother {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE inline output_type operator()(
+    TRACCC_HOST_DEVICE inline void operator()(
         const mask_group_t& mask_group, const index_t& index,
         track_state<algebra_t>& cur_state,
         const track_state<algebra_t>& next_state) {
@@ -64,7 +65,7 @@ struct gain_matrix_smoother {
         const matrix_type<6, 6>& cur_filtered_cov = cur_filtered.covariance();
 
         // Regularization matrix for numerical stability
-        static constexpr scalar epsilon = 1e-13;
+        static constexpr scalar_type epsilon = 1e-13f;
         const matrix_type<6, 6> regularization =
             matrix_operator().template identity<e_bound_size, e_bound_size>() *
             epsilon;
@@ -86,21 +87,23 @@ struct gain_matrix_smoother {
         cur_state.smoothed().set_covariance(smt_cov);
 
         // projection matrix
-        const matrix_type<2, 6> H =
-            mask_group[index].template projection_matrix<e_bound_size>();
+        // @TODO: Need to check if it is right to put the filtered state here
+        const typename mask_group_t::value_type::projection_matrix_type H =
+            mask_group[index].projection_matrix(cur_filtered);
+
+        constexpr const unsigned int D =
+            mask_group_t::value_type::shape::meas_dim;
 
         // Calculate smoothed chi square
-        const matrix_type<2, 1>& meas_local = cur_state.measurement_local();
-        const matrix_type<2, 2>& V = cur_state.measurement_covariance();
-        const matrix_type<2, 1> residual = meas_local - H * smt_vec;
-        const matrix_type<2, 2> R =
+        const matrix_type<D, 1>& meas_local = cur_state.measurement_local();
+        const matrix_type<D, D>& V = cur_state.measurement_covariance();
+        const matrix_type<D, 1> residual = meas_local - H * smt_vec;
+        const matrix_type<D, D> R =
             V - H * smt_cov * matrix_operator().transpose(H);
         const matrix_type<1, 1> chi2 = matrix_operator().transpose(residual) *
                                        matrix_operator().inverse(R) * residual;
 
         cur_state.smoothed_chi2() = matrix_operator().element(chi2, 0, 0);
-
-        return true;
     }
 };
 

@@ -11,7 +11,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -45,9 +45,9 @@ TEST_P(SurfaceBinningTests, Run) {
     traccc::spacepoint_formation sf(host_mr);
 
     // Read the cells from the relevant event file
-    auto readOut =
-        traccc::io::read_cells(event, data_dir, traccc::data_format::csv,
-                               &surface_transforms, &digi_cfg, &host_mr);
+    traccc::io::cell_reader_output readOut(&host_mr);
+    traccc::io::read_cells(readOut, event, data_dir, traccc::data_format::csv,
+                           &surface_transforms, &digi_cfg);
 
     const traccc::cell_collection_types::host& cells_truth = readOut.cells;
     const traccc::cell_module_collection_types::host& modules = readOut.modules;
@@ -57,9 +57,9 @@ TEST_P(SurfaceBinningTests, Run) {
     auto spacepoints_recon = sf(measurements_recon, modules);
 
     // Read the hits from the relevant event file
-    auto sp_readOut =
-        traccc::io::read_spacepoints_alt(event, data_dir, surface_transforms,
-                                         traccc::data_format::csv, &host_mr);
+    traccc::io::spacepoint_reader_output sp_readOut(&host_mr);
+    traccc::io::read_spacepoints(sp_readOut, event, data_dir,
+                                 surface_transforms, traccc::data_format::csv);
 
     const traccc::spacepoint_collection_types::host& spacepoints_truth =
         sp_readOut.spacepoints;

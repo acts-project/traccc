@@ -9,6 +9,7 @@
 
 // Library include(s).
 #include "traccc/resolution/res_plot_tool_config.hpp"
+#include "traccc/resolution/stat_plot_tool_config.hpp"
 
 // Project include(s).
 #include "traccc/edm/track_parameters.hpp"
@@ -37,7 +38,8 @@ class fitting_performance_writer {
         /// Output file mode
         std::string file_mode = "RECREATE";
         /// Plot tool configurations.
-        res_plot_tool_config config;
+        res_plot_tool_config res_config;
+        stat_plot_tool_config stat_config;
     };
 
     /// Constructor with writer config
@@ -53,7 +55,8 @@ class fitting_performance_writer {
     /// @param evt_map event map to find the truth values
     template <typename detector_t>
     void write(const track_state_collection_types::host& track_states_per_track,
-               const detector_t& det, event_map2& evt_map) {
+               const fitter_info<transform3>& fit_info, const detector_t& det,
+               event_map2& evt_map) {
 
         auto& m_p_map = evt_map.meas_ptc_map;
 
@@ -74,7 +77,8 @@ class fitting_performance_writer {
         const auto global_mom = evt_map.meas_xp_map[meas_link].second;
 
         const auto truth_local = det.global_to_local(
-            meas_link.surface_link, global_pos, vector::normalize(global_mom));
+            detray::geometry::barcode(meas_link.surface_link), global_pos,
+            vector::normalize(global_mom));
 
         // Return value
         bound_track_parameters truth_param;
@@ -90,7 +94,8 @@ class fitting_performance_writer {
             ptc.charge / getter::norm(global_mom);
 
         // For the moment, only fill with the first measurements
-        write_impl(truth_param, trk_state.smoothed());
+        write_res(truth_param, trk_state.smoothed());
+        write_stat(fit_info);
     }
 
     /// Writing caches into the file
@@ -98,8 +103,11 @@ class fitting_performance_writer {
 
     private:
     /// Non-templated part of the @c write(...) function
-    void write_impl(const bound_track_parameters& truth_param,
-                    const bound_track_parameters& fit_param);
+    void write_res(const bound_track_parameters& truth_param,
+                   const bound_track_parameters& fit_param);
+
+    /// Non-templated part of the @c write(...) function
+    void write_stat(const fitter_info<transform3>& fit_info);
 
     /// Configuration for the tool
     config m_cfg;

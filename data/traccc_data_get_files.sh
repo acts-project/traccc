@@ -27,7 +27,7 @@ usage() {
 }
 
 # Default script arguments.
-TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v2"}
+TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v3"}
 TRACCC_WEB_DIRECTORY=${TRACCC_WEB_DIRECTORY:-"https://acts.web.cern.ch/traccc/data"}
 TRACCC_DATA_DIRECTORY=${TRACCC_DATA_DIRECTORY:-$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)}
 TRACCC_CMAKE_EXECUTABLE=${TRACCC_CMAKE_EXECUTABLE:-cmake}

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,7 +10,6 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 
 // detray include(s).
@@ -96,6 +95,9 @@ struct kalman_actor : detray::actor {
                 propagation._heartbeat &= navigation.abort();
             }
 
+            // This track state is not a hole
+            trk_state.is_hole = false;
+
             // Set full jacobian
             trk_state.jacobian() = stepping._full_jacobian;
 
@@ -111,6 +113,9 @@ struct kalman_actor : detray::actor {
 
             // Update iterator
             actor_state.next();
+
+            // Flag renavigation of the current candidate
+            navigation.set_high_trust();
         }
     }
 };

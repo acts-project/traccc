@@ -22,9 +22,7 @@ namespace traccc::kokkos {
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr)
-    : m_config(config.toInternalUnits()),
-      m_axes(get_axes(grid_config.toInternalUnits(), *(mr.host))),
-      m_mr(mr) {
+    : m_config(config), m_axes(get_axes(grid_config, *(mr.host))), m_mr(mr) {
     m_copy = std::make_unique<vecmem::copy>();
 }
 
@@ -49,14 +47,19 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
     Kokkos::parallel_for(
-        "count_grid_capacities", team_policy(num_blocks, num_threads),
+        "count_grid_capacities", team_policy(num_blocks, Kokkos::AUTO),
         KOKKOS_LAMBDA(const member_type& team_member) {
-            device::count_grid_capacities(
-                team_member.league_rank() * team_member.team_size() +
-                    team_member.team_rank(),
-                m_config, m_axes.first, m_axes.second, spacepoints_view,
-                grid_capacities_view);
+            Kokkos::parallel_for(
+                Kokkos::TeamThreadRange(team_member, num_threads),
+                [&](const int& thr) {
+                    device::count_grid_capacities(
+                        team_member.league_rank() * team_member.team_size() +
+                            thr,
+                        m_config, m_axes.first, m_axes.second, spacepoints_view,
+                        grid_capacities_view);
+                });
         });
+
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
                                                                 : &(m_mr.main));
@@ -73,12 +76,16 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
 
     // Populate the grid.
     Kokkos::parallel_for(
-        "populate_grid", team_policy(num_blocks, num_threads),
+        "populate_grid", team_policy(num_blocks, Kokkos::AUTO),
         KOKKOS_LAMBDA(const member_type& team_member) {
-            device::populate_grid(
-                team_member.league_rank() * team_member.team_size() +
-                    team_member.team_rank(),
-                m_config, spacepoints_view, grid_view);
+            Kokkos::parallel_for(
+                Kokkos::TeamThreadRange(team_member, num_threads),
+                [&](const int& thr) {
+                    device::populate_grid(
+                        team_member.league_rank() * team_member.team_size() +
+                            thr,
+                        m_config, spacepoints_view, grid_view);
+                });
         });
 
     // Return the freshly filled buffer.

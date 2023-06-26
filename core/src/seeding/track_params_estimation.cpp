@@ -17,20 +17,17 @@ track_params_estimation::track_params_estimation(vecmem::memory_resource& mr)
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::host& spacepoints,
-    const seed_collection_types::host& seeds) const {
+    const seed_collection_types::host& seeds, const vector3& bfield) const {
 
-    output_type result(&m_mr.get());
+    const unsigned int num_seeds = seeds.size();
+    output_type result(num_seeds, &m_mr.get());
 
-    // convenient assumption on bfield and mass
-    // TODO: Make use of bfield extenstion in the future
-    vector3 bfield = {0, 0, 2};
-
-    for (const auto& seed : seeds) {
+    for (unsigned int i = 0; i < num_seeds; ++i) {
         bound_track_parameters track_params;
         track_params.set_vector(
-            seed_to_bound_vector(spacepoints, seed, bfield, PION_MASS_MEV));
+            seed_to_bound_vector(spacepoints, seeds[i], bfield, PION_MASS_MEV));
 
-        result.push_back(track_params);
+        result[i] = track_params;
     }
 
     return result;

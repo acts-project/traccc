@@ -6,14 +6,15 @@
  */
 
 // Local include(s).
-#include "../common/throughput_st_alt.hpp"
+#include "../common/throughput_st.hpp"
+
 #include "full_chain_algorithm.hpp"
 
 int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
     static const bool use_host_caching = true;
-    return traccc::throughput_st_alt<traccc::sycl::full_chain_algorithm>(
+    return traccc::throughput_st<traccc::sycl::full_chain_algorithm>(
         "Single-threaded SYCL GPU throughput tests", argc, argv,
         use_host_caching);
 }

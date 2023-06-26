@@ -10,7 +10,7 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/io/write.hpp"
 
@@ -43,9 +43,10 @@ TEST(io_binary, cell) {
         "tml_detector/default-geometric-config-generic.json");
 
     // Read csv file
-    auto reader_csv =
-        traccc::io::read_cells(event, cells_directory, traccc::data_format::csv,
-                               &surface_transforms, &digi_cfg, &host_mr);
+    traccc::io::cell_reader_output reader_csv(&host_mr);
+    traccc::io::read_cells(reader_csv, event, cells_directory,
+                           traccc::data_format::csv, &surface_transforms,
+                           &digi_cfg);
     const traccc::cell_collection_types::host& cells_csv = reader_csv.cells;
     const traccc::cell_module_collection_types::host& modules_csv =
         reader_csv.modules;
@@ -56,9 +57,10 @@ TEST(io_binary, cell) {
                       vecmem::get_data(modules_csv));
 
     // Read binary file
-    auto reader_binary = traccc::io::read_cells(
-        event, cells_directory, traccc::data_format::binary,
-        &surface_transforms, &digi_cfg, &host_mr);
+    traccc::io::cell_reader_output reader_binary(&host_mr);
+    traccc::io::read_cells(reader_binary, event, cells_directory,
+                           traccc::data_format::binary, &surface_transforms,
+                           &digi_cfg);
     const traccc::cell_collection_types::host& cells_binary =
         reader_binary.cells;
     const traccc::cell_module_collection_types::host& modules_binary =
@@ -111,9 +113,9 @@ TEST(io_binary, spacepoint) {
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read csv file
-    auto reader_csv = traccc::io::read_spacepoints_alt(
-        event, hits_directory, surface_transforms, traccc::data_format::csv,
-        &host_mr);
+    traccc::io::spacepoint_reader_output reader_csv(&host_mr);
+    traccc::io::read_spacepoints(reader_csv, event, hits_directory,
+                                 surface_transforms, traccc::data_format::csv);
     const traccc::spacepoint_collection_types::host& spacepoints_csv =
         reader_csv.spacepoints;
     const traccc::cell_module_collection_types::host& modules_csv =
@@ -125,9 +127,10 @@ TEST(io_binary, spacepoint) {
                       vecmem::get_data(modules_csv));
 
     // Read binary file
-    auto reader_binary = traccc::io::read_spacepoints_alt(
-        event, hits_directory, surface_transforms, traccc::data_format::binary,
-        &host_mr);
+    traccc::io::spacepoint_reader_output reader_binary(&host_mr);
+    traccc::io::read_spacepoints(reader_binary, event, hits_directory,
+                                 surface_transforms,
+                                 traccc::data_format::binary);
     const traccc::spacepoint_collection_types::host& spacepoints_binary =
         reader_binary.spacepoints;
     const traccc::cell_module_collection_types::host& modules_binary =
@@ -174,8 +177,9 @@ TEST(io_binary, measurement) {
     vecmem::host_memory_resource host_mr;
 
     // Read csv file
-    auto reader_csv = traccc::io::read_measurements(
-        event, measurements_directory, traccc::data_format::csv, &host_mr);
+    traccc::io::measurement_reader_output reader_csv(&host_mr);
+    traccc::io::read_measurements(reader_csv, event, measurements_directory,
+                                  traccc::data_format::csv);
     const traccc::alt_measurement_collection_types::host& measurements_csv =
         reader_csv.measurements;
     const traccc::cell_module_collection_types::host& modules_csv =
@@ -187,8 +191,9 @@ TEST(io_binary, measurement) {
         vecmem::get_data(measurements_csv), vecmem::get_data(modules_csv));
 
     // Read binary file
-    auto reader_binary = traccc::io::read_measurements(
-        event, measurements_directory, traccc::data_format::binary, &host_mr);
+    traccc::io::measurement_reader_output reader_binary(&host_mr);
+    traccc::io::read_measurements(reader_binary, event, measurements_directory,
+                                  traccc::data_format::binary);
     const traccc::alt_measurement_collection_types::host& measurements_binary =
         reader_binary.measurements;
     const traccc::cell_module_collection_types::host& modules_binary =

@@ -29,7 +29,10 @@ namespace traccc::cuda {
 
 full_chain_algorithm::full_chain_algorithm(
     vecmem::memory_resource& host_mr,
-    const unsigned short target_cells_per_partition)
+    const unsigned short target_cells_per_partition,
+    const seedfinder_config& finder_config,
+    const spacepoint_grid_config& grid_config,
+    const seedfilter_config& filter_config)
     : m_host_mr(host_mr),
       m_stream(),
       m_device_mr(),
@@ -39,10 +42,14 @@ full_chain_algorithm::full_chain_algorithm(
       m_target_cells_per_partition(target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_stream, m_target_cells_per_partition),
-      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
+      m_seeding(finder_config, grid_config, filter_config,
+                memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                 m_stream),
       m_track_parameter_estimation(
-          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream) {
+          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream),
+      m_finder_config(finder_config),
+      m_grid_config(grid_config),
+      m_filter_config(filter_config) {
 
     // Tell the user what device is being used.
     int device = 0;
@@ -64,10 +71,14 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_target_cells_per_partition(parent.m_target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_stream, m_target_cells_per_partition),
-      m_seeding(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                m_stream),
+      m_seeding(
+          parent.m_finder_config, parent.m_grid_config, parent.m_filter_config,
+          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream),
       m_track_parameter_estimation(
-          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream) {}
+          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream),
+      m_finder_config(parent.m_finder_config),
+      m_grid_config(parent.m_grid_config),
+      m_filter_config(parent.m_filter_config) {}
 
 full_chain_algorithm::~full_chain_algorithm() {
 
@@ -93,10 +104,11 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         m_clusterization(cells_buffer, modules_buffer);
     const track_params_estimation::output_type track_params =
         m_track_parameter_estimation(spacepoints.first,
-                                     m_seeding(spacepoints.first));
+                                     m_seeding(spacepoints.first),
+                                     {0.f, 0.f, m_finder_config.bFieldInZ});
 
     // Get the final data back to the host.
-    bound_track_parameters_collection_types::host result;
+    bound_track_parameters_collection_types::host result(&m_host_mr);
     m_copy(track_params, result);
     m_stream.synchronize();
 

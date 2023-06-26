@@ -11,9 +11,10 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/mt_options.hpp"
 #include "traccc/options/throughput_options.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
 
 // I/O include(s).
-#include "traccc/io/demonstrator_alt_edm.hpp"
+#include "traccc/io/demonstrator_edm.hpp"
 #include "traccc/io/read.hpp"
 
 // Performance measurement include(s).
@@ -41,8 +42,8 @@
 namespace traccc {
 
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
-int throughput_mt_alt(std::string_view description, int argc, char* argv[],
-                      bool use_host_caching) {
+int throughput_mt(std::string_view description, int argc, char* argv[],
+                  bool use_host_caching) {
 
     // Convenience typedef.
     namespace po = boost::program_options;
@@ -67,6 +68,12 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
               << mt_cfg << "\n"
               << std::endl;
 
+    // Set seeding config
+    // @FIXME: Seeding config should be configured by options
+    seedfinder_config finder_config;
+    spacepoint_grid_config grid_config(finder_config);
+    seedfilter_config filter_config;
+
     // Set up the timing info holder.
     performance::timing_info times;
 
@@ -80,17 +87,19 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
     HOST_MR uncached_host_mr;
 
     // Read in all input events into memory.
-    alt_demonstrator_input input;
+    demonstrator_input input(&uncached_host_mr);
+
     {
         performance::timer t{"File reading", times};
-        for (unsigned int event = 0; event < throughput_cfg.loaded_events;
-             ++event) {
-            input = io::read(
-                throughput_cfg.loaded_events, throughput_cfg.input_directory,
-                throughput_cfg.detector_file,
-                throughput_cfg.digitization_config_file,
-                throughput_cfg.input_data_format, &uncached_host_mr);
+        // Create empty inputs using the correct memory resource
+        for (std::size_t i = 0; i < throughput_cfg.loaded_events; ++i) {
+            input.push_back(demonstrator_input::value_type(&uncached_host_mr));
         }
+        // Read event data into input vector
+        io::read(input, throughput_cfg.loaded_events,
+                 throughput_cfg.input_directory, throughput_cfg.detector_file,
+                 throughput_cfg.digitization_config_file,
+                 throughput_cfg.input_data_format);
     }
 
     // Set up cached memory resources on top of the host memory resource
@@ -111,8 +120,8 @@ int throughput_mt_alt(std::string_view description, int argc, char* argv[],
                 ? static_cast<vecmem::memory_resource&>(
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
-        algs.push_back(
-            {alg_host_mr, throughput_cfg.target_cells_per_partition});
+        algs.push_back({alg_host_mr, throughput_cfg.target_cells_per_partition,
+                        finder_config, grid_config, filter_config});
     }
 
     // Seed the random number generator.

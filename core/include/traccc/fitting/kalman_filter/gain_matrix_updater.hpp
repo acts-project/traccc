@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -37,7 +37,7 @@ struct gain_matrix_updater {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE inline bool operator()(
+    TRACCC_HOST_DEVICE inline void operator()(
         const mask_group_t& mask_group, const index_t& index,
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
@@ -46,15 +46,19 @@ struct gain_matrix_updater {
         // @Note: Make constexpr work
         const matrix_type<6, 6> I66 =
             matrix_operator().template identity<e_bound_size, e_bound_size>();
-        const matrix_type<2, 2> I22 =
-            matrix_operator().template identity<2, 2>();
+
+        constexpr const unsigned int D =
+            mask_group_t::value_type::shape::meas_dim;
+
+        const matrix_type<D, D> I_m =
+            matrix_operator().template identity<D, D>();
 
         // projection matrix
-        const matrix_type<2, 6> H =
-            mask_group[index].template projection_matrix<e_bound_size>();
+        const typename mask_group_t::value_type::projection_matrix_type H =
+            mask_group[index].projection_matrix(bound_params);
 
         // Measurement data on surface
-        const matrix_type<2, 1>& meas_local = trk_state.measurement_local();
+        const matrix_type<D, 1>& meas_local = trk_state.measurement_local();
 
         // Predicted vector of bound track parameters
         const matrix_type<6, 1>& predicted_vec = bound_params.vector();
@@ -67,13 +71,13 @@ struct gain_matrix_updater {
         trk_state.predicted().set_covariance(predicted_cov);
 
         // Spatial resolution (Measurement covariance)
-        const matrix_type<2, 2> V = trk_state.measurement_covariance();
+        const matrix_type<D, D> V = trk_state.measurement_covariance();
 
-        const matrix_type<2, 2> M =
+        const matrix_type<D, D> M =
             H * predicted_cov * matrix_operator().transpose(H) + V;
 
         // Kalman gain matrix
-        const matrix_type<6, 2> K = predicted_cov *
+        const matrix_type<6, D> K = predicted_cov *
                                     matrix_operator().transpose(H) *
                                     matrix_operator().inverse(M);
 
@@ -83,10 +87,10 @@ struct gain_matrix_updater {
         const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
 
         // Residual between measurement and (projected) filtered vector
-        const matrix_type<2, 1> residual = meas_local - H * filtered_vec;
+        const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
 
         // Calculate the chi square
-        const matrix_type<2, 2> R = (I22 - H * K) * V;
+        const matrix_type<D, D> R = (I_m - H * K) * V;
         const matrix_type<1, 1> chi2 = matrix_operator().transpose(residual) *
                                        matrix_operator().inverse(R) * residual;
 
@@ -98,8 +102,6 @@ struct gain_matrix_updater {
         trk_state.filtered().set_vector(filtered_vec);
         trk_state.filtered().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = matrix_operator().element(chi2, 0, 0);
-
-        return true;
     }
 };
 

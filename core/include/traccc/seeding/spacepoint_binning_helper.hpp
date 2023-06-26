@@ -27,8 +27,7 @@ inline std::pair<detray::axis::circular<>, detray::axis::regular<>> get_axes(
         phiBins = 100;
     } else {
         // calculate circle intersections of helix and max detector radius
-        scalar minHelixRadius =
-            grid_config.minPt / (300. * grid_config.bFieldInZ);  // in mm
+        scalar minHelixRadius = grid_config.minPt / grid_config.bFieldInZ;
 
         // sanity check: if yOuter takes the square root of a negative number
         if (minHelixRadius < grid_config.rMax / 2) {

@@ -10,6 +10,7 @@ find_package( OpenMP COMPONENTS CXX )
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
+  "include/traccc/io/digitization_config.hpp"
   "include/traccc/io/read.hpp"
   "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_digitization_config.hpp"
@@ -17,11 +18,10 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/read_measurements.hpp"
   "include/traccc/io/read_particles.hpp"
   "include/traccc/io/read_spacepoints.hpp"
-  "include/traccc/io/read_spacepoints_alt.hpp"
   "include/traccc/io/data_format.hpp"
   "include/traccc/io/event_map.hpp"
   "include/traccc/io/event_map2.hpp"
-  "include/traccc/io/demonstrator_alt_edm.hpp"
+  "include/traccc/io/demonstrator_edm.hpp"
   "include/traccc/io/mapper.hpp"
   "include/traccc/io/write.hpp"
   "include/traccc/io/utils.hpp"
@@ -38,7 +38,6 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/read_measurements.cpp"
   "src/read_particles.cpp"
   "src/read_spacepoints.cpp"
-  "src/read_spacepoints_alt.cpp"
   "src/write.cpp"
   "src/utils.cpp"
   "src/read_binary.hpp"
@@ -59,8 +58,6 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/make_hit_reader.cpp"
   "src/csv/read_spacepoints.hpp"
   "src/csv/read_spacepoints.cpp"
-  "src/csv/read_spacepoints_alt.hpp"
-  "src/csv/read_spacepoints_alt.cpp"
   "src/csv/measurement.hpp"
   "src/csv/make_measurement_reader.hpp"
   "src/csv/make_measurement_reader.cpp"
@@ -75,7 +72,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/read_particles.hpp"
   "src/csv/read_particles.cpp" )
 target_link_libraries( traccc_io
-  PUBLIC vecmem::core traccc::core
+  PUBLIC vecmem::core traccc::core ActsCore
   PRIVATE dfelibs::dfelibs ActsPluginJson )
 target_compile_definitions( traccc_io
   PRIVATE TRACCC_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data" )

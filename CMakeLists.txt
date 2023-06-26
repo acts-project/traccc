@@ -6,7 +6,7 @@
 
 # Set up the project.
 cmake_minimum_required( VERSION 3.9 )
-project( traccc VERSION 0.4.0 LANGUAGES CXX )
+project( traccc VERSION 0.6.0 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 17 CACHE STRING "The (host) C++ standard to use" )
@@ -140,7 +140,7 @@ endif()
 
 # Set up Kokkos.
 option( TRACCC_SETUP_KOKKOS
-   "Set up the Kokkos library" TRUE )
+   "Set up the Kokkos library" ${TRACCC_BUILD_KOKKOS} )
 option( TRACCC_USE_SYSTEM_KOKKOS
    "Pick up an existing installation of Kokkos from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
@@ -177,6 +177,20 @@ if( TRACCC_SETUP_ALGEBRA_PLUGINS )
       find_package( algebra-plugins REQUIRED )
    else()
       add_subdirectory( extern/algebra-plugins )
+   endif()
+endif()
+
+# Set up covfie.
+option( TRACCC_SETUP_COVFIE
+   "Set up the covfie target(s) explicitly" TRUE )
+option( TRACCC_USE_SYSTEM_COVFIE
+   "Pick up an existing installation of covfie from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_COVFIE )
+   if( TRACCC_USE_SYSTEM_COVFIE )
+      find_package( covfie REQUIRED )
+   else()
+      add_subdirectory( extern/covfie )
    endif()
 endif()
 
@@ -223,8 +237,12 @@ if( TRACCC_SETUP_ACTS )
 endif()
 
 # Set up GoogleTest.
+include( CTest )
+if (BUILD_TESTING AND TRACCC_BUILD_TESTING)
+set (TRACCC_DEFAULT_SETUP_GOOGLETEST TRUE)
+endif ()
 option( TRACCC_SETUP_GOOGLETEST
-   "Set up the GoogleTest target(s) explicitly" TRUE )
+   "Set up the GoogleTest target(s) explicitly" ${TRACCC_DEFAULT_SETUP_GOOGLETEST} )
 option( TRACCC_USE_SYSTEM_GOOGLETEST
    "Pick up an existing installation of GoogleTest from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
@@ -235,6 +253,9 @@ if( TRACCC_SETUP_GOOGLETEST )
       add_subdirectory( extern/googletest )
    endif()
 endif()
+
+option( TRACCC_ENABLE_NVTX_PROFILING
+        "Use instrument functions to enable fine grained profiling" FALSE )
 
 # option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
 set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the build")
@@ -268,7 +289,6 @@ if ( TRACCC_BUILD_EXAMPLES )
 endif()
 
 # Set up the test(s).
-include( CTest )
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    add_subdirectory( tests )
 endif()

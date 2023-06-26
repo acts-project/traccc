@@ -47,9 +47,8 @@ __global__ void populate_grid(
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str)
-    : m_config(config.toInternalUnits()),
-      m_axes(get_axes(grid_config.toInternalUnits(),
-                      (mr.host ? *(mr.host) : mr.main))),
+    : m_config(config),
+      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
       m_copy(copy),
       m_stream(str) {}
@@ -61,7 +60,11 @@ sp_grid_buffer spacepoint_binning::operator()(
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Get the spacepoint sizes from the view
-    auto sp_size = m_copy.get_size(spacepoints_view);
+    const auto sp_size = m_copy.get_size(spacepoints_view);
+
+    if (sp_size == 0) {
+        return {m_axes.first, m_axes.second, {}, m_mr.main, m_mr.host};
+    }
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
@@ -102,7 +105,6 @@ sp_grid_buffer spacepoint_binning::operator()(
     kernels::populate_grid<<<num_blocks, num_threads, 0, stream>>>(
         m_config, spacepoints_view, grid_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
-    m_stream.synchronize();
 
     // Return the freshly filled buffer.
     return grid_buffer;

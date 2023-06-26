@@ -7,7 +7,7 @@
 
 // io
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -39,10 +39,16 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
 
+    // Configs
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config(finder_config);
+    traccc::seedfilter_config filter_config;
+
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
-    traccc::seeding_algorithm sa(host_mr);
+    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
+                                 host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     // performance writer
@@ -57,9 +63,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the hits from the relevant event file
-        auto readOut = traccc::io::read_spacepoints_alt(
-            event, common_opts.input_directory, surface_transforms,
-            common_opts.input_data_format, &host_mr);
+        traccc::io::spacepoint_reader_output readOut(&host_mr);
+        traccc::io::read_spacepoints(
+            readOut, event, common_opts.input_directory, surface_transforms,
+            common_opts.input_data_format);
         traccc::spacepoint_collection_types::host& spacepoints_per_event =
             readOut.spacepoints;
 

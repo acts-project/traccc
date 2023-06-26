@@ -34,7 +34,7 @@ prefix_sum_buffer_t make_prefix_sum_buffer(
         vecmem::data::vector_buffer<prefix_sum_size_t> sizes_sum_buff(
             sizes_sum.size(), mr.main);
         copy.setup(sizes_sum_buff);
-        (copy)(vecmem::get_data(sizes_sum), sizes_sum_buff);
+        (copy)(vecmem::get_data(sizes_sum), sizes_sum_buff)->wait();
         vecmem::data::vector_view<prefix_sum_size_t> sizes_sum_view(
             sizes_sum_buff);
 

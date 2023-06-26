@@ -10,9 +10,7 @@
 // Project include(s).
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/geometry.hpp"
-
-// VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
+#include "traccc/io/reader_edm.hpp"
 
 // System include(s).
 #include <string_view>
@@ -21,13 +19,11 @@ namespace traccc::io::csv {
 
 /// Read spacepoint information from a specific CSV file
 ///
+/// @param out A spacepoint & a cell_module (host) collections
 /// @param filename The file to read the spacepoint data from
 /// @param geom The description of the detector geometry
-/// @param mr The memory resource to create the host container with
-/// @return A spacepoint (host) container
 ///
-spacepoint_container_types::host read_spacepoints(
-    std::string_view filename, const geometry& geom,
-    vecmem::memory_resource* mr = nullptr);
+void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+                      const geometry& geom);
 
 }  // namespace traccc::io::csv

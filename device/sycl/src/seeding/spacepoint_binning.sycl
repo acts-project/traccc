@@ -34,9 +34,8 @@ class populate_grid;
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue)
-    : m_config(config.toInternalUnits()),
-      m_axes(get_axes(grid_config.toInternalUnits(),
-                      (mr.host ? *(mr.host) : mr.main))),
+    : m_config(config),
+      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
       m_queue(queue),
       m_copy(copy) {}
@@ -45,7 +44,11 @@ sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {
 
     // Get the spacepoint sizes from the view
-    auto sp_size = m_copy.get_size(spacepoints_view);
+    const auto sp_size = m_copy.get_size(spacepoints_view);
+
+    if (sp_size == 0) {
+        return {m_axes.first, m_axes.second, {}, m_mr.main, m_mr.host};
+    }
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.

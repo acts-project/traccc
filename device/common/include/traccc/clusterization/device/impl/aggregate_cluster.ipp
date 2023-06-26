@@ -8,8 +8,6 @@
 #pragma once
 
 // Project include(s)
-#include <vecmem/memory/device_atomic_ref.hpp>
-
 #include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 
 namespace traccc::device {

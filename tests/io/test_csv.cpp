@@ -12,7 +12,7 @@
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_particles.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -28,8 +28,10 @@ class io : public traccc::tests::data_test {};
 // This defines the local frame test suite
 TEST_F(io, csv_read_single_module) {
 
-    auto single_module_cells = traccc::io::read_cells(
-        get_datafile("single_module/cells.csv"), traccc::data_format::csv);
+    traccc::io::cell_reader_output single_module_cells;
+    traccc::io::read_cells(single_module_cells,
+                           get_datafile("single_module/cells.csv"),
+                           traccc::data_format::csv);
     auto& cells = single_module_cells.cells;
     auto& modules = single_module_cells.modules;
     ASSERT_EQ(cells.size(), 6u);
@@ -46,8 +48,10 @@ TEST_F(io, csv_read_single_module) {
 // This defines the local frame test suite
 TEST_F(io, csv_read_two_modules) {
 
-    auto two_module_cells = traccc::io::read_cells(
-        get_datafile("two_modules/cells.csv"), traccc::data_format::csv);
+    traccc::io::cell_reader_output two_module_cells;
+    traccc::io::read_cells(two_module_cells,
+                           get_datafile("two_modules/cells.csv"),
+                           traccc::data_format::csv);
     auto& cells = two_module_cells.cells;
     auto& modules = two_module_cells.modules;
     ASSERT_EQ(modules.size(), 2u);
@@ -86,13 +90,12 @@ TEST_F(io, csv_read_tml_transforms) {
 // This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_pixelbarrel) {
 
-    auto tml_barrel_modules =
-        traccc::io::read_cells(
-            get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
-            traccc::data_format::csv)
-            .modules;
+    traccc::io::cell_reader_output readOut;
+    traccc::io::read_cells(
+        readOut, get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
+        traccc::data_format::csv);
 
-    ASSERT_EQ(tml_barrel_modules.size(), 2382u);
+    ASSERT_EQ(readOut.modules.size(), 2382u);
 }
 
 // This checks if hit and measurement container from the first single muon event
@@ -104,13 +107,16 @@ TEST_F(io, csv_read_tml_single_muon) {
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the hits from the relevant event file
-    auto spacepoints_per_event = traccc::io::read_spacepoints_alt(
-        0, "tml_full/single_muon/", surface_transforms,
-        traccc::data_format::csv, &resource);
+    traccc::io::spacepoint_reader_output spacepoints_per_event(&resource);
+    traccc::io::read_spacepoints(spacepoints_per_event, 0,
+                                 "tml_full/single_muon/", surface_transforms,
+                                 traccc::data_format::csv);
 
     // Read the measurements from the relevant event file
-    auto measurements_per_event = traccc::io::read_measurements(
-        0, "tml_full/single_muon/", traccc::data_format::csv, &resource);
+    traccc::io::measurement_reader_output measurements_per_event(&resource);
+    traccc::io::read_measurements(measurements_per_event, 0,
+                                  "tml_full/single_muon/",
+                                  traccc::data_format::csv);
 
     // Read the particles from the relevant event file
     traccc::particle_collection_types::host particles_per_event =

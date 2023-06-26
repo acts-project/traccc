@@ -22,12 +22,17 @@ namespace traccc::alpaka {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    const traccc::memory_resource& mr, vecmem::copy& copy)
-    : m_config(config.toInternalUnits()),
-      m_axes(get_axes(grid_config.toInternalUnits(),
-                      (mr.host ? *(mr.host) : mr.main))),
-      m_mr(mr),
-      m_copy(copy) {
+    const traccc::memory_resource& mr)
+    : m_config(config),
+      m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
+      m_mr(mr) {
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::cuda::copy>();
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
 }
 
 // Grid Capacity Kernel
@@ -96,8 +101,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
 
     // Setup alpaka
     using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
-    using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
-    std::cout << "Using alpaka accelerator: " << ::alpaka::getAccName<Acc>() << std::endl;
+    using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
     auto queue = Queue{devAcc};
 
@@ -122,7 +126,6 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     auto const elementsPerThread = 1u;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     auto bufAcc = ::alpaka::allocBuf<float, uint32_t>(devAcc, sp_size);
-    std::cout << "Lets get started with " << sp_size << " space points ..." << std::endl;
 
     ::alpaka::exec<Acc>(
             queue, workDiv,

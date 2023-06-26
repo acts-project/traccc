@@ -9,7 +9,6 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/io/read_spacepoints_alt.hpp"
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
@@ -35,40 +34,6 @@
 
 namespace po = boost::program_options;
 
-/// Helper function that would produce a default seed-finder configuration
-traccc::seedfinder_config default_seedfinder_config() {
-
-    traccc::seedfinder_config config;
-    traccc::seedfinder_config config_copy = config.toInternalUnits();
-    config.highland = 13.6 * std::sqrt(config_copy.radLengthPerSeed) *
-                      (1 + 0.038 * std::log(config_copy.radLengthPerSeed));
-    float maxScatteringAngle = config.highland / config_copy.minPt;
-    config.maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
-    // helix radius in homogeneous magnetic field. Units are Kilotesla, MeV
-    // and millimeter
-    config.pTPerHelixRadius = 300. * config_copy.bFieldInZ;
-    config.minHelixDiameter2 =
-        std::pow(config_copy.minPt * 2 / config.pTPerHelixRadius, 2);
-    config.pT2perRadius =
-        std::pow(config.highland / config.pTPerHelixRadius, 2);
-    return config;
-}
-
-/// Helper function that would produce a default spacepoint grid configuration
-traccc::spacepoint_grid_config default_spacepoint_grid_config() {
-
-    traccc::seedfinder_config config = default_seedfinder_config();
-    traccc::spacepoint_grid_config grid_config;
-    grid_config.bFieldInZ = config.bFieldInZ;
-    grid_config.minPt = config.minPt;
-    grid_config.rMax = config.rMax;
-    grid_config.zMax = config.zMax;
-    grid_config.zMin = config.zMin;
-    grid_config.deltaRMax = config.deltaRMax;
-    grid_config.cotThetaMax = config.cotThetaMax;
-    return grid_config;
-}
-
 int seq_run(const traccc::seeding_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
@@ -81,19 +46,25 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_alpaka = 0;
 
+    // Configs
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config(finder_config);
+    traccc::seedfilter_config filter_config;
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 
-    traccc::seeding_algorithm sa(host_mr);
+    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
+                                 host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     vecmem::cuda::copy copy;
 
     // Alpaka Spacepoint Binning
-    traccc::alpaka::spacepoint_binning m_spacepoint_binning(
-        default_seedfinder_config(), default_spacepoint_grid_config(), mr, copy);
+    traccc::alpaka::spacepoint_binning m_spacepoint_binning(finder_config,
+                                                            grid_config, mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -109,7 +80,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-        traccc::io::spacepoint_reader_output reader_output;
+        traccc::io::spacepoint_reader_output reader_output(mr.host);
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -123,9 +94,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                reader_output = traccc::io::read_spacepoints_alt(
-                    event, common_opts.input_directory, surface_transforms,
-                    common_opts.input_data_format, &host_mr);
+                traccc::io::read_spacepoints(
+                    reader_output, event, common_opts.input_directory,
+                    surface_transforms, common_opts.input_data_format);
             }  // stop measuring hit reading timer
 
             traccc::spacepoint_collection_types::host& spacepoints_per_event =
@@ -165,7 +136,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(std::move(spacepoints_per_event), seeds);
+                params = tp(std::move(spacepoints_per_event), seeds,
+                            {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
