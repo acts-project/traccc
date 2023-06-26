@@ -22,18 +22,11 @@ namespace traccc::alpaka {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    const traccc::memory_resource& mr)
+    const traccc::memory_resource& mr, vecmem::copy& copy)
     : m_config(config),
       m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
-      m_mr(mr) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::cuda::copy>();
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+      m_mr(mr),
+      m_copy(copy) {}
 
 // Grid Capacity Kernel
 struct CountGridCapacityKernel {

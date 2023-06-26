@@ -32,8 +32,14 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     /// Constructor for the seed finding algorithm
     ///
     /// @param mr The memory resource to use
+    /// @param mr The memory resource(s) to use in the algorithm
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
     ///
-    seeding_algorithm(const traccc::memory_resource& mr, vecmem::copy& copy);
+    seeding_algorithm(const seedfinder_config& finder_config,
+                      const spacepoint_grid_config& grid_config,
+                      const seedfilter_config& filter_config,
+                      const traccc::memory_resource& mr, vecmem::copy& copy);
 
     /// Operator executing the algorithm.
     ///

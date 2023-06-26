@@ -20,12 +20,12 @@ struct EstimateTrackParamsKernel {
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         spacepoint_collection_types::const_view spacepoints_view,
-        seed_collection_types::const_view seed_view,
+        seed_collection_types::const_view seed_view, const vector3 bfield,
         bound_track_parameters_collection_types::view params_view
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::estimate_track_params(globalThreadIdx, spacepoints_view, seed_view, params_view);
+        device::estimate_track_params(globalThreadIdx, spacepoints_view, seed_view, bfield, params_view);
     }
 };
 
