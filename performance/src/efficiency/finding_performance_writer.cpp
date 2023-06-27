@@ -35,12 +35,11 @@ struct finding_performance_writer_data {
 
     /// Plot tool for efficiency
     eff_plot_tool m_eff_plot_tool;
-    std::map<std::string, eff_plot_tool::eff_plot_cache> m_eff_plot_caches;
+    eff_plot_tool::eff_plot_cache m_eff_plot_cache;
 
     /// Plot tool for duplication rate
     duplication_plot_tool m_duplication_plot_tool;
-    std::map<std::string, duplication_plot_tool::duplication_plot_cache>
-        m_duplication_plot_caches;
+    duplication_plot_tool::duplication_plot_cache m_duplication_plot_cache;
 
     measurement_particle_map m_measurement_particle_map;
     particle_map m_particle_map;
@@ -51,19 +50,16 @@ struct finding_performance_writer_data {
 
 finding_performance_writer::finding_performance_writer(const config& cfg)
     : m_cfg(cfg),
-      m_data(std::make_unique<details::finding_performance_writer_data>(cfg)) {}
+      m_data(std::make_unique<details::finding_performance_writer_data>(cfg)) {
+
+    m_data->m_eff_plot_tool.book("finding", m_data->m_eff_plot_cache);
+    m_data->m_duplication_plot_tool.book("finding",
+                                         m_data->m_duplication_plot_cache);
+}
 
 finding_performance_writer::~finding_performance_writer() {}
 
-void finding_performance_writer::add_cache(std::string_view name) {
-
-    m_data->m_eff_plot_tool.book(name, m_data->m_eff_plot_caches[name.data()]);
-    m_data->m_duplication_plot_tool.book(
-        name, m_data->m_duplication_plot_caches[name.data()]);
-}
-
 void finding_performance_writer::write(
-    std::string_view name,
     const track_candidate_container_types::const_view& track_candidates_view,
     const event_map2& evt_map) {
 
@@ -109,11 +105,10 @@ void finding_performance_writer::write(
             n_matched_seeds_for_particle = it->second;
         }
 
-        m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_caches[name.data()],
-                                     ptc, is_matched);
-        m_data->m_duplication_plot_tool.fill(
-            m_data->m_duplication_plot_caches[name.data()], ptc,
-            n_matched_seeds_for_particle - 1);
+        m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_cache, ptc, is_matched);
+        m_data->m_duplication_plot_tool.fill(m_data->m_duplication_plot_cache,
+                                             ptc,
+                                             n_matched_seeds_for_particle - 1);
     }
 }
 
@@ -134,13 +129,8 @@ void finding_performance_writer::finalize() {
               << std::endl;
 #endif  // TRACCC_HAVE_ROOT
 
-    for (auto const& [name, cache] : m_data->m_eff_plot_caches) {
-        m_data->m_eff_plot_tool.write(cache);
-    }
-
-    for (auto const& [name, cache] : m_data->m_duplication_plot_caches) {
-        m_data->m_duplication_plot_tool.write(cache);
-    }
+    m_data->m_eff_plot_tool.write(m_data->m_eff_plot_cache);
+    m_data->m_duplication_plot_tool.write(m_data->m_duplication_plot_cache);
 }
 
 }  // namespace traccc

@@ -8,6 +8,7 @@
 // io
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/utils.hpp"
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -21,6 +22,11 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 
+// Detray include(s).
+#include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/io/json/json_reader.hpp"
+#include "detray/io/json/json_writer.hpp"
+
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
@@ -31,9 +37,30 @@ namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& i_cfg,
             const traccc::common_options& common_opts) {
+    // Memory resource used by the EDM.
+    vecmem::host_memory_resource host_mr;
+
+    // Declare detector type
+    using detector_t =
+        detray::detector<detray::detector_registry::toy_detector>;
+    detector_t det{host_mr};
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    traccc::geometry surface_transforms;
+
+    if (i_cfg.run_detray_geometry == false) {
+        surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    } else if (i_cfg.run_detray_geometry == true) {
+
+        // Read the detector
+        detray::json_geometry_reader<detector_t> geo_reader;
+        typename detector_t::name_map volume_name_map = {{0u, "detector"}};
+
+        geo_reader.read(det, volume_name_map,
+                        traccc::io::data_directory() + i_cfg.detector_file);
+
+        surface_transforms = traccc::io::alt_read_geometry(det);
+    }
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -44,9 +71,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::spacepoint_grid_config grid_config(finder_config);
     traccc::seedfilter_config filter_config;
 
-    // Memory resource used by the EDM.
-    vecmem::host_memory_resource host_mr;
-
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
                                  host_mr);
     traccc::track_params_estimation tp(host_mr);
@@ -54,9 +78,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-    }
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
@@ -88,12 +109,27 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ------------*/
 
         if (i_cfg.check_performance) {
-            traccc::event_map evt_map(event, i_cfg.detector_file,
-                                      common_opts.input_directory,
-                                      common_opts.input_directory, host_mr);
-            sd_performance_writer.write("CPU", vecmem::get_data(seeds),
-                                        vecmem::get_data(spacepoints_per_event),
-                                        evt_map);
+
+            if (i_cfg.run_detray_geometry == false) {
+
+                traccc::event_map evt_map(event, i_cfg.detector_file,
+                                          common_opts.input_directory,
+                                          common_opts.input_directory, host_mr);
+                sd_performance_writer.write(
+                    vecmem::get_data(seeds),
+                    vecmem::get_data(spacepoints_per_event), evt_map);
+
+            }
+
+            else if (i_cfg.run_detray_geometry == true) {
+                traccc::event_map2 evt_map(event, common_opts.input_directory,
+                                           common_opts.input_directory,
+                                           common_opts.input_directory);
+                sd_performance_writer.write(
+                    vecmem::get_data(seeds),
+                    vecmem::get_data(spacepoints_per_event), readOut.modules,
+                    evt_map);
+            }
         }
     }
 

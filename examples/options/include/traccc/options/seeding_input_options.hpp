@@ -14,6 +14,7 @@ namespace po = boost::program_options;
 
 struct seeding_input_config {
     std::string detector_file;
+    bool run_detray_geometry;
     bool check_performance;
 
     seeding_input_config(po::options_description& desc);

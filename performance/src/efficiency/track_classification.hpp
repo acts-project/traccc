@@ -7,9 +7,10 @@
 
 #pragma once
 
+#include <iostream>
+
 #include "traccc/edm/particle.hpp"
 #include "traccc/io/mapper.hpp"
-
 namespace traccc {
 
 struct particle_hit_count {
