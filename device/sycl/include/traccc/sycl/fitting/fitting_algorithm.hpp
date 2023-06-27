@@ -35,11 +35,16 @@ class fitting_algorithm
           const typename track_candidate_container_types::const_view&)> {
 
     public:
+    using transform3_type = typename fitter_t::transform3_type;
+    /// Configuration type
+    using config_type = typename fitter_t::config_type;
+
     /// Constructor for the fitting algorithm
     ///
     /// @param mr The memory resource to use
     /// @param queue is a wrapper for the sycl queue for kernel invocation
-    fitting_algorithm(const traccc::memory_resource& mr, queue_wrapper queue);
+    fitting_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
+                      queue_wrapper queue);
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(
@@ -50,6 +55,8 @@ class fitting_algorithm
             track_candidates_view) const override;
 
     private:
+    /// Config object
+    config_type m_cfg;
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// Queue wrapper

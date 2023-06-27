@@ -18,7 +18,10 @@ traccc_add_executable( seeding_example_cuda "seeding_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options )
-
+traccc_add_executable( truth_finding_example_cuda "truth_finding_example_cuda.cpp"
+   LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
+                  traccc::core traccc::device_common traccc::cuda
+                  traccc::options )
 #
 # Set up the "throughput applications".
 #

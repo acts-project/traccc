@@ -508,6 +508,15 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 }
 
 // Explicit template instantiation
+using toy_detector_type =
+    detray::detector<detray::detector_registry::toy_detector,
+                     covfie::field_view, detray::device_container_types>;
+using toy_stepper_type = detray::rk_stepper<
+    covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
+    detray::constrained_step<>>;
+using toy_navigator_type = detray::navigator<const toy_detector_type>;
+template class finding_algorithm<toy_stepper_type, toy_navigator_type>;
+
 using device_detector_type =
     detray::detector<detray::detector_registry::template telescope_detector<
                          detray::rectangle2D<>>,

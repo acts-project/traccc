@@ -11,6 +11,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/efficiency/eff_plot_tool.hpp"
    "include/traccc/efficiency/seeding_performance_writer.hpp"
    "src/efficiency/seeding_performance_writer.cpp"
+   "include/traccc/efficiency/finding_performance_writer.hpp"
+   "src/efficiency/finding_performance_writer.cpp"
    "src/efficiency/track_classification.hpp"
    "include/traccc/efficiency/nseed_performance_writer.hpp"
    "src/efficiency/nseed_performance_writer.cpp"
