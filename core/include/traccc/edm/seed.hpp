@@ -7,11 +7,10 @@
 
 #pragma once
 
-#include <iostream>
-
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
+
 namespace traccc {
 
 /// Seed consisting of three spacepoints, z origin and weight

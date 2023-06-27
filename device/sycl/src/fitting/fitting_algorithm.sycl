@@ -79,17 +79,15 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     auto trackParamsNdRange =
         traccc::sycl::calculate1DimNdRange(n_tracks, localSize);
 
-    // Copy fitting config
-    config_type cfg = m_cfg;
-
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::fit>(
                 trackParamsNdRange,
-                [det_view, cfg, navigation_buffer, track_candidates_view,
+                [det_view, config = m_cfg, navigation_buffer,
+                 track_candidates_view,
                  track_states_view](::sycl::nd_item<1> item) {
                     device::fit<fitter_t>(item.get_global_linear_id(), det_view,
-                                          cfg, navigation_buffer,
+                                          config, navigation_buffer,
                                           track_candidates_view,
                                           track_states_view);
                 });
