@@ -37,10 +37,11 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// @param seed is the input seed
 /// @param bfield is the magnetic field
 /// @param mass is the mass of particle
-template <typename spacepoint_collection_t>
-inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
-    const spacepoint_collection_t& sp_collection, const seed& seed,
-    const vector3& bfield, const scalar mass) {
+template <typename spacepoint_collection_t, typename module_collection_t>
+inline TRACCC_HOST_DEVICE bound_vector
+seed_to_bound_vector(const spacepoint_collection_t& sp_collection,
+                     const seed& seed, const module_collection_t modules,
+                     const vector3& bfield, const scalar mass) {
 
     bound_vector params;
 
@@ -105,8 +106,12 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
 
     // The measured loc0 and loc1
     const auto& meas_for_spB = spB.meas;
-    getter::element(params, e_bound_loc0, 0) = meas_for_spB.local[0];
-    getter::element(params, e_bound_loc1, 0) = meas_for_spB.local[1];
+    const auto& module_spB = modules[meas_for_spB.module_link];
+
+    const auto spB_local = module_spB.placement.point_to_local(spB.global);
+
+    getter::element(params, e_bound_loc0, 0) = spB_local[0];
+    getter::element(params, e_bound_loc1, 0) = spB_local[1];
 
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)

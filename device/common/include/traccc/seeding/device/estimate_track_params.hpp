@@ -25,7 +25,9 @@ TRACCC_HOST_DEVICE
 inline void estimate_track_params(
     const std::size_t globalIndex,
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const seed_collection_types::const_view& seeds_view, const vector3& bfield,
+    const seed_collection_types::const_view& seeds_view,
+    const cell_module_collection_types::const_view& modules_view,
+    const vector3& bfield,
     bound_track_parameters_collection_types::view params_view);
 
 }  // namespace traccc::device

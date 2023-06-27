@@ -17,7 +17,9 @@ TRACCC_HOST_DEVICE
 inline void estimate_track_params(
     const std::size_t globalIndex,
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const seed_collection_types::const_view& seeds_view, const vector3& bfield,
+    const seed_collection_types::const_view& seeds_view,
+    const cell_module_collection_types::const_view& modules_view,
+    const vector3& bfield,
     bound_track_parameters_collection_types::view params_view) {
 
     // Check if anything needs to be done.
@@ -33,10 +35,12 @@ inline void estimate_track_params(
 
     const seed& this_seed = seeds_device.at(globalIndex);
 
+    cell_module_collection_types::const_device modules_device(modules_view);
+
     // Get bound track parameter
     bound_track_parameters track_params;
-    track_params.set_vector(seed_to_bound_vector(spacepoints_device, this_seed,
-                                                 bfield, PION_MASS_MEV));
+    track_params.set_vector(seed_to_bound_vector(
+        spacepoints_device, this_seed, modules_device, bfield, PION_MASS_MEV));
 
     // Save the object into global memory.
     params_device[globalIndex] = track_params;

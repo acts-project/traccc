@@ -52,7 +52,7 @@ TEST(track_params_estimation, helix) {
 
     // Run track parameter estimation
     traccc::track_params_estimation tp(host_mr);
-    auto bound_params = tp(spacepoints, seeds, B);
+    auto bound_params = tp(spacepoints, seeds, {}, B);
 
     // Make sure that the reconstructed momentum is equal to the original
     // momentum

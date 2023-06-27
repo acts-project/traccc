@@ -23,12 +23,13 @@ namespace kernels {
 /// CUDA kernel for running @c traccc::device::estimate_track_params
 __global__ void estimate_track_params(
     spacepoint_collection_types::const_view spacepoints_view,
-    seed_collection_types::const_view seed_view, const vector3 bfield,
+    seed_collection_types::const_view seed_view,
+    cell_module_collection_types::const_view modules_view, const vector3 bfield,
     bound_track_parameters_collection_types::view params_view) {
 
     device::estimate_track_params(threadIdx.x + blockIdx.x * blockDim.x,
-                                  spacepoints_view, seed_view, bfield,
-                                  params_view);
+                                  spacepoints_view, seed_view, modules_view,
+                                  bfield, params_view);
 }
 }  // namespace kernels
 
@@ -39,6 +40,7 @@ track_params_estimation::track_params_estimation(
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
     const seed_collection_types::const_view& seeds_view,
+    const cell_module_collection_types::const_view& modules_view,
     const vector3& bfield) const {
 
     // Get a convenience variable for the stream that we'll be using.
@@ -68,7 +70,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // run the kernel
     kernels::estimate_track_params<<<num_blocks, num_threads, 0, stream>>>(
-        spacepoints_view, seeds_view, bfield, params_buffer);
+        spacepoints_view, seeds_view, modules_view, bfield, params_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
 
     return params_buffer;
