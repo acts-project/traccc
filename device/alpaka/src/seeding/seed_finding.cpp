@@ -211,30 +211,30 @@ seed_finding::output_type seed_finding::operator()(
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
 
     // Create prefix sum buffer
-    // vecmem::data::vector_buffer sp_grid_prefix_sum_buff =
-    //     make_prefix_sum_buff<Acc, Queue>(
-    //         grid_sizes, m_copy, m_mr, queue
-    //     );
+    vecmem::data::vector_buffer sp_grid_prefix_sum_buff =
+        make_prefix_sum_buff(
+            grid_sizes, m_copy, m_mr, queue
+        );
 
-    // // Set up the doublet counter buffer.
-    // device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
-    //     m_copy.get_size(sp_grid_prefix_sum_buff), m_mr.main,
-    //     vecmem::data::buffer_type::resizable};
-    // m_copy.setup(doublet_counter_buffer);
+    // Set up the doublet counter buffer.
+    device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
+        m_copy.get_size(sp_grid_prefix_sum_buff), m_mr.main,
+        vecmem::data::buffer_type::resizable};
+    m_copy.setup(doublet_counter_buffer);
 
-    // // Calculate the number of threads and thread blocks to run the doublet
-    // // counting kernel for.
-    // auto const blocksPerGrid = (sp_grid_prefix_sum_buff.size() + threadsPerBlock - 1) / threadsPerBlock;
-    // auto const elementsPerThread = 1u;
-    // auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    // std::cout << "Doublet counter buffer of size" << sp_grid_prefix_sum_buff.size() << std::endl;
+    // Calculate the number of threads and thread blocks to run the doublet
+    // counting kernel for.
+    auto const blocksPerGrid = (sp_grid_prefix_sum_buff.size() + threadsPerBlock - 1) / threadsPerBlock;
+    auto const elementsPerThread = 1u;
+    auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    std::cout << "Doublet counter buffer of size" << sp_grid_prefix_sum_buff.size() << std::endl;
 
-    // // Counter for the total number of doublets and triplets
-    // vecmem::unique_alloc_ptr<device::seeding_global_counter>
-    //     globalCounter_device =
-    //         vecmem::make_unique_alloc<device::seeding_global_counter>(
-    //             m_mr.main);
-    // // m_copy(globalCounter_device);
+    // Counter for the total number of doublets and triplets
+    vecmem::unique_alloc_ptr<device::seeding_global_counter>
+        globalCounter_device =
+            vecmem::make_unique_alloc<device::seeding_global_counter>(
+                m_mr.main);
+    auto globalCounter_device_ptr = globalCounter_device.get();
 
     // // Count the number of doublets that we need to produce.
     // ::alpaka::exec<Acc>(
