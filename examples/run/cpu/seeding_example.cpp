@@ -54,9 +54,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-    }
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
@@ -91,7 +88,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
-            sd_performance_writer.write("CPU", vecmem::get_data(seeds),
+            sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
                                         evt_map);
         }

@@ -59,10 +59,7 @@ class finding_performance_writer {
     /// Destructor
     ~finding_performance_writer();
 
-    void add_cache(std::string_view name);
-
-    void write(std::string_view name,
-               const track_candidate_container_types::const_view&
+    void write(const track_candidate_container_types::const_view&
                    track_candidates_view,
                const event_map2& evt_map);
 
