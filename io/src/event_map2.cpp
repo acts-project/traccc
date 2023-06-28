@@ -8,8 +8,6 @@
 // Local include(s).
 #include "traccc/io/event_map2.hpp"
 
-#include <iostream>
-
 #include "csv/make_hit_reader.hpp"
 #include "csv/make_measurement_hit_id_reader.hpp"
 #include "csv/make_measurement_reader.hpp"
