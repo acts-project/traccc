@@ -140,10 +140,11 @@ struct UpdateTripletWeightsKernel {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
         // TODO: Fix launch params of this, and data access (to get multiple elements).
+        // TODO: Shared memory size (dynamic? Static upper limit?)
 
         // Array for temporary storage of quality parameters for comparing triplets
         // within weight updating kernel
-        auto &data = ::alpaka::declareSharedVar<scalar[10], __COUNTER__>(acc);
+        auto &data = ::alpaka::declareSharedVar<scalar[32], __COUNTER__>(acc);
 
         // Each thread uses compatSeedLimit elements of the array
         scalar* dataPos = &data[globalThreadIdx];
@@ -170,18 +171,20 @@ struct SelectSeedsKernel {
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        // TODO: Fix use of shared.
+        // TODO: Fix launch params of this, and data access (to get multiple elements).
+        // TODO: Shared memory size (dynamic? Static upper limit?)
 
-        // // Array for temporary storage of triplets for comparing within seed
-        // // selecting kernel
-        // extern __shared__ triplet data2[];
-        // // Each thread uses max_triplets_per_spM elements of the array
-        // triplet* dataPos = &data2[threadIdx.x * filter_config.max_triplets_per_spM];
+        // Array for temporary storage of quality parameters for comparing triplets
+        // within weight updating kernel
+        auto &data2 = ::alpaka::declareSharedVar<triplet[32], __COUNTER__>(acc);
 
-        // device::select_seeds(threadIdx.x + blockIdx.x * blockDim.x, filter_config,
-        //                      spacepoints_view, internal_sp_view, dc_ps_view,
-        //                      doublet_counter_container, tc_view, dataPos,
-        //                      seed_view);
+        // Each thread uses compatSeedLimit elements of the array
+        triplet* dataPos = &data2[globalThreadIdx];
+
+        device::select_seeds(globalThreadIdx, filter_config,
+                             spacepoints_view, internal_sp_view,
+                             spM_tc, midBot_tc, triplet_view, dataPos,
+                             seed_view);
     }
 
 };
