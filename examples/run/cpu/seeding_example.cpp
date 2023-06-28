@@ -109,7 +109,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ------------*/
 
         if (i_cfg.check_performance) {
-
             if (i_cfg.run_detray_geometry == false) {
 
                 traccc::event_map evt_map(event, i_cfg.detector_file,
