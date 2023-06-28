@@ -14,6 +14,7 @@
 #include "traccc/efficiency/track_filter.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
@@ -21,6 +22,11 @@
 #include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+
+// Detray include(s).
+#include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/io/json/json_reader.hpp"
+#include "detray/io/json/json_writer.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -41,8 +47,32 @@ namespace po = boost::program_options;
 int seq_run(const traccc::seeding_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
+    // Memory resources used by the application.
+    vecmem::host_memory_resource host_mr;
+    vecmem::cuda::host_memory_resource cuda_host_mr;
+    vecmem::cuda::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &cuda_host_mr};
+
+    // Declare detector type
+    using detector_t =
+        detray::detector<detray::detector_registry::toy_detector>;
+    detector_t det{host_mr};
+
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    traccc::geometry surface_transforms;
+    if (i_cfg.run_detray_geometry == false) {
+        surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    } else if (i_cfg.run_detray_geometry == true) {
+
+        // Read the detector
+        detray::json_geometry_reader<detector_t> geo_reader;
+        typename detector_t::name_map volume_name_map = {{0u, "detector"}};
+
+        geo_reader.read(det, volume_name_map,
+                        traccc::io::data_directory() + i_cfg.detector_file);
+
+        surface_transforms = traccc::io::alt_read_geometry(det);
+    }
 
     // Output stats
     uint64_t n_modules = 0;
@@ -54,12 +84,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::seedfinder_config finder_config;
     traccc::spacepoint_grid_config grid_config(finder_config);
     traccc::seedfilter_config filter_config;
-
-    // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
-    vecmem::cuda::host_memory_resource cuda_host_mr;
-    vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
                                  host_mr);
@@ -213,24 +237,39 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ------------*/
 
         if (i_cfg.check_performance) {
-            traccc::event_map evt_map(event, i_cfg.detector_file,
-                                      common_opts.input_directory,
-                                      common_opts.input_directory, host_mr);
+            if (i_cfg.run_detray_geometry == false) {
 
-            std::vector<traccc::nseed<3>> nseeds;
+                traccc::event_map evt_map(event, i_cfg.detector_file,
+                                          common_opts.input_directory,
+                                          common_opts.input_directory, host_mr);
 
-            std::transform(
-                seeds_cuda.cbegin(), seeds_cuda.cend(),
-                std::back_inserter(nseeds),
-                [](const traccc::seed& s) { return traccc::nseed<3>(s); });
+                std::vector<traccc::nseed<3>> nseeds;
 
-            nsd_performance_writer.register_event(
-                event, nseeds.begin(), nseeds.end(),
-                reader_output.spacepoints.begin(), evt_map);
+                std::transform(
+                    seeds_cuda.cbegin(), seeds_cuda.cend(),
+                    std::back_inserter(nseeds),
+                    [](const traccc::seed& s) { return traccc::nseed<3>(s); });
 
-            sd_performance_writer.write(
-                vecmem::get_data(seeds_cuda),
-                vecmem::get_data(reader_output.spacepoints), evt_map);
+                nsd_performance_writer.register_event(
+                    event, nseeds.begin(), nseeds.end(),
+                    reader_output.spacepoints.begin(), evt_map);
+
+                sd_performance_writer.write(
+                    vecmem::get_data(seeds_cuda),
+                    vecmem::get_data(reader_output.spacepoints), evt_map);
+
+            }
+
+            else if (i_cfg.run_detray_geometry == true) {
+
+                traccc::event_map2 evt_map(event, common_opts.input_directory,
+                                           common_opts.input_directory,
+                                           common_opts.input_directory);
+                sd_performance_writer.write(
+                    vecmem::get_data(seeds_cuda),
+                    vecmem::get_data(reader_output.spacepoints),
+                    reader_output.modules, evt_map);
+            }
         }
     }
 
