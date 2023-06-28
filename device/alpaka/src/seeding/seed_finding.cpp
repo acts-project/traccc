@@ -139,17 +139,18 @@ struct UpdateTripletWeightsKernel {
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        // TODO: Fix use of shared.
+        // TODO: Fix launch params of this, and data access (to get multiple elements).
 
-        // // Array for temporary storage of quality parameters for comparing triplets
-        // // within weight updating kernel
-        // extern __shared__ scalar data[];
-        // // Each thread uses compatSeedLimit elements of the array
-        // scalar* dataPos = &data[threadIdx.x * filter_config.compatSeedLimit];
+        // Array for temporary storage of quality parameters for comparing triplets
+        // within weight updating kernel
+        auto &data = ::alpaka::declareSharedVar<scalar[10], __COUNTER__>(acc);
 
-        // device::update_triplet_weights(threadIdx.x + blockIdx.x * blockDim.x,
-        //                                filter_config, sp_grid, triplet_prefix_sum,
-        //                                dataPos, triplet_view);
+        // Each thread uses compatSeedLimit elements of the array
+        scalar* dataPos = &data[globalThreadIdx];
+
+        device::update_triplet_weights(globalThreadIdx, filter_config,
+                                       sp_grid, spM_tc, midBot_tc,
+                                       dataPos, triplet_view);
     }
 };
 
@@ -386,6 +387,9 @@ seed_finding::output_type seed_finding::operator()(
     elementsPerThread = 1u;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     std::cout << "Triplet weight update buffer of size" << globalCounter_host->m_nTriplets << std::endl;
+
+    // Array for temporary storage of quality parameters for comparing triplets
+    // within weight updating kernel
 
     // Update the weights of all spacepoint triplets.
     ::alpaka::exec<Acc>(
