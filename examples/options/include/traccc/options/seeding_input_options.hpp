@@ -14,7 +14,6 @@ namespace po = boost::program_options;
 
 struct seeding_input_config {
     std::string detector_file;
-    bool check_performance;
 
     seeding_input_config(po::options_description& desc);
     void read(const po::variables_map& vm);
