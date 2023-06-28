@@ -16,7 +16,6 @@
 #include "traccc/edm/device/device_doublet.hpp"
 #include "traccc/edm/device/device_triplet.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
-#include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/edm/device/seeding_global_counter.hpp"
 #include "traccc/edm/device/triplet_counter.hpp"
 #include "traccc/seeding/device/count_doublets.hpp"
@@ -332,7 +331,7 @@ seed_finding::output_type seed_finding::operator()(
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
     elementsPerThread = 1u;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Triplet finder buffer of size" << doublet_counter_buffer_size << std::endl;
+    std::cout << "Triplet reduction buffer of size" << doublet_counter_buffer_size << std::endl;
 
     // Reduce the triplet counts per spM.
     ::alpaka::exec<Acc>(
@@ -350,63 +349,84 @@ seed_finding::output_type seed_finding::operator()(
     //                                  sizeof(device::seeding_global_counter),
     //                                  cudaMemcpyDeviceToHost, stream));
 
-    // Find all of the spacepoint triplets.
-    // kernels::find_triplets<<<nTripletFindBlocks, nTripletFindThreads>>>(
-    //     m_seedfinder_config, m_seedfilter_config, g2_view,
-    //     doublet_buffers.middleTop, triplet_counter_buffer,
-    //     triplet_counter_prefix_sum_buff, triplet_buffer);
+    if (globalCounter_host->m_nTriplets == 0) {
+        return {0, m_mr.main};
+    }
 
-    // // Create prefix sum buffer
-    // vecmem::data::vector_buffer triplet_prefix_sum_buff = make_prefix_sum_buff(
-    //     m_copy->get_sizes(triplet_buffer.items), *m_copy, m_mr);
+    // Set up the triplet buffer.
+    device::device_triplet_collection_types::buffer triplet_buffer = {
+        globalCounter_host->m_nTriplets, m_mr.main};
+    m_copy.setup(triplet_buffer);
+
+    // Calculate the number of threads and thread blocks to run the triplet
+    // finding kernel for.
+    blocksPerGrid = (m_copy.get_size(triplet_counter_midBot_buffer) + threadsPerBlock - 1) / threadsPerBlock;
+    elementsPerThread = 1u;
+    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    std::cout << "Triplet reduction buffer of size" << m_copy.get_size(triplet_counter_midBot_buffer) << std::endl;
+
+    // Find all of the spacepoint triplets.
+    ::alpaka::exec<Acc>(
+            queue, workDiv,
+            FindTripletsKernel{},
+            m_seedfinder_config,
+            m_seedfilter_config,
+            g2_view,
+            vecmem::get_data(doublet_counter_buffer),
+            vecmem::get_data(doublet_buffer_mt),
+            vecmem::get_data(triplet_counter_spM_buffer),
+            vecmem::get_data(triplet_counter_midBot_buffer),
+            vecmem::get_data(triplet_buffer)
+    );
+    ::alpaka::wait(queue);
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    // const unsigned int nWeightUpdatingThreads = WARP_SIZE * 2;
-    // const unsigned int nWeightUpdatingBlocks =
-    //     (triplet_prefix_sum_buff.size() + nWeightUpdatingThreads - 1) /
-    //     nWeightUpdatingThreads;
+    blocksPerGrid = (globalCounter_host->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
+    elementsPerThread = 1u;
+    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    std::cout << "Triplet weight update buffer of size" << globalCounter_host->m_nTriplets << std::endl;
 
     // Update the weights of all spacepoint triplets.
-    // kernels::update_triplet_weights<<<
-    //     nWeightUpdatingBlocks, nWeightUpdatingThreads,
-    //     sizeof(scalar) * m_seedfilter_config.compatSeedLimit *
-    //         nWeightUpdatingThreads>>>(m_seedfilter_config, g2_view,
-    //                                   triplet_prefix_sum_buff, triplet_buffer);
+    ::alpaka::exec<Acc>(
+            queue, workDiv,
+            UpdateTripletWeightsKernel{},
+            m_seedfilter_config,
+            g2_view,
+            vecmem::get_data(triplet_counter_spM_buffer),
+            vecmem::get_data(triplet_counter_midBot_buffer),
+            vecmem::get_data(triplet_buffer)
+    );
+    ::alpaka::wait(queue);
 
-    // // Take header of the triplet counter container buffer into host
-    // vecmem::vector<device::triplet_counter_header> tcc_headers(
-    //     m_mr.host ? m_mr.host : &(m_mr.main));
-    // (*m_copy)(triplet_counter_buffer.headers, tcc_headers);
-
-    // Get the number of seeds (triplets)
-    // unsigned int n_triplets = 0;
-    // for (const auto& h : tcc_headers) {
-    //     n_triplets += h.m_nTriplets;
-    // }
-
-    // seed_collection_types::buffer seed_buffer(
-    //     globalCounter_host.m_nTriplets, m_mr.main,
-    //     vecmem::data::buffer_type::resizable);
-    // m_copy.setup(seed_buffer);
+    // Create result object: collection of seeds
+    seed_collection_types::buffer seed_buffer(
+        globalCounter_host->m_nTriplets, m_mr.main,
+        vecmem::data::buffer_type::resizable);
+    m_copy.setup(seed_buffer);
 
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.
-    // const unsigned int nSeedSelectingThreads = WARP_SIZE * 2;
-    // const unsigned int nSeedSelectingBlocks =
-    //     (doublet_prefix_sum_buff.size() + nSeedSelectingThreads - 1) /
-    //     nSeedSelectingThreads;
+    blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
+    elementsPerThread = 1u;
+    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    std::cout << "Select seeds buffer of size" << doublet_counter_buffer_size << std::endl;
 
     // Create seeds out of selected triplets
-    // kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads,
-    //                         sizeof(triplet) *
-    //                             m_seedfilter_config.max_triplets_per_spM *
-    //                             nSeedSelectingThreads>>>(
-    //     m_seedfilter_config, spacepoints_view, g2_view, doublet_prefix_sum_buff,
-    //     doublet_counter_buffer, triplet_buffer, seed_buffer);
+    ::alpaka::exec<Acc>(
+            queue, workDiv,
+            SelectSeedsKernel{},
+            m_seedfilter_config,
+            spacepoints_view,
+            g2_view,
+            vecmem::get_data(triplet_counter_spM_buffer),
+            vecmem::get_data(triplet_counter_midBot_buffer),
+            vecmem::get_data(triplet_buffer),
+            vecmem::get_data(seed_buffer)
+    );
+    ::alpaka::wait(queue);
 
-    // return seed_buffer;
-    return seed_collection_types::buffer();
+    return seed_buffer;
 }
 
 }  // namespace traccc::alpaka
