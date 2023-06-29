@@ -139,15 +139,14 @@ struct UpdateTripletWeightsKernel {
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        // TODO: Fix launch params of this, and data access (to get multiple elements).
-        // TODO: Shared memory size (dynamic? Static upper limit?)
-
         // Array for temporary storage of quality parameters for comparing triplets
         // within weight updating kernel
-        auto &data = ::alpaka::declareSharedVar<scalar[32], __COUNTER__>(acc);
+        // TODO: In the CUDA version, this is set based on warp size.
+        static const auto dataSize = filter_config.compatSeedLimit * 32 * 2;
+        auto &data = ::alpaka::declareSharedVar<scalar[dataSize], __COUNTER__>(acc);
 
         // Each thread uses compatSeedLimit elements of the array
-        scalar* dataPos = &data[globalThreadIdx];
+        scalar* dataPos = &data[(globalThreadIdx % (32 * 2)) * filter_config.compatSeedLimit];
 
         device::update_triplet_weights(globalThreadIdx, filter_config,
                                        sp_grid, spM_tc, midBot_tc,
@@ -171,15 +170,14 @@ struct SelectSeedsKernel {
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        // TODO: Fix launch params of this, and data access (to get multiple elements).
-        // TODO: Shared memory size (dynamic? Static upper limit?)
-
         // Array for temporary storage of quality parameters for comparing triplets
         // within weight updating kernel
-        auto &data2 = ::alpaka::declareSharedVar<triplet[32], __COUNTER__>(acc);
+        // TODO: In the CUDA version, this is set based on warp size.
+        static const auto dataSize = filter_config.max_triplets_per_spM * 32 * 2;
+        auto &data2 = ::alpaka::declareSharedVar<triplet[dataSize], __COUNTER__>(acc);
 
         // Each thread uses compatSeedLimit elements of the array
-        triplet* dataPos = &data2[globalThreadIdx];
+        triplet* dataPos = &data2[(globalThreadIdx % (32 * 2)) * filter_config.max_triplets_per_spM];
 
         device::select_seeds(globalThreadIdx, filter_config,
                              spacepoints_view, internal_sp_view,
@@ -252,8 +250,8 @@ seed_finding::output_type seed_finding::operator()(
             g2_view,
             vecmem::get_data(sp_grid_prefix_sum_buff),
             vecmem::get_data(doublet_counter_buffer),
-            (*globalCounter_device).m_nMidBot,
-            (*globalCounter_device).m_nMidTop
+            (*globalCounter_device_ptr).m_nMidBot,
+            (*globalCounter_device_ptr).m_nMidTop
     );
     ::alpaka::wait(queue);
 
@@ -282,7 +280,6 @@ seed_finding::output_type seed_finding::operator()(
     const unsigned int doublet_counter_buffer_size =
         m_copy.get_size(doublet_counter_buffer);
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
-    elementsPerThread = 1u;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     std::cout << "Doublet finder buffer of size" << doublet_counter_buffer_size << std::endl;
 
@@ -312,7 +309,6 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the triplet
     // counting kernel for.
     blocksPerGrid = (globalCounter_host->m_nMidBot + threadsPerBlock - 1) / threadsPerBlock;
-    elementsPerThread = 1u;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     std::cout << "Triplet counter buffer of size" << globalCounter_host->m_nMidBot << std::endl;
 
@@ -333,7 +329,6 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the triplet
     // count reduction kernel for.
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
-    elementsPerThread = 1u;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     std::cout << "Triplet reduction buffer of size" << doublet_counter_buffer_size << std::endl;
 
@@ -365,7 +360,6 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
     blocksPerGrid = (m_copy.get_size(triplet_counter_midBot_buffer) + threadsPerBlock - 1) / threadsPerBlock;
-    elementsPerThread = 1u;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     std::cout << "Triplet reduction buffer of size" << m_copy.get_size(triplet_counter_midBot_buffer) << std::endl;
 
@@ -387,7 +381,7 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
     blocksPerGrid = (globalCounter_host->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
-    elementsPerThread = 1u;
+    elementsPerThread = 32 * 2;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     std::cout << "Triplet weight update buffer of size" << globalCounter_host->m_nTriplets << std::endl;
 
@@ -415,7 +409,6 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
-    elementsPerThread = 1u;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     std::cout << "Select seeds buffer of size" << doublet_counter_buffer_size << std::endl;
 
