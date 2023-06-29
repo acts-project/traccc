@@ -9,7 +9,7 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/alpaka/seeding/spacepoint_binning.hpp"
+#include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
@@ -63,8 +63,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     vecmem::cuda::copy copy;
 
     // Alpaka Spacepoint Binning
-    traccc::alpaka::spacepoint_binning m_spacepoint_binning(finder_config,
-                                                            grid_config, mr, copy);
+    traccc::alpaka::seeding_algorithm sa_alpaka{
+        finder_config, grid_config, filter_config, mr, copy};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -84,6 +84,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
+        // Instantiate alpaka containers/collections
+        traccc::seed_collection_types::buffer seeds_alpaka_buffer(0, *(mr.host));
+
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
 
@@ -99,26 +102,26 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                     surface_transforms, common_opts.input_data_format);
             }  // stop measuring hit reading timer
 
-            traccc::spacepoint_collection_types::host& spacepoints_per_event =
-                reader_output.spacepoints;
-
-
-            // Copy the spacepoint data to the device.
-            traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
-                spacepoints_per_event.size(), mr.main);
-            copy(vecmem::get_data(spacepoints_per_event),
-                 spacepoints_cuda_buffer);
-
-            {  // Spacepoint binning for alpaka
-                traccc::performance::timer t("Spacepoint binning (alpaka)",
-                                             elapsedTimes);
-                m_spacepoint_binning(
-                    vecmem::get_data(spacepoints_cuda_buffer));
-            }
+            auto& spacepoints_per_event = reader_output.spacepoints;
 
             /*----------------------------
                 Seeding algorithm
             ----------------------------*/
+
+            /// Alpaka
+
+            // Copy the spacepoint data to the device.
+            traccc::spacepoint_collection_types::buffer spacepoints_alpaka_buffer(
+                spacepoints_per_event.size(), mr.main);
+            copy(vecmem::get_data(spacepoints_per_event),
+                 spacepoints_alpaka_buffer);
+
+            {
+                traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
+                // Reconstruct the spacepoints into seeds.
+                seeds_alpaka_buffer = sa_alpaka(
+                    vecmem::get_data(spacepoints_alpaka_buffer));
+            }
 
             // CPU
 
