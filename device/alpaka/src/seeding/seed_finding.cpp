@@ -34,7 +34,6 @@
 #include <vector>
 
 namespace traccc::alpaka {
-// namespace kernels {
 
 /// Kernel for running @c traccc::device::count_doublets
 struct CountDoubletsKernel {
@@ -45,11 +44,11 @@ struct CountDoubletsKernel {
         sp_grid_const_view sp_grid,
         vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
         device::doublet_counter_collection_types::view doublet_counter,
-        unsigned int& nMidBot, unsigned int& nMidTop
+        device::seeding_global_counter* counter
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::count_doublets(globalThreadIdx, config, sp_grid, sp_prefix_sum, doublet_counter, nMidBot, nMidTop);
+        device::count_doublets(globalThreadIdx, config, sp_grid, sp_prefix_sum, doublet_counter, counter->m_nMidBot, counter->m_nMidTop);
     }
 };
 
@@ -96,11 +95,11 @@ struct ReduceTripletCounts {
         Acc const& acc,
         device::doublet_counter_collection_types::const_view doublet_counter,
         device::triplet_counter_spM_collection_types::view spM_counter,
-        unsigned int& num_triplets
+        device::seeding_global_counter* counter
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::reduce_triplet_counts(globalThreadIdx, doublet_counter, spM_counter, num_triplets);
+        device::reduce_triplet_counts(globalThreadIdx, doublet_counter, spM_counter, counter->m_nTriplets);
     }
 };
 
@@ -201,6 +200,7 @@ seed_finding::output_type seed_finding::operator()(
     const sp_grid_const_view& g2_view) const {
 
     // Setup alpaka
+    auto devHost = ::alpaka::getDevByIdx<Host>(0u);
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
@@ -233,14 +233,16 @@ seed_finding::output_type seed_finding::operator()(
     auto blocksPerGrid = (sp_grid_prefix_sum_buff.size() + threadsPerBlock - 1) / threadsPerBlock;
     auto elementsPerThread = 1u;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Doublet counter buffer of size" << sp_grid_prefix_sum_buff.size() << std::endl;
 
     // Counter for the total number of doublets and triplets
-    vecmem::unique_alloc_ptr<device::seeding_global_counter>
-        globalCounter_device =
-            vecmem::make_unique_alloc<device::seeding_global_counter>(
-                m_mr.main);
-    auto globalCounter_device_ptr = globalCounter_device.get();
+    // TODO: Is this really the best way? Surely I'm missing something.
+    auto bufHost_counter = ::alpaka::allocBuf<device::seeding_global_counter, Idx>(devHost, 1u);
+    device::seeding_global_counter* const pBufHost_counter(::alpaka::getPtrNative(bufHost_counter));
+    pBufHost_counter->m_nMidBot = 0;
+    pBufHost_counter->m_nMidTop = 0;
+    pBufHost_counter->m_nTriplets = 0;
+    auto bufAcc_counter = ::alpaka::allocBuf<device::seeding_global_counter, Idx>(devAcc, 1u);
+    ::alpaka::memcpy(queue, bufAcc_counter, bufHost_counter);
 
     // Count the number of doublets that we need to produce.
     ::alpaka::exec<Acc>(
@@ -250,29 +252,24 @@ seed_finding::output_type seed_finding::operator()(
             g2_view,
             vecmem::get_data(sp_grid_prefix_sum_buff),
             vecmem::get_data(doublet_counter_buffer),
-            (*globalCounter_device_ptr).m_nMidBot,
-            (*globalCounter_device_ptr).m_nMidTop
+            ::alpaka::getPtrNative(bufAcc_counter)
     );
     ::alpaka::wait(queue);
 
     // Get the summary values per bin.
-    // TODO: Copy to device.
-    vecmem::unique_alloc_ptr<device::seeding_global_counter>
-        globalCounter_host =
-            vecmem::make_unique_alloc<device::seeding_global_counter>(
-                (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
+    ::alpaka::memcpy(queue, bufHost_counter, bufAcc_counter);
 
-    if (globalCounter_host->m_nMidBot == 0 ||
-        globalCounter_host->m_nMidTop == 0) {
+    if (pBufHost_counter->m_nMidBot == 0 ||
+        pBufHost_counter->m_nMidTop == 0) {
         return {0, m_mr.main};
     }
 
     // Set up the doublet counter buffers.
     device::device_doublet_collection_types::buffer doublet_buffer_mb = {
-        globalCounter_host->m_nMidBot, m_mr.main};
+        pBufHost_counter->m_nMidBot, m_mr.main};
     m_copy.setup(doublet_buffer_mb);
     device::device_doublet_collection_types::buffer doublet_buffer_mt = {
-        globalCounter_host->m_nMidTop, m_mr.main};
+        pBufHost_counter->m_nMidTop, m_mr.main};
     m_copy.setup(doublet_buffer_mt);
 
     // Calculate the number of threads and thread blocks to run the doublet
@@ -281,7 +278,6 @@ seed_finding::output_type seed_finding::operator()(
         m_copy.get_size(doublet_counter_buffer);
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Doublet finder buffer of size" << doublet_counter_buffer_size << std::endl;
 
     // Find all of the spacepoint doublets.
     ::alpaka::exec<Acc>(
@@ -301,16 +297,15 @@ seed_finding::output_type seed_finding::operator()(
     m_copy.setup(triplet_counter_spM_buffer);
     m_copy.memset(triplet_counter_spM_buffer, 0);
     device::triplet_counter_collection_types::buffer
-        triplet_counter_midBot_buffer = {globalCounter_host->m_nMidBot,
+        triplet_counter_midBot_buffer = {pBufHost_counter->m_nMidBot,
                                          m_mr.main,
                                          vecmem::data::buffer_type::resizable};
     m_copy.setup(triplet_counter_midBot_buffer);
 
     // Calculate the number of threads and thread blocks to run the triplet
     // counting kernel for.
-    blocksPerGrid = (globalCounter_host->m_nMidBot + threadsPerBlock - 1) / threadsPerBlock;
+    blocksPerGrid = (pBufHost_counter->m_nMidBot + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Triplet counter buffer of size" << globalCounter_host->m_nMidBot << std::endl;
 
     // Count the number of triplets that we need to produce.
     ::alpaka::exec<Acc>(
@@ -330,7 +325,6 @@ seed_finding::output_type seed_finding::operator()(
     // count reduction kernel for.
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Triplet reduction buffer of size" << doublet_counter_buffer_size << std::endl;
 
     // Reduce the triplet counts per spM.
     ::alpaka::exec<Acc>(
@@ -338,30 +332,25 @@ seed_finding::output_type seed_finding::operator()(
             ReduceTripletCounts{},
             vecmem::get_data(doublet_counter_buffer),
             vecmem::get_data(triplet_counter_spM_buffer),
-            (*globalCounter_device).m_nTriplets
+            ::alpaka::getPtrNative(bufAcc_counter)
     );
     ::alpaka::wait(queue);
 
-    // TODO: Copy globalCounter_host / globalCounter_device again.
-    // CUDA_ERROR_CHECK(cudaMemcpyAsync(globalCounter_host.get(),
-    //                                  globalCounter_device.get(),
-    //                                  sizeof(device::seeding_global_counter),
-    //                                  cudaMemcpyDeviceToHost, stream));
+    ::alpaka::memcpy(queue, bufHost_counter, bufAcc_counter);
 
-    if (globalCounter_host->m_nTriplets == 0) {
+    if (pBufHost_counter->m_nTriplets == 0) {
         return {0, m_mr.main};
     }
 
     // Set up the triplet buffer.
     device::device_triplet_collection_types::buffer triplet_buffer = {
-        globalCounter_host->m_nTriplets, m_mr.main};
+        pBufHost_counter->m_nTriplets, m_mr.main};
     m_copy.setup(triplet_buffer);
 
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
     blocksPerGrid = (m_copy.get_size(triplet_counter_midBot_buffer) + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Triplet reduction buffer of size" << m_copy.get_size(triplet_counter_midBot_buffer) << std::endl;
 
     // Find all of the spacepoint triplets.
     ::alpaka::exec<Acc>(
@@ -380,10 +369,9 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    blocksPerGrid = (globalCounter_host->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
+    blocksPerGrid = (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
     elementsPerThread = 32 * 2;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Triplet weight update buffer of size" << globalCounter_host->m_nTriplets << std::endl;
 
     // Array for temporary storage of quality parameters for comparing triplets
     // within weight updating kernel
@@ -402,7 +390,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Create result object: collection of seeds
     seed_collection_types::buffer seed_buffer(
-        globalCounter_host->m_nTriplets, m_mr.main,
+        pBufHost_counter->m_nTriplets, m_mr.main,
         vecmem::data::buffer_type::resizable);
     m_copy.setup(seed_buffer);
 
@@ -410,7 +398,6 @@ seed_finding::output_type seed_finding::operator()(
     // selecting kernel for.
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    std::cout << "Select seeds buffer of size" << doublet_counter_buffer_size << std::endl;
 
     // Create seeds out of selected triplets
     ::alpaka::exec<Acc>(
