@@ -144,6 +144,37 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
+
+        /*----------------------------------
+          compare seeds from cpu and cuda
+          ----------------------------------*/
+
+        // Copy the seeds to the host for comparisons
+        traccc::seed_collection_types::host seeds_alpaka;
+        copy(seeds_alpaka_buffer, seeds_alpaka)->wait();
+
+        if (run_cpu) {
+            // Show which event we are currently presenting the results for.
+            std::cout << "===>>> Event " << event << " <<<===" << std::endl;
+
+            // Compare the seeds made on the host and on the device
+            traccc::collection_comparator<traccc::seed> compare_seeds{
+                "seeds", traccc::details::comparator_factory<traccc::seed>{
+                             vecmem::get_data(reader_output.spacepoints),
+                             vecmem::get_data(reader_output.spacepoints)}};
+            compare_seeds(vecmem::get_data(seeds),
+                          vecmem::get_data(seeds_alpaka));
+        }
+
+        /*----------------
+             Statistics
+          ---------------*/
+
+        n_spacepoints += reader_output.spacepoints.size();
+        n_modules += reader_output.modules.size();
+        n_seeds_alpaka += seeds_alpaka.size();
+        n_seeds += seeds.size();
+
     }
 
     if (i_cfg.check_performance) {
