@@ -25,23 +25,27 @@ namespace traccc::alpaka {
 struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const spacepoint_collection_types::const_view&,
-          const seed_collection_types::const_view&)> {
+          const seed_collection_types::const_view&, const vector3&)> {
 
     public:
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
     track_params_estimation(const traccc::memory_resource& mr, vecmem::copy& copy);
 
-    /// Callable operator for track_params_esitmation
+    /// Callable operator for track_params_estimation
     ///
-    /// @param spaepoints_view   is the view of the spacepoint collection
+    /// @param spacepoints_view   is the view of the spacepoint collection
     /// @param seeds_view        is the view of the seed collection
+    /// @param bfield            the current b-field
     /// @return                  vector of bound track parameters
     ///
     output_type operator()(
         const spacepoint_collection_types::const_view& spacepoints_view,
-        const seed_collection_types::const_view& seeds_view) const override;
+        const seed_collection_types::const_view& seeds_view,
+        const vector3& bfield) const override;
 
     private:
     /// Memory resource used by the algorithm

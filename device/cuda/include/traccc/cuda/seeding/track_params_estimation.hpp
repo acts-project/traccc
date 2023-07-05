@@ -41,10 +41,11 @@ struct track_params_estimation
     track_params_estimation(const traccc::memory_resource& mr,
                             vecmem::copy& copy, stream& str);
 
-    /// Callable operator for track_params_esitmation
+    /// Callable operator for track_params_estimation
     ///
-    /// @param spaepoints_view   is the view of the spacepoint collection
+    /// @param spacepoints_view   is the view of the spacepoint collection
     /// @param seeds_view        is the view of the seed collection
+    /// @param bfield            the current b-field
     /// @return                  vector of bound track parameters
     ///
     output_type operator()(

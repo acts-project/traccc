@@ -217,7 +217,6 @@ seed_finding::output_type seed_finding::operator()(
         );
 
     const auto num_spacepoints = m_copy.get_size(sp_grid_prefix_sum_buff);
-
     if (num_spacepoints == 0) {
         return {0, m_mr.main};
     }
