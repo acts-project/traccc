@@ -6,10 +6,14 @@
  */
 
 // Project include(s).
+#include "traccc/alpaka/seeding/seeding_algorithm.hpp"
+#include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/definitions/common.hpp"
+#include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/efficiency/track_filter.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
@@ -19,18 +23,19 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
+
+// ACTS include(s).
+#include <Acts/Definitions/Units.hpp>
 
 // System include(s).
 #include <chrono>
 #include <exception>
 #include <iomanip>
 #include <iostream>
-
-// Alpaka
-#include <alpaka/alpaka.hpp>
 
 namespace po = boost::program_options;
 
@@ -65,13 +70,22 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // Alpaka Spacepoint Binning
     traccc::alpaka::seeding_algorithm sa_alpaka{
         finder_config, grid_config, filter_config, mr, copy};
+    traccc::alpaka::track_params_estimation tp_alpaka{mr, copy};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
+
+    traccc::nseed_performance_writer nsd_performance_writer(
+        "nseed_performance_",
+        std::make_unique<traccc::simple_charged_eta_pt_cut>(
+            2.7f, 1.f * traccc::unit<traccc::scalar>::GeV),
+        std::make_unique<traccc::stepped_percentage>(0.6f));
+
     if (i_cfg.check_performance) {
         sd_performance_writer.add_cache("CPU");
         sd_performance_writer.add_cache("ALPAKA");
+        nsd_performance_writer.initialize();
     }
 
     traccc::performance::timing_info elapsedTimes;
@@ -86,6 +100,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Instantiate alpaka containers/collections
         traccc::seed_collection_types::buffer seeds_alpaka_buffer(0, *(mr.host));
+        traccc::bound_track_parameters_collection_types::buffer
+            params_alpaka_buffer(0, *mr.host);
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -108,7 +124,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 Seeding algorithm
             ----------------------------*/
 
-            /// Alpaka
+            // Alpaka
 
             // Copy the spacepoint data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_alpaka_buffer(
@@ -134,6 +150,15 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             Track params estimation
             ----------------------------*/
 
+            // Alpaka
+
+            {
+                traccc::performance::timer t("Track params (alpaka)",
+                                             elapsedTimes);
+                params_alpaka_buffer =
+                    tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
+                            {0.f, 0.f, finder_config.bFieldInZ});
+            }  // stop measuring track params alpaka timer
             // CPU
 
             if (run_cpu) {
@@ -151,7 +176,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         // Copy the seeds to the host for comparisons
         traccc::seed_collection_types::host seeds_alpaka;
-        copy(seeds_alpaka_buffer, seeds_alpaka)->wait();
+        traccc::bound_track_parameters_collection_types::host params_alpaka;
+        copy(seeds_alpaka_buffer, seeds_alpaka);
+        copy(params_alpaka_buffer, params_alpaka);
 
         if (run_cpu) {
             // Show which event we are currently presenting the results for.
@@ -164,6 +191,12 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                              vecmem::get_data(reader_output.spacepoints)}};
             compare_seeds(vecmem::get_data(seeds),
                           vecmem::get_data(seeds_alpaka));
+
+            // Compare the track parameters made on the host and on the device.
+            traccc::collection_comparator<traccc::bound_track_parameters>
+                compare_track_parameters{"track parameters"};
+            compare_track_parameters(vecmem::get_data(params),
+                                     vecmem::get_data(params_alpaka));
         }
 
         /*----------------
@@ -175,18 +208,49 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         n_seeds_alpaka += seeds_alpaka.size();
         n_seeds += seeds.size();
 
+        /*------------
+          Writer
+          ------------*/
+
+        if (i_cfg.check_performance) {
+            traccc::event_map evt_map(event, i_cfg.detector_file,
+                                      common_opts.input_directory,
+                                      common_opts.input_directory, host_mr);
+
+            std::vector<traccc::nseed<3>> nseeds;
+
+            std::transform(
+                seeds_alpaka.cbegin(), seeds_alpaka.cend(),
+                std::back_inserter(nseeds),
+                [](const traccc::seed& s) { return traccc::nseed<3>(s); });
+
+            nsd_performance_writer.register_event(
+                event, nseeds.begin(), nseeds.end(),
+                reader_output.spacepoints.begin(), evt_map);
+
+            sd_performance_writer.write(
+                "ALPAKA", vecmem::get_data(seeds_alpaka),
+                vecmem::get_data(reader_output.spacepoints), evt_map);
+            if (run_cpu) {
+                sd_performance_writer.write(
+                    "CPU", vecmem::get_data(seeds),
+                    vecmem::get_data(reader_output.spacepoints), evt_map);
+            }
+        }
     }
 
     if (i_cfg.check_performance) {
         sd_performance_writer.finalize();
+        nsd_performance_writer.finalize();
+
+        std::cout << nsd_performance_writer.generate_report_str();
     }
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
-    std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
-    std::cout << "- created (alpaka) " << n_seeds_alpaka << " seeds"
-              << std::endl;
+    std::cout << "- created  (cpu)  " << n_seeds << " seeds" << std::endl;
+    std::cout << "- created (alpaka)  " << n_seeds_alpaka << " seeds" << std::endl;
     std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;
@@ -220,7 +284,5 @@ int main(int argc, char* argv[]) {
               << " " << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    int ret = seq_run(seeding_input_cfg, common_opts, run_cpu);
-
-    return ret;
+    return seq_run(seeding_input_cfg, common_opts, run_cpu);
 }
