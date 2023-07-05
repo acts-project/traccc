@@ -93,8 +93,6 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {
 
     // Setup alpaka
-    using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
-    using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
     auto queue = Queue{devAcc};
 
