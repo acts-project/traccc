@@ -40,7 +40,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     const vector3& bfield) const {
 
     // Get the size of the seeds view
-    const std::size_t seeds_size = m_copy.get_size(seeds_view);
+    auto seeds_size = m_copy.get_size(seeds_view);
 
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
@@ -52,18 +52,27 @@ track_params_estimation::output_type track_params_estimation::operator()(
         return params_buffer;
     }
 
-    // -- Num threads
-    // // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    // unsigned int num_threads = WARP_SIZE * 2;
+    auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
+    auto queue = Queue{devAcc};
+    auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
+    auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
+    auto const threadsPerBlock = maxThreadsPerBlock;
 
-    // -- Num blocks
-    // The dimension of grid is (number_of_seeds + num_threads - 1) /
-    // num_threads + 1
-    // unsigned int num_blocks = (seeds_size + num_threads - 1) / num_threads;
+    auto blocksPerGrid = (seeds_size + threadsPerBlock - 1) / threadsPerBlock;
+    auto elementsPerThread = 1u;
+    auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
 
     // run the kernel
-    // kernels::estimate_track_params<<<num_blocks, num_threads>>>(
-    //     spacepoints_view, seeds_view, params_buffer);
+    ::alpaka::exec<Acc>(
+        queue, workDiv,
+        EstimateTrackParamsKernel{},
+        spacepoints_view,
+        seeds_view,
+        bfield,
+        vecmem::get_data(params_buffer)
+    );
+    ::alpaka::wait(queue);
+
 
     return params_buffer;
 }

@@ -245,13 +245,13 @@ seed_finding::output_type seed_finding::operator()(
 
     // Count the number of doublets that we need to produce.
     ::alpaka::exec<Acc>(
-            queue, workDiv,
-            CountDoubletsKernel{},
-            m_seedfinder_config,
-            g2_view,
-            vecmem::get_data(sp_grid_prefix_sum_buff),
-            vecmem::get_data(doublet_counter_buffer),
-            ::alpaka::getPtrNative(bufAcc_counter)
+        queue, workDiv,
+        CountDoubletsKernel{},
+        m_seedfinder_config,
+        g2_view,
+        vecmem::get_data(sp_grid_prefix_sum_buff),
+        vecmem::get_data(doublet_counter_buffer),
+        ::alpaka::getPtrNative(bufAcc_counter)
     );
     ::alpaka::wait(queue);
 
@@ -280,13 +280,13 @@ seed_finding::output_type seed_finding::operator()(
 
     // Find all of the spacepoint doublets.
     ::alpaka::exec<Acc>(
-            queue, workDiv,
-            FindDoubletsKernel{},
-            m_seedfinder_config,
-            g2_view,
-            vecmem::get_data(doublet_counter_buffer),
-            vecmem::get_data(doublet_buffer_mb),
-            vecmem::get_data(doublet_buffer_mt)
+        queue, workDiv,
+        FindDoubletsKernel{},
+        m_seedfinder_config,
+        g2_view,
+        vecmem::get_data(doublet_counter_buffer),
+        vecmem::get_data(doublet_buffer_mb),
+        vecmem::get_data(doublet_buffer_mt)
     );
     ::alpaka::wait(queue);
 
@@ -308,15 +308,15 @@ seed_finding::output_type seed_finding::operator()(
 
     // Count the number of triplets that we need to produce.
     ::alpaka::exec<Acc>(
-            queue, workDiv,
-            CountTripletsKernel{},
-            m_seedfinder_config,
-            g2_view,
-            vecmem::get_data(doublet_counter_buffer),
-            vecmem::get_data(doublet_buffer_mb),
-            vecmem::get_data(doublet_buffer_mt),
-            vecmem::get_data(triplet_counter_spM_buffer),
-            vecmem::get_data(triplet_counter_midBot_buffer)
+        queue, workDiv,
+        CountTripletsKernel{},
+        m_seedfinder_config,
+        g2_view,
+        vecmem::get_data(doublet_counter_buffer),
+        vecmem::get_data(doublet_buffer_mb),
+        vecmem::get_data(doublet_buffer_mt),
+        vecmem::get_data(triplet_counter_spM_buffer),
+        vecmem::get_data(triplet_counter_midBot_buffer)
     );
     ::alpaka::wait(queue);
 
@@ -353,16 +353,16 @@ seed_finding::output_type seed_finding::operator()(
 
     // Find all of the spacepoint triplets.
     ::alpaka::exec<Acc>(
-            queue, workDiv,
-            FindTripletsKernel{},
-            m_seedfinder_config,
-            m_seedfilter_config,
-            g2_view,
-            vecmem::get_data(doublet_counter_buffer),
-            vecmem::get_data(doublet_buffer_mt),
-            vecmem::get_data(triplet_counter_spM_buffer),
-            vecmem::get_data(triplet_counter_midBot_buffer),
-            vecmem::get_data(triplet_buffer)
+        queue, workDiv,
+        FindTripletsKernel{},
+        m_seedfinder_config,
+        m_seedfilter_config,
+        g2_view,
+        vecmem::get_data(doublet_counter_buffer),
+        vecmem::get_data(doublet_buffer_mt),
+        vecmem::get_data(triplet_counter_spM_buffer),
+        vecmem::get_data(triplet_counter_midBot_buffer),
+        vecmem::get_data(triplet_buffer)
     );
     ::alpaka::wait(queue);
 
@@ -377,13 +377,13 @@ seed_finding::output_type seed_finding::operator()(
 
     // Update the weights of all spacepoint triplets.
     ::alpaka::exec<Acc>(
-            queue, workDiv,
-            UpdateTripletWeightsKernel{},
-            m_seedfilter_config,
-            g2_view,
-            vecmem::get_data(triplet_counter_spM_buffer),
-            vecmem::get_data(triplet_counter_midBot_buffer),
-            vecmem::get_data(triplet_buffer)
+        queue, workDiv,
+        UpdateTripletWeightsKernel{},
+        m_seedfilter_config,
+        g2_view,
+        vecmem::get_data(triplet_counter_spM_buffer),
+        vecmem::get_data(triplet_counter_midBot_buffer),
+        vecmem::get_data(triplet_buffer)
     );
     ::alpaka::wait(queue);
 
@@ -400,15 +400,15 @@ seed_finding::output_type seed_finding::operator()(
 
     // Create seeds out of selected triplets
     ::alpaka::exec<Acc>(
-            queue, workDiv,
-            SelectSeedsKernel{},
-            m_seedfilter_config,
-            spacepoints_view,
-            g2_view,
-            vecmem::get_data(triplet_counter_spM_buffer),
-            vecmem::get_data(triplet_counter_midBot_buffer),
-            vecmem::get_data(triplet_buffer),
-            vecmem::get_data(seed_buffer)
+        queue, workDiv,
+        SelectSeedsKernel{},
+        m_seedfilter_config,
+        spacepoints_view,
+        g2_view,
+        vecmem::get_data(triplet_counter_spM_buffer),
+        vecmem::get_data(triplet_counter_midBot_buffer),
+        vecmem::get_data(triplet_buffer),
+        vecmem::get_data(seed_buffer)
     );
     ::alpaka::wait(queue);
 
