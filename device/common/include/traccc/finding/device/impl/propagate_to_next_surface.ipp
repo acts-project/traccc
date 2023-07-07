@@ -62,6 +62,9 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     typename propagator_t::state propagation(
         in_par, det.get_bfield(), det,
         std::move(nav_candidates.at(globalIndex)));
+    propagation._stepping
+        .template set_constraint<detray::step::constraint::e_accuracy>(
+            cfg.constrained_step_size);
 
     // Actor state
     // @TODO: simplify the syntax here
@@ -72,14 +75,22 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         s0{};
     typename detray::detail::tuple_element<1, actor_list_type>::type::state
         s1{};
+    typename detray::detail::tuple_element<3, actor_list_type>::type::state
+        s3{};
     typename detray::detail::tuple_element<2, actor_list_type>::type::state s2{
+        s3};
+    typename detray::detail::tuple_element<4, actor_list_type>::type::state s4{
         cfg.min_step_length_for_surface_aborter};
 
+    // @TODO: Should be removed once detray is fixed to set the volume in the
+    // constructor
+    propagation._navigation.set_volume(in_par.surface_link().volume());
+
     // Propagate to the next surface
-    propagator.propagate_sync(propagation, std::tie(s0, s1, s2));
+    propagator.propagate_sync(propagation, std::tie(s0, s1, s2, s3, s4));
 
     // If a surface found, add the parameter for the next step
-    if (s2.success) {
+    if (s4.success) {
         vecmem::device_atomic_ref<unsigned int> num_out_params(n_out_params);
         const unsigned int out_param_id = num_out_params.fetch_add(1);
 
@@ -87,7 +98,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         param_to_link[out_param_id] = globalIndex;
     }
     // Unless the track found a surface, it is considered a tip
-    else if (!s2.success && step >= cfg.min_track_candidates_per_track - 1) {
+    else if (!s4.success && step >= cfg.min_track_candidates_per_track - 1) {
         tips.push_back({step, globalIndex});
     }
 }

@@ -48,11 +48,12 @@ struct event_map2 {
             &resource);
 
         for (auto const& [ptc, measurements] : ptc_meas_map) {
-            // Make a seed parameter
-            free_track_parameters vertex(ptc.pos, ptc.time, ptc.mom,
-                                         ptc.charge);
 
-            auto seed_params = sg(vertex);
+            const auto& xp = meas_xp_map[measurements[0]];
+            const free_track_parameters free_param(xp.first, 0.f, xp.second,
+                                                   ptc.charge);
+
+            auto seed_params = sg(measurements[0].surface_link, free_param);
 
             // Candidate objects
             vecmem::vector<track_candidate> candidates;
@@ -82,7 +83,10 @@ struct event_map2 {
     /// Map for particle to the vector of (geometry_id, measurement)
     using particle_measurement_map =
         std::map<particle, std::vector<measurement_link>>;
+    using particle_id = uint64_t;
+    using particle_map = std::map<particle_id, particle>;
 
+    particle_map ptc_map;
     measurement_xp_map meas_xp_map;
     measurement_particle_map meas_ptc_map;
     particle_measurement_map ptc_meas_map;

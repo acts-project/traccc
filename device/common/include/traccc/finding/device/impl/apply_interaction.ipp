@@ -39,11 +39,12 @@ TRACCC_DEVICE inline void apply_interaction(
 
     // in param
     bound_track_parameters_collection_types::device params(params_view);
-    auto& bound_param = params.at(globalIndex);
 
     if (globalIndex >= n_params) {
         return;
     }
+
+    auto& bound_param = params.at(globalIndex);
 
     // Get intersection at surface
     const auto free_vec = det.bound_to_free_vector(bound_param.surface_link(),
