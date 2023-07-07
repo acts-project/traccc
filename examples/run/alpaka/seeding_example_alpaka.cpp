@@ -69,10 +69,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-        sd_performance_writer.add_cache("ALPAKA");
-    }
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -104,16 +100,16 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
 
             // Copy the spacepoint data to the device.
-            traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
+            traccc::spacepoint_collection_types::buffer spacepoints_alpaka_buffer(
                 spacepoints_per_event.size(), mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
-                 spacepoints_cuda_buffer);
+                 spacepoints_alpaka_buffer);
 
             {  // Spacepoint binning for alpaka
                 traccc::performance::timer t("Spacepoint binning (alpaka)",
                                              elapsedTimes);
                 m_spacepoint_binning(
-                    vecmem::get_data(spacepoints_cuda_buffer));
+                    vecmem::get_data(spacepoints_alpaka_buffer));
             }
 
             /*----------------------------
