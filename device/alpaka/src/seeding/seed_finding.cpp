@@ -137,15 +137,17 @@ struct UpdateTripletWeightsKernel {
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        auto const localThreadIdx = ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
+        // auto const threadElemExtent = ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
 
         // Array for temporary storage of quality parameters for comparing triplets
         // within weight updating kernel
-        // TODO: In the CUDA version, this is set based on warp size.
+        // TODO: This should be dynamic/compile time, utilising the thread extent or similar.
         static const auto dataSize = filter_config.compatSeedLimit * 32 * 2;
         auto &data = ::alpaka::declareSharedVar<scalar[dataSize], __COUNTER__>(acc);
 
         // Each thread uses compatSeedLimit elements of the array
-        scalar* dataPos = &data[(globalThreadIdx % (32 * 2)) * filter_config.compatSeedLimit];
+        scalar* dataPos = &data[localThreadIdx * filter_config.compatSeedLimit];
 
         device::update_triplet_weights(globalThreadIdx, filter_config,
                                        sp_grid, spM_tc, midBot_tc,
@@ -168,15 +170,16 @@ struct SelectSeedsKernel {
     ) const
     {
         auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        auto const localThreadIdx = ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
 
         // Array for temporary storage of quality parameters for comparing triplets
         // within weight updating kernel
-        // TODO: In the CUDA version, this is set based on warp size.
+        // TODO: This should be dynamic/compile time, utilising the thread extent or similar.
         static const auto dataSize = filter_config.max_triplets_per_spM * 32 * 2;
-        auto &data2 = ::alpaka::declareSharedVar<triplet[dataSize], __COUNTER__>(acc);
+        auto &data = ::alpaka::declareSharedVar<triplet[dataSize], __COUNTER__>(acc);
 
         // Each thread uses compatSeedLimit elements of the array
-        triplet* dataPos = &data2[(globalThreadIdx % (32 * 2)) * filter_config.max_triplets_per_spM];
+        triplet* dataPos = &data[localThreadIdx * filter_config.max_triplets_per_spM];
 
         device::select_seeds(globalThreadIdx, filter_config,
                              spacepoints_view, internal_sp_view,
@@ -205,7 +208,7 @@ seed_finding::output_type seed_finding::operator()(
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
-    auto const threadsPerBlock = maxThreadsPerBlock;
+    auto threadsPerBlock = maxThreadsPerBlock;
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -368,8 +371,8 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
+    threadsPerBlock = 32 * 2;
     blocksPerGrid = (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
-    elementsPerThread = 32 * 2;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
 
     // Array for temporary storage of quality parameters for comparing triplets

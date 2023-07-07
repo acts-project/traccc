@@ -197,31 +197,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_alpaka));
-
-            std::cout << "===>>> CPU Seeds Start <<<===" << std::endl;
-            for (unsigned int i = 0; i < seeds.size(); i++) {
-                std::cout << " ===>>> Seed " << i << std::endl;
-                traccc::seed seed = seeds[i];
-                std::cout << "  Weight: " << seed.weight << std::endl;
-                std::cout << "  Z Vtx: " << seed.z_vertex << std::endl;
-                std::cout << "  spBLink: " << seed.spB_link << std::endl;
-                std::cout << "  spMLink: " << seed.spM_link << std::endl;
-                std::cout << "  spTLink: " << seed.spT_link << std::endl;
-                std::cout << " <<<=== Seed " << i << std::endl;
-            }
-            std::cout << "===>>> CPU Seeds Stop<<<===" << std::endl;
-            std::cout << "===>>> Alpaka Seeds Start <<<===" << std::endl;
-            for (unsigned int i = 0; i < seeds_alpaka.size(); i++) {
-                std::cout << " ===>>> Seed " << i << std::endl;
-                traccc::seed seed = seeds_alpaka[i];
-                std::cout << "  Weight: " << seed.weight << std::endl;
-                std::cout << "  Z Vtx: " << seed.z_vertex << std::endl;
-                std::cout << "  spBLink: " << seed.spB_link << std::endl;
-                std::cout << "  spMLink: " << seed.spM_link << std::endl;
-                std::cout << "  spTLink: " << seed.spT_link << std::endl;
-                std::cout << " <<<=== Seed " << i << std::endl;
-            }
-            std::cout << "===>>> Alpaka Seeds Stop<<<===" << std::endl;
         }
 
         /*----------------
