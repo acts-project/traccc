@@ -14,10 +14,6 @@
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
-// VecMem include(s).
-#include <vecmem/utils/copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-
 namespace traccc::alpaka {
 
 spacepoint_binning::spacepoint_binning(
@@ -33,8 +29,7 @@ struct CountGridCapacityKernel {
     template <typename Acc>
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
-        const seedfinder_config& config,
-        const sp_grid::axis_p0_type& phi_axis,
+        const seedfinder_config& config sp_grid::axis_p0_type& phi_axis,
         const sp_grid::axis_p1_type& z_axis,
         const spacepoint_collection_types::const_view& spacepoints_view,
         vecmem::data::vector_view<unsigned int>& grid_capacities_view

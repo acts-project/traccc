@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/definitions/common.hpp"
@@ -23,10 +24,12 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
+#ifdef alpaka_ACC_GPU_CUDA_ENABLE
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
+#else
 #include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
+#endif
 
 // ACTS include(s).
 #include <Acts/Definitions/Units.hpp>
@@ -58,14 +61,19 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+
+#ifdef alpaka_ACC_GPU_CUDA_ENABLE
+    vecmem::cuda::copy copy;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
+#else
+    vecmem::copy copy;
+    traccc::memory_resource mr{host_mr};
+#endif
 
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
                                  host_mr);
     traccc::track_params_estimation tp(host_mr);
-
-    vecmem::cuda::copy copy;
 
     // Alpaka Spacepoint Binning
     traccc::alpaka::seeding_algorithm sa_alpaka{
@@ -126,6 +134,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
             // Alpaka
 
+            // TODO: Check this (and all other copies) are intelligent.
             // Copy the spacepoint data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_alpaka_buffer(
                 spacepoints_per_event.size(), mr.main);

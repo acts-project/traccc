@@ -26,9 +26,6 @@
 #include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
 
-// VecMem include(s).
-#include "vecmem/utils/cuda/copy.hpp"
-
 // System include(s).
 #include <algorithm>
 #include <vector>

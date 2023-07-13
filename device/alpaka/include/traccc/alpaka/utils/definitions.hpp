@@ -10,6 +10,12 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
 
+#ifdef alpaka_ACC_GPU_CUDA_ENABLE
+#include "vecmem/utils/cuda/copy.h"
+#else
+#include "vecmem/utils/copy.hpp"
+#endif
+
 namespace traccc::alpaka {
 
 using Dim = ::alpaka::DimInt<1>;

@@ -4,14 +4,14 @@
  *
  * Mozilla Public License Version 2.0
  */
+//
+// Local include(s).
+#include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/device/estimate_track_params.hpp"
 #include "traccc/alpaka/utils/definitions.hpp"
-
-// VecMem include(s).
-#include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc::alpaka {
 
