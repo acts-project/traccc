@@ -38,8 +38,8 @@ struct CountDoubletsKernel {
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         seedfinder_config config,
-        sp_grid_const_view sp_grid,
-        vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
+        const sp_grid_const_view sp_grid,
+        const vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
         device::doublet_counter_collection_types::view doublet_counter,
         device::seeding_global_counter* counter
     ) const
@@ -140,7 +140,7 @@ struct UpdateTripletWeightsKernel {
         // Array for temporary storage of quality parameters for comparing triplets
         // within weight updating kernel
         // TODO: This should be dynamic/compile time, utilising the thread extent or similar.
-        static const auto dataSize = filter_config.compatSeedLimit * 32 * 2;
+        static const auto dataSize = filter_config.compatSeedLimit * WARP_SIZE * 2;
         auto &data = ::alpaka::declareSharedVar<scalar[dataSize], __COUNTER__>(acc);
 
         // Each thread uses compatSeedLimit elements of the array
@@ -172,10 +172,10 @@ struct SelectSeedsKernel {
         // Array for temporary storage of quality parameters for comparing triplets
         // within weight updating kernel
         // TODO: This should be dynamic/compile time, utilising the thread extent or similar.
-        static const auto dataSize = filter_config.max_triplets_per_spM * 32 * 2;
+        static const auto dataSize = filter_config.max_triplets_per_spM * WARP_SIZE * 2;
         auto &data = ::alpaka::declareSharedVar<triplet[dataSize], __COUNTER__>(acc);
 
-        // Each thread uses compatSeedLimit elements of the array
+        // Each thread uses max_triplets_per_spM elements of the array
         triplet* dataPos = &data[localThreadIdx * filter_config.max_triplets_per_spM];
 
         device::select_seeds(globalThreadIdx, filter_config,
@@ -205,7 +205,7 @@ seed_finding::output_type seed_finding::operator()(
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
-    auto threadsPerBlock = maxThreadsPerBlock;
+    auto threadsPerBlock = 1u;
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -368,7 +368,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    threadsPerBlock = 32 * 2;
+    threadsPerBlock = 1;
     blocksPerGrid = (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
 

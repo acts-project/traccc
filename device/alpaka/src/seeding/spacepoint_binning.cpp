@@ -69,8 +69,8 @@ struct PopulateGridKernel {
 
             // Set up the spacepoint grid object(s).
             sp_grid_device grid(*grid_view);
-            const sp_grid_device::axis_p0_type& phi_axis = grid.axis_p0();
-            const sp_grid_device::axis_p1_type& z_axis = grid.axis_p1();
+            const auto& phi_axis = grid.axis_p0();
+            const auto& z_axis = grid.axis_p1();
 
             // Find the grid bin that the spacepoint belongs to.
             const internal_spacepoint<spacepoint> isp(sp, globalThreadIdx,
@@ -108,11 +108,10 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     // Now define the Alpaka Work division
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
-    auto const threadsPerBlock = maxThreadsPerBlock;
+    auto const threadsPerBlock = 1u;
     auto const blocksPerGrid = (sp_size + threadsPerBlock - 1) / threadsPerBlock;
     auto const elementsPerThread = 1u;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    auto bufAcc = ::alpaka::allocBuf<float, uint32_t>(devAcc, sp_size);
 
     ::alpaka::exec<Acc>(
             queue, workDiv,

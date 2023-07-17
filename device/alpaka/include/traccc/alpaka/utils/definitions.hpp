@@ -18,6 +18,12 @@
 
 namespace traccc::alpaka {
 
+#ifdef alpaka_ACC_GPU_CUDA_ENABLE
+#define WARP_SIZE 32
+#else
+#define WARP_SIZE 4
+#endif
+
 using Dim = ::alpaka::DimInt<1>;
 using Idx = uint32_t;
 using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;

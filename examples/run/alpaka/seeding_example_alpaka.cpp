@@ -68,7 +68,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::memory_resource mr{device_mr, &host_mr};
 #else
     vecmem::copy copy;
-    traccc::memory_resource mr{host_mr};
+    traccc::memory_resource mr{host_mr, &host_mr}; // TODO: Best way?
 #endif
 
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,

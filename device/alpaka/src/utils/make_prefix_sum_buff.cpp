@@ -21,11 +21,8 @@ struct PrefixSumBuffKernel {
         vecmem::data::vector_view<const device::prefix_sum_size_t> sizes_view,
         vecmem::data::vector_view<device::prefix_sum_element_t> ps_view
     ) const {
-        auto threadIdx = ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        auto blockDim = ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        auto blockIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
-
-        device::fill_prefix_sum(threadIdx + blockIdx * blockDim, sizes_view, ps_view);
+        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        device::fill_prefix_sum(globalThreadIdx, sizes_view, ps_view);
     }
 };
 
