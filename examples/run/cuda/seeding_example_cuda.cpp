@@ -237,8 +237,17 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ------------*/
 
         if (i_cfg.check_performance) {
-            if (i_cfg.run_detray_geometry == false) {
 
+            if (i_cfg.run_detray_geometry) {
+
+                traccc::event_map2 evt_map(event, common_opts.input_directory,
+                                           common_opts.input_directory,
+                                           common_opts.input_directory);
+                sd_performance_writer.write(
+                    vecmem::get_data(seeds_cuda),
+                    vecmem::get_data(reader_output.spacepoints),
+                    reader_output.modules, evt_map);
+            } else {
                 traccc::event_map evt_map(event, i_cfg.detector_file,
                                           common_opts.input_directory,
                                           common_opts.input_directory, host_mr);
@@ -257,18 +266,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 sd_performance_writer.write(
                     vecmem::get_data(seeds_cuda),
                     vecmem::get_data(reader_output.spacepoints), evt_map);
-
-            }
-
-            else if (i_cfg.run_detray_geometry == true) {
-
-                traccc::event_map2 evt_map(event, common_opts.input_directory,
-                                           common_opts.input_directory,
-                                           common_opts.input_directory);
-                sd_performance_writer.write(
-                    vecmem::get_data(seeds_cuda),
-                    vecmem::get_data(reader_output.spacepoints),
-                    reader_output.modules, evt_map);
             }
         }
     }
