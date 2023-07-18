@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
-#include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/efficiency/finding_performance_writer.hpp"
 
 #include "duplication_plot_tool.hpp"
 #include "eff_plot_tool.hpp"
@@ -25,11 +25,11 @@
 namespace traccc {
 namespace details {
 
-struct seeding_performance_writer_data {
+struct finding_performance_writer_data {
 
     /// Constructor
-    seeding_performance_writer_data(
-        const seeding_performance_writer::config& cfg)
+    finding_performance_writer_data(
+        const finding_performance_writer::config& cfg)
         : m_eff_plot_tool({cfg.var_binning}),
           m_duplication_plot_tool({cfg.var_binning}) {}
 
@@ -44,36 +44,45 @@ struct seeding_performance_writer_data {
     measurement_particle_map m_measurement_particle_map;
     particle_map m_particle_map;
 
-};  // struct seeding_performance_writer_data
+};  // struct finding_performance_writer_data
 
 }  // namespace details
 
-seeding_performance_writer::seeding_performance_writer(const config& cfg)
+finding_performance_writer::finding_performance_writer(const config& cfg)
     : m_cfg(cfg),
-      m_data(std::make_unique<details::seeding_performance_writer_data>(cfg)) {
+      m_data(std::make_unique<details::finding_performance_writer_data>(cfg)) {
 
-    m_data->m_eff_plot_tool.book("seeding", m_data->m_eff_plot_cache);
-    m_data->m_duplication_plot_tool.book("seeding",
+    m_data->m_eff_plot_tool.book("finding", m_data->m_eff_plot_cache);
+    m_data->m_duplication_plot_tool.book("finding",
                                          m_data->m_duplication_plot_cache);
 }
 
-seeding_performance_writer::~seeding_performance_writer() {}
+finding_performance_writer::~finding_performance_writer() {}
 
-void seeding_performance_writer::write(
-    const seed_collection_types::const_view& seeds_view,
-    const spacepoint_collection_types::const_view& spacepoints_view,
-    const event_map& evt_map) {
+void finding_performance_writer::write(
+    const track_candidate_container_types::const_view& track_candidates_view,
+    const event_map2& evt_map) {
 
     std::map<particle_id, std::size_t> match_counter;
 
-    // Iterate over the seeds.
-    seed_collection_types::const_device seeds(seeds_view);
-    for (const seed& sd : seeds) {
+    // Iterate over the tracks.
+    track_candidate_container_types::const_device track_candidates(
+        track_candidates_view);
+
+    const unsigned int n_tracks = track_candidates.size();
+
+    for (unsigned int i = 0; i < n_tracks; i++) {
+        const auto& cands = track_candidates.at(i).items;
+
+        std::vector<measurement_link> measurements;
+        measurements.reserve(cands.size());
+        for (const auto& cand : cands) {
+            measurements.push_back({cand.surface_link.value(), cand.meas});
+        }
 
         // Check which particle matches this seed.
         std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(
-                sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
+            identify_contributing_particles(measurements, evt_map.meas_ptc_map);
 
         if (particle_hit_counts.size() == 1) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
@@ -103,7 +112,7 @@ void seeding_performance_writer::write(
     }
 }
 
-void seeding_performance_writer::finalize() {
+void finding_performance_writer::finalize() {
 
 #ifdef TRACCC_HAVE_ROOT
     // Open the output file.

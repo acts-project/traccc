@@ -12,6 +12,8 @@ traccc_add_library( traccc_options options TYPE SHARED
   "include/traccc/options/mt_options.hpp"
   "include/traccc/options/options.hpp"
   "include/traccc/options/particle_gen_options.hpp"
+  "include/traccc/options/propagation_options.hpp"
+  "include/traccc/options/finding_input_options.hpp"
   "include/traccc/options/seeding_input_options.hpp"
   "include/traccc/options/full_tracking_input_options.hpp"   
   "include/traccc/options/throughput_options.hpp"
@@ -20,6 +22,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/options/handle_argument_errors.cpp"
   "src/options/mt_options.cpp"
   "src/options/seeding_input_options.cpp"
+  "src/options/finding_input_options.cpp"
   "src/options/full_tracking_input_options.cpp"
   "src/options/throughput_options.cpp"
   )
