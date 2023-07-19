@@ -14,7 +14,6 @@ add_library( traccc_tests_common STATIC
     "common/tests/data_test.hpp"
     "common/tests/kalman_fitting_test.hpp"
     "common/tests/kalman_fitting_test.cpp"
-    "common/tests/seed_generator.hpp"
     "common/tests/space_point.hpp" )
 target_include_directories( traccc_tests_common
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )

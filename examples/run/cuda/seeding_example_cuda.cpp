@@ -84,8 +84,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         std::make_unique<traccc::stepped_percentage>(0.6f));
 
     if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-        sd_performance_writer.add_cache("CUDA");
         nsd_performance_writer.initialize();
     }
 
@@ -231,13 +229,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                 reader_output.spacepoints.begin(), evt_map);
 
             sd_performance_writer.write(
-                "CUDA", vecmem::get_data(seeds_cuda),
+                vecmem::get_data(seeds_cuda),
                 vecmem::get_data(reader_output.spacepoints), evt_map);
-            if (run_cpu) {
-                sd_performance_writer.write(
-                    "CPU", vecmem::get_data(seeds),
-                    vecmem::get_data(reader_output.spacepoints), evt_map);
-            }
         }
     }
 
