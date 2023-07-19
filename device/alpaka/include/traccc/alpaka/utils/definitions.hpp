@@ -32,4 +32,15 @@ using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
 using Host = ::alpaka::DevCpu;
 using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
+template <typename TAcc>
+inline WorkDiv makeWorkDiv(Idx blocksPerGrid, Idx threadsPerBlockOrElementsPerThread) {
+#ifdef alpaka_ACC_GPU_CUDA_ENABLED
+
+    const auto elementsPerThread = Idx{1};
+    return WorkDiv{blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread};
+#endif
+    const auto threadsPerBlock = Idx{1};
+    return WorkDiv{blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread};
+}
+
 }  // namespace traccc::alpaka

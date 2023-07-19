@@ -15,9 +15,9 @@
 namespace traccc::alpaka {
 
 struct PrefixSumBuffKernel {
-    template<typename Acc>
+    template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         vecmem::data::vector_view<const device::prefix_sum_size_t> sizes_view,
         vecmem::data::vector_view<device::prefix_sum_element_t> ps_view
     ) const {

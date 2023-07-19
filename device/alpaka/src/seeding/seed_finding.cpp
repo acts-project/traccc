@@ -34,9 +34,9 @@ namespace traccc::alpaka {
 
 /// Kernel for running @c traccc::device::count_doublets
 struct CountDoubletsKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         seedfinder_config config,
         const sp_grid_const_view sp_grid,
         const vecmem::data::vector_view<const device::prefix_sum_element_t> sp_prefix_sum,
@@ -51,9 +51,9 @@ struct CountDoubletsKernel {
 
 // Kernel for running @c traccc::device::find_doublets
 struct FindDoubletsKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         seedfinder_config config, sp_grid_const_view sp_grid,
         device::doublet_counter_collection_types::const_view doublet_counter,
         device::device_doublet_collection_types::view mb_doublets,
@@ -67,9 +67,9 @@ struct FindDoubletsKernel {
 
 // Kernel for running @c traccc::device::count_triplets
 struct CountTripletsKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         seedfinder_config config, sp_grid_const_view sp_grid,
         device::doublet_counter_collection_types::const_view doublet_counter,
         device::device_doublet_collection_types::const_view mb_doublets,
@@ -87,9 +87,9 @@ struct CountTripletsKernel {
 
 // Kernel for running @c traccc::device::reduce_triplet_counts
 struct ReduceTripletCounts {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         device::doublet_counter_collection_types::const_view doublet_counter,
         device::triplet_counter_spM_collection_types::view spM_counter,
         device::seeding_global_counter* counter
@@ -102,9 +102,9 @@ struct ReduceTripletCounts {
 
 // Kernel for running @c traccc::device::find_triplets
 struct FindTripletsKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         seedfinder_config config, seedfilter_config filter_config,
         sp_grid_const_view sp_grid,
         device::doublet_counter_collection_types::const_view doublet_counter,
@@ -124,9 +124,9 @@ struct FindTripletsKernel {
 
 // Kernel for running @c traccc::device::update_triplet_weights
 struct UpdateTripletWeightsKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         seedfilter_config filter_config, sp_grid_const_view sp_grid,
         device::triplet_counter_spM_collection_types::const_view spM_tc,
         device::triplet_counter_collection_types::const_view midBot_tc,
@@ -154,9 +154,9 @@ struct UpdateTripletWeightsKernel {
 
 // Kernel for running @c traccc::device::select_seeds
 struct SelectSeedsKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         seedfilter_config filter_config,
         spacepoint_collection_types::const_view spacepoints_view,
         sp_grid_const_view internal_sp_view,

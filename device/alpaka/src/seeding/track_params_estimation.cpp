@@ -16,9 +16,9 @@
 namespace traccc::alpaka {
 
 struct EstimateTrackParamsKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         spacepoint_collection_types::const_view spacepoints_view,
         seed_collection_types::const_view seed_view, const vector3 bfield,
         bound_track_parameters_collection_types::view params_view

@@ -26,9 +26,9 @@ spacepoint_binning::spacepoint_binning(
 
 // Grid Capacity Kernel
 struct CountGridCapacityKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         const seedfinder_config& config,
         const sp_grid::axis_p0_type* phi_axis,
         const sp_grid::axis_p1_type* z_axis,
@@ -45,9 +45,9 @@ struct CountGridCapacityKernel {
 
 // Populate Grid Kernel
 struct PopulateGridKernel {
-    template <typename Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
+        TAcc const& acc,
         const seedfinder_config& config,
         const spacepoint_collection_types::const_view& spacepoints_view,
         sp_grid_view *grid_view
