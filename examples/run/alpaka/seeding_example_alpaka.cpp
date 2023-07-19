@@ -24,7 +24,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
-#ifdef alpaka_ACC_GPU_CUDA_ENABLE
+#ifdef alpaka_ACC_GPU_CUDA_ENABLED
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #else
@@ -62,7 +62,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
 
-#ifdef alpaka_ACC_GPU_CUDA_ENABLE
+#ifdef alpaka_ACC_GPU_CUDA_ENABLED
     vecmem::cuda::copy copy;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};

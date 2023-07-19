@@ -10,7 +10,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
 
-#ifdef alpaka_ACC_GPU_CUDA_ENABLE
+#ifdef alpaka_ACC_GPU_CUDA_ENABLED
 #include "vecmem/utils/cuda/copy.h"
 #else
 #include "vecmem/utils/copy.hpp"
@@ -18,7 +18,7 @@
 
 namespace traccc::alpaka {
 
-#ifdef alpaka_ACC_GPU_CUDA_ENABLE
+#ifdef alpaka_ACC_GPU_CUDA_ENABLED
 #define WARP_SIZE 32
 #else
 #define WARP_SIZE 4
