@@ -204,8 +204,7 @@ seed_finding::output_type seed_finding::operator()(
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
-    auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
-    auto threadsPerBlock = 1u;
+    auto const threadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -230,8 +229,7 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
     auto blocksPerGrid = (sp_grid_prefix_sum_buff.size() + threadsPerBlock - 1) / threadsPerBlock;
-    auto elementsPerThread = 1u;
-    auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Counter for the total number of doublets and triplets
     // TODO: Is this really the best way? Surely I'm missing something.
@@ -276,7 +274,7 @@ seed_finding::output_type seed_finding::operator()(
     const unsigned int doublet_counter_buffer_size =
         m_copy.get_size(doublet_counter_buffer);
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
-    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Find all of the spacepoint doublets.
     ::alpaka::exec<Acc>(
@@ -304,7 +302,7 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the triplet
     // counting kernel for.
     blocksPerGrid = (pBufHost_counter->m_nMidBot + threadsPerBlock - 1) / threadsPerBlock;
-    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Count the number of triplets that we need to produce.
     ::alpaka::exec<Acc>(
@@ -323,7 +321,7 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the triplet
     // count reduction kernel for.
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
-    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Reduce the triplet counts per spM.
     ::alpaka::exec<Acc>(
@@ -349,7 +347,7 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
     blocksPerGrid = (m_copy.get_size(triplet_counter_midBot_buffer) + threadsPerBlock - 1) / threadsPerBlock;
-    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Find all of the spacepoint triplets.
     ::alpaka::exec<Acc>(
@@ -368,9 +366,8 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    threadsPerBlock = 1;
     blocksPerGrid = (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
-    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Array for temporary storage of quality parameters for comparing triplets
     // within weight updating kernel
@@ -396,7 +393,7 @@ seed_finding::output_type seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.
     blocksPerGrid = (doublet_counter_buffer_size + threadsPerBlock - 1) / threadsPerBlock;
-    workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Create seeds out of selected triplets
     ::alpaka::exec<Acc>(

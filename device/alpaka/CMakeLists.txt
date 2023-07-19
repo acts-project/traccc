@@ -7,7 +7,7 @@
 # Project include(s).
 include( traccc-compiler-options-cpp )
 
-if(alpaka_ACC_GPU_CUDA_ENABLED)
+if(alpaka_ACC_GPU_CUDA_ENABLE)
   enable_language(CUDA)
   find_package( CUDAToolkit REQUIRED )
 
@@ -38,7 +38,7 @@ traccc_add_library( traccc_alpaka alpaka TYPE SHARED
   "src/seeding/track_params_estimation.cpp"
 )
 
-if(alpaka_ACC_GPU_CUDA_ENABLED)
+if(alpaka_ACC_GPU_CUDA_ENABLE)
     target_link_libraries( traccc_alpaka
         PUBLIC traccc::core vecmem::core
         PRIVATE CUDA::cudart traccc::device_common vecmem::cuda alpaka::alpaka)
