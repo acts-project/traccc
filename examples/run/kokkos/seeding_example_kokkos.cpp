@@ -57,11 +57,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                                  host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::seedfinder_config finder_config;
-    traccc::spacepoint_grid_config grid_config;
-    finder_config.setup();
-    grid_config.setup(finder_config);
-
     // KOKKOS Spacepoint Binning
     traccc::kokkos::spacepoint_binning m_spacepoint_binning(finder_config,
                                                             grid_config, mr);
