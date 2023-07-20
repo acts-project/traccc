@@ -30,8 +30,9 @@ class fit;
 
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
-    const traccc::memory_resource& mr, queue_wrapper queue)
-    : m_mr(mr), m_queue(queue) {
+    const config_type& cfg, const traccc::memory_resource& mr,
+    queue_wrapper queue)
+    : m_cfg(cfg), m_mr(mr), m_queue(queue) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
@@ -82,10 +83,11 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::fit>(
                 trackParamsNdRange,
-                [det_view, navigation_buffer, track_candidates_view,
+                [det_view, config = m_cfg, navigation_buffer,
+                 track_candidates_view,
                  track_states_view](::sycl::nd_item<1> item) {
                     device::fit<fitter_t>(item.get_global_linear_id(), det_view,
-                                          navigation_buffer,
+                                          config, navigation_buffer,
                                           track_candidates_view,
                                           track_states_view);
                 });

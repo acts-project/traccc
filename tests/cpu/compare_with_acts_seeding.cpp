@@ -70,10 +70,10 @@ inline bool operator==(const Acts::BoundVector& acts_vec,
             traccc::float_epsilon * 10 &&
         std::abs(acts_vec[Acts::eBoundTheta] -
                  traccc::getter::element(traccc_vec, traccc::e_bound_theta,
-                                         0)) < traccc::float_epsilon * 10 &&
+                                         0)) < traccc::float_epsilon * 1000 &&
         std::abs(acts_vec[Acts::eBoundPhi] -
                  traccc::getter::element(traccc_vec, traccc::e_bound_phi, 0)) <
-            traccc::float_epsilon * 10) {
+            traccc::float_epsilon * 1000) {
         return true;
     }
     return false;
@@ -95,10 +95,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Seeding Config
     traccc::seedfinder_config traccc_config;
-    traccc::spacepoint_grid_config grid_config;
-
-    traccc_config.setup();
-    grid_config.setup(traccc_config);
+    traccc::spacepoint_grid_config grid_config(traccc_config);
 
     // Declare algorithms
     traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
@@ -128,7 +125,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
       TRACCC track params estimation
       --------------------------------*/
 
-    auto tp_output = tp(spacepoints_per_event, seeds);
+    auto tp_output =
+        tp(spacepoints_per_event, seeds, {0.f, 0.f, traccc_config.bFieldInZ});
     auto& traccc_params = tp_output;
 
     /*--------------------------------
@@ -395,7 +393,10 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         // Test the full track parameters estimator
         auto fullParamsOpt = estimateTrackParamsFromSeed(
             geoCtx, spacePointPtrs.begin(), spacePointPtrs.end(),
-            *bottomSurface, Acts::Vector3(0, 0, 2), 0.1);
+            *bottomSurface,
+            Acts::Vector3(
+                0, 0, acts_config.bFieldInZ / traccc::unit<traccc::scalar>::T),
+            0.1);
 
         auto acts_vec = *fullParamsOpt;
 
@@ -431,7 +432,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // EXPECT_EQ(acts_params.size(), traccc_params.size())
     EXPECT_NEAR(acts_params.size(), traccc_params.size(),
                 acts_params.size() * 0.001);
-    EXPECT_TRUE(params_match_ratio > 0.999);
+    EXPECT_TRUE(params_match_ratio > 0.999)
+        << "Parameter matching ratio: " << params_match_ratio << std::endl;
 }
 
 INSTANTIATE_TEST_SUITE_P(

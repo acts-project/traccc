@@ -33,8 +33,10 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/geometry/pixel_data.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
+  "include/traccc/utils/compare.hpp"
   "include/traccc/utils/type_traits.hpp"
   "include/traccc/utils/memory_resource.hpp"
+  "include/traccc/utils/seed_generator.hpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/measurement_creation_helper.hpp"
   "include/traccc/clusterization/detail/sparse_ccl.hpp"
@@ -46,6 +48,11 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/spacepoint_formation.cpp"
   "include/traccc/clusterization/measurement_creation.hpp"
   "src/clusterization/measurement_creation.cpp"
+  # Finding algorithmic code
+  "include/traccc/finding/candidate_link.hpp"
+  "include/traccc/finding/finding_algorithm.hpp"
+  "include/traccc/finding/finding_config.hpp"
+  "include/traccc/finding/interaction_register.hpp"
   # Fitting algorithmic code
   "include/traccc/fitting/detail/gamma_functions.hpp"
   "src/fitting/detail/gamma_functions.cpp"
@@ -53,6 +60,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
   "include/traccc/fitting/kalman_filter/kalman_actor.hpp"
   "include/traccc/fitting/kalman_filter/kalman_fitter.hpp"
+  "include/traccc/fitting/kalman_filter/statistics_updater.hpp"
   "include/traccc/fitting/fitting_algorithm.hpp"
   # Seed finding algorithmic code.
   "include/traccc/seeding/detail/lin_circle.hpp"

@@ -15,6 +15,9 @@
 namespace traccc {
 
 struct seedfinder_config {
+
+    seedfinder_config() { setup(); }
+
     // limiting location of measurements
     // Beomki's note: this value introduces redundant bins
     // without any spacepoints
@@ -136,6 +139,20 @@ struct seedfinder_config {
 // spacepoint grid configuration
 struct spacepoint_grid_config {
 
+    spacepoint_grid_config() = delete;
+    spacepoint_grid_config(const seedfinder_config& finder_config)
+        : bFieldInZ(finder_config.bFieldInZ),
+          minPt(finder_config.minPt),
+          rMax(finder_config.rMax),
+          zMax(finder_config.zMax),
+          zMin(finder_config.zMin),
+          deltaRMax(finder_config.deltaRMax),
+          cotThetaMax(finder_config.cotThetaMax),
+          impactMax(finder_config.impactMax),
+          phiMin(finder_config.phiMin),
+          phiMax(finder_config.phiMax),
+          phiBinDeflectionCoverage(finder_config.phiBinDeflectionCoverage) {}
+
     // magnetic field in kTesla
     scalar bFieldInZ;
     // minimum pT to be found by seedfinder in MeV
@@ -167,21 +184,6 @@ struct spacepoint_grid_config {
     // configured to return 1 neighbor on either side of the current phi-bin
     // (and you want to cover the full phi-range of minPT), leave this at 1.
     int phiBinDeflectionCoverage = 1;
-
-    TRACCC_HOST_DEVICE
-    void setup(const seedfinder_config& finder_config) {
-        bFieldInZ = finder_config.bFieldInZ;
-        minPt = finder_config.minPt;
-        rMax = finder_config.rMax;
-        zMax = finder_config.zMax;
-        zMin = finder_config.zMin;
-        deltaRMax = finder_config.deltaRMax;
-        cotThetaMax = finder_config.cotThetaMax;
-        impactMax = finder_config.impactMax;
-        phiMax = finder_config.phiMax;
-        phiMin = finder_config.phiMin;
-        phiBinDeflectionCoverage = finder_config.phiBinDeflectionCoverage;
-    }
 };
 
 struct seedfilter_config {

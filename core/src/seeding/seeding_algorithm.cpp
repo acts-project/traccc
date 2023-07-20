@@ -16,10 +16,12 @@
 
 namespace traccc {
 
-seeding_algorithm::seeding_algorithm(vecmem::memory_resource& mr) : m_mr(mr) {
-    m_finder_config.setup();
-    m_grid_config.setup(m_finder_config);
-}
+seeding_algorithm::seeding_algorithm(const seedfinder_config& finder_config,
+                                     const spacepoint_grid_config& grid_config,
+                                     const seedfilter_config& filter_config,
+                                     vecmem::memory_resource& mr)
+    : m_spacepoint_binning(finder_config, grid_config, mr),
+      m_seed_finding(finder_config, filter_config) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_collection_types::host& spacepoints) const {

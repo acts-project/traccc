@@ -28,7 +28,10 @@ class seeding_algorithm : public algorithm<seed_collection_types::host(
     ///
     /// @param mr The memory resource to use
     ///
-    seeding_algorithm(vecmem::memory_resource& mr);
+    seeding_algorithm(const seedfinder_config& finder_config,
+                      const spacepoint_grid_config& grid_config,
+                      const seedfilter_config& filter_config,
+                      vecmem::memory_resource& mr);
 
     /// Operator executing the algorithm.
     ///

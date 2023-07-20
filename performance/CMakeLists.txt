@@ -11,6 +11,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/efficiency/eff_plot_tool.hpp"
    "include/traccc/efficiency/seeding_performance_writer.hpp"
    "src/efficiency/seeding_performance_writer.cpp"
+   "include/traccc/efficiency/finding_performance_writer.hpp"
+   "src/efficiency/finding_performance_writer.cpp"
    "src/efficiency/track_classification.hpp"
    "include/traccc/efficiency/nseed_performance_writer.hpp"
    "src/efficiency/nseed_performance_writer.cpp"
@@ -19,9 +21,12 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    # Resolution calculation code.
    "include/traccc/resolution/fitting_performance_writer.hpp"
    "include/traccc/resolution/res_plot_tool_config.hpp"
+   "include/traccc/resolution/stat_plot_tool_config.hpp"
    "src/resolution/fitting_performance_writer.cpp"
    "src/resolution/res_plot_tool.hpp"
    "src/resolution/res_plot_tool.cpp"
+   "src/resolution/stat_plot_tool.hpp"
+   "src/resolution/stat_plot_tool.cpp"
    # Utils
    "include/traccc/utils/ranges.hpp"
    "include/traccc/utils/helpers.hpp"

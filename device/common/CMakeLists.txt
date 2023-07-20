@@ -20,6 +20,7 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/device/container_d2h_copy_alg.hpp"
    "include/traccc/device/impl/container_d2h_copy_alg.ipp"
    # EDM class(es).
+   "include/traccc/edm/device/finding_global_counter.hpp"
    "include/traccc/edm/device/seeding_global_counter.hpp"
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
@@ -54,6 +55,25 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/seeding/device/impl/select_seeds.ipp"
    # Track parameters estimation function(s).
    "include/traccc/seeding/device/estimate_track_params.hpp"
-   "include/traccc/seeding/device/impl/estimate_track_params.ipp" )
+   "include/traccc/seeding/device/impl/estimate_track_params.ipp"
+   # Track finding funtions(s).
+   "include/traccc/finding/device/apply_interaction.hpp"
+   "include/traccc/finding/device/build_tracks.hpp"
+   "include/traccc/finding/device/count_measurements.hpp"
+   "include/traccc/finding/device/count_threads.hpp"
+   "include/traccc/finding/device/find_tracks.hpp"
+   "include/traccc/finding/device/make_module_map.hpp"
+   "include/traccc/finding/device/propagate_to_next_surface.hpp"
+   "include/traccc/finding/device/impl/apply_interaction.ipp"
+   "include/traccc/finding/device/impl/build_tracks.ipp"
+   "include/traccc/finding/device/impl/count_measurements.ipp"
+   "include/traccc/finding/device/impl/count_threads.ipp"
+   "include/traccc/finding/device/impl/find_tracks.ipp"
+   "include/traccc/finding/device/impl/make_module_map.ipp"
+   "include/traccc/finding/device/impl/propagate_to_next_surface.ipp"
+   # Track fitting funtions(s).
+   "include/traccc/fitting/device/fit.hpp"
+   "include/traccc/fitting/device/impl/fit.ipp"
+   )
 target_link_libraries( traccc_device_common
    PUBLIC traccc::Thrust traccc::core vecmem::core )

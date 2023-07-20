@@ -58,6 +58,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
+    // Configs
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config(finder_config);
+    traccc::seedfilter_config filter_config;
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::host_memory_resource cuda_host_mr;
@@ -66,7 +71,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(host_mr);
+    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
+                                 host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     traccc::cuda::stream stream;
@@ -75,16 +81,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::clusterization_algorithm ca_cuda(
         mr, copy, stream, common_opts.target_cells_per_partition);
-    traccc::cuda::seeding_algorithm sa_cuda(mr, copy, stream);
+    traccc::cuda::seeding_algorithm sa_cuda(finder_config, grid_config,
+                                            filter_config, mr, copy, stream);
     traccc::cuda::track_params_estimation tp_cuda(mr, copy, stream);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-        sd_performance_writer.add_cache("CUDA");
-    }
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -198,7 +201,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("Track params (cuda)",
                                              elapsedTimes);
                 params_cuda_buffer =
-                    tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer);
+                    tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer,
+                            {0.f, 0.f, finder_config.bFieldInZ});
                 stream.synchronize();
             }  // stop measuring track params timer
 
@@ -207,7 +211,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(spacepoints_per_event, seeds);
+                params = tp(spacepoints_per_event, seeds,
+                            {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
@@ -219,11 +224,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::spacepoint_collection_types::host spacepoints_per_event_cuda;
         traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
-        if (run_cpu || i_cfg.check_performance) {
-            copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
-            copy(seeds_cuda_buffer, seeds_cuda)->wait();
-            copy(params_cuda_buffer, params_cuda)->wait();
-        }
+        copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
+        copy(seeds_cuda_buffer, seeds_cuda)->wait();
+        copy(params_cuda_buffer, params_cuda)->wait();
 
         if (run_cpu) {
 
@@ -249,16 +252,17 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_cuda));
-
-            /// Statistics
-            n_modules += read_out_per_event.modules.size();
-            n_cells += read_out_per_event.cells.size();
-            n_measurements += measurements_per_event.size();
-            n_spacepoints += spacepoints_per_event.size();
-            n_spacepoints_cuda += spacepoints_per_event_cuda.size();
-            n_seeds_cuda += seeds_cuda.size();
-            n_seeds += seeds.size();
         }
+
+        /// Statistics
+        n_modules += read_out_per_event.modules.size();
+        n_cells += read_out_per_event.cells.size();
+        n_measurements += measurements_per_event.size();
+        n_spacepoints += spacepoints_per_event.size();
+        n_seeds += seeds.size();
+        n_spacepoints_cuda += spacepoints_per_event_cuda.size();
+        n_seeds_cuda += seeds_cuda.size();
+
         if (i_cfg.check_performance) {
 
             traccc::event_map evt_map(
@@ -266,14 +270,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 common_opts.input_directory, common_opts.input_directory,
                 common_opts.input_directory, host_mr);
             sd_performance_writer.write(
-                "CUDA", vecmem::get_data(seeds_cuda),
+                vecmem::get_data(seeds_cuda),
                 vecmem::get_data(spacepoints_per_event_cuda), evt_map);
-
-            if (run_cpu) {
-                sd_performance_writer.write(
-                    "CPU", vecmem::get_data(seeds),
-                    vecmem::get_data(spacepoints_per_event), evt_map);
-            }
         }
     }
 
@@ -282,12 +280,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_spacepoints << " spacepoints from "
-              << n_modules << " modules" << std::endl;
-    std::cout << "- created        " << n_cells << " cells" << std::endl;
-    std::cout << "- created        " << n_measurements << " measurements     "
+    std::cout << "- read    " << n_cells << " cells from " << n_modules
+              << " modules" << std::endl;
+    std::cout << "- created (cpu)  " << n_measurements << " measurements     "
               << std::endl;
-    std::cout << "- created        " << n_spacepoints << " spacepoints     "
+    std::cout << "- created (cpu)  " << n_spacepoints << " spacepoints     "
               << std::endl;
     std::cout << "- created (cuda) " << n_spacepoints_cuda
               << " spacepoints     " << std::endl;

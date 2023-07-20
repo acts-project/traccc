@@ -103,4 +103,31 @@ bool is_same_object<bound_track_parameters>::operator()(
 
 /// @}
 
+/// @name Implementation for
+///       @c
+///       traccc::details::is_same_object<track_candidate_collection_types::host>
+/// @{
+
+is_same_object<track_candidate_collection_types::host>::is_same_object(
+    const track_candidate_collection_types::host& ref, scalar unc)
+    : m_ref(ref), m_unc(unc) {}
+
+bool is_same_object<track_candidate_collection_types::host>::operator()(
+    const track_candidate_collection_types::host& obj) const {
+
+    const unsigned int n_cands = m_ref.get().size();
+    for (unsigned int i = 0; i < n_cands; i++) {
+
+        const bool is_same = m_ref.get()[i] == obj[i];
+
+        if (!is_same) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/// @}
+
 }  // namespace traccc::details

@@ -50,21 +50,23 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
 
+    // Configs
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config(finder_config);
+    traccc::seedfilter_config filter_config;
+
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(host_mr);
+    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
+                                 host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-
-    if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-    }
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
@@ -103,7 +105,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           Track params estimation
           ----------------------------*/
 
-        auto params = tp(spacepoints_per_event, seeds);
+        auto params = tp(spacepoints_per_event, seeds,
+                         {0.f, 0.f, finder_config.bFieldInZ});
 
         /*----------------------------
           Statistics
@@ -125,7 +128,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 common_opts.input_directory, common_opts.input_directory,
                 common_opts.input_directory, host_mr);
 
-            sd_performance_writer.write("CPU", vecmem::get_data(seeds),
+            sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
                                         evt_map);
         }

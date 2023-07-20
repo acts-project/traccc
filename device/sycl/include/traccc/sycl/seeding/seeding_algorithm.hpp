@@ -38,7 +38,10 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     ///             and host memory blocks
     /// @param queue The SYCL queue to work with
     ///
-    seeding_algorithm(const traccc::memory_resource& mr, vecmem::copy& copy,
+    seeding_algorithm(const seedfinder_config& finder_config,
+                      const spacepoint_grid_config& grid_config,
+                      const seedfilter_config& filter_config,
+                      const traccc::memory_resource& mr, vecmem::copy& copy,
                       const queue_wrapper& queue);
 
     /// Operator executing the algorithm.

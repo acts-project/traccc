@@ -44,11 +44,17 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_kokkos = 0;
 
+    // Configs
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config(finder_config);
+    traccc::seedfilter_config filter_config;
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     traccc::memory_resource mr{host_mr, &host_mr};
 
-    traccc::seeding_algorithm sa(host_mr);
+    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
+                                 host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     traccc::seedfinder_config finder_config;
@@ -63,10 +69,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    if (i_cfg.check_performance) {
-        sd_performance_writer.add_cache("CPU");
-        sd_performance_writer.add_cache("KOKKOS");
-    }
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -122,7 +124,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(std::move(spacepoints_per_event), seeds);
+                params = tp(std::move(spacepoints_per_event), seeds,
+                            {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
