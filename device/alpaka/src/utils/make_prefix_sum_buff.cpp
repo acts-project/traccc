@@ -9,27 +9,30 @@
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
-#include "traccc/device/make_prefix_sum_buffer.hpp"
 #include "traccc/alpaka/utils/make_prefix_sum_buff.hpp"
+#include "traccc/device/make_prefix_sum_buffer.hpp"
 
 namespace traccc::alpaka {
 
 struct PrefixSumBuffKernel {
-    template<typename Acc>
+    template <typename Acc>
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         vecmem::data::vector_view<const device::prefix_sum_size_t> sizes_view,
-        vecmem::data::vector_view<device::prefix_sum_element_t> ps_view
-    ) const {
-        auto threadIdx = ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        auto blockDim = ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        auto blockIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
+        vecmem::data::vector_view<device::prefix_sum_element_t> ps_view) const {
+        auto threadIdx =
+            ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
+        auto blockDim =
+            ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
+        auto blockIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
 
-        device::fill_prefix_sum(threadIdx + blockIdx * blockDim, sizes_view, ps_view);
+        device::fill_prefix_sum(threadIdx + blockIdx * blockDim, sizes_view,
+                                ps_view);
     }
 };
 
-template<typename Acc, typename Queue, typename BufAcc>
+template <typename Acc, typename Queue, typename BufAcc>
 vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
     const traccc::memory_resource& mr, Queue& queue, BufAcc& bufAcc) {
@@ -47,7 +50,8 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
 
     // Setup Alpaka
     auto const n = ::alpaka::getExtentProduct(bufAcc);
-    auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(::alpaka::getDevByIdx<Acc>(0u));
+    auto const deviceProperties =
+        ::alpaka::getAccDevProps<Acc>(::alpaka::getDevByIdx<Acc>(0u));
     auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
 
     // Fixed number of threads per block.
@@ -59,7 +63,8 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     // Fill the prefix sum vector
     auto data_prefix_sum_buff = vecmem::get_data(prefix_sum_buff);
 
-    ::alpaka::exec<Acc>(queue, workDiv, PrefixSumBuffKernel{}, sizes_sum_view, data_prefix_sum_buff);
+    ::alpaka::exec<Acc>(queue, workDiv, PrefixSumBuffKernel{}, sizes_sum_view,
+                        data_prefix_sum_buff);
     ::alpaka::wait(queue);
 
     return prefix_sum_buff;

@@ -6,10 +6,10 @@
  */
 
 // Project include(s).
+#include "traccc/alpaka/seeding/spacepoint_binning.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/alpaka/seeding/spacepoint_binning.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
@@ -19,8 +19,8 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
@@ -98,10 +98,10 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             traccc::spacepoint_collection_types::host& spacepoints_per_event =
                 reader_output.spacepoints;
 
-
             // Copy the spacepoint data to the device.
-            traccc::spacepoint_collection_types::buffer spacepoints_alpaka_buffer(
-                spacepoints_per_event.size(), mr.main);
+            traccc::spacepoint_collection_types::buffer
+                spacepoints_alpaka_buffer(spacepoints_per_event.size(),
+                                          mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_alpaka_buffer);
 

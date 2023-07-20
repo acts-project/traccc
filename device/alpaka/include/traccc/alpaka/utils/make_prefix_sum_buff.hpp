@@ -21,7 +21,7 @@ namespace traccc::alpaka {
 /// @param copy A "copy object" capable of dealing with the view
 /// @return     A vector buffer of prefix_sum element
 ///
-template<typename Acc, typename Queue, typename BufAcc>
+template <typename Acc, typename Queue, typename BufAcc>
 vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
     const traccc::memory_resource& mr, Queue& queue, BufAcc& bufAcc);
