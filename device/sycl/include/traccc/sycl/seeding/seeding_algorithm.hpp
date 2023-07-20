@@ -53,17 +53,10 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
                                spacepoints_view) const override;
 
     private:
-    /// Config objects
-    seedfinder_config m_finder_config;
-    spacepoint_grid_config m_grid_config;
-    seedfilter_config m_filter_config;
-
-    /// Memory resource used by the algorithm
-    traccc::memory_resource m_mr;
-    /// The copy object to use
-    vecmem::copy& m_copy;
-    /// The SYCL Queue
-    queue_wrapper m_queue;
+    /// Sub-algorithm performing the spacepoint binning
+    spacepoint_binning m_spacepoint_binning;
+    /// Sub-algorithm performing the seed finding
+    seed_finding m_seed_finding;
 
 };  // class seeding_algorithm
 

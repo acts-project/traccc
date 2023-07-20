@@ -27,14 +27,8 @@ seeding_algorithm::seeding_algorithm(const seedfinder_config& finder_config,
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {
 
-    /// Sub-algorithm performing the spacepoint binning
-    spacepoint_binning binning_alg(m_finder_config, m_grid_config, m_mr, m_copy,
-                                   m_stream);
-    /// Sub-algorithm performing the seed finding
-    seed_finding finding_alg(m_finder_config, m_filter_config, m_mr, m_copy,
-                             m_stream);
-
-    return finding_alg(spacepoints_view, binning_alg(spacepoints_view));
+    return m_seed_finding(spacepoints_view,
+                          m_spacepoint_binning(spacepoints_view));
 }
 
 }  // namespace traccc::cuda

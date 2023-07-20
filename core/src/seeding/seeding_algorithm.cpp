@@ -26,12 +26,7 @@ seeding_algorithm::seeding_algorithm(const seedfinder_config& finder_config,
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_collection_types::host& spacepoints) const {
 
-    /// Sub-algorithm performing the spacepoint binning
-    spacepoint_binning binning_alg(m_finder_config, m_grid_config, m_mr);
-    /// Sub-algorithm performing the seed finding
-    seed_finding finding_alg(m_finder_config, m_filter_config);
-
-    return finding_alg(spacepoints, binning_alg(spacepoints));
+    return m_seed_finding(spacepoints, m_spacepoint_binning(spacepoints));
 }
 
 }  // namespace traccc

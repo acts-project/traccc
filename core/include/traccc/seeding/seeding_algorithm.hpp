@@ -42,13 +42,10 @@ class seeding_algorithm : public algorithm<seed_collection_types::host(
         const spacepoint_collection_types::host& spacepoints) const override;
 
     private:
-    /// Memory resource used by the algorithm
-    vecmem::memory_resource& m_mr;
-
-    /// Config objects
-    seedfinder_config m_finder_config;
-    spacepoint_grid_config m_grid_config;
-    seedfilter_config m_filter_config;
+    /// Sub-algorithm performing the spacepoint binning
+    spacepoint_binning m_spacepoint_binning;
+    /// Sub-algorithm performing the seed finding
+    seed_finding m_seed_finding;
 
 };  // class seeding_algorithm
 

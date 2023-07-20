@@ -140,7 +140,7 @@ double igamc(const double a, const double x) {
     return (ans * ax);
 }
 
-double lgam(const double x) {
+double lgam(double x) {
     double p, q, u, w, z;
     int i;
 
