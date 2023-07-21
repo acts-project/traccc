@@ -23,9 +23,9 @@
 #include "traccc/options/seeding_input_options.hpp"
 
 // Detray include(s).
-#include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/core/detector.hpp"
+#include "detray/detectors/detector_metadata.hpp"
 #include "detray/io/json/json_reader.hpp"
-#include "detray/io/json/json_writer.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

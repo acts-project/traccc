@@ -64,7 +64,6 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
         const point3 pos{iohit.tx, iohit.ty, iohit.tz};
 
         // Construct the local 3D(2D) position of the measurement.
-        // const point3 lpos = placement.point_to_local(pos);
         alt_measurement meas;
         for (auto const [meas_id, hit_id] : meas_hit_ids) {
             if (hit_id == result_spacepoints.size()) {
