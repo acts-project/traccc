@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "traccc/definitions/qualifiers.hpp"
+
 // gamma and related functions from Cephes library
 // see:  http://www.netlib.org/cephes
 //
@@ -30,7 +32,7 @@ namespace traccc::detail {
 // The integral is evaluated by either a power series or
 // continued fraction expansion, depending on the relative
 // values of a and x.
-double igamc(const double a, const double x);
+TRACCC_HOST_DEVICE double igamc(const double a, const double x);
 
 // left tail of incomplete gamma function:
 //
@@ -40,20 +42,22 @@ double igamc(const double a, const double x);
 //           -     -
 //          k=0   | (a+k+1)
 //
-double igam(const double a, const double x);
+TRACCC_HOST_DEVICE double igam(const double a, const double x);
 
-double lgam(const double x);
+TRACCC_HOST_DEVICE double lgam(const double x);
 
 /*
  * calculates a value of a polynomial of the form:
  * a[0]x^N+a[1]x^(N-1) + ... + a[N]
  */
-double Polynomialeval(const double x, const double* a, const unsigned int N);
+TRACCC_HOST_DEVICE double Polynomialeval(const double x, const double* a,
+                                         const unsigned int N);
 
 /*
  * calculates a value of a polynomial of the form:
  * x^N+a[0]x^(N-1) + ... + a[N-1]
  */
-double Polynomial1eval(const double x, const double* a, const unsigned int N);
+TRACCC_HOST_DEVICE double Polynomial1eval(const double x, const double* a,
+                                          const unsigned int N);
 
 }  // namespace traccc::detail

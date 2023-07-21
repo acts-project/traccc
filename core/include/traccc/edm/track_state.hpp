@@ -32,6 +32,9 @@ struct fitter_info {
 
     /// Chi square of fitted track
     scalar_type chi2{0};
+
+    /// pvalue
+    scalar_type pval{0};
 };
 
 /// Fitting result per measurement

@@ -94,6 +94,7 @@ TEST_P(KalmanFittingTests, Run) {
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    // fit_cfg.n_iterations = 10;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 
     // Iterate over events

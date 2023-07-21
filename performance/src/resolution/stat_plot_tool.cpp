@@ -47,7 +47,7 @@ void stat_plot_tool::fill(stat_plot_cache& cache,
     cache.ndf_hist->Fill(ndf);
     cache.chi2_hist->Fill(chi2);
     cache.reduced_chi2_hist->Fill(chi2 / ndf);
-    cache.pval_hist->Fill(ROOT::Math::chisquared_cdf_c(chi2, ndf));
+    cache.pval_hist->Fill(fit_info.pval);
 #endif  // TRACCC_HAVE_ROOT
 }
 

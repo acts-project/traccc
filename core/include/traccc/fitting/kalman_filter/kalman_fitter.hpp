@@ -12,6 +12,7 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/detail/chi2_cdf.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
@@ -124,20 +125,66 @@ class kalman_fitter {
         vector_type<intersection_type>&& nav_candidates = {}) {
 
         // Run the kalman filtering for a given number of iterations
-        for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
+        for (std::size_t i_it = 0; i_it < m_cfg.n_iterations; i_it++) {
 
             // Reset the iterator of kalman actor
             fitter_state.m_fit_actor_state.reset();
 
-            if (i == 0) {
+            if (i_it == 0) {
                 filter(seed_params, fitter_state, std::move(nav_candidates));
             }
             // From the second iteration, seed parameter is the smoothed track
             // parameter at the first surface
-            else {
-                const auto& new_seed_params =
+            else if (i_it > 0) {
+
+                auto& smoothed =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
 
+                const auto& mask_store = m_detector.mask_store();
+
+                // Get intersection on surface
+                intersection_type sfi;
+                sfi.surface = m_detector.surfaces(
+                    detray::geometry::barcode{smoothed.surface_link()});
+
+                // Get free vector on surface
+                auto free_vec = m_detector.bound_to_free_vector(
+                    detray::geometry::barcode{smoothed.surface_link()},
+                    smoothed.vector());
+
+                mask_store.template visit<detray::intersection_update>(
+                    sfi.surface.mask(),
+                    detray::detail::ray<transform3_type>(free_vec), sfi,
+                    m_detector.transform_store());
+
+                // Apply material interaction backwardly to track state
+                typename interactor::state interactor_state;
+                interactor_state.do_multiple_scattering = false;
+                interactor{}.update(
+                    smoothed, interactor_state,
+                    static_cast<int>(detray::navigation::direction::e_backward),
+                    sfi, m_detector.material_store());
+
+                // Make new seed parameter
+                auto new_seed_params =
+                    fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
+
+                // inflate cov
+                /*
+                auto& new_cov = new_seed_params.covariance();
+
+                for (std::size_t i = 0; i < e_bound_size; i++) {
+                    for (std::size_t j = 0; j < e_bound_size; j++) {
+                        if (i == j && i != e_bound_qoverp) {
+                            getter::element(new_cov, i, j) =
+                                getter::element(new_cov, i, j) * 100.f;
+                        }
+                        if (i != j) {
+                            getter::element(new_cov, i, j) = 0.f;
+                        }
+                    }
+                }
+                */
                 filter(new_seed_params, fitter_state,
                        std::move(nav_candidates));
             }
@@ -226,6 +273,12 @@ class kalman_fitter {
 
     TRACCC_HOST_DEVICE
     void update_statistics(state& fitter_state) {
+
+        // Reset the ndf and chi2 of fitter info
+        fitter_state.m_fit_info.ndf = 0.f;
+        fitter_state.m_fit_info.chi2 = 0.f;
+        fitter_state.m_fit_info.pval = 0.f;
+
         auto& fit_info = fitter_state.m_fit_info;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
         const auto& mask_store = m_detector.mask_store();
@@ -245,6 +298,9 @@ class kalman_fitter {
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
         fit_info.ndf = fit_info.ndf - 5.f;
+
+        // p value
+        fit_info.pval = detail::chisquared_cdf_c(fit_info.chi2, fit_info.ndf);
     }
 
     private:
