@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
+#include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
@@ -19,9 +20,10 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#endif
 #include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <chrono>
@@ -53,18 +55,23 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    vecmem::cuda::copy copy;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
+#else
+    vecmem::copy copy;
+    traccc::memory_resource mr{host_mr, &host_mr};
+#endif
 
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
                                  host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    vecmem::cuda::copy copy;
-
     // Alpaka Spacepoint Binning
-    traccc::alpaka::spacepoint_binning m_spacepoint_binning(finder_config,
-                                                            grid_config, mr);
+    traccc::alpaka::spacepoint_binning m_spacepoint_binning(
+        finder_config, grid_config, mr, copy);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
