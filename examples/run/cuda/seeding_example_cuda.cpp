@@ -83,7 +83,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             2.7f, 1.f * traccc::unit<traccc::scalar>::GeV),
         std::make_unique<traccc::stepped_percentage>(0.6f));
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         nsd_performance_writer.initialize();
     }
 
@@ -212,7 +212,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
-        if (i_cfg.check_performance) {
+        if (common_opts.check_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
@@ -234,7 +234,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         }
     }
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         sd_performance_writer.finalize();
         nsd_performance_writer.finalize();
 
