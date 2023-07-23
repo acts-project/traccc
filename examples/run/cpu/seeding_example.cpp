@@ -108,7 +108,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
-        if (i_cfg.check_performance) {
+        if (common_opts.check_performance) {
 
             if (i_cfg.run_detray_geometry) {
                 traccc::event_map2 evt_map(event, common_opts.input_directory,
@@ -129,7 +129,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         }
     }
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         sd_performance_writer.finalize();
     }
 

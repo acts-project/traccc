@@ -23,6 +23,9 @@ traccc::common_options::common_options(po::options_description& desc) {
                        "Number of cells to merge in a partition. Equal to the "
                        "number of threads multiplied by CELLS_PER_THREAD "
                        "defined in clusterization.");
+    desc.add_options()("check_performance",
+                       po::value<bool>()->default_value(false),
+                       "generate performance result");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -37,4 +40,5 @@ void traccc::common_options::read(const po::variables_map& vm) {
     skip = vm["skip"].as<int>();
     target_cells_per_partition =
         vm["target_cells_per_partition"].as<unsigned short>();
+    check_performance = vm["check_performance"].as<bool>();
 }
