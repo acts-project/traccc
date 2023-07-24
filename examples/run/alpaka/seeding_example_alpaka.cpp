@@ -146,7 +146,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         }  // Stop measuring wall time
     }
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         sd_performance_writer.finalize();
     }
 
