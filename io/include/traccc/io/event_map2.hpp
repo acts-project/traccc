@@ -15,12 +15,6 @@
 
 namespace traccc {
 
-/// Measurement with surface link
-struct measurement_link {
-    geometry_id surface_link;
-    measurement meas;
-};
-
 /// Comparison / ordering operator for measurements
 TRACCC_HOST_DEVICE
 inline bool operator<(const measurement_link& lhs,
