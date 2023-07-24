@@ -16,13 +16,9 @@ traccc::finding_input_config::finding_input_config(
                            ->value_name("MIN:MAX")
                            ->default_value({6, 30}),
                        "Range of track candidates number");
-    desc.add_options()("check_performance",
-                       po::value<bool>()->default_value(false),
-                       "generate performance result");
 }
 
 void traccc::finding_input_config::read(const po::variables_map& vm) {
     track_candidates_range =
         vm["track_candidates_range"].as<Reals<unsigned int, 2>>();
-    check_performance = vm["check_performance"].as<bool>();
 }
