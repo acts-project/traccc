@@ -9,23 +9,26 @@
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
-#include "traccc/device/make_prefix_sum_buffer.hpp"
 #include "traccc/alpaka/utils/make_prefix_sum_buff.hpp"
+#include "traccc/device/make_prefix_sum_buffer.hpp"
 
 namespace traccc::alpaka {
 
 struct PrefixSumBuffKernel {
-    template<typename Acc>
+    template <typename Acc>
     ALPAKA_FN_ACC void operator()(
         Acc const& acc,
         vecmem::data::vector_view<const device::prefix_sum_size_t> sizes_view,
-        vecmem::data::vector_view<device::prefix_sum_element_t> ps_view
-    ) const {
-        auto threadIdx = ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        auto blockDim = ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        auto blockIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
+        vecmem::data::vector_view<device::prefix_sum_element_t> ps_view) const {
+        auto threadIdx =
+            ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
+        auto blockDim =
+            ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
+        auto blockIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
 
-        device::fill_prefix_sum(threadIdx + blockIdx * blockDim, sizes_view, ps_view);
+        device::fill_prefix_sum(threadIdx + blockIdx * blockDim, sizes_view,
+                                ps_view);
     }
 };
 

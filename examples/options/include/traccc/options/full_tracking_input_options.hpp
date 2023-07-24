@@ -15,7 +15,6 @@ namespace po = boost::program_options;
 struct full_tracking_input_config {
     std::string detector_file;
     std::string digitization_config_file;
-    bool check_performance;
 
     full_tracking_input_config(po::options_description& desc);
     void read(const po::variables_map& vm);

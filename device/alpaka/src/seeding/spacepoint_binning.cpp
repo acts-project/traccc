@@ -14,10 +14,6 @@
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
-// VecMem include(s).
-#include <vecmem/utils/copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-
 namespace traccc::alpaka {
 
 spacepoint_binning::spacepoint_binning(
@@ -32,18 +28,16 @@ spacepoint_binning::spacepoint_binning(
 struct CountGridCapacityKernel {
     template <typename Acc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
-        const seedfinder_config& config,
-        const sp_grid::axis_p0_type& phi_axis,
-        const sp_grid::axis_p1_type& z_axis,
+        Acc const& acc, const seedfinder_config& config,
+        const sp_grid::axis_p0_type* phi_axis,
+        const sp_grid::axis_p1_type* z_axis,
         const spacepoint_collection_types::const_view& spacepoints_view,
-        vecmem::data::vector_view<unsigned int>& grid_capacities_view
-    ) const
-    {
-        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::count_grid_capacities(globalThreadIdx, config,
-                                      phi_axis, z_axis, spacepoints_view,
-                                      grid_capacities_view);
+        vecmem::data::vector_view<unsigned int>* grid_capacities_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        device::count_grid_capacities(globalThreadIdx, config, *phi_axis,
+                                      *z_axis, spacepoints_view,
+                                      *grid_capacities_view);
     }
 };
 
@@ -51,13 +45,11 @@ struct CountGridCapacityKernel {
 struct PopulateGridKernel {
     template <typename Acc>
     ALPAKA_FN_ACC void operator()(
-        Acc const& acc,
-        const seedfinder_config& config,
+        Acc const& acc, const seedfinder_config& config,
         const spacepoint_collection_types::const_view& spacepoints_view,
-        sp_grid_view& grid_view
-    ) const
-    {
-        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        sp_grid_view* grid_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
         // Check if anything needs to be done.
         const spacepoint_collection_types::const_device spacepoints(
@@ -69,10 +61,11 @@ struct PopulateGridKernel {
         const spacepoint sp = spacepoints.at(globalThreadIdx);
 
         /// Check out if the spacepoint can be used for seeding.
-        if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {
+        if (is_valid_sp(config, sp) !=
+            detray::detail::invalid_value<size_t>()) {
 
             // Set up the spacepoint grid object(s).
-            sp_grid_device grid(grid_view);
+            sp_grid_device grid(*grid_view);
             const sp_grid_device::axis_p0_type& phi_axis = grid.axis_p0();
             const sp_grid_device::axis_p1_type& z_axis = grid.axis_p1();
 
@@ -87,7 +80,6 @@ struct PopulateGridKernel {
         }
     }
 };
-
 
 spacepoint_binning::output_type spacepoint_binning::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {
@@ -113,17 +105,15 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto const maxThreadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
     auto const threadsPerBlock = maxThreadsPerBlock;
-    auto const blocksPerGrid = (sp_size + threadsPerBlock - 1) / threadsPerBlock;
+    auto const blocksPerGrid =
+        (sp_size + threadsPerBlock - 1) / threadsPerBlock;
     auto const elementsPerThread = 1u;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     auto bufAcc = ::alpaka::allocBuf<float, uint32_t>(devAcc, sp_size);
 
-    ::alpaka::exec<Acc>(
-            queue, workDiv,
-            CountGridCapacityKernel{},
-            m_config, m_axes.first, m_axes.second,
-            spacepoints_view, grid_capacities_view
-    );
+    ::alpaka::exec<Acc>(queue, workDiv, CountGridCapacityKernel{}, m_config,
+                        &m_axes.first, &m_axes.second, spacepoints_view,
+                        &grid_capacities_view);
     ::alpaka::wait(queue);
 
     // Copy grid capacities back to the host
@@ -140,11 +130,8 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     m_copy.setup(grid_buffer._buffer);
     sp_grid_view grid_view = grid_buffer;
 
-    ::alpaka::exec<Acc>(
-            queue, workDiv,
-            PopulateGridKernel{},
-            m_config, spacepoints_view, grid_view
-    );
+    ::alpaka::exec<Acc>(queue, workDiv, PopulateGridKernel{}, m_config,
+                        spacepoints_view, &grid_view);
     ::alpaka::wait(queue);
 
     // Return the freshly filled buffer.
