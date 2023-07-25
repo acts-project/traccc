@@ -10,11 +10,11 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
 
-#ifdef alpaka_ACC_GPU_CUDA_ENABLED
-#include "vecmem/utils/cuda/copy.h"
-#else
-#include "vecmem/utils/copy.hpp"
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#include <vecmem/utils/cuda/copy.hpp>
 #endif
+
+#include <vecmem/utils/copy.hpp>
 
 namespace traccc::alpaka {
 

@@ -62,13 +62,13 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
 
-#ifdef alpaka_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     vecmem::cuda::copy copy;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 #else
     vecmem::copy copy;
-    traccc::memory_resource mr{host_mr, &host_mr}; // TODO: Best way?
+    traccc::memory_resource mr{host_mr, &host_mr};
 #endif
 
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
@@ -90,7 +90,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             2.7f, 1.f * traccc::unit<traccc::scalar>::GeV),
         std::make_unique<traccc::stepped_percentage>(0.6f));
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         nsd_performance_writer.initialize();
     }
 
@@ -134,8 +134,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
             // TODO: Check this (and all other copies) are intelligent.
             // Copy the spacepoint data to the device.
-            traccc::spacepoint_collection_types::buffer spacepoints_alpaka_buffer(
-                spacepoints_per_event.size(), mr.main);
+            traccc::spacepoint_collection_types::buffer
+                spacepoints_alpaka_buffer(spacepoints_per_event.size(),
+                                          mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_alpaka_buffer);
 
@@ -219,7 +220,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           Writer
           ------------*/
 
-        if (i_cfg.check_performance) {
+        if (common_opts.check_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
@@ -241,7 +242,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         }
     }
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         sd_performance_writer.finalize();
         nsd_performance_writer.finalize();
 

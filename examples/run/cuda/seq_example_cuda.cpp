@@ -263,7 +263,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_spacepoints_cuda += spacepoints_per_event_cuda.size();
         n_seeds_cuda += seeds_cuda.size();
 
-        if (i_cfg.check_performance) {
+        if (common_opts.check_performance) {
 
             traccc::event_map evt_map(
                 event, i_cfg.detector_file, i_cfg.digitization_config_file,
@@ -275,7 +275,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         }
     }
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         sd_performance_writer.finalize();
     }
 

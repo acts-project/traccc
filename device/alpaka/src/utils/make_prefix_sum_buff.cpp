@@ -9,8 +9,8 @@
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
-#include "traccc/device/make_prefix_sum_buffer.hpp"
 #include "traccc/alpaka/utils/make_prefix_sum_buff.hpp"
+#include "traccc/device/make_prefix_sum_buffer.hpp"
 
 namespace traccc::alpaka {
 
