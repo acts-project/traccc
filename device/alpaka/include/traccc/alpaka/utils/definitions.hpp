@@ -18,7 +18,7 @@
 
 namespace traccc::alpaka {
 
-#ifdef alpaka_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #define WARP_SIZE 32
 #else
 #define WARP_SIZE 4

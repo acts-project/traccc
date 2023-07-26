@@ -12,7 +12,7 @@
 
 namespace traccc::device {
 
-TRACCC_DEVICE
+TRACCC_HOST_DEVICE
 inline void populate_grid(
     unsigned int globalIndex, const seedfinder_config& config,
     const spacepoint_collection_types::const_view& spacepoints_view,
