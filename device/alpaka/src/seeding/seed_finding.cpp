@@ -132,17 +132,10 @@ struct UpdateTripletWeightsKernel {
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
         auto const localThreadIdx =
             ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        // auto const threadElemExtent = ::alpaka::getWorkDiv<::alpaka::Block,
-        // ::alpaka::Threads>(acc)[0u];
 
         // Array for temporary storage of quality parameters for comparing
         // triplets within weight updating kernel
-        // TODO: This should be dynamic/compile time, utilising the thread
-        // extent or similar.
-        static const auto dataSize =
-            filter_config.compatSeedLimit * WARP_SIZE * 2;
-        auto& data =
-            ::alpaka::declareSharedVar<scalar[dataSize], __COUNTER__>(acc);
+        scalar* const data = ::alpaka::getDynSharedMem<scalar>(acc);
 
         // Each thread uses compatSeedLimit elements of the array
         scalar* dataPos = &data[localThreadIdx * filter_config.compatSeedLimit];
@@ -171,12 +164,7 @@ struct SelectSeedsKernel {
 
         // Array for temporary storage of quality parameters for comparing
         // triplets within weight updating kernel
-        // TODO: This should be dynamic/compile time, utilising the thread
-        // extent or similar.
-        static const auto dataSize =
-            filter_config.max_triplets_per_spM * WARP_SIZE * 2;
-        auto& data =
-            ::alpaka::declareSharedVar<triplet[dataSize], __COUNTER__>(acc);
+        triplet* const data = ::alpaka::getDynSharedMem<triplet>(acc);
 
         // Each thread uses max_triplets_per_spM elements of the array
         triplet* dataPos =
@@ -353,7 +341,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    threadsPerBlock = WARP_SIZE * 2;  // TODO: Replace with a dynamic size.
+    threadsPerBlock = WARP_SIZE * 2;
     blocksPerGrid =
         (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
@@ -390,3 +378,46 @@ seed_finding::output_type seed_finding::operator()(
 }
 
 }  // namespace traccc::alpaka
+
+// Define the required trait needed for Dynamic shared memory allocation.
+namespace alpaka::trait {
+
+template <typename TAcc>
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel, TAcc>
+{
+    template <typename TVec>
+    ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
+        traccc::alpaka::UpdateTripletWeightsKernel const& /* kernel */,
+        TVec const& blockThreadExtent,
+        TVec const& /* threadElemExtent */,
+        traccc::seedfilter_config filter_config,
+        traccc::sp_grid_const_view /* sp_grid */,
+        traccc::device::triplet_counter_spM_collection_types::const_view /* spM_tc */,
+        traccc::device::triplet_counter_collection_types::const_view /* midBot_tc */,
+        traccc::device::device_triplet_collection_types::view /* triplet_view */
+    ) -> std::size_t {
+        return static_cast<std::size_t>(filter_config.compatSeedLimit * blockThreadExtent.prod()) * sizeof(traccc::scalar);
+    }
+};
+
+template <typename TAcc>
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc>
+{
+    template <typename TVec>
+    ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
+        traccc::alpaka::SelectSeedsKernel const& /* kernel */,
+        TVec const& blockThreadExtent,
+        TVec const& /* threadElemExtent */,
+        traccc::seedfilter_config filter_config,
+        traccc::spacepoint_collection_types::const_view /* spacepoints_view */,
+        traccc::sp_grid_const_view /* sp_grid */,
+        traccc::device::triplet_counter_spM_collection_types::const_view /* spM_tc */,
+        traccc::device::triplet_counter_collection_types::const_view /* midBot_tc */,
+        traccc::device::device_triplet_collection_types::view /* triplet_view */,
+        traccc::seed_collection_types::view /* seed_view */
+    ) -> std::size_t {
+        return static_cast<std::size_t>(filter_config.max_triplets_per_spM * blockThreadExtent.prod()) * sizeof(traccc::triplet);
+    }
+};
+
+}  // namespace alpaka::traits

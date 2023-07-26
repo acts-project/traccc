@@ -59,7 +59,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     auto blocksPerGrid = (seeds_size + threadsPerBlock - 1) / threadsPerBlock;
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-    // run the kernel
+    // Run the kernel
     ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{},
                         spacepoints_view, seeds_view, bfield,
                         vecmem::get_data(params_buffer));
