@@ -34,8 +34,8 @@ using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
 template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocksPerGrid, Idx threadsPerBlockOrElementsPerThread) {
-#ifdef alpaka_ACC_GPU_CUDA_ENABLED
-    if constexpr (std::is_same_v<TAcc, alpaka::AccGpuCudaRt<Dim, Idx>>) {
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    if constexpr (std::is_same_v<TAcc, ::alpaka::AccGpuCudaRt<Dim, Idx>>) {
         const auto elementsPerThread = Idx{1};
         return WorkDiv{blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread};
     } else
