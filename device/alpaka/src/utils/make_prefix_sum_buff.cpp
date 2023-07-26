@@ -15,13 +15,13 @@
 namespace traccc::alpaka {
 
 struct PrefixSumBuffKernel {
-    template<typename TAcc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
         vecmem::data::vector_view<const device::prefix_sum_size_t> sizes_view,
-        vecmem::data::vector_view<device::prefix_sum_element_t> ps_view
-    ) const {
-        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        vecmem::data::vector_view<device::prefix_sum_element_t> ps_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
         device::fill_prefix_sum(globalThreadIdx, sizes_view, ps_view);
     }
 };
@@ -43,14 +43,17 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     auto data_prefix_sum_buff = vecmem::get_data(prefix_sum_buff);
 
     // Setup Alpaka
-    auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(::alpaka::getDevByIdx<Acc>(0u));
+    auto const deviceProperties =
+        ::alpaka::getAccDevProps<Acc>(::alpaka::getDevByIdx<Acc>(0u));
     auto const threadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
 
     // Fixed number of threads per block.
-    auto const blocksPerGrid = (totalSize + threadsPerBlock - 1) / threadsPerBlock;
+    auto const blocksPerGrid =
+        (totalSize + threadsPerBlock - 1) / threadsPerBlock;
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-    ::alpaka::exec<Acc>(queue, workDiv, PrefixSumBuffKernel{}, sizes_sum_view, data_prefix_sum_buff);
+    ::alpaka::exec<Acc>(queue, workDiv, PrefixSumBuffKernel{}, sizes_sum_view,
+                        data_prefix_sum_buff);
     ::alpaka::wait(queue);
 
     return prefix_sum_buff;

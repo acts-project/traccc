@@ -8,13 +8,12 @@
 #pragma once
 
 // Project include(s)
+#include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
-
-#include "traccc/alpaka/utils/definitions.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -33,7 +32,8 @@ struct track_params_estimation
     /// @param mr is the memory resource
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
-    track_params_estimation(const traccc::memory_resource& mr, vecmem::copy& copy);
+    track_params_estimation(const traccc::memory_resource& mr,
+                            vecmem::copy& copy);
 
     /// Callable operator for track_params_estimation
     ///

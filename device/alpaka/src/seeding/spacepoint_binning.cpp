@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
+
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
@@ -28,19 +29,16 @@ spacepoint_binning::spacepoint_binning(
 struct CountGridCapacityKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        const seedfinder_config& config,
+        TAcc const& acc, const seedfinder_config& config,
         const sp_grid::axis_p0_type phi_axis,
         const sp_grid::axis_p1_type z_axis,
         const spacepoint_collection_types::const_view spacepoints_view,
-        vecmem::data::vector_view<unsigned int> grid_capacities_view
-    ) const
-    {
-        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        vecmem::data::vector_view<unsigned int> grid_capacities_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        device::count_grid_capacities(globalThreadIdx, config,
-                                      phi_axis, z_axis, spacepoints_view,
-                                      grid_capacities_view);
+        device::count_grid_capacities(globalThreadIdx, config, phi_axis, z_axis,
+                                      spacepoints_view, grid_capacities_view);
     }
 };
 
@@ -50,11 +48,12 @@ struct PopulateGridKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, seedfinder_config config,
         spacepoint_collection_types::const_view spacepoints_view,
-        sp_grid_view grid_view) const
-    {
-        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        sp_grid_view grid_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        device::populate_grid(globalThreadIdx, config, spacepoints_view, grid_view);
+        device::populate_grid(globalThreadIdx, config, spacepoints_view,
+                              grid_view);
     }
 };
 
@@ -89,11 +88,10 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     auto const blocksPerGrid =
         (sp_size + threadsPerBlock - 1) / threadsPerBlock;
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
-    std::cout << "CountGrid: " << workDiv << std::endl;
 
-    ::alpaka::exec<Acc>(
-        queue, workDiv, CountGridCapacityKernel{}, m_config,
-        m_axes.first, m_axes.second, spacepoints_view, grid_capacities_view);
+    ::alpaka::exec<Acc>(queue, workDiv, CountGridCapacityKernel{}, m_config,
+                        m_axes.first, m_axes.second, spacepoints_view,
+                        grid_capacities_view);
     ::alpaka::wait(queue);
 
     // Copy grid capacities back to the host

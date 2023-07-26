@@ -10,8 +10,8 @@
 
 // Project include(s).
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/seeding/device/estimate_track_params.hpp"
 #include "traccc/alpaka/utils/definitions.hpp"
+#include "traccc/seeding/device/estimate_track_params.hpp"
 
 namespace traccc::alpaka {
 
@@ -21,18 +21,17 @@ struct EstimateTrackParamsKernel {
         TAcc const& acc,
         spacepoint_collection_types::const_view spacepoints_view,
         seed_collection_types::const_view seed_view, const vector3 bfield,
-        bound_track_parameters_collection_types::view params_view
-    ) const
-    {
-        auto const globalThreadIdx = ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::estimate_track_params(globalThreadIdx, spacepoints_view, seed_view, bfield, params_view);
+        bound_track_parameters_collection_types::view params_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        device::estimate_track_params(globalThreadIdx, spacepoints_view,
+                                      seed_view, bfield, params_view);
     }
 };
 
 track_params_estimation::track_params_estimation(
     const traccc::memory_resource& mr, vecmem::copy& copy)
-    : m_mr(mr),
-      m_copy(copy) {}
+    : m_mr(mr), m_copy(copy) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
@@ -61,16 +60,10 @@ track_params_estimation::output_type track_params_estimation::operator()(
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // run the kernel
-    ::alpaka::exec<Acc>(
-        queue, workDiv,
-        EstimateTrackParamsKernel{},
-        spacepoints_view,
-        seeds_view,
-        bfield,
-        vecmem::get_data(params_buffer)
-    );
+    ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{},
+                        spacepoints_view, seeds_view, bfield,
+                        vecmem::get_data(params_buffer));
     ::alpaka::wait(queue);
-
 
     return params_buffer;
 }

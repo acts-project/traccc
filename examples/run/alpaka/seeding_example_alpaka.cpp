@@ -6,9 +6,9 @@
  */
 
 // Project include(s).
-#include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -77,8 +77,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::track_params_estimation tp(host_mr);
 
     // Alpaka Spacepoint Binning
-    traccc::alpaka::seeding_algorithm sa_alpaka{
-        finder_config, grid_config, filter_config, mr, copy};
+    traccc::alpaka::seeding_algorithm sa_alpaka{finder_config, grid_config,
+                                                filter_config, mr, copy};
     traccc::alpaka::track_params_estimation tp_alpaka{mr, copy};
 
     // performance writer
@@ -106,7 +106,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
         traccc::track_params_estimation::output_type params;
 
         // Instantiate alpaka containers/collections
-        traccc::seed_collection_types::buffer seeds_alpaka_buffer(0, *(mr.host));
+        traccc::seed_collection_types::buffer seeds_alpaka_buffer(0,
+                                                                  *(mr.host));
         traccc::bound_track_parameters_collection_types::buffer
             params_alpaka_buffer(0, *mr.host);
 
@@ -144,8 +145,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             {
                 traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                seeds_alpaka_buffer = sa_alpaka(
-                    vecmem::get_data(spacepoints_alpaka_buffer));
+                seeds_alpaka_buffer =
+                    sa_alpaka(vecmem::get_data(spacepoints_alpaka_buffer));
             }
 
             // CPU
@@ -166,7 +167,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
                                              elapsedTimes);
                 params_alpaka_buffer =
                     tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                              {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params alpaka timer
             // CPU
 
@@ -254,7 +255,8 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
               << n_modules << " modules" << std::endl;
     std::cout << "- created  (cpu)  " << n_seeds << " seeds" << std::endl;
-    std::cout << "- created (alpaka)  " << n_seeds_alpaka << " seeds" << std::endl;
+    std::cout << "- created (alpaka)  " << n_seeds_alpaka << " seeds"
+              << std::endl;
     std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;
