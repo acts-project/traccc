@@ -27,4 +27,19 @@ namespace traccc::io {
 geometry read_geometry(std::string_view filename,
                        data_format format = data_format::csv);
 
+/// Read in the detector geometry description from a detector object
+template <typename detector_t>
+geometry alt_read_geometry(const detector_t& det) {
+
+    const auto transforms = det.transform_store();
+    const auto surfaces = det.surfaces();
+    std::map<traccc::geometry_id, traccc::transform3> maps;
+
+    for (const auto& sf : surfaces) {
+        maps.insert({sf.barcode().value(), transforms[sf.transform()]});
+    }
+
+    return maps;
+}
+
 }  // namespace traccc::io

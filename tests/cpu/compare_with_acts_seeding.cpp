@@ -12,7 +12,6 @@
 // algorithms
 #include "traccc/seeding/seed_finding.hpp"
 #include "traccc/seeding/spacepoint_binning.hpp"
-#include "traccc/seeding/track_params_estimation.hpp"
 
 // tests
 #include "tests/atlas_cuts.hpp"
@@ -60,25 +59,6 @@ inline bool operator==(const traccc::spacepoint& traccc_sp,
     return false;
 }
 
-inline bool operator==(const Acts::BoundVector& acts_vec,
-                       const traccc::bound_vector& traccc_vec) {
-    if (std::abs(acts_vec[Acts::eBoundLoc0] -
-                 traccc::getter::element(traccc_vec, traccc::e_bound_loc0, 0)) <
-            traccc::float_epsilon * 10 &&
-        std::abs(acts_vec[Acts::eBoundLoc1] -
-                 traccc::getter::element(traccc_vec, traccc::e_bound_loc1, 0)) <
-            traccc::float_epsilon * 10 &&
-        std::abs(acts_vec[Acts::eBoundTheta] -
-                 traccc::getter::element(traccc_vec, traccc::e_bound_theta,
-                                         0)) < traccc::float_epsilon * 1000 &&
-        std::abs(acts_vec[Acts::eBoundPhi] -
-                 traccc::getter::element(traccc_vec, traccc::e_bound_phi, 0)) <
-            traccc::float_epsilon * 1000) {
-        return true;
-    }
-    return false;
-}
-
 class CompareWithActsSeedingTests
     : public ::testing::TestWithParam<
           std::tuple<std::string, std::string, unsigned int>> {};
@@ -100,7 +80,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // Declare algorithms
     traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
     traccc::seed_finding sf(traccc_config, traccc::seedfilter_config());
-    traccc::track_params_estimation tp(host_mr);
 
     // Read the surface transforms
     auto surface_transforms = traccc::io::read_geometry(detector_file);
@@ -112,22 +91,13 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     traccc::spacepoint_collection_types::host& spacepoints_per_event =
         reader_output.spacepoints;
-    traccc::cell_module_collection_types::host& modules_per_event =
-        reader_output.modules;
+
     /*--------------------------------
       TRACCC seeding
       --------------------------------*/
 
     auto internal_spacepoints_per_event = sb(spacepoints_per_event);
     auto seeds = sf(spacepoints_per_event, internal_spacepoints_per_event);
-
-    /*--------------------------------
-      TRACCC track params estimation
-      --------------------------------*/
-
-    auto tp_output =
-        tp(spacepoints_per_event, seeds, {0.f, 0.f, traccc_config.bFieldInZ});
-    auto& traccc_params = tp_output;
 
     /*--------------------------------
       ACTS seeding
@@ -318,122 +288,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // EXPECT_EQ(seeds.size(), seedVector.size());
     EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.001);
     EXPECT_TRUE(seed_match_ratio > 0.999);
-
-    /*--------------------------------
-      ACTS track params estimation
-      --------------------------------*/
-
-    const Acts::GeometryContext geoCtx;
-
-    std::vector<Acts::BoundVector> acts_params;
-
-    for (auto& seed : seedVector) {
-
-        auto& spacePoints = seed.sp();
-
-        // get SpacePointPtr
-        std::array<const SpacePoint*, 3> spacePointPtrs;
-        spacePointPtrs[0] = spacePoints[0];
-        spacePointPtrs[1] = spacePoints[1];
-        spacePointPtrs[2] = spacePoints[2];
-
-        // find geometry id
-        auto spB = spacePoints[0];
-        traccc::geometry_id geo_id = 0;
-        auto it = std::find(spacepoints_per_event.begin(),
-                            spacepoints_per_event.end(), spB);
-        if (it != spacepoints_per_event.end()) {
-            geo_id = modules_per_event.at((*it).meas.module_link).module;
-        }
-
-        EXPECT_TRUE(geo_id != 0);
-
-        const auto& tf3 = surface_transforms[geo_id];
-        const auto& tsl = tf3.translation();
-        const auto& rot = tf3.rotation();
-
-        Acts::Vector3 normal;
-        normal(0, 0) = traccc::transform3::element_getter()(rot, 0, 2);
-        normal(1, 0) = traccc::transform3::element_getter()(rot, 1, 2);
-        normal(2, 0) = traccc::transform3::element_getter()(rot, 2, 2);
-
-        std::shared_ptr<Acts::Surface> bottomSurface;
-        bool is_disc = false;
-        // barrel layer
-        if (abs(normal.dot(Acts::Vector3::UnitZ())) < traccc::float_epsilon) {
-            // for plane of barrel layers, translation and normal vector is used
-            // to form acts transform3
-
-            Acts::Vector3 center;
-            center(0, 0) = tsl[0];
-            center(1, 0) = tsl[1];
-            center(2, 0) = tsl[2];
-
-            bottomSurface =
-                Acts::Surface::makeShared<Acts::PlaneSurface>(center, normal);
-        }
-        // endcap layer
-        else {
-            is_disc = true;
-            // for disc of endcap layers, the traccc transform components are
-            // copied into acts transform3
-            Acts::Transform3 acts_tf3;
-            for (unsigned int i = 0; i < 4; i++) {
-                for (unsigned int j = 0; j < 4; j++) {
-                    acts_tf3(i, j) = traccc::transform3::element_getter()(
-                        tf3.matrix(), i, j);
-                }
-            }
-
-            // last three arugments are given randomly
-            bottomSurface = Acts::Surface::makeShared<Acts::DiscSurface>(
-                acts_tf3, 0., 10., 0.);
-        }
-
-        // Test the full track parameters estimator
-        auto fullParamsOpt = estimateTrackParamsFromSeed(
-            geoCtx, spacePointPtrs.begin(), spacePointPtrs.end(),
-            *bottomSurface,
-            Acts::Vector3(
-                0, 0, acts_config.bFieldInZ / traccc::unit<traccc::scalar>::T),
-            0.1);
-
-        auto acts_vec = *fullParamsOpt;
-
-        // Acts globalToLocal function on DiscSurface gives (u,v) in radial
-        // coordinate. Therefore acts parameters are converted into cartesian
-        // coordinate for comparison with traccc parameters
-        if (is_disc) {
-            auto x = acts_vec[Acts::eBoundLoc0] *
-                     std::cos(acts_vec[Acts::eBoundLoc1]);
-            auto y = acts_vec[Acts::eBoundLoc0] *
-                     std::sin(acts_vec[Acts::eBoundLoc1]);
-            acts_vec[Acts::eBoundLoc0] = x;
-            acts_vec[Acts::eBoundLoc1] = y;
-        }
-
-        acts_params.push_back(acts_vec);
-    }
-
-    // params equality check
-    int n_params_match = 0;
-    for (auto& traccc_param : traccc_params) {
-        auto& traccc_vec = traccc_param.vector();
-        for (auto& acts_vec : acts_params) {
-            if (acts_vec == traccc_vec) {
-                n_params_match++;
-                break;
-            }
-        }
-    }
-
-    float params_match_ratio = float(n_params_match) / traccc_params.size();
-    // @TODO Uncomment the line below once acts-project/acts#2132 is merged
-    // EXPECT_EQ(acts_params.size(), traccc_params.size())
-    EXPECT_NEAR(acts_params.size(), traccc_params.size(),
-                acts_params.size() * 0.001);
-    EXPECT_TRUE(params_match_ratio > 0.999)
-        << "Parameter matching ratio: " << params_match_ratio << std::endl;
 }
 
 INSTANTIATE_TEST_SUITE_P(

@@ -20,10 +20,15 @@ void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
 
     switch (format) {
         case data_format::csv: {
-            read_spacepoints(out,
-                             data_directory() + directory.data() +
-                                 get_event_filename(event, "-hits.csv"),
-                             geom, format);
+            read_spacepoints(
+                out,
+                data_directory() + directory.data() +
+                    get_event_filename(event, "-hits.csv"),
+                data_directory() + directory.data() +
+                    get_event_filename(event, "-measurements.csv"),
+                data_directory() + directory.data() +
+                    get_event_filename(event, "-measurement-simhit-map.csv"),
+                geom, format);
             break;
         }
         case data_format::binary: {
@@ -41,11 +46,14 @@ void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
 }
 
 void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+                      std::string_view meas_filename,
+                      std::string_view meas_hit_map_filename,
                       const geometry& geom, data_format format) {
 
     switch (format) {
         case data_format::csv:
-            return csv::read_spacepoints(out, filename, geom);
+            return csv::read_spacepoints(out, filename, meas_filename,
+                                         meas_hit_map_filename, geom);
         default:
             throw std::invalid_argument("Unsupported data format");
     }
