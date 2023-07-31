@@ -30,7 +30,7 @@ using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
 using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
 using Host = ::alpaka::DevCpu;
-using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
+using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
 
 template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocksPerGrid,

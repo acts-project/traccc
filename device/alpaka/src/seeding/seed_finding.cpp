@@ -194,7 +194,8 @@ seed_finding::output_type seed_finding::operator()(
     auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
-    auto threadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
+    auto maxThreads = deviceProperties.m_blockThreadExtentMax[0];
+    auto threadsPerBlock = maxThreads;
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -341,7 +342,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    threadsPerBlock = WARP_SIZE * 2;
+    threadsPerBlock = WARP_SIZE * 2 < maxThreads ? WARP_SIZE * 2 : maxThreads;
     blocksPerGrid =
         (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
