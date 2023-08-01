@@ -15,22 +15,16 @@ namespace traccc::alpaka {
 template <typename TAcc>
 struct barrier {
 
-    barrier(TAcc const& acc) : m_acc(acc) {};
+    ALPAKA_FN_INLINE ALPAKA_FN_ACC barrier(const TAcc* acc) : m_acc(acc) {};
 
-    // TRACCC_DEVICE
-    // void blockBarrier() { ::alpaka::syncBlockThreads(m_acc); }
+    ALPAKA_FN_ACC
+    void blockBarrier() { ::alpaka::syncBlockThreads(*m_acc); }
 
-    // TRACCC_DEVICE
-    // bool blockOr(bool predicate) { return ::alpaka::syncBlockThreadsPredicate<::alpaka::BlockCount>(m_acc, predicate); }
-
-    TRACCC_DEVICE
-    void blockBarrier() { return; }
-
-    TRACCC_DEVICE
-    bool blockOr(bool predicate) { return predicate; }
+    ALPAKA_FN_ACC
+    bool blockOr(bool predicate) { return ::alpaka::syncBlockThreadsPredicate<::alpaka::BlockCount>(*m_acc, predicate); }
 
     private:
-    TAcc m_acc;
+    const TAcc* m_acc;
 };
 
 }  // namespace traccc::alpaka
