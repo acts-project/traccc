@@ -48,17 +48,17 @@ struct CCLKernel {
         unsigned int const localBlockIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
         index_t const blockExtent =
-            ::alpaka::getWorkDiv<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
+            ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
 
-        unsigned int partition_start = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
-        unsigned int partition_end = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
-        unsigned int outi = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
+        auto& partition_start = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
+        auto& partition_end = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
+        auto& outi = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
 
         index_t* const shared_v = ::alpaka::getDynSharedMem<index_t>(acc);
         index_t* f = &shared_v[0];
         index_t* f_next = &shared_v[max_cells_per_partition];
 
-        alpaka::barrier<TAcc> barry_r(acc);
+        alpaka::barrier<TAcc> barry_r(&acc);
 
         device::ccl_kernel(localThreadIdx, blockExtent, localBlockIdx, cells_view,
                            modules_view, max_cells_per_partition,
@@ -120,8 +120,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Counter for number of measurements
     auto bufHost_num_measurements =
         ::alpaka::allocBuf<unsigned int, Idx>(devHost, 1u);
-    unsigned int* num_measurements_host(::alpaka::getPtrNative(bufHost_num_measurements));
-    num_measurements_host = 0;
+    unsigned int* pBufHost_num_measurements(::alpaka::getPtrNative(bufHost_num_measurements));
     auto bufAcc_num_measurements =
         ::alpaka::allocBuf<unsigned int, Idx>(devAcc, 1u);
     ::alpaka::memcpy(queue, bufAcc_num_measurements, bufHost_num_measurements);
@@ -158,14 +157,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     ::alpaka::memcpy(queue, bufHost_num_measurements, bufAcc_num_measurements);
 
     spacepoint_collection_types::buffer spacepoints_buffer(
-        *num_measurements_host, m_mr.main);
+        *pBufHost_num_measurements, m_mr.main);
     m_copy.setup(spacepoints_buffer);
 
     // For the following kernel, we can now use whatever the desired number of
     // threads per block.
     auto spacepointsLocalSize = 1024;
     const unsigned int num_blocks =
-        (*num_measurements_host + spacepointsLocalSize - 1) /
+        (*pBufHost_num_measurements + spacepointsLocalSize - 1) /
         spacepointsLocalSize;
     workDiv = makeWorkDiv<Acc>(num_blocks, spacepointsLocalSize);
 
@@ -188,7 +187,7 @@ namespace alpaka::trait {
 template <typename TAcc>
 struct BlockSharedMemDynSizeBytes<traccc::alpaka::CCLKernel, TAcc>
 {
-    template <typename TVec>
+    template <typename TVec, typename ...TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::CCLKernel const& /* kernel */,
         TVec const& /* blockThreadExtent */,
@@ -196,10 +195,7 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::CCLKernel, TAcc>
         const traccc::cell_collection_types::const_view /* cells_view */,
         const traccc::cell_module_collection_types::const_view /* modules_view */,
         const unsigned short max_cells_per_partition,
-        const unsigned short /* target_cells_per_partition */,
-        traccc::alt_measurement_collection_types::view /* measurements_view */,
-        unsigned int* /* measurement_count */,
-        vecmem::data::vector_view<unsigned int> /* cell_link */
+        TArgs const&... /* args */
     ) -> std::size_t {
         return static_cast<std::size_t>(2 * max_cells_per_partition * sizeof(unsigned short));
     }
