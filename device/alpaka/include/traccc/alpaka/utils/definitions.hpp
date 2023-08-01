@@ -30,22 +30,23 @@ using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
 using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
 using Host = ::alpaka::DevCpu;
-using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
+using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
 template <typename TAcc>
-inline WorkDiv makeWorkDiv(Idx blocksPerGrid,
-                           Idx threadsPerBlockOrElementsPerThread) {
+inline WorkDiv makeWorkDiv(Idx blocks,
+                           Idx threadsOrElements) {
+    const Idx blocksPerGrid = std::max(Idx{1}, blocks);
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     if constexpr (std::is_same_v<TAcc, ::alpaka::AccGpuCudaRt<Dim, Idx>>) {
         const auto elementsPerThread = Idx{1};
-        return WorkDiv{blocksPerGrid, threadsPerBlockOrElementsPerThread,
-                       elementsPerThread};
+        const Idx threadsPerBlock(threadsOrElements);
+        return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     } else
 #endif
     {
         const auto threadsPerBlock = Idx{1};
-        return WorkDiv{blocksPerGrid, threadsPerBlock,
-                       threadsPerBlockOrElementsPerThread};
+        const Idx elementsPerThread(threadsOrElements);
+        return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     }
 }
 
