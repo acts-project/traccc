@@ -53,11 +53,11 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
     /// Type declarations
     using host_detector_type =
-        detray::detector<detray::detector_registry::toy_detector, covfie::field,
+        detray::detector<detray::toy_metadata<>, covfie::field,
                          detray::host_container_types>;
     using device_detector_type =
-        detray::detector<detray::detector_registry::toy_detector,
-                         covfie::field_view, detray::device_container_types>;
+        detray::detector<detray::toy_metadata<>, covfie::field_view,
+                         detray::device_container_types>;
 
     using b_field_t = typename host_detector_type::bfield_type;
     using rk_stepper_type =
@@ -100,7 +100,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
 
     // Create the toy geometry
-    host_detector_type host_det =
+    auto [host_det, name_map] =
         detray::create_toy_geometry<detray::host_container_types>(
             mng_mr,
             b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),

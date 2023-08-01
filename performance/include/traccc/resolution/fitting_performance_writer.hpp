@@ -76,9 +76,12 @@ class fitting_performance_writer {
         const auto global_pos = evt_map.meas_xp_map[meas_link].first;
         const auto global_mom = evt_map.meas_xp_map[meas_link].second;
 
-        const auto truth_local = det.global_to_local(
-            detray::geometry::barcode(meas_link.surface_link), global_pos,
-            vector::normalize(global_mom));
+        const detray::surface<detector_t> sf{
+            det, detray::geometry::barcode(meas_link.surface_link)};
+        using cxt_t = typename detector_t::geometry_context;
+        const cxt_t ctx{};
+        const auto truth_local =
+            sf.global_to_local(ctx, global_pos, vector::normalize(global_mom));
 
         // Return value
         bound_track_parameters truth_param;

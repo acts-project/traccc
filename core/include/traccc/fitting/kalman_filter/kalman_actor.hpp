@@ -91,7 +91,7 @@ struct kalman_actor : detray::actor {
             auto& trk_state = actor_state();
 
             // Abort if the propagator fails to find the next measurement
-            if (navigation.current_object() != trk_state.surface_link()) {
+            if (navigation.barcode() != trk_state.surface_link()) {
                 propagation._heartbeat &= navigation.abort();
             }
 
@@ -101,15 +101,10 @@ struct kalman_actor : detray::actor {
             // Set full jacobian
             trk_state.jacobian() = stepping._full_jacobian;
 
-            auto det = navigation.detector();
-            const auto& mask_store = det->mask_store();
-
-            // Surface
-            const auto& surface = det->surfaces(trk_state.surface_link());
-
-            // Run kalman updater
-            mask_store.template visit<gain_matrix_updater<algebra_t>>(
-                surface.mask(), trk_state, propagation._stepping._bound_params);
+            // Run Kalman Gain Updater
+            const auto sf = navigation.get_surface();
+            sf.template visit_mask<gain_matrix_updater<algebra_t>>(
+                trk_state, propagation._stepping._bound_params);
 
             // Update iterator
             actor_state.next();

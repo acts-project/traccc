@@ -17,6 +17,7 @@
 
 // detray include(s).
 #include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/io/common/detector_writer.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 #include "detray/simulation/simulator.hpp"
 
@@ -46,9 +47,7 @@ int simulate(std::string output_directory, unsigned int events,
      *****************************/
 
     // Detector type
-    using detector_type =
-        detray::detector<detray::detector_registry::toy_detector,
-                         covfie::field>;
+    using detector_type = detray::detector<detray::toy_metadata<>>;
 
     // B field value and its type
     // @TODO: Set B field as argument
@@ -56,7 +55,7 @@ int simulate(std::string output_directory, unsigned int events,
     using field_type = typename detector_type::bfield_type;
 
     // Create the toy geometry
-    detector_type det =
+    const auto [det, name_map] =
         detray::create_toy_geometry<detray::host_container_types>(
             host_mr,
             field_type(
@@ -89,6 +88,12 @@ int simulate(std::string output_directory, unsigned int events,
     sim.get_config().overstep_tolerance = propagation_opts.overstep_tolerance;
 
     sim.run();
+
+    // Create detector file
+    auto writer_cfg = detray::io::detector_writer_config{}
+                          .format(detray::io::format::json)
+                          .replace_files(true);
+    detray::io::write_detector(det, name_map, writer_cfg);
 
     return 1;
 }

@@ -12,7 +12,8 @@
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 
 // detray include(s).
-#include "detray/detectors/detector_metadata.hpp"
+#include "detray/detectors/telescope_metadata.hpp"
+#include "detray/detectors/toy_metadata.hpp"
 #include "detray/masks/unbounded.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 
@@ -96,8 +97,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
 // Explicit template instantiation
 using toy_detector_type =
-    detray::detector<detray::detector_registry::toy_detector,
-                     covfie::field_view, detray::device_container_types>;
+    detray::detector<detray::toy_metadata<>, covfie::field_view,
+                     detray::device_container_types>;
 using toy_stepper_type = detray::rk_stepper<
     covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
     detray::constrained_step<>>;
@@ -106,8 +107,7 @@ using toy_fitter_type = kalman_fitter<toy_stepper_type, toy_navigator_type>;
 template class fitting_algorithm<toy_fitter_type>;
 
 using device_detector_type =
-    detray::detector<detray::detector_registry::template telescope_detector<
-                         detray::rectangle2D<>>,
+    detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
                      covfie::field_view, detray::device_container_types>;
 using rk_stepper_type = detray::rk_stepper<
     covfie::field<device_detector_type::bfield_backend_type>::view_t,

@@ -27,6 +27,7 @@ namespace traccc {
 template <typename detector_t>
 struct seed_generator {
     using matrix_operator = typename transform3::matrix_actor;
+    using cxt_t = typename detector_t::geometry_context;
 
     /// Constructor with detector
     ///
@@ -47,8 +48,12 @@ struct seed_generator {
                                       const free_track_parameters& free_param) {
 
         // Get bound parameter
-        auto bound_vec = m_detector->free_to_bound_vector(
-            detray::geometry::barcode{surface_link}, free_param.vector());
+        const detray::surface<detector_t> sf{
+            *m_detector, detray::geometry::barcode{surface_link}};
+
+        const cxt_t ctx{};
+        auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());
+
         auto bound_cov =
             matrix_operator().template zero<e_bound_size, e_bound_size>();
 
@@ -63,14 +68,10 @@ struct seed_generator {
         using interactor_type =
             detray::pointwise_material_interactor<transform3_type>;
 
-        const auto& mask_store = m_detector->mask_store();
-
         intersection_type sfi;
-        sfi.surface =
-            m_detector->surfaces(detray::geometry::barcode{surface_link});
-
-        mask_store.template visit<detray::intersection_update>(
-            sfi.surface.mask(),
+        sfi.sf_desc =
+            m_detector->surface(detray::geometry::barcode{surface_link});
+        sf.template visit_mask<detray::intersection_update>(
             detray::detail::ray<transform3_type>(free_param.vector()), sfi,
             m_detector->transform_store());
 
@@ -79,8 +80,8 @@ struct seed_generator {
         interactor_state.do_multiple_scattering = false;
         interactor_type{}.update(
             bound_param, interactor_state,
-            static_cast<int>(detray::navigation::direction::e_backward), sfi,
-            m_detector->material_store());
+            static_cast<int>(detray::navigation::direction::e_backward), sf,
+            sfi.cos_incidence_angle);
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 
