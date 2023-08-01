@@ -14,8 +14,10 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
   include( traccc-compiler-options-cuda )
 
   set_source_files_properties(src/utils/make_prefix_sum_buff.cpp PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(src/seeding/spacepoint_binning.cpp PROPERTIES LANGUAGE CUDA)
 
+  set_source_files_properties(src/clusterization/clusterization_algorithm.cpp PROPERTIES LANGUAGE CUDA)
+
+  set_source_files_properties(src/seeding/spacepoint_binning.cpp PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(src/seeding/track_params_estimation.cpp PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(src/seeding/seed_finding.cpp PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(src/seeding/seeding_algorithm.cpp PROPERTIES LANGUAGE CUDA)
@@ -26,11 +28,14 @@ traccc_add_library( traccc_alpaka alpaka TYPE SHARED
   "include/traccc/alpaka/utils/definitions.hpp"
   "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
-  # Seed finding includes
+  # Seed finding code.
   "include/traccc/alpaka/seeding/spacepoint_binning.hpp"
   "include/traccc/alpaka/seeding/seed_finding.hpp"
   "include/traccc/alpaka/seeding/seeding_algorithm.hpp"
   "include/traccc/alpaka/seeding/track_params_estimation.hpp"
+  # Clusterization
+  "include/traccc/alpaka/clusterization/clusterization_algorithm.hpp"
+  "src/clusterization/clusterization_algorithm.cpp"
   # Seeding code
   "src/seeding/spacepoint_binning.cpp"
   "src/seeding/seed_finding.cpp"
