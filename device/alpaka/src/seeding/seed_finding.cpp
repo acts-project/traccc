@@ -7,7 +7,6 @@
 
 // Local include(s).
 #include "traccc/alpaka/seeding/seed_finding.hpp"
-
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
@@ -386,16 +385,13 @@ namespace alpaka::trait {
 template <typename TAcc>
 struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel, TAcc>
 {
-    template <typename TVec>
+    template <typename TVec, typename ...TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::UpdateTripletWeightsKernel const& /* kernel */,
         TVec const& blockThreadExtent,
         TVec const& /* threadElemExtent */,
         traccc::seedfilter_config filter_config,
-        traccc::sp_grid_const_view /* sp_grid */,
-        traccc::device::triplet_counter_spM_collection_types::const_view /* spM_tc */,
-        traccc::device::triplet_counter_collection_types::const_view /* midBot_tc */,
-        traccc::device::device_triplet_collection_types::view /* triplet_view */
+        TArgs const&... /* args */
     ) -> std::size_t {
         return static_cast<std::size_t>(filter_config.compatSeedLimit * blockThreadExtent.prod()) * sizeof(traccc::scalar);
     }
@@ -404,18 +400,13 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel, TA
 template <typename TAcc>
 struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc>
 {
-    template <typename TVec>
+    template <typename TVec, typename ...TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::SelectSeedsKernel const& /* kernel */,
         TVec const& blockThreadExtent,
         TVec const& /* threadElemExtent */,
         traccc::seedfilter_config filter_config,
-        traccc::spacepoint_collection_types::const_view /* spacepoints_view */,
-        traccc::sp_grid_const_view /* sp_grid */,
-        traccc::device::triplet_counter_spM_collection_types::const_view /* spM_tc */,
-        traccc::device::triplet_counter_collection_types::const_view /* midBot_tc */,
-        traccc::device::device_triplet_collection_types::view /* triplet_view */,
-        traccc::seed_collection_types::view /* seed_view */
+        TArgs const&... /* args */
     ) -> std::size_t {
         return static_cast<std::size_t>(filter_config.max_triplets_per_spM * blockThreadExtent.prod()) * sizeof(traccc::triplet);
     }
