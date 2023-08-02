@@ -8,12 +8,21 @@
 // Local include(s).
 #include "full_chain_algorithm.hpp"
 
-// CUDA include(s).
-#include <cuda_runtime_api.h>
-
 // System include(s).
 #include <iostream>
 #include <stdexcept>
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+/// Helper macro for checking the return value of CUDA function calls
+#define CUDA_ERROR_CHECK(EXP)                                                  \
+    do {                                                                       \
+        const cudaError_t errorCode = EXP;                                     \
+        if (errorCode != cudaSuccess) {                                        \
+            throw std::runtime_error(std::string("Failed to run " #EXP " (") + \
+                                     cudaGetErrorString(errorCode) + ")");     \
+        }                                                                      \
+    } while (false)
+#endif
 
 namespace traccc::alpaka {
 
@@ -38,14 +47,20 @@ full_chain_algorithm::full_chain_algorithm(
       m_grid_config(grid_config),
       m_filter_config(filter_config) {
 
-    // // Tell the user what device is being used.
-    // int device = 0;
-    // CUDA_ERROR_CHECK(cudaGetDevice(&device));
-    // cudaDeviceProp props;
-    // CUDA_ERROR_CHECK(cudaGetDeviceProperties(&props, device));
-    // std::cout << "Using CUDA device: " << props.name << " [id: " << device
-    //           << ", bus: " << props.pciBusID
-    //           << ", device: " << props.pciDeviceID << "]" << std::endl;
+    // Tell the user what device is being used.
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    // Alpaka's get device properties doesn't populate most of this info:
+    int device = 0;
+    CUDA_ERROR_CHECK(cudaGetDevice(&device));
+    cudaDeviceProp props;
+    CUDA_ERROR_CHECK(cudaGetDeviceProperties(&props, device));
+    std::cout << "Using CUDA device: " << props.name << " [id: " << device
+              << ", bus: " << props.pciBusID
+              << ", device: " << props.pciDeviceID << "]" << std::endl;
+#else
+    std::cout << "Using Alpaka CPU device" << std::endl;
+#endif
 }
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
@@ -101,4 +116,4 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     return result;
 }
 
-}  // namespace traccc::cuda
+}  // namespace traccc::alpaka
