@@ -83,6 +83,7 @@ struct kalman_actor : detray::actor {
         // If the iterator reaches the end, terminate the propagation
         if (actor_state.is_complete()) {
             propagation._heartbeat &= navigation.abort();
+            return;
         }
 
         // triggered only for sensitive surfaces
@@ -93,6 +94,7 @@ struct kalman_actor : detray::actor {
             // Abort if the propagator fails to find the next measurement
             if (navigation.current_object() != trk_state.surface_link()) {
                 propagation._heartbeat &= navigation.abort();
+                return;
             }
 
             // This track state is not a hole
