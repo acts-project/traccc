@@ -21,14 +21,13 @@ int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
     static const bool use_host_caching = true;
-    return traccc::throughput_st<
-        traccc::alpaka::full_chain_algorithm,
+    return traccc::throughput_st<traccc::alpaka::full_chain_algorithm,
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-        vecmem::cuda::host_memory_resource
+                                 vecmem::cuda::host_memory_resource
 #else
-        vecmem::host_memory_resource
+                                  vecmem::host_memory_resource
 #endif
-    >(
-        "Single-threaded Alpaka GPU throughput tests", argc, argv, use_host_caching
-    );
+                                 >(
+        "Single-threaded Alpaka GPU throughput tests", argc, argv,
+        use_host_caching);
 }

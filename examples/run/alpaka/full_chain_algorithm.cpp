@@ -72,9 +72,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_target_cells_per_partition(parent.m_target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_target_cells_per_partition),
-      m_seeding(
-          parent.m_finder_config, parent.m_grid_config, parent.m_filter_config,
-          memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
+      m_seeding(parent.m_finder_config, parent.m_grid_config,
+                parent.m_filter_config,
+                memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
       m_finder_config(parent.m_finder_config),

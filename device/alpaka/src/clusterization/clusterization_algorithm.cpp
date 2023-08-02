@@ -6,9 +6,10 @@
  */
 
 // Local include(s).
-#include "traccc/alpaka/utils/definitions.hpp"
-#include "traccc/alpaka/utils/barrier.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
+
+#include "traccc/alpaka/utils/barrier.hpp"
+#include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/aggregate_cluster.hpp"
@@ -33,15 +34,13 @@ static constexpr int MAX_CELLS_PER_THREAD = 12;
 struct CCLKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        const cell_collection_types::const_view cells_view,
+        TAcc const& acc, const cell_collection_types::const_view cells_view,
         const cell_module_collection_types::const_view modules_view,
         const index_t max_cells_per_partition,
         const index_t target_cells_per_partition,
         alt_measurement_collection_types::view measurements_view,
         unsigned int* measurement_count,
-        vecmem::data::vector_view<unsigned int> cell_links
-    ) const {
+        vecmem::data::vector_view<unsigned int> cell_links) const {
 
         index_t const localThreadIdx =
             ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
@@ -50,8 +49,10 @@ struct CCLKernel {
         index_t const blockExtent =
             ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
 
-        auto& partition_start = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
-        auto& partition_end = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
+        auto& partition_start =
+            ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
+        auto& partition_end =
+            ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         auto& outi = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
 
         index_t* const shared_v = ::alpaka::getDynSharedMem<index_t>(acc);
@@ -60,8 +61,8 @@ struct CCLKernel {
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
-        device::ccl_kernel(localThreadIdx, blockExtent, localBlockIdx, cells_view,
-                           modules_view, max_cells_per_partition,
+        device::ccl_kernel(localThreadIdx, blockExtent, localBlockIdx,
+                           cells_view, modules_view, max_cells_per_partition,
                            target_cells_per_partition, partition_start,
                            partition_end, outi, f, f_next, barry_r,
                            measurements_view, *measurement_count, cell_links);
@@ -75,8 +76,7 @@ struct FormSpacepointsKernel {
         alt_measurement_collection_types::const_view measurements_view,
         cell_module_collection_types::const_view modules_view,
         const unsigned int* measurement_count,
-        spacepoint_collection_types::view spacepoints_view
-    ) const {
+        spacepoint_collection_types::view spacepoints_view) const {
 
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
@@ -90,9 +90,9 @@ struct FormSpacepointsKernel {
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy,
     const unsigned short target_cells_per_partition)
-    : m_mr(mr),
-      m_copy(copy),
-      m_target_cells_per_partition(target_cells_per_partition) {}
+    : m_target_cells_per_partition(target_cells_per_partition),
+      m_mr(mr),
+      m_copy(copy) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
@@ -120,7 +120,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Counter for number of measurements
     auto bufHost_num_measurements =
         ::alpaka::allocBuf<unsigned int, Idx>(devHost, 1u);
-    unsigned int* pBufHost_num_measurements(::alpaka::getPtrNative(bufHost_num_measurements));
+    unsigned int* pBufHost_num_measurements(
+        ::alpaka::getPtrNative(bufHost_num_measurements));
     *pBufHost_num_measurements = 0;
     auto bufAcc_num_measurements =
         ::alpaka::allocBuf<unsigned int, Idx>(devAcc, 1u);
@@ -143,15 +144,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy.setup(cell_links);
 
     // Launch ccl kernel. Each thread will handle a single cell.
-    ::alpaka::exec<Acc>(queue, workDiv, CCLKernel{},
-            cells,
-            modules,
-            max_cells_per_partition,
-            m_target_cells_per_partition,
-            vecmem::get_data(measurements_buffer),
-            ::alpaka::getPtrNative(bufAcc_num_measurements),
-            vecmem::get_data(cell_links)
-    );
+    ::alpaka::exec<Acc>(queue, workDiv, CCLKernel{}, cells, modules,
+                        max_cells_per_partition, m_target_cells_per_partition,
+                        vecmem::get_data(measurements_buffer),
+                        ::alpaka::getPtrNative(bufAcc_num_measurements),
+                        vecmem::get_data(cell_links));
     ::alpaka::wait(queue);
 
     // Copy number of measurements to host
@@ -171,10 +168,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Turn 2D measurements into 3D spacepoints
     ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel{},
-        vecmem::get_data(measurements_buffer),
-        modules,
-        ::alpaka::getPtrNative(bufAcc_num_measurements),
-        vecmem::get_data(spacepoints_buffer));
+                        vecmem::get_data(measurements_buffer), modules,
+                        ::alpaka::getPtrNative(bufAcc_num_measurements),
+                        vecmem::get_data(spacepoints_buffer));
     ::alpaka::wait(queue);
 
     return {std::move(spacepoints_buffer), std::move(cell_links)};
@@ -186,20 +182,19 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 namespace alpaka::trait {
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::CCLKernel, TAcc>
-{
-    template <typename TVec, typename ...TArgs>
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::CCLKernel, TAcc> {
+    template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::CCLKernel const& /* kernel */,
-        TVec const& /* blockThreadExtent */,
-        TVec const& /* threadElemExtent */,
+        TVec const& /* blockThreadExtent */, TVec const& /* threadElemExtent */,
         const traccc::cell_collection_types::const_view /* cells_view */,
-        const traccc::cell_module_collection_types::const_view /* modules_view */,
-        const unsigned short max_cells_per_partition,
-        TArgs const&... /* args */
-    ) -> std::size_t {
-        return static_cast<std::size_t>(2 * max_cells_per_partition * sizeof(unsigned short));
+        const traccc::cell_module_collection_types::
+            const_view /* modules_view */,
+        const unsigned short max_cells_per_partition, TArgs const&... /* args */
+        ) -> std::size_t {
+        return static_cast<std::size_t>(2 * max_cells_per_partition *
+                                        sizeof(unsigned short));
     }
 };
 
-}  // namespace alpaka::traits
+}  // namespace alpaka::trait

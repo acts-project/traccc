@@ -6,11 +6,11 @@
  */
 
 // Project include(s).
-#include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
@@ -85,7 +85,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::alpaka::clusterization_algorithm ca_alpaka(
         mr, copy, common_opts.target_cells_per_partition);
     traccc::alpaka::seeding_algorithm sa_alpaka(finder_config, grid_config,
-                                            filter_config, mr, copy);
+                                                filter_config, mr, copy);
     traccc::alpaka::track_params_estimation tp_alpaka(mr, copy);
 
     // performance writer
@@ -203,7 +203,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                              elapsedTimes);
                 params_alpaka_buffer =
                     tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                              {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params timer
 
             // CPU
@@ -290,7 +290,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
               << " spacepoints     " << std::endl;
 
     std::cout << "- created  (cpu) " << n_seeds << " seeds" << std::endl;
-    std::cout << "- created (alpaka) " << n_seeds_alpaka << " seeds" << std::endl;
+    std::cout << "- created (alpaka) " << n_seeds_alpaka << " seeds"
+              << std::endl;
     std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;

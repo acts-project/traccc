@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "traccc/alpaka/seeding/seed_finding.hpp"
+
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
@@ -383,33 +384,32 @@ seed_finding::output_type seed_finding::operator()(
 namespace alpaka::trait {
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel, TAcc>
-{
-    template <typename TVec, typename ...TArgs>
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel,
+                                  TAcc> {
+    template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::UpdateTripletWeightsKernel const& /* kernel */,
-        TVec const& blockThreadExtent,
-        TVec const& /* threadElemExtent */,
-        traccc::seedfilter_config filter_config,
-        TArgs const&... /* args */
-    ) -> std::size_t {
-        return static_cast<std::size_t>(filter_config.compatSeedLimit * blockThreadExtent.prod()) * sizeof(traccc::scalar);
+        TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
+        traccc::seedfilter_config filter_config, TArgs const&... /* args */
+        ) -> std::size_t {
+        return static_cast<std::size_t>(filter_config.compatSeedLimit *
+                                        blockThreadExtent.prod()) *
+               sizeof(traccc::scalar);
     }
 };
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc>
-{
-    template <typename TVec, typename ...TArgs>
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc> {
+    template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::SelectSeedsKernel const& /* kernel */,
-        TVec const& blockThreadExtent,
-        TVec const& /* threadElemExtent */,
-        traccc::seedfilter_config filter_config,
-        TArgs const&... /* args */
-    ) -> std::size_t {
-        return static_cast<std::size_t>(filter_config.max_triplets_per_spM * blockThreadExtent.prod()) * sizeof(traccc::triplet);
+        TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
+        traccc::seedfilter_config filter_config, TArgs const&... /* args */
+        ) -> std::size_t {
+        return static_cast<std::size_t>(filter_config.max_triplets_per_spM *
+                                        blockThreadExtent.prod()) *
+               sizeof(traccc::triplet);
     }
 };
 
-}  // namespace alpaka::traits
+}  // namespace alpaka::trait
