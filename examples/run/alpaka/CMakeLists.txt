@@ -15,6 +15,7 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
 
   set_source_files_properties(full_chain_algorithm.cpp PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(throughput_st.cpp PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(throughput_mt.cpp PROPERTIES LANGUAGE CUDA)
 
   list(APPEND CUDA_LIBS vecmem::cuda traccc::cuda)
 endif()
@@ -40,10 +41,12 @@ target_link_libraries( traccc_examples_alpaka
 
 traccc_add_executable( throughput_st_alpaka "throughput_st.cpp"
    LINK_LIBRARIES vecmem::core traccc::io traccc::performance
-                  traccc::core traccc::device_common traccc::alpaka alpaka::alpaka
-                  traccc::options ${CUDA_LIBS} traccc_examples_alpaka)
+                  traccc::core traccc::device_common traccc::alpaka
+                  alpaka::alpaka traccc::options ${CUDA_LIBS}
+                  traccc_examples_alpaka)
 
-# traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
-#    LINK_LIBRARIES TBB::tbb vecmem::core vecmem::cuda traccc::io traccc::performance
-#                   traccc::core traccc::device_common traccc::cuda traccc::alpaka
-#                   traccc::options traccc_examples_alpaka )
+traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
+   LINK_LIBRARIES TBB::tbb vecmem::core traccc::io traccc::performance
+                  traccc::core traccc::device_common traccc::alpaka
+                  alpaka::alpaka traccc::options ${CUDA_LIBS}
+                  traccc_examples_alpaka )
