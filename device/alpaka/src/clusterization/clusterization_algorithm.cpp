@@ -121,6 +121,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     auto bufHost_num_measurements =
         ::alpaka::allocBuf<unsigned int, Idx>(devHost, 1u);
     unsigned int* pBufHost_num_measurements(::alpaka::getPtrNative(bufHost_num_measurements));
+    *pBufHost_num_measurements = 0;
     auto bufAcc_num_measurements =
         ::alpaka::allocBuf<unsigned int, Idx>(devAcc, 1u);
     ::alpaka::memcpy(queue, bufAcc_num_measurements, bufHost_num_measurements);
