@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -33,7 +33,11 @@ full_chain_algorithm::full_chain_algorithm(
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config)
     : m_host_mr(host_mr),
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       m_device_mr(),
+#else
+      m_device_mr(host_mr),
+#endif
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_target_cells_per_partition(target_cells_per_partition),
@@ -65,7 +69,11 @@ full_chain_algorithm::full_chain_algorithm(
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     : m_host_mr(parent.m_host_mr),
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       m_device_mr(),
+#else
+      m_device_mr(parent.m_host_mr),
+#endif
       m_copy(),
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),

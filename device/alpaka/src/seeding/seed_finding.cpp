@@ -7,7 +7,6 @@
 
 // Local include(s).
 #include "traccc/alpaka/seeding/seed_finding.hpp"
-
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
