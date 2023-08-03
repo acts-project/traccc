@@ -94,16 +94,17 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *************************/
 
             // Get intersection at surface
-            const auto free_vec = det.bound_to_free_vector(
-                in_param.surface_link(), in_param.vector());
-            const auto& mask_store = det.mask_store();
+            const detray::surface<detector_type> sf{det,
+                                                    in_param.surface_link()};
+
+            const cxt_t ctx{};
+            const auto free_vec =
+                sf.bound_to_free_vector(ctx, in_param.vector());
             intersection_type sfi;
 
-            const auto sf = det.surfaces(in_param.surface_link());
-
-            sfi.surface = sf;
-            mask_store.template visit<detray::intersection_update>(
-                sfi.surface.mask(),
+            const auto sf_desc = det.surface(in_param.surface_link());
+            sfi.sf_desc = sf_desc;
+            sf.template visit_mask<detray::intersection_update>(
                 detray::detail::ray<transform3_type>(free_vec), sfi,
                 det.transform_store());
 
@@ -111,8 +112,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             typename interactor_type::state interactor_state;
             interactor_type{}.update(
                 in_param, interactor_state,
-                static_cast<int>(detray::navigation::direction::e_forward), sfi,
-                det.material_store());
+                static_cast<int>(detray::navigation::direction::e_forward), sf,
+                sfi.cos_incidence_angle);
 
             /*************************
              * CKF
@@ -146,7 +147,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     break;
                 }
 
-                // bound_track_parameters bound_param = in_param;
                 bound_track_parameters bound_param(in_param.surface_link(),
                                                    in_param.vector(),
                                                    in_param.covariance());
@@ -155,8 +155,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 track_state<transform3_type> trk_state({module_id, meas});
 
                 // Run the Kalman update
-                mask_store.template visit<gain_matrix_updater<transform3_type>>(
-                    sf.mask(), trk_state, bound_param);
+                sf.template visit_mask<gain_matrix_updater<transform3_type>>(
+                    trk_state, bound_param);
 
                 // Get the chi-square
                 const auto chi2 = trk_state.filtered_chi2();

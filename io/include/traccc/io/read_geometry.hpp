@@ -13,6 +13,9 @@
 // Project include(s).
 #include "traccc/geometry/geometry.hpp"
 
+// Detray include(s).
+#include "detray/geometry/surface.hpp"
+
 // System include(s).
 #include <string_view>
 
@@ -32,11 +35,15 @@ template <typename detector_t>
 geometry alt_read_geometry(const detector_t& det) {
 
     const auto transforms = det.transform_store();
-    const auto surfaces = det.surfaces();
+    const auto surfaces = det.surface_lookup();
     std::map<traccc::geometry_id, traccc::transform3> maps;
+    using cxt_t = typename detector_t::geometry_context;
+    const cxt_t ctx0{};
 
-    for (const auto& sf : surfaces) {
-        maps.insert({sf.barcode().value(), transforms[sf.transform()]});
+    for (const auto& sf_desc : surfaces) {
+        const detray::surface<detector_t> sf{det, sf_desc.barcode()};
+
+        maps.insert({sf.barcode().value(), sf.transform(ctx0)});
     }
 
     return maps;
