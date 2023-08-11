@@ -321,6 +321,7 @@ seed_finding::output_type seed_finding::operator()(
     device::device_triplet_collection_types::buffer triplet_buffer = {
         pBufHost_counter->m_nTriplets, m_mr.main};
     m_copy.setup(triplet_buffer);
+    m_copy.memset(triplet_buffer, 0);
 
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
