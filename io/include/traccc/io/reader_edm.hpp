@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
 namespace traccc::io {
@@ -25,10 +25,10 @@ struct cell_reader_output {
 };
 
 /// Type definition for the reading of measurements into a vector of
-/// alt_measurements and a vector of modules. The alt_measurements hold a link
+/// measurements and a vector of modules. The measurements hold a link
 /// to a position in the modules' vector.
 struct measurement_reader_output {
-    alt_measurement_collection_types::host measurements;
+    measurement_collection_types::host measurements;
     cell_module_collection_types::host modules;
 
     measurement_reader_output() {}

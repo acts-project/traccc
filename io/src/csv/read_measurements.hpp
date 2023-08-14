@@ -8,7 +8,6 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/io/reader_edm.hpp"
 

@@ -57,7 +57,7 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           alt_measurement_collection_types::const_view measurements,
+           measurement_collection_types::const_view measurements,
            traccc::cell_module_collection_types::const_view modules) {
 
     switch (format) {
@@ -65,7 +65,7 @@ void write(std::size_t event, std::string_view directory,
             details::write_binary_collection(
                 data_directory() + directory.data() +
                     get_event_filename(event, "-measurements.dat"),
-                traccc::alt_measurement_collection_types::const_device{
+                traccc::measurement_collection_types::const_device{
                     measurements});
             details::write_binary_collection(
                 data_directory() + directory.data() +

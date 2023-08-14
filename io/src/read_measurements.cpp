@@ -28,8 +28,7 @@ void read_measurements(measurement_reader_output& out, std::size_t event,
         }
         case data_format::binary: {
 
-            details::read_binary_collection<
-                alt_measurement_collection_types::host>(
+            details::read_binary_collection<measurement_collection_types::host>(
                 out.measurements,
                 data_directory() + directory.data() +
                     get_event_filename(event, "-measurements.dat"));

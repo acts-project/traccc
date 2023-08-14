@@ -180,7 +180,7 @@ TEST(io_binary, measurement) {
     traccc::io::measurement_reader_output reader_csv(&host_mr);
     traccc::io::read_measurements(reader_csv, event, measurements_directory,
                                   traccc::data_format::csv);
-    const traccc::alt_measurement_collection_types::host& measurements_csv =
+    const traccc::measurement_collection_types::host& measurements_csv =
         reader_csv.measurements;
     const traccc::cell_module_collection_types::host& modules_csv =
         reader_csv.modules;
@@ -194,7 +194,7 @@ TEST(io_binary, measurement) {
     traccc::io::measurement_reader_output reader_binary(&host_mr);
     traccc::io::read_measurements(reader_binary, event, measurements_directory,
                                   traccc::data_format::binary);
-    const traccc::alt_measurement_collection_types::host& measurements_binary =
+    const traccc::measurement_collection_types::host& measurements_binary =
         reader_binary.measurements;
     const traccc::cell_module_collection_types::host& modules_binary =
         reader_binary.modules;

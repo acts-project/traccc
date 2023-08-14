@@ -22,8 +22,7 @@ void read_measurements(measurement_reader_output& out,
     auto reader = make_measurement_reader(filename);
 
     // Create the result collection.
-    alt_measurement_collection_types::host& result_measurements =
-        out.measurements;
+    measurement_collection_types::host& result_measurements = out.measurements;
     cell_module_collection_types::host& result_modules = out.modules;
 
     std::map<geometry_id, unsigned int> m;
@@ -46,7 +45,7 @@ void read_measurements(measurement_reader_output& out,
         }
 
         // Construct the measurement object.
-        const traccc::alt_measurement meas{
+        const traccc::measurement meas{
             point2{iomeas.local0, iomeas.local1},
             variance2{iomeas.var_local0, iomeas.var_local1}, link};
 
