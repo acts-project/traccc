@@ -42,7 +42,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    auto surface_transforms =
+        traccc::io::read_geometry(common_opts.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -200,9 +201,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             {
                 traccc::performance::timer t("Track params (cuda)",
                                              elapsedTimes);
-                params_cuda_buffer =
-                    tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                params_cuda_buffer = tp_cuda(
+                    spacepoints_cuda_buffer, seeds_cuda_buffer, modules_buffer,
+                    {0.f, 0.f, finder_config.bFieldInZ});
                 stream.synchronize();
             }  // stop measuring track params timer
 
@@ -211,7 +212,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(spacepoints_per_event, seeds,
+                params = tp(spacepoints_per_event, seeds, modules_per_event,
                             {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
@@ -224,6 +225,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::spacepoint_collection_types::host spacepoints_per_event_cuda;
         traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
+
         copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
         copy(seeds_cuda_buffer, seeds_cuda)->wait();
         copy(params_cuda_buffer, params_cuda)->wait();
@@ -253,7 +255,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_cuda));
         }
-
         /// Statistics
         n_modules += read_out_per_event.modules.size();
         n_cells += read_out_per_event.cells.size();
@@ -265,10 +266,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         if (common_opts.check_performance) {
 
-            traccc::event_map evt_map(
-                event, i_cfg.detector_file, i_cfg.digitization_config_file,
-                common_opts.input_directory, common_opts.input_directory,
-                common_opts.input_directory, host_mr);
+            traccc::event_map evt_map(event, common_opts.detector_file,
+                                      i_cfg.digitization_config_file,
+                                      common_opts.input_directory,
+                                      common_opts.input_directory,
+                                      common_opts.input_directory, host_mr);
             sd_performance_writer.write(
                 vecmem::get_data(seeds_cuda),
                 vecmem::get_data(spacepoints_per_event_cuda), evt_map);

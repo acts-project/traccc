@@ -26,6 +26,13 @@ traccc::common_options::common_options(po::options_description& desc) {
     desc.add_options()("check_performance",
                        po::value<bool>()->default_value(false),
                        "generate performance result");
+    desc.add_options()("detector_file", po::value<std::string>()->required(),
+                       "specify detector file");
+    desc.add_options()("material_file", po::value<std::string>()->required(),
+                       "specify material file");
+    desc.add_options()("run_detray_geometry",
+                       po::value<bool>()->default_value(false),
+                       "generate performance result");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -41,4 +48,7 @@ void traccc::common_options::read(const po::variables_map& vm) {
     target_cells_per_partition =
         vm["target_cells_per_partition"].as<unsigned short>();
     check_performance = vm["check_performance"].as<bool>();
+    detector_file = vm["detector_file"].as<std::string>();
+    material_file = vm["material_file"].as<std::string>();
+    run_detray_geometry = vm["run_detray_geometry"].as<bool>();
 }
