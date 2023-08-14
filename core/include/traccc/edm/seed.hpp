@@ -31,9 +31,9 @@ struct seed {
         const cell_module_collection_types::host& modules) const {
         const spacepoint_collection_types::const_device spacepoints(
             spacepoints_view);
-        alt_measurement alt_measB = spacepoints.at(spB_link).meas;
-        alt_measurement alt_measM = spacepoints.at(spM_link).meas;
-        alt_measurement alt_measT = spacepoints.at(spT_link).meas;
+        measurement alt_measB = spacepoints.at(spB_link).meas;
+        measurement alt_measM = spacepoints.at(spM_link).meas;
+        measurement alt_measT = spacepoints.at(spT_link).meas;
 
         measurement measB = {alt_measB.local, alt_measB.variance};
         measurement measM = {alt_measM.local, alt_measM.variance};
@@ -45,7 +45,7 @@ struct seed {
     }
 
     TRACCC_HOST_DEVICE
-    std::array<alt_measurement, 3> get_measurements(
+    std::array<measurement, 3> get_measurements(
         const spacepoint_collection_types::const_view& spacepoints_view) const {
         const spacepoint_collection_types::const_device spacepoints(
             spacepoints_view);

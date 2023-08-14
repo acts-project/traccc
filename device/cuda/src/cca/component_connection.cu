@@ -778,7 +778,7 @@ component_connection::output_type component_connection::operator()(
     output_type out;
 
     for (std::size_t i = 0; i < mctnr->size; ++i) {
-        alt_measurement m;
+        measurement m;
         m.local = {mctnr->channel0[i], mctnr->channel1[i]};
         m.variance = {mctnr->variance0[i], mctnr->variance1[i]};
         m.module_link = mctnr->module_link[i];

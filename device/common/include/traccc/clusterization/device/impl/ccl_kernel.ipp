@@ -128,8 +128,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const index_t max_cells_per_partition,
     const index_t target_cells_per_partition, unsigned int& partition_start,
     unsigned int& partition_end, unsigned int& outi, index_t* f, index_t* gf,
-    barrier_t& barrier,
-    alt_measurement_collection_types::view measurements_view,
+    barrier_t& barrier, measurement_collection_types::view measurements_view,
     unsigned int& measurement_count,
     vecmem::data::vector_view<unsigned int> cell_links) {
 
@@ -137,8 +136,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const cell_collection_types::const_device cells_device(cells_view);
     const cell_module_collection_types::const_device modules_device(
         modules_view);
-    alt_measurement_collection_types::device measurements_device(
-        measurements_view);
+    measurement_collection_types::device measurements_device(measurements_view);
 
     const unsigned int num_cells = cells_device.size();
 
