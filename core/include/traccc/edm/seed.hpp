@@ -26,25 +26,6 @@ struct seed {
     scalar z_vertex;
 
     TRACCC_HOST_DEVICE
-    std::array<measurement_link, 3> get_measurements(
-        const spacepoint_collection_types::const_view& spacepoints_view,
-        const cell_module_collection_types::host& modules) const {
-        const spacepoint_collection_types::const_device spacepoints(
-            spacepoints_view);
-        measurement alt_measB = spacepoints.at(spB_link).meas;
-        measurement alt_measM = spacepoints.at(spM_link).meas;
-        measurement alt_measT = spacepoints.at(spT_link).meas;
-
-        measurement measB = {alt_measB.local, alt_measB.variance};
-        measurement measM = {alt_measM.local, alt_measM.variance};
-        measurement measT = {alt_measT.local, alt_measT.variance};
-
-        return {measurement_link{modules[alt_measB.module_link].module, measB},
-                measurement_link{modules[alt_measM.module_link].module, measM},
-                measurement_link{modules[alt_measT.module_link].module, measT}};
-    }
-
-    TRACCC_HOST_DEVICE
     std::array<measurement, 3> get_measurements(
         const spacepoint_collection_types::const_view& spacepoints_view) const {
         const spacepoint_collection_types::const_device spacepoints(
