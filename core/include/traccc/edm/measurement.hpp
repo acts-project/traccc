@@ -13,6 +13,9 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/container.hpp"
 
+// Detray include(s).
+#include "detray/geometry/barcode.hpp"
+
 // System include(s).
 #include <limits>
 
@@ -30,17 +33,15 @@ struct measurement {
     /// Variance on the 2D coordinates of the measurement
     variance2 variance{0., 0.};
 
+    /// Geometry ID
+    detray::geometry::barcode surface_link;
+
+    /// Link to Module vector index
     using link_type = cell_module_collection_types::view::size_type;
     link_type module_link = 0;
 
     /// Cluster link
     std::size_t cluster_link = std::numeric_limits<std::size_t>::max();
-};
-
-/// Measurement with surface link
-struct measurement_link {
-    geometry_id surface_link;
-    measurement meas;
 };
 
 /// Comparison / ordering operator for measurements

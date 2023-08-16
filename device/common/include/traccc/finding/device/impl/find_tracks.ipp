@@ -99,8 +99,7 @@ TRACCC_DEVICE inline void find_tracks(
 
         bound_track_parameters in_par = in_params.at(in_param_id);
         const auto meas = measurements_on_surface.at(i + stride);
-        track_state<typename detector_t::transform3> trk_state(
-            {module_id, meas});
+        track_state<typename detector_t::transform3> trk_state(meas);
 
         // Run the Kalman update
         sf.template visit_mask<

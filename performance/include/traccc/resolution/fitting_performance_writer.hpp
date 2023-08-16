@@ -62,22 +62,19 @@ class fitting_performance_writer {
 
         // Get the track state at the first surface
         const auto& trk_state = track_states_per_track[0];
-        const measurement_link meas_link{trk_state.surface_link().value(),
-                                         trk_state.get_measurement()};
+        const measurement meas = trk_state.get_measurement();
 
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
-        std::map<particle, uint64_t> contributing_particles =
-            m_p_map[meas_link];
+        std::map<particle, uint64_t> contributing_particles = m_p_map[meas];
 
         const particle ptc = contributing_particles.begin()->first;
 
         // Find the truth global position and momentum
-        const auto global_pos = evt_map.meas_xp_map[meas_link].first;
-        const auto global_mom = evt_map.meas_xp_map[meas_link].second;
+        const auto global_pos = evt_map.meas_xp_map[meas].first;
+        const auto global_mom = evt_map.meas_xp_map[meas].second;
 
-        const detray::surface<detector_t> sf{
-            det, detray::geometry::barcode(meas_link.surface_link)};
+        const detray::surface<detector_t> sf{det, meas.surface_link};
         using cxt_t = typename detector_t::geometry_context;
         const cxt_t ctx{};
         const auto truth_local =

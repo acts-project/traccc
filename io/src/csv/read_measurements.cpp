@@ -47,7 +47,8 @@ void read_measurements(measurement_reader_output& out,
         // Construct the measurement object.
         const traccc::measurement meas{
             point2{iomeas.local0, iomeas.local1},
-            variance2{iomeas.var_local0, iomeas.var_local1}, link};
+            variance2{iomeas.var_local0, iomeas.var_local1},
+            detray::geometry::barcode{iomeas.geometry_id}, link};
 
         result_measurements.push_back(meas);
     }
@@ -76,7 +77,8 @@ measurement_container_types::host read_measurements_container(
         // Construct the measurement object.
         const traccc::measurement meas{
             point2{iomeas.local0, iomeas.local1},
-            variance2{iomeas.var_local0, iomeas.var_local1}};
+            variance2{iomeas.var_local0, iomeas.var_local1},
+            detray::geometry::barcode{iomeas.geometry_id}};
 
         // Find the detector module that this measurement belongs to.
         const measurement_container_types::host::header_vector& headers =
