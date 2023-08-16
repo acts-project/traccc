@@ -9,7 +9,6 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -60,8 +59,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const index_t max_cells_per_partition,
     const index_t target_cells_per_partition, unsigned int& partition_start,
     unsigned int& partition_end, unsigned int& outi, index_t* f, index_t* gf,
-    barrier_t& barrier,
-    alt_measurement_collection_types::view measurements_view,
+    barrier_t& barrier, measurement_collection_types::view measurements_view,
     unsigned int& measurement_count,
     vecmem::data::vector_view<unsigned int> cell_links);
 

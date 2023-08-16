@@ -8,9 +8,9 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -28,7 +28,7 @@ namespace traccc {
 /// module.
 ///
 class measurement_creation
-    : public algorithm<alt_measurement_collection_types::host(
+    : public algorithm<measurement_collection_types::host(
           const cluster_container_types::host &,
           const cell_module_collection_types::host &)> {
 

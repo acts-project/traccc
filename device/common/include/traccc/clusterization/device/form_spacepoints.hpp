@@ -10,7 +10,6 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -36,7 +35,7 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void form_spacepoints(
     const std::size_t globalIndex,
-    alt_measurement_collection_types::const_view measurements_view,
+    measurement_collection_types::const_view measurements_view,
     cell_module_collection_types::const_view modules_view,
     const unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view);
