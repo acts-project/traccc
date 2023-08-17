@@ -15,19 +15,6 @@
 
 namespace traccc {
 
-/// Comparison / ordering operator for measurements
-TRACCC_HOST_DEVICE
-inline bool operator<(const measurement_link& lhs,
-                      const measurement_link& rhs) {
-    if (lhs.surface_link < rhs.surface_link) {
-        return true;
-    } else if (lhs.surface_link == rhs.surface_link) {
-        return lhs.meas < rhs.meas;
-    }
-
-    return false;
-}
-
 struct event_map2 {
 
     /// Constructor without cell information
@@ -51,14 +38,10 @@ struct event_map2 {
 
             // Candidate objects
             vecmem::vector<track_candidate> candidates;
+            candidates.reserve(measurements.size());
 
-            for (const auto& meas_link : measurements) {
-
-                track_candidate cand = {
-                    detray::geometry::barcode{meas_link.surface_link},
-                    meas_link.meas};
-
-                candidates.push_back(cand);
+            for (const auto& meas : measurements) {
+                candidates.push_back(meas);
             }
 
             track_candidates.push_back(std::move(seed_params),
@@ -69,14 +52,13 @@ struct event_map2 {
     }
 
     /// Map for measurement to truth global position and momentum
-    using measurement_xp_map =
-        std::map<measurement_link, std::pair<point3, point3>>;
+    using measurement_xp_map = std::map<measurement, std::pair<point3, point3>>;
     /// Map for measurement to the contributing particles
     using measurement_particle_map =
-        std::map<measurement_link, std::map<particle, uint64_t>>;
+        std::map<measurement, std::map<particle, uint64_t>>;
     /// Map for particle to the vector of (geometry_id, measurement)
     using particle_measurement_map =
-        std::map<particle, std::vector<measurement_link>>;
+        std::map<particle, std::vector<measurement>>;
     using particle_id = uint64_t;
     using particle_map = std::map<particle_id, particle>;
 

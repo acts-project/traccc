@@ -98,17 +98,17 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
         // Make measurement
         point2 local{csv_meas.local0, csv_meas.local1};
         variance2 var{csv_meas.var_local0, csv_meas.var_local1};
-        measurement meas{local, var};
-        measurement_link meas_link{csv_meas.geometry_id, meas};
+        measurement meas{local, var,
+                         detray::geometry::barcode{csv_meas.geometry_id}};
 
         // Fill measurement to truth global position and momentum map
-        meas_xp_map[meas_link] = std::make_pair(global_pos, global_mom);
+        meas_xp_map[meas] = std::make_pair(global_pos, global_mom);
 
         // Fill particle to measurement map
-        ptc_meas_map[ptc].push_back(meas_link);
+        ptc_meas_map[ptc].push_back(meas);
 
         // Fill measurement to particle map
-        auto& contributing_particles = meas_ptc_map[meas_link];
+        auto& contributing_particles = meas_ptc_map[meas];
         contributing_particles[ptc]++;
     }
 }

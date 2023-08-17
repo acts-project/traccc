@@ -449,8 +449,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                                            common_opts.input_directory);
                 sd_performance_writer.write(
                     vecmem::get_data(seeds_cuda),
-                    vecmem::get_data(reader_output.spacepoints),
-                    reader_output.modules, evt_map);
+                    vecmem::get_data(reader_output.spacepoints), evt_map);
 
                 find_performance_writer.write(
                     traccc::get_data(track_candidates_cuda), evt_map);

@@ -53,7 +53,7 @@ TRACCC_DEVICE inline void build_tracks(
          it++) {
 
         auto& cand = *it;
-        cand = {L.surface_link, measurements.at(L.meas_link)};
+        cand = {measurements.at(L.meas_link)};
 
         // Break the loop if the iterator is at the first candidate and fill the
         // seed

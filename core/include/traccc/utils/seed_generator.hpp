@@ -44,12 +44,12 @@ struct seed_generator {
     ///
     /// @param vertex vertex of particle
     /// @param stddevs standard deviations for track parameter smearing
-    bound_track_parameters operator()(const geometry_id surface_link,
-                                      const free_track_parameters& free_param) {
+    bound_track_parameters operator()(
+        const detray::geometry::barcode surface_link,
+        const free_track_parameters& free_param) {
 
         // Get bound parameter
-        const detray::surface<detector_t> sf{
-            *m_detector, detray::geometry::barcode{surface_link}};
+        const detray::surface<detector_t> sf{*m_detector, surface_link};
 
         const cxt_t ctx{};
         auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());
@@ -57,8 +57,7 @@ struct seed_generator {
         auto bound_cov =
             matrix_operator().template zero<e_bound_size, e_bound_size>();
 
-        bound_track_parameters bound_param{
-            detray::geometry::barcode{surface_link}, bound_vec, bound_cov};
+        bound_track_parameters bound_param{surface_link, bound_vec, bound_cov};
 
         // Type definitions
         using transform3_type = typename detector_t::transform3;
@@ -69,8 +68,7 @@ struct seed_generator {
             detray::pointwise_material_interactor<transform3_type>;
 
         intersection_type sfi;
-        sfi.sf_desc =
-            m_detector->surface(detray::geometry::barcode{surface_link});
+        sfi.sf_desc = m_detector->surface(surface_link);
         sf.template visit_mask<detray::intersection_update>(
             detray::detail::ray<transform3_type>(free_param.vector()), sfi,
             m_detector->transform_store());

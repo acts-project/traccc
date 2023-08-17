@@ -152,7 +152,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                    in_param.covariance());
                 const auto& meas = measurements_on_surface[item_id];
 
-                track_state<transform3_type> trk_state({module_id, meas});
+                track_state<transform3_type> trk_state(meas);
 
                 // Run the Kalman update
                 sf.template visit_mask<gain_matrix_updater<transform3_type>>(
@@ -254,7 +254,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
             auto& cand = *it;
 
-            cand = {L.surface_link, measurements.at(L.meas_link)};
+            cand = measurements.at(L.meas_link);
 
             // Break the loop if the iterator is at the first candidate and
             // fill the seed
