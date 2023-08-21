@@ -39,7 +39,7 @@ template <typename stepper_t, typename navigator_t>
 class finding_algorithm
     : public algorithm<track_candidate_container_types::host(
           const typename navigator_t::detector_type&,
-          const measurement_container_types::host&,
+          measurement_collection_types::host&&,
           const bound_track_parameters_collection_types::host&)> {
 
     /// Transform3 type
@@ -92,7 +92,7 @@ class finding_algorithm
     /// @param seeds  Input seeds
     track_candidate_container_types::host operator()(
         const detector_type& det,
-        const measurement_container_types::host& measurements,
+        measurement_collection_types::host&& measurements,
         const bound_track_parameters_collection_types::host& seeds) const;
 
     private:

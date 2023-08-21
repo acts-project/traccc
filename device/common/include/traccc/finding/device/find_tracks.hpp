@@ -37,9 +37,9 @@ template <typename detector_t, typename config_t>
 TRACCC_DEVICE inline void find_tracks(
     std::size_t globalIndex, const config_t cfg,
     typename detector_t::detector_view_type det_data,
-    measurement_container_types::const_view measurements_view,
-    vecmem::data::vector_view<const thrust::pair<geometry_id, unsigned int>>
-        module_map_view,
+    measurement_collection_types::const_view measurements_view,
+    vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
+    vecmem::data::vector_view<const unsigned int> upper_bounds_view,
     bound_track_parameters_collection_types::const_view in_params_view,
     vecmem::data::vector_view<const unsigned int> n_threads_view,
     const unsigned int step, const unsigned int& n_measurements_per_thread,

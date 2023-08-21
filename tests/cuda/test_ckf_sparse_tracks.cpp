@@ -165,11 +165,15 @@ TEST_P(CkfSparseTrackTests, Run) {
              vecmem::copy::type::host_to_device);
 
         // Read measurements
-        traccc::measurement_container_types::host measurements_per_event =
-            traccc::io::read_measurements_container(
-                i_evt, path, traccc::data_format::csv, &host_mr);
-        traccc::measurement_container_types::buffer measurements_buffer =
-            measurement_h2d(traccc::get_data(measurements_per_event));
+        traccc::io::measurement_reader_output readOut(&host_mr);
+        traccc::io::read_measurements(readOut, i_evt, path,
+                                      traccc::data_format::csv);
+        traccc::measurement_collection_types::host& measurements_per_event =
+            readOut.measurements;
+
+        traccc::measurement_collection_types::buffer measurements_buffer(
+            measurements_per_event.size(), mr.main);
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
 
         // Instantiate output cuda containers/collections
         traccc::track_candidate_container_types::buffer
@@ -186,9 +190,9 @@ TEST_P(CkfSparseTrackTests, Run) {
             mr.main, mr.host);
 
         // Run finding
-        track_candidates_cuda_buffer =
-            device_finding(det_view, navigation_buffer, measurements_buffer,
-                           std::move(seeds_buffer));
+        track_candidates_cuda_buffer = device_finding(
+            det_view, navigation_buffer, std::move(measurements_buffer),
+            std::move(seeds_buffer));
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);
