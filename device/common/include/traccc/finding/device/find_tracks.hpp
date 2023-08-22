@@ -23,7 +23,9 @@ namespace traccc::device {
 /// @param[in] cfg                Track finding config object
 /// @param[in] det_data           Detector view object
 /// @param[in] measurements_view  Measurements container view
-/// @param[in] module_map_view    Module map view
+/// @param[in] barcodes_view      Barcode sequence view object
+/// @param[in] upper_bounds_view  Upper bounds of measurements unique w.r.t
+/// barcode
 /// @param[in] in_params_view     Input parameters
 /// @param[in] n_threads_view     The number of threads per tracks
 /// @param[in] step               Step index
