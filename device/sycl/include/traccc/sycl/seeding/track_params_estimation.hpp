@@ -30,8 +30,7 @@ namespace traccc::sycl {
 struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const spacepoint_collection_types::const_view&,
-          const seed_collection_types::const_view&,
-          const cell_module_collection_types::const_view&, const vector3&,
+          const seed_collection_types::const_view&, const vector3&,
           const std::array<traccc::scalar, traccc::e_bound_size>&)> {
 
     public:
@@ -50,7 +49,6 @@ struct track_params_estimation
     ///
     /// @param spacepoints All spacepoints of the event
     /// @param seeds The reconstructed track seeds of the event
-    /// @param modules Geometry module vector
     /// @param bfield (Temporary) Magnetic field vector
     /// @param stddev standard deviation for setting the covariance (Default
     /// value from arXiv:2112.09470v1)
@@ -59,7 +57,6 @@ struct track_params_estimation
     output_type operator()(
         const spacepoint_collection_types::const_view& spacepoints_view,
         const seed_collection_types::const_view& seeds_view,
-        const cell_module_collection_types::const_view& modules_view,
         const vector3& bfield,
         const std::array<traccc::scalar, traccc::e_bound_size>& stddev = {
             0.02 * detray::unit<traccc::scalar>::mm,
