@@ -5,7 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-#pragma once
+// Detray include(s).
+#include "detray/geometry/surface.hpp"
 
 namespace traccc::device::experimental {
 
@@ -15,6 +16,30 @@ template <typename detector_t>
 TRACCC_HOST_DEVICE inline void form_spacepoints(
     const std::size_t globalIndex,
     typename detector_t::detector_view_type det_data,
-    measurement_collection_types::const_view measurements_view) {}
+    measurement_collection_types::const_view measurements_view,
+    spacepoint_collection_types::view spacepoints_view) {
+
+    // Detector
+    detector_t det(det_data);
+
+    // Get device copy of input measurements
+    const measurement_collection_types::const_device measurements(
+        measurements_view);
+
+    // Get device copy of output measurements
+    spacepoint_collection_types::device spacepoints(spacepoints_view);
+
+    if (globalIndex >= measurements.size()) {
+        return;
+    }
+
+    // Access the measurements of the current module.
+    const measurement& ms = measurements.at(globalIndex);
+
+    const detray::surface<detector_t> sf{det, ms.surface_link};
+    const auto global = sf.local_to_global({}, ms.local, {});
+
+    spacepoints.push_back({global, ms});
+}
 
 }  // namespace traccc::device::experimental
