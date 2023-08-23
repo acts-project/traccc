@@ -16,6 +16,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # header files
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
   "include/traccc/sycl/fitting/fitting_algorithm.hpp"
+  "include/traccc/sycl/seeding/experimental/spacepoint_formation.hpp"
   "include/traccc/sycl/seeding/seeding_algorithm.hpp"
   "include/traccc/sycl/seeding/seed_finding.hpp"
   "include/traccc/sycl/seeding/spacepoint_binning.hpp"
@@ -27,6 +28,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # implementation files
   "src/clusterization/clusterization_algorithm.sycl"
   "src/fitting/fitting_algorithm.sycl"
+  "src/seeding/experimental/spacepoint_formation.sycl"
   "src/seeding/seed_finding.sycl"
   "src/seeding/seeding_algorithm.cpp"
   "src/seeding/spacepoint_binning.sycl"
