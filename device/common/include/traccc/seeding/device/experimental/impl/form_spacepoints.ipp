@@ -37,6 +37,9 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     const measurement& ms = measurements.at(globalIndex);
 
     const detray::surface<detector_t> sf{det, ms.surface_link};
+
+    // This local to global transformation only works for 2D planar measurement
+    // (e.g. barrel pixel and endcap pixel detector)
     const auto global = sf.local_to_global({}, ms.local, {});
 
     spacepoints.push_back({global, ms});

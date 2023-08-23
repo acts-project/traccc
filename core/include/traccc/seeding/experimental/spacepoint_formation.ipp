@@ -30,6 +30,10 @@ spacepoint_collection_types::host spacepoint_formation<detector_t>::operator()(
         const measurement& ms = measurements.at(i);
 
         const detray::surface<detector_t> sf{det, ms.surface_link};
+
+        // This local to global transformation only works for 2D planar
+        // measurement
+        // (e.g. barrel pixel and endcap pixel detector)
         const auto global = sf.local_to_global({}, ms.local, {});
 
         // Fill result with this spacepoint
