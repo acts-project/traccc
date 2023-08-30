@@ -10,9 +10,9 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
 
 namespace traccc::detail {
 
@@ -80,7 +80,7 @@ TRACCC_HOST inline void calc_cluster_properties(
 /// @param[in] module_link is the module index
 ///
 TRACCC_HOST void fill_measurement(
-    alt_measurement_collection_types::host& measurements,
+    measurement_collection_types::host& measurements,
     const cell_collection_types::host& cluster, const cell_module& module,
     const unsigned int module_link) {
 
@@ -100,7 +100,7 @@ TRACCC_HOST void fill_measurement(
     detail::calc_cluster_properties(cluster, module, mean, var, totalWeight);
 
     if (totalWeight > 0.) {
-        alt_measurement m;
+        measurement m;
         m.module_link = module_link;
         // normalize the cell position
         m.local = mean;

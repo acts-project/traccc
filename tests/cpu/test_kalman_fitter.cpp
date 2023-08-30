@@ -58,10 +58,14 @@ TEST_P(KalmanFittingTests, Run) {
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
 
-    const host_detector_type det = create_telescope_detector(
-        host_mr,
-        b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
-        rectangle, plane_positions, mat, thickness, traj);
+    detray::tel_det_config<> tel_cfg{rectangle};
+    tel_cfg.positions(plane_positions);
+    tel_cfg.module_material(mat);
+    tel_cfg.mat_thickness(thickness);
+    tel_cfg.pilot_track(traj);
+    tel_cfg.bfield_vec(B);
+
+    auto [det, name_map] = create_telescope_detector(host_mr, tel_cfg);
 
     /***************************
      * Generate simulation data

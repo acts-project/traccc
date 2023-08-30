@@ -31,8 +31,8 @@
 
 // Detray include(s).
 #include "detray/core/detector.hpp"
-#include "detray/detectors/detector_metadata.hpp"
-#include "detray/io/json/json_reader.hpp"
+#include "detray/detectors/toy_metadata.hpp"
+#include "detray/io/common/detector_reader.hpp"
 
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -47,7 +47,7 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_config& i_cfg,
+int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     // Creating sycl queue object
@@ -55,32 +55,18 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     std::cout << "Running on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
+    /// Type declarations
+    using host_detector_type = detray::detector<detray::toy_metadata<>>;
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     vecmem::sycl::host_memory_resource sycl_host_mr{&q};
     vecmem::sycl::device_memory_resource device_mr{&q};
     traccc::memory_resource mr{device_mr, &sycl_host_mr};
 
-    // Declare detector type
-    using detector_t =
-        detray::detector<detray::detector_registry::toy_detector>;
-    detector_t det{host_mr};
-
-    // Read the surface transforms
-    traccc::geometry surface_transforms;
-    if (i_cfg.run_detray_geometry == false) {
-        surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
-    } else if (i_cfg.run_detray_geometry == true) {
-
-        // Read the detector
-        detray::json_geometry_reader<detector_t> geo_reader;
-        typename detector_t::name_map volume_name_map = {{0u, "detector"}};
-
-        geo_reader.read(det, volume_name_map,
-                        traccc::io::data_directory() + i_cfg.detector_file);
-
-        surface_transforms = traccc::io::alt_read_geometry(det);
-    }
+    // Performance writer
+    traccc::seeding_performance_writer sd_performance_writer(
+        traccc::seeding_performance_writer::config{});
 
     // Output stats
     uint64_t n_modules = 0;
@@ -88,7 +74,36 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_sycl = 0;
 
-    // Configs
+    /*****************************
+     * Build a geometry
+     *****************************/
+
+    // B field value and its type
+    // @TODO: Set B field as argument
+    const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+
+    // Read the surface transforms
+    traccc::geometry surface_transforms;
+
+    if (common_opts.run_detray_geometry == false) {
+        surface_transforms =
+            traccc::io::read_geometry(common_opts.detector_file);
+    } else if (common_opts.run_detray_geometry == true) {
+
+        // Read the detector
+        detray::io::detector_reader_config reader_cfg{};
+        reader_cfg
+            .add_file(traccc::io::data_directory() + common_opts.detector_file)
+            .add_file(traccc::io::data_directory() + common_opts.material_file)
+            .bfield_vec(B[0], B[1], B[2]);
+
+        auto [det, names] =
+            detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+
+        surface_transforms = traccc::io::alt_read_geometry(det);
+    }
+
+    // Seeding algorithm
     traccc::seedfinder_config finder_config;
     traccc::spacepoint_grid_config grid_config(finder_config);
     traccc::seedfilter_config filter_config;
@@ -102,10 +117,6 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
     traccc::sycl::seeding_algorithm sa_sycl{
         finder_config, grid_config, filter_config, mr, copy, &q};
     traccc::sycl::track_params_estimation tp_sycl{mr, copy, &q};
-
-    // performance writer
-    traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -142,17 +153,23 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
             const traccc::spacepoint_collection_types::host&
                 spacepoints_per_event = reader_output.spacepoints;
+            const traccc::cell_module_collection_types::host&
+                modules_per_event = reader_output.modules;
+
             /*----------------------------
                  Seeding algorithm
               ----------------------------*/
 
             /// SYCL
 
-            // Copy the spacepoint data to the device.
+            // Copy the spacepoint and module data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_sycl_buffer(
                 spacepoints_per_event.size(), mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_sycl_buffer);
+            traccc::cell_module_collection_types::buffer modules_buffer(
+                modules_per_event.size(), mr.main);
+            copy(vecmem::get_data(modules_per_event), modules_buffer);
 
             {
                 traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
@@ -176,16 +193,16 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             {
                 traccc::performance::timer t("Track params (sycl)",
                                              elapsedTimes);
-                params_sycl_buffer =
-                    tp_sycl(spacepoints_sycl_buffer, seeds_sycl_buffer,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                params_sycl_buffer = tp_sycl(
+                    spacepoints_sycl_buffer, seeds_sycl_buffer, modules_buffer,
+                    {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params sycl timer
 
             // CPU
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(spacepoints_per_event, seeds,
+                params = tp(spacepoints_per_event, seeds, modules_per_event,
                             {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
@@ -234,17 +251,16 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
           ------------*/
 
         if (common_opts.check_performance) {
-            if (i_cfg.run_detray_geometry) {
+            if (common_opts.run_detray_geometry) {
 
                 traccc::event_map2 evt_map(event, common_opts.input_directory,
                                            common_opts.input_directory,
                                            common_opts.input_directory);
                 sd_performance_writer.write(
                     vecmem::get_data(seeds_sycl),
-                    vecmem::get_data(reader_output.spacepoints),
-                    reader_output.modules, evt_map);
+                    vecmem::get_data(reader_output.spacepoints), evt_map);
             } else {
-                traccc::event_map evt_map(event, i_cfg.detector_file,
+                traccc::event_map evt_map(event, common_opts.detector_file,
                                           common_opts.input_directory,
                                           common_opts.input_directory, host_mr);
                 sd_performance_writer.write(
@@ -292,7 +308,7 @@ int main(int argc, char* argv[]) {
     seeding_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    std::cout << "Running " << argv[0] << " " << seeding_input_cfg.detector_file
+    std::cout << "Running " << argv[0] << " " << common_opts.detector_file
               << " " << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 

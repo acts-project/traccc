@@ -13,9 +13,6 @@ namespace traccc {
 namespace po = boost::program_options;
 
 struct seeding_input_config {
-    std::string detector_file;
-    bool run_detray_geometry;
-
     seeding_input_config(po::options_description& desc);
     void read(const po::variables_map& vm);
 };

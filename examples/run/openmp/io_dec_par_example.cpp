@@ -8,8 +8,8 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/io/demonstrator_edm.hpp"
 

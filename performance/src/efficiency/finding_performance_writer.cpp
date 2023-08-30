@@ -74,10 +74,10 @@ void finding_performance_writer::write(
     for (unsigned int i = 0; i < n_tracks; i++) {
         const auto& cands = track_candidates.at(i).items;
 
-        std::vector<measurement_link> measurements;
+        std::vector<measurement> measurements;
         measurements.reserve(cands.size());
         for (const auto& cand : cands) {
-            measurements.push_back({cand.surface_link.value(), cand.meas});
+            measurements.push_back(cand);
         }
 
         // Check which particle matches this seed.

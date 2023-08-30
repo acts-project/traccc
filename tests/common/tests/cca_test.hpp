@@ -9,9 +9,9 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/alt_measurement.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/io/read_cells.hpp"
 
 // Test include(s).
@@ -31,7 +31,7 @@
 #include <functional>
 
 using cca_function_t = std::function<
-    std::map<traccc::geometry_id, vecmem::vector<traccc::alt_measurement>>(
+    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
         const traccc::cell_collection_types::host &,
         const traccc::cell_module_collection_types::host &)>;
 
@@ -101,7 +101,7 @@ class ConnectedComponentAnalysisTests
             modules.at(i).pixel = traccc::pixel_data{0, 0, 1, 1};
         }
 
-        std::map<traccc::geometry_id, vecmem::vector<traccc::alt_measurement>>
+        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result = f(cells, modules);
 
         std::size_t total_truth = 0, total_found = 0;
@@ -116,7 +116,7 @@ class ConnectedComponentAnalysisTests
         while (truth_reader.read(io_truth)) {
             ASSERT_TRUE(result.find(io_truth.geometry_id) != result.end());
 
-            const vecmem::vector<traccc::alt_measurement> &meas =
+            const vecmem::vector<traccc::measurement> &meas =
                 result.at(io_truth.geometry_id);
 
             traccc::scalar tol = std::max(
@@ -124,7 +124,7 @@ class ConnectedComponentAnalysisTests
 
             auto match = std::find_if(
                 meas.begin(), meas.end(),
-                [&io_truth, tol](const traccc::alt_measurement &i) {
+                [&io_truth, tol](const traccc::measurement &i) {
                     return std::abs(i.local[0] - io_truth.channel0) < tol &&
                            std::abs(i.local[1] - io_truth.channel1) < tol;
                 });

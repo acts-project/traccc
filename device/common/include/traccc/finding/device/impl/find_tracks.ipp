@@ -86,8 +86,7 @@ TRACCC_DEVICE inline void find_tracks(
     const unsigned int n_meas_on_surface = measurements_on_surface.size();
 
     // Iterate over the measurements
-    const auto& mask_store = det.mask_store();
-    const auto& surface = det.surfaces(module_id);
+    const detray::surface<detector_t> sf{det, module_id};
 
     // Last step ID
     const unsigned int previous_step =
@@ -100,13 +99,12 @@ TRACCC_DEVICE inline void find_tracks(
 
         bound_track_parameters in_par = in_params.at(in_param_id);
         const auto meas = measurements_on_surface.at(i + stride);
-        track_state<typename detector_t::transform3> trk_state(
-            {module_id, meas});
+        track_state<typename detector_t::transform3> trk_state(meas);
 
         // Run the Kalman update
-        mask_store.template visit<
-            gain_matrix_updater<typename detector_t::transform3>>(
-            surface.mask(), trk_state, in_par);
+        sf.template visit_mask<
+            gain_matrix_updater<typename detector_t::transform3>>(trk_state,
+                                                                  in_par);
 
         // Get the chi-square
         const auto chi2 = trk_state.filtered_chi2();

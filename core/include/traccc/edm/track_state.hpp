@@ -53,7 +53,7 @@ struct track_state {
     /// Construction with track candidate
     TRACCC_HOST_DEVICE
     track_state(const track_candidate& trk_cand)
-        : m_surface_link(trk_cand.surface_link), m_measurement(trk_cand.meas) {
+        : m_surface_link(trk_cand.surface_link), m_measurement(trk_cand) {
         m_predicted.set_surface_link(m_surface_link);
         m_filtered.set_surface_link(m_surface_link);
         m_smoothed.set_surface_link(m_surface_link);

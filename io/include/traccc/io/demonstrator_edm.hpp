@@ -13,7 +13,7 @@
 
 namespace traccc {
 struct result {
-    alt_measurement_collection_types::host measurements;
+    measurement_collection_types::host measurements;
     spacepoint_collection_types::host spacepoints;
 };
 

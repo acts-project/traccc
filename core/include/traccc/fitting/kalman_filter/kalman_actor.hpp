@@ -83,6 +83,7 @@ struct kalman_actor : detray::actor {
         // If the iterator reaches the end, terminate the propagation
         if (actor_state.is_complete()) {
             propagation._heartbeat &= navigation.abort();
+            return;
         }
 
         // triggered only for sensitive surfaces
@@ -91,8 +92,9 @@ struct kalman_actor : detray::actor {
             auto& trk_state = actor_state();
 
             // Abort if the propagator fails to find the next measurement
-            if (navigation.current_object() != trk_state.surface_link()) {
+            if (navigation.barcode() != trk_state.surface_link()) {
                 propagation._heartbeat &= navigation.abort();
+                return;
             }
 
             // This track state is not a hole
@@ -101,15 +103,10 @@ struct kalman_actor : detray::actor {
             // Set full jacobian
             trk_state.jacobian() = stepping._full_jacobian;
 
-            auto det = navigation.detector();
-            const auto& mask_store = det->mask_store();
-
-            // Surface
-            const auto& surface = det->surfaces(trk_state.surface_link());
-
-            // Run kalman updater
-            mask_store.template visit<gain_matrix_updater<algebra_t>>(
-                surface.mask(), trk_state, propagation._stepping._bound_params);
+            // Run Kalman Gain Updater
+            const auto sf = navigation.get_surface();
+            sf.template visit_mask<gain_matrix_updater<algebra_t>>(
+                trk_state, propagation._stepping._bound_params);
 
             // Update iterator
             actor_state.next();

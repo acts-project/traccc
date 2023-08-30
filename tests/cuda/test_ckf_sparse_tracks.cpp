@@ -70,10 +70,14 @@ TEST_P(CkfSparseTrackTests, Run) {
     traccc::memory_resource mr{device_mr, &host_mr};
     vecmem::cuda::managed_memory_resource mng_mr;
 
-    host_detector_type host_det = create_telescope_detector(
-        mng_mr,
-        b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
-        rectangle, plane_positions, mat, thickness, traj);
+    detray::tel_det_config<> tel_cfg{rectangle};
+    tel_cfg.positions(plane_positions);
+    tel_cfg.module_material(mat);
+    tel_cfg.mat_thickness(thickness);
+    tel_cfg.pilot_track(traj);
+    tel_cfg.bfield_vec(B);
+
+    auto [host_det, name_map] = create_telescope_detector(mng_mr, tel_cfg);
 
     // Detector view object
     auto det_view = detray::get_data(host_det);

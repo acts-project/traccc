@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/alt_measurement.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -26,7 +26,7 @@ namespace traccc {
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
 class spacepoint_formation : public algorithm<spacepoint_collection_types::host(
-                                 const alt_measurement_collection_types::host&,
+                                 const measurement_collection_types::host&,
                                  const cell_module_collection_types::host&)> {
 
     public:
@@ -45,7 +45,7 @@ class spacepoint_formation : public algorithm<spacepoint_collection_types::host(
     ///         measurement
     ///
     output_type operator()(
-        const alt_measurement_collection_types::host& measurements,
+        const measurement_collection_types::host& measurements,
         const cell_module_collection_types::host& modules) const override;
 
     private:

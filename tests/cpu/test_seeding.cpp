@@ -64,7 +64,8 @@ TEST(seeding, case1) {
 
     traccc::track_params_estimation tp(host_mr);
 
-    auto bound_params = tp(spacepoints, seeds, B);
+    cell_module_collection_types::host modules(1);
+    auto bound_params = tp(spacepoints, seeds, modules, B);
 
     // The number of bound track parameters should be eqaul to one
     ASSERT_EQ(bound_params.size(), 1u);
@@ -106,7 +107,8 @@ TEST(seeding, case2) {
 
     traccc::track_params_estimation tp(host_mr);
 
-    auto bound_params = tp(spacepoints, seeds, B);
+    cell_module_collection_types::host modules(1);
+    auto bound_params = tp(spacepoints, seeds, modules, B);
 
     // The number of bound track parameters should be eqaul to one
     ASSERT_EQ(bound_params.size(), 1u);

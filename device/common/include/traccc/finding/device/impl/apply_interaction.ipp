@@ -47,21 +47,24 @@ TRACCC_DEVICE inline void apply_interaction(
     auto& bound_param = params.at(globalIndex);
 
     // Get intersection at surface
-    const auto free_vec = det.bound_to_free_vector(bound_param.surface_link(),
-                                                   bound_param.vector());
+    const detray::surface<detector_t> sf{det, bound_param.surface_link()};
+    using cxt_t = typename detector_t::geometry_context;
+    const cxt_t ctx{};
+    const auto free_vec = sf.bound_to_free_vector(ctx, bound_param.vector());
+
     const auto& mask_store = det.mask_store();
     intersection_type sfi;
-    sfi.surface = det.surfaces(bound_param.surface_link());
-    mask_store.template visit<detray::intersection_update>(
-        sfi.surface.mask(), detray::detail::ray<transform3_type>(free_vec), sfi,
+    sfi.sf_desc = det.surface(bound_param.surface_link());
+    sf.template visit_mask<detray::intersection_update>(
+        detray::detail::ray<transform3_type>(free_vec), sfi,
         det.transform_store());
 
     // Apply interactor
     typename interactor_type::state interactor_state;
     interactor_type{}.update(
         bound_param, interactor_state,
-        static_cast<int>(detray::navigation::direction::e_forward), sfi,
-        det.material_store());
+        static_cast<int>(detray::navigation::direction::e_forward), sf,
+        sfi.cos_incidence_angle);
 }
 
 }  // namespace traccc::device

@@ -14,7 +14,7 @@ spacepoint_formation::spacepoint_formation(vecmem::memory_resource& mr)
     : m_mr(mr) {}
 
 spacepoint_formation::output_type spacepoint_formation::operator()(
-    const alt_measurement_collection_types::host& measurements,
+    const measurement_collection_types::host& measurements,
     const cell_module_collection_types::host& modules) const {
 
     // Create the result container.
@@ -24,7 +24,7 @@ spacepoint_formation::output_type spacepoint_formation::operator()(
     for (std::size_t i = 0; i < measurements.size(); ++i) {
 
         // Access the measurements of the current module.
-        const alt_measurement& this_measurement = measurements.at(i);
+        const measurement& this_measurement = measurements.at(i);
         const cell_module& module = modules.at(this_measurement.module_link);
 
         // Transform measurement position to 3D

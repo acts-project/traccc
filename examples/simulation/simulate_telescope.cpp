@@ -16,6 +16,7 @@
 
 // detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/io/common/detector_writer.hpp"
 #include "detray/masks/unbounded.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 #include "detray/simulation/simulator.hpp"
@@ -50,29 +51,26 @@ int simulate(std::string output_directory, unsigned int events,
     std::vector<scalar> plane_positions = {20.,  40., 60., 80., 100.,
                                            120., 140, 160, 180.};
 
-    // Detector type
-    using detector_type =
-        detray::detector<detray::detector_registry::template telescope_detector<
-                             detray::unbounded<detray::rectangle2D<>>>,
-                         covfie::field>;
-
     // B field value and its type
     const vector3 B{2 * detray::unit<scalar>::T, 0, 0};
-    using b_field_t = typename detector_type::bfield_type;
 
     // Create the detector
     const auto mat = detray::silicon_tml<scalar>();
     const scalar thickness = 0.5 * detray::unit<scalar>::mm;
 
     // Use rectangle surfaces
-    detray::mask<detray::unbounded<detray::rectangle2D<>>> rectangle{
+    detray::mask<detray::rectangle2D<>> rectangle{
         0u, 10000.f * detray::unit<scalar>::mm,
         10000.f * detray::unit<scalar>::mm};
 
-    const detector_type det = create_telescope_detector(
-        host_mr,
-        b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
-        rectangle, plane_positions, mat, thickness, traj);
+    detray::tel_det_config<> tel_cfg{rectangle};
+    tel_cfg.positions(plane_positions);
+    tel_cfg.module_material(mat);
+    tel_cfg.mat_thickness(thickness);
+    tel_cfg.pilot_track(traj);
+    tel_cfg.bfield_vec(B);
+
+    const auto [det, name_map] = create_telescope_detector(host_mr, tel_cfg);
 
     /***************************
      * Generate simulation data
@@ -97,6 +95,12 @@ int simulate(std::string output_directory, unsigned int events,
     auto sim = detray::simulator(events, det, std::move(generator),
                                  meas_smearer, full_path);
     sim.run();
+
+    // Create detector file
+    auto writer_cfg = detray::io::detector_writer_config{}
+                          .format(detray::io::format::json)
+                          .replace_files(true);
+    detray::io::write_detector(det, name_map, writer_cfg);
 
     return 1;
 }
