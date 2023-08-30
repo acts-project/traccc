@@ -52,6 +52,9 @@ namespace traccc {
 template <typename K = geometry_id, typename V = transform3>
 class module_map {
     public:
+    // Default constructor
+    module_map() = default;
+
     /**
      * @brief Construct a module map from one created by the `io` library.
      *

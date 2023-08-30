@@ -24,6 +24,8 @@ namespace traccc::io::csv {
 /// @param geom The description of the detector geometry
 ///
 void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+                      std::string_view meas_filename,
+                      std::string_view meas_hit_map_filename,
                       const geometry& geom);
 
 }  // namespace traccc::io::csv

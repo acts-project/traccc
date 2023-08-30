@@ -103,6 +103,52 @@ void seeding_performance_writer::write(
     }
 }
 
+void seeding_performance_writer::write(
+    const seed_collection_types::const_view& seeds_view,
+    const spacepoint_collection_types::const_view& spacepoints_view,
+    const cell_module_collection_types::host& modules,
+    const event_map2& evt_map) {
+
+    std::map<particle_id, std::size_t> match_counter;
+
+    // Iterate over the seeds.
+    seed_collection_types::const_device seeds(seeds_view);
+    for (const seed& sd : seeds) {
+
+        // Check which particle matches this seed.
+        std::vector<particle_hit_count> particle_hit_counts =
+            identify_contributing_particles(
+                sd.get_measurements(spacepoints_view, modules),
+                evt_map.meas_ptc_map);
+
+        if (particle_hit_counts.size() == 1) {
+            auto pid = particle_hit_counts.at(0).ptc.particle_id;
+            match_counter[pid]++;
+        }
+    }
+
+    for (auto const& [pid, ptc] : evt_map.ptc_map) {
+
+        // Count only charged particles which satisfiy pT_cut
+        if (ptc.charge == 0 || getter::perp(ptc.mom) < m_cfg.pT_cut) {
+            continue;
+        }
+
+        bool is_matched = false;
+        std::size_t n_matched_seeds_for_particle = 0;
+        auto it = match_counter.find(pid);
+        if (it != match_counter.end()) {
+            is_matched = true;
+            n_matched_seeds_for_particle = it->second;
+        }
+
+        m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_cache, ptc, is_matched);
+        m_data->m_duplication_plot_tool.fill(m_data->m_duplication_plot_cache,
+                                             ptc,
+                                             n_matched_seeds_for_particle - 1);
+    }
+}
+
 void seeding_performance_writer::finalize() {
 
 #ifdef TRACCC_HAVE_ROOT
