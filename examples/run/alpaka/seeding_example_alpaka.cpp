@@ -144,6 +144,9 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                                           mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_alpaka_buffer);
+            traccc::cell_module_collection_types::buffer modules_buffer(
+                modules_per_event.size(), mr.main);
+            copy(vecmem::get_data(modules_per_event), modules_buffer);
 
             {
                 traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
@@ -170,7 +173,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                                              elapsedTimes);
                 params_alpaka_buffer =
                     tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                              {0.f, 0.f, finder_config.bFieldInZ});
+                              modules_buffer, {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params alpaka timer
             // CPU
 
@@ -227,7 +230,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
           ------------*/
 
         if (common_opts.check_performance) {
-            traccc::event_map evt_map(event, i_cfg.detector_file,
+            traccc::event_map evt_map(event, common_opts.detector_file,
                                       common_opts.input_directory,
                                       common_opts.input_directory, host_mr);
 

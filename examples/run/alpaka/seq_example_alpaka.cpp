@@ -43,7 +43,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(common_opts.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -266,7 +266,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         if (common_opts.check_performance) {
 
             traccc::event_map evt_map(
-                event, i_cfg.detector_file, i_cfg.digitization_config_file,
+                event, common_opts.detector_file, i_cfg.digitization_config_file,
                 common_opts.input_directory, common_opts.input_directory,
                 common_opts.input_directory, host_mr);
             sd_performance_writer.write(
@@ -322,7 +322,7 @@ int main(int argc, char* argv[]) {
     auto run_cpu = vm["run_cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " "
-              << full_tracking_input_cfg.detector_file << " "
+              << common_opts.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 

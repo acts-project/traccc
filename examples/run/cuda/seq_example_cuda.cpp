@@ -323,7 +323,7 @@ int main(int argc, char* argv[]) {
     auto run_cpu = vm["run_cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " "
-              << full_tracking_input_cfg.detector_file << " "
+              << common_opts.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
