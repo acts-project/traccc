@@ -203,10 +203,10 @@ struct seedfilter_config {
     unsigned int maxSeedsPerSpM = 20;
     // how often do you want to increase the weight of a seed for finding a
     // compatible seed?
-    inline static const size_t compatSeedLimit = 2;
+    const size_t compatSeedLimit = 2;
     // Tool to apply experiment specific cuts on collected middle space points
 
-    inline static const size_t max_triplets_per_spM = 5;
+    const size_t max_triplets_per_spM = 5;
 
     // seed weight increase
     scalar good_spB_min_radius = 150. * unit<scalar>::mm;
