@@ -12,7 +12,7 @@
 #include <memory>
 #include <optional>
 #include <set>
-#include <traccc/edm/alt_measurement.hpp>
+#include <traccc/edm/measurement.hpp>
 #include <traccc/edm/nseed.hpp>
 #include <traccc/edm/spacepoint.hpp>
 #include <traccc/efficiency/track_filter.hpp>
@@ -48,7 +48,7 @@ class nseed_performance_writer {
                 s->cbegin(), s->cend(), std::back_inserter(particle_ids),
                 [pb,
                  &em](const spacepoint_collection_types::host::size_type& l) {
-                    traccc::alt_measurement meas = (pb + l)->meas;
+                    traccc::measurement meas = (pb + l)->meas;
 
                     const auto& ptcs = em.meas_ptc_map.find(meas)->second;
 

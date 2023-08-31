@@ -16,18 +16,8 @@
 
 namespace traccc {
 
-/// Track candidate contains the measurement object and its surface link
-struct track_candidate {
-    detray::geometry::barcode surface_link;
-    measurement meas{};
-};
-
-/// Equality operator for track_candidate
-TRACCC_HOST_DEVICE
-inline bool operator==(const track_candidate& lhs, const track_candidate& rhs) {
-
-    return ((lhs.surface_link == rhs.surface_link) && (lhs.meas == rhs.meas));
-}
+/// Track candidate is the measurement
+using track_candidate = measurement;
 
 /// Declare a track candidates collection types
 using track_candidate_collection_types = collection_types<track_candidate>;

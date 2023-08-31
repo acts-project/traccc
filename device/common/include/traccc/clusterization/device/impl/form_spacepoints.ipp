@@ -12,13 +12,13 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void form_spacepoints(
     const std::size_t globalIndex,
-    alt_measurement_collection_types::const_view measurements_view,
+    measurement_collection_types::const_view measurements_view,
     cell_module_collection_types::const_view modules_view,
     const unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view) {
 
     // Get device copy of input parameters
-    const alt_measurement_collection_types::const_device measurements_device(
+    const measurement_collection_types::const_device measurements_device(
         measurements_view);
 
     // Check if anything needs to be done
@@ -33,7 +33,7 @@ inline void form_spacepoints(
     spacepoint_collection_types::device spacepoints_device(spacepoints_view);
 
     // Get the measurement for this index
-    const alt_measurement& meas = measurements_device.at(globalIndex);
+    const measurement& meas = measurements_device.at(globalIndex);
     // Get the current cell module
     const cell_module& mod = modules_device.at(meas.module_link);
     // Form a spacepoint based on this measurement

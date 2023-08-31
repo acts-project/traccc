@@ -47,6 +47,7 @@ class finding_algorithm
 
     /// Detector type
     using detector_type = typename navigator_t::detector_type;
+    using cxt_t = typename detector_type::geometry_context;
 
     /// Actor types
     using transporter = detray::parameter_transporter<transform3_type>;

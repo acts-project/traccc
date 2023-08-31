@@ -21,7 +21,8 @@
 
 // detray include(s).
 #include "detray/core/detector.hpp"
-#include "detray/detectors/detector_metadata.hpp"
+#include "detray/detectors/telescope_metadata.hpp"
+#include "detray/detectors/toy_metadata.hpp"
 #include "detray/masks/unbounded.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
@@ -509,8 +510,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
 // Explicit template instantiation
 using toy_detector_type =
-    detray::detector<detray::detector_registry::toy_detector,
-                     covfie::field_view, detray::device_container_types>;
+    detray::detector<detray::toy_metadata<>, covfie::field_view,
+                     detray::device_container_types>;
 using toy_stepper_type = detray::rk_stepper<
     covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
     detray::constrained_step<>>;
@@ -518,8 +519,7 @@ using toy_navigator_type = detray::navigator<const toy_detector_type>;
 template class finding_algorithm<toy_stepper_type, toy_navigator_type>;
 
 using device_detector_type =
-    detray::detector<detray::detector_registry::template telescope_detector<
-                         detray::rectangle2D<>>,
+    detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
                      covfie::field_view, detray::device_container_types>;
 using rk_stepper_type = detray::rk_stepper<
     covfie::field<device_detector_type::bfield_backend_type>::view_t,

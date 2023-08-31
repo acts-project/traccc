@@ -32,11 +32,12 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_config& i_cfg,
+int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    auto surface_transforms =
+        traccc::io::read_geometry(common_opts.detector_file);
 
     // Output stats
     uint64_t n_modules = 0;
@@ -92,6 +93,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
             traccc::spacepoint_collection_types::host& spacepoints_per_event =
                 reader_output.spacepoints;
+            auto& modules_per_event = reader_output.modules;
 
             {  // Spacepoin binning for kokkos
                 traccc::performance::timer t("Spacepoint binning (kokkos)",
@@ -119,8 +121,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(std::move(spacepoints_per_event), seeds,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                params =
+                    tp(std::move(spacepoints_per_event), seeds,
+                       modules_per_event, {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
@@ -168,7 +171,7 @@ int main(int argc, char* argv[]) {
     seeding_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    std::cout << "Running " << argv[0] << " " << seeding_input_cfg.detector_file
+    std::cout << "Running " << argv[0] << " " << common_opts.detector_file
               << " " << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 

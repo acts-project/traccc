@@ -106,7 +106,6 @@ void seeding_performance_writer::write(
 void seeding_performance_writer::write(
     const seed_collection_types::const_view& seeds_view,
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const cell_module_collection_types::host& modules,
     const event_map2& evt_map) {
 
     std::map<particle_id, std::size_t> match_counter;
@@ -118,8 +117,7 @@ void seeding_performance_writer::write(
         // Check which particle matches this seed.
         std::vector<particle_hit_count> particle_hit_counts =
             identify_contributing_particles(
-                sd.get_measurements(spacepoints_view, modules),
-                evt_map.meas_ptc_map);
+                sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
 
         if (particle_hit_counts.size() == 1) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;

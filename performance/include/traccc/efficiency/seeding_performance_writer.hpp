@@ -67,7 +67,6 @@ class seeding_performance_writer {
 
     void write(const seed_collection_types::const_view& seeds_view,
                const spacepoint_collection_types::const_view& spacepoints_view,
-               const cell_module_collection_types::host& modules,
                const event_map2& evt_map);
 
     void finalize();

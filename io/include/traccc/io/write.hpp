@@ -54,7 +54,7 @@ void write(std::size_t event, std::string_view directory,
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           alt_measurement_collection_types::const_view measurements,
+           measurement_collection_types::const_view measurements,
            traccc::cell_module_collection_types::const_view modules);
 
 }  // namespace traccc::io
