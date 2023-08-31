@@ -203,7 +203,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                              elapsedTimes);
                 params_alpaka_buffer =
                     tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                              {0.f, 0.f, finder_config.bFieldInZ});
+                              modules_buffer, {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params timer
 
             // CPU
@@ -212,7 +212,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
                 params = tp(spacepoints_per_event, seeds,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                            modules_per_event, {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time

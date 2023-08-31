@@ -38,7 +38,7 @@ struct CCLKernel {
         const cell_module_collection_types::const_view modules_view,
         const index_t max_cells_per_partition,
         const index_t target_cells_per_partition,
-        alt_measurement_collection_types::view measurements_view,
+        measurement_collection_types::view measurements_view,
         unsigned int* measurement_count,
         vecmem::data::vector_view<unsigned int> cell_links) const {
 
@@ -73,7 +73,7 @@ struct FormSpacepointsKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        alt_measurement_collection_types::const_view measurements_view,
+        measurement_collection_types::const_view measurements_view,
         cell_module_collection_types::const_view modules_view,
         const unsigned int* measurement_count,
         spacepoint_collection_types::view spacepoints_view) const {
@@ -113,7 +113,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     }
 
     // Create result object for the CCL kernel with size overestimation
-    alt_measurement_collection_types::buffer measurements_buffer(num_cells,
+    measurement_collection_types::buffer measurements_buffer(num_cells,
                                                                  m_mr.main);
     m_copy.setup(measurements_buffer);
 
