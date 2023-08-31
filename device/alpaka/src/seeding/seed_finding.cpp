@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -384,41 +384,47 @@ seed_finding::output_type seed_finding::operator()(
 namespace alpaka::trait {
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel, TAcc>
-{
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel,
+                                  TAcc> {
     template <typename TVec>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::UpdateTripletWeightsKernel const& /* kernel */,
-        TVec const& blockThreadExtent,
-        TVec const& /* threadElemExtent */,
+        TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
         traccc::seedfilter_config filter_config,
         traccc::sp_grid_const_view /* sp_grid */,
-        traccc::device::triplet_counter_spM_collection_types::const_view /* spM_tc */,
-        traccc::device::triplet_counter_collection_types::const_view /* midBot_tc */,
+        traccc::device::triplet_counter_spM_collection_types::
+            const_view /* spM_tc */,
+        traccc::device::triplet_counter_collection_types::
+            const_view /* midBot_tc */,
         traccc::device::device_triplet_collection_types::view /* triplet_view */
-    ) -> std::size_t {
-        return static_cast<std::size_t>(filter_config.compatSeedLimit * blockThreadExtent.prod()) * sizeof(traccc::scalar);
+        ) -> std::size_t {
+        return static_cast<std::size_t>(filter_config.compatSeedLimit *
+                                        blockThreadExtent.prod()) *
+               sizeof(traccc::scalar);
     }
 };
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc>
-{
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc> {
     template <typename TVec>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::SelectSeedsKernel const& /* kernel */,
-        TVec const& blockThreadExtent,
-        TVec const& /* threadElemExtent */,
+        TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
         traccc::seedfilter_config filter_config,
         traccc::spacepoint_collection_types::const_view /* spacepoints_view */,
         traccc::sp_grid_const_view /* sp_grid */,
-        traccc::device::triplet_counter_spM_collection_types::const_view /* spM_tc */,
-        traccc::device::triplet_counter_collection_types::const_view /* midBot_tc */,
-        traccc::device::device_triplet_collection_types::view /* triplet_view */,
+        traccc::device::triplet_counter_spM_collection_types::
+            const_view /* spM_tc */,
+        traccc::device::triplet_counter_collection_types::
+            const_view /* midBot_tc */,
+        traccc::device::device_triplet_collection_types::
+            view /* triplet_view */,
         traccc::seed_collection_types::view /* seed_view */
-    ) -> std::size_t {
-        return static_cast<std::size_t>(filter_config.max_triplets_per_spM * blockThreadExtent.prod()) * sizeof(traccc::triplet);
+        ) -> std::size_t {
+        return static_cast<std::size_t>(filter_config.max_triplets_per_spM *
+                                        blockThreadExtent.prod()) *
+               sizeof(traccc::triplet);
     }
 };
 
-}  // namespace alpaka::traits
+}  // namespace alpaka::trait

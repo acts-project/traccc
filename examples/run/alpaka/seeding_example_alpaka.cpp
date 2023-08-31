@@ -171,9 +171,9 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             {
                 traccc::performance::timer t("Track params (alpaka)",
                                              elapsedTimes);
-                params_alpaka_buffer =
-                    tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                              modules_buffer, {0.f, 0.f, finder_config.bFieldInZ});
+                params_alpaka_buffer = tp_alpaka(
+                    spacepoints_alpaka_buffer, seeds_alpaka_buffer,
+                    modules_buffer, {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params alpaka timer
             // CPU
 
