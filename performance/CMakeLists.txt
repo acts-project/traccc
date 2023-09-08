@@ -4,6 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-cpp )
+
 # Set up the build of the traccc::performance library.
 traccc_add_library( traccc_performance performance TYPE SHARED
    # Efficiency calculation code.
