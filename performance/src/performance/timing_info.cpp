@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,9 +19,10 @@ namespace traccc::performance {
 std::chrono::nanoseconds timing_info::get_time(
     std::string_view timer_name) const {
 
-    auto it = std::find_if(
-        data.begin(), data.end(),
-        [&timer_name](timing_info_pair it) { return it.first == timer_name; });
+    auto it = std::find_if(data.begin(), data.end(),
+                           [&timer_name](timing_info_pair itr) {
+                               return itr.first == timer_name;
+                           });
     if (it == data.end()) {
         throw std::invalid_argument("Unknown component name received");
     }
