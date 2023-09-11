@@ -38,40 +38,58 @@ struct gain_matrix_updater {
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
     TRACCC_HOST_DEVICE inline void operator()(
-        const mask_group_t& mask_group, const index_t& index,
+        const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
 
+        const auto D = trk_state.get_measurement().meas_dim;
+        assert(D == 1u || D == 2u);
+        if (D == 1u) {
+            update<1u>(trk_state, bound_params);
+        } else if (D == 2u) {
+            update<2u>(trk_state, bound_params);
+        }
+    }
+
+    template <size_type D>
+    TRACCC_HOST_DEVICE inline void update(
+        track_state<algebra_t>& trk_state,
+        bound_track_parameters& bound_params) const {
+
+        static_assert(((D == 1u) || (D == 2u)),
+                      "The measurement dimension should be 1 or 2");
+
+        const auto meas = trk_state.get_measurement();
+
         // Some identity matrices
         // @Note: Make constexpr work
-        const matrix_type<6, 6> I66 =
+        const matrix_type<e_bound_size, e_bound_size> I66 =
             matrix_operator().template identity<e_bound_size, e_bound_size>();
-
-        constexpr const unsigned int D =
-            mask_group_t::value_type::shape::meas_dim;
 
         const matrix_type<D, D> I_m =
             matrix_operator().template identity<D, D>();
 
-        // projection matrix
-        const typename mask_group_t::value_type::projection_matrix_type H =
-            mask_group[index].projection_matrix(bound_params);
+        const matrix_type<D, e_bound_size> H =
+            meas.subs.template projector<D>();
 
-        // Measurement data on surface
-        const matrix_type<D, 1>& meas_local = trk_state.measurement_local();
+        const matrix_type<D, 1>& meas_local =
+            trk_state.template measurement_local<D>();
 
         // Predicted vector of bound track parameters
-        const matrix_type<6, 1>& predicted_vec = bound_params.vector();
+        const matrix_type<e_bound_size, 1>& predicted_vec =
+            bound_params.vector();
 
         // Predicted covaraince of bound track parameters
-        const matrix_type<6, 6>& predicted_cov = bound_params.covariance();
+        const matrix_type<e_bound_size, e_bound_size>& predicted_cov =
+            bound_params.covariance();
 
         // Set track state parameters
         trk_state.predicted().set_vector(predicted_vec);
         trk_state.predicted().set_covariance(predicted_cov);
 
         // Spatial resolution (Measurement covariance)
-        const matrix_type<D, D> V = trk_state.measurement_covariance();
+        const matrix_type<D, D> V =
+            trk_state.template measurement_covariance<D>();
 
         const matrix_type<D, D> M =
             H * predicted_cov * matrix_operator().transpose(H) + V;
@@ -102,6 +120,8 @@ struct gain_matrix_updater {
         trk_state.filtered().set_vector(filtered_vec);
         trk_state.filtered().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = matrix_operator().element(chi2, 0, 0);
+
+        return;
     }
 };
 
