@@ -8,6 +8,7 @@ import scipy.stats
 import random
 import collections
 import csv
+import tqdm
 
 
 def neighbourhood(p, m):
@@ -32,8 +33,6 @@ def rand(d):
 
 
 def generate_file(name, Md, Hd, size, N):
-    print("Generating file %s..." % name)
-
     with open(name, "w") as f:
         h = 0
         w = csv.DictWriter(
@@ -50,7 +49,7 @@ def generate_file(name, Md, Hd, size, N):
         )
         w.writeheader()
 
-        for m in range(N):
+        for m in tqdm.tqdm(range(N), position=1, leave=False, desc="Modules"):
             acts = 0
             hits = rand(Md)
 
@@ -182,7 +181,7 @@ if __name__ == "__main__":
     if args.C is None:
         generate_file(("%s.csv" % args.o), hits_dist, cell_dist, args.S, args.N)
     else:
-        for i in range(args.C):
+        for i in tqdm.tqdm(range(args.C), position=0, desc="  Files"):
             generate_file(
                 "%s_%010d.csv" % (args.o, i), hits_dist, cell_dist, args.S, args.N
             )

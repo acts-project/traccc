@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "ccl-generator"
+version = "0.1.0"
+description = "traccc CCL test data generator"
+authors = ["Stephen Nicholas Swatman <stephen.nicholas.swatman@cern.ch>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9,<3.13"
+scipy = "^1.11.2"
+tqdm = "^4.66.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.9.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
