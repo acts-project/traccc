@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -107,8 +107,8 @@ bool is_same_object<bound_track_parameters>::operator()(
 /// @{
 
 is_same_object<track_candidate_collection_types::host>::is_same_object(
-    const track_candidate_collection_types::host& ref, scalar unc)
-    : m_ref(ref), m_unc(unc) {}
+    const track_candidate_collection_types::host& ref, scalar)
+    : m_ref(ref) {}
 
 bool is_same_object<track_candidate_collection_types::host>::operator()(
     const track_candidate_collection_types::host& obj) const {

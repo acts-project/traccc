@@ -14,7 +14,8 @@ endif()
 
 # Turn on a number of warnings for the "known compilers".
 if( ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" ) OR
-    ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) )
+    ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) OR
+    ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM" ) )
 
    # Basic flags for all build modes.
    traccc_add_flag( CMAKE_CXX_FLAGS "-Wall" )
