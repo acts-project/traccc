@@ -73,6 +73,7 @@ TEST_P(CkfSparseTrackTests, Run) {
      * Generate simulation data
      ***************************/
 
+    // Track generator
     auto generator =
         detray::random_track_generator<traccc::free_track_parameters,
                                        uniform_gen_t>(n_truth_tracks, origin,
@@ -83,12 +84,20 @@ TEST_P(CkfSparseTrackTests, Run) {
     detray::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
 
+    using generator_type = decltype(generator);
+    using writer_type =
+        detray::smearing_writer<detray::measurement_smearer<transform3>>;
+
+    typename writer_type::config smearer_writer_cfg{meas_smearer};
+
     // Run simulator
     const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
-    auto sim = detray::simulator(n_events, host_det, std::move(generator),
-                                 meas_smearer, full_path);
+    auto sim =
+        detray::simulator<host_detector_type, generator_type, writer_type>(
+            n_events, host_det, std::move(generator),
+            std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /*****************************
