@@ -176,7 +176,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     const vecmem::data::jagged_vector_view<
         typename navigator_t::intersection_type>& navigation_buffer,
     typename measurement_collection_types::view&& measurements,
-    bound_track_parameters_collection_types::buffer&& seeds_buffer) const {
+    const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
 
     // Copy setup
     m_copy->setup(seeds_buffer);

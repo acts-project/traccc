@@ -41,7 +41,7 @@ class finding_algorithm
           const vecmem::data::jagged_vector_view<
               typename navigator_t::intersection_type>&,
           typename measurement_collection_types::view&&,
-          bound_track_parameters_collection_types::buffer&&)> {
+          const bound_track_parameters_collection_types::buffer&)> {
 
     /// Transform3 type
     using transform3_type = typename stepper_t::transform3_type;
@@ -89,7 +89,8 @@ class finding_algorithm
         const vecmem::data::jagged_vector_view<
             typename navigator_t::intersection_type>& navigation_buffer,
         typename measurement_collection_types::view&& measurements,
-        bound_track_parameters_collection_types::buffer&& seeds) const override;
+        const bound_track_parameters_collection_types::buffer& seeds)
+        const override;
 
     private:
     /// Memory resource used by the algorithm
