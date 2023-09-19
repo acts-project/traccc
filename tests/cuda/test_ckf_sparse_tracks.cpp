@@ -199,8 +199,7 @@ TEST_P(CkfSparseTrackTests, Run) {
 
         // Run finding
         track_candidates_cuda_buffer = device_finding(
-            det_view, navigation_buffer, std::move(measurements_buffer),
-            std::move(seeds_buffer));
+            det_view, navigation_buffer, measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);

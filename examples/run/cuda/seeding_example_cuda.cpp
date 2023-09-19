@@ -328,17 +328,16 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                 {
                     traccc::performance::timer t(
                         "Track finding with CKF (cuda)", elapsedTimes);
-                    track_candidates_cuda_buffer =
-                        device_finding(det_view, navigation_buffer,
-                                       std::move(measurements_cuda_buffer),
-                                       std::move(params_cuda_buffer));
+                    track_candidates_cuda_buffer = device_finding(
+                        det_view, navigation_buffer, measurements_cuda_buffer,
+                        params_cuda_buffer);
                 }
 
                 if (run_cpu) {
                     traccc::performance::timer t("Track finding with CKF (cpu)",
                                                  elapsedTimes);
-                    track_candidates = host_finding(
-                        host_det, std::move(measurements_per_event), params);
+                    track_candidates =
+                        host_finding(host_det, measurements_per_event, params);
                 }
 
                 /*------------------------

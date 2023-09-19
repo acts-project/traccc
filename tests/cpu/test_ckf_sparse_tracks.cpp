@@ -148,7 +148,7 @@ TEST_P(CkfSparseTrackTests, Run) {
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, std::move(measurements_per_event), seeds);
+            host_finding(host_det, measurements_per_event, seeds);
 
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
