@@ -154,9 +154,6 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     // Copy objects
     vecmem::cuda::copy copy;
 
-    traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
-        measurement_h2d{mr, copy};
-
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
         track_candidate_d2h{mr, copy};
@@ -212,11 +209,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::spacepoint_reader_output reader_output(mr.host);
-        traccc::measurement_container_types::host measurements_per_event(
-            mr.host);
-        traccc::measurement_container_types::buffer measurements_buffer{
-            {{}, mr.main}, {{}, mr.main, mr.host}};
+        traccc::io::spacepoint_reader_output sp_reader_output(mr.host);
+        traccc::io::measurement_reader_output meas_reader_output(mr.host);
 
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
@@ -245,22 +239,18 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
-                    reader_output, event, common_opts.input_directory,
+                    sp_reader_output, event, common_opts.input_directory,
                     surface_transforms, common_opts.input_data_format);
 
                 // Read measurements
-                measurements_per_event =
-                    traccc::io::read_measurements_container(
-                        event, common_opts.input_directory,
-                        traccc::data_format::csv, &host_mr);
-
-                measurements_buffer =
-                    measurement_h2d(traccc::get_data(measurements_per_event));
-
+                traccc::io::read_measurements(meas_reader_output, event,
+                                              common_opts.input_directory,
+                                              common_opts.input_data_format);
             }  // stop measuring hit reading timer
 
-            auto& spacepoints_per_event = reader_output.spacepoints;
-            auto& modules_per_event = reader_output.modules;
+            auto& spacepoints_per_event = sp_reader_output.spacepoints;
+            auto& modules_per_event = sp_reader_output.modules;
+            auto& measurements_per_event = meas_reader_output.measurements;
 
             /*----------------------------
                 Seeding algorithm
@@ -276,6 +266,12 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
             async_copy(vecmem::get_data(modules_per_event), modules_buffer);
+
+            traccc::measurement_collection_types::buffer
+                measurements_cuda_buffer(measurements_per_event.size(),
+                                         mr.main);
+            async_copy(vecmem::get_data(measurements_per_event),
+                       measurements_cuda_buffer);
 
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
@@ -333,8 +329,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                     traccc::performance::timer t(
                         "Track finding with CKF (cuda)", elapsedTimes);
                     track_candidates_cuda_buffer = device_finding(
-                        det_view, navigation_buffer, measurements_buffer,
-                        std::move(params_cuda_buffer));
+                        det_view, navigation_buffer, measurements_cuda_buffer,
+                        params_cuda_buffer);
                 }
 
                 if (run_cpu) {
@@ -391,8 +387,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             // Compare the seeds made on the host and on the device
             traccc::collection_comparator<traccc::seed> compare_seeds{
                 "seeds", traccc::details::comparator_factory<traccc::seed>{
-                             vecmem::get_data(reader_output.spacepoints),
-                             vecmem::get_data(reader_output.spacepoints)}};
+                             vecmem::get_data(sp_reader_output.spacepoints),
+                             vecmem::get_data(sp_reader_output.spacepoints)}};
             compare_seeds(vecmem::get_data(seeds),
                           vecmem::get_data(seeds_cuda));
 
@@ -428,8 +424,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
              Statistics
           ---------------*/
 
-        n_spacepoints += reader_output.spacepoints.size();
-        n_modules += reader_output.modules.size();
+        n_spacepoints += sp_reader_output.spacepoints.size();
+        n_modules += sp_reader_output.modules.size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
         n_found_tracks_cuda += track_candidates_cuda.size();
@@ -449,7 +445,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                                            common_opts.input_directory);
                 sd_performance_writer.write(
                     vecmem::get_data(seeds_cuda),
-                    vecmem::get_data(reader_output.spacepoints), evt_map);
+                    vecmem::get_data(sp_reader_output.spacepoints), evt_map);
 
                 find_performance_writer.write(
                     traccc::get_data(track_candidates_cuda), evt_map);
@@ -477,11 +473,11 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
                 nsd_performance_writer.register_event(
                     event, nseeds.begin(), nseeds.end(),
-                    reader_output.spacepoints.begin(), evt_map);
+                    sp_reader_output.spacepoints.begin(), evt_map);
 
                 sd_performance_writer.write(
                     vecmem::get_data(seeds_cuda),
-                    vecmem::get_data(reader_output.spacepoints), evt_map);
+                    vecmem::get_data(sp_reader_output.spacepoints), evt_map);
             }
         }
     }

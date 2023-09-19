@@ -95,7 +95,8 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         const unsigned int out_param_id = num_out_params.fetch_add(1);
 
         out_params[out_param_id] = propagation._stepping._bound_params;
-        param_to_link[out_param_id] = globalIndex;
+
+        param_to_link[out_param_id] = static_cast<unsigned int>(globalIndex);
     }
     // Unless the track found a surface, it is considered a tip
     else if (!s4.success && step >= cfg.min_track_candidates_per_track - 1) {

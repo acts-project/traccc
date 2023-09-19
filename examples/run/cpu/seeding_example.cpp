@@ -79,6 +79,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
     // Output stats
     uint64_t n_spacepoints = 0;
+    uint64_t n_measurements = 0;
     uint64_t n_seeds = 0;
     uint64_t n_found_tracks = 0;
     uint64_t n_fitted_tracks = 0;
@@ -172,10 +173,13 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         if (common_opts.run_detray_geometry) {
 
             // Read measurements
-            traccc::measurement_container_types::host measurements_per_event =
-                traccc::io::read_measurements_container(
-                    event, common_opts.input_directory,
-                    traccc::data_format::csv, &host_mr);
+            traccc::io::measurement_reader_output meas_read_out(&host_mr);
+            traccc::io::read_measurements(meas_read_out, event,
+                                          common_opts.input_directory,
+                                          traccc::data_format::csv);
+            traccc::measurement_collection_types::host& measurements_per_event =
+                meas_read_out.measurements;
+            n_measurements += measurements_per_event.size();
 
             /*------------------------
                Track Finding with CKF
@@ -244,6 +248,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints" << std::endl;
+    std::cout << "- read    " << n_measurements << " measurements" << std::endl;
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (cpu)  " << n_found_tracks << " found tracks"
               << std::endl;

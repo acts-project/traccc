@@ -27,7 +27,7 @@ namespace traccc::device {
 
 TRACCC_DEVICE inline void build_tracks(
     std::size_t globalIndex,
-    measurement_container_types::const_view measurements_view,
+    measurement_collection_types::const_view measurements_view,
     bound_track_parameters_collection_types::const_view seeds_view,
     vecmem::data::jagged_vector_view<const candidate_link> links_view,
     vecmem::data::jagged_vector_view<const unsigned int> param_to_link_view,

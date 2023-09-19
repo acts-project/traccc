@@ -140,9 +140,11 @@ TEST_P(CkfSparseTrackTests, Run) {
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
         // Read measurements
-        traccc::measurement_container_types::host measurements_per_event =
-            traccc::io::read_measurements_container(
-                i_evt, path, traccc::data_format::csv, &host_mr);
+        traccc::io::measurement_reader_output readOut(&host_mr);
+        traccc::io::read_measurements(readOut, i_evt, path,
+                                      traccc::data_format::csv);
+        traccc::measurement_collection_types::host& measurements_per_event =
+            readOut.measurements;
 
         // Run finding
         auto track_candidates =
