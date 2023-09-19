@@ -51,11 +51,11 @@ void nseed_performance_writer::write_seed_header() {
 }
 
 void nseed_performance_writer::write_seed_row(
-    std::size_t event_id, std::size_t seed_id, std::size_t length,
-    std::optional<std::size_t> particle_id) {
+    std::size_t evt_id, std::size_t seed_id, std::size_t length,
+    std::optional<std::size_t> part_id) {
     if (output_seed_file.good()) {
-        output_seed_file << event_id << sep << seed_id << sep << length << sep
-                         << (particle_id ? std::to_string(*particle_id) : "-1")
+        output_seed_file << evt_id << sep << seed_id << sep << length << sep
+                         << (part_id ? std::to_string(*part_id) : "-1")
                          << std::endl;
     }
 }
@@ -68,13 +68,13 @@ void nseed_performance_writer::write_track_header() {
     }
 }
 
-void nseed_performance_writer::write_track_row(std::size_t event_id,
-                                               std::size_t particle_id,
+void nseed_performance_writer::write_track_row(std::size_t evt_id,
+                                               std::size_t part_id,
                                                bool pass_cuts, int q,
                                                scalar eta, scalar phi,
                                                scalar pt) {
     if (output_track_file.good()) {
-        output_track_file << event_id << sep << particle_id << sep
+        output_track_file << evt_id << sep << part_id << sep
                           << (pass_cuts ? "true" : "false") << sep << q << sep
                           << eta << sep << phi << sep << pt << std::endl;
     }

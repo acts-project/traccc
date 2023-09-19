@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022 CERN for the benefit of the ACTS project
+# (c) 2022-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -29,3 +29,10 @@ set( Kokkos_ENABLE_SERIAL TRUE CACHE BOOL
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Kokkos )
+
+# Treat the Kokkos headers as "system headers", to avoid getting warnings from
+# them.
+get_target_property( _incDirs kokkoscore INTERFACE_INCLUDE_DIRECTORIES )
+target_include_directories( kokkoscore
+   SYSTEM PUBLIC ${_incDirs} )
+unset( _incDirs )

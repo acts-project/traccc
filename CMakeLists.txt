@@ -278,13 +278,13 @@ if( TRACCC_BUILD_ALPAKA )
    add_subdirectory( device/alpaka )
 endif()
 add_subdirectory( io )
+add_subdirectory( performance )
 add_subdirectory( plugins )
 
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
    find_package( Boost REQUIRED COMPONENTS program_options filesystem)
 
-   add_subdirectory( performance )
    add_subdirectory( examples )
 endif()
 
