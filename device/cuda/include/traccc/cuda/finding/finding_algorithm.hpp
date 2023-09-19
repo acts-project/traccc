@@ -40,7 +40,7 @@ class finding_algorithm
           const typename navigator_t::detector_type::detector_view_type&,
           const vecmem::data::jagged_vector_view<
               typename navigator_t::intersection_type>&,
-          typename measurement_collection_types::view&&,
+          const typename measurement_collection_types::view&,
           const bound_track_parameters_collection_types::buffer&)> {
 
     /// Transform3 type
@@ -88,7 +88,7 @@ class finding_algorithm
         const typename detector_type::detector_view_type& det_view,
         const vecmem::data::jagged_vector_view<
             typename navigator_t::intersection_type>& navigation_buffer,
-        typename measurement_collection_types::view&& measurements,
+        const typename measurement_collection_types::view& measurements,
         const bound_track_parameters_collection_types::buffer& seeds)
         const override;
 
