@@ -163,7 +163,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
            Track Parameter Estimation
           ----------------------------*/
 
-        auto params = tp(spacepoints_per_event, seeds, readOut.modules,
+        auto params = tp(spacepoints_per_event, seeds,
                          {0.f, 0.f, finder_config.bFieldInZ});
 
         // Run CKF and KF if we are using a detray geometry
