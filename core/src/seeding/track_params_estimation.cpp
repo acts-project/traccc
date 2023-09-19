@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -30,9 +30,9 @@ track_params_estimation::output_type track_params_estimation::operator()(
             seed_to_bound_vector(spacepoints, seeds[i], bfield, PION_MASS_MEV));
 
         // Set Covariance
-        for (std::size_t i = 0; i < e_bound_size; i++) {
-            getter::element(track_params.covariance(), i, i) =
-                stddev[i] * stddev[i];
+        for (std::size_t j = 0; j < e_bound_size; ++j) {
+            getter::element(track_params.covariance(), j, j) =
+                stddev[j] * stddev[j];
         }
 
         // Get geometry ID for bottom spacepoint

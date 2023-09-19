@@ -229,9 +229,9 @@ int seq_run(const traccc::finding_input_config& i_cfg,
             traccc::performance::timer t("Track finding  (cuda)", elapsedTimes);
 
             // Run finding
-            track_candidates_cuda_buffer = device_finding(
-                det_view, navigation_buffer,
-                std::move(measurements_cuda_buffer), std::move(seeds_buffer));
+            track_candidates_cuda_buffer =
+                device_finding(det_view, navigation_buffer,
+                               measurements_cuda_buffer, seeds_buffer);
         }
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
@@ -263,8 +263,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
                                              elapsedTimes);
 
                 // Run finding
-                track_candidates = host_finding(
-                    host_det, std::move(measurements_per_event), seeds);
+                track_candidates =
+                    host_finding(host_det, measurements_per_event, seeds);
             }
 
             {
