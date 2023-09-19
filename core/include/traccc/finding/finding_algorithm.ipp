@@ -30,9 +30,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
      *****************************************************************/
 
     // Copy the measurements
-    measurement_collection_types::host sorted_measurements;
-    std::copy(measurements.begin(), measurements.end(),
-              std::back_inserter(sorted_measurements));
+    measurement_collection_types::host sorted_measurements = measurements;
 
     // Sort the measurements w.r.t geometry barcode
     std::sort(sorted_measurements.begin(), sorted_measurements.end(),
