@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022 CERN for the benefit of the ACTS project
+# (c) 2022-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -27,5 +27,23 @@ FetchContent_Declare( TBB ${TRACCC_TBB_SOURCE} )
 set( TBB_TEST FALSE CACHE BOOL "Turn off the TBB tests" )
 set( TBB_STRICT FALSE CACHE BOOL "Do not throw errors on compiler warnings" )
 
-# Get it into the current directory.
+# Get it into the current directory. Setting TBB_DIR locally to an empty string
+# is necessary so that incremental rebuilds would not get confused about the
+# TBB_DIR cache variable set a little further down in this file. (The TBB CMake
+# configuration is plenty weird...)
+set( TBB_DIR "" )
 FetchContent_MakeAvailable( TBB )
+
+# Make CMake pick up a no-op TBBConfig.cmake file in any possible
+# find_package(TBB) call. (Mostly needed in case other externals also need
+# TBB.)
+include( CMakePackageConfigHelpers )
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/TBBConfig.cmake.in"
+   "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TBBConfig.cmake"
+   @ONLY )
+write_basic_package_version_file(
+   "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TBBConfig-version.cmake"
+   VERSION "2021.7.0"
+   COMPATIBILITY "AnyNewerVersion" )
+set( TBB_DIR "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}" CACHE PATH
+   "TBBConfig.cmake location" )

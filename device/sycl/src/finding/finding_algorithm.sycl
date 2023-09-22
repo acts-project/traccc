@@ -1,0 +1,585 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2023 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// DPL include(s).
+// @NOTE: For GCC 9 or 10, onedpl header should come first
+#include <oneapi/dpl/algorithm>
+#include <oneapi/dpl/execution>
+
+// Project include(s).
+#include "../utils/get_queue.hpp"
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/device/finding_global_counter.hpp"
+#include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/device/apply_interaction.hpp"
+#include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/count_threads.hpp"
+#include "traccc/finding/device/find_tracks.hpp"
+#include "traccc/finding/device/make_barcode_sequence.hpp"
+#include "traccc/finding/device/propagate_to_next_surface.hpp"
+#include "traccc/sycl/finding/finding_algorithm.hpp"
+#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
+
+// detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/detectors/telescope_metadata.hpp"
+#include "detray/detectors/toy_metadata.hpp"
+#include "detray/masks/unbounded.hpp"
+#include "detray/propagator/navigator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
+
+// VecMem include(s).
+#include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/jagged_device_vector.hpp>
+#include <vecmem/containers/vector.hpp>
+
+namespace traccc::sycl {
+
+// @NOTE: These kernel definitinos cause the multiple definitions with multiple
+// template instantiations
+/*
+namespace kernels {
+
+/// Class identifying the kernel running @c
+/// traccc::device::make_barcode_sequence
+class make_barcode_sequence;
+
+/// Class identifying the kernel running @c traccc::device::apply_interaction
+class apply_interaction;
+
+/// Class identifying the kernel running @c traccc::device::count_threads
+class count_threads;
+
+/// Class identifying the kernel running @c traccc::device::find_tracks
+class find_tracks;
+
+/// Class identifying the kernel running @c
+/// traccc::device::propagate_to_next_surface
+class propagate_to_next_surface;
+
+/// Class identifying the kernel running @c traccc::device::build_tracks
+class build_tracks;
+
+}  // namespace kernels
+*/
+
+template <typename stepper_t, typename navigator_t>
+finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
+    const config_type& cfg, const traccc::memory_resource& mr,
+    queue_wrapper queue)
+    : m_mr(mr), m_queue(queue), m_cfg(cfg) {
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
+};
+
+template <typename stepper_t, typename navigator_t>
+track_candidate_container_types::buffer
+finding_algorithm<stepper_t, navigator_t>::operator()(
+    const typename detector_type::detector_view_type& det_view,
+    const vecmem::data::jagged_vector_view<
+        typename navigator_t::intersection_type>& navigation_buffer,
+    const measurement_collection_types::view& measurements,
+    const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
+
+    // Copy setup
+    m_copy->setup(seeds_buffer);
+    m_copy->setup(navigation_buffer);
+
+    // Prepare input parameters with seeds
+    bound_track_parameters_collection_types::buffer in_params_buffer(
+        m_copy->get_size(seeds_buffer), m_mr.main);
+    bound_track_parameters_collection_types::device in_params(in_params_buffer);
+    bound_track_parameters_collection_types::device seeds(seeds_buffer);
+
+    std::copy(oneapi::dpl::execution::dpcpp_default, seeds.begin(), seeds.end(),
+              in_params.begin());
+
+    // Create a map for links
+    std::map<unsigned int, vecmem::data::vector_buffer<candidate_link>>
+        link_map;
+
+    // Create a map for parameter ID to link ID
+    std::map<unsigned int, vecmem::data::vector_buffer<unsigned int>>
+        param_to_link_map;
+
+    // Create a map for tip links
+    std::map<unsigned int, vecmem::data::vector_buffer<
+                               typename candidate_link::link_index_type>>
+        tips_map;
+
+    // Link size
+    std::vector<std::size_t> n_candidates_per_step;
+    n_candidates_per_step.reserve(m_cfg.max_track_candidates_per_track);
+
+    std::vector<std::size_t> n_parameters_per_step;
+    n_parameters_per_step.reserve(m_cfg.max_track_candidates_per_track);
+
+    // Global counter object in Device memory
+    vecmem::unique_alloc_ptr<device::finding_global_counter>
+        global_counter_device =
+            vecmem::make_unique_alloc<device::finding_global_counter>(
+                m_mr.main);
+
+    // Global counter object in Host memory
+    // device::finding_global_counter global_counter_host;
+    vecmem::unique_alloc_ptr<device::finding_global_counter>
+        global_counter_host =
+            vecmem::make_unique_alloc<device::finding_global_counter>(
+                (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
+
+    /*****************************************************************
+     * Measurement Operations
+     *****************************************************************/
+
+    // Copy the measurements
+    measurement_collection_types::buffer sorted_measurements_buffer(
+        m_copy->get_size(measurements), m_mr.main);
+    measurement_collection_types::device sorted_measurements(
+        sorted_measurements_buffer);
+    measurement_collection_types::const_device measurements_device(
+        measurements);
+    std::copy(oneapi::dpl::execution::dpcpp_default,
+              measurements_device.begin(), measurements_device.end(),
+              sorted_measurements.begin());
+    measurement_collection_types::const_view sorted_measurements_view(
+        sorted_measurements_buffer);
+
+    // Sort the measurements w.r.t geometry barcode
+    oneapi::dpl::sort(oneapi::dpl::execution::dpcpp_default,
+                      sorted_measurements.begin(), sorted_measurements.end(),
+                      measurement_sort_comp());
+
+    // Get copy of barcode uniques
+    measurement_collection_types::buffer uniques_buffer{
+        sorted_measurements.size(), m_mr.main};
+    measurement_collection_types::device uniques(uniques_buffer);
+
+    measurement* end = oneapi::dpl::unique_copy(
+        oneapi::dpl::execution::dpcpp_default, sorted_measurements.begin(),
+        sorted_measurements.end(), uniques.begin(), measurement_equal_comp());
+    unsigned int n_modules = end - uniques.begin();
+
+    // Get upper bounds of unique elements
+    vecmem::data::vector_buffer<unsigned int> upper_bounds_buffer{n_modules,
+                                                                  m_mr.main};
+    vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
+
+    oneapi::dpl::upper_bound(
+        oneapi::dpl::execution::dpcpp_default, sorted_measurements.begin(),
+        sorted_measurements.end(), uniques.begin(), uniques.begin() + n_modules,
+        upper_bounds.begin(), measurement_sort_comp());
+    vecmem::data::vector_view<const unsigned int> upper_bounds_view(
+        upper_bounds_buffer);
+
+    // Get the number of measurements of each module
+    vecmem::data::vector_buffer<unsigned int> sizes_buffer{n_modules,
+                                                           m_mr.main};
+    vecmem::device_vector<unsigned int> sizes(sizes_buffer);
+    vecmem::data::vector_view<const unsigned int> sizes_view(sizes_buffer);
+
+    oneapi::dpl::adjacent_difference(oneapi::dpl::execution::dpcpp_default,
+                                     upper_bounds.begin(), upper_bounds.end(),
+                                     sizes.begin());
+
+    // Number of total measurements
+    const unsigned int n_total_measurements = sorted_measurements.size();
+
+    vecmem::data::vector_buffer<detray::geometry::barcode> barcodes_buffer{
+        n_modules, m_mr.main};
+
+    /*****************************************************************
+     * Kernel1: Create barcode sequence
+     *****************************************************************/
+
+    measurement_collection_types::const_view uniques_view(uniques_buffer);
+    vecmem::data::vector_view<detray::geometry::barcode> barcodes_view(
+        barcodes_buffer);
+
+    // -- localSize
+    // The dimension of workGroup (block) is the integer multiple of WARP_SIZE
+    // (=32)
+    unsigned int localSize = 64;
+
+    // 1 dim ND Range for the kernel
+    auto barcodesNdRange =
+        traccc::sycl::calculate1DimNdRange(barcodes_buffer.size(), localSize);
+
+    details::get_queue(m_queue)
+        .submit([&](::sycl::handler& h) {
+            // h.parallel_for<kernels::make_barcode_sequence>(
+            h.parallel_for(barcodesNdRange, [uniques_view, barcodes_view](
+                                                ::sycl::nd_item<1> item) {
+                device::make_barcode_sequence(item.get_global_linear_id(),
+                                              uniques_view, barcodes_view);
+            });
+        })
+        .wait_and_throw();
+
+    for (unsigned int step = 0; step < m_cfg.max_track_candidates_per_track;
+         step++) {
+
+        // Global counter object: Device -> Host
+        details::get_queue(m_queue)
+            .memcpy(global_counter_host.get(), global_counter_device.get(),
+                    sizeof(device::finding_global_counter))
+            .wait_and_throw();
+
+        // Set the number of input parameters
+        const unsigned int n_in_params =
+            (step == 0) ? in_params_buffer.size()
+                        : global_counter_host->n_out_params;
+
+        // Terminate if there is no parameter to process.
+        if (n_in_params == 0) {
+            break;
+        }
+
+        // Reset the global counter
+        details::get_queue(m_queue)
+            .memset(global_counter_device.get(), 0,
+                    sizeof(device::finding_global_counter))
+            .wait_and_throw();
+
+        /*****************************************************************
+         * Kernel2: Apply material interaction
+         ****************************************************************/
+
+        bound_track_parameters_collection_types::view in_params_view(
+            in_params_buffer);
+
+        localSize = 64;
+        auto applyInteractionNdRange =
+            traccc::sycl::calculate1DimNdRange(n_in_params, localSize);
+
+        details::get_queue(m_queue)
+            .submit([&](::sycl::handler& h) {
+                // h.parallel_for<kernels::apply_interaction>(
+                h.parallel_for(applyInteractionNdRange,
+                               [det_view, navigation_buffer, n_in_params,
+                                in_params_view](::sycl::nd_item<1> item) {
+                                   device::apply_interaction<detector_type>(
+                                       item.get_global_linear_id(), det_view,
+                                       navigation_buffer, n_in_params,
+                                       in_params_view);
+                               });
+            })
+            .wait_and_throw();
+
+        /*****************************************************************
+         * Kernel3: Count the number of threads per parameter
+         ****************************************************************/
+
+        // Create a buffer for the number of threads per parameter
+        vecmem::data::vector_buffer<unsigned int> n_threads_buffer(n_in_params,
+                                                                   m_mr.main);
+        vecmem::data::vector_view<unsigned int> n_threads_view(
+            n_threads_buffer);
+
+        auto aux_global_counter = global_counter_device.get();
+
+        localSize = 64;
+        auto countThreadsNdRange =
+            traccc::sycl::calculate1DimNdRange(n_in_params, localSize);
+
+        details::get_queue(m_queue)
+            .submit([&](::sycl::handler& h) {
+                // h.parallel_for<kernels::count_threads>(
+                h.parallel_for(
+                    countThreadsNdRange,
+                    [config = m_cfg, in_params_view, barcodes_view, sizes_view,
+                     n_in_params, n_total_measurements, n_threads_view,
+                     aux_global_counter](::sycl::nd_item<1> item) {
+                        device::count_threads<config_type>(
+                            item.get_global_linear_id(), config, in_params_view,
+                            barcodes_view, sizes_view, n_in_params,
+                            n_total_measurements, n_threads_view,
+                            (*aux_global_counter).n_measurements_per_thread,
+                            (*aux_global_counter).n_total_threads);
+                    });
+            })
+            .wait_and_throw();
+
+        // Get Prefix Sum of n_thread vector
+        vecmem::device_vector<unsigned int> n_threads(n_threads_buffer);
+
+        oneapi::dpl::inclusive_scan(oneapi::dpl::execution::dpcpp_default,
+                                    n_threads.begin(), n_threads.end(),
+                                    n_threads.begin());
+
+        /*****************************************************************
+         * Kernel4: Find valid tracks
+         *****************************************************************/
+
+        // Global counter object: Device -> Host
+        details::get_queue(m_queue)
+            .memcpy(global_counter_host.get(), global_counter_device.get(),
+                    sizeof(device::finding_global_counter))
+            .wait_and_throw();
+
+        // Buffer for kalman-updated parameters spawned by the measurement
+        // candidates
+        bound_track_parameters_collection_types::buffer updated_params_buffer(
+            n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
+        bound_track_parameters_collection_types::view updated_params_view(
+            updated_params_buffer);
+
+        // Create the link map
+        link_map[step] = {n_in_params * m_cfg.max_num_branches_per_surface,
+                          m_mr.main};
+        vecmem::data::vector_view<candidate_link> link_view(link_map[step]);
+
+        m_copy->setup(link_map[step]);
+
+        localSize = 64;
+
+        if (global_counter_host->n_total_threads > 0) {
+            auto findTracksNdRange = traccc::sycl::calculate1DimNdRange(
+                global_counter_host->n_total_threads, localSize);
+
+            details::get_queue(m_queue)
+                .submit([&](::sycl::handler& h) {
+                    // h.parallel_for<kernels::find_tracks>(
+                    h.parallel_for(
+                        findTracksNdRange,
+                        [config = m_cfg, det_view, sorted_measurements_view,
+                         barcodes_view, upper_bounds_view, in_params_view,
+                         n_threads_view, step, aux_global_counter,
+                         updated_params_view,
+                         link_view](::sycl::nd_item<1> item) {
+                            device::find_tracks<detector_type, config_type>(
+                                item.get_global_linear_id(), config, det_view,
+                                sorted_measurements_view, barcodes_view,
+                                upper_bounds_view, in_params_view,
+                                n_threads_view, step,
+                                (*aux_global_counter).n_measurements_per_thread,
+                                (*aux_global_counter).n_total_threads,
+                                updated_params_view, link_view,
+                                (*aux_global_counter).n_candidates);
+                        });
+                })
+                .wait_and_throw();
+        }
+
+        /*****************************************************************
+         * Kernel5: Propagate to the next surface
+         *****************************************************************/
+
+        // Global counter object: Device -> Host
+        details::get_queue(m_queue)
+            .memcpy(global_counter_host.get(), global_counter_device.get(),
+                    sizeof(device::finding_global_counter))
+            .wait_and_throw();
+
+        // Buffer for out parameters for the next step
+        bound_track_parameters_collection_types::buffer out_params_buffer(
+            global_counter_host->n_candidates, m_mr.main);
+        bound_track_parameters_collection_types::view out_params_view(
+            out_params_buffer);
+
+        // Create the param to link ID map
+        param_to_link_map[step] = {global_counter_host->n_candidates,
+                                   m_mr.main};
+        m_copy->setup(param_to_link_map[step]);
+        vecmem::data::vector_view<unsigned int> param_to_link_view(
+            param_to_link_map[step]);
+
+        // Create the tip map
+
+        tips_map[step] = vecmem::data::vector_buffer<
+            typename candidate_link::link_index_type>{
+            global_counter_host->n_candidates, m_mr.main,
+            vecmem::data::buffer_type::resizable};
+
+        m_copy->setup(tips_map[step]);
+        vecmem::data::vector_view<typename candidate_link::link_index_type>
+            tips_view(tips_map[step]);
+
+        localSize = 64;
+        if (global_counter_host->n_candidates > 0) {
+            auto propagateNdRange = traccc::sycl::calculate1DimNdRange(
+                global_counter_host->n_candidates, localSize);
+
+            details::get_queue(m_queue)
+                .submit([&](::sycl::handler& h) {
+                    // h.parallel_for<kernels::propagate_to_next_surface>(
+                    h.parallel_for(
+                        propagateNdRange,
+                        [config = m_cfg, det_view, navigation_buffer,
+                         updated_params_view, link_view, step, out_params_view,
+                         param_to_link_view, tips_view,
+                         aux_global_counter](::sycl::nd_item<1> item) {
+                            device::propagate_to_next_surface<propagator_type,
+                                                              config_type>(
+                                item.get_global_linear_id(), config, det_view,
+                                navigation_buffer, updated_params_view,
+                                link_view, step,
+                                (*aux_global_counter).n_candidates,
+                                out_params_view, param_to_link_view, tips_view,
+                                (*aux_global_counter).n_out_params);
+                        });
+                })
+                .wait_and_throw();
+        }
+
+        // Global counter object: Device -> Host
+        details::get_queue(m_queue)
+            .memcpy(global_counter_host.get(), global_counter_device.get(),
+                    sizeof(device::finding_global_counter))
+            .wait_and_throw();
+
+        // Fill the candidate size vector
+        n_candidates_per_step.push_back(global_counter_host->n_candidates);
+        n_parameters_per_step.push_back(global_counter_host->n_out_params);
+
+        // Swap parameter buffer for the next step
+        in_params_buffer = std::move(out_params_buffer);
+    }
+
+    // Create link buffer
+    vecmem::data::jagged_vector_buffer<candidate_link> links_buffer(
+        n_candidates_per_step, m_mr.main, m_mr.host);
+    m_copy->setup(links_buffer);
+    vecmem::data::jagged_vector_view<candidate_link> links_view(links_buffer);
+
+    // Copy link map to link buffer
+    const auto n_steps = n_candidates_per_step.size();
+    for (unsigned int it = 0; it < n_steps; it++) {
+
+        vecmem::device_vector<candidate_link> in(link_map[it]);
+        vecmem::device_vector<candidate_link> out(
+            *(links_buffer.host_ptr() + it));
+
+        std::copy(oneapi::dpl::execution::dpcpp_default, in.begin(),
+                  in.begin() + n_candidates_per_step[it], out.begin());
+    }
+
+    // Create param_to_link
+    vecmem::data::jagged_vector_buffer<unsigned int> param_to_link_buffer(
+        n_parameters_per_step, m_mr.main, m_mr.host);
+    m_copy->setup(param_to_link_buffer);
+    vecmem::data::jagged_vector_view<unsigned int> param_to_link_view(
+        param_to_link_buffer);
+
+    // Copy param_to_link map to param_to_link buffer
+    for (unsigned int it = 0; it < n_steps; it++) {
+
+        vecmem::device_vector<unsigned int> in(param_to_link_map[it]);
+        vecmem::device_vector<unsigned int> out(
+            *(param_to_link_buffer.host_ptr() + it));
+
+        std::copy(oneapi::dpl::execution::dpcpp_default, in.begin(),
+                  in.begin() + n_parameters_per_step[it], out.begin());
+    }
+
+    // Get the number of tips per step
+    std::vector<unsigned int> n_tips_per_step;
+    n_tips_per_step.reserve(n_steps);
+    for (unsigned int it = 0; it < n_steps; it++) {
+        n_tips_per_step.push_back(m_copy->get_size(tips_map[it]));
+    }
+
+    // Copy tips_map into the tips vector (D->D)
+    unsigned int n_tips_total =
+        std::accumulate(n_tips_per_step.begin(), n_tips_per_step.end(), 0);
+    vecmem::data::vector_buffer<typename candidate_link::link_index_type>
+        tips_buffer{n_tips_total, m_mr.main};
+    m_copy->setup(tips_buffer);
+    vecmem::data::vector_view<typename candidate_link::link_index_type>
+        tips_view(tips_buffer);
+
+    vecmem::device_vector<typename candidate_link::link_index_type> tips(
+        tips_buffer);
+
+    unsigned int prefix_sum = 0;
+    for (unsigned int it = m_cfg.min_track_candidates_per_track - 1;
+         it < n_steps; it++) {
+
+        vecmem::device_vector<typename candidate_link::link_index_type> in(
+            tips_map[it]);
+
+        const unsigned int n_tips = n_tips_per_step[it];
+        if (n_tips > 0) {
+            std::copy(oneapi::dpl::execution::dpcpp_default, in.begin(),
+                      in.begin() + n_tips, tips.begin() + prefix_sum);
+            prefix_sum += n_tips;
+        }
+    }
+
+    /*****************************************************************
+     * Kernel6: Build tracks
+     *****************************************************************/
+
+    // Create track candidate buffer
+    track_candidate_container_types::buffer track_candidates_buffer{
+        {n_tips_total, m_mr.main},
+        {std::vector<std::size_t>(n_tips_total,
+                                  m_cfg.max_track_candidates_per_track),
+         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
+
+    m_copy->setup(track_candidates_buffer.headers);
+    m_copy->setup(track_candidates_buffer.items);
+
+    track_candidate_container_types::view track_candidates_view(
+        track_candidates_buffer);
+
+    bound_track_parameters_collection_types::const_view seeds_view(
+        seeds_buffer);
+
+    // @Note: nBlocks can be zero in case there is no tip. This happens when
+    // chi2_max config is set tightly and no tips are found
+    localSize = 64;
+    if (n_tips_total > 0) {
+        auto buildTracksNdRange =
+            traccc::sycl::calculate1DimNdRange(n_tips_total, localSize);
+
+        details::get_queue(m_queue)
+            .submit([&](::sycl::handler& h) {
+                // h.parallel_for<kernels::build_tracks>(
+                h.parallel_for(
+                    buildTracksNdRange,
+                    [sorted_measurements_view, seeds_view, links_view,
+                     param_to_link_view, tips_view,
+                     track_candidates_view](::sycl::nd_item<1> item) {
+                        device::build_tracks(item.get_global_linear_id(),
+                                             sorted_measurements_view,
+                                             seeds_view, links_view,
+                                             param_to_link_view, tips_view,
+                                             track_candidates_view);
+                    });
+            })
+            .wait_and_throw();
+    }
+
+    return track_candidates_buffer;
+}
+
+// Explicit template instantiation
+using toy_detector_type =
+    detray::detector<detray::toy_metadata<>, covfie::field_view,
+                     detray::device_container_types>;
+using toy_stepper_type = detray::rk_stepper<
+    covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
+    detray::constrained_step<>>;
+using toy_navigator_type = detray::navigator<const toy_detector_type>;
+template class finding_algorithm<toy_stepper_type, toy_navigator_type>;
+
+using device_detector_type =
+    detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
+                     covfie::field_view, detray::device_container_types>;
+using rk_stepper_type = detray::rk_stepper<
+    covfie::field<device_detector_type::bfield_backend_type>::view_t,
+    transform3, detray::constrained_step<>>;
+using device_navigator_type = detray::navigator<const device_detector_type>;
+template class finding_algorithm<rk_stepper_type, device_navigator_type>;
+
+}  // namespace traccc::sycl

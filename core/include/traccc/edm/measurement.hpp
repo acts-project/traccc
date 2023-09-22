@@ -71,14 +71,14 @@ inline bool operator==(const measurement& lhs, const measurement& rhs) {
 /// Comparator based on detray barcode value
 struct measurement_sort_comp {
     TRACCC_HOST_DEVICE
-    bool operator()(const measurement& lhs, const measurement& rhs) {
+    bool operator()(const measurement& lhs, const measurement& rhs) const {
         return lhs.surface_link < rhs.surface_link;
     }
 };
 
 struct measurement_equal_comp {
     TRACCC_HOST_DEVICE
-    bool operator()(const measurement& lhs, const measurement& rhs) {
+    bool operator()(const measurement& lhs, const measurement& rhs) const {
         return lhs.surface_link == rhs.surface_link;
     }
 };

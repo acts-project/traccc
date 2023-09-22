@@ -28,6 +28,11 @@ traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
                   traccc::core traccc::device_common traccc::sycl
                   traccc::performance )
 
+traccc_add_executable( truth_finding_example_sycl "truth_finding_example_sycl.sycl"
+   LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
+                  traccc::core traccc::device_common traccc::sycl
+                  traccc::performance )
+
 #
 # Set up the "throughput applications".
 #

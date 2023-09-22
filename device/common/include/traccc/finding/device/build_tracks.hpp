@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/track_candidate.hpp"
 
 namespace traccc::device {
 

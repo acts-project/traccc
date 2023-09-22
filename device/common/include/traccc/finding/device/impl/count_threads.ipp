@@ -10,6 +10,10 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
+// Thrust include(s).
+#include <thrust/binary_search.h>
+#include <thrust/execution_policy.h>
+
 namespace traccc::device {
 
 template <typename config_t>
@@ -30,7 +34,7 @@ TRACCC_DEVICE inline void count_threads(
 
     const unsigned int n_params = params.size();
 
-    if (globalIndex >= n_in_params) {
+    if (static_cast<int>(globalIndex) >= n_in_params) {
         return;
     }
 

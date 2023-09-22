@@ -10,6 +10,8 @@
 // Detray include(s).
 #include "detray/intersection/detail/trajectories.hpp"
 #include "detray/intersection/intersection_kernel.hpp"
+#include "detray/propagator/actors/pointwise_material_interactor.hpp"
+#include "detray/propagator/navigator.hpp"
 
 namespace traccc::device {
 
@@ -40,7 +42,7 @@ TRACCC_DEVICE inline void apply_interaction(
     // in param
     bound_track_parameters_collection_types::device params(params_view);
 
-    if (globalIndex >= n_params) {
+    if (static_cast<int>(globalIndex) >= n_params) {
         return;
     }
 
@@ -52,7 +54,6 @@ TRACCC_DEVICE inline void apply_interaction(
     const cxt_t ctx{};
     const auto free_vec = sf.bound_to_free_vector(ctx, bound_param.vector());
 
-    const auto& mask_store = det.mask_store();
     intersection_type sfi;
     sfi.sf_desc = det.surface(bound_param.surface_link());
     sf.template visit_mask<detray::intersection_update>(
