@@ -143,10 +143,12 @@ int seq_run(const traccc::finding_input_config& i_cfg,
         }
 
         // Read measurements
-        traccc::measurement_container_types::host measurements_per_event =
-            traccc::io::read_measurements_container(
-                event, common_opts.input_directory, traccc::data_format::csv,
-                &host_mr);
+        traccc::io::measurement_reader_output meas_read_out(&host_mr);
+        traccc::io::read_measurements(meas_read_out, event,
+                                      common_opts.input_directory,
+                                      traccc::data_format::csv);
+        traccc::measurement_collection_types::host& measurements_per_event =
+            meas_read_out.measurements;
 
         // Run finding
         auto track_candidates =

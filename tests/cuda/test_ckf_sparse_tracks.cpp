@@ -96,12 +96,20 @@ TEST_P(CkfSparseTrackTests, Run) {
     detray::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
 
+    using generator_type = decltype(generator);
+    using writer_type =
+        detray::smearing_writer<detray::measurement_smearer<transform3>>;
+
+    typename writer_type::config smearer_writer_cfg{meas_smearer};
+
     // Run simulator
     const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
-    auto sim = detray::simulator(n_events, host_det, std::move(generator),
-                                 meas_smearer, full_path);
+    auto sim =
+        detray::simulator<host_detector_type, generator_type, writer_type>(
+            n_events, host_det, std::move(generator),
+            std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /*****************************
@@ -165,11 +173,15 @@ TEST_P(CkfSparseTrackTests, Run) {
              vecmem::copy::type::host_to_device);
 
         // Read measurements
-        traccc::measurement_container_types::host measurements_per_event =
-            traccc::io::read_measurements_container(
-                i_evt, path, traccc::data_format::csv, &host_mr);
-        traccc::measurement_container_types::buffer measurements_buffer =
-            measurement_h2d(traccc::get_data(measurements_per_event));
+        traccc::io::measurement_reader_output readOut(&host_mr);
+        traccc::io::read_measurements(readOut, i_evt, path,
+                                      traccc::data_format::csv);
+        traccc::measurement_collection_types::host& measurements_per_event =
+            readOut.measurements;
+
+        traccc::measurement_collection_types::buffer measurements_buffer(
+            measurements_per_event.size(), mr.main);
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
 
         // Instantiate output cuda containers/collections
         traccc::track_candidate_container_types::buffer
@@ -186,9 +198,8 @@ TEST_P(CkfSparseTrackTests, Run) {
             mr.main, mr.host);
 
         // Run finding
-        track_candidates_cuda_buffer =
-            device_finding(det_view, navigation_buffer, measurements_buffer,
-                           std::move(seeds_buffer));
+        track_candidates_cuda_buffer = device_finding(
+            det_view, navigation_buffer, measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);

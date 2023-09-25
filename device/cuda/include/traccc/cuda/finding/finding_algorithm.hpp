@@ -40,8 +40,8 @@ class finding_algorithm
           const typename navigator_t::detector_type::detector_view_type&,
           const vecmem::data::jagged_vector_view<
               typename navigator_t::intersection_type>&,
-          const typename measurement_container_types::const_view&,
-          bound_track_parameters_collection_types::buffer&&)> {
+          const typename measurement_collection_types::view&,
+          const bound_track_parameters_collection_types::buffer&)> {
 
     /// Transform3 type
     using transform3_type = typename stepper_t::transform3_type;
@@ -88,8 +88,9 @@ class finding_algorithm
         const typename detector_type::detector_view_type& det_view,
         const vecmem::data::jagged_vector_view<
             typename navigator_t::intersection_type>& navigation_buffer,
-        const typename measurement_container_types::const_view& measurements,
-        bound_track_parameters_collection_types::buffer&& seeds) const override;
+        const typename measurement_collection_types::view& measurements,
+        const bound_track_parameters_collection_types::buffer& seeds)
+        const override;
 
     private:
     /// Memory resource used by the algorithm

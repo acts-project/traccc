@@ -106,7 +106,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           Track params estimation
           ----------------------------*/
 
-        auto params = tp(spacepoints_per_event, seeds, modules_per_event,
+        auto params = tp(spacepoints_per_event, seeds,
                          {0.f, 0.f, finder_config.bFieldInZ});
 
         /*----------------------------

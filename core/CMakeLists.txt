@@ -4,6 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-cpp )
+
 # Set up the "build" of the traccc::core library.
 traccc_add_library( traccc_core core TYPE SHARED
   # Common definitions.
@@ -85,7 +88,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cpp" )
 target_link_libraries( traccc_core
-  PUBLIC Eigen3::Eigen vecmem::core detray::core traccc::Thrust 
+  PUBLIC Eigen3::Eigen vecmem::core detray::core traccc::Thrust
          traccc::algebra )
 
 # Prevent Eigen from getting confused when building code for a
