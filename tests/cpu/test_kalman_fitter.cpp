@@ -155,25 +155,25 @@ TEST_P(KalmanFittingTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitValidation0, KalmanFittingTests,
+    CpuKalmanFitValidation0, KalmanFittingTests,
     ::testing::Values(std::make_tuple(
-        "1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cpu_1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f}, 100,
         100)));
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitValidation1, KalmanFittingTests,
+    CpuKalmanFitValidation1, KalmanFittingTests,
     ::testing::Values(std::make_tuple(
-        "10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cpu_10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitValidation2, KalmanFittingTests,
+    CpuKalmanFitValidation2, KalmanFittingTests,
     ::testing::Values(std::make_tuple(
-        "100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cpu_100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
