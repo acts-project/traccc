@@ -74,4 +74,4 @@ test_sycl:
     - cd ..
     - cd build
     - nvidia-smi
-    - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
+    - ctest --output-on-failure -E "(^SeedingValidation/CompareWithActsSeedingTests.*)|(^dpl.*)"
