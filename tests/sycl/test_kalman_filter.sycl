@@ -150,8 +150,8 @@ TEST_P(KalmanFittingTests, Run) {
     // Fitting algorithm object
     typename traccc::sycl::fitting_algorithm<device_fitter_type>::config_type
         fit_cfg;
-    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr, &q);
+    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, copy, &q);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

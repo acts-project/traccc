@@ -36,16 +36,8 @@ class fit;
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
-    queue_wrapper queue)
-    : m_cfg(cfg), m_mr(mr), m_queue(queue) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::sycl::copy>(queue.queue());
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-}
+    vecmem::copy& copy, queue_wrapper queue)
+    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_queue(queue) {}
 
 template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
@@ -57,21 +49,21 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     // Number of tracks
     const track_candidate_container_types::const_device::header_vector::
-        size_type n_tracks = m_copy->get_size(track_candidates_view.headers);
+        size_type n_tracks = m_copy.get_size(track_candidates_view.headers);
 
     // Get the sizes of the track candidates in each track
     const std::vector<track_candidate_container_types::const_device::
                           item_vector::value_type::size_type>
-        candidate_sizes = m_copy->get_sizes(track_candidates_view.items);
+        candidate_sizes = m_copy.get_sizes(track_candidates_view.items);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 
-    m_copy->setup(track_states_buffer.headers);
-    m_copy->setup(track_states_buffer.items);
-    m_copy->setup(navigation_buffer);
+    m_copy.setup(track_states_buffer.headers);
+    m_copy.setup(track_states_buffer.items);
+    m_copy.setup(navigation_buffer);
 
     track_state_container_types::view track_states_view(track_states_buffer);
 

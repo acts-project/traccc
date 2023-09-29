@@ -76,7 +76,7 @@ class finding_algorithm
     /// @param mr   The memory resource to use
     /// @param queue is a wrapper for the sycl queue for kernel invocation
     finding_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
-                      queue_wrapper queue);
+                      vecmem::copy& copy, queue_wrapper queue);
 
     /// Get config object (const access)
     const finding_config<scalar_type>& get_config() const { return m_cfg; }
@@ -95,14 +95,14 @@ class finding_algorithm
         const override;
 
     private:
+    /// Config object
+    config_type m_cfg;
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// Queue wrapper
     mutable queue_wrapper m_queue;
     /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
-    /// Config object
-    config_type m_cfg;
+    vecmem::copy& m_copy;
 };
 
 }  // namespace traccc::sycl

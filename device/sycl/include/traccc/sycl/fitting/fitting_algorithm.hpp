@@ -44,7 +44,7 @@ class fitting_algorithm
     /// @param mr The memory resource to use
     /// @param queue is a wrapper for the sycl queue for kernel invocation
     fitting_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
-                      queue_wrapper queue);
+                      vecmem::copy& copy, queue_wrapper queue);
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(
@@ -62,7 +62,7 @@ class fitting_algorithm
     /// Queue wrapper
     mutable queue_wrapper m_queue;
     /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
+    vecmem::copy& m_copy;
 };
 
 }  // namespace traccc::sycl

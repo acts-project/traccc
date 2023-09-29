@@ -161,13 +161,13 @@ TEST_P(CkfSparseTrackTests, Run) {
 
     // Finding algorithm object
     traccc::sycl::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, &q);
+        device_finding(cfg, mr, copy, &q);
 
     // Fitting algorithm object
     typename traccc::sycl::fitting_algorithm<device_fitter_type>::config_type
         fit_cfg;
-    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr, &q);
+    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, copy, &q);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

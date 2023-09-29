@@ -187,15 +187,15 @@ int main(int argc, char* argv[]) {
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
     traccc::sycl::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, &q);
+        device_finding(cfg, mr, copy, &q);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = propagation_opts.step_constraint;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
-    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr, &q);
+    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, copy, &q);
 
     traccc::performance::timing_info elapsedTimes;
 
