@@ -42,8 +42,8 @@ __global__ void fit(
 
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
-    const config_type& cfg, const traccc::memory_resource& mr)
-    : m_cfg(cfg), m_mr(mr) {
+    const config_type& cfg, const traccc::memory_resource& mr, stream& str)
+    : m_cfg(cfg), m_mr(mr), m_stream(str) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
@@ -60,6 +60,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         typename fitter_t::intersection_type>& navigation_buffer,
     const typename track_candidate_container_types::const_view&
         track_candidates_view) const {
+
+    // Get a convenience variable for the stream that we'll be using.
+    cudaStream_t stream = details::get_stream(m_stream);
 
     // Number of tracks
     const track_candidate_container_types::const_device::header_vector::
@@ -86,12 +89,13 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
         // Run the track fitting
-        kernels::fit<fitter_t>
-            <<<nBlocks, nThreads>>>(det_view, m_cfg, navigation_buffer,
-                                    track_candidates_view, track_states_buffer);
+        kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
+            det_view, m_cfg, navigation_buffer, track_candidates_view,
+            track_states_buffer);
         CUDA_ERROR_CHECK(cudaGetLastError());
-        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+        m_stream.synchronize();
     }
+
     return track_states_buffer;
 }
 

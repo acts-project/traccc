@@ -40,8 +40,8 @@ class fitting_algorithm
     /// Constructor for the fitting algorithm
     ///
     /// @param mr The memory resource to use
-    fitting_algorithm(const config_type& cfg,
-                      const traccc::memory_resource& mr);
+    fitting_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
+                      stream& str);
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(
@@ -58,6 +58,8 @@ class fitting_algorithm
     traccc::memory_resource m_mr;
     /// Copy object used by the algorithm
     std::unique_ptr<vecmem::copy> m_copy;
+    /// The CUDA stream to use
+    stream& m_stream;
 };
 
 }  // namespace traccc::cuda
