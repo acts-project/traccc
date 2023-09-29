@@ -122,15 +122,18 @@ int seq_run(const traccc::finding_input_config& i_cfg,
      * Do the reconstruction
      *****************************/
 
-    // Copy objects
-    vecmem::cuda::copy copy;
+    // Stream object
+    traccc::cuda::stream stream;
+
+    // Copy object
+    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
-        track_candidate_d2h{mr, copy};
+        track_candidate_d2h{mr, async_copy};
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
+        track_state_d2h{mr, async_copy};
 
     // Standard deviations for seed track parameters
     static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
@@ -155,24 +158,20 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr);
+        device_finding(cfg, mr, async_copy, stream);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = propagation_opts.step_constraint;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr);
+    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, async_copy, stream);
 
     traccc::performance::timing_info elapsedTimes;
 
     // Seed generator
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
-
-    // copy
-    traccc::cuda::stream stream;
-    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     // Iterate over events
     for (unsigned int event = common_opts.skip;
@@ -195,9 +194,9 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
-        copy.setup(seeds_buffer);
-        copy(vecmem::get_data(seeds), seeds_buffer,
-             vecmem::copy::type::host_to_device);
+        async_copy.setup(seeds_buffer);
+        async_copy(vecmem::get_data(seeds), seeds_buffer,
+                   vecmem::copy::type::host_to_device);
 
         // Read measurements
         traccc::io::measurement_reader_output meas_reader_output(mr.host);
@@ -215,8 +214,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
         traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer{{{}, *(mr.host)},
                                          {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers);
-        copy.setup(track_candidates_cuda_buffer.items);
+        async_copy.setup(track_candidates_cuda_buffer.headers);
+        async_copy.setup(track_candidates_cuda_buffer.items);
 
         // Navigation buffer
         auto navigation_buffer = detray::create_candidates_buffer(

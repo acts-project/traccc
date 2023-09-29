@@ -192,15 +192,15 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr);
+        device_finding(cfg, mr, async_copy, stream);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = propagation_opts.step_constraint;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr);
+    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, async_copy, stream);
 
     traccc::performance::timing_info elapsedTimes;
 

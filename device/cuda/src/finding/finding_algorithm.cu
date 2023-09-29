@@ -158,16 +158,9 @@ __global__ void build_tracks(
 
 template <typename stepper_t, typename navigator_t>
 finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
-    const config_type& cfg, const traccc::memory_resource& mr, stream& str)
-    : m_cfg(cfg), m_mr(mr), m_stream(str) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::cuda::copy>();
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-};
+    const config_type& cfg, const traccc::memory_resource& mr,
+    vecmem::copy& copy, stream& str)
+    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_stream(str){};
 
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
@@ -179,12 +172,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
 
     // Copy setup
-    m_copy->setup(seeds_buffer);
-    m_copy->setup(navigation_buffer);
+    m_copy.setup(seeds_buffer);
+    m_copy.setup(navigation_buffer);
 
     // Prepare input parameters with seeds
     bound_track_parameters_collection_types::buffer in_params_buffer(
-        m_copy->get_size(seeds_buffer), m_mr.main);
+        m_copy.get_size(seeds_buffer), m_mr.main);
     bound_track_parameters_collection_types::device in_params(in_params_buffer);
     bound_track_parameters_collection_types::device seeds(seeds_buffer);
     thrust::copy(thrust::device, seeds.begin(), seeds.end(), in_params.begin());
@@ -224,7 +217,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     // Copy the measurements
     measurement_collection_types::buffer sorted_measurements_buffer(
-        m_copy->get_size(measurements), m_mr.main);
+        m_copy.get_size(measurements), m_mr.main);
     measurement_collection_types::device sorted_measurements(
         sorted_measurements_buffer);
     measurement_collection_types::const_device measurements_device(
@@ -355,7 +348,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         // Create the link map
         link_map[step] = {n_in_params * m_cfg.max_num_branches_per_surface,
                           m_mr.main};
-        m_copy->setup(link_map[step]);
+        m_copy.setup(link_map[step]);
         nBlocks =
             (global_counter_host.n_total_threads + nThreads - 1) / nThreads;
 
@@ -387,12 +380,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         // Create the param to link ID map
         param_to_link_map[step] = {global_counter_host.n_candidates, m_mr.main};
-        m_copy->setup(param_to_link_map[step]);
+        m_copy.setup(param_to_link_map[step]);
 
         // Create the tip map
         tips_map[step] = {global_counter_host.n_candidates, m_mr.main,
                           vecmem::data::buffer_type::resizable};
-        m_copy->setup(tips_map[step]);
+        m_copy.setup(tips_map[step]);
 
         nThreads = WARP_SIZE * 2;
 
@@ -425,7 +418,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // Create link buffer
     vecmem::data::jagged_vector_buffer<candidate_link> links_buffer(
         n_candidates_per_step, m_mr.main, m_mr.host);
-    m_copy->setup(links_buffer);
+    m_copy.setup(links_buffer);
 
     // Copy link map to link buffer
     const auto n_steps = n_candidates_per_step.size();
@@ -442,7 +435,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // Create param_to_link
     vecmem::data::jagged_vector_buffer<unsigned int> param_to_link_buffer(
         n_parameters_per_step, m_mr.main, m_mr.host);
-    m_copy->setup(param_to_link_buffer);
+    m_copy.setup(param_to_link_buffer);
 
     // Copy param_to_link map to param_to_link buffer
     for (unsigned int it = 0; it < n_steps; it++) {
@@ -459,7 +452,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     std::vector<unsigned int> n_tips_per_step;
     n_tips_per_step.reserve(n_steps);
     for (unsigned int it = 0; it < n_steps; it++) {
-        n_tips_per_step.push_back(m_copy->get_size(tips_map[it]));
+        n_tips_per_step.push_back(m_copy.get_size(tips_map[it]));
     }
 
     // Copy tips_map into the tips vector (D->D)
@@ -467,7 +460,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         std::accumulate(n_tips_per_step.begin(), n_tips_per_step.end(), 0);
     vecmem::data::vector_buffer<typename candidate_link::link_index_type>
         tips_buffer{n_tips_total, m_mr.main};
-    m_copy->setup(tips_buffer);
+    m_copy.setup(tips_buffer);
 
     vecmem::device_vector<typename candidate_link::link_index_type> tips(
         tips_buffer);
@@ -498,8 +491,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                   m_cfg.max_track_candidates_per_track),
          m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
 
-    m_copy->setup(track_candidates_buffer.headers);
-    m_copy->setup(track_candidates_buffer.items);
+    m_copy.setup(track_candidates_buffer.headers);
+    m_copy.setup(track_candidates_buffer.items);
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found

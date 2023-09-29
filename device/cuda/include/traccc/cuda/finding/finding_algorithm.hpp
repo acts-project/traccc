@@ -75,7 +75,7 @@ class finding_algorithm
     /// @param cfg  Configuration object
     /// @param mr   The memory resource to use
     finding_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
-                      stream& str);
+                      vecmem::copy& copy, stream& str);
 
     /// Get config object (const access)
     const finding_config<scalar_type>& get_config() const { return m_cfg; }
@@ -94,12 +94,12 @@ class finding_algorithm
         const override;
 
     private:
-    /// Memory resource used by the algorithm
-    traccc::memory_resource m_mr;
-    /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
     /// Config object
     config_type m_cfg;
+    /// Memory resource used by the algorithm
+    traccc::memory_resource m_mr;
+    /// The copy object to use
+    vecmem::copy& m_copy;
     /// The CUDA stream to use
     stream& m_stream;
 };
