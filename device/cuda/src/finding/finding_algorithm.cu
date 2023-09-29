@@ -158,8 +158,8 @@ __global__ void build_tracks(
 
 template <typename stepper_t, typename navigator_t>
 finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
-    const config_type& cfg, const traccc::memory_resource& mr)
-    : m_cfg(cfg), m_mr(mr) {
+    const config_type& cfg, const traccc::memory_resource& mr, stream& str)
+    : m_cfg(cfg), m_mr(mr), m_stream(str) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {

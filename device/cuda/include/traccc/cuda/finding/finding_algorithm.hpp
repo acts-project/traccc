@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
@@ -73,8 +74,8 @@ class finding_algorithm
     ///
     /// @param cfg  Configuration object
     /// @param mr   The memory resource to use
-    finding_algorithm(const config_type& cfg,
-                      const traccc::memory_resource& mr);
+    finding_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
+                      stream& str);
 
     /// Get config object (const access)
     const finding_config<scalar_type>& get_config() const { return m_cfg; }
@@ -99,6 +100,8 @@ class finding_algorithm
     std::unique_ptr<vecmem::copy> m_copy;
     /// Config object
     config_type m_cfg;
+    /// The CUDA stream to use
+    stream& m_stream;
 };
 
 }  // namespace traccc::cuda
