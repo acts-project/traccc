@@ -41,16 +41,6 @@ jobs:
           - Debug
         include:
           - platform:
-              name: "SYCL"
-              container: "ghcr.io/acts-project/ubuntu2004_cuda_oneapi:v37"
-              options: -DTRACCC_BUILD_SYCL=TRUE -DTRACCC_BUILD_CUDA=FALSE -DVECMEM_BUILD_CUDA_LIBRARY=FALSE
-            build: Release
-          - platform:
-              name: "SYCL"
-              container: "ghcr.io/acts-project/ubuntu2004_rocm_oneapi:v37"
-              options: -DTRACCC_BUILD_SYCL=TRUE -DVECMEM_BUILD_HIP_LIBRARY=FALSE
-            build: Release
-          - platform:
               name: "CUDA"
               container: ghcr.io/acts-project/ubuntu2004_cuda:v30
               options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_ENABLE_NVTX_PROFILING=TRUE

@@ -245,7 +245,7 @@ TEST_P(CkfSparseTrackTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackValidation0, CkfSparseTrackTests,
+    CudaCkfSparseTrackValidation0, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
@@ -253,7 +253,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{0.f, 0.f}, 1, 5000)));
 
 INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackValidation1, CkfSparseTrackTests,
+    CudaCkfSparseTrackValidation1, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
@@ -261,7 +261,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{0.f, 0.f}, 2, 2500)));
 
 INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackValidation2, CkfSparseTrackTests,
+    CudaCkfSparseTrackValidation2, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
@@ -269,7 +269,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{0.f, 0.f}, 4, 1250)));
 
 INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackValidation3, CkfSparseTrackTests,
+    CudaCkfSparseTrackValidation3, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
