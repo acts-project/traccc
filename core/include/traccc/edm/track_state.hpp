@@ -77,10 +77,8 @@ struct track_state {
                       "The measurement dimension should be 1 or 2");
 
         matrix_type<D, 1> ret;
-        if constexpr (D == 1u) {
-            matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
-        } else if (D == 2u) {
-            matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
+        matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
+        if constexpr (D == 2u) {
             matrix_operator().element(ret, 1, 0) = m_measurement.local[1];
         }
         return ret;
