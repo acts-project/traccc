@@ -93,10 +93,8 @@ struct track_state {
                       "The measurement dimension should be 1 or 2");
 
         matrix_type<D, D> ret;
-        if constexpr (D == 1u) {
-            matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
-        } else if (D == 2u) {
-            matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
+        matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
+        if constexpr (D == 2u) {
             matrix_operator().element(ret, 0, 1) = 0.f;
             matrix_operator().element(ret, 1, 0) = 0.f;
             matrix_operator().element(ret, 1, 1) = m_measurement.variance[1];
