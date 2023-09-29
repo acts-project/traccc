@@ -10,8 +10,10 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/container.hpp"
+#include "traccc/utils/subspace.hpp"
 
 // Detray include(s).
 #include "detray/geometry/barcode.hpp"
@@ -28,6 +30,7 @@ namespace traccc {
 /// objects need to have both the header and item information from the
 /// measurement container types.
 struct measurement {
+
     /// Local 2D coordinates for a measurement on a detector module
     point2 local{0., 0.};
     /// Variance on the 2D coordinates of the measurement
@@ -42,11 +45,17 @@ struct measurement {
 
     /// Cluster link
     std::size_t cluster_link = std::numeric_limits<std::size_t>::max();
+
+    /// Measurement dimension
+    unsigned int meas_dim = 2u;
+
+    /// subspace
+    subspace<transform3, e_bound_size, 2u> subs{{0u, 1u}};
 };
 
 /// Comparison / ordering operator for measurements
-TRACCC_HOST_DEVICE
-inline bool operator<(const measurement& lhs, const measurement& rhs) {
+TRACCC_HOST_DEVICE inline bool operator<(const measurement& lhs,
+                                         const measurement& rhs) {
 
     if (lhs.surface_link != rhs.surface_link) {
         return lhs.surface_link < rhs.surface_link;
