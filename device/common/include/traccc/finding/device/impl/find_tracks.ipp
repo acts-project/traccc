@@ -57,8 +57,8 @@ TRACCC_DEVICE inline void find_tracks(
     vecmem::device_vector<const unsigned int> n_threads(n_threads_view);
 
     // Search for out_param index
-    const auto lo1 =
-        std::lower_bound(n_threads.begin(), n_threads.end(), globalIndex + 1);
+    const auto lo1 = detray::detail::lower_bound(
+        n_threads.begin(), n_threads.end(), globalIndex + 1);
     const auto in_param_id = std::distance(n_threads.begin(), lo1);
 
     // Get measurements on surface
@@ -72,7 +72,8 @@ TRACCC_DEVICE inline void find_tracks(
     // Get barcode
     const auto bcd = in_params.at(in_param_id).surface_link();
 
-    const auto lo2 = std::lower_bound(barcodes.begin(), barcodes.end(), bcd);
+    const auto lo2 =
+        detray::detail::lower_bound(barcodes.begin(), barcodes.end(), bcd);
     const auto bcd_id = std::distance(barcodes.begin(), lo2);
 
     // Find the range for measurements

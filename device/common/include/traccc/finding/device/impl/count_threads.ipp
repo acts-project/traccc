@@ -10,6 +10,9 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
+// Detray include(s).
+#include "detray/definitions/detail/algorithms.hpp"
+
 // Thrust include(s).
 //#include <thrust/binary_search.h>
 //#include <thrust/execution_policy.h>
@@ -42,12 +45,8 @@ TRACCC_DEVICE inline void count_threads(
     const auto bcd = params.at(globalIndex).surface_link();
 
     // Search for the corresponding index of unique vector
-    /*
     const auto lower =
-        thrust::lower_bound(thrust::seq, barcodes.begin(), barcodes.end(), bcd);
-    const auto idx = thrust::distance(barcodes.begin(), lower);
-    */
-    const auto lower = std::lower_bound(barcodes.begin(), barcodes.end(), bcd);
+        detray::detail::lower_bound(barcodes.begin(), barcodes.end(), bcd);
     const auto idx = std::distance(barcodes.begin(), lower);
 
     // The averaged number of measurement per track
