@@ -8,8 +8,10 @@
 // DPL include(s).
 // @NOTE: For GCC 9 or 10, onedpl header should come first
 #include <oneapi/dpl/algorithm>
-#include <oneapi/dpl/async>
 #include <oneapi/dpl/execution>
+
+// DPL async header should come later
+#include <oneapi/dpl/async>
 
 // Project include(s).
 #include "../utils/get_queue.hpp"
