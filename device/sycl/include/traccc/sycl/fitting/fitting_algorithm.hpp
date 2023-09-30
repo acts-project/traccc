@@ -59,10 +59,10 @@ class fitting_algorithm
     config_type m_cfg;
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
-    /// Queue wrapper
-    mutable queue_wrapper m_queue;
     /// Copy object used by the algorithm
     vecmem::copy& m_copy;
+    /// Queue wrapper
+    mutable queue_wrapper m_queue;
 };
 
 }  // namespace traccc::sycl
