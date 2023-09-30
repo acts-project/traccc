@@ -40,6 +40,7 @@ void stat_plot_tool::fill(stat_plot_cache& cache,
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
+    (void)fit_info;
 
 #ifdef TRACCC_HAVE_ROOT
     const auto& ndf = fit_info.ndf;
