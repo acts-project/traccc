@@ -102,6 +102,7 @@ TRACCC_HOST void fill_measurement(
     if (totalWeight > 0.) {
         measurement m;
         m.module_link = module_link;
+        m.surface_link = detray::geometry::barcode{module.module};
         // normalize the cell position
         m.local = mean;
         // normalize the variance
