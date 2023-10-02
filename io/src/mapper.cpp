@@ -242,7 +242,7 @@ measurement_particle_map generate_measurement_particle_map(
     geoId_link_map link_map;
 
     for (unsigned int i = 0; i < modules.size(); ++i) {
-        link_map[modules[i].module] = i;
+        link_map[modules[i].surface_link.value()] = i;
     }
 
     // generate cell particle map
@@ -279,7 +279,7 @@ measurement_particle_map generate_measurement_particle_map(
     geoId_link_map link_map;
 
     for (unsigned int i = 0; i < modules.size(); ++i) {
-        link_map[modules[i].module] = i;
+        link_map[modules[i].surface_link.value()] = i;
     }
 
     auto h_p_map =

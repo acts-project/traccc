@@ -30,6 +30,7 @@ traccc_add_test(
     test_basic.cu
     test_cca.cpp
     test_ckf_sparse_tracks.cpp
+    test_clusterization.cpp
     test_copy.cu
     test_kalman_filter.cpp
     test_spacepoint_formation.cpp

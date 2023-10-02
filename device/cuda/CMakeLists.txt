@@ -42,6 +42,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/seeding_algorithm.cpp"
   "src/cca/component_connection.cu"
   # Clusterization
+  "include/traccc/cuda/clusterization/experimental/clusterization_algorithm.hpp"
+  "src/clusterization/experimental/clusterization_algorithm.cu"
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"
   # Finding

@@ -15,6 +15,7 @@ enable_language( SYCL )
 traccc_add_library( traccc_sycl sycl TYPE SHARED
   # header files
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
+  "include/traccc/sycl/clusterization/experimental/clusterization_algorithm.hpp"
   "include/traccc/sycl/fitting/fitting_algorithm.hpp"
   "include/traccc/sycl/seeding/experimental/spacepoint_formation.hpp"
   "include/traccc/sycl/seeding/seeding_algorithm.hpp"
@@ -27,6 +28,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/utils/barrier.hpp"
   # implementation files
   "src/clusterization/clusterization_algorithm.sycl"
+  "src/clusterization/experimental/clusterization_algorithm.sycl"
   "src/fitting/fitting_algorithm.sycl"
   "src/seeding/experimental/spacepoint_formation.sycl"
   "src/seeding/seed_finding.sycl"

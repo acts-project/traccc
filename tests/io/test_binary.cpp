@@ -93,7 +93,7 @@ TEST(io_binary, cell) {
         ASSERT_EQ(cells_csv[i], cells_binary[i]);
     }
     for (std::size_t i = 0; i < modules_csv.size(); i++) {
-        ASSERT_EQ(modules_csv[i].module, modules_binary[i].module);
+        ASSERT_EQ(modules_csv[i].surface_link, modules_binary[i].surface_link);
         ASSERT_EQ(modules_csv[i].placement, modules_binary[i].placement);
     }
 }
@@ -226,6 +226,6 @@ TEST(io_binary, measurement) {
         ASSERT_EQ(measurements_csv[i], measurements_binary[i]);
     }
     for (std::size_t i = 0; i < modules_csv.size(); i++) {
-        ASSERT_EQ(modules_csv[i].module, modules_binary[i].module);
+        ASSERT_EQ(modules_csv[i].surface_link, modules_binary[i].surface_link);
     }
 }
