@@ -96,12 +96,20 @@ TEST_P(CkfSparseTrackTests, Run) {
     detray::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
 
+    using generator_type = decltype(generator);
+    using writer_type =
+        detray::smearing_writer<detray::measurement_smearer<transform3>>;
+
+    typename writer_type::config smearer_writer_cfg{meas_smearer};
+
     // Run simulator
     const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
-    auto sim = detray::simulator(n_events, host_det, std::move(generator),
-                                 meas_smearer, full_path);
+    auto sim =
+        detray::simulator<host_detector_type, generator_type, writer_type>(
+            n_events, host_det, std::move(generator),
+            std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /*****************************
@@ -191,8 +199,7 @@ TEST_P(CkfSparseTrackTests, Run) {
 
         // Run finding
         track_candidates_cuda_buffer = device_finding(
-            det_view, navigation_buffer, std::move(measurements_buffer),
-            std::move(seeds_buffer));
+            det_view, navigation_buffer, measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);

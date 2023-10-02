@@ -185,8 +185,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                Track Finding with CKF
               ------------------------*/
 
-            track_candidates = host_finding(
-                host_det, std::move(measurements_per_event), params);
+            track_candidates =
+                host_finding(host_det, measurements_per_event, params);
             n_found_tracks += track_candidates.size();
 
             /*------------------------

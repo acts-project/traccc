@@ -152,7 +152,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, std::move(measurements_per_event), seeds);
+            host_finding(host_det, measurements_per_event, seeds);
 
         std::cout << "Number of found tracks: " << track_candidates.size()
                   << std::endl;

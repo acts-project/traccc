@@ -77,13 +77,22 @@ int simulate(std::string output_directory, unsigned int events,
     detray::measurement_smearer<transform3> meas_smearer(
         50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
 
+    // Type declarations
+    using generator_type = decltype(generator);
+    using writer_type =
+        detray::smearing_writer<detray::measurement_smearer<transform3>>;
+
+    // Writer config
+    typename writer_type::config smearer_writer_cfg{meas_smearer};
+
     // Run simulator
     const std::string full_path = io::data_directory() + output_directory;
 
     boost::filesystem::create_directories(full_path);
 
-    auto sim = detray::simulator(events, det, std::move(generator),
-                                 meas_smearer, full_path);
+    auto sim = detray::simulator<detector_type, generator_type, writer_type>(
+        events, det, std::move(generator), std::move(smearer_writer_cfg),
+        full_path);
     sim.get_config().step_constraint = propagation_opts.step_constraint;
     sim.get_config().overstep_tolerance = propagation_opts.overstep_tolerance;
 

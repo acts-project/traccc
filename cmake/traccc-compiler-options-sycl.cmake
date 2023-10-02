@@ -7,6 +7,12 @@
 # Include the helper function(s).
 include( traccc-functions )
 
+# Only tweak the flags for the Intel compiler.
+if( NOT ( ( "${CMAKE_SYCL_COMPILER_ID}" STREQUAL "IntelLLVM" ) OR
+          ( "${CMAKE_SYCL_COMPILER_ID}" MATCHES "Clang" ) ) )
+   return()
+endif()
+
 # Basic flags for all build modes.
 foreach( mode RELEASE RELWITHDEBINFO MINSIZEREL DEBUG )
    traccc_add_flag( CMAKE_SYCL_FLAGS_${mode} "-Wall" )
