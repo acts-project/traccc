@@ -70,6 +70,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/detail/singlet.hpp"
   "include/traccc/seeding/detail/seeding_config.hpp"
   "include/traccc/seeding/detail/spacepoint_grid.hpp"
+  "include/traccc/seeding/experimental/spacepoint_formation.hpp"
+  "include/traccc/seeding/experimental/spacepoint_formation.ipp"
   "include/traccc/seeding/seed_selecting_helper.hpp"
   "include/traccc/seeding/seed_filtering.hpp"
   "src/seeding/seed_filtering.cpp"
