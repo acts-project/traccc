@@ -10,6 +10,13 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
+// Detray include(s).
+#include "detray/definitions/detail/algorithms.hpp"
+
+// Thrust include(s).
+//#include <thrust/binary_search.h>
+//#include <thrust/execution_policy.h>
+
 namespace traccc::device {
 
 template <typename config_t>
@@ -30,7 +37,7 @@ TRACCC_DEVICE inline void count_threads(
 
     const unsigned int n_params = params.size();
 
-    if (globalIndex >= n_in_params) {
+    if (static_cast<int>(globalIndex) >= n_in_params) {
         return;
     }
 
@@ -39,8 +46,8 @@ TRACCC_DEVICE inline void count_threads(
 
     // Search for the corresponding index of unique vector
     const auto lower =
-        thrust::lower_bound(thrust::seq, barcodes.begin(), barcodes.end(), bcd);
-    const auto idx = thrust::distance(barcodes.begin(), lower);
+        detray::detail::lower_bound(barcodes.begin(), barcodes.end(), bcd);
+    const auto idx = std::distance(barcodes.begin(), lower);
 
     // The averaged number of measurement per track
     const unsigned int n_avg_meas_per_track =

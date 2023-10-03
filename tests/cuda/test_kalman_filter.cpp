@@ -31,6 +31,7 @@
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
 // GTest include(s).
@@ -114,7 +115,11 @@ TEST_P(KalmanFittingTests, Run) {
      * Run fitting
      ***************/
 
-    vecmem::cuda::copy copy;
+    // Stream object
+    traccc::cuda::stream stream;
+
+    // Copy objects
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     traccc::device::container_h2d_copy_alg<
         traccc::track_candidate_container_types>
@@ -129,8 +134,8 @@ TEST_P(KalmanFittingTests, Run) {
     // Fitting algorithm object
     typename traccc::cuda::fitting_algorithm<device_fitter_type>::config_type
         fit_cfg;
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr);
+    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, copy, stream);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -195,25 +200,25 @@ TEST_P(KalmanFittingTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitValidation0, KalmanFittingTests,
+    CudaKalmanFitValidation0, KalmanFittingTests,
     ::testing::Values(std::make_tuple(
-        "1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f}, 100,
         100)));
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitValidation1, KalmanFittingTests,
+    CudaKalmanFitValidation1, KalmanFittingTests,
     ::testing::Values(std::make_tuple(
-        "10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitValidation2, KalmanFittingTests,
+    CudaKalmanFitValidation2, KalmanFittingTests,
     ::testing::Values(std::make_tuple(
-        "100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));

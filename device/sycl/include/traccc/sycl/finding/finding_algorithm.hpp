@@ -8,12 +8,12 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/interaction_register.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -27,12 +27,12 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/utils/sycl/copy.hpp>
 
 // Thrust Library
 #include <thrust/pair.h>
 
-namespace traccc::cuda {
+namespace traccc::sycl {
 
 /// Track Finding algorithm for a set of tracks
 template <typename stepper_t, typename navigator_t>
@@ -41,7 +41,7 @@ class finding_algorithm
           const typename navigator_t::detector_type::detector_view_type&,
           const vecmem::data::jagged_vector_view<
               typename navigator_t::intersection_type>&,
-          const typename measurement_collection_types::view&,
+          const measurement_collection_types::view&,
           const bound_track_parameters_collection_types::buffer&)> {
 
     /// Transform3 type
@@ -74,8 +74,9 @@ class finding_algorithm
     ///
     /// @param cfg  Configuration object
     /// @param mr   The memory resource to use
+    /// @param queue is a wrapper for the sycl queue for kernel invocation
     finding_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
-                      vecmem::copy& copy, stream& str);
+                      vecmem::copy& copy, queue_wrapper queue);
 
     /// Get config object (const access)
     const finding_config<scalar_type>& get_config() const { return m_cfg; }
@@ -89,7 +90,7 @@ class finding_algorithm
         const typename detector_type::detector_view_type& det_view,
         const vecmem::data::jagged_vector_view<
             typename navigator_t::intersection_type>& navigation_buffer,
-        const typename measurement_collection_types::view& measurements,
+        const measurement_collection_types::view& measurements,
         const bound_track_parameters_collection_types::buffer& seeds)
         const override;
 
@@ -98,10 +99,10 @@ class finding_algorithm
     config_type m_cfg;
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
-    /// The copy object to use
+    /// Copy object used by the algorithm
     vecmem::copy& m_copy;
-    /// The CUDA stream to use
-    stream& m_stream;
+    /// Queue wrapper
+    mutable queue_wrapper m_queue;
 };
 
-}  // namespace traccc::cuda
+}  // namespace traccc::sycl
