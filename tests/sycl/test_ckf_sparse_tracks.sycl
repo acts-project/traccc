@@ -5,17 +5,24 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL include(s)
+#include <CL/sycl.hpp>
+
 // Project include(s).
-#include "traccc/finding/finding_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
+#include "traccc/edm/track_candidate.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/sycl/finding/finding_algorithm.hpp"
+#include "traccc/sycl/fitting/fitting_algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
+#include "traccc/utils/seed_generator.hpp"
 
 // Test include(s).
 #include "tests/combinatorial_kalman_finding_test.hpp"
-#include "traccc/utils/seed_generator.hpp"
 
 // detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
@@ -25,15 +32,32 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/sycl/device_memory_resource.hpp>
+#include <vecmem/memory/sycl/shared_memory_resource.hpp>
+#include <vecmem/utils/sycl/copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
 
 // System include(s).
+#include <exception>
 #include <filesystem>
 #include <string>
 
 using namespace traccc;
+
+// Simple asynchronous handler function
+auto handle_async_error = [](::sycl::exception_list elist) {
+    for (auto& e : elist) {
+        try {
+            std::rethrow_exception(e);
+        } catch (::sycl::exception& e) {
+            std::cout << "ASYNC EXCEPTION!!\n";
+            std::cout << e.what() << "\n";
+        }
+    }
+};
+
 // This defines the local frame test suite
 TEST_P(CkfSparseTrackTests, Run) {
 
@@ -57,8 +81,16 @@ TEST_P(CkfSparseTrackTests, Run) {
      * Build a telescope geometry
      *****************************/
 
+    // Creating SYCL queue object
+    ::sycl::queue q(handle_async_error);
+    std::cout << "Running CKF on device: "
+              << q.get_device().get_info<::sycl::info::device::name>() << "\n";
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::sycl::device_memory_resource device_mr{&q};
+    traccc::memory_resource mr{device_mr, &host_mr};
+    vecmem::sycl::shared_memory_resource shared_mr;
 
     detray::tel_det_config<> tel_cfg{rectangle};
     tel_cfg.positions(plane_positions);
@@ -67,13 +99,15 @@ TEST_P(CkfSparseTrackTests, Run) {
     tel_cfg.pilot_track(traj);
     tel_cfg.bfield_vec(B);
 
-    auto [host_det, name_map] = create_telescope_detector(host_mr, tel_cfg);
+    auto [host_det, name_map] = create_telescope_detector(shared_mr, tel_cfg);
+
+    // Detector view object
+    auto det_view = detray::get_data(host_det);
 
     /***************************
      * Generate simulation data
      ***************************/
 
-    // Track generator
     auto generator =
         detray::random_track_generator<traccc::free_track_parameters,
                                        uniform_gen_t>(n_truth_tracks, origin,
@@ -104,22 +138,36 @@ TEST_P(CkfSparseTrackTests, Run) {
      * Do the reconstruction
      *****************************/
 
+    vecmem::sycl::copy copy{&q};
+
+    traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
+        measurement_h2d{mr, copy};
+
+    traccc::device::container_d2h_copy_alg<
+        traccc::track_candidate_container_types>
+        track_candidate_d2h{mr, copy};
+
+    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
+        track_state_d2h{mr, copy};
+
     // Seed generator
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<rk_stepper_type,
-                                       host_navigator_type>::config_type cfg;
+    typename traccc::sycl::finding_algorithm<
+        rk_stepper_type, device_navigator_type>::config_type cfg;
     // few tracks (~1 out of 1000 tracks) are missed when chi2_max = 15
     cfg.chi2_max = 30.f;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg);
+    traccc::sycl::finding_algorithm<rk_stepper_type, device_navigator_type>
+        device_finding(cfg, mr, &q);
 
     // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
+    typename traccc::sycl::fitting_algorithm<device_fitter_type>::config_type
+        fit_cfg;
+    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
+                                                                       mr, &q);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -128,16 +176,22 @@ TEST_P(CkfSparseTrackTests, Run) {
         traccc::event_map2 evt_map(i_evt, path, path, path);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map.generate_truth_candidates(sg, host_mr);
+            evt_map.generate_truth_candidates(sg, shared_mr);
 
         ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
 
         // Prepare truth seeds
-        traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
+        traccc::bound_track_parameters_collection_types::host seeds(mr.host);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
             seeds.push_back(truth_track_candidates.at(i_trk).header);
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
+
+        traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
+            static_cast<unsigned int>(seeds.size()), mr.main};
+        copy.setup(seeds_buffer);
+        copy(vecmem::get_data(seeds), seeds_buffer,
+             vecmem::copy::type::host_to_device);
 
         // Read measurements
         traccc::io::measurement_reader_output readOut(&host_mr);
@@ -146,21 +200,50 @@ TEST_P(CkfSparseTrackTests, Run) {
         traccc::measurement_collection_types::host& measurements_per_event =
             readOut.measurements;
 
-        // Run finding
-        auto track_candidates =
-            host_finding(host_det, measurements_per_event, seeds);
+        traccc::measurement_collection_types::buffer measurements_buffer(
+            measurements_per_event.size(), mr.main);
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
 
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        // Instantiate output cuda containers/collections
+        traccc::track_candidate_container_types::buffer
+            track_candidates_cuda_buffer{{{}, *(mr.host)},
+                                         {{}, *(mr.host), mr.host}};
+        copy.setup(track_candidates_cuda_buffer.headers);
+        copy.setup(track_candidates_cuda_buffer.items);
+
+        // Navigation buffer
+        auto navigation_buffer = detray::create_candidates_buffer(
+            host_det,
+            device_finding.get_config().max_num_branches_per_seed *
+                seeds.size(),
+            mr.main, mr.host);
+
+        // Run finding
+        track_candidates_cuda_buffer = device_finding(
+            det_view, navigation_buffer, measurements_buffer, seeds_buffer);
+
+        traccc::track_candidate_container_types::host track_candidates_cuda =
+            track_candidate_d2h(track_candidates_cuda_buffer);
+
+        ASSERT_EQ(track_candidates_cuda.size(), n_truth_tracks);
+
+        // Instantiate cuda containers/collections
+        traccc::track_state_container_types::buffer track_states_cuda_buffer{
+            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
 
         // Run fitting
-        auto track_states = host_fitting(host_det, track_candidates);
+        track_states_cuda_buffer = device_fitting(det_view, navigation_buffer,
+                                                  track_candidates_cuda_buffer);
 
-        ASSERT_EQ(track_states.size(), n_truth_tracks);
+        traccc::track_state_container_types::host track_states_cuda =
+            track_state_d2h(track_states_cuda_buffer);
+
+        ASSERT_EQ(track_states_cuda.size(), n_truth_tracks);
 
         for (unsigned int i = 0; i < n_truth_tracks; i++) {
-            const auto& trk_states_per_track = track_states.at(i).items;
+            const auto& trk_states_per_track = track_states_cuda.at(i).items;
             ASSERT_EQ(trk_states_per_track.size(), plane_positions.size());
-            const auto& fit_info = track_states[i].header;
+            const auto& fit_info = track_states_cuda[i].header;
             ASSERT_FLOAT_EQ(fit_info.ndf, 2 * plane_positions.size() - 5.f);
 
             fit_performance_writer.write(trk_states_per_track, fit_info,
@@ -183,7 +266,7 @@ TEST_P(CkfSparseTrackTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    CpuCkfSparseTrackValidation0, CkfSparseTrackTests,
+    SyclCkfSparseTrackValidation0, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
@@ -191,7 +274,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{0.f, 0.f}, 1, 5000)));
 
 INSTANTIATE_TEST_SUITE_P(
-    CpuCkfSparseTrackValidation1, CkfSparseTrackTests,
+    SyclCkfSparseTrackValidation1, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
@@ -199,7 +282,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{0.f, 0.f}, 2, 2500)));
 
 INSTANTIATE_TEST_SUITE_P(
-    CpuCkfSparseTrackValidation2, CkfSparseTrackTests,
+    SyclCkfSparseTrackValidation2, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
@@ -207,7 +290,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{0.f, 0.f}, 4, 1250)));
 
 INSTANTIATE_TEST_SUITE_P(
-    CpuCkfSparseTrackValidation3, CkfSparseTrackTests,
+    SyclCkfSparseTrackValidation3, CkfSparseTrackTests,
     ::testing::Values(std::make_tuple(
         "decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},

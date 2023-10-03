@@ -23,11 +23,15 @@
 
 namespace traccc::sycl {
 
+// @NOTE: These kernel definitinos cause the multiple definitions with multiple
+// template instantiations
+/*
 namespace kernels {
 /// Class identifying the kernel running @c
 /// traccc::device::fit
 class fit;
 }  // namespace kernels
+*/
 
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
@@ -82,16 +86,16 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
-            h.parallel_for<kernels::fit>(
-                trackParamsNdRange,
-                [det_view, config = m_cfg, navigation_buffer,
-                 track_candidates_view,
-                 track_states_view](::sycl::nd_item<1> item) {
-                    device::fit<fitter_t>(item.get_global_linear_id(), det_view,
-                                          config, navigation_buffer,
-                                          track_candidates_view,
-                                          track_states_view);
-                });
+            // h.parallel_for<kernels::fit>(
+            h.parallel_for(trackParamsNdRange,
+                           [det_view, config = m_cfg, navigation_buffer,
+                            track_candidates_view,
+                            track_states_view](::sycl::nd_item<1> item) {
+                               device::fit<fitter_t>(
+                                   item.get_global_linear_id(), det_view,
+                                   config, navigation_buffer,
+                                   track_candidates_view, track_states_view);
+                           });
         })
         .wait_and_throw();
 
@@ -99,6 +103,16 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 }
 
 // Explicit template instantiation
+using toy_detector_type =
+    detray::detector<detray::toy_metadata<>, covfie::field_view,
+                     detray::device_container_types>;
+using toy_stepper_type = detray::rk_stepper<
+    covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
+    detray::constrained_step<>>;
+using toy_navigator_type = detray::navigator<const toy_detector_type>;
+using toy_fitter_type = kalman_fitter<toy_stepper_type, toy_navigator_type>;
+template class fitting_algorithm<toy_fitter_type>;
+
 using device_detector_type =
     detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
                      covfie::field_view, detray::device_container_types>;
