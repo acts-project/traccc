@@ -12,6 +12,7 @@ traccc_add_test(
     sycl
 
     # Define the sources for the test.
+    test_dpl.sycl
     test_kalman_filter.sycl
     test_spacepoint_formation.sycl
 
@@ -26,4 +27,5 @@ traccc_add_test(
     traccc::performance
     traccc::io
     traccc_tests_common
+    oneDPL
 )
