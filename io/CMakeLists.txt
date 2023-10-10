@@ -32,6 +32,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/reader_edm.hpp"
   "include/traccc/io/csv/cell.hpp"
   "include/traccc/io/csv/hit.hpp"
+  "include/traccc/io/csv/meas_hit_id.hpp"
   "include/traccc/io/csv/measurement.hpp"
   "include/traccc/io/csv/particle.hpp"
   # Implementation

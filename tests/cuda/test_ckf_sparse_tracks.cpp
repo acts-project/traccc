@@ -14,6 +14,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -25,7 +26,6 @@
 #include "detray/detectors/create_telescope_detector.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
-#include "detray/simulation/simulator.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -93,12 +93,12 @@ TEST_P(CkfSparseTrackTests, Run) {
                                                       theta_range, phi_range);
 
     // Smearing value for measurements
-    detray::measurement_smearer<transform3> meas_smearer(smearing[0],
+    traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
 
     using generator_type = decltype(generator);
     using writer_type =
-        detray::smearing_writer<detray::measurement_smearer<transform3>>;
+        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
@@ -107,7 +107,7 @@ TEST_P(CkfSparseTrackTests, Run) {
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
     auto sim =
-        detray::simulator<host_detector_type, generator_type, writer_type>(
+        traccc::simulator<host_detector_type, generator_type, writer_type>(
             n_events, host_det, std::move(generator),
             std::move(smearer_writer_cfg), full_path);
     sim.run();

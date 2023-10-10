@@ -26,5 +26,6 @@ traccc_add_test(
     traccc::sycl
     traccc::performance
     traccc::io
+    traccc::simulation
     traccc_tests_common
 )

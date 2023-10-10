@@ -48,10 +48,31 @@ void read_measurements(measurement_reader_output& out,
         }
 
         // Construct the measurement object.
-        const traccc::measurement meas{
-            point2{iomeas.local0, iomeas.local1},
-            variance2{iomeas.var_local0, iomeas.var_local1},
-            detray::geometry::barcode{iomeas.geometry_id}, link};
+        traccc::measurement meas;
+        std::array<typename transform3::size_type, 2u> indices{0u, 0u};
+        meas.meas_dim = 0u;
+
+        for (unsigned int ipar = 0; ipar < 2u; ++ipar) {
+            if (((iomeas.local_key) & (1 << (ipar + 1))) != 0) {
+
+                switch (ipar) {
+                    case e_bound_loc0: {
+                        meas.local[0] = iomeas.local0;
+                        meas.variance[0] = iomeas.var_local0;
+                        indices[meas.meas_dim++] = ipar;
+                    }; break;
+                    case e_bound_loc1: {
+                        meas.local[1] = iomeas.local1;
+                        meas.variance[1] = iomeas.var_local1;
+                        indices[meas.meas_dim++] = ipar;
+                    }; break;
+                }
+            }
+        }
+
+        meas.subs.set_indices(indices);
+        meas.surface_link = detray::geometry::barcode{iomeas.geometry_id};
+        meas.module_link = link;
 
         result_measurements.push_back(meas);
     }
