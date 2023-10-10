@@ -76,9 +76,13 @@ TEST_P(CkfSparseTrackTests, Run) {
     // Track generator
     auto generator =
         detray::random_track_generator<traccc::free_track_parameters,
-                                       uniform_gen_t>(n_truth_tracks, origin,
-                                                      origin_stddev, mom_range,
-                                                      theta_range, phi_range);
+                                       uniform_gen_t>(n_truth_tracks);
+
+    generator.origin(origin);
+    generator.origin_stddev(origin_stddev);
+    generator.mom_range(mom_range);
+    generator.phi_range(phi_range);
+    generator.theta_range(theta_range);
 
     // Smearing value for measurements
     traccc::measurement_smearer<transform3> meas_smearer(smearing[0],

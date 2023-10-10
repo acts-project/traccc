@@ -49,10 +49,12 @@ class KalmanFittingTests
     public:
     /// Type declarations
     using host_detector_type =
-        detray::detector<detray::telescope_metadata<>, covfie::field,
+        detray::detector<detray::telescope_metadata<>,
+                         covfie::field<detray::bfield::const_bknd_t>,
                          detray::host_container_types>;
     using device_detector_type =
-        detray::detector<detray::telescope_metadata<>, covfie::field_view,
+        detray::detector<detray::telescope_metadata<>,
+                         covfie::field_view<detray::bfield::const_bknd_t>,
                          detray::device_container_types>;
 
     using b_field_t = typename host_detector_type::bfield_type;

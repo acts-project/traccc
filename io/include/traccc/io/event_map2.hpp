@@ -23,7 +23,9 @@ struct event_map2 {
 
     template <typename seed_generator_t>
     track_candidate_container_types::host generate_truth_candidates(
-        seed_generator_t& sg, vecmem::memory_resource& resource) {
+        seed_generator_t& sg,
+        const typename seed_generator_t::detector_type& det,
+        vecmem::memory_resource& resource) {
 
         traccc::track_candidate_container_types::host track_candidates(
             &resource);
@@ -34,7 +36,8 @@ struct event_map2 {
             const free_track_parameters free_param(xp.first, 0.f, xp.second,
                                                    ptc.charge);
 
-            auto seed_params = sg(measurements[0].surface_link, free_param);
+            auto seed_params =
+                sg(det, measurements[0].surface_link, free_param);
 
             // Candidate objects
             vecmem::vector<track_candidate> candidates;

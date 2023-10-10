@@ -46,9 +46,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     /// Type declarations
-    using host_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field,
-                         detray::host_container_types>;
+    using host_detector_type = detray::detector<detray::toy_metadata>;
 
     using b_field_t = typename host_detector_type::bfield_type;
     using rk_stepper_type =
@@ -121,7 +119,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     // Seed generator
-    traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
+    traccc::seed_generator<host_detector_type> sg(stddevs);
 
     // Iterate over events
     for (unsigned int event = common_opts.skip;
@@ -133,7 +131,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
                                     common_opts.input_directory);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map2.generate_truth_candidates(sg, host_mr);
+            evt_map2.generate_truth_candidates(sg, host_det, host_mr);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);

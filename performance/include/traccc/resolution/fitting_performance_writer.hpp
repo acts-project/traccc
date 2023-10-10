@@ -17,6 +17,9 @@
 #include "traccc/io/event_map2.hpp"
 #include "traccc/io/mapper.hpp"
 
+// Detray include(s).
+#include "detray/geometry/surface.hpp"
+
 // System include(s).
 #include <memory>
 

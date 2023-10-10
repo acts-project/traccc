@@ -63,10 +63,11 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     /// Type declarations
-    using host_detector_type = detray::detector<detray::toy_metadata<>>;
+    using host_detector_type = detray::detector<detray::toy_metadata>;
 
     using device_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field_view,
+        detray::detector<detray::toy_metadata,
+                         covfie::field_view<detray::bfield::const_bknd_t>,
                          detray::device_container_types>;
 
     using b_field_t = typename host_detector_type::bfield_type;
@@ -124,32 +125,23 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
 
-    host_detector_type host_det{mng_mr};
-
     // Read the surface transforms
     traccc::geometry surface_transforms;
 
-    if (not common_opts.run_detray_geometry) {
-        surface_transforms =
-            traccc::io::read_geometry(common_opts.detector_file);
-    } else {
+    // Read the detector
+    detray::io::detector_reader_config reader_cfg{};
+    reader_cfg
+        .add_file(traccc::io::data_directory() + common_opts.detector_file)
+        .add_file(traccc::io::data_directory() + common_opts.material_file)
+        .bfield_vec(B[0], B[1], B[2]);
 
-        // Read the detector
-        detray::io::detector_reader_config reader_cfg{};
-        reader_cfg
-            .add_file(traccc::io::data_directory() + common_opts.detector_file)
-            .add_file(traccc::io::data_directory() + common_opts.material_file)
-            .bfield_vec(B[0], B[1], B[2]);
+    auto [host_det, names] =
+        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
-        auto [det, names] =
-            detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
-        host_det = std::move(det);
-
-        surface_transforms = traccc::io::alt_read_geometry(host_det);
-    }
+    surface_transforms = traccc::io::alt_read_geometry(host_det);
 
     // Detector view object
-    auto det_view = detray::get_data(host_det);
+    auto det_view = detray::get_data<detray::bfield::const_bknd_t>(host_det);
 
     // Copy objects
     vecmem::cuda::copy copy;
