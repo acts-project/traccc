@@ -19,7 +19,8 @@ namespace traccc::device::experimental {
 template <typename detector_t>
 TRACCC_HOST_DEVICE inline void form_spacepoints(
     const std::size_t globalIndex,
-    typename detector_t::detector_view_type det_data,
+    typename detector_t::detector_view_type<detray::bfield::const_bknd_t>
+        det_data,
     measurement_collection_types::const_view measurements_view,
     spacepoint_collection_types::view spacepoints_view);
 

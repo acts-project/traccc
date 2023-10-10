@@ -59,7 +59,8 @@ __global__ void make_barcode_sequence(
 /// CUDA kernel for running @c traccc::device::apply_interaction
 template <typename detector_t>
 __global__ void apply_interaction(
-    typename detector_t::detector_view_type det_data,
+    typename detector_t::detector_view_type<detray::bfield::const_bknd_t>
+        det_data,
     vecmem::data::jagged_vector_view<detray::intersection2D<
         typename detector_t::surface_type, typename detector_t::transform3>>
         nav_candidates_buffer,
@@ -94,7 +95,9 @@ __global__ void count_threads(
 /// CUDA kernel for running @c traccc::device::find_tracks
 template <typename detector_t, typename config_t>
 __global__ void find_tracks(
-    const config_t cfg, typename detector_t::detector_view_type det_data,
+    const config_t cfg,
+    typename detector_t::detector_view_type<detray::bfield::const_bknd_t>
+        det_data,
     measurement_collection_types::const_view measurements_view,
     vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
     vecmem::data::vector_view<const unsigned int> upper_bounds_view,
@@ -118,7 +121,9 @@ __global__ void find_tracks(
 template <typename propagator_t, typename config_t>
 __global__ void propagate_to_next_surface(
     const config_t cfg,
-    typename propagator_t::detector_type::detector_view_type det_data,
+    typename propagator_t::detector_type::detector_view_type<
+        detray::bfield::const_bknd_t>
+        det_data,
     vecmem::data::jagged_vector_view<typename propagator_t::intersection_type>
         nav_candidates_buffer,
     bound_track_parameters_collection_types::const_view in_params_view,
@@ -172,7 +177,8 @@ finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
 finding_algorithm<stepper_t, navigator_t>::operator()(
-    const typename detector_type::detector_view_type& det_view,
+    const typename detector_type::detector_view_type<
+        detray::bfield::const_bknd_t>& det_view,
     const vecmem::data::jagged_vector_view<
         typename navigator_t::intersection_type>& navigation_buffer,
     const typename measurement_collection_types::view& measurements,
@@ -519,20 +525,22 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
 // Explicit template instantiation
 using toy_detector_type =
-    detray::detector<detray::toy_metadata<>, covfie::field_view,
+    detray::detector<detray::toy_metadata,
+                     covfie::field_view<detray::bfield::const_bknd_t>,
                      detray::device_container_types>;
-using toy_stepper_type = detray::rk_stepper<
-    covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
-    detray::constrained_step<>>;
+using toy_stepper_type =
+    detray::rk_stepper<toy_detector_type::bfield_type, transform3,
+                       detray::constrained_step<>>;
 using toy_navigator_type = detray::navigator<const toy_detector_type>;
 template class finding_algorithm<toy_stepper_type, toy_navigator_type>;
 
 using device_detector_type =
     detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                     covfie::field_view, detray::device_container_types>;
-using rk_stepper_type = detray::rk_stepper<
-    covfie::field<device_detector_type::bfield_backend_type>::view_t,
-    transform3, detray::constrained_step<>>;
+                     covfie::field_view<detray::bfield::const_bknd_t>,
+                     detray::device_container_types>;
+using rk_stepper_type =
+    detray::rk_stepper<device_detector_type::bfield_type, transform3,
+                       detray::constrained_step<>>;
 using device_navigator_type = detray::navigator<const device_detector_type>;
 template class finding_algorithm<rk_stepper_type, device_navigator_type>;
 

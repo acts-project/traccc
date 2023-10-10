@@ -38,7 +38,8 @@ namespace traccc::device {
 template <typename detector_t, typename config_t>
 TRACCC_DEVICE inline void find_tracks(
     std::size_t globalIndex, const config_t cfg,
-    typename detector_t::detector_view_type det_data,
+    typename detector_t::detector_view_type<detray::bfield::const_bknd_t>
+        det_data,
     measurement_collection_types::const_view measurements_view,
     vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
     vecmem::data::vector_view<const unsigned int> upper_bounds_view,

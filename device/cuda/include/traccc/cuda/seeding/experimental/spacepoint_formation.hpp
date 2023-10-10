@@ -14,6 +14,9 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
+// Detray include(s).
+#include "detray/definitions/bfield_backends.hpp"
+
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
@@ -31,7 +34,8 @@ namespace traccc::cuda::experimental {
 template <typename detector_t>
 class spacepoint_formation
     : public algorithm<spacepoint_collection_types::buffer(
-          const typename detector_t::detector_view_type&,
+          const typename detector_t::detector_view_type<
+              detray::bfield::const_bknd_t>&,
           const measurement_collection_types::const_view&)> {
 
     public:
@@ -50,7 +54,8 @@ class spacepoint_formation
     /// @param measurements  a collection of measurements
     /// @return a spacepoint collection (buffer)
     spacepoint_collection_types::buffer operator()(
-        const typename detector_t::detector_view_type& det_view,
+        const typename detector_t::detector_view_type<
+            detray::bfield::const_bknd_t>& det_view,
         const measurement_collection_types::const_view& measurements_view)
         const override;
 

@@ -23,7 +23,9 @@ namespace traccc::device {
 ///
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
-    std::size_t globalIndex, typename detector_t::detector_view_type det_data,
+    std::size_t globalIndex,
+    typename detector_t::detector_view_type<detray::bfield::const_bknd_t>
+        det_data,
     vecmem::data::jagged_vector_view<detray::intersection2D<
         typename detector_t::surface_type, typename detector_t::transform3>>
         nav_candidates_buffer,

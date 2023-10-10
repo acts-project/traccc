@@ -17,6 +17,7 @@
 #include "traccc/utils/memory_resource.hpp"
 
 // detray include(s).
+#include "detray/definitions/bfield_backends.hpp"
 #include "detray/propagator/actor_chain.hpp"
 #include "detray/propagator/actors/aborters.hpp"
 #include "detray/propagator/actors/parameter_resetter.hpp"
@@ -37,7 +38,8 @@ namespace traccc::cuda {
 template <typename stepper_t, typename navigator_t>
 class finding_algorithm
     : public algorithm<track_candidate_container_types::buffer(
-          const typename navigator_t::detector_type::detector_view_type&,
+          const typename navigator_t::detector_type::detector_view_type<
+              detray::bfield::const_bknd_t>&,
           const vecmem::data::jagged_vector_view<
               typename navigator_t::intersection_type>&,
           const typename measurement_collection_types::view&,
@@ -85,7 +87,8 @@ class finding_algorithm
     /// @param navigation_buffer  Buffer for navigation candidates
     /// @param seeds     Input seeds
     track_candidate_container_types::buffer operator()(
-        const typename detector_type::detector_view_type& det_view,
+        const typename detector_type::detector_view_type<
+            detray::bfield::const_bknd_t>& det_view,
         const vecmem::data::jagged_vector_view<
             typename navigator_t::intersection_type>& navigation_buffer,
         const typename measurement_collection_types::view& measurements,

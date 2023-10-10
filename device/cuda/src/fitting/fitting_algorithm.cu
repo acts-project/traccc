@@ -55,7 +55,8 @@ fitting_algorithm<fitter_t>::fitting_algorithm(
 
 template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
-    const typename fitter_t::detector_type::detector_view_type& det_view,
+    const typename fitter_t::detector_type::detector_view_type<
+        detray::bfield::const_bknd_t>& det_view,
     const vecmem::data::jagged_vector_view<
         typename fitter_t::intersection_type>& navigation_buffer,
     const typename track_candidate_container_types::const_view&
@@ -97,21 +98,23 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
 // Explicit template instantiation
 using toy_detector_type =
-    detray::detector<detray::toy_metadata<>, covfie::field_view,
+    detray::detector<detray::toy_metadata,
+                     covfie::field_view<detray::bfield::const_bknd_t>,
                      detray::device_container_types>;
-using toy_stepper_type = detray::rk_stepper<
-    covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
-    detray::constrained_step<>>;
+using toy_stepper_type =
+    detray::rk_stepper<toy_detector_type::bfield_type, transform3,
+                       detray::constrained_step<>>;
 using toy_navigator_type = detray::navigator<const toy_detector_type>;
 using toy_fitter_type = kalman_fitter<toy_stepper_type, toy_navigator_type>;
 template class fitting_algorithm<toy_fitter_type>;
 
 using device_detector_type =
     detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                     covfie::field_view, detray::device_container_types>;
-using rk_stepper_type = detray::rk_stepper<
-    covfie::field<device_detector_type::bfield_backend_type>::view_t,
-    transform3, detray::constrained_step<>>;
+                     covfie::field_view<detray::bfield::const_bknd_t>,
+                     detray::device_container_types>;
+using rk_stepper_type =
+    detray::rk_stepper<device_detector_type::bfield_type, transform3,
+                       detray::constrained_step<>>;
 using device_navigator_type = detray::navigator<const device_detector_type>;
 using device_fitter_type =
     kalman_fitter<rk_stepper_type, device_navigator_type>;

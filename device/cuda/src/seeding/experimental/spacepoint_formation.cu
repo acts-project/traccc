@@ -22,7 +22,8 @@ namespace kernels {
 
 template <typename detector_t>
 __global__ void form_spacepoints(
-    typename detector_t::detector_view_type det_data,
+    typename detector_t::detector_view_type<detray::bfield::const_bknd_t>
+        det_data,
     measurement_collection_types::const_view measurements_view,
     spacepoint_collection_types::view spacepoints_view) {
 
@@ -41,7 +42,8 @@ spacepoint_formation<detector_t>::spacepoint_formation(
 template <typename detector_t>
 spacepoint_collection_types::buffer
 spacepoint_formation<detector_t>::operator()(
-    const typename detector_t::detector_view_type& det_view,
+    const typename detector_t::detector_view_type<detray::bfield::const_bknd_t>&
+        det_view,
     const measurement_collection_types::const_view& measurements_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
@@ -66,7 +68,8 @@ spacepoint_formation<detector_t>::operator()(
 
 using telescope_detector_type =
     detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                     covfie::field_view, detray::device_container_types>;
+                     covfie::field_view<detray::bfield::const_bknd_t>,
+                     detray::device_container_types>;
 template class spacepoint_formation<telescope_detector_type>;
 
 }  // namespace traccc::cuda::experimental

@@ -28,15 +28,15 @@ template <typename detector_t>
 struct seed_generator {
     using matrix_operator = typename transform3::matrix_actor;
     using cxt_t = typename detector_t::geometry_context;
+    using detector_type = detector_t;
 
     /// Constructor with detector
     ///
     /// @param det input detector
     /// @param stddevs standard deviations for parameter smearing
-    seed_generator(const detector_t& det,
-                   const std::array<scalar, e_bound_size>& stddevs,
+    seed_generator(const std::array<scalar, e_bound_size>& stddevs,
                    const std::size_t sd = 0)
-        : m_detector(std::make_unique<detector_t>(det)), m_stddevs(stddevs) {
+        : m_stddevs(stddevs) {
         generator.seed(sd);
     }
 
@@ -45,11 +45,11 @@ struct seed_generator {
     /// @param vertex vertex of particle
     /// @param stddevs standard deviations for track parameter smearing
     bound_track_parameters operator()(
-        const detray::geometry::barcode surface_link,
+        const detector_t& det, const detray::geometry::barcode surface_link,
         const free_track_parameters& free_param) {
 
         // Get bound parameter
-        const detray::surface<detector_t> sf{*m_detector, surface_link};
+        const detray::surface<detector_t> sf{det, surface_link};
 
         const cxt_t ctx{};
         auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());
@@ -68,10 +68,10 @@ struct seed_generator {
             detray::pointwise_material_interactor<transform3_type>;
 
         intersection_type sfi;
-        sfi.sf_desc = m_detector->surface(surface_link);
+        sfi.sf_desc = det.surface(surface_link);
         sf.template visit_mask<detray::intersection_update>(
             detray::detail::ray<transform3_type>(free_param.vector()), sfi,
-            m_detector->transform_store());
+            det.transform_store());
 
         // Apply interactor
         typename interactor_type::state interactor_state;
@@ -101,7 +101,6 @@ struct seed_generator {
     std::mt19937 generator{rd()};
 
     /// Detector objects
-    std::unique_ptr<detector_t> m_detector;
     /// Standard deviations for parameter smearing
     std::array<scalar, e_bound_size> m_stddevs;
 };
