@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "particle.hpp"
+#include "traccc/io/csv/particle.hpp"
 
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
