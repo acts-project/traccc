@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "cell.hpp"
+#include "traccc/io/csv/cell.hpp"
 
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
