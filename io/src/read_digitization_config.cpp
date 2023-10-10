@@ -34,6 +34,8 @@ void from_json(const nlohmann::json& json, module_digitization_config& cfg) {
 
     // Read the object, if possible.
     if (json.find(geometric) != json.end()) {
+        cfg.indices =
+            json[geometric]["indices"].get<std::vector<unsigned int>>();
         from_json(json[geometric][segmentation], cfg.segmentation);
     }
 }

@@ -14,6 +14,8 @@ find_package( OpenMP COMPONENTS CXX )
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
   "include/traccc/io/digitization_config.hpp"
+  "include/traccc/io/digitization_configurator.hpp"
+  "include/traccc/io/digitization_configurator.ipp"
   "include/traccc/io/read.hpp"
   "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_digitization_config.hpp"
@@ -26,6 +28,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/event_map2.hpp"
   "include/traccc/io/demonstrator_edm.hpp"
   "include/traccc/io/mapper.hpp"
+  "include/traccc/io/write_digitization_config.hpp"
   "include/traccc/io/write.hpp"
   "include/traccc/io/utils.hpp"
   "include/traccc/io/details/read_surfaces.hpp"
@@ -56,6 +59,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/utils.cpp"
   "src/read_binary.hpp"
   "src/write_binary.hpp"
+  "src/write_digitization_config.cpp"
   "src/details/read_surfaces.cpp"
   "src/csv/make_surface_reader.cpp"
   "src/csv/read_surfaces.hpp"
