@@ -10,6 +10,9 @@
 
 #include "make_measurement_reader.hpp"
 
+// Detray include(s).
+#include "detray/geometry/barcode.hpp"
+
 // System include(s).
 #include <algorithm>
 
@@ -40,7 +43,7 @@ void read_measurements(measurement_reader_output& out,
             link = result_modules.size();
             m[iomeas.geometry_id] = link;
             cell_module mod;
-            mod.module = iomeas.geometry_id;
+            mod.surface_link = detray::geometry::barcode{iomeas.geometry_id};
             result_modules.push_back(mod);
         }
 
@@ -72,7 +75,7 @@ measurement_container_types::host read_measurements_container(
 
         // Construct the module ID for the measurement.
         cell_module module;
-        module.module = iomeas.geometry_id;
+        module.surface_link = detray::geometry::barcode{iomeas.geometry_id};
 
         // Construct the measurement object.
         const traccc::measurement meas{

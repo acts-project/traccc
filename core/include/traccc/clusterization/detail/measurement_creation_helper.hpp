@@ -79,7 +79,7 @@ TRACCC_HOST inline void calc_cluster_properties(
 /// @param[in] module is the cell module where the cluster belongs to
 /// @param[in] module_link is the module index
 ///
-TRACCC_HOST void fill_measurement(
+TRACCC_HOST inline void fill_measurement(
     measurement_collection_types::host& measurements,
     const cell_collection_types::host& cluster, const cell_module& module,
     const unsigned int module_link) {
@@ -102,7 +102,7 @@ TRACCC_HOST void fill_measurement(
     if (totalWeight > 0.) {
         measurement m;
         m.module_link = module_link;
-        m.surface_link = detray::geometry::barcode{module.module};
+        m.surface_link = module.surface_link;
         // normalize the cell position
         m.local = mean;
         // normalize the variance

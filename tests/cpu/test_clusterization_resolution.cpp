@@ -76,8 +76,8 @@ TEST_P(SurfaceBinningTests, Run) {
         const auto& sp_truth = spacepoints_truth[i];
 
         // Check that the spacepoints belong to the same module
-        EXPECT_EQ(modules.at(sp_recon.meas.module_link).module,
-                  modules_2.at(sp_truth.meas.module_link).module);
+        EXPECT_EQ(modules.at(sp_recon.meas.module_link).surface_link,
+                  modules_2.at(sp_truth.meas.module_link).surface_link);
 
         // Make sure that the difference in spacepoint position is less than
         // 1%
