@@ -32,21 +32,20 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
                                const traccc::digitization_config* dconfig) {
 
     traccc::cell_module result;
-
-    result.module = c.geometry_id;
+    result.surface_link = detray::geometry::barcode{c.geometry_id};
 
     // Find/set the 3D position of the detector module.
     if (geom != nullptr) {
 
         // Check if the module ID is known.
-        if (!geom->contains(result.module)) {
+        if (!geom->contains(result.surface_link.value())) {
             throw std::runtime_error(
                 "Could not find placement for geometry ID " +
-                std::to_string(result.module));
+                std::to_string(result.surface_link.value()));
         }
 
         // Set the value on the module description.
-        result.placement = (*geom)[result.module];
+        result.placement = (*geom)[result.surface_link.value()];
     }
 
     // Find/set the digitization configuration of the detector module.
@@ -54,11 +53,11 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
 
         // Check if the module ID is known.
         const traccc::digitization_config::Iterator geo_it =
-            dconfig->find(result.module);
+            dconfig->find(result.surface_link.value());
         if (geo_it == dconfig->end()) {
             throw std::runtime_error(
                 "Could not find digitization config for geometry ID " +
-                std::to_string(result.module));
+                std::to_string(result.surface_link.value()));
         }
 
         // Set the value on the module description.
@@ -100,7 +99,8 @@ void read_cells(cell_reader_output& out, std::string_view filename,
         // Look for current module in cell counter vector.
         auto rit = std::find_if(result_modules.rbegin(), result_modules.rend(),
                                 [&iocell](const cell_module& mod) {
-                                    return mod.module == iocell.geometry_id;
+                                    return mod.surface_link.value() ==
+                                           iocell.geometry_id;
                                 });
         if (rit == result_modules.rend()) {
             // Add new cell and new cell counter if a new module is found

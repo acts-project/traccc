@@ -12,6 +12,9 @@
 #include "make_measurement_hit_id_reader.hpp"
 #include "read_measurements.hpp"
 
+// Detray include(s).
+#include "detray/geometry/barcode.hpp"
+
 // System include(s).
 #include <algorithm>
 #include <map>
@@ -55,7 +58,7 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
             link = result_modules.size();
             m[iohit.geometry_id] = link;
             cell_module mod;
-            mod.module = iohit.geometry_id;
+            mod.surface_link = detray::geometry::barcode{iohit.geometry_id};
             mod.placement = geom[iohit.geometry_id];
             result_modules.push_back(mod);
         }
