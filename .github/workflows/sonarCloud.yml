@@ -1,0 +1,108 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+name: Sonar Cloud
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  sonarUbuntu:
+      name: Sonar-Ubuntu
+      runs-on: ubuntu-latest
+      env:
+        SONAR_SCANNER_VERSION: 4.7.0.2747
+        SONAR_SERVER_URL: "https://sonarcloud.io"
+        BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+      steps:
+        - uses: actions/checkout@v2
+          with:
+            fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+            submodules: true
+            lfs: true
+        - name: Set up JDK 11
+          uses: actions/setup-java@v1
+          with:
+            java-version: 11
+        - name: Cache SonarCloud packages
+          uses: actions/cache@v1
+          with:
+            path: ~/.sonar/cache
+            key: ${{ runner.os }}-sonar
+            restore-keys: ${{ runner.os }}-sonar
+        - name: Download and set up sonar-scanner
+          env:
+            SONAR_SCANNER_DOWNLOAD_URL: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${{ env.SONAR_SCANNER_VERSION }}-linux.zip
+          run: |
+            mkdir -p $HOME/.sonar
+            curl -sSLo $HOME/.sonar/sonar-scanner.zip ${{ env.SONAR_SCANNER_DOWNLOAD_URL }}
+            unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+            echo "$HOME/.sonar/sonar-scanner-${{ env.SONAR_SCANNER_VERSION }}-linux/bin" >> $GITHUB_PATH
+        - name: Download and set up build-wrapper
+          env:
+            BUILD_WRAPPER_DOWNLOAD_URL: ${{ env.SONAR_SERVER_URL }}/static/cpp/build-wrapper-linux-x86.zip
+          run: |
+            curl -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip ${{ env.BUILD_WRAPPER_DOWNLOAD_URL }}
+            unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
+            echo "$HOME/.sonar/build-wrapper-linux-x86" >> $GITHUB_PATH
+        - name: Get Dependancies For BOOST & ROOT + Check Locations
+          # Install All Dependancies commands 
+          # sudo apt install dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev python libssl-dev
+          run: |
+            sudo apt update
+            sudo apt install libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev
+            dpkg -L libxpm-dev
+            dpkg -L libssl-dev
+            dpkg -L libxext-dev
+
+          # wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
+          # sudo sh cuda_11.8.0_520.61.05_linux.run
+
+          # ROOT FROM BINARY DOWNLOAD
+          # wget https://root.cern/download/root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
+          # tar -xzvf root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
+          # source root/bin/thisroot.sh
+
+          # ROOT FROM SOURCE BUILD
+          # git clone --branch latest-stable --depth=1 https://github.com/root-project/root.git root_src
+          # mkdir root_build root
+          # cd root_build
+          # cmake -DCMAKE_INSTALL_PREFIX=/home/runner/work/traccc/traccc/root /home/runner/work/traccc/traccc/root_src
+          # cmake --build . --target install
+
+        - name: Get & Build BOOST & ROOT
+          run: |
+            cd /home/runner/work/traccc/
+            wget https://boostorg.jfrog.io/artifactory/main/release/1.80.0/source/boost_1_80_0.tar.bz2
+            tar --bzip2 -xf boost_1_80_0.tar.bz2
+            mkdir boost-install
+            cd ./boost_1_80_0
+            ./bootstrap.sh --prefix=/home/runner/work/traccc/boost_install --with-libraries=atomic,filesystem,headers,program_options,test
+            sudo ./b2 install
+            cd ../
+            wget https://root.cern/download/root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
+            tar -xzf root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
+            source root/bin/thisroot.sh
+            cd ./traccc
+
+        - name: Run build-wrapper
+          # USE FOR CUDA BUILD
+          # cmake -S . -B build -D TRACCC_BUILD_CUDA=TRUE -D DETRAY_BUILD_CUDA=TRUE -D VECMEM_BUILD_CUDA_LIBRARY=TRUE
+          run: |
+            cd ../
+            mkdir traccc-build && cd ./traccc-build
+            cmake -S ../traccc -B . -D ROOT_DIR=/home/runner/work/traccc/root/cmake -D Boost_DIR=/home/runner/work/traccc/boost_install/lib/cmake/Boost-1.80.0
+            cd ../traccc
+            build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build ../traccc-build --clean-first -j $(nproc)
+        - name: Run sonar-scanner
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          run: |
+            sonar-scanner --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"

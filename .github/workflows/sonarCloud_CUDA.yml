@@ -1,0 +1,100 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2022 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+name: Sonar Cloud CUDA (SelfHost)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  sonarUbuntu_CUDA:
+      name: Sonar-Ubuntu-CUDA
+      runs-on: [self-hosted, linux]
+      env:
+        SONAR_SCANNER_VERSION: 4.7.0.2747
+        SONAR_SERVER_URL: "https://sonarcloud.io"
+        BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+      steps:
+        - uses: actions/checkout@v2
+          with:
+            fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+        - name: Set up JDK 11
+          uses: actions/setup-java@v1
+          with:
+            java-version: 11
+
+        - name: Install sonar-scanner and build-wrapper
+          uses: SonarSource/sonarcloud-github-c-cpp@v1
+
+        - name: Get Dependancies For BOOST & ROOT + Check Locations
+          # Install All Dependancies commands 
+          # sudo apt install dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev python libssl-dev
+
+          # INSTALL DEPENDANCIES FOR VIRTUAL GITHUB RUNNERS
+          # sudo apt install libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev
+          run: |
+            dpkg -L libxpm-dev
+            dpkg -L libssl-dev
+            dpkg -L libxext-dev
+          # wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
+          # sudo sh cuda_11.8.0_520.61.05_linux.run
+
+          # ROOT FROM BINARY DOWNLOAD
+          # wget https://root.cern/download/root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
+          # tar -xzvf root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
+          # source root/bin/thisroot.sh
+
+          # ROOT FROM SOURCE BUILD
+          # git clone --branch latest-stable --depth=1 https://github.com/root-project/root.git root_src
+          # mkdir root_build root
+          # cd root_build
+          # cmake -DCMAKE_INSTALL_PREFIX=/home/runner/work/traccc/traccc/root /home/runner/work/traccc/traccc/root_src
+          # cmake --build . --target install
+
+        - name: Run build-wrapper
+          # USE FOR CUDA BUILD
+          # cmake -S . -B build -D TRACCC_BUILD_CUDA=TRUE -D DETRAY_BUILD_CUDA=TRUE -D VECMEM_BUILD_CUDA_LIBRARY=TRUE
+          # -D Boost_DIR=/home/yusuf/usr/local/boost/lib/cmake/Boost-1.79.0
+          # cmake -S ../traccc -B . -D ROOT_DIR=/home/yusuf/usr/local/root/cmake -D Boost_DIR=/home/yusuf/usr/local/boost/lib/cmake/Boost-1.79.0 -D Boost_INCLUDE_DIR=/home/yusuf/usr/local/boost/inlcude
+          run: |
+            cd ../
+            mkdir -p ./traccc-build && cd ./traccc-build
+            cmake -S ../traccc -B . -D ROOT_DIR=/home/yusuf/usr/local/root/cmake -D Boost_DIR=/home/yusuf/usr/local/boost/lib/cmake/Boost-1.79.0 -D Boost_INCLUDE_DIR=/home/yusuf/usr/local/boost/inlcude -D CMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -D TRACCC_BUILD_CUDA=TRUE -D DETRAY_BUILD_CUDA=TRUE -D VECMEM_BUILD_CUDA_LIBRARY=TRUE -D CMAKE_CUDA_ARCHITECTURES="52;75" -D TRACCC_BUILD_TESTING=TRUE
+            cd ../traccc 
+            build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build ../traccc-build -j4 --clean-first
+  
+        - name: Run tests to generate coverage statistics
+          env:
+            TRACCC_TEST_DATA_DIR: /home/yusuf/atlas-project/traccc-projects/traccc/data
+          run: |
+            find ../traccc-build/bin -maxdepth 1 -name "traccc_test*" -executable -exec '{}' ';'
+        - name: Collect coverage into one XML report
+          run: |
+            gcovr --sonarqube > coverage.xml
+            
+        - name: Run sonar-scanner
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          run: |
+            sonar-scanner \
+               --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
+               --define sonar.cfamily.llvm-cov.reportPath=coverage.xml
+
+        - name: Run NSYS on Most Current Code
+          env:
+            TRACCC_TEST_DATA_DIR: /home/yusuf/atlas-project/traccc-projects/traccc/data
+          run: |
+            TRACCC_SHA=$(git rev-parse --short "$GITHUB_SHA")
+            echo $TRACCC_SHA
+
+            /usr/local/cuda/bin/ncu --export /home/yusuf/action-runners/actions-runner-traccc-cuda/_work/traccc/cuda-nsight/traccc-cuda-$TRACCC_SHA.ncu-rep --target-processes application-only --replay-mode kernel --kernel-name-base function --launch-skip-before-match 0 --section ComputeWorkloadAnalysis --section InstructionStats --section LaunchStats --section MemoryWorkloadAnalysis --section MemoryWorkloadAnalysis_Chart --section MemoryWorkloadAnalysis_Tables --section Nvlink_Tables --section Nvlink_Topology --section Occupancy --section SchedulerStats --section SourceCounters --section SpeedOfLight --section SpeedOfLight_RooflineChart --section WarpStateStats --sampling-interval auto --sampling-max-passes 5 --sampling-buffer-size 33554432 --profile-from-start 1 --cache-control all --clock-control base --apply-rules yes --import-source no --check-exit-code yes /home/yusuf/action-runners/actions-runner-traccc-cuda/_work/traccc/traccc-build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/ --events=10 --run_cpu=1
