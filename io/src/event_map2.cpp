@@ -19,7 +19,7 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
                        const std::string& hit_dir,
                        const std::string particle_dir) {
 
-    std::string io_meas_hit_id_file =
+    std::string io_measurement_hit_id_file =
         io::data_directory() + hit_dir +
         io::get_event_filename(event, "-measurement-simhit-map.csv");
 
@@ -41,16 +41,16 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
     auto preader = io::csv::make_particle_reader(io_particle_file);
 
     auto mhid_reader =
-        io::csv::make_measurement_hit_id_reader(io_meas_hit_id_file);
+        io::csv::make_measurement_hit_id_reader(io_measurement_hit_id_file);
 
-    std::vector<traccc::io::csv::measurement_hit_id> meas_hit_ids;
+    std::vector<traccc::io::csv::measurement_hit_id> measurement_hit_ids;
     std::vector<traccc::io::csv::particle> particles;
     std::vector<traccc::io::csv::hit> hits;
     std::vector<traccc::io::csv::measurement> measurements;
 
     traccc::io::csv::measurement_hit_id io_mh_id;
     while (mhid_reader.read(io_mh_id)) {
-        meas_hit_ids.push_back(io_mh_id);
+        measurement_hit_ids.push_back(io_mh_id);
     }
 
     traccc::io::csv::particle io_particle;
@@ -79,7 +79,7 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
     for (const auto& csv_meas : measurements) {
 
         // Hit index
-        const auto h_id = meas_hit_ids[csv_meas.measurement_id].hit_id;
+        const auto h_id = measurement_hit_ids[csv_meas.measurement_id].hit_id;
 
         // Make spacepoint
         const auto csv_hit = hits[h_id];

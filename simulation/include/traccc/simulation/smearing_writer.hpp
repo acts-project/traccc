@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/io/csv/hit.hpp"
-#include "traccc/io/csv/meas_hit_id.hpp"
+#include "traccc/io/csv/measurement_hit_id.hpp"
 #include "traccc/io/csv/measurement.hpp"
 #include "traccc/io/csv/particle.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
@@ -37,7 +37,7 @@ struct smearing_writer : detray::actor {
     using transform3_type = typename smearer_t::transform3_type;
     using scalar_type = typename transform3_type::scalar_type;
 
-    using meas_hit_id_writer = dfe::NamedTupleCsvWriter<io::csv::meas_hit_id>;
+    using measurement_hit_id_writer = dfe::NamedTupleCsvWriter<io::csv::measurement_hit_id>;
     using measurement_writer = dfe::NamedTupleCsvWriter<io::csv::measurement>;
     using hit_writer = dfe::NamedTupleCsvWriter<io::csv::hit>;
     using particle_writer = dfe::NamedTupleCsvWriter<io::csv::particle>;
@@ -55,7 +55,7 @@ struct smearing_writer : detray::actor {
                                            event_id, "-hits.csv")),
               m_meas_writer(directory + detray::detail::get_event_filename(
                                             event_id, "-measurements.csv")),
-              m_meas_hit_id_writer(
+              m_measurement_hit_id_writer(
                   directory + detray::detail::get_event_filename(
                                   event_id, "-measurement-simhit-map.csv")),
               m_meas_smearer(writer_cfg.smearer) {}
@@ -64,7 +64,7 @@ struct smearing_writer : detray::actor {
         particle_writer m_particle_writer;
         hit_writer m_hit_writer;
         measurement_writer m_meas_writer;
-        meas_hit_id_writer m_meas_hit_id_writer;
+        measurement_hit_id_writer m_measurement_hit_id_writer;
         uint64_t m_hit_count = 0u;
         smearer_t m_meas_smearer;
 
@@ -156,10 +156,10 @@ struct smearing_writer : detray::actor {
             writer_state.m_meas_writer.append(meas);
 
             // Write hit measurement map
-            io::csv::meas_hit_id meas_hit_id;
-            meas_hit_id.hit_id = writer_state.m_hit_count;
-            meas_hit_id.measurement_id = writer_state.m_hit_count;
-            writer_state.m_meas_hit_id_writer.append(meas_hit_id);
+            io::csv::measurement_hit_id measurement_hit_id;
+            measurement_hit_id.hit_id = writer_state.m_hit_count;
+            measurement_hit_id.measurement_id = writer_state.m_hit_count;
+            writer_state.m_measurement_hit_id_writer.append(measurement_hit_id);
             writer_state.m_hit_count++;
         }
     }

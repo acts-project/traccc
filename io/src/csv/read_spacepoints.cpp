@@ -32,10 +32,10 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
     // Measurement hit id reader
     auto mhid_reader =
         io::csv::make_measurement_hit_id_reader(meas_hit_map_filename);
-    std::vector<traccc::io::csv::measurement_hit_id> meas_hit_ids;
+    std::vector<traccc::io::csv::measurement_hit_id> measurement_hit_ids;
     traccc::io::csv::measurement_hit_id io_mh_id;
     while (mhid_reader.read(io_mh_id)) {
-        meas_hit_ids.push_back(io_mh_id);
+        measurement_hit_ids.push_back(io_mh_id);
     }
 
     // Construct the spacepoint reader object.
@@ -68,7 +68,7 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
 
         // Construct the local 3D(2D) position of the measurement.
         measurement meas;
-        for (auto const [meas_id, hit_id] : meas_hit_ids) {
+        for (auto const [meas_id, hit_id] : measurement_hit_ids) {
             if (hit_id == result_spacepoints.size()) {
                 meas = meas_reader_out.measurements[meas_id];
             }
