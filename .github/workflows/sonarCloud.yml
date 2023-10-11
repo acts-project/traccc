@@ -15,7 +15,7 @@ on:
 jobs:
   sonarUbuntu:
       name: Sonar-Ubuntu
-      runs-on: ubuntu-latest
+      runs-on: [self-hosted, linux]
       env:
         SONAR_SCANNER_VERSION: 4.7.0.2747
         SONAR_SERVER_URL: "https://sonarcloud.io"
@@ -55,8 +55,8 @@ jobs:
           # Install All Dependancies commands 
           # sudo apt install dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev python libssl-dev
           run: |
-            sudo apt update
-            sudo apt install libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev
+            sudo dnf -y update
+            sudo dnf -y install dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev
             dpkg -L libxpm-dev
             dpkg -L libssl-dev
             dpkg -L libxext-dev
@@ -78,7 +78,7 @@ jobs:
 
         - name: Get & Build BOOST & ROOT
           run: |
-            cd /home/runner/work/traccc/
+            cd /home/wthompson/Work/traccc/
             wget https://boostorg.jfrog.io/artifactory/main/release/1.80.0/source/boost_1_80_0.tar.bz2
             tar --bzip2 -xf boost_1_80_0.tar.bz2
             mkdir boost-install
@@ -97,7 +97,7 @@ jobs:
           run: |
             cd ../
             mkdir traccc-build && cd ./traccc-build
-            cmake -S ../traccc -B . -D ROOT_DIR=/home/runner/work/traccc/root/cmake -D Boost_DIR=/home/runner/work/traccc/boost_install/lib/cmake/Boost-1.80.0
+            cmake -S ../traccc 
             cd ../traccc
             build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build ../traccc-build --clean-first -j $(nproc)
         - name: Run sonar-scanner
