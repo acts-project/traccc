@@ -56,10 +56,10 @@ jobs:
           # sudo apt install dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev python libssl-dev
           run: |
             sudo dnf -y update
-            sudo dnf -y install dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev
-            dpkg -L libxpm-dev
-            dpkg -L libssl-dev
-            dpkg -L libxext-dev
+            sudo dnf -y install libX11-devel libXpm-devel libXft-devel libXext-devel openssl-devel
+            dnf repoquery -l libXpm-devel
+            dnf repoquery -l openssl-devel
+            dnf repoquery -l libXext-devel
 
           # wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
           # sudo sh cuda_11.8.0_520.61.05_linux.run
