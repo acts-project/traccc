@@ -77,8 +77,9 @@ jobs:
             cd /home/wthompson/Work/traccc/
             wget https://boostorg.jfrog.io/artifactory/main/release/1.80.0/source/boost_1_80_0.tar.bz2
             tar --bzip2 -xf boost_1_80_0.tar.bz2
-            mkdir boost-install
-            uncomment if fresh install of traccc 
+            if ! [ -d boost-install ]; then
+                mkdir boost-install
+            fi
             cd ./boost_1_80_0
             ./bootstrap.sh --prefix=/home/runner/work/traccc/boost_install --with-libraries=atomic,filesystem,headers,program_options,test
             sudo ./b2 install
