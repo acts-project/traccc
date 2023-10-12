@@ -90,8 +90,8 @@ jobs:
         - name: Run build-wrapper
           # USE FOR CUDA BUILD
           # cmake -S . -B build -D TRACCC_BUILD_CUDA=TRUE -D DETRAY_BUILD_CUDA=TRUE -D VECMEM_BUILD_CUDA_LIBRARY=TRUE
+          # replace next cd with your traccc path
           run: |
-            # replace next cd with your traccc path
             cd /home/wthompson/Work/traccc/ 
             cd ../
             mkdir traccc-build && cd ./traccc-build
