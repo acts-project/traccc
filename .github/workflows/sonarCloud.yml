@@ -98,7 +98,7 @@ jobs:
                 mkdir traccc-build
             fi
             cd ./traccc-build
-            cmake -S ../traccc 
+            cmake -S ../traccc -B ./ -D CUDAToolkit_BIN_DIR=/usr/local/cuda/bin -D CMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
             cd ../traccc
             mkdir /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/
             touch /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/build-wrapper-dump.json
