@@ -100,7 +100,7 @@ jobs:
             cd ./traccc-build
             cmake -S ../traccc 
             cd ../traccc
-          # make build wrapper out dir
+
             mkdir /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/
             build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build ../traccc-build --clean-first -j $(nproc)
         - name: Run sonar-scanner
