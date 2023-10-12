@@ -94,7 +94,10 @@ jobs:
           run: |
             cd /home/wthompson/Work/traccc/ 
             cd ../
-            mkdir traccc-build && cd ./traccc-build
+            if ! [-d traccc-build ]; then
+                mkdir traccc-build
+            fi
+            cd ./traccc-build
             cmake -S ../traccc 
             cd ../traccc
             build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build ../traccc-build --clean-first -j $(nproc)
