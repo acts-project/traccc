@@ -102,7 +102,7 @@ jobs:
             cd ../traccc
             mkdir /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/
             touch /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/build-wrapper-dump.json
-            build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake -S ./ -B ../traccc-build --clean-first -j $(nproc)
+            build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake -S ./ -B ../traccc-build --clean-first $(nproc)
         - name: Run sonar-scanner
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
