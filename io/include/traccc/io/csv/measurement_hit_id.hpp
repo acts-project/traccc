@@ -12,7 +12,6 @@
 
 // System include(s).
 #include <cstdint>
-#include <string>
 
 namespace traccc::io::csv {
 
