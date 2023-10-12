@@ -94,7 +94,7 @@ jobs:
           run: |
             cd /home/wthompson/Work/traccc/ 
             cd ../
-            if ! [-d traccc-build ]; then
+            if ! [ -d traccc-build ]; then
                 mkdir traccc-build
             fi
             cd ./traccc-build
