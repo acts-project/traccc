@@ -86,7 +86,6 @@ jobs:
             wget https://root.cern/download/root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
             tar -xzf root_v6.26.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
             source root/bin/thisroot.sh
-            cd ./traccc
 
         - name: Run build-wrapper
           # USE FOR CUDA BUILD
