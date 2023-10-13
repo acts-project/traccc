@@ -49,6 +49,7 @@ traccc_add_test(
     traccc::cuda
     traccc::performance
     traccc::io
+    traccc::simulation
     traccc_tests_cuda_main
     traccc_tests_common
 )

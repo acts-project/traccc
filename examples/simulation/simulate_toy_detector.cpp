@@ -14,12 +14,14 @@
 #include "traccc/options/options.hpp"
 #include "traccc/options/particle_gen_options.hpp"
 #include "traccc/options/propagation_options.hpp"
+#include "traccc/simulation/measurement_smearer.hpp"
+#include "traccc/simulation/simulator.hpp"
+#include "traccc/simulation/smearing_writer.hpp"
 
 // detray include(s).
 #include "detray/detectors/create_toy_geometry.hpp"
 #include "detray/io/common/detector_writer.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
-#include "detray/simulation/simulator.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -74,13 +76,13 @@ int simulate(std::string output_directory, unsigned int events,
             pg_opts.mom_range, pg_opts.theta_range, pg_opts.phi_range);
 
     // Smearing value for measurements
-    detray::measurement_smearer<transform3> meas_smearer(
+    traccc::measurement_smearer<transform3> meas_smearer(
         50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
 
     // Type declarations
     using generator_type = decltype(generator);
     using writer_type =
-        detray::smearing_writer<detray::measurement_smearer<transform3>>;
+        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
 
     // Writer config
     typename writer_type::config smearer_writer_cfg{meas_smearer};
@@ -90,7 +92,7 @@ int simulate(std::string output_directory, unsigned int events,
 
     boost::filesystem::create_directories(full_path);
 
-    auto sim = detray::simulator<detector_type, generator_type, writer_type>(
+    auto sim = traccc::simulator<detector_type, generator_type, writer_type>(
         events, det, std::move(generator), std::move(smearer_writer_cfg),
         full_path);
     sim.get_config().step_constraint = propagation_opts.step_constraint;

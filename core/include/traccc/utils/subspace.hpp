@@ -64,8 +64,14 @@ struct subspace {
     /// implementation detail. Users should treat the return type as a generic
     /// container whose elements are convertible to `size_t`.
     TRACCC_HOST_DEVICE
-    constexpr const std::array<size_type, kSize>& indices() const {
+    constexpr const std::array<size_type, kSize>& get_indices() const {
         return m_axes;
+    }
+
+    /// Function that sets the m_axes
+    TRACCC_HOST_DEVICE
+    void set_indices(const std::array<size_type, kSize>& indices) {
+        m_axes = indices;
     }
 
     /// Projection matrix that maps from the full space into the subspace.

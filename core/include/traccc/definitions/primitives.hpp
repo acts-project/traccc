@@ -24,7 +24,6 @@
 namespace traccc {
 
 using geometry_id = uint64_t;
-using event_id = uint64_t;
 using channel_id = unsigned int;
 
 using vector2 = __plugin::point2<traccc::scalar>;
