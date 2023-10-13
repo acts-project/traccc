@@ -93,17 +93,10 @@ jobs:
           # cmake -S . -B build -D TRACCC_BUILD_CUDA=TRUE -D DETRAY_BUILD_CUDA=TRUE -D VECMEM_BUILD_CUDA_LIBRARY=TRUE
           # replace next cd with your traccc path
           run: |
-            cd /home/wthompson/Work/traccc/ 
             cd ../
-            if ! [ -d traccc-build ]; then
-                mkdir traccc-build
-            fi
             cd ./traccc-build
             cmake -S ../traccc -B ./ -D CUDAToolkit_BIN_DIR=/usr/local/cuda/bin -D CMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
             cd ../traccc
-            mkdir /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/
-            touch /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/build-wrapper-dump.json
-            touch /home/wthompson/Work/actions-runner-traccc/_work/traccc/traccc/build_wrapper_output_directory/build-wrapper.log
             build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build ../traccc-build --clean-first -j $(nproc)
 
         - name: Run sonar-scanner
@@ -111,4 +104,4 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           run: |
-            sonar-scanner -X --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"
+            sonar-scanner --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"
