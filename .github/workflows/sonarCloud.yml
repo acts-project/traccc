@@ -95,9 +95,18 @@ jobs:
           run: |
             cd ../
             cd ./traccc-build
-            cmake -S ../traccc -B ./ -D CUDAToolkit_BIN_DIR=/usr/local/cuda/bin -D CMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+            cmake -S ../traccc -B ./ -D CUDAToolkit_BIN_DIR=/usr/local/cuda/bin -D CMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -D TRACCC_BUILD_CUDA=TRUE -D DETRAY_BUILD_CUDA=TRUE -D VECMEM_BUILD_CUDA_LIBRARY=TRUE -D CMAKE_CUDA_ARCHITECTURES="52;75" -D TRACCC_BUILD_TESTING=TRUE
             cd ../traccc
             build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build ../traccc-build --clean-first -j $(nproc)
+            
+        - name: Run tests to generate coverage statistics
+          env:
+            TRACCC_TEST_DATA_DIR: /home/wthompson/Work/traccc/data
+          run: |
+            find ../traccc-build/bin -maxdepth 1 -name "traccc_test*" -executable -exec '{}' ';'
+        - name: Collect coverage into one XML report
+          run: |
+            gcovr --sonarqube > coverage.xml
 
         - name: Run sonar-scanner
           env:
