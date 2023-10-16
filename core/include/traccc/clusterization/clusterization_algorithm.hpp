@@ -37,7 +37,7 @@ class clusterization_algorithm
     ///
     /// @param mr The memory resource to use for the result objects
     ///
-    clusterization_algorithm(vecmem::memory_resource& mr);
+    explicit clusterization_algorithm(vecmem::memory_resource& mr);
 
     /// Construct measurements for each detector module
     ///
