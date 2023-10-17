@@ -8,10 +8,10 @@
 // Local include(s).
 #include "traccc/io/event_map2.hpp"
 
-#include "csv/make_hit_reader.hpp"
-#include "csv/make_measurement_hit_id_reader.hpp"
-#include "csv/make_measurement_reader.hpp"
-#include "csv/make_particle_reader.hpp"
+#include "traccc/io/csv/make_hit_reader.hpp"
+#include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
+#include "traccc/io/csv/make_measurement_reader.hpp"
+#include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/io/utils.hpp"
 namespace traccc {
 

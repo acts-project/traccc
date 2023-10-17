@@ -8,9 +8,9 @@
 // Local include(s).
 #include "read_spacepoints.hpp"
 
-#include "make_hit_reader.hpp"
-#include "make_measurement_hit_id_reader.hpp"
 #include "read_measurements.hpp"
+#include "traccc/io/csv/make_hit_reader.hpp"
+#include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 
 // Detray include(s).
 #include "detray/geometry/barcode.hpp"

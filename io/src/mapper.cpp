@@ -8,10 +8,10 @@
 // Local include(s).
 #include "traccc/io/mapper.hpp"
 
-#include "csv/make_cell_reader.hpp"
-#include "csv/make_hit_reader.hpp"
-#include "csv/make_measurement_hit_id_reader.hpp"
-#include "csv/make_particle_reader.hpp"
+#include "traccc/io/csv/make_cell_reader.hpp"
+#include "traccc/io/csv/make_hit_reader.hpp"
+#include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
+#include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"

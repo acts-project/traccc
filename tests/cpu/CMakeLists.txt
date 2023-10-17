@@ -15,6 +15,7 @@ traccc_add_test(cpu
     "test_kalman_fitter.cpp"
     "test_ranges.cpp"
     "test_seeding.cpp"
+    "test_simulation.cpp"
     "test_spacepoint_formation.cpp"
     "test_track_params_estimation.cpp"
     LINK_LIBRARIES GTest::gtest_main vecmem::core 
