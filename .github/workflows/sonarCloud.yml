@@ -114,3 +114,12 @@ jobs:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           run: |
             sonar-scanner --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"
+
+        - name: Run NSYS on Most Current Code
+          env:
+            TRACCC_TEST_DATA_DIR: /home/wthompson/Work/traccc/data
+          run: |
+            TRACCC_SHA=$(git rev-parse --short "$GITHUB_SHA")
+            echo $TRACCC_SHA
+
+            /usr/local/cuda/bin/ncu --export /home/yusuf/action-runners/actions-runner-traccc-cuda/_work/traccc/cuda-nsight/traccc-cuda-$TRACCC_SHA.ncu-rep --target-processes application-only --replay-mode kernel --kernel-name-base function --launch-skip-before-match 0 --section ComputeWorkloadAnalysis --section InstructionStats --section LaunchStats --section MemoryWorkloadAnalysis --section MemoryWorkloadAnalysis_Chart --section MemoryWorkloadAnalysis_Tables --section Nvlink_Tables --section Nvlink_Topology --section Occupancy --section SchedulerStats --section SourceCounters --section SpeedOfLight --section SpeedOfLight_RooflineChart --section WarpStateStats --sampling-interval auto --sampling-max-passes 5 --sampling-buffer-size 33554432 --profile-from-start 1 --cache-control all --clock-control base --apply-rules yes --import-source no --check-exit-code yes /home/yusuf/action-runners/actions-runner-traccc-cuda/_work/traccc/traccc-build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/ --events=10 --run_cpu=1
