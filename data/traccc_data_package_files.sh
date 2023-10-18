@@ -27,8 +27,8 @@ usage() {
 }
 
 # Default script arguments.
-TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v4"}
-TRACCC_DATA_DIRECTORY_NAMES=("cca_test" "detray_simulation" "single_module"
+TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v5"}
+TRACCC_DATA_DIRECTORY_NAMES=("cca_test" "detray_simulation" "geometries" "single_module"
    "tml_detector" "tml_full" "tml_pixel_barrel" "tml_pixels" "two_modules")
 TRACCC_DATA_DIRECTORY=${TRACCC_DATA_DIRECTORY:-$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)}
 TRACCC_CMAKE_EXECUTABLE=${TRACCC_CMAKE_EXECUTABLE:-cmake}
