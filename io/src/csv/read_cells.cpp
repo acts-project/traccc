@@ -8,7 +8,7 @@
 // Local include(s).
 #include "read_cells.hpp"
 
-#include "make_cell_reader.hpp"
+#include "traccc/io/csv/make_cell_reader.hpp"
 
 // System include(s).
 #include <algorithm>

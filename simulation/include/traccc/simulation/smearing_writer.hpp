@@ -9,9 +9,10 @@
 
 // Project include(s).
 #include "traccc/io/csv/hit.hpp"
-#include "traccc/io/csv/measurement_hit_id.hpp"
 #include "traccc/io/csv/measurement.hpp"
+#include "traccc/io/csv/measurement_hit_id.hpp"
 #include "traccc/io/csv/particle.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 
 // Detray core include(s).
@@ -37,7 +38,8 @@ struct smearing_writer : detray::actor {
     using transform3_type = typename smearer_t::transform3_type;
     using scalar_type = typename transform3_type::scalar_type;
 
-    using measurement_hit_id_writer = dfe::NamedTupleCsvWriter<io::csv::measurement_hit_id>;
+    using measurement_hit_id_writer =
+        dfe::NamedTupleCsvWriter<io::csv::measurement_hit_id>;
     using measurement_writer = dfe::NamedTupleCsvWriter<io::csv::measurement>;
     using hit_writer = dfe::NamedTupleCsvWriter<io::csv::hit>;
     using particle_writer = dfe::NamedTupleCsvWriter<io::csv::particle>;
@@ -49,14 +51,14 @@ struct smearing_writer : detray::actor {
     struct state {
         state(std::size_t event_id, config&& writer_cfg,
               const std::string directory)
-            : m_particle_writer(directory + detray::detail::get_event_filename(
+            : m_particle_writer(directory + traccc::io::get_event_filename(
                                                 event_id, "-particles.csv")),
-              m_hit_writer(directory + detray::detail::get_event_filename(
+              m_hit_writer(directory + traccc::io::get_event_filename(
                                            event_id, "-hits.csv")),
-              m_meas_writer(directory + detray::detail::get_event_filename(
+              m_meas_writer(directory + traccc::io::get_event_filename(
                                             event_id, "-measurements.csv")),
               m_measurement_hit_id_writer(
-                  directory + detray::detail::get_event_filename(
+                  directory + traccc::io::get_event_filename(
                                   event_id, "-measurement-simhit-map.csv")),
               m_meas_smearer(writer_cfg.smearer) {}
 

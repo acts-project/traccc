@@ -48,10 +48,6 @@ struct subspace {
         for (size_type i = 0u; i < kSize; ++i) {
             assert((indices[i] < kFullSize) and
                    "Axis indices must be within the full space");
-            if (0u < i) {
-                assert((indices[i - 1u] < indices[i]) and
-                       "Axis indices must be unique and ordered");
-            }
         }
         for (size_type i = 0; i < kSize; ++i) {
             m_axes[i] = static_cast<size_type>(indices[i]);
