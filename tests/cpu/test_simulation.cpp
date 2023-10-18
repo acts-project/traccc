@@ -26,6 +26,9 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
+// System include(s).
+#include <filesystem>
+
 using namespace traccc;
 using namespace detray;
 
@@ -182,7 +185,8 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
 
 // Test parameters: <initial momentum, theta direction>
 class TelescopeDetectorSimulation
-    : public ::testing::TestWithParam<std::tuple<scalar, scalar>> {};
+    : public ::testing::TestWithParam<std::tuple<std::string, scalar, scalar>> {
+};
 
 TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
@@ -203,14 +207,18 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
     const auto [detector, names] = create_telescope_detector(host_mr, tel_cfg);
 
+    // Directory name
+    const std::string directory = std::get<0>(GetParam()) + "/";
+    std::filesystem::create_directory(directory);
+
     // Momentum
-    const scalar mom = std::get<0>(GetParam());
+    const scalar mom = std::get<1>(GetParam());
 
     // Create track generator
     constexpr unsigned int theta_steps{1u};
     constexpr unsigned int phi_steps{1u};
     const vector3 ori{0.f, 0.f, 0.f};
-    const scalar theta = std::get<1>(GetParam());
+    const scalar theta = std::get<2>(GetParam());
     auto generator = uniform_track_generator<free_track_parameters<transform3>>(
         theta_steps, phi_steps, ori, mom, {theta, theta}, {0.f, 0.f});
 
@@ -227,7 +235,8 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     typename writer_type::config writer_cfg{smearer};
 
     auto sim = simulator<detector_type, generator_type, writer_type>(
-        n_events, detector, std::move(generator), std::move(writer_cfg));
+        n_events, detector, std::move(generator), std::move(writer_cfg),
+        directory);
 
     // Lift step size constraints
     sim.get_config().step_constraint = std::numeric_limits<scalar>::max();
@@ -239,6 +248,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
         std::vector<io::csv::measurement> measurements;
         auto measurement_reader = io::csv::make_measurement_reader(
+            directory +
             detail::get_event_filename(i_event, "-measurements.csv"));
         io::csv::measurement io_measurement;
         while (measurement_reader.read(io_measurement)) {
@@ -251,74 +261,34 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(Simulation1, TelescopeDetectorSimulation,
-                         ::testing::Values(std::make_tuple(
-                             0.1f * detray::unit<scalar>::GeV, 0.01f)));
-
 INSTANTIATE_TEST_SUITE_P(
-    Simulation2, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(1.f * detray::unit<scalar>::GeV, 0.01f)));
-
-INSTANTIATE_TEST_SUITE_P(Simulation3, TelescopeDetectorSimulation,
-                         ::testing::Values(std::make_tuple(
-                             10.f * detray::unit<scalar>::GeV, 0.01f)));
-
-INSTANTIATE_TEST_SUITE_P(Simulation4, TelescopeDetectorSimulation,
-                         ::testing::Values(std::make_tuple(
-                             100.f * detray::unit<scalar>::GeV, 0.01f)));
-
-INSTANTIATE_TEST_SUITE_P(Simulation5, TelescopeDetectorSimulation,
-                         ::testing::Values(std::make_tuple(
-                             0.1f * detray::unit<scalar>::GeV, 0.01f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation6, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(1.f * detray::unit<scalar>::GeV, 0.01f)));
-
-INSTANTIATE_TEST_SUITE_P(Simulation7, TelescopeDetectorSimulation,
-                         ::testing::Values(std::make_tuple(
-                             10.f * detray::unit<scalar>::GeV, 0.01f)));
-
-INSTANTIATE_TEST_SUITE_P(Simulation8, TelescopeDetectorSimulation,
-                         ::testing::Values(std::make_tuple(
-                             100.f * detray::unit<scalar>::GeV, 0.01f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation9, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(0.1f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 8.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation10, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(1.f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 8.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation11, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(10.f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 8.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation12, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(100.f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 8.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation13, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(0.1f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 6.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation14, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(1.f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 6.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation15, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(10.f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 6.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    Simulation16, TelescopeDetectorSimulation,
-    ::testing::Values(std::make_tuple(100.f * detray::unit<scalar>::GeV,
-                                      detray::constant<scalar>::pi / 6.f)));
+    Simulation, TelescopeDetectorSimulation,
+    ::testing::Values(
+        std::make_tuple("0", 0.1f * detray::unit<scalar>::GeV, 0.01f),
+        std::make_tuple("1", 1.f * detray::unit<scalar>::GeV, 0.01f),
+        std::make_tuple("2", 10.f * detray::unit<scalar>::GeV, 0.01f),
+        std::make_tuple("3", 100.f * detray::unit<scalar>::GeV, 0.01f),
+        std::make_tuple("4", 0.1f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 12.f),
+        std::make_tuple("5", 1.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 12.f),
+        std::make_tuple("6", 10.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 12.f),
+        std::make_tuple("7", 100.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 12.f),
+        std::make_tuple("8", 0.1f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 8.f),
+        std::make_tuple("9", 1.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 8.f),
+        std::make_tuple("10", 10.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 8.f),
+        std::make_tuple("11", 100.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 8.f),
+        std::make_tuple("12", 0.1f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 6.f),
+        std::make_tuple("13", 1.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 6.f),
+        std::make_tuple("14", 10.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 6.f),
+        std::make_tuple("15", 100.f * detray::unit<scalar>::GeV,
+                        detray::constant<scalar>::pi / 6.f)));
