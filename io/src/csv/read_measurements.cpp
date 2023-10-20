@@ -81,6 +81,9 @@ void read_measurements(measurement_reader_output& out,
 
         result_measurements.push_back(meas);
     }
+
+    std::sort(result_measurements.begin(), result_measurements.end(),
+              measurement_sort_comp());
 }
 
 measurement_container_types::host read_measurements_container(

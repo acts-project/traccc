@@ -225,27 +225,16 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
      * Measurement Operations
      *****************************************************************/
 
-    // Copy the measurements
-    measurement_collection_types::buffer sorted_measurements_buffer(
-        m_copy->get_size(measurements), m_mr.main);
-    measurement_collection_types::device sorted_measurements(
-        sorted_measurements_buffer);
     measurement_collection_types::const_device measurements_device(
         measurements);
-    thrust::copy(thrust::device, measurements_device.begin(),
-                 measurements_device.end(), sorted_measurements.begin());
-
-    // Sort the measurements w.r.t geometry barcode
-    thrust::sort(thrust::device, sorted_measurements.begin(),
-                 sorted_measurements.end(), measurement_sort_comp());
 
     // Get copy of barcode uniques
     measurement_collection_types::buffer uniques_buffer{
-        sorted_measurements.size(), m_mr.main};
+        measurements_device.size(), m_mr.main};
     measurement_collection_types::device uniques(uniques_buffer);
 
     measurement* end = thrust::unique_copy(
-        thrust::device, sorted_measurements.begin(), sorted_measurements.end(),
+        thrust::device, measurements_device.begin(), measurements_device.end(),
         uniques.begin(), measurement_equal_comp());
     unsigned int n_modules = end - uniques.begin();
 
@@ -254,8 +243,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                                   m_mr.main};
     vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
 
-    thrust::upper_bound(thrust::device, sorted_measurements.begin(),
-                        sorted_measurements.end(), uniques.begin(),
+    thrust::upper_bound(thrust::device, measurements_device.begin(),
+                        measurements_device.end(), uniques.begin(),
                         uniques.begin() + n_modules, upper_bounds.begin(),
                         measurement_sort_comp());
 
@@ -267,7 +256,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                 upper_bounds.end(), sizes.begin());
 
     // Number of total measurements
-    const unsigned int n_total_measurements = sorted_measurements.size();
+    const unsigned int n_total_measurements = measurements_device.size();
 
     /*****************************************************************
      * Kernel1: Create barcode sequence
@@ -365,10 +354,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         if (nBlocks > 0) {
             kernels::find_tracks<detector_type, config_type>
                 <<<nBlocks, nThreads>>>(
-                    m_cfg, det_view, sorted_measurements_buffer,
-                    barcodes_buffer, upper_bounds_buffer, in_params_buffer,
-                    n_threads_buffer, step,
-                    (*global_counter_device).n_measurements_per_thread,
+                    m_cfg, det_view, measurements, barcodes_buffer,
+                    upper_bounds_buffer, in_params_buffer, n_threads_buffer,
+                    step, (*global_counter_device).n_measurements_per_thread,
                     (*global_counter_device).n_total_threads,
                     updated_params_buffer, link_map[step],
                     (*global_counter_device).n_candidates);
@@ -512,8 +500,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         nThreads = WARP_SIZE * 2;
         nBlocks = (n_tips_total + nThreads - 1) / nThreads;
         kernels::build_tracks<<<nBlocks, nThreads>>>(
-            sorted_measurements_buffer, seeds_buffer, links_buffer,
-            param_to_link_buffer, tips_buffer, track_candidates_buffer);
+            measurements, seeds_buffer, links_buffer, param_to_link_buffer,
+            tips_buffer, track_candidates_buffer);
 
         CUDA_ERROR_CHECK(cudaGetLastError());
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
