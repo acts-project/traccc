@@ -24,6 +24,7 @@
 
 // Detray include(s).
 #include "detray/core/detector.hpp"
+#include "detray/detectors/bfield.hpp"
 #include "detray/detectors/toy_metadata.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
@@ -47,10 +48,9 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
     /// Type declarations
     using host_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field,
-                         detray::host_container_types>;
+        detray::detector<detray::toy_metadata, detray::host_container_types>;
 
-    using b_field_t = typename host_detector_type::bfield_type;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::transform3,
                            detray::constrained_step<>>;
@@ -75,13 +75,13 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    auto field = detray::bfield::create_const_field(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg
         .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file)
-        .bfield_vec(B[0], B[1], B[2]);
+        .add_file(traccc::io::data_directory() + common_opts.material_file);
 
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
@@ -152,13 +152,13 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, measurements_per_event, seeds);
+            host_finding(host_det, field, measurements_per_event, seeds);
 
         std::cout << "Number of found tracks: " << track_candidates.size()
                   << std::endl;
 
         // Run fitting
-        auto track_states = host_fitting(host_det, track_candidates);
+        auto track_states = host_fitting(host_det, field, track_candidates);
 
         std::cout << "Number of fitted tracks: " << track_states.size()
                   << std::endl;

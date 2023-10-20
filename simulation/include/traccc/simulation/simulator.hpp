@@ -26,7 +26,8 @@
 
 namespace traccc {
 
-template <typename detector_t, typename track_generator_t, typename writer_t>
+template <typename detector_t, typename bfield_t, typename track_generator_t,
+          typename writer_t>
 struct simulator {
 
     using scalar_type = typename detector_t::scalar_type;
@@ -37,7 +38,7 @@ struct simulator {
     };
 
     using transform3 = typename detector_t::transform3;
-    using bfield_type = typename detector_t::bfield_type;
+    using bfield_type = bfield_t;
 
     using actor_chain_type =
         detray::actor_chain<dtuple, detray::parameter_transporter<transform3>,
@@ -45,18 +46,20 @@ struct simulator {
                             detray::parameter_resetter<transform3>, writer_t>;
 
     using navigator_type = detray::navigator<detector_t>;
-    using stepper_type = detray::rk_stepper<typename bfield_type::view_t,
-                                            transform3, detray::constrained_step<>>;
+    using stepper_type =
+        detray::rk_stepper<typename bfield_type::view_t, transform3,
+                           detray::constrained_step<>>;
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 
     simulator(std::size_t events, const detector_t& det,
-              track_generator_t&& track_gen,
+              const bfield_type& field, track_generator_t&& track_gen,
               typename writer_t::config&& writer_cfg,
               const std::string directory = "")
         : m_events(events),
           m_directory(directory),
-          m_detector(std::make_unique<detector_t>(det)),
+          m_detector(det),
+          m_field(field),
           m_track_generator(
               std::make_unique<track_generator_t>(std::move(track_gen))),
           m_writer_cfg(writer_cfg) {}
@@ -81,8 +84,8 @@ struct simulator {
 
                 writer_state.write_particle(track);
 
-                typename propagator_type::state propagation(
-                    track, m_detector->get_bfield(), *m_detector);
+                typename propagator_type::state propagation(track, m_field,
+                                                            m_detector);
 
                 propagator_type p({}, {});
 
@@ -105,7 +108,8 @@ struct simulator {
     config m_cfg;
     std::size_t m_events{0u};
     std::string m_directory = "";
-    std::unique_ptr<detector_t> m_detector;
+    const detector_t& m_detector;
+    const bfield_type& m_field;
     std::unique_ptr<track_generator_t> m_track_generator;
     typename writer_t::config m_writer_cfg;
 

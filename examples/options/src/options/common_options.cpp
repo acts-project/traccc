@@ -30,9 +30,6 @@ traccc::common_options::common_options(po::options_description& desc) {
                        "specify detector file");
     desc.add_options()("material_file", po::value<std::string>(),
                        "specify material file");
-    desc.add_options()("run_detray_geometry",
-                       po::value<bool>()->default_value(false),
-                       "generate performance result");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -52,5 +49,4 @@ void traccc::common_options::read(const po::variables_map& vm) {
     if (vm.count("material_file")) {
         material_file = vm["material_file"].as<std::string>();
     }
-    run_detray_geometry = vm["run_detray_geometry"].as<bool>();
 }

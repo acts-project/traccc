@@ -75,9 +75,9 @@ TEST_P(CkfSparseTrackTests, Run) {
     tel_cfg.module_material(mat);
     tel_cfg.mat_thickness(thickness);
     tel_cfg.pilot_track(traj);
-    tel_cfg.bfield_vec(B);
 
     auto [host_det, name_map] = create_telescope_detector(mng_mr, tel_cfg);
+    auto field = detray::bfield::create_const_field(B);
 
     // Detector view object
     auto det_view = detray::get_data(host_det);
@@ -86,17 +86,22 @@ TEST_P(CkfSparseTrackTests, Run) {
      * Generate simulation data
      ***************************/
 
-    auto generator =
+    // Track generator
+    using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
-                                       uniform_gen_t>(n_truth_tracks, origin,
-                                                      origin_stddev, mom_range,
-                                                      theta_range, phi_range);
+                                       uniform_gen_t>;
+    generator_type::configuration gen_cfg{};
+    gen_cfg.n_tracks(n_truth_tracks);
+    gen_cfg.origin(origin);
+    gen_cfg.origin_stddev(origin_stddev);
+    gen_cfg.phi_range(phi_range[0], phi_range[1]);
+    gen_cfg.theta_range(theta_range[0], theta_range[1]);
+    gen_cfg.mom_range(mom_range[0], mom_range[1]);
+    generator_type generator(gen_cfg);
 
     // Smearing value for measurements
     traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
-
-    using generator_type = decltype(generator);
     using writer_type =
         traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
 
@@ -106,10 +111,10 @@ TEST_P(CkfSparseTrackTests, Run) {
     const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
-    auto sim =
-        traccc::simulator<host_detector_type, generator_type, writer_type>(
-            n_events, host_det, std::move(generator),
-            std::move(smearer_writer_cfg), full_path);
+    auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
+                                 writer_type>(
+        n_events, host_det, field, std::move(generator),
+        std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /*****************************
@@ -198,8 +203,9 @@ TEST_P(CkfSparseTrackTests, Run) {
             mr.main, mr.host);
 
         // Run finding
-        track_candidates_cuda_buffer = device_finding(
-            det_view, navigation_buffer, measurements_buffer, seeds_buffer);
+        track_candidates_cuda_buffer =
+            device_finding(det_view, field, navigation_buffer,
+                           measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);
@@ -211,8 +217,8 @@ TEST_P(CkfSparseTrackTests, Run) {
             {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
 
         // Run fitting
-        track_states_cuda_buffer = device_fitting(det_view, navigation_buffer,
-                                                  track_candidates_cuda_buffer);
+        track_states_cuda_buffer = device_fitting(
+            det_view, field, navigation_buffer, track_candidates_cuda_buffer);
 
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);

@@ -19,7 +19,7 @@ namespace traccc {
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::host
 finding_algorithm<stepper_t, navigator_t>::operator()(
-    const detector_type& det,
+    const detector_type& det, const bfield_type& field,
     const measurement_collection_types::host& measurements,
     const bound_track_parameters_collection_types::host& seeds) const {
 
@@ -207,7 +207,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
                     // Create propagator state
                     typename propagator_type::state propagation(
-                        trk_state.filtered(), det.get_bfield(), det);
+                        trk_state.filtered(), field, det);
                     propagation._stepping.template set_constraint<
                         detray::step::constraint::e_accuracy>(
                         m_cfg.constrained_step_size);

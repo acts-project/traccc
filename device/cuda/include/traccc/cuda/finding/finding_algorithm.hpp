@@ -37,7 +37,8 @@ namespace traccc::cuda {
 template <typename stepper_t, typename navigator_t>
 class finding_algorithm
     : public algorithm<track_candidate_container_types::buffer(
-          const typename navigator_t::detector_type::detector_view_type&,
+          const typename navigator_t::detector_type::view_type&,
+          const typename stepper_t::magnetic_field_type&,
           const vecmem::data::jagged_vector_view<
               typename navigator_t::intersection_type>&,
           const typename measurement_collection_types::view&,
@@ -48,6 +49,9 @@ class finding_algorithm
 
     /// Detector type
     using detector_type = typename navigator_t::detector_type;
+
+    /// Field type
+    using bfield_type = typename stepper_t::magnetic_field_type;
 
     /// Actor types
     using interactor = detray::pointwise_material_interactor<transform3_type>;
@@ -85,7 +89,8 @@ class finding_algorithm
     /// @param navigation_buffer  Buffer for navigation candidates
     /// @param seeds     Input seeds
     track_candidate_container_types::buffer operator()(
-        const typename detector_type::detector_view_type& det_view,
+        const typename detector_type::view_type& det_view,
+        const bfield_type& field_view,
         const vecmem::data::jagged_vector_view<
             typename navigator_t::intersection_type>& navigation_buffer,
         const typename measurement_collection_types::view& measurements,

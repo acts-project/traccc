@@ -24,7 +24,6 @@ struct common_options {
     bool check_performance;
     std::string detector_file;
     std::string material_file;
-    bool run_detray_geometry;
 
     common_options(po::options_description& desc);
     void read(const po::variables_map& vm);
