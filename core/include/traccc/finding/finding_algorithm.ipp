@@ -29,30 +29,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
      * Measurement Operations
      *****************************************************************/
 
-    // Copy the measurements
-    measurement_collection_types::host sorted_measurements = measurements;
-
-    // Sort the measurements w.r.t geometry barcode
-    std::sort(sorted_measurements.begin(), sorted_measurements.end(),
-              measurement_sort_comp());
-
     // Get copy of barcode uniques
     std::vector<measurement> uniques;
-    uniques.resize(sorted_measurements.size());
+    uniques.resize(measurements.size());
 
-    auto end =
-        std::unique_copy(sorted_measurements.begin(), sorted_measurements.end(),
-                         uniques.begin(), measurement_equal_comp());
+    auto end = std::unique_copy(measurements.begin(), measurements.end(),
+                                uniques.begin(), measurement_equal_comp());
     unsigned int n_modules = end - uniques.begin();
 
     // Get upper bounds of unique elements
     std::vector<unsigned int> upper_bounds;
     upper_bounds.reserve(n_modules);
     for (unsigned int i = 0; i < n_modules; i++) {
-        auto up = std::upper_bound(sorted_measurements.begin(),
-                                   sorted_measurements.end(), uniques[i],
-                                   measurement_sort_comp());
-        upper_bounds.push_back(std::distance(sorted_measurements.begin(), up));
+        auto up = std::upper_bound(measurements.begin(), measurements.end(),
+                                   uniques[i], measurement_sort_comp());
+        upper_bounds.push_back(std::distance(measurements.begin(), up));
     }
 
     // Get the number of measurements of each module
@@ -178,7 +169,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 bound_track_parameters bound_param(in_param.surface_link(),
                                                    in_param.vector(),
                                                    in_param.covariance());
-                const auto& meas = sorted_measurements[item_id];
+                const auto& meas = measurements[item_id];
 
                 track_state<transform3_type> trk_state(meas);
 
@@ -281,7 +272,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
             auto& cand = *it;
 
-            cand = sorted_measurements.at(L.meas_idx);
+            cand = measurements.at(L.meas_idx);
 
             // Break the loop if the iterator is at the first candidate and
             // fill the seed

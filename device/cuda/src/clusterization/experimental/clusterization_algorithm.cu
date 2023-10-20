@@ -19,6 +19,10 @@
 // Vecmem include(s).
 #include <vecmem/utils/copy.hpp>
 
+// Thrust include(s).
+#include <thrust/execution_policy.h>
+#include <thrust/sort.h>
+
 namespace traccc::cuda::experimental {
 
 namespace {
@@ -140,6 +144,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         cudaMemcpyDeviceToDevice, stream));
 
     m_stream.synchronize();
+
+    // Sort the measurements w.r.t geometry barcode
+    thrust::sort(thrust::cuda::par.on(stream), new_measurements_device.begin(),
+                 new_measurements_device.end(), measurement_sort_comp());
 
     return new_measurements_buffer;
 }
