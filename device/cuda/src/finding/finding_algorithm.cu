@@ -20,6 +20,7 @@
 
 // detray include(s).
 #include "detray/core/detector.hpp"
+#include "detray/detectors/bfield.hpp"
 #include "detray/detectors/telescope_metadata.hpp"
 #include "detray/detectors/toy_metadata.hpp"
 #include "detray/masks/unbounded.hpp"
@@ -59,7 +60,7 @@ __global__ void make_barcode_sequence(
 /// CUDA kernel for running @c traccc::device::apply_interaction
 template <typename detector_t>
 __global__ void apply_interaction(
-    typename detector_t::detector_view_type det_data,
+    typename detector_t::view_type det_data,
     vecmem::data::jagged_vector_view<detray::intersection2D<
         typename detector_t::surface_type, typename detector_t::transform3>>
         nav_candidates_buffer,
@@ -94,7 +95,7 @@ __global__ void count_threads(
 /// CUDA kernel for running @c traccc::device::find_tracks
 template <typename detector_t, typename config_t>
 __global__ void find_tracks(
-    const config_t cfg, typename detector_t::detector_view_type det_data,
+    const config_t cfg, typename detector_t::view_type det_data,
     measurement_collection_types::const_view measurements_view,
     vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
     vecmem::data::vector_view<const unsigned int> upper_bounds_view,
@@ -115,10 +116,11 @@ __global__ void find_tracks(
 }
 
 /// CUDA kernel for running @c traccc::device::propagate_to_next_surface
-template <typename propagator_t, typename config_t>
+template <typename propagator_t, typename bfield_t, typename config_t>
 __global__ void propagate_to_next_surface(
     const config_t cfg,
-    typename propagator_t::detector_type::detector_view_type det_data,
+    typename propagator_t::detector_type::view_type det_data,
+    bfield_t field_data,
     vecmem::data::jagged_vector_view<typename propagator_t::intersection_type>
         nav_candidates_buffer,
     bound_track_parameters_collection_types::const_view in_params_view,
@@ -132,10 +134,10 @@ __global__ void propagate_to_next_surface(
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::propagate_to_next_surface<propagator_t, config_t>(
-        gid, cfg, det_data, nav_candidates_buffer, in_params_view, links_view,
-        step, n_candidates, out_params_view, param_to_link_view, tips_view,
-        n_out_params);
+    device::propagate_to_next_surface<propagator_t, bfield_t, config_t>(
+        gid, cfg, det_data, field_data, nav_candidates_buffer, in_params_view,
+        links_view, step, n_candidates, out_params_view, param_to_link_view,
+        tips_view, n_out_params);
 }
 
 /// CUDA kernel for running @c traccc::device::build_tracks
@@ -172,7 +174,8 @@ finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
 finding_algorithm<stepper_t, navigator_t>::operator()(
-    const typename detector_type::detector_view_type& det_view,
+    const typename detector_type::view_type& det_view,
+    const bfield_type& field_view,
     const vecmem::data::jagged_vector_view<
         typename navigator_t::intersection_type>& navigation_buffer,
     const typename measurement_collection_types::view& measurements,
@@ -399,11 +402,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         if (global_counter_host.n_candidates > 0) {
             nBlocks =
                 (global_counter_host.n_candidates + nThreads - 1) / nThreads;
-            kernels::propagate_to_next_surface<propagator_type, config_type>
+            kernels::propagate_to_next_surface<propagator_type, bfield_type,
+                                               config_type>
                 <<<nBlocks, nThreads>>>(
-                    m_cfg, det_view, navigation_buffer, updated_params_buffer,
-                    link_map[step], step, (*global_counter_device).n_candidates,
-                    out_params_buffer, param_to_link_map[step], tips_map[step],
+                    m_cfg, det_view, field_view, navigation_buffer,
+                    updated_params_buffer, link_map[step], step,
+                    (*global_counter_device).n_candidates, out_params_buffer,
+                    param_to_link_map[step], tips_map[step],
                     (*global_counter_device).n_out_params);
             CUDA_ERROR_CHECK(cudaGetLastError());
             CUDA_ERROR_CHECK(cudaDeviceSynchronize());
@@ -519,20 +524,19 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
 // Explicit template instantiation
 using toy_detector_type =
-    detray::detector<detray::toy_metadata<>, covfie::field_view,
-                     detray::device_container_types>;
-using toy_stepper_type = detray::rk_stepper<
-    covfie::field<toy_detector_type::bfield_backend_type>::view_t, transform3,
-    detray::constrained_step<>>;
+    detray::detector<detray::toy_metadata, detray::device_container_types>;
+using toy_stepper_type =
+    detray::rk_stepper<covfie::field_view<detray::bfield::const_bknd_t>,
+                       transform3, detray::constrained_step<>>;
 using toy_navigator_type = detray::navigator<const toy_detector_type>;
 template class finding_algorithm<toy_stepper_type, toy_navigator_type>;
 
 using device_detector_type =
     detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                     covfie::field_view, detray::device_container_types>;
-using rk_stepper_type = detray::rk_stepper<
-    covfie::field<device_detector_type::bfield_backend_type>::view_t,
-    transform3, detray::constrained_step<>>;
+                     detray::device_container_types>;
+using rk_stepper_type =
+    detray::rk_stepper<covfie::field_view<detray::bfield::const_bknd_t>,
+                       transform3, detray::constrained_step<>>;
 using device_navigator_type = detray::navigator<const device_detector_type>;
 template class finding_algorithm<rk_stepper_type, device_navigator_type>;
 

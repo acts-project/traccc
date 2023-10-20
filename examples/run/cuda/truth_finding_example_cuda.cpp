@@ -32,6 +32,7 @@
 
 // detray include(s).
 #include "detray/core/detector.hpp"
+#include "detray/detectors/bfield.hpp"
 #include "detray/detectors/toy_metadata.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
@@ -59,13 +60,11 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
     /// Type declarations
     using host_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field,
-                         detray::host_container_types>;
+        detray::detector<detray::toy_metadata, detray::host_container_types>;
     using device_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field_view,
-                         detray::device_container_types>;
+        detray::detector<detray::toy_metadata, detray::device_container_types>;
 
-    using b_field_t = typename host_detector_type::bfield_type;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::transform3,
                            detray::constrained_step<>>;
@@ -102,13 +101,13 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    auto field = detray::bfield::create_const_field(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg
         .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file)
-        .bfield_vec(B[0], B[1], B[2]);
+        .add_file(traccc::io::data_directory() + common_opts.material_file);
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
@@ -230,7 +229,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
             // Run finding
             track_candidates_cuda_buffer =
-                device_finding(det_view, navigation_buffer,
+                device_finding(det_view, field, navigation_buffer,
                                measurements_cuda_buffer, seeds_buffer);
         }
 
@@ -245,8 +244,9 @@ int seq_run(const traccc::finding_input_config& i_cfg,
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
 
             // Run fitting
-            track_states_cuda_buffer = device_fitting(
-                det_view, navigation_buffer, track_candidates_cuda_buffer);
+            track_states_cuda_buffer =
+                device_fitting(det_view, field, navigation_buffer,
+                               track_candidates_cuda_buffer);
         }
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);
@@ -263,8 +263,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
                                              elapsedTimes);
 
                 // Run finding
-                track_candidates =
-                    host_finding(host_det, measurements_per_event, seeds);
+                track_candidates = host_finding(host_det, field,
+                                                measurements_per_event, seeds);
             }
 
             {
@@ -272,7 +272,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
                                              elapsedTimes);
 
                 // Run fitting
-                track_states = host_fitting(host_det, track_candidates);
+                track_states = host_fitting(host_det, field, track_candidates);
             }
         }
 

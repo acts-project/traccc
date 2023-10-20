@@ -57,7 +57,7 @@ TEST(spacepoint_formation, cuda) {
     auto [det, name_map] = create_telescope_detector(mng_mr, tel_cfg);
     using device_detector_type =
         detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                         covfie::field_view, detray::device_container_types>;
+                         detray::device_container_types>;
 
     // Surface lookup
     auto surfaces = det.surface_lookup();

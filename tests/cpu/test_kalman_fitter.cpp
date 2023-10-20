@@ -63,25 +63,31 @@ TEST_P(KalmanFittingTests, Run) {
     tel_cfg.module_material(mat);
     tel_cfg.mat_thickness(thickness);
     tel_cfg.pilot_track(traj);
-    tel_cfg.bfield_vec(B);
 
     auto [det, name_map] = create_telescope_detector(host_mr, tel_cfg);
+    auto field = detray::bfield::create_const_field(B);
 
     /***************************
      * Generate simulation data
      ***************************/
 
-    auto generator =
+    // Track generator
+    using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
-                                       uniform_gen_t>(n_truth_tracks, origin,
-                                                      origin_stddev, mom_range,
-                                                      theta_range, phi_range);
+                                       uniform_gen_t>;
+    generator_type::configuration gen_cfg{};
+    gen_cfg.n_tracks(n_truth_tracks);
+    gen_cfg.origin(origin);
+    gen_cfg.origin_stddev(origin_stddev);
+    gen_cfg.phi_range(phi_range[0], phi_range[1]);
+    gen_cfg.theta_range(theta_range[0], theta_range[1]);
+    gen_cfg.mom_range(mom_range[0], mom_range[1]);
+    generator_type generator(gen_cfg);
 
     // Smearing value for measurements
     traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
 
-    using generator_type = decltype(generator);
     using writer_type =
         traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
 
@@ -91,10 +97,10 @@ TEST_P(KalmanFittingTests, Run) {
     const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
-    auto sim =
-        traccc::simulator<host_detector_type, generator_type, writer_type>(
-            n_events, det, std::move(generator), std::move(smearer_writer_cfg),
-            full_path);
+    auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
+                                 writer_type>(
+        n_events, det, field, std::move(generator),
+        std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /***************
@@ -121,7 +127,7 @@ TEST_P(KalmanFittingTests, Run) {
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
         // Run fitting
-        auto track_states = fitting(det, track_candidates);
+        auto track_states = fitting(det, field, track_candidates);
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();

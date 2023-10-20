@@ -39,6 +39,7 @@ template <typename stepper_t, typename navigator_t>
 class finding_algorithm
     : public algorithm<track_candidate_container_types::host(
           const typename navigator_t::detector_type&,
+          const typename stepper_t::magnetic_field_type&,
           const measurement_collection_types::host&,
           const bound_track_parameters_collection_types::host&)> {
 
@@ -72,6 +73,8 @@ class finding_algorithm
     using interactor_type =
         detray::pointwise_material_interactor<transform3_type>;
 
+    using bfield_type = typename stepper_t::magnetic_field_type;
+
     public:
     /// Configuration type
     using config_type = finding_config<scalar_type>;
@@ -91,7 +94,7 @@ class finding_algorithm
     /// @param measurements  Input measurements
     /// @param seeds  Input seeds
     track_candidate_container_types::host operator()(
-        const detector_type& det,
+        const detector_type& det, const bfield_type& field,
         const measurement_collection_types::host& measurements,
         const bound_track_parameters_collection_types::host& seeds) const;
 
