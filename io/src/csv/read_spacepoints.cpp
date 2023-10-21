@@ -27,7 +27,7 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
                       const geometry& geom) {
     // Read measurements
     measurement_reader_output meas_reader_out;
-    read_measurements(meas_reader_out, meas_filename);
+    read_measurements(meas_reader_out, meas_filename, false);
 
     // Measurement hit id reader
     auto mhid_reader =

@@ -22,6 +22,6 @@ namespace traccc::io::csv {
 /// @param filename The file to read the measurement data from
 ///
 void read_measurements(measurement_reader_output& out,
-                       std::string_view filename);
+                       std::string_view filename, bool do_sort = true);
 
 }  // namespace traccc::io::csv
