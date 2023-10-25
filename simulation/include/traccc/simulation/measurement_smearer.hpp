@@ -95,8 +95,7 @@ struct measurement_smearer {
                 iomeas.local0 =
                     std::max(std::abs(matrix_operator().element(meas, 0u, 0u)) +
                                  offset[0],
-                             0.f);
-
+                             static_cast<scalar_type>(0.f));
             } else {
                 iomeas.local0 =
                     matrix_operator().element(meas, 0u, 0u) + offset[0];
