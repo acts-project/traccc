@@ -144,6 +144,33 @@ class kalman_fitter {
                 auto& smoothed =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
 
+                // Get intersection on surface
+                const detray::surface<detector_type> sf{
+                    m_detector, smoothed.surface_link()};
+                using cxt_t = typename detector_type::geometry_context;
+                const cxt_t ctx{};
+                const auto free_vec =
+                    sf.bound_to_free_vector(ctx, smoothed.vector());
+
+                intersection_type sfi;
+                sfi.sf_desc = m_detector.surface(smoothed.surface_link());
+                sf.template visit_mask<detray::intersection_update>(
+                    detray::detail::ray<transform3_type>(free_vec), sfi,
+                    m_detector.transform_store());
+
+                // Apply material interaction backwardly to track state
+                typename interactor::state interactor_state;
+                interactor_state.do_multiple_scattering = false;
+                interactor{}.update(
+                    smoothed, interactor_state,
+                    static_cast<int>(detray::navigation::direction::e_backward),
+                    sf, sfi.cos_incidence_angle);
+
+                // Make new seed parameter
+                auto new_seed_params =
+                    fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
+
+                /*
                 const auto& mask_store = m_detector.mask_store();
 
                 // Get intersection on surface
@@ -172,7 +199,7 @@ class kalman_fitter {
                 // Make new seed parameter
                 auto new_seed_params =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
-
+                */
                 // inflate cov
                 /*
                 auto& new_cov = new_seed_params.covariance();
