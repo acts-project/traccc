@@ -129,7 +129,7 @@ class kalman_fitter {
         vector_type<intersection_type>&& nav_candidates = {}) {
 
         // Run the kalman filtering for a given number of iterations
-        for (std::size_t i_it = 0; i_it < m_cfg.n_iterations; i_it++) {
+        for (std::size_t i_it = 0; i_it < m_cfg.max_iterations; i_it++) {
 
             // Reset the iterator of kalman actor
             fitter_state.m_fit_actor_state.reset();
