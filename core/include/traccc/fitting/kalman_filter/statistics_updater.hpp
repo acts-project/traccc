@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/detail/chi2_cdf.hpp"
 
 namespace traccc {
 

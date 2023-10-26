@@ -13,6 +13,7 @@ traccc_add_test(cpu
     "test_clusterization_resolution.cpp"
     "test_copy.cpp"
     "test_kalman_fitter.cpp"
+    "test_pvalue.cpp"
     "test_ranges.cpp"
     "test_seeding.cpp"
     "test_simulation.cpp"

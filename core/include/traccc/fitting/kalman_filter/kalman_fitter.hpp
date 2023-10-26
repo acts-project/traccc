@@ -12,6 +12,7 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/detail/chi2_cdf.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
@@ -127,25 +128,64 @@ class kalman_fitter {
         const seed_parameters_t& seed_params, state& fitter_state,
         vector_type<intersection_type>&& nav_candidates = {}) {
 
+        scalar_type pval = 0.f;
+
         // Run the kalman filtering for a given number of iterations
-        for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
+        for (std::size_t i_it = 0; i_it < m_cfg.max_iterations; i_it++) {
 
             // Reset the iterator of kalman actor
             fitter_state.m_fit_actor_state.reset();
 
-            if (i == 0) {
+            if (i_it == 0) {
                 filter(seed_params, fitter_state, std::move(nav_candidates));
+                pval = fitter_state.m_fit_info.pval;
             }
             // From the second iteration, seed parameter is the smoothed track
             // parameter at the first surface
-            else {
-                const auto& new_seed_params =
+            else if (i_it > 0) {
+
+                auto& smoothed =
+                    fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
+
+                // Get intersection on surface
+                const detray::surface<detector_type> sf{
+                    m_detector, smoothed.surface_link()};
+                using cxt_t = typename detector_type::geometry_context;
+                const cxt_t ctx{};
+                const auto free_vec =
+                    sf.bound_to_free_vector(ctx, smoothed.vector());
+
+                intersection_type sfi;
+                sfi.sf_desc = m_detector.surface(smoothed.surface_link());
+                sf.template visit_mask<detray::intersection_update>(
+                    detray::detail::ray<transform3_type>(free_vec), sfi,
+                    m_detector.transform_store());
+
+                // Apply material interaction backwardly to track state
+                typename interactor::state interactor_state;
+                interactor_state.do_multiple_scattering = false;
+                interactor{}.update(
+                    smoothed, interactor_state,
+                    static_cast<int>(detray::navigation::direction::e_backward),
+                    sf, sfi.cos_incidence_angle);
+
+                // Make new seed parameter
+                auto new_seed_params =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
 
                 filter(new_seed_params, fitter_state,
                        std::move(nav_candidates));
+
+                const auto dpval = pval - fitter_state.m_fit_info.pval;
+                pval = fitter_state.m_fit_info.pval;
+                if (std::abs(dpval) < 1e-2) {
+                    std::cout << "N iterations: " << i_it + 1 << std::endl;
+                    return;
+                }
             }
         }
+        std::cout << "N iterations (FULL): " << m_cfg.max_iterations
+                  << std::endl;
     }
 
     /// Run the kalman fitter for an iteration
@@ -226,6 +266,12 @@ class kalman_fitter {
 
     TRACCC_HOST_DEVICE
     void update_statistics(state& fitter_state) {
+
+        // Reset the ndf and chi2 of fitter info
+        fitter_state.m_fit_info.ndf = 0.f;
+        fitter_state.m_fit_info.chi2 = 0.f;
+        fitter_state.m_fit_info.pval = 0.f;
+
         auto& fit_info = fitter_state.m_fit_info;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
@@ -242,6 +288,9 @@ class kalman_fitter {
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
         fit_info.ndf = fit_info.ndf - 5.f;
+
+        // p value
+        fit_info.pval = detail::chisquared_cdf_c(fit_info.chi2, fit_info.ndf);
     }
 
     private:

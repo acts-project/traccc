@@ -11,12 +11,18 @@
 #include "traccc/definitions/primitives.hpp"
 
 // Detray include(s).
+#include "detray/definitions/math.hpp"
 #include "detray/definitions/units.hpp"
 
 namespace traccc {
 
+namespace math_ns = detray::math_ns;
+
 template <typename scalar_t>
 using unit = detray::unit<scalar_t>;
+
+template <typename scalar_t>
+using constant = detray::constant<scalar_t>;
 
 // epsilon for float variables
 constexpr scalar float_epsilon = 1e-5;
