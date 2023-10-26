@@ -16,7 +16,7 @@ namespace traccc {
 template <typename scalar_t>
 struct fitting_config {
 
-    std::size_t n_iterations = 10;
+    std::size_t n_iterations = 2;
     scalar_t pathlimit = std::numeric_limits<scalar_t>::max();
     scalar_t overstep_tolerance = -10 * detray::unit<scalar_t>::um;
     scalar_t step_constraint = std::numeric_limits<scalar_t>::max();
