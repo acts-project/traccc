@@ -128,6 +128,8 @@ class kalman_fitter {
         const seed_parameters_t& seed_params, state& fitter_state,
         vector_type<intersection_type>&& nav_candidates = {}) {
 
+        scalar_type pval = 0.f;
+
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i_it = 0; i_it < m_cfg.max_iterations; i_it++) {
 
@@ -136,6 +138,7 @@ class kalman_fitter {
 
             if (i_it == 0) {
                 filter(seed_params, fitter_state, std::move(nav_candidates));
+                pval = fitter_state.m_fit_info.pval;
             }
             // From the second iteration, seed parameter is the smoothed track
             // parameter at the first surface
@@ -170,56 +173,19 @@ class kalman_fitter {
                 auto new_seed_params =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
 
-                /*
-                const auto& mask_store = m_detector.mask_store();
-
-                // Get intersection on surface
-                intersection_type sfi;
-                sfi.surface = m_detector.surfaces(
-                    detray::geometry::barcode{smoothed.surface_link()});
-
-                // Get free vector on surface
-                auto free_vec = m_detector.bound_to_free_vector(
-                    detray::geometry::barcode{smoothed.surface_link()},
-                    smoothed.vector());
-
-                mask_store.template visit<detray::intersection_update>(
-                    sfi.surface.mask(),
-                    detray::detail::ray<transform3_type>(free_vec), sfi,
-                    m_detector.transform_store());
-
-                // Apply material interaction backwardly to track state
-                typename interactor::state interactor_state;
-                interactor_state.do_multiple_scattering = false;
-                interactor{}.update(
-                    smoothed, interactor_state,
-                    static_cast<int>(detray::navigation::direction::e_backward),
-                    sfi, m_detector.material_store());
-
-                // Make new seed parameter
-                auto new_seed_params =
-                    fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
-                */
-                // inflate cov
-                /*
-                auto& new_cov = new_seed_params.covariance();
-
-                for (std::size_t i = 0; i < e_bound_size; i++) {
-                    for (std::size_t j = 0; j < e_bound_size; j++) {
-                        if (i == j && i != e_bound_qoverp) {
-                            getter::element(new_cov, i, j) =
-                                getter::element(new_cov, i, j) * 100.f;
-                        }
-                        if (i != j) {
-                            getter::element(new_cov, i, j) = 0.f;
-                        }
-                    }
-                }
-                */
                 filter(new_seed_params, fitter_state,
                        std::move(nav_candidates));
+
+                const auto dpval = pval - fitter_state.m_fit_info.pval;
+                pval = fitter_state.m_fit_info.pval;
+                if (std::abs(dpval) < 1e-2) {
+                    std::cout << "N iterations: " << i_it + 1 << std::endl;
+                    return;
+                }
             }
         }
+        std::cout << "N iterations (FULL): " << m_cfg.max_iterations
+                  << std::endl;
     }
 
     /// Run the kalman fitter for an iteration
