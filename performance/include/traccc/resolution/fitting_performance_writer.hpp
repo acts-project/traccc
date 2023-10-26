@@ -95,7 +95,7 @@ class fitting_performance_writer {
 
         // For the moment, only fill with the first measurements
         write_res(truth_param, trk_state.smoothed());
-        write_stat(fit_info);
+        write_stat(fit_info, track_states_per_track);
     }
 
     /// Writing caches into the file
@@ -107,7 +107,8 @@ class fitting_performance_writer {
                    const bound_track_parameters& fit_param);
 
     /// Non-templated part of the @c write(...) function
-    void write_stat(const fitter_info<transform3>& fit_info);
+    void write_stat(const fitter_info<transform3>& fit_info,
+                    const track_state_collection_types::host& track_states);
 
     /// Configuration for the tool
     config m_cfg;

@@ -20,6 +20,7 @@
 
 // detray include(s).
 #include "detray/core/detector.hpp"
+#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/telescope_metadata.hpp"
 #include "detray/detectors/toy_metadata.hpp"
@@ -102,7 +103,7 @@ __global__ void find_tracks(
     bound_track_parameters_collection_types::const_view in_params_view,
     vecmem::data::vector_view<const unsigned int> n_threads_view,
     const unsigned int step, const unsigned int& n_measurements_per_thread,
-    const unsigned int& n_total_threads,
+    const unsigned int& n_total_threads, const unsigned int n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
     vecmem::data::vector_view<candidate_link> links_view,
     unsigned int& n_candidates) {
@@ -112,7 +113,8 @@ __global__ void find_tracks(
     device::find_tracks<detector_t, config_t>(
         gid, cfg, det_data, measurements_view, barcodes_view, upper_bounds_view,
         in_params_view, n_threads_view, step, n_measurements_per_thread,
-        n_total_threads, out_params_view, links_view, n_candidates);
+        n_total_threads, n_max_candidates, out_params_view, links_view,
+        n_candidates);
 }
 
 /// CUDA kernel for running @c traccc::device::propagate_to_next_surface
@@ -341,6 +343,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         // Buffer for kalman-updated parameters spawned by the measurement
         // candidates
+
+        const unsigned int n_max_candidates =
+            std::min(n_in_params * m_cfg.max_num_branches_per_surface,
+                     seeds.size() * m_cfg.max_num_branches_per_seed);
+
         bound_track_parameters_collection_types::buffer updated_params_buffer(
             n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
 
@@ -357,7 +364,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     m_cfg, det_view, measurements, barcodes_buffer,
                     upper_bounds_buffer, in_params_buffer, n_threads_buffer,
                     step, (*global_counter_device).n_measurements_per_thread,
-                    (*global_counter_device).n_total_threads,
+                    (*global_counter_device).n_total_threads, n_max_candidates,
                     updated_params_buffer, link_map[step],
                     (*global_counter_device).n_candidates);
             CUDA_ERROR_CHECK(cudaGetLastError());
@@ -511,21 +518,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 }
 
 // Explicit template instantiation
-using toy_detector_type =
-    detray::detector<detray::toy_metadata, detray::device_container_types>;
-using toy_stepper_type =
-    detray::rk_stepper<covfie::field_view<detray::bfield::const_bknd_t>,
+using default_detector_type =
+    detray::detector<detray::default_metadata, detray::device_container_types>;
+using default_stepper_type =
+    detray::rk_stepper<covfie::field<detray::bfield::const_bknd_t>::view_t,
                        transform3, detray::constrained_step<>>;
-using toy_navigator_type = detray::navigator<const toy_detector_type>;
-template class finding_algorithm<toy_stepper_type, toy_navigator_type>;
-
-using device_detector_type =
-    detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                     detray::device_container_types>;
-using rk_stepper_type =
-    detray::rk_stepper<covfie::field_view<detray::bfield::const_bknd_t>,
-                       transform3, detray::constrained_step<>>;
-using device_navigator_type = detray::navigator<const device_detector_type>;
-template class finding_algorithm<rk_stepper_type, device_navigator_type>;
+using default_navigator_type = detray::navigator<const default_detector_type>;
+template class finding_algorithm<default_stepper_type, default_navigator_type>;
 
 }  // namespace traccc::cuda

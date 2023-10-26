@@ -81,4 +81,31 @@ void KalmanFittingTests::pull_value_tests(
 #endif  // TRACCC_HAVE_ROOT
 }
 
+void KalmanFittingTests::ndf_tests(
+    const fitter_info<transform3>& fit_info,
+    const track_state_collection_types::host& track_states_per_track) {
+
+    scalar dim_sum = 0;
+    std::size_t n_effective_states = 0;
+
+    for (const auto& state : track_states_per_track) {
+
+        if (!state.is_hole) {
+
+            dim_sum += state.get_measurement().meas_dim;
+            n_effective_states++;
+        }
+    }
+
+    // Check if the number of degree of freedoms is equal to (the sum of
+    // measurement dimensions - 5)
+    ASSERT_FLOAT_EQ(fit_info.ndf, dim_sum - 5.f);
+
+    // The number of track states is supposed to be eqaul to the number
+    // of measurements unless KF failes in the middle of propagation
+    if (n_effective_states == track_states_per_track.size()) {
+        n_success++;
+    }
+}
+
 }  // namespace traccc

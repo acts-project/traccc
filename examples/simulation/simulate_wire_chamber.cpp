@@ -20,7 +20,7 @@
 
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/detectors/create_wire_chamber.hpp"
 #include "detray/io/common/detector_writer.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
@@ -46,11 +46,11 @@ int simulate(std::string output_directory, unsigned int events,
     vecmem::host_memory_resource host_mr;
 
     /*****************************
-     * Build a toy geometry
+     * Build a wire chamber
      *****************************/
 
     // Detector type
-    using detector_type = detray::detector<detray::toy_metadata>;
+    using detector_type = detray::detector<>;
 
     // B field value and its type
     // @TODO: Set B field as argument
@@ -58,8 +58,13 @@ int simulate(std::string output_directory, unsigned int events,
     const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
     auto field = detray::bfield::create_const_field(B);
 
+    // Set Configuration
+    detray::wire_chamber_config wire_chamber_cfg{};
+    wire_chamber_cfg.n_layers(20u);
+
     // Create the toy geometry
-    const auto [det, name_map] = detray::create_toy_geometry(host_mr, {4u, 7u});
+    const auto [det, name_map] =
+        detray::create_wire_chamber(host_mr, wire_chamber_cfg);
 
     /***************************
      * Generate simulation data

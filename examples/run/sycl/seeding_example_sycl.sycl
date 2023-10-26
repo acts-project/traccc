@@ -33,6 +33,9 @@
 #include "detray/core/detector.hpp"
 #include "detray/detectors/toy_metadata.hpp"
 #include "detray/io/common/detector_reader.hpp"
+#include "detray/propagator/navigator.hpp"
+#include "detray/propagator/propagator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
 
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -56,7 +59,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
     /// Type declarations
-    using host_detector_type = detray::detector<detray::toy_metadata>;
+    using host_detector_type = detray::detector<>;
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -82,7 +85,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg
         .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file);
+        .add_file(traccc::io::data_directory() + common_opts.material_file)
+        .add_file(traccc::io::data_directory() + common_opts.grid_file);
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);

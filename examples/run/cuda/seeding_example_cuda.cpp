@@ -36,8 +36,8 @@
 
 // Detray include(s).
 #include "detray/core/detector.hpp"
+#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/toy_metadata.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -56,6 +56,7 @@
 #include <iomanip>
 #include <iostream>
 
+using namespace traccc;
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
@@ -64,9 +65,10 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     /// Type declarations
-    using host_detector_type = detray::detector<detray::toy_metadata>;
+    using host_detector_type = detray::detector<>;
     using device_detector_type =
-        detray::detector<detray::toy_metadata, detray::device_container_types>;
+        detray::detector<detray::default_metadata,
+                         detray::device_container_types>;
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
@@ -128,7 +130,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg
         .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file);
+        .add_file(traccc::io::data_directory() + common_opts.material_file)
+        .add_file(traccc::io::data_directory() + common_opts.grid_file);
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);

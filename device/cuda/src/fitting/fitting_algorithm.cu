@@ -12,6 +12,7 @@
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 
 // detray include(s).
+#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/telescope_metadata.hpp"
 #include "detray/detectors/toy_metadata.hpp"
@@ -99,24 +100,14 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 }
 
 // Explicit template instantiation
-using toy_detector_type =
-    detray::detector<detray::toy_metadata, detray::device_container_types>;
-using toy_stepper_type =
-    detray::rk_stepper<covfie::field_view<detray::bfield::const_bknd_t>,
+using default_detector_type =
+    detray::detector<detray::default_metadata, detray::device_container_types>;
+using default_stepper_type =
+    detray::rk_stepper<covfie::field<detray::bfield::const_bknd_t>::view_t,
                        transform3, detray::constrained_step<>>;
-using toy_navigator_type = detray::navigator<const toy_detector_type>;
-using toy_fitter_type = kalman_fitter<toy_stepper_type, toy_navigator_type>;
-template class fitting_algorithm<toy_fitter_type>;
-
-using device_detector_type =
-    detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                     detray::device_container_types>;
-using rk_stepper_type =
-    detray::rk_stepper<covfie::field_view<detray::bfield::const_bknd_t>,
-                       transform3, detray::constrained_step<>>;
-using device_navigator_type = detray::navigator<const device_detector_type>;
-using device_fitter_type =
-    kalman_fitter<rk_stepper_type, device_navigator_type>;
-template class fitting_algorithm<device_fitter_type>;
+using default_navigator_type = detray::navigator<const default_detector_type>;
+using default_fitter_type =
+    kalman_fitter<default_stepper_type, default_navigator_type>;
+template class fitting_algorithm<default_fitter_type>;
 
 }  // namespace traccc::cuda

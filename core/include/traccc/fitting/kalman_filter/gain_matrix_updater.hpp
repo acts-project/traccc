@@ -42,16 +42,18 @@ struct gain_matrix_updater {
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
 
+        using shape_type = typename mask_group_t::value_type::shape;
+
         const auto D = trk_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
         if (D == 1u) {
-            update<1u>(trk_state, bound_params);
+            update<1u, shape_type>(trk_state, bound_params);
         } else if (D == 2u) {
-            update<2u>(trk_state, bound_params);
+            update<2u, shape_type>(trk_state, bound_params);
         }
     }
 
-    template <size_type D>
+    template <size_type D, typename shape_t>
     TRACCC_HOST_DEVICE inline void update(
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
@@ -69,9 +71,9 @@ struct gain_matrix_updater {
         const matrix_type<D, D> I_m =
             matrix_operator().template identity<D, D>();
 
-        const matrix_type<D, e_bound_size> H =
-            meas.subs.template projector<D>();
+        matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
 
+        // Measurement data on surface
         const matrix_type<D, 1>& meas_local =
             trk_state.template measurement_local<D>();
 
@@ -86,6 +88,14 @@ struct gain_matrix_updater {
         // Set track state parameters
         trk_state.predicted().set_vector(predicted_vec);
         trk_state.predicted().set_covariance(predicted_cov);
+
+        if constexpr (std::is_same_v<shape_t, detray::line<true>> ||
+                      std::is_same_v<shape_t, detray::line<false>>) {
+
+            if (getter::element(predicted_vec, e_bound_loc0, 0u) < 0) {
+                getter::element(H, 0u, e_bound_loc0) = -1;
+            }
+        }
 
         // Spatial resolution (Measurement covariance)
         const matrix_type<D, D> V =

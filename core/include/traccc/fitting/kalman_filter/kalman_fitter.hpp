@@ -173,12 +173,13 @@ class kalman_fitter {
         // volume in the constructor
         propagation._navigation.set_volume(seed_params.surface_link().volume());
 
-        // Set overstep tolerance and stepper constraint
+        // Set overstep tolerance, stepper constraint and mask tolerance
         propagation._stepping().set_overstep_tolerance(
             m_cfg.overstep_tolerance);
         propagation._stepping
             .template set_constraint<detray::step::constraint::e_accuracy>(
                 m_cfg.step_constraint);
+        propagation.set_mask_tolerance(m_cfg.mask_tolerance);
 
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());
@@ -210,6 +211,7 @@ class kalman_fitter {
         auto& last = track_states.back();
         last.smoothed().set_vector(last.filtered().vector());
         last.smoothed().set_covariance(last.filtered().covariance());
+        last.smoothed_chi2() = last.filtered_chi2();
 
         for (typename vector_type<
                  track_state<transform3_type>>::reverse_iterator it =
