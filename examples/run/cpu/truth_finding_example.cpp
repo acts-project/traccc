@@ -24,8 +24,8 @@
 
 // Detray include(s).
 #include "detray/core/detector.hpp"
+#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/toy_metadata.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -47,8 +47,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     /// Type declarations
-    using host_detector_type =
-        detray::detector<detray::toy_metadata, detray::host_container_types>;
+    using host_detector_type = detray::detector<detray::default_metadata,
+                                                detray::host_container_types>;
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
@@ -81,7 +81,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg
         .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file);
+        .add_file(traccc::io::data_directory() + common_opts.material_file)
+        .add_file(traccc::io::data_directory() + common_opts.grid_file);
 
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);

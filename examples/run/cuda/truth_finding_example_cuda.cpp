@@ -32,8 +32,8 @@
 
 // detray include(s).
 #include "detray/core/detector.hpp"
+#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/toy_metadata.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -59,10 +59,11 @@ int seq_run(const traccc::finding_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
     /// Type declarations
-    using host_detector_type =
-        detray::detector<detray::toy_metadata, detray::host_container_types>;
+    using host_detector_type = detray::detector<detray::default_metadata,
+                                                detray::host_container_types>;
     using device_detector_type =
-        detray::detector<detray::toy_metadata, detray::device_container_types>;
+        detray::detector<detray::default_metadata,
+                         detray::device_container_types>;
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
@@ -107,7 +108,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg
         .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file);
+        .add_file(traccc::io::data_directory() + common_opts.material_file)
+        .add_file(traccc::io::data_directory() + common_opts.grid_file);
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
@@ -296,17 +298,17 @@ int seq_run(const traccc::finding_input_config& i_cfg,
             std::cout << "Track candidate matching Rate: "
                       << float(n_matches) / track_candidates.size()
                       << std::endl;
-
-            /// Statistics
-            n_found_tracks += track_candidates.size();
-            n_fitted_tracks += track_states.size();
-            n_found_tracks_cuda += track_candidates_cuda.size();
-            n_fitted_tracks_cuda += track_states_cuda.size();
         }
 
+        /// Statistics
+        n_found_tracks += track_candidates.size();
+        n_fitted_tracks += track_states.size();
+        n_found_tracks_cuda += track_candidates_cuda.size();
+        n_fitted_tracks_cuda += track_states_cuda.size();
+
         if (common_opts.check_performance) {
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_map2);
+            find_performance_writer.write(
+                traccc::get_data(track_candidates_cuda), evt_map2);
 
             for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
                 const auto& trk_states_per_track =

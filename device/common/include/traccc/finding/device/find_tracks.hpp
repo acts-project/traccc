@@ -31,6 +31,7 @@ namespace traccc::device {
 /// @param[in] step               Step index
 /// @param[in] n_measurements_per_thread  Number of measurements per thread
 /// @param[in] n_total_threads    Number of total threads
+/// @param[in] n_max_candidates   Number of maximum candidates
 /// @param[out] out_params_view   Output parameters
 /// @param[out] links_view        link container for the current step
 /// @param[out] n_candidates      The number of candidates for the current step
@@ -45,7 +46,7 @@ TRACCC_DEVICE inline void find_tracks(
     bound_track_parameters_collection_types::const_view in_params_view,
     vecmem::data::vector_view<const unsigned int> n_threads_view,
     const unsigned int step, const unsigned int& n_measurements_per_thread,
-    const unsigned int& n_total_threads,
+    const unsigned int& n_total_threads, const unsigned int& n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
     vecmem::data::vector_view<candidate_link> links_view,
     unsigned int& n_candidates);
