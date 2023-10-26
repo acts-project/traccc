@@ -274,14 +274,18 @@ endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )
 endif()
+if( TRACCC_BUILD_ALPAKA )
+   add_subdirectory( device/alpaka )
+endif()
 add_subdirectory( io )
+add_subdirectory( performance )
 add_subdirectory( plugins )
+add_subdirectory( simulation )
 
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
    find_package( Boost REQUIRED COMPONENTS program_options filesystem)
 
-   add_subdirectory( performance )
    add_subdirectory( examples )
 endif()
 

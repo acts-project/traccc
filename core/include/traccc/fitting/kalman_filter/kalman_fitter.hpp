@@ -55,6 +55,9 @@ class kalman_fitter {
     // Detector type
     using detector_type = typename navigator_t::detector_type;
 
+    // Field type
+    using bfield_type = typename stepper_t::magnetic_field_type;
+
     // Actor types
     using aborter = detray::pathlimit_aborter;
     using transporter = detray::parameter_transporter<transform3_type>;
@@ -74,8 +77,9 @@ class kalman_fitter {
     ///
     /// @param det the detector object
     TRACCC_HOST_DEVICE
-    kalman_fitter(const detector_type& det, const config_type& cfg)
-        : m_detector(det), m_cfg(cfg) {}
+    kalman_fitter(const detector_type& det, const bfield_type& field,
+                  const config_type& cfg)
+        : m_detector(det), m_field(field), m_cfg(cfg) {}
 
     /// Kalman fitter state
     struct state {
@@ -210,8 +214,7 @@ class kalman_fitter {
 
         // Create propagator state
         typename propagator_type::state propagation(
-            seed_params, m_detector.get_bfield(), m_detector,
-            std::move(nav_candidates));
+            seed_params, m_field, m_detector, std::move(nav_candidates));
 
         // @TODO: Should be removed once detray is fixed to set the
         // volume in the constructor
@@ -255,19 +258,16 @@ class kalman_fitter {
         last.smoothed().set_vector(last.filtered().vector());
         last.smoothed().set_covariance(last.filtered().covariance());
 
-        const auto& mask_store = m_detector.mask_store();
-
         for (typename vector_type<
                  track_state<transform3_type>>::reverse_iterator it =
                  track_states.rbegin() + 1;
              it != track_states.rend(); ++it) {
 
-            // Surface
-            const auto& surface = m_detector.surfaces(it->surface_link());
-
             // Run kalman smoother
-            mask_store.template visit<gain_matrix_smoother<transform3_type>>(
-                surface.mask(), *it, *(it - 1));
+            const detray::surface<detector_type> sf{m_detector,
+                                                    it->surface_link()};
+            sf.template visit_mask<gain_matrix_smoother<transform3_type>>(
+                *it, *(it - 1));
         }
     }
 
@@ -281,19 +281,16 @@ class kalman_fitter {
 
         auto& fit_info = fitter_state.m_fit_info;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
-        const auto& mask_store = m_detector.mask_store();
 
         // Fit parameter = smoothed track parameter at the first surface
         fit_info.fit_params = track_states[0].smoothed();
 
         for (const auto& trk_state : track_states) {
 
-            // Surface
-            const auto& surface = m_detector.surfaces(trk_state.surface_link());
-
-            // Update NDoF and Chi2
-            mask_store.template visit<statistics_updater<transform3_type>>(
-                surface.mask(), fit_info, trk_state);
+            const detray::surface<detector_type> sf{m_detector,
+                                                    trk_state.surface_link()};
+            sf.template visit_mask<statistics_updater<transform3_type>>(
+                fit_info, trk_state);
         }
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
@@ -306,6 +303,9 @@ class kalman_fitter {
     private:
     // Detector object
     const detector_type& m_detector;
+    // Field object
+    const bfield_type m_field;
+
     // Configuration object
     config_type m_cfg;
 };

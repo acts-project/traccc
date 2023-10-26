@@ -14,6 +14,7 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -25,7 +26,6 @@
 #include "detray/detectors/create_telescope_detector.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
-#include "detray/simulation/simulator.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -71,31 +71,49 @@ TEST_P(KalmanFittingTests, Run) {
     traccc::memory_resource mr{device_mr, &host_mr};
     vecmem::cuda::managed_memory_resource mng_mr;
 
-    host_detector_type host_det = create_telescope_detector(
-        mng_mr,
-        b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
-        rectangle, plane_positions, mat, thickness, traj);
+    detray::tel_det_config<> tel_cfg{rectangle};
+    tel_cfg.positions(plane_positions);
+    tel_cfg.module_material(mat);
+    tel_cfg.mat_thickness(thickness);
+    tel_cfg.pilot_track(traj);
+
+    auto [host_det, name_map] = create_telescope_detector(mng_mr, tel_cfg);
+    auto field = detray::bfield::create_const_field(B);
 
     /***************************
      * Generate simulation data
      ***************************/
 
-    auto generator =
+    // Track generator
+    using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
-                                       uniform_gen_t>(n_truth_tracks, origin,
-                                                      origin_stddev, mom_range,
-                                                      theta_range, phi_range);
+                                       uniform_gen_t>;
+    generator_type::configuration gen_cfg{};
+    gen_cfg.n_tracks(n_truth_tracks);
+    gen_cfg.origin(origin);
+    gen_cfg.origin_stddev(origin_stddev);
+    gen_cfg.phi_range(phi_range[0], phi_range[1]);
+    gen_cfg.theta_range(theta_range[0], theta_range[1]);
+    gen_cfg.mom_range(mom_range[0], mom_range[1]);
+    generator_type generator(gen_cfg);
 
     // Smearing value for measurements
-    detray::measurement_smearer<transform3> meas_smearer(smearing[0],
+    traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
+
+    using writer_type =
+        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
+
+    typename writer_type::config smearer_writer_cfg{meas_smearer};
 
     // Run simulator
     const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
-    auto sim = detray::simulator(n_events, host_det, std::move(generator),
-                                 meas_smearer, full_path);
+    auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
+                                 writer_type>(
+        n_events, host_det, field, std::move(generator),
+        std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /***************
@@ -149,8 +167,8 @@ TEST_P(KalmanFittingTests, Run) {
                 track_candidate_h2d(traccc::get_data(track_candidates));
 
         // Run fitting
-        track_states_cuda_buffer = device_fitting(det_view, navigation_buffer,
-                                                  track_candidates_cuda_buffer);
+        track_states_cuda_buffer = device_fitting(
+            det_view, field, navigation_buffer, track_candidates_cuda_buffer);
 
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);

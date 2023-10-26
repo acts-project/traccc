@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,12 +16,10 @@ namespace traccc::details {
 /// @name Implementation for @c traccc::details::is_same_object<measurement>
 /// @{
 
-is_same_object<alt_measurement>::is_same_object(const alt_measurement& ref,
-                                                scalar unc)
+is_same_object<measurement>::is_same_object(const measurement& ref, scalar unc)
     : m_ref(ref), m_unc(unc) {}
 
-bool is_same_object<alt_measurement>::operator()(
-    const alt_measurement& obj) const {
+bool is_same_object<measurement>::operator()(const measurement& obj) const {
 
     return (is_same_scalar(obj.local[0], m_ref.get().local[0], m_unc) &&
             is_same_scalar(obj.local[1], m_ref.get().local[1], m_unc) &&
@@ -74,7 +72,7 @@ bool is_same_object<spacepoint>::operator()(const spacepoint& obj) const {
     return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
             is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
             is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
-            is_same_object<alt_measurement>(m_ref.get().meas, m_unc)(obj.meas));
+            is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
 }
 
 /// @}
@@ -109,8 +107,8 @@ bool is_same_object<bound_track_parameters>::operator()(
 /// @{
 
 is_same_object<track_candidate_collection_types::host>::is_same_object(
-    const track_candidate_collection_types::host& ref, scalar unc)
-    : m_ref(ref), m_unc(unc) {}
+    const track_candidate_collection_types::host& ref, scalar)
+    : m_ref(ref) {}
 
 bool is_same_object<track_candidate_collection_types::host>::operator()(
     const track_candidate_collection_types::host& obj) const {

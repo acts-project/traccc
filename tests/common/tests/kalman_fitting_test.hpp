@@ -13,7 +13,8 @@
 
 // detray include(s).
 #include "detray/core/detector.hpp"
-#include "detray/detectors/detector_metadata.hpp"
+#include "detray/detectors/bfield.hpp"
+#include "detray/detectors/telescope_metadata.hpp"
 #include "detray/masks/masks.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
@@ -48,16 +49,13 @@ class KalmanFittingTests
 
     public:
     /// Type declarations
-    using host_detector_type =
-        detray::detector<detray::detector_registry::template telescope_detector<
-                             detray::rectangle2D<>>,
-                         covfie::field, detray::host_container_types>;
+    using host_detector_type = detray::detector<detray::telescope_metadata<>,
+                                                detray::host_container_types>;
     using device_detector_type =
-        detray::detector<detray::detector_registry::template telescope_detector<
-                             detray::rectangle2D<>>,
-                         covfie::field_view, detray::device_container_types>;
+        detray::detector<detray::telescope_metadata<>,
+                         detray::device_container_types>;
 
-    using b_field_t = typename host_detector_type::bfield_type;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type = detray::rk_stepper<b_field_t::view_t, transform3,
                                                detray::constrained_step<>>;
     using host_navigator_type = detray::navigator<const host_detector_type>;

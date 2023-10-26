@@ -27,20 +27,19 @@ namespace {
 vecmem::host_memory_resource resource;
 traccc::clusterization_algorithm ca(resource);
 
-cca_function_t f =
-    [](const traccc::cell_collection_types::host& cells,
-       const traccc::cell_module_collection_types::host& modules) {
-        std::map<traccc::geometry_id, vecmem::vector<traccc::alt_measurement>>
-            result;
+cca_function_t f = [](const traccc::cell_collection_types::host& cells,
+                      const traccc::cell_module_collection_types::host&
+                          modules) {
+    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
-        auto measurements = ca(cells, modules);
-        for (std::size_t i = 0; i < measurements.size(); i++) {
-            result[modules.at(measurements.at(i).module_link).module].push_back(
-                measurements.at(i));
-        }
+    auto measurements = ca(cells, modules);
+    for (std::size_t i = 0; i < measurements.size(); i++) {
+        result[modules.at(measurements.at(i).module_link).surface_link.value()]
+            .push_back(measurements.at(i));
+    }
 
-        return result;
-    };
+    return result;
+};
 }  // namespace
 
 TEST_P(ConnectedComponentAnalysisTests, Run) {

@@ -18,7 +18,7 @@ inline void aggregate_cluster(
     const cell_module_collection_types::const_device& modules,
     const vecmem::data::vector_view<unsigned short> f_view,
     const unsigned int start, const unsigned int end, const unsigned short cid,
-    alt_measurement& out, vecmem::data::vector_view<unsigned int> cell_links,
+    measurement& out, vecmem::data::vector_view<unsigned int> cell_links,
     const unsigned int link) {
 
     const vecmem::device_vector<unsigned short> f(f_view);
@@ -106,7 +106,10 @@ inline void aggregate_cluster(
      */
     out.local = mean;
     out.variance = var;
+    out.surface_link = this_module.surface_link;
     out.module_link = module_link;
+    // The following will need to be filled properly "soon".
+    out.meas_dim = 2u;
 }
 
 }  // namespace traccc::device

@@ -3,13 +3,14 @@
 #
 # Mozilla Public License Version 2.0
 #
-cca_test/
-detray_simulation/
-single_module/
-tml_detector/
-tml_full/
-tml_pixel_barrel/
-tml_pixels/
-two_modules/
+cca_test
+detray_simulation
+geometries
+single_module
+tml_detector
+tml_full
+tml_pixel_barrel
+tml_pixels
+two_modules
 *.tar.gz
 *.md5

@@ -28,18 +28,22 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/utils/utils.hpp"
   "src/utils/utils.cpp"
   # Seed finding code.
+  "include/traccc/cuda/seeding/experimental/spacepoint_formation.hpp"
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "include/traccc/cuda/seeding/seed_finding.hpp"
   "include/traccc/cuda/seeding/seeding_algorithm.hpp"
   "include/traccc/cuda/seeding/spacepoint_binning.hpp"
   # CCL code.
   "include/traccc/cuda/cca/component_connection.hpp"
+  "src/seeding/experimental/spacepoint_formation.cu"
   "src/seeding/track_params_estimation.cu"
   "src/seeding/seed_finding.cu"
   "src/seeding/spacepoint_binning.cu"
   "src/seeding/seeding_algorithm.cpp"
   "src/cca/component_connection.cu"
   # Clusterization
+  "include/traccc/cuda/clusterization/experimental/clusterization_algorithm.hpp"
+  "src/clusterization/experimental/clusterization_algorithm.cu"
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"
   # Finding

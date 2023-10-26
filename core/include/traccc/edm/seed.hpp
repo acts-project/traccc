@@ -8,6 +8,7 @@
 #pragma once
 
 #include "traccc/edm/container.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
 namespace traccc {
@@ -25,7 +26,7 @@ struct seed {
     scalar z_vertex;
 
     TRACCC_HOST_DEVICE
-    std::array<alt_measurement, 3> get_measurements(
+    std::array<measurement, 3> get_measurements(
         const spacepoint_collection_types::const_view& spacepoints_view) const {
         const spacepoint_collection_types::const_device spacepoints(
             spacepoints_view);

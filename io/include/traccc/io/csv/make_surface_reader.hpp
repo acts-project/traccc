@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "hit.hpp"
+#include "traccc/io/csv/surface.hpp"
 
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
@@ -18,11 +18,12 @@
 
 namespace traccc::io::csv {
 
-/// Set up an object for reading a CSV file containing hit information
+/// Set up an object for reading a CSV file containing surface information
 ///
 /// @param filename The name of the file to read
 /// @return An object that can read the specified CSV file
 ///
-dfe::NamedTupleCsvReader<hit> make_hit_reader(std::string_view filename);
+dfe::NamedTupleCsvReader<surface> make_surface_reader(
+    std::string_view filename);
 
 }  // namespace traccc::io::csv

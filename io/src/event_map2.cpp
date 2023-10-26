@@ -8,19 +8,18 @@
 // Local include(s).
 #include "traccc/io/event_map2.hpp"
 
-#include "csv/make_hit_reader.hpp"
-#include "csv/make_measurement_hit_id_reader.hpp"
-#include "csv/make_measurement_reader.hpp"
-#include "csv/make_particle_reader.hpp"
+#include "traccc/io/csv/make_hit_reader.hpp"
+#include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
+#include "traccc/io/csv/make_measurement_reader.hpp"
+#include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/io/utils.hpp"
-
 namespace traccc {
 
 event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
                        const std::string& hit_dir,
                        const std::string particle_dir) {
 
-    std::string io_meas_hit_id_file =
+    std::string io_measurement_hit_id_file =
         io::data_directory() + hit_dir +
         io::get_event_filename(event, "-measurement-simhit-map.csv");
 
@@ -42,16 +41,16 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
     auto preader = io::csv::make_particle_reader(io_particle_file);
 
     auto mhid_reader =
-        io::csv::make_measurement_hit_id_reader(io_meas_hit_id_file);
+        io::csv::make_measurement_hit_id_reader(io_measurement_hit_id_file);
 
-    std::vector<traccc::io::csv::measurement_hit_id> meas_hit_ids;
+    std::vector<traccc::io::csv::measurement_hit_id> measurement_hit_ids;
     std::vector<traccc::io::csv::particle> particles;
     std::vector<traccc::io::csv::hit> hits;
     std::vector<traccc::io::csv::measurement> measurements;
 
     traccc::io::csv::measurement_hit_id io_mh_id;
     while (mhid_reader.read(io_mh_id)) {
-        meas_hit_ids.push_back(io_mh_id);
+        measurement_hit_ids.push_back(io_mh_id);
     }
 
     traccc::io::csv::particle io_particle;
@@ -80,7 +79,7 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
     for (const auto& csv_meas : measurements) {
 
         // Hit index
-        const auto h_id = meas_hit_ids[csv_meas.measurement_id].hit_id;
+        const auto h_id = measurement_hit_ids[csv_meas.measurement_id].hit_id;
 
         // Make spacepoint
         const auto csv_hit = hits[h_id];
@@ -99,28 +98,19 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
         // Make measurement
         point2 local{csv_meas.local0, csv_meas.local1};
         variance2 var{csv_meas.var_local0, csv_meas.var_local1};
-        measurement meas{local, var};
-        measurement_link meas_link{csv_meas.geometry_id, meas};
+        measurement meas{local, var,
+                         detray::geometry::barcode{csv_meas.geometry_id}};
 
         // Fill measurement to truth global position and momentum map
-        meas_xp_map[meas_link] = std::make_pair(global_pos, global_mom);
+        meas_xp_map[meas] = std::make_pair(global_pos, global_mom);
 
         // Fill particle to measurement map
-        ptc_meas_map[ptc].push_back(meas_link);
+        ptc_meas_map[ptc].push_back(meas);
 
         // Fill measurement to particle map
-        auto& contributing_particles = meas_ptc_map[meas_link];
+        auto& contributing_particles = meas_ptc_map[meas];
         contributing_particles[ptc]++;
     }
-
-    /*
-    // Fill measurement to particle map
-    for (auto const& [ptc, measurements] : ptc_meas_map) {
-        for (const auto& meas : measurements) {
-            meas_ptc_map[meas][ptc]++;
-        }
-    }
-    */
 }
 
 }  // namespace traccc

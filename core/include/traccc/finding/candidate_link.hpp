@@ -28,11 +28,8 @@ struct candidate_link {
     // Index of link from the previous step
     link_index_type previous;
 
-    // Measurement link
-    typename measurement_container_types::host::link_type meas_link;
-
-    // Surface ID (Geometry ID)
-    detray::geometry::barcode surface_link;
+    // Measurement index
+    unsigned int meas_idx;
 };
 
 }  // namespace traccc

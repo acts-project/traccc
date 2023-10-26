@@ -13,6 +13,9 @@
 #include "traccc/edm/container.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 
+// Detray include(s).
+#include "detray/geometry/barcode.hpp"
+
 namespace traccc {
 
 /// Definition of a detector module
@@ -23,7 +26,7 @@ namespace traccc {
 ///
 struct cell_module {
 
-    geometry_id module = 0;
+    detray::geometry::barcode surface_link{0u};
     transform3 placement = transform3{};
     scalar threshold = 0;
 
@@ -37,7 +40,7 @@ using cell_module_collection_types = collection_types<cell_module>;
 /// Equality operator for cell module
 TRACCC_HOST_DEVICE
 inline bool operator==(const cell_module& lhs, const cell_module& rhs) {
-    return lhs.module == rhs.module;
+    return lhs.surface_link == rhs.surface_link;
 }
 
 /// Definition for one detector cell

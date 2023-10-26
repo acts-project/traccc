@@ -28,8 +28,7 @@ void read_measurements(measurement_reader_output& out, std::size_t event,
         }
         case data_format::binary: {
 
-            details::read_binary_collection<
-                alt_measurement_collection_types::host>(
+            details::read_binary_collection<measurement_collection_types::host>(
                 out.measurements,
                 data_directory() + directory.data() +
                     get_event_filename(event, "-measurements.dat"));
@@ -49,33 +48,6 @@ void read_measurements(measurement_reader_output& out,
     switch (format) {
         case data_format::csv:
             return csv::read_measurements(out, filename);
-        default:
-            throw std::invalid_argument("Unsupported data format");
-    }
-}
-
-measurement_container_types::host read_measurements_container(
-    std::size_t event, std::string_view directory, data_format format,
-    vecmem::memory_resource* mr) {
-
-    switch (format) {
-        case data_format::csv:
-            return read_measurements_container(
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.csv"),
-                format, mr);
-        default:
-            throw std::invalid_argument("Unsupported data format");
-    }
-}
-
-measurement_container_types::host read_measurements_container(
-    std::string_view filename, data_format format,
-    vecmem::memory_resource* mr) {
-
-    switch (format) {
-        case data_format::csv:
-            return csv::read_measurements_container(filename, mr);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

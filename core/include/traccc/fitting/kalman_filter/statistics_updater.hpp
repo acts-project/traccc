@@ -36,8 +36,7 @@ struct statistics_updater {
         if (!trk_state.is_hole) {
 
             // Measurement dimension
-            constexpr const unsigned int D =
-                mask_group_t::value_type::shape::meas_dim;
+            const unsigned int D = trk_state.get_measurement().meas_dim;
 
             // NDoF = NDoF + number of coordinates per measurement
             fit_info.ndf += static_cast<scalar_type>(D);

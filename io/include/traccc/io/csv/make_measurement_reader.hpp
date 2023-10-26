@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "cell.hpp"
+#include "traccc/io/csv/measurement.hpp"
 
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
@@ -18,11 +18,12 @@
 
 namespace traccc::io::csv {
 
-/// Set up an object for reading a CSV file containing cell information
+/// Set up an object for reading a CSV file containing measurement information
 ///
 /// @param filename The name of the file to read
 /// @return An object that can read the specified CSV file
 ///
-dfe::NamedTupleCsvReader<cell> make_cell_reader(std::string_view filename);
+dfe::NamedTupleCsvReader<measurement> make_measurement_reader(
+    std::string_view filename);
 
 }  // namespace traccc::io::csv

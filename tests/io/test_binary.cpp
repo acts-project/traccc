@@ -93,7 +93,7 @@ TEST(io_binary, cell) {
         ASSERT_EQ(cells_csv[i], cells_binary[i]);
     }
     for (std::size_t i = 0; i < modules_csv.size(); i++) {
-        ASSERT_EQ(modules_csv[i].module, modules_binary[i].module);
+        ASSERT_EQ(modules_csv[i].surface_link, modules_binary[i].surface_link);
         ASSERT_EQ(modules_csv[i].placement, modules_binary[i].placement);
     }
 }
@@ -180,7 +180,7 @@ TEST(io_binary, measurement) {
     traccc::io::measurement_reader_output reader_csv(&host_mr);
     traccc::io::read_measurements(reader_csv, event, measurements_directory,
                                   traccc::data_format::csv);
-    const traccc::alt_measurement_collection_types::host& measurements_csv =
+    const traccc::measurement_collection_types::host& measurements_csv =
         reader_csv.measurements;
     const traccc::cell_module_collection_types::host& modules_csv =
         reader_csv.modules;
@@ -194,7 +194,7 @@ TEST(io_binary, measurement) {
     traccc::io::measurement_reader_output reader_binary(&host_mr);
     traccc::io::read_measurements(reader_binary, event, measurements_directory,
                                   traccc::data_format::binary);
-    const traccc::alt_measurement_collection_types::host& measurements_binary =
+    const traccc::measurement_collection_types::host& measurements_binary =
         reader_binary.measurements;
     const traccc::cell_module_collection_types::host& modules_binary =
         reader_binary.modules;
@@ -226,6 +226,6 @@ TEST(io_binary, measurement) {
         ASSERT_EQ(measurements_csv[i], measurements_binary[i]);
     }
     for (std::size_t i = 0; i < modules_csv.size(); i++) {
-        ASSERT_EQ(modules_csv[i].module, modules_binary[i].module);
+        ASSERT_EQ(modules_csv[i].surface_link, modules_binary[i].surface_link);
     }
 }

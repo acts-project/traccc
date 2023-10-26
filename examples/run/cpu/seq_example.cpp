@@ -37,7 +37,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(i_cfg.detector_file);
+    auto surface_transforms =
+        traccc::io::read_geometry(common_opts.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -122,11 +123,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
              Writer
           ------------*/
 
-        if (i_cfg.check_performance) {
-            traccc::event_map evt_map(
-                event, i_cfg.detector_file, i_cfg.digitization_config_file,
-                common_opts.input_directory, common_opts.input_directory,
-                common_opts.input_directory, host_mr);
+        if (common_opts.check_performance) {
+            traccc::event_map evt_map(event, common_opts.detector_file,
+                                      i_cfg.digitization_config_file,
+                                      common_opts.input_directory,
+                                      common_opts.input_directory,
+                                      common_opts.input_directory, host_mr);
 
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
@@ -134,7 +136,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         }
     }
 
-    if (i_cfg.check_performance) {
+    if (common_opts.check_performance) {
         sd_performance_writer.finalize();
     }
 

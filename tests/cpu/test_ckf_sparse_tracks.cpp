@@ -11,6 +11,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
@@ -21,7 +22,6 @@
 #include "detray/detectors/create_telescope_detector.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
-#include "detray/simulation/simulator.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -60,31 +60,49 @@ TEST_P(CkfSparseTrackTests, Run) {
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
 
-    host_detector_type host_det = create_telescope_detector(
-        host_mr,
-        b_field_t(b_field_t::backend_t::configuration_t{B[0], B[1], B[2]}),
-        rectangle, plane_positions, mat, thickness, traj);
+    detray::tel_det_config<> tel_cfg{rectangle};
+    tel_cfg.positions(plane_positions);
+    tel_cfg.module_material(mat);
+    tel_cfg.mat_thickness(thickness);
+    tel_cfg.pilot_track(traj);
+
+    auto [host_det, name_map] = create_telescope_detector(host_mr, tel_cfg);
+    auto field = detray::bfield::create_const_field(B);
 
     /***************************
      * Generate simulation data
      ***************************/
 
-    auto generator =
+    // Track generator
+    using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
-                                       uniform_gen_t>(n_truth_tracks, origin,
-                                                      origin_stddev, mom_range,
-                                                      theta_range, phi_range);
+                                       uniform_gen_t>;
+    generator_type::configuration gen_cfg{};
+    gen_cfg.n_tracks(n_truth_tracks);
+    gen_cfg.origin(origin);
+    gen_cfg.origin_stddev(origin_stddev);
+    gen_cfg.phi_range(phi_range[0], phi_range[1]);
+    gen_cfg.theta_range(theta_range[0], theta_range[1]);
+    gen_cfg.mom_range(mom_range[0], mom_range[1]);
+    generator_type generator(gen_cfg);
 
     // Smearing value for measurements
-    detray::measurement_smearer<transform3> meas_smearer(smearing[0],
+    traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
                                                          smearing[1]);
+
+    using writer_type =
+        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
+
+    typename writer_type::config smearer_writer_cfg{meas_smearer};
 
     // Run simulator
     const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
-    auto sim = detray::simulator(n_events, host_det, std::move(generator),
-                                 meas_smearer, full_path);
+    auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
+                                 writer_type>(
+        n_events, host_det, field, std::move(generator),
+        std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /*****************************
@@ -127,18 +145,20 @@ TEST_P(CkfSparseTrackTests, Run) {
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
         // Read measurements
-        traccc::measurement_container_types::host measurements_per_event =
-            traccc::io::read_measurements_container(
-                i_evt, path, traccc::data_format::csv, &host_mr);
+        traccc::io::measurement_reader_output readOut(&host_mr);
+        traccc::io::read_measurements(readOut, i_evt, path,
+                                      traccc::data_format::csv);
+        traccc::measurement_collection_types::host& measurements_per_event =
+            readOut.measurements;
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, measurements_per_event, seeds);
+            host_finding(host_det, field, measurements_per_event, seeds);
 
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
         // Run fitting
-        auto track_states = host_fitting(host_det, track_candidates);
+        auto track_states = host_fitting(host_det, field, track_candidates);
 
         ASSERT_EQ(track_states.size(), n_truth_tracks);
 
