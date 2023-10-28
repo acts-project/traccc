@@ -34,7 +34,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
 
     /// Plane material and thickness
     static const inline detray::silicon_tml<scalar> mat = {};
-    static constexpr scalar thickness = 1.0 * detray::unit<scalar>::mm;
+    static constexpr scalar thickness = 0.5 * detray::unit<scalar>::mm;
 
     // Rectangle mask for the telescope geometry
     static constexpr detray::mask<detray::rectangle2D<>> rectangle{0u, 100000.f,
@@ -42,7 +42,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
-        100 * detray::unit<scalar>::um, 100 * detray::unit<scalar>::um};
+        50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um};
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
