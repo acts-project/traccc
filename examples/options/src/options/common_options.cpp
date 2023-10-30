@@ -28,8 +28,10 @@ traccc::common_options::common_options(po::options_description& desc) {
                        "generate performance result");
     desc.add_options()("detector_file", po::value<std::string>()->required(),
                        "specify detector file");
-    desc.add_options()("material_file", po::value<std::string>(),
+    desc.add_options()("material_file", po::value<std::string>()->required(),
                        "specify material file");
+    desc.add_options()("grid_file", po::value<std::string>()->required(),
+                       "specify surface grid file");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -48,5 +50,8 @@ void traccc::common_options::read(const po::variables_map& vm) {
     detector_file = vm["detector_file"].as<std::string>();
     if (vm.count("material_file")) {
         material_file = vm["material_file"].as<std::string>();
+    }
+    if (vm.count("grid_file")) {
+        grid_file = vm["grid_file"].as<std::string>();
     }
 }

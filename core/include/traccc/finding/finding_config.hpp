@@ -16,7 +16,7 @@ namespace traccc {
 template <typename scalar_t>
 struct finding_config {
     /// @NOTE: This paramter might be removed
-    unsigned int max_num_branches_per_seed = 10;
+    unsigned int max_num_branches_per_seed = 100;
 
     /// Maximum number of branches per surface
     unsigned int max_num_branches_per_surface = 10;

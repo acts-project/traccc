@@ -25,7 +25,7 @@ TRACCC_DEVICE inline void find_tracks(
     bound_track_parameters_collection_types::const_view in_params_view,
     vecmem::data::vector_view<const unsigned int> n_threads_view,
     const unsigned int step, const unsigned int& n_measurements_per_thread,
-    const unsigned int& n_total_threads,
+    const unsigned int& n_total_threads, const unsigned int& n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
     vecmem::data::vector_view<candidate_link> links_view,
     unsigned int& n_candidates) {
@@ -120,9 +120,14 @@ TRACCC_DEVICE inline void find_tracks(
             // Add measurement candidates to link
             vecmem::device_atomic_ref<unsigned int> num_candidates(
                 n_candidates);
+
             const unsigned int l_pos = num_candidates.fetch_add(1);
 
-            // @TODO; Consider max_num_branches_per_surface
+            if (l_pos >= n_max_candidates) {
+                n_candidates = n_max_candidates;
+                return;
+            }
+
             links[l_pos] = {{previous_step, in_param_id}, meas_idx};
 
             out_params[l_pos] = trk_state.filtered();

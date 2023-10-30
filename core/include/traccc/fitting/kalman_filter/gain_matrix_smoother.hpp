@@ -48,16 +48,18 @@ struct gain_matrix_smoother {
         track_state<algebra_t>& cur_state,
         const track_state<algebra_t>& next_state) {
 
+        using shape_type = typename mask_group_t::value_type::shape;
+
         const auto D = cur_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
         if (D == 1u) {
-            smoothe<1u>(cur_state, next_state);
+            smoothe<1u, shape_type>(cur_state, next_state);
         } else if (D == 2u) {
-            smoothe<2u>(cur_state, next_state);
+            smoothe<2u, shape_type>(cur_state, next_state);
         }
     }
 
-    template <size_type D>
+    template <size_type D, typename shape_t>
     TRACCC_HOST_DEVICE inline void smoothe(
         track_state<algebra_t>& cur_state,
         const track_state<algebra_t>& next_state) const {
@@ -110,8 +112,16 @@ struct gain_matrix_smoother {
         cur_state.smoothed().set_vector(smt_vec);
         cur_state.smoothed().set_covariance(smt_cov);
 
-        const matrix_type<D, e_bound_size> H =
-            meas.subs.template projector<D>();
+        matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
+
+        // Correct sign for line detector
+        if constexpr (std::is_same_v<shape_t, detray::line<true>> ||
+                      std::is_same_v<shape_t, detray::line<false>>) {
+
+            if (getter::element(smt_vec, e_bound_loc0, 0u) < 0) {
+                getter::element(H, 0u, e_bound_loc0) = -1;
+            }
+        }
 
         // Calculate smoothed chi square
         const matrix_type<D, 1>& meas_local =
