@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../utils/utils.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -162,16 +163,9 @@ __global__ void build_tracks(
 
 template <typename stepper_t, typename navigator_t>
 finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
-    const config_type& cfg, const traccc::memory_resource& mr)
-    : m_cfg(cfg), m_mr(mr) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::cuda::copy>();
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-};
+    const config_type& cfg, const traccc::memory_resource& mr,
+    vecmem::copy& copy, stream& str)
+    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_stream(str){};
 
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
@@ -183,16 +177,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     const typename measurement_collection_types::view& measurements,
     const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
 
+    // Get a convenience variable for the stream that we'll be using.
+    cudaStream_t stream = details::get_stream(m_stream);
+
     // Copy setup
-    m_copy->setup(seeds_buffer);
-    m_copy->setup(navigation_buffer);
+    m_copy.setup(seeds_buffer);
+    m_copy.setup(navigation_buffer);
 
     // Prepare input parameters with seeds
     bound_track_parameters_collection_types::buffer in_params_buffer(
-        m_copy->get_size(seeds_buffer), m_mr.main);
+        m_copy.get_size(seeds_buffer), m_mr.main);
     bound_track_parameters_collection_types::device in_params(in_params_buffer);
     bound_track_parameters_collection_types::device seeds(seeds_buffer);
-    thrust::copy(thrust::device, seeds.begin(), seeds.end(), in_params.begin());
+    thrust::copy(thrust::cuda::par.on(stream), seeds.begin(), seeds.end(),
+                 in_params.begin());
 
     // Create a map for links
     std::map<unsigned int, vecmem::data::vector_buffer<candidate_link>>
@@ -236,8 +234,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     measurement_collection_types::device uniques(uniques_buffer);
 
     measurement* end = thrust::unique_copy(
-        thrust::device, measurements_device.begin(), measurements_device.end(),
-        uniques.begin(), measurement_equal_comp());
+        thrust::cuda::par.on(stream), measurements_device.begin(),
+        measurements_device.end(), uniques.begin(), measurement_equal_comp());
     unsigned int n_modules = end - uniques.begin();
 
     // Get upper bounds of unique elements
@@ -245,17 +243,18 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                                   m_mr.main};
     vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
 
-    thrust::upper_bound(thrust::device, measurements_device.begin(),
-                        measurements_device.end(), uniques.begin(),
-                        uniques.begin() + n_modules, upper_bounds.begin(),
-                        measurement_sort_comp());
+    thrust::upper_bound(thrust::cuda::par.on(stream),
+                        measurements_device.begin(), measurements_device.end(),
+                        uniques.begin(), uniques.begin() + n_modules,
+                        upper_bounds.begin(), measurement_sort_comp());
 
     // Get the number of measurements of each module
     vecmem::data::vector_buffer<unsigned int> sizes_buffer{n_modules,
                                                            m_mr.main};
     vecmem::device_vector<unsigned int> sizes(sizes_buffer);
-    thrust::adjacent_difference(thrust::device, upper_bounds.begin(),
-                                upper_bounds.end(), sizes.begin());
+    thrust::adjacent_difference(thrust::cuda::par.on(stream),
+                                upper_bounds.begin(), upper_bounds.end(),
+                                sizes.begin());
 
     // Number of total measurements
     const unsigned int n_total_measurements = measurements_device.size();
@@ -270,19 +269,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     unsigned int nThreads = WARP_SIZE * 2;
     unsigned int nBlocks = (barcodes_buffer.size() + nThreads - 1) / nThreads;
 
-    kernels::make_barcode_sequence<<<nBlocks, nThreads>>>(uniques_buffer,
-                                                          barcodes_buffer);
+    kernels::make_barcode_sequence<<<nBlocks, nThreads, 0, stream>>>(
+        uniques_buffer, barcodes_buffer);
 
     CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     for (unsigned int step = 0; step < m_cfg.max_track_candidates_per_track;
          step++) {
 
         // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpy(
-            &global_counter_host, global_counter_device.get(),
-            sizeof(device::finding_global_counter), cudaMemcpyDeviceToHost));
+        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
+                                         global_counter_device.get(),
+                                         sizeof(device::finding_global_counter),
+                                         cudaMemcpyDeviceToHost, stream));
+
+        m_stream.synchronize();
 
         // Set the number of input parameters
         const unsigned int n_in_params = (step == 0)
@@ -295,8 +296,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         }
 
         // Reset the global counter
-        CUDA_ERROR_CHECK(cudaMemset(global_counter_device.get(), 0,
-                                    sizeof(device::finding_global_counter)));
+        CUDA_ERROR_CHECK(cudaMemsetAsync(global_counter_device.get(), 0,
+                                         sizeof(device::finding_global_counter),
+                                         stream));
 
         /*****************************************************************
          * Kernel2: Apply material interaction
@@ -304,10 +306,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         nThreads = WARP_SIZE * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
-        kernels::apply_interaction<detector_type><<<nBlocks, nThreads>>>(
-            det_view, navigation_buffer, n_in_params, in_params_buffer);
+        kernels::apply_interaction<detector_type>
+            <<<nBlocks, nThreads, 0, stream>>>(det_view, navigation_buffer,
+                                               n_in_params, in_params_buffer);
         CUDA_ERROR_CHECK(cudaGetLastError());
-        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
         /*****************************************************************
          * Kernel3: Count the number of threads per parameter
@@ -319,27 +321,29 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         nThreads = WARP_SIZE * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
 
-        kernels::count_threads<<<nBlocks, nThreads>>>(
+        kernels::count_threads<<<nBlocks, nThreads, 0, stream>>>(
             m_cfg, in_params_buffer, barcodes_buffer, sizes_buffer, n_in_params,
             n_total_measurements, n_threads_buffer,
             (*global_counter_device).n_measurements_per_thread,
             (*global_counter_device).n_total_threads);
         CUDA_ERROR_CHECK(cudaGetLastError());
-        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
+        // Global counter object: Device -> Host
+        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
+                                         global_counter_device.get(),
+                                         sizeof(device::finding_global_counter),
+                                         cudaMemcpyDeviceToHost, stream));
+
+        m_stream.synchronize();
 
         // Get Prefix Sum of n_thread vector
         vecmem::device_vector<unsigned int> n_threads(n_threads_buffer);
-        thrust::inclusive_scan(thrust::device, n_threads.begin(),
+        thrust::inclusive_scan(thrust::cuda::par.on(stream), n_threads.begin(),
                                n_threads.end(), n_threads.begin());
 
         /*****************************************************************
          * Kernel4: Find valid tracks
          *****************************************************************/
-
-        // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpy(
-            &global_counter_host, global_counter_device.get(),
-            sizeof(device::finding_global_counter), cudaMemcpyDeviceToHost));
 
         // Buffer for kalman-updated parameters spawned by the measurement
         // candidates
@@ -354,13 +358,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         // Create the link map
         link_map[step] = {n_in_params * m_cfg.max_num_branches_per_surface,
                           m_mr.main};
-        m_copy->setup(link_map[step]);
+        m_copy.setup(link_map[step]);
         nBlocks =
             (global_counter_host.n_total_threads + nThreads - 1) / nThreads;
 
         if (nBlocks > 0) {
             kernels::find_tracks<detector_type, config_type>
-                <<<nBlocks, nThreads>>>(
+                <<<nBlocks, nThreads, 0, stream>>>(
                     m_cfg, det_view, measurements, barcodes_buffer,
                     upper_bounds_buffer, in_params_buffer, n_threads_buffer,
                     step, (*global_counter_device).n_measurements_per_thread,
@@ -368,16 +372,19 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     updated_params_buffer, link_map[step],
                     (*global_counter_device).n_candidates);
             CUDA_ERROR_CHECK(cudaGetLastError());
-            CUDA_ERROR_CHECK(cudaDeviceSynchronize());
         }
+
+        // Global counter object: Device -> Host
+        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
+                                         global_counter_device.get(),
+                                         sizeof(device::finding_global_counter),
+                                         cudaMemcpyDeviceToHost, stream));
+
+        m_stream.synchronize();
+
         /*****************************************************************
          * Kernel5: Propagate to the next surface
          *****************************************************************/
-
-        // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpy(
-            &global_counter_host, global_counter_device.get(),
-            sizeof(device::finding_global_counter), cudaMemcpyDeviceToHost));
 
         // Buffer for out parameters for the next step
         bound_track_parameters_collection_types::buffer out_params_buffer(
@@ -385,12 +392,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         // Create the param to link ID map
         param_to_link_map[step] = {global_counter_host.n_candidates, m_mr.main};
-        m_copy->setup(param_to_link_map[step]);
+        m_copy.setup(param_to_link_map[step]);
 
         // Create the tip map
         tips_map[step] = {global_counter_host.n_candidates, m_mr.main,
                           vecmem::data::buffer_type::resizable};
-        m_copy->setup(tips_map[step]);
+        m_copy.setup(tips_map[step]);
 
         nThreads = WARP_SIZE * 2;
 
@@ -399,20 +406,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 (global_counter_host.n_candidates + nThreads - 1) / nThreads;
             kernels::propagate_to_next_surface<propagator_type, bfield_type,
                                                config_type>
-                <<<nBlocks, nThreads>>>(
+                <<<nBlocks, nThreads, 0, stream>>>(
                     m_cfg, det_view, field_view, navigation_buffer,
                     updated_params_buffer, link_map[step], step,
                     (*global_counter_device).n_candidates, out_params_buffer,
                     param_to_link_map[step], tips_map[step],
                     (*global_counter_device).n_out_params);
             CUDA_ERROR_CHECK(cudaGetLastError());
-            CUDA_ERROR_CHECK(cudaDeviceSynchronize());
         }
 
-        // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpy(
-            &global_counter_host, global_counter_device.get(),
-            sizeof(device::finding_global_counter), cudaMemcpyDeviceToHost));
+        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
+                                         global_counter_device.get(),
+                                         sizeof(device::finding_global_counter),
+                                         cudaMemcpyDeviceToHost, stream));
+
+        m_stream.synchronize();
 
         // Fill the candidate size vector
         n_candidates_per_step.push_back(global_counter_host.n_candidates);
@@ -425,7 +433,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // Create link buffer
     vecmem::data::jagged_vector_buffer<candidate_link> links_buffer(
         n_candidates_per_step, m_mr.main, m_mr.host);
-    m_copy->setup(links_buffer);
+    m_copy.setup(links_buffer);
 
     // Copy link map to link buffer
     const auto n_steps = n_candidates_per_step.size();
@@ -435,14 +443,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         vecmem::device_vector<candidate_link> out(
             *(links_buffer.host_ptr() + it));
 
-        thrust::copy(thrust::device, in.begin(),
+        thrust::copy(thrust::cuda::par.on(stream), in.begin(),
                      in.begin() + n_candidates_per_step[it], out.begin());
     }
 
     // Create param_to_link
     vecmem::data::jagged_vector_buffer<unsigned int> param_to_link_buffer(
         n_parameters_per_step, m_mr.main, m_mr.host);
-    m_copy->setup(param_to_link_buffer);
+    m_copy.setup(param_to_link_buffer);
 
     // Copy param_to_link map to param_to_link buffer
     for (unsigned int it = 0; it < n_steps; it++) {
@@ -451,7 +459,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         vecmem::device_vector<unsigned int> out(
             *(param_to_link_buffer.host_ptr() + it));
 
-        thrust::copy(thrust::device, in.begin(),
+        thrust::copy(thrust::cuda::par.on(stream), in.begin(),
                      in.begin() + n_parameters_per_step[it], out.begin());
     }
 
@@ -459,7 +467,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     std::vector<unsigned int> n_tips_per_step;
     n_tips_per_step.reserve(n_steps);
     for (unsigned int it = 0; it < n_steps; it++) {
-        n_tips_per_step.push_back(m_copy->get_size(tips_map[it]));
+        n_tips_per_step.push_back(m_copy.get_size(tips_map[it]));
     }
 
     // Copy tips_map into the tips vector (D->D)
@@ -467,7 +475,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         std::accumulate(n_tips_per_step.begin(), n_tips_per_step.end(), 0);
     vecmem::data::vector_buffer<typename candidate_link::link_index_type>
         tips_buffer{n_tips_total, m_mr.main};
-    m_copy->setup(tips_buffer);
+    m_copy.setup(tips_buffer);
 
     vecmem::device_vector<typename candidate_link::link_index_type> tips(
         tips_buffer);
@@ -481,8 +489,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         const unsigned int n_tips = n_tips_per_step[it];
         if (n_tips > 0) {
-            thrust::copy(thrust::device, in.begin(), in.begin() + n_tips,
-                         tips.begin() + prefix_sum);
+            thrust::copy(thrust::cuda::par.on(stream), in.begin(),
+                         in.begin() + n_tips, tips.begin() + prefix_sum);
             prefix_sum += n_tips;
         }
     }
@@ -498,21 +506,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                   m_cfg.max_track_candidates_per_track),
          m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
 
-    m_copy->setup(track_candidates_buffer.headers);
-    m_copy->setup(track_candidates_buffer.items);
+    m_copy.setup(track_candidates_buffer.headers);
+    m_copy.setup(track_candidates_buffer.items);
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
         nThreads = WARP_SIZE * 2;
         nBlocks = (n_tips_total + nThreads - 1) / nThreads;
-        kernels::build_tracks<<<nBlocks, nThreads>>>(
+        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
             measurements, seeds_buffer, links_buffer, param_to_link_buffer,
             tips_buffer, track_candidates_buffer);
 
         CUDA_ERROR_CHECK(cudaGetLastError());
-        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     }
+    m_stream.synchronize();
 
     return track_candidates_buffer;
 }

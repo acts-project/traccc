@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../utils/utils.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/fitting/device/fit.hpp"
@@ -45,16 +46,9 @@ __global__ void fit(
 
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
-    const config_type& cfg, const traccc::memory_resource& mr)
-    : m_cfg(cfg), m_mr(mr) {
-
-    // Initialize m_copy ptr based on memory resources that were given
-    if (mr.host) {
-        m_copy = std::make_unique<vecmem::cuda::copy>();
-    } else {
-        m_copy = std::make_unique<vecmem::copy>();
-    }
-};
+    const config_type& cfg, const traccc::memory_resource& mr,
+    vecmem::copy& copy, stream& str)
+    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_stream(str){};
 
 template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
@@ -65,23 +59,26 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename track_candidate_container_types::const_view&
         track_candidates_view) const {
 
+    // Get a convenience variable for the stream that we'll be using.
+    cudaStream_t stream = details::get_stream(m_stream);
+
     // Number of tracks
     const track_candidate_container_types::const_device::header_vector::
-        size_type n_tracks = m_copy->get_size(track_candidates_view.headers);
+        size_type n_tracks = m_copy.get_size(track_candidates_view.headers);
 
     // Get the sizes of the track candidates in each track
     const std::vector<track_candidate_container_types::const_device::
                           item_vector::value_type::size_type>
-        candidate_sizes = m_copy->get_sizes(track_candidates_view.items);
+        candidate_sizes = m_copy.get_sizes(track_candidates_view.items);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 
-    m_copy->setup(track_states_buffer.headers);
-    m_copy->setup(track_states_buffer.items);
-    m_copy->setup(navigation_buffer);
+    m_copy.setup(track_states_buffer.headers);
+    m_copy.setup(track_states_buffer.items);
+    m_copy.setup(navigation_buffer);
 
     // Calculate the number of threads and thread blocks to run the track
     // fitting
@@ -90,12 +87,14 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
         // Run the track fitting
-        kernels::fit<fitter_t><<<nBlocks, nThreads>>>(
+        kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
             det_view, field_view, m_cfg, navigation_buffer,
             track_candidates_view, track_states_buffer);
         CUDA_ERROR_CHECK(cudaGetLastError());
-        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     }
+
+    m_stream.synchronize();
+
     return track_states_buffer;
 }
 

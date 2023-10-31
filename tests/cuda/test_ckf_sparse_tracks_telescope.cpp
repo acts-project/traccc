@@ -33,7 +33,7 @@
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -140,8 +140,11 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
      * Do the reconstruction
      *****************************/
 
+    // Stream object
+    traccc::cuda::stream stream;
+
     // Copy objects
-    vecmem::cuda::copy copy;
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
         measurement_h2d{mr, copy};
@@ -164,13 +167,13 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
     // Finding algorithm object
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr);
+        device_finding(cfg, mr, copy, stream);
 
     // Fitting algorithm object
     typename traccc::cuda::fitting_algorithm<device_fitter_type>::config_type
         fit_cfg;
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr);
+    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, copy, stream);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
