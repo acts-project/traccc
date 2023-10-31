@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
@@ -40,9 +41,12 @@ class fitting_algorithm
 
     /// Constructor for the fitting algorithm
     ///
-    /// @param mr The memory resource to use
-    fitting_algorithm(const config_type& cfg,
-                      const traccc::memory_resource& mr);
+    /// @param cfg  Configuration object
+    /// @param mr   The memory resource to use
+    /// @param copy Copy object
+    /// @param str  Cuda stream object
+    fitting_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
+                      vecmem::copy& copy, stream& str);
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(
@@ -58,8 +62,10 @@ class fitting_algorithm
     config_type m_cfg;
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
-    /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
+    /// The copy object to use
+    vecmem::copy& m_copy;
+    /// The CUDA stream to use
+    stream& m_stream;
 };
 
 }  // namespace traccc::cuda

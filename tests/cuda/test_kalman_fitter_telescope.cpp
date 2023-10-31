@@ -33,7 +33,7 @@
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -127,7 +127,11 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
      * Run fitting
      ***************/
 
-    vecmem::cuda::copy copy;
+    // Stream object
+    traccc::cuda::stream stream;
+
+    // Copy objects
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     traccc::device::container_h2d_copy_alg<
         traccc::track_candidate_container_types>
@@ -142,8 +146,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Fitting algorithm object
     typename traccc::cuda::fitting_algorithm<device_fitter_type>::config_type
         fit_cfg;
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr);
+    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, copy, stream);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
