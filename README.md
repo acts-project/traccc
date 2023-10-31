@@ -12,7 +12,7 @@ Demonstrator tracking chain for accelerators.
 | **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
 |                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
 |                    | Track param estimation | ✅  | ✅   | ✅   | ⚪      |
-|                    | Combinatorial KF       | 🟡  | 🟡   | ⚪   | ⚪      |
+|                    | Combinatorial KF       | ✅  | ✅   | 🟡   | ⚪      |
 | **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
