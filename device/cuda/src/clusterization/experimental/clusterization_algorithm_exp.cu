@@ -23,16 +23,18 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
 
-namespace traccc::cuda::experimental {
-
 namespace {
+
 /// These indices in clusterization will only range from 0 to
 /// max_cells_per_partition, so we only need a short.
 using index_t = unsigned short;
 
 static constexpr int TARGET_CELLS_PER_THREAD = 8;
 static constexpr int MAX_CELLS_PER_THREAD = 12;
+
 }  // namespace
+
+namespace traccc::cuda::experimental {
 
 namespace kernels {
 

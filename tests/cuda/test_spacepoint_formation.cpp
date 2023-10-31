@@ -72,8 +72,8 @@ TEST(spacepoint_formation, cuda) {
     measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
 
     // Run spacepoint formation
-    cuda::experimental::spacepoint_formation<device_detector_type> sp_formation(
-        mr, copy, stream);
+    traccc::cuda::experimental::spacepoint_formation<device_detector_type>
+        sp_formation(mr, copy, stream);
     auto spacepoints_buffer =
         sp_formation(detray::get_data(det), vecmem::get_data(measurements));
 
