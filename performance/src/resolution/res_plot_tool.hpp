@@ -12,6 +12,7 @@
 #include "traccc/resolution/res_plot_tool_config.hpp"
 
 // Project include(s).
+#include "traccc/edm/particle.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
 // System include(s).
@@ -28,8 +29,16 @@ class res_plot_tool {
     struct res_plot_cache {
 #ifdef TRACCC_HAVE_ROOT
         // Residuals and pulls for parameters
-        std::map<std::string, std::unique_ptr<TH1> > residuals;
-        std::map<std::string, std::unique_ptr<TH1> > pulls;
+        std::map<std::string, std::unique_ptr<TH1>> residuals;
+        std::map<std::string, std::unique_ptr<TH1>> pulls;
+        std::map<std::string, std::shared_ptr<TH1>> resolutions_eta;
+        std::map<std::string, std::shared_ptr<TH1>> resolutions_pT;
+        std::map<std::string, std::unique_ptr<TH2>> residuals_eta;
+        std::map<std::string, std::unique_ptr<TH2>> residuals_pT;
+        std::map<std::string, std::map<std::size_t, std::shared_ptr<TH1>>>
+            residuals_per_eta;
+        std::map<std::string, std::map<std::size_t, std::shared_ptr<TH1>>>
+            residuals_per_pT;
 #endif  // TRACCC_HAVE_ROOT
     };
 
@@ -49,12 +58,13 @@ class res_plot_tool {
     /// @param truth_param truth track parameter
     /// @param fit_param fitted track parameter
     void fill(res_plot_cache& cache, const bound_track_parameters& truth_param,
-              const bound_track_parameters& fit_param) const;
+              const bound_track_parameters& fit_param,
+              const particle& ptc) const;
 
     /// @brief write the resolution plots into ROOT
     ///
     /// @param cache the cache for resolution plots
-    void write(const res_plot_cache& cache) const;
+    void write(res_plot_cache& cache) const;
 
     private:
     res_plot_tool_config m_cfg;  ///< The Config class
