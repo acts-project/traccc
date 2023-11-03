@@ -211,6 +211,7 @@ class kalman_fitter {
         auto& last = track_states.back();
         last.smoothed().set_vector(last.filtered().vector());
         last.smoothed().set_covariance(last.filtered().covariance());
+        last.smoothed_chi2() = last.filtered_chi2();
 
         for (typename vector_type<
                  track_state<transform3_type>>::reverse_iterator it =

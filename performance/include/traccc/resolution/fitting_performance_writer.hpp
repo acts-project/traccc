@@ -12,6 +12,7 @@
 #include "traccc/resolution/stat_plot_tool_config.hpp"
 
 // Project include(s).
+#include "traccc/edm/particle.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/io/event_map2.hpp"
@@ -94,8 +95,10 @@ class fitting_performance_writer {
             ptc.charge / getter::norm(global_mom);
 
         // For the moment, only fill with the first measurements
-        write_res(truth_param, trk_state.smoothed());
-        write_stat(fit_info);
+        if (fit_info.ndf > 0 && !trk_state.is_hole) {
+            write_res(truth_param, trk_state.smoothed(), ptc);
+        }
+        write_stat(fit_info, track_states_per_track);
     }
 
     /// Writing caches into the file
@@ -104,10 +107,12 @@ class fitting_performance_writer {
     private:
     /// Non-templated part of the @c write(...) function
     void write_res(const bound_track_parameters& truth_param,
-                   const bound_track_parameters& fit_param);
+                   const bound_track_parameters& fit_param,
+                   const particle& ptc);
 
     /// Non-templated part of the @c write(...) function
-    void write_stat(const fitter_info<transform3>& fit_info);
+    void write_stat(const fitter_info<transform3>& fit_info,
+                    const track_state_collection_types::host& track_states);
 
     /// Configuration for the tool
     config m_cfg;

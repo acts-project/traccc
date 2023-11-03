@@ -13,6 +13,8 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/options.hpp"
 #include "traccc/options/particle_gen_options.hpp"
+#include "traccc/options/propagation_options.hpp"
+#include "traccc/options/telescope_detector_options.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
@@ -34,7 +36,9 @@ using namespace traccc;
 namespace po = boost::program_options;
 
 int simulate(std::string output_directory, unsigned int events,
-             const traccc::particle_gen_options<scalar>& pg_opts) {
+             const traccc::particle_gen_options<scalar>& pg_opts,
+             const traccc::propagation_options<scalar>& propagation_opts,
+             const traccc::telescope_detector_options<scalar>& telescope_opts) {
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =
@@ -48,25 +52,33 @@ int simulate(std::string output_directory, unsigned int events,
      * Build a telescope geometry
      *****************************/
 
-    // Plane alignment direction (aligned to x-axis)
-    detray::detail::ray<transform3> traj{{0, 0, 0}, 0, {1, 0, 0}, -1};
+    // Plane alignment direction (aligned to z-axis)
+    detray::detail::ray<transform3> traj{{0, 0, 0}, 0, {0, 0, 1}, -1};
     // Position of planes (in mm unit)
-    std::vector<scalar> plane_positions = {20.,  40., 60., 80., 100.,
-                                           120., 140, 160, 180.};
+    std::vector<scalar> plane_positions;
+
+    for (unsigned int i = 0; i < telescope_opts.n_planes; i++) {
+        plane_positions.push_back((i + 1) * telescope_opts.spacing);
+    }
 
     // B field value and its type
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
-    const vector3 B{2 * detray::unit<scalar>::T, 0, 0};
+    const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
     auto field = detray::bfield::create_const_field(B);
 
-    // Create the detector
-    const auto mat = detray::silicon_tml<scalar>();
-    const scalar thickness = 0.5 * detray::unit<scalar>::mm;
+    // Set material and thickness
+    detray::material<scalar> mat;
+    if (!telescope_opts.empty_material) {
+        mat = detray::silicon<scalar>();
+    } else {
+        mat = detray::vacuum<scalar>();
+    }
+
+    const scalar thickness = telescope_opts.thickness;
 
     // Use rectangle surfaces
     detray::mask<detray::rectangle2D<>> rectangle{
-        0u, 10000.f * detray::unit<scalar>::mm,
-        10000.f * detray::unit<scalar>::mm};
+        0u, telescope_opts.half_length, telescope_opts.half_length};
 
     detray::tel_det_config<> tel_cfg{rectangle};
     tel_cfg.positions(plane_positions);
@@ -95,7 +107,7 @@ int simulate(std::string output_directory, unsigned int events,
 
     // Smearing value for measurements
     traccc::measurement_smearer<transform3> meas_smearer(
-        50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
+        telescope_opts.smearing, telescope_opts.smearing);
 
     // Type declarations
     using detector_type = decltype(det);
@@ -115,6 +127,9 @@ int simulate(std::string output_directory, unsigned int events,
                                  writer_type>(
         events, det, field, std::move(generator), std::move(smearer_writer_cfg),
         full_path);
+    sim.get_config().step_constraint = propagation_opts.step_constraint;
+    sim.get_config().overstep_tolerance = propagation_opts.overstep_tolerance;
+
     sim.run();
 
     // Create detector file
@@ -139,6 +154,8 @@ int main(int argc, char* argv[]) {
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
     traccc::particle_gen_options<scalar> pg_opts(desc);
+    traccc::propagation_options<scalar> propagation_opts(desc);
+    traccc::telescope_detector_options<scalar> telescope_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -150,9 +167,12 @@ int main(int argc, char* argv[]) {
     auto output_directory = vm["output_directory"].as<std::string>();
     auto events = vm["events"].as<unsigned int>();
     pg_opts.read(vm);
+    propagation_opts.read(vm);
+    telescope_opts.read(vm);
 
     std::cout << "Running " << argv[0] << " " << output_directory << " "
               << events << std::endl;
 
-    return simulate(output_directory, events, pg_opts);
+    return simulate(output_directory, events, pg_opts, propagation_opts,
+                    telescope_opts);
 }

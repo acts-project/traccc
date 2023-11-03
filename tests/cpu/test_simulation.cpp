@@ -121,7 +121,7 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
 
         std::vector<traccc::io::csv::particle> particles;
         auto particle_reader = traccc::io::csv::make_particle_reader(
-            detail::get_event_filename(i_event, "-particles.csv"));
+            traccc::io::get_event_filename(i_event, "-particles.csv"));
         traccc::io::csv::particle io_particle;
         while (particle_reader.read(io_particle)) {
             particles.push_back(io_particle);
@@ -129,7 +129,7 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
 
         std::vector<traccc::io::csv::hit> hits;
         auto hit_reader = traccc::io::csv::make_hit_reader(
-            detail::get_event_filename(i_event, "-hits.csv"));
+            traccc::io::get_event_filename(i_event, "-hits.csv"));
         traccc::io::csv::hit io_hit;
         while (hit_reader.read(io_hit)) {
             hits.push_back(io_hit);
@@ -137,7 +137,7 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
 
         std::vector<traccc::io::csv::measurement> measurements;
         auto measurement_reader = traccc::io::csv::make_measurement_reader(
-            detail::get_event_filename(i_event, "-measurements.csv"));
+            traccc::io::get_event_filename(i_event, "-measurements.csv"));
         traccc::io::csv::measurement io_measurement;
         while (measurement_reader.read(io_measurement)) {
             measurements.push_back(io_measurement);
@@ -146,8 +146,8 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
         std::vector<traccc::io::csv::measurement_hit_id> meas_hit_ids;
         auto measurement_hit_id_reader =
             traccc::io::csv::make_measurement_hit_id_reader(
-                detail::get_event_filename(i_event,
-                                           "-measurement-simhit-map.csv"));
+                traccc::io::get_event_filename(i_event,
+                                               "-measurement-simhit-map.csv"));
         traccc::io::csv::measurement_hit_id io_meas_hit_id;
         while (measurement_hit_id_reader.read(io_meas_hit_id)) {
             meas_hit_ids.push_back(io_meas_hit_id);
@@ -267,7 +267,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
         std::vector<traccc::io::csv::measurement> measurements;
         auto measurement_reader = traccc::io::csv::make_measurement_reader(
             directory +
-            detail::get_event_filename(i_event, "-measurements.csv"));
+            traccc::io::get_event_filename(i_event, "-measurements.csv"));
         traccc::io::csv::measurement io_measurement;
         while (measurement_reader.read(io_measurement)) {
             measurements.push_back(io_measurement);

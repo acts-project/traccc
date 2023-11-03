@@ -24,7 +24,8 @@ struct stat_plot_tool_config {
         {"ndf", plot_helpers::binning("ndf", 35, -5., 30.)},
         {"chi2", plot_helpers::binning("chi2", 100, 0., 50.)},
         {"reduced_chi2", plot_helpers::binning("chi2/ndf", 100, 0., 10.)},
-        {"pval", plot_helpers::binning("pval", 100, 0., 1.)}};
+        {"pval", plot_helpers::binning("pval", 100, 0., 1.)},
+        {"chi2_local", plot_helpers::binning("chi2", 100, 0., 10.)}};
 };
 
 }  // namespace traccc
