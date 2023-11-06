@@ -253,7 +253,7 @@ cmake --build <build_directory> <options>
 # Toy geometry examples
 <build_directory>/bin/traccc_simulate_toy_detector --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:360 --events=10 --gen-nparticles=2000 --output_directory=detray_simulation/toy_detector/n_particles_2000/ --gen-eta=-3:3 --constraint-step-size-mm=1
 
-<build_directory>/bin/traccc_seeding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:10 --constraint-step-size-mm=1000 --run_cpu=1
+<build_directory>/bin/traccc_seeding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1000 --run_cpu=1
 
 <build_directory>/bin/traccc_truth_finding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1 --run_cpu=1
 ```
@@ -304,12 +304,12 @@ The dirft chamber will not produce meaningful results with `seeding_example` as 
 
 ```sh
 # Run cuda seeding example for toy geometry
-<build_directory>/bin/traccc_seeding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:10 --constraint-step-size-mm=1000 --run_cpu=1
+<build_directory>/bin/traccc_seeding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1000 --run_cpu=1
 ```
 
 ```sh
 # Run cuda truth finding example for toy geometry
-<build_directory>/bin/traccc_truth_finding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:10 --constraint-step-size-mm=1000 --run_cpu=1
+<build_directory>/bin/traccc_truth_finding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1000 --run_cpu=1
 ```
 
 ```sh
