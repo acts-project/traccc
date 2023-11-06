@@ -103,6 +103,8 @@ void res_plot_tool::fill(res_plot_cache& cache,
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
+    (void)eta;
+    (void)pT;
 
     for (std::size_t idx = 0; idx < m_cfg.param_names.size(); idx++) {
         std::string par_name = m_cfg.param_names.at(idx);
@@ -129,6 +131,7 @@ void res_plot_tool::fill(res_plot_cache& cache,
         (void)residual;
         (void)pull;
 
+#ifdef TRACCC_HAVE_ROOT
         const auto eta_idx =
             std::min(cache.resolutions_eta[par_name]->FindBin(eta) - 1,
                      cache.resolutions_eta[par_name]->GetNbinsX() - 1);
@@ -136,7 +139,6 @@ void res_plot_tool::fill(res_plot_cache& cache,
             std::min(cache.resolutions_pT[par_name]->FindBin(pT) - 1,
                      cache.resolutions_pT[par_name]->GetNbinsX() - 1);
 
-#ifdef TRACCC_HAVE_ROOT
         cache.residuals.at(par_name)->Fill(residual);
         cache.pulls.at(par_name)->Fill(pull);
         cache.residuals_eta.at(par_name)->Fill(eta, residual);
