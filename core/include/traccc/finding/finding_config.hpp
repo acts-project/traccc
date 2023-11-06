@@ -22,7 +22,7 @@ struct finding_config {
     unsigned int max_num_branches_per_surface = 10;
 
     /// Min/Max number of track candidates per track
-    unsigned int min_track_candidates_per_track = 2;
+    unsigned int min_track_candidates_per_track = 3;
     unsigned int max_track_candidates_per_track = 30;
 
     /// Minimum step length that track should make to reach the next surface. It
