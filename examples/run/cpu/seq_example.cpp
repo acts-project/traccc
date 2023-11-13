@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,6 +21,7 @@
 
 // options
 #include "traccc/options/common_options.hpp"
+#include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
@@ -34,11 +35,11 @@
 namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
-            const traccc::common_options& common_opts) {
+            const traccc::common_options& common_opts,
+            const traccc::detector_input_options& det_opts) {
 
     // Read the surface transforms
-    auto surface_transforms =
-        traccc::io::read_geometry(common_opts.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -124,11 +125,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           ------------*/
 
         if (common_opts.check_performance) {
-            traccc::event_map evt_map(event, common_opts.detector_file,
-                                      i_cfg.digitization_config_file,
-                                      common_opts.input_directory,
-                                      common_opts.input_directory,
-                                      common_opts.input_directory, host_mr);
+            traccc::event_map evt_map(
+                event, det_opts.detector_file, i_cfg.digitization_config_file,
+                common_opts.input_directory, common_opts.input_directory,
+                common_opts.input_directory, host_mr);
 
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
@@ -161,6 +161,7 @@ int main(int argc, char* argv[]) {
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
+    traccc::detector_input_options det_opts(desc);
     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
 
     po::variables_map vm;
@@ -171,6 +172,7 @@ int main(int argc, char* argv[]) {
 
     // Read options
     common_opts.read(vm);
+    det_opts.read(vm);
     full_tracking_input_cfg.read(vm);
 
     std::cout << "Running " << argv[0] << " "
@@ -178,5 +180,5 @@ int main(int argc, char* argv[]) {
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    return seq_run(full_tracking_input_cfg, common_opts);
+    return seq_run(full_tracking_input_cfg, common_opts, det_opts);
 }

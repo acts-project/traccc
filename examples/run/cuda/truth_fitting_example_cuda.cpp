@@ -18,6 +18,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
+#include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/propagation_options.hpp"
 #include "traccc/performance/collection_comparator.hpp"
@@ -59,6 +60,7 @@ int main(int argc, char* argv[]) {
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
+    traccc::detector_input_options det_opts(desc);
     traccc::propagation_options<scalar> propagation_opts(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
@@ -71,6 +73,8 @@ int main(int argc, char* argv[]) {
 
     // Read options
     common_opts.read(vm);
+    det_opts.read(vm);
+
     propagation_opts.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
@@ -121,10 +125,9 @@ int main(int argc, char* argv[]) {
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg
-        .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file)
-        .add_file(traccc::io::data_directory() + common_opts.grid_file);
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file)
+        .add_file(traccc::io::data_directory() + det_opts.material_file)
+        .add_file(traccc::io::data_directory() + det_opts.grid_file);
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);

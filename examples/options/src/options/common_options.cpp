@@ -26,12 +26,6 @@ traccc::common_options::common_options(po::options_description& desc) {
     desc.add_options()("check_performance",
                        po::value<bool>()->default_value(false),
                        "generate performance result");
-    desc.add_options()("detector_file", po::value<std::string>()->required(),
-                       "specify detector file");
-    desc.add_options()("material_file", po::value<std::string>()->required(),
-                       "specify material file");
-    desc.add_options()("grid_file", po::value<std::string>()->required(),
-                       "specify surface grid file");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -47,11 +41,4 @@ void traccc::common_options::read(const po::variables_map& vm) {
     target_cells_per_partition =
         vm["target_cells_per_partition"].as<unsigned short>();
     check_performance = vm["check_performance"].as<bool>();
-    detector_file = vm["detector_file"].as<std::string>();
-    if (vm.count("material_file")) {
-        material_file = vm["material_file"].as<std::string>();
-    }
-    if (vm.count("grid_file")) {
-        grid_file = vm["grid_file"].as<std::string>();
-    }
 }
