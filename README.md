@@ -277,7 +277,7 @@ cmake --build <build_directory> <options>
 
 ### Running a partial chain with simplified simulation data
 
-Users can generate muon-like particle simulation data by running following example commands:
+Users can generate muon-like particle simulation data with the pre-built detray geometries:
 
 ```sh
 # Generate telescope geometry data
@@ -291,6 +291,13 @@ Users can generate muon-like particle simulation data by running following examp
 ```
 
 The simulation will also generate the detector json files (geometry, material and surface_grid) in the current directory. It is user's responsibility to move them to an appropriate place (e.g. `<detector_directory>`) and match them to the input file arguments of reconstruction chains.
+
+If users have a geometry json file already, it is also possible to run simulation with `traccc_simulate` application 
+
+```sh
+# Given that users have a geometry json file
+<build_directory>/bin/traccc_simulate  --output_directory=<output_directory>  --detector_file=<geometry_file> --material_file=<material_file> --grid_file=<grid_file>  --event=10 --constraint-step-size-mm=1
+```
 
 There are three types of partial reconstruction chain users can operate: `seeding_example`, `truth_finding_example`, and `truth_fitting_example` where their algorithm coverages are shown in the table below. Each of them starts from truth measurements, truth seeds, and truth tracks, respectively.
 

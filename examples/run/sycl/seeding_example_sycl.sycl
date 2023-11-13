@@ -26,6 +26,7 @@
 
 // options
 #include "traccc/options/common_options.hpp"
+#include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 
@@ -51,7 +52,8 @@
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
-            const traccc::common_options& common_opts, bool run_cpu) {
+            const traccc::common_options& common_opts,
+            const traccc::detector_input_options& det_opts, bool run_cpu) {
 
     // Creating sycl queue object
     ::sycl::queue q;
@@ -83,10 +85,9 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg
-        .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file)
-        .add_file(traccc::io::data_directory() + common_opts.grid_file);
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file)
+        .add_file(traccc::io::data_directory() + det_opts.material_file)
+        .add_file(traccc::io::data_directory() + det_opts.grid_file);
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
@@ -274,6 +275,7 @@ int main(int argc, char* argv[]) {
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
+    traccc::detector_input_options det_opts(desc);
     traccc::seeding_input_config seeding_input_cfg(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
@@ -286,12 +288,14 @@ int main(int argc, char* argv[]) {
 
     // Read options
     common_opts.read(vm);
+    det_opts.read(vm);
+
     seeding_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    std::cout << "Running " << argv[0] << " " << common_opts.detector_file
-              << " " << common_opts.input_directory << " " << common_opts.events
+    std::cout << "Running " << argv[0] << " " << det_opts.detector_file << " "
+              << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    return seq_run(seeding_input_cfg, common_opts, run_cpu);
+    return seq_run(seeding_input_cfg, common_opts, det_opts, run_cpu);
 }

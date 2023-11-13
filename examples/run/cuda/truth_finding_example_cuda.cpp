@@ -21,6 +21,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
+#include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/finding_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/propagation_options.hpp"
@@ -56,7 +57,8 @@ namespace po = boost::program_options;
 
 int seq_run(const traccc::finding_input_config& i_cfg,
             const traccc::propagation_options<scalar>& propagation_opts,
-            const traccc::common_options& common_opts, bool run_cpu) {
+            const traccc::common_options& common_opts,
+            const traccc::detector_input_options& det_opts, bool run_cpu) {
 
     /// Type declarations
     using host_detector_type = detray::detector<detray::default_metadata,
@@ -106,10 +108,9 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg
-        .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file)
-        .add_file(traccc::io::data_directory() + common_opts.grid_file);
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file)
+        .add_file(traccc::io::data_directory() + det_opts.material_file)
+        .add_file(traccc::io::data_directory() + det_opts.grid_file);
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
@@ -356,6 +357,7 @@ int main(int argc, char* argv[]) {
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
+    traccc::detector_input_options det_opts(desc);
     traccc::finding_input_config finding_input_cfg(desc);
     traccc::propagation_options<scalar> propagation_opts(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
@@ -369,6 +371,8 @@ int main(int argc, char* argv[]) {
 
     // Read options
     common_opts.read(vm);
+    det_opts.read(vm);
+
     finding_input_cfg.read(vm);
     propagation_opts.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
@@ -376,5 +380,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Running " << argv[0] << " " << common_opts.input_directory
               << " " << common_opts.events << std::endl;
 
-    return seq_run(finding_input_cfg, propagation_opts, common_opts, run_cpu);
+    return seq_run(finding_input_cfg, propagation_opts, common_opts, det_opts,
+                   run_cpu);
 }
