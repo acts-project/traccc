@@ -63,7 +63,7 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
     }
 
     protected:
-    virtual void SetUp() override {
+    static void SetUpTestCase() {
         vecmem::host_memory_resource host_mr;
 
         detray::wire_chamber_config wire_chamber_cfg;
