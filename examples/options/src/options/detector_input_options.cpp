@@ -12,9 +12,10 @@ traccc::detector_input_options::detector_input_options(
     po::options_description& desc) {
     desc.add_options()("detector_file", po::value<std::string>()->required(),
                        "specify detector file");
-    desc.add_options()("material_file", po::value<std::string>(),
+    desc.add_options()("material_file",
+                       po::value<std::string>()->default_value(""),
                        "specify material file");
-    desc.add_options()("grid_file", po::value<std::string>(),
+    desc.add_options()("grid_file", po::value<std::string>()->default_value(""),
                        "specify surface grid file");
 }
 
