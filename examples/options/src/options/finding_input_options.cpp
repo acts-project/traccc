@@ -14,7 +14,7 @@ traccc::finding_input_config::finding_input_config(
     desc.add_options()("track_candidates_range",
                        po::value<Reals<unsigned int, 2>>()
                            ->value_name("MIN:MAX")
-                           ->default_value({6, 30}),
+                           ->default_value({3, 30}),
                        "Range of track candidates number");
 }
 
