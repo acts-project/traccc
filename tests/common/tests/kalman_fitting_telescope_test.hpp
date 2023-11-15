@@ -62,7 +62,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
     }
 
     protected:
-    virtual void SetUp() override {
+    static void SetUpTestCase() {
         vecmem::host_memory_resource host_mr;
 
         detray::tel_det_config<> tel_cfg{rectangle};
