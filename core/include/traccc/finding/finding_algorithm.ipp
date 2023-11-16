@@ -75,9 +75,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     // Copy seed to input parameters
     std::vector<bound_track_parameters> in_params;
+    std::vector<unsigned int> n_trks_per_seed;
+    n_trks_per_seed.reserve(seeds.size());
+
     in_params.reserve(seeds.size());
     for (const auto& seed : seeds) {
         in_params.push_back(seed);
+	n_trks_per_seed.push_back(0);
     }
 
     std::vector<bound_track_parameters> out_params;
@@ -99,11 +103,16 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         // Previous step ID
         const unsigned int previous_step =
             (step == 0) ? std::numeric_limits<unsigned int>::max() : step - 1;
+	
+	for (unsigned int i_seed = 0; i_seed < seeds.size() ; i_seed ++)
+	  n_trks_per_seed[i_seed] = 0;
 
         for (unsigned int in_param_id = 0; in_param_id < n_in_params;
              in_param_id++) {
 
             bound_track_parameters& in_param = in_params[in_param_id];
+	    unsigned int orig_param_id = (step ==0 ? in_param_id :
+					  links[step-1][param_to_link[step-1][in_param_id]].initial_seed);	    
 
             /*************************
              * Material interaction
@@ -165,6 +174,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 if (n_branches > m_cfg.max_num_branches_per_surface) {
                     break;
                 }
+		if (n_trks_per_seed[orig_param_id] >= m_cfg.max_num_branches_per_initial_seed) {
+		    break;
+		}
 
                 bound_track_parameters bound_param(in_param.surface_link(),
                                                    in_param.vector(),
@@ -188,9 +200,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         static_cast<unsigned int>(links[step].size());
 
                     n_branches++;
+		    n_trks_per_seed[orig_param_id]++;		    
 
-                    links[step].push_back(
-                        {{previous_step, in_param_id}, item_id});
+                    // links[step].push_back(
+                    //     {{previous_step, in_param_id}, item_id});
+                    links[step].push_back({{previous_step, in_param_id}, item_id, orig_param_id});
 
                     /*********************************
                      * Propagate to the next surface

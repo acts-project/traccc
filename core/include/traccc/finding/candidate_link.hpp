@@ -30,6 +30,10 @@ struct candidate_link {
 
     // Measurement index
     unsigned int meas_idx;
+
+    // Index to the initial seed
+    unsigned int  initial_seed;
+
 };
 
 }  // namespace traccc
