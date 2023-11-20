@@ -62,7 +62,8 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
     }
 
     protected:
-    static void SetUpTestCase() {
+    virtual void SetUp() override {
+
         vecmem::host_memory_resource host_mr;
 
         detray::tel_det_config<> tel_cfg{rectangle};
@@ -77,7 +78,8 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
         // Write detector file
         auto writer_cfg = detray::io::detector_writer_config{}
                               .format(detray::io::format::json)
-                              .replace_files(true);
+                              .replace_files(true)
+                              .path(std::get<0>(GetParam()));
         detray::io::write_detector(det, name_map, writer_cfg);
     }
 };
