@@ -74,10 +74,11 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Read back detector file
+    const std::string path = name + "/";
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file("telescope_detector_geometry.json")
-        .add_file("telescope_detector_homogeneous_material.json")
-        .add_file("telescope_detector_surface_grids.json");
+    reader_cfg.add_file(path + "telescope_detector_geometry.json")
+        .add_file(path + "telescope_detector_homogeneous_material.json")
+        .add_file(path + "telescope_detector_surface_grids.json");
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
@@ -114,7 +115,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
     // Run simulator
-    const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
@@ -223,7 +223,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation0, KalmanFittingTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f}, 100,
         100)));
@@ -231,7 +231,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));
@@ -239,7 +239,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 100, 100)));

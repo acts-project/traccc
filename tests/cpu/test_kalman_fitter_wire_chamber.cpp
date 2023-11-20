@@ -59,9 +59,10 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     vecmem::host_memory_resource host_mr;
 
     // Read back detector file
+    const std::string path = name + "/";
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file("wire_chamber_geometry.json")
-        .add_file("wire_chamber_homogeneous_material.json")
+    reader_cfg.add_file(path + "wire_chamber_geometry.json")
+        .add_file(path + "wire_chamber_homogeneous_material.json")
         //.add_file("wire_chamber_surface_grids.json")
         .do_check(true);
 
@@ -96,7 +97,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
     // Run simulator
-    const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,

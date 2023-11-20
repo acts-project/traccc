@@ -61,10 +61,11 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     vecmem::host_memory_resource host_mr;
 
     // Read back detector file
+    const std::string path = name + "/";
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file("telescope_detector_geometry.json")
-        .add_file("telescope_detector_homogeneous_material.json")
-        .add_file("telescope_detector_surface_grids.json");
+    reader_cfg.add_file(path + "telescope_detector_geometry.json")
+        .add_file(path + "telescope_detector_homogeneous_material.json")
+        .add_file(path + "telescope_detector_surface_grids.json");
 
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
@@ -97,7 +98,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
     // Run simulator
-    const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
