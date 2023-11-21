@@ -37,9 +37,9 @@ struct finding_config {
     /// @TODO: Make a separate file for propagation config?
     scalar_t constrained_step_size = std::numeric_limits<scalar_t>::max();
 
-    /// GPU-specific parameter to evaluate the number of measurements to be
-    /// iterated per track
-    unsigned int n_avg_threads_per_track = 4;
+    /// GPU-specific parameter for the number of measurements to be
+    /// iterated per thread
+    unsigned int n_measurements_per_thread = 8;
 };
 
 }  // namespace traccc
