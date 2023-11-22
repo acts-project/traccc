@@ -63,7 +63,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file(path + "wire_chamber_geometry.json")
         .add_file(path + "wire_chamber_homogeneous_material.json")
-        //.add_file("wire_chamber_surface_grids.json")
+        //.add_file(path + "wire_chamber_surface_grids.json")
         .do_check(true);
 
     const auto [host_det, names] =
@@ -185,7 +185,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation0, KalmanFittingWireChamberTests,
     ::testing::Values(std::make_tuple(
-        "2_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "wire_2_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{2.f, 2.f},
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, 100,
@@ -194,7 +194,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation1, KalmanFittingWireChamberTests,
     ::testing::Values(std::make_tuple(
-        "10_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "wire_10_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, 100,
@@ -203,7 +203,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation2, KalmanFittingWireChamberTests,
     ::testing::Values(std::make_tuple(
-        "100_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "wire_100_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, 100,

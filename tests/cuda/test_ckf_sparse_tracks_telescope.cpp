@@ -91,8 +91,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     const std::string path = name + "/";
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file(path + "telescope_detector_geometry.json")
-        .add_file(path + "telescope_detector_homogeneous_material.json")
-        .add_file(path + "telescope_detector_surface_grids.json");
+        .add_file(path + "telescope_detector_homogeneous_material.json");
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
@@ -287,7 +286,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation0, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "cuda_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_telescope_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 1, 5000)));
@@ -295,7 +294,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation1, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "cuda_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_telescope_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 2, 2500)));
@@ -303,7 +302,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation2, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "cuda_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_telescope_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 4, 1250)));
@@ -311,7 +310,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation3, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "cuda_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "cuda_telescope_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, 10, 500)));
