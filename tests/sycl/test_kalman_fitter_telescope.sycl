@@ -223,9 +223,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     static const std::vector<std::string> pull_names{
         "pull_d0", "pull_z0", "pull_phi", "pull_theta", "pull_qop"};
     pull_value_tests(fit_writer_cfg.file_path, pull_names);
-
-    // Remove the data
-    std::filesystem::remove_all(full_path);
 }
 
 INSTANTIATE_TEST_SUITE_P(

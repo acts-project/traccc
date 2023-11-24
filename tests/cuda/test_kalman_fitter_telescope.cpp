@@ -216,9 +216,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
         static_cast<scalar>(n_success) / (n_truth_tracks * n_events);
 
     ASSERT_FLOAT_EQ(success_rate, 1.00f);
-
-    // Remove the data
-    std::filesystem::remove_all(full_path);
 }
 
 INSTANTIATE_TEST_SUITE_P(
