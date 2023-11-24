@@ -7,11 +7,9 @@
 
 // Project include(s).
 #include "traccc/finding/candidate_link.hpp"
-#include "traccc/utils/compare.hpp"
 
 // System include
 #include <algorithm>
-#include <iostream>
 #include <limits>
 
 namespace traccc {
@@ -35,7 +33,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     auto end = std::unique_copy(measurements.begin(), measurements.end(),
                                 uniques.begin(), measurement_equal_comp());
-    unsigned int n_modules = end - uniques.begin();
+    const unsigned int n_modules = end - uniques.begin();
 
     // Get upper bounds of unique elements
     std::vector<unsigned int> upper_bounds;
