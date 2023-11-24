@@ -54,8 +54,9 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
     const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const unsigned int n_truth_tracks = std::get<6>(GetParam());
-    const unsigned int n_events = std::get<7>(GetParam());
+    const scalar charge = std::get<6>(GetParam());
+    const unsigned int n_truth_tracks = std::get<7>(GetParam());
+    const unsigned int n_events = std::get<8>(GetParam());
 
     // Performance writer
     traccc::fitting_performance_writer::config fit_writer_cfg;
@@ -116,6 +117,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     gen_cfg.phi_range(phi_range[0], phi_range[1]);
     gen_cfg.theta_range(theta_range[0], theta_range[1]);
     gen_cfg.mom_range(mom_range[0], mom_range[1]);
+    gen_cfg.charge(charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -289,7 +291,7 @@ INSTANTIATE_TEST_SUITE_P(
         "cuda_telescope_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, 1, 5000)));
+        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 1, 5000)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation1, CkfSparseTrackTelescopeTests,
@@ -297,7 +299,7 @@ INSTANTIATE_TEST_SUITE_P(
         "cuda_telescope_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, 2, 2500)));
+        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 2, 2500)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation2, CkfSparseTrackTelescopeTests,
@@ -305,7 +307,7 @@ INSTANTIATE_TEST_SUITE_P(
         "cuda_telescope_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, 4, 1250)));
+        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 4, 1250)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation3, CkfSparseTrackTelescopeTests,
@@ -313,4 +315,4 @@ INSTANTIATE_TEST_SUITE_P(
         "cuda_telescope_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, 10, 500)));
+        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 10, 500)));

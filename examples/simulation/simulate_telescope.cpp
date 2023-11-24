@@ -103,6 +103,7 @@ int simulate(std::string output_directory, unsigned int events,
     gen_cfg.phi_range(pg_opts.phi_range[0], pg_opts.phi_range[1]);
     gen_cfg.theta_range(pg_opts.theta_range[0], pg_opts.theta_range[1]);
     gen_cfg.mom_range(pg_opts.mom_range[0], pg_opts.mom_range[1]);
+    gen_cfg.charge(pg_opts.charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
