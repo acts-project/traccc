@@ -40,13 +40,14 @@ namespace traccc {
 /// (4) momentum range
 /// (5) eta range
 /// (6) phi range
-/// (7) number of tracks per event
-/// (8) number of events
+/// (7) charge
+/// (8) number of tracks per event
+/// (9) number of events
 class KalmanFittingTests
     : public ::testing::TestWithParam<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
           std::array<scalar, 2u>, std::array<scalar, 2u>,
-          std::array<scalar, 2u>, unsigned int, unsigned int>> {
+          std::array<scalar, 2u>, scalar, unsigned int, unsigned int>> {
 
     public:
     /// Type declarations
