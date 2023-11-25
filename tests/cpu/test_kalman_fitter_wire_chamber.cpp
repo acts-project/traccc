@@ -179,9 +179,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     ASSERT_GE(success_rate, 0.99f);
     ASSERT_LE(success_rate, 1.00f);
-
-    // Remove the data
-    std::filesystem::remove_all(full_path);
 }
 
 INSTANTIATE_TEST_SUITE_P(

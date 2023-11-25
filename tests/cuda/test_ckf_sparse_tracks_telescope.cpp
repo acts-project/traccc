@@ -73,21 +73,6 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     traccc::memory_resource mr{device_mr, &host_mr};
     vecmem::cuda::managed_memory_resource mng_mr;
 
-    detray::tel_det_config<> tel_cfg{rectangle};
-    tel_cfg.positions(plane_positions);
-    tel_cfg.module_material(mat);
-    tel_cfg.mat_thickness(thickness);
-    tel_cfg.pilot_track(traj);
-
-    // Create telescope detector
-    auto [det, name_map] = create_telescope_detector(host_mr, tel_cfg);
-
-    // Write detector file
-    auto writer_cfg = detray::io::detector_writer_config{}
-                          .format(detray::io::format::json)
-                          .replace_files(true);
-    detray::io::write_detector(det, name_map, writer_cfg);
-
     // Read back detector file
     const std::string path = name + "/";
     detray::io::detector_reader_config reader_cfg{};
@@ -280,9 +265,6 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         static_cast<scalar>(n_success) / (n_truth_tracks * n_events);
 
     ASSERT_FLOAT_EQ(success_rate, 1.00f);
-
-    // Remove the data
-    std::filesystem::remove_all(full_path);
 }
 
 INSTANTIATE_TEST_SUITE_P(
