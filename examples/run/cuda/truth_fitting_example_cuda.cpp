@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
     traccc::propagation_options<scalar> propagation_opts(desc);
-    desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
+    desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
     po::variables_map vm;
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     det_opts.read(vm);
 
     propagation_opts.read(vm);
-    auto run_cpu = vm["run_cpu"].as<bool>();
+    auto run_cpu = vm["run-cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " " << common_opts.input_directory
               << " " << common_opts.events << std::endl;

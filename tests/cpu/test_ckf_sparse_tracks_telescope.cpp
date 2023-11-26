@@ -120,8 +120,6 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     // Finding algorithm configuration
     typename traccc::finding_algorithm<rk_stepper_type,
                                        host_navigator_type>::config_type cfg;
-    // few tracks (~1 out of 1000 tracks) are missed when chi2_max = 15
-    cfg.chi2_max = 30.f;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
