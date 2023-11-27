@@ -234,13 +234,13 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
 
             const auto& track_states_per_track = track_states_cuda[i_trk].items;
-            const auto& fit_info = track_states_cuda[i_trk].header;
+            const auto& fit_res = track_states_cuda[i_trk].header;
 
             consistency_tests(track_states_per_track);
 
-            ndf_tests(fit_info, track_states_per_track);
+            ndf_tests(fit_res, track_states_per_track);
 
-            fit_performance_writer.write(track_states_per_track, fit_info,
+            fit_performance_writer.write(track_states_per_track, fit_res,
                                          host_det, evt_map);
         }
     }

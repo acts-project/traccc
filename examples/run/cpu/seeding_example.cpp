@@ -222,9 +222,9 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
-                const auto& fit_info = track_states[i].header;
+                const auto& fit_res = track_states[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_info,
+                fit_performance_writer.write(trk_states_per_track, fit_res,
                                              host_det, evt_map);
             }
         }

@@ -51,15 +51,15 @@ void stat_plot_tool::book(stat_plot_cache& cache) const {
 }
 
 void stat_plot_tool::fill(stat_plot_cache& cache,
-                          const fitter_info<transform3>& fit_info) const {
+                          const fitting_result<transform3>& fit_res) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
-    (void)fit_info;
+    (void)fit_res;
 
 #ifdef TRACCC_HAVE_ROOT
-    const auto& ndf = fit_info.ndf;
-    const auto& chi2 = fit_info.chi2;
+    const auto& ndf = fit_res.ndf;
+    const auto& chi2 = fit_res.chi2;
     cache.ndf_hist->Fill(ndf);
     cache.chi2_hist->Fill(chi2);
     cache.reduced_chi2_hist->Fill(chi2 / ndf);

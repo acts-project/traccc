@@ -74,7 +74,7 @@ class fitting_algorithm
             fitter.fit(seed_param, fitter_state);
 
             output_states.push_back(
-                std::move(fitter_state.m_fit_info),
+                std::move(fitter_state.m_fit_res),
                 std::move(fitter_state.m_fit_actor_state.m_track_states));
         }
 
