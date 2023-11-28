@@ -66,7 +66,7 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
     // Create a device for host for memory allocation, using the first CPU
     // available
     auto const platformDevCpu = alpaka::Platform<DevCpu>{};
-    auto devHost = getDevByIdx(platformDevCpu,0u);
+    auto devHost = getDevByIdx(platformDevCpu, 0u);
 
     // Allocate memory on the device side:
     auto bufAcc = alpaka::allocBuf<float, uint32_t>(devAcc, n);
