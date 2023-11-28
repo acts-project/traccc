@@ -49,7 +49,8 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
               << std::endl;
 
     // Select a device and create queue for it
-    auto const devAcc = getDevByIdx<Acc>(0u);
+    auto const platformAcc = alpaka::Platform<Acc>{};
+    auto const devAcc = getDevByIdx(platformAcc, 0u);
 
     using Queue = Queue<Acc, Blocking>;
     auto queue = Queue{devAcc};
@@ -64,7 +65,8 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
 
     // Create a device for host for memory allocation, using the first CPU
     // available
-    auto devHost = getDevByIdx<DevCpu>(0u);
+    auto const platformDevCpu = alpaka::Platform<DevCpu>{};
+    auto devHost = getDevByIdx(platformDevCpu,0u);
 
     // Allocate memory on the device side:
     auto bufAcc = alpaka::allocBuf<float, uint32_t>(devAcc, n);
