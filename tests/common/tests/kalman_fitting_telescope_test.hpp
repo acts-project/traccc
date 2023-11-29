@@ -26,6 +26,8 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
         {0, 0, 0}, 0, {1, 0, 0}, -1};
 
     /// Position of planes (in mm unit)
+    /// @NOTE: Increasing the number of planes will make
+    /// test_ckf_combinatorics_telescope take too much time
     static const inline std::vector<scalar> plane_positions = {
         20., 40., 60., 80., 100., 120., 140, 160, 180.};
 
