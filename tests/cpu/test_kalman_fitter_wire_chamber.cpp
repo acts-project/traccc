@@ -108,7 +108,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Set constrained step size to 2 mm
     sim.get_config().step_constraint = step_constraint;
-    sim.get_config().overstep_tolerance = overstep_tolerance;
 
     sim.run();
 
@@ -122,7 +121,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = step_constraint;
-    fit_cfg.overstep_tolerance = overstep_tolerance;
     fit_cfg.mask_tolerance = mask_tolerance;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 

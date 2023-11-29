@@ -125,6 +125,8 @@ int main(int argc, char* argv[]) {
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = propagation_opts.step_constraint;
+    fit_cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
+    fit_cfg.mask_tolerance = propagation_opts.mask_tolerance;
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     // Seed generator

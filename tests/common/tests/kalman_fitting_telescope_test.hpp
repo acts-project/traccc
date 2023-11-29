@@ -54,7 +54,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
         1 * detray::unit<scalar>::ns};
 
     void consistency_tests(const track_state_collection_types::host&
-                               track_states_per_track) const override {
+                               track_states_per_track) const {
 
         // The nubmer of track states is supposed be equal to the number
         // of planes
