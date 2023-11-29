@@ -48,8 +48,8 @@ TEST(clusterization, cuda) {
     modules.push_back({});
 
     // Run Clusterization
-    cuda::experimental::clusterization_algorithm ca_cuda(mr, copy, stream,
-                                                         1024);
+    traccc::cuda::experimental::clusterization_algorithm ca_cuda(mr, copy,
+                                                                 stream, 1024);
 
     auto measurements_buffer =
         ca_cuda(vecmem::get_data(cells), vecmem::get_data(modules));

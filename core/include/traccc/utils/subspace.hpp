@@ -48,10 +48,6 @@ struct subspace {
         for (size_type i = 0u; i < kSize; ++i) {
             assert((indices[i] < kFullSize) and
                    "Axis indices must be within the full space");
-            if (0u < i) {
-                assert((indices[i - 1u] < indices[i]) and
-                       "Axis indices must be unique and ordered");
-            }
         }
         for (size_type i = 0; i < kSize; ++i) {
             m_axes[i] = static_cast<size_type>(indices[i]);
@@ -64,8 +60,14 @@ struct subspace {
     /// implementation detail. Users should treat the return type as a generic
     /// container whose elements are convertible to `size_t`.
     TRACCC_HOST_DEVICE
-    constexpr const std::array<size_type, kSize>& indices() const {
+    constexpr const std::array<size_type, kSize>& get_indices() const {
         return m_axes;
+    }
+
+    /// Function that sets the m_axes
+    TRACCC_HOST_DEVICE
+    void set_indices(const std::array<size_type, kSize>& indices) {
+        m_axes = indices;
     }
 
     /// Projection matrix that maps from the full space into the subspace.

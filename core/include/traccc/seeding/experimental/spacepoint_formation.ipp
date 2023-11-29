@@ -34,7 +34,7 @@ spacepoint_collection_types::host spacepoint_formation<detector_t>::operator()(
         // This local to global transformation only works for 2D planar
         // measurement
         // (e.g. barrel pixel and endcap pixel detector)
-        const auto global = sf.local_to_global({}, ms.local, {});
+        const auto global = sf.bound_to_global({}, ms.local, {});
 
         // Fill result with this spacepoint
         result.push_back({global, ms});

@@ -20,6 +20,7 @@ struct fitting_config {
     scalar_t pathlimit = std::numeric_limits<scalar_t>::max();
     scalar_t overstep_tolerance = -10 * detray::unit<scalar_t>::um;
     scalar_t step_constraint = std::numeric_limits<scalar_t>::max();
+    scalar_t mask_tolerance = 15.f * detray::unit<scalar_t>::um;
 };
 
 }  // namespace traccc

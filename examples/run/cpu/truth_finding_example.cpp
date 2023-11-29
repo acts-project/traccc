@@ -16,6 +16,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
+#include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/finding_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/propagation_options.hpp"
@@ -24,7 +25,8 @@
 
 // Detray include(s).
 #include "detray/core/detector.hpp"
-#include "detray/detectors/toy_metadata.hpp"
+#include "detray/core/detector_metadata.hpp"
+#include "detray/detectors/bfield.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -43,14 +45,14 @@ namespace po = boost::program_options;
 
 int seq_run(const traccc::finding_input_config& i_cfg,
             const traccc::propagation_options<scalar>& propagation_opts,
-            const traccc::common_options& common_opts) {
+            const traccc::common_options& common_opts,
+            const traccc::detector_input_options& det_opts) {
 
     /// Type declarations
-    using host_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field,
-                         detray::host_container_types>;
+    using host_detector_type = detray::detector<detray::default_metadata,
+                                                detray::host_container_types>;
 
-    using b_field_t = typename host_detector_type::bfield_type;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::transform3,
                            detray::constrained_step<>>;
@@ -75,14 +77,18 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    auto field = detray::bfield::create_const_field(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg
-        .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file)
-        .bfield_vec(B[0], B[1], B[2]);
-
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
+    if (!det_opts.material_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            det_opts.material_file);
+    }
+    if (!det_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    }
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
@@ -152,13 +158,13 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, measurements_per_event, seeds);
+            host_finding(host_det, field, measurements_per_event, seeds);
 
         std::cout << "Number of found tracks: " << track_candidates.size()
                   << std::endl;
 
         // Run fitting
-        auto track_states = host_fitting(host_det, track_candidates);
+        auto track_states = host_fitting(host_det, field, track_candidates);
 
         std::cout << "Number of fitted tracks: " << track_states.size()
                   << std::endl;
@@ -197,6 +203,7 @@ int main(int argc, char* argv[]) {
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
+    traccc::detector_input_options det_opts(desc);
     traccc::finding_input_config finding_input_cfg(desc);
     traccc::propagation_options<scalar> propagation_opts(desc);
 
@@ -208,11 +215,12 @@ int main(int argc, char* argv[]) {
 
     // Read options
     common_opts.read(vm);
+    det_opts.read(vm);
     finding_input_cfg.read(vm);
     propagation_opts.read(vm);
 
     std::cout << "Running " << argv[0] << " " << common_opts.input_directory
               << " " << common_opts.events << std::endl;
 
-    return seq_run(finding_input_cfg, propagation_opts, common_opts);
+    return seq_run(finding_input_cfg, propagation_opts, common_opts, det_opts);
 }

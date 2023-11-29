@@ -19,16 +19,22 @@
 // Vecmem include(s).
 #include <vecmem/utils/copy.hpp>
 
-namespace traccc::cuda::experimental {
+// Thrust include(s).
+#include <thrust/execution_policy.h>
+#include <thrust/sort.h>
 
 namespace {
+
 /// These indices in clusterization will only range from 0 to
 /// max_cells_per_partition, so we only need a short.
 using index_t = unsigned short;
 
 static constexpr int TARGET_CELLS_PER_THREAD = 8;
 static constexpr int MAX_CELLS_PER_THREAD = 12;
+
 }  // namespace
+
+namespace traccc::cuda::experimental {
 
 namespace kernels {
 
@@ -140,6 +146,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         cudaMemcpyDeviceToDevice, stream));
 
     m_stream.synchronize();
+
+    // Sort the measurements w.r.t geometry barcode
+    thrust::sort(thrust::cuda::par.on(stream), new_measurements_device.begin(),
+                 new_measurements_device.end(), measurement_sort_comp());
 
     return new_measurements_buffer;
 }

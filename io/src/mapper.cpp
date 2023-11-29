@@ -8,10 +8,10 @@
 // Local include(s).
 #include "traccc/io/mapper.hpp"
 
-#include "csv/make_cell_reader.hpp"
-#include "csv/make_hit_reader.hpp"
-#include "csv/make_measurement_hit_id_reader.hpp"
-#include "csv/make_particle_reader.hpp"
+#include "traccc/io/csv/make_cell_reader.hpp"
+#include "traccc/io/csv/make_hit_reader.hpp"
+#include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
+#include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
@@ -101,12 +101,12 @@ hit_map generate_hit_map(std::size_t event, const std::string& hits_dir) {
     io::csv::hit iohit;
 
     // Read the hits from the relevant event file
-    std::string io_meas_hit_id_file =
+    std::string io_measurement_hit_id_file =
         io::data_directory() + hits_dir +
         io::get_event_filename(event, "-measurement-simhit-map.csv");
 
     auto mhid_reader =
-        io::csv::make_measurement_hit_id_reader(io_meas_hit_id_file);
+        io::csv::make_measurement_hit_id_reader(io_measurement_hit_id_file);
 
     io::csv::measurement_hit_id mh_id;
 
