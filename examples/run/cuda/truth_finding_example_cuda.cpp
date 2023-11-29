@@ -14,6 +14,7 @@
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
+#include "traccc/event/event_tree_writer.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
@@ -86,6 +87,8 @@ int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     // Performance writer
+    traccc::event_tree_writer evt_tree_writer(
+        traccc::event_tree_writer::config{});
     traccc::finding_performance_writer find_performance_writer(
         traccc::finding_performance_writer::config{});
     traccc::fitting_performance_writer fit_performance_writer(
@@ -320,6 +323,7 @@ int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
         n_fitted_tracks_cuda += track_states_cuda.size();
 
         if (common_opts.check_performance) {
+            evt_tree_writer.write(traccc::get_data(track_states), evt_map2);
             find_performance_writer.write(
                 traccc::get_data(track_candidates_cuda), evt_map2);
 
@@ -336,6 +340,7 @@ int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
     }
 
     if (common_opts.check_performance) {
+        evt_tree_writer.finalize();
         find_performance_writer.finalize();
         fit_performance_writer.finalize();
     }
