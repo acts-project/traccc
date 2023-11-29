@@ -306,9 +306,9 @@ int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
                       << std::endl;
 
             // Compare the track parameters made on the host and on the device.
-            traccc::collection_comparator<traccc::fitter_info<transform3>>
-                compare_fitter_infos{"fitted tracks"};
-            compare_fitter_infos(
+            traccc::collection_comparator<traccc::fitting_result<transform3>>
+                compare_fitting_results{"fitted tracks"};
+            compare_fitting_results(
                 vecmem::get_data(track_states.get_headers()),
                 vecmem::get_data(track_states_cuda.get_headers()));
         }
@@ -327,9 +327,9 @@ int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
                 const auto& trk_states_per_track =
                     track_states_cuda.at(i).items;
 
-                const auto& fit_info = track_states_cuda[i].header;
+                const auto& fit_res = track_states_cuda[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_info,
+                fit_performance_writer.write(trk_states_per_track, fit_res,
                                              host_det, evt_map2);
             }
         }

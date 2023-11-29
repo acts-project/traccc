@@ -55,7 +55,7 @@ TRACCC_HOST_DEVICE inline void fit(
     fitter.fit(seed_param, fitter_state, nav_candidates.at(globalIndex));
 
     // Get the final fitting information
-    track_states[globalIndex].header = fitter_state.m_fit_info;
+    track_states[globalIndex].header = fitter_state.m_fit_res;
 }
 
 }  // namespace traccc::device
