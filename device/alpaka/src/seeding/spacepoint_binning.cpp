@@ -89,7 +89,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
     using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
     auto const platformAcc = ::alpaka::Platform<Acc>{};
-    auto devAcc = ::alpaka::getDevByIdx(platformAcc,0u);
+    auto devAcc = ::alpaka::getDevByIdx(platformAcc, 0u);
     auto queue = Queue{devAcc};
 
     // Get the spacepoint sizes from the view
