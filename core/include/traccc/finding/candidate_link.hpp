@@ -32,7 +32,7 @@ struct candidate_link {
     unsigned int meas_idx;
 
     // Index to the initial seed
-    unsigned int initial_seed;
+    unsigned int seed_idx;
 };
 
 }  // namespace traccc
