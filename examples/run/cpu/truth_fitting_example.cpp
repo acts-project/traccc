@@ -125,6 +125,8 @@ int main(int argc, char* argv[]) {
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = propagation_opts.step_constraint;
+    fit_cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
+    fit_cfg.mask_tolerance = propagation_opts.mask_tolerance;
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     // Seed generator
@@ -156,9 +158,9 @@ int main(int argc, char* argv[]) {
             for (unsigned int i = 0; i < n_fitted_tracks; i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
-                const auto& fit_info = track_states[i].header;
+                const auto& fit_res = track_states[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_info,
+                fit_performance_writer.write(trk_states_per_track, fit_res,
                                              host_det, evt_map2);
             }
         }

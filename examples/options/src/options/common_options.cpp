@@ -12,18 +12,18 @@ traccc::common_options::common_options(po::options_description& desc) {
 
     desc.add_options()("input-csv", "Use csv input file");
     desc.add_options()("input-binary", "Use binary input file");
-    desc.add_options()("input_directory", po::value<std::string>()->required(),
+    desc.add_options()("input-directory", po::value<std::string>()->required(),
                        "specify the directory of input data");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
     desc.add_options()("skip", po::value<int>()->default_value(0),
                        "number of events to skip");
-    desc.add_options()("target_cells_per_partition",
+    desc.add_options()("target-cells-per-partition",
                        po::value<unsigned short>()->default_value(1024),
                        "Number of cells to merge in a partition. Equal to the "
                        "number of threads multiplied by CELLS_PER_THREAD "
                        "defined in clusterization.");
-    desc.add_options()("check_performance",
+    desc.add_options()("check-performance",
                        po::value<bool>()->default_value(false),
                        "generate performance result");
 }
@@ -35,10 +35,10 @@ void traccc::common_options::read(const po::variables_map& vm) {
     } else if (vm.count("input-binary")) {
         input_data_format = traccc::data_format::binary;
     }
-    input_directory = vm["input_directory"].as<std::string>();
+    input_directory = vm["input-directory"].as<std::string>();
     events = vm["events"].as<unsigned int>();
     skip = vm["skip"].as<int>();
     target_cells_per_partition =
-        vm["target_cells_per_partition"].as<unsigned short>();
-    check_performance = vm["check_performance"].as<bool>();
+        vm["target-cells-per-partition"].as<unsigned short>();
+    check_performance = vm["check-performance"].as<bool>();
 }

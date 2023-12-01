@@ -18,8 +18,7 @@ build_cuda:
         -DCMAKE_BUILD_TYPE=Release
         -DTRACCC_BUILD_TESTING=ON
         -DTRACCC_BUILD_CUDA=ON
-      - cmake --build build
-
+      - cmake --build build --parallel 2
 
 test_cuda:
   stage: test

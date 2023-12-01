@@ -26,6 +26,8 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
         {0, 0, 0}, 0, {1, 0, 0}, -1};
 
     /// Position of planes (in mm unit)
+    /// @NOTE: Increasing the number of planes will make
+    /// test_ckf_combinatorics_telescope take too much time
     static const inline std::vector<scalar> plane_positions = {
         20., 40., 60., 80., 100., 120., 140, 160, 180.};
 
@@ -54,7 +56,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
         1 * detray::unit<scalar>::ns};
 
     void consistency_tests(const track_state_collection_types::host&
-                               track_states_per_track) const override {
+                               track_states_per_track) const {
 
         // The nubmer of track states is supposed be equal to the number
         // of planes
@@ -62,7 +64,8 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
     }
 
     protected:
-    static void SetUpTestCase() {
+    virtual void SetUp() override {
+
         vecmem::host_memory_resource host_mr;
 
         detray::tel_det_config<> tel_cfg{rectangle};
@@ -77,7 +80,8 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
         // Write detector file
         auto writer_cfg = detray::io::detector_writer_config{}
                               .format(detray::io::format::json)
-                              .replace_files(true);
+                              .replace_files(true)
+                              .path(std::get<0>(GetParam()));
         detray::io::write_detector(det, name_map, writer_cfg);
     }
 };

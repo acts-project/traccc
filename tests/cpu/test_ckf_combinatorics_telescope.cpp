@@ -37,7 +37,7 @@
 
 using namespace traccc;
 // This defines the local frame test suite
-TEST_P(CkfSparseTrackTelescopeTests, Run) {
+TEST_P(CkfCombinatoricsTelescopeTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
@@ -50,11 +50,6 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     const scalar charge = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
-
-    // Performance writer
-    traccc::fitting_performance_writer::config fit_writer_cfg;
-    fit_writer_cfg.file_path = "performance_track_fitting_" + name + ".root";
-    traccc::fitting_performance_writer fit_performance_writer(fit_writer_cfg);
 
     /*****************************
      * Build a telescope geometry
@@ -125,10 +120,6 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
 
-    // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
-
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
@@ -158,75 +149,26 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         auto track_candidates =
             host_finding(host_det, field, measurements_per_event, seeds);
 
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
-
-        // Run fitting
-        auto track_states = host_fitting(host_det, field, track_candidates);
-
-        ASSERT_EQ(track_states.size(), n_truth_tracks);
-
-        for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-
-            const auto& track_states_per_track = track_states[i_trk].items;
-            const auto& fit_res = track_states[i_trk].header;
-
-            consistency_tests(track_states_per_track);
-
-            ndf_tests(fit_res, track_states_per_track);
-
-            fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_map);
-        }
+        // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
+        ASSERT_EQ(track_candidates.size(),
+                  std::pow(n_truth_tracks, plane_positions.size() + 1));
     }
-
-    fit_performance_writer.finalize();
-
-    /********************
-     * Pull value test
-     ********************/
-
-    static const std::vector<std::string> pull_names{
-        "pull_d0", "pull_z0", "pull_phi", "pull_theta", "pull_qop"};
-    pull_value_tests(fit_writer_cfg.file_path, pull_names);
-
-    /********************
-     * Success rate test
-     ********************/
-
-    scalar success_rate =
-        static_cast<scalar>(n_success) / (n_truth_tracks * n_events);
-
-    ASSERT_FLOAT_EQ(success_rate, 1.00f);
 }
 
+// Testing two identical tracks
 INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackTelescopeValidation0, CkfSparseTrackTelescopeTests,
+    CkfCombinatoricsTelescopeValidation0, CkfCombinatoricsTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "telescope_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
-        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 1, 5000)));
+        "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 2, 1)));
 
+// Testing three identical tracks
 INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackTelescopeValidation1, CkfSparseTrackTelescopeTests,
+    CkfCombinatoricsTelescopeValidation1, CkfCombinatoricsTelescopeTests,
     ::testing::Values(std::make_tuple(
-        "telescope_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
-        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 2, 2500)));
-
-INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackTelescopeValidation2, CkfSparseTrackTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
-        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 4, 1250)));
-
-INSTANTIATE_TEST_SUITE_P(
-    CkfSparseTrackTelescopeValidation3, CkfSparseTrackTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
-        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 10, 500)));
+        "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 3, 1)));

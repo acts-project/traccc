@@ -53,7 +53,7 @@ using namespace traccc;
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
-            const traccc::finding_input_config& finding_cfg,
+            const traccc::finding_input_config<traccc::scalar>& finding_cfg,
             const traccc::propagation_options<traccc::scalar>& propagation_opts,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts) {
@@ -128,7 +128,10 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
     cfg.min_track_candidates_per_track = finding_cfg.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_cfg.track_candidates_range[1];
+    cfg.chi2_max = finding_cfg.chi2_max;
     cfg.constrained_step_size = propagation_opts.step_constraint;
+    cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
+    cfg.mask_tolerance = propagation_opts.mask_tolerance;
 
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
@@ -136,6 +139,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = propagation_opts.step_constraint;
+    fit_cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
+    fit_cfg.mask_tolerance = propagation_opts.mask_tolerance;
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     // Loop over events
@@ -217,9 +222,9 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
-                const auto& fit_info = track_states[i].header;
+                const auto& fit_res = track_states[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_info,
+                fit_performance_writer.write(trk_states_per_track, fit_res,
                                              host_det, evt_map);
             }
         }
@@ -254,7 +259,7 @@ int main(int argc, char* argv[]) {
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
     traccc::seeding_input_config seeding_input_cfg(desc);
-    traccc::finding_input_config finding_input_cfg(desc);
+    traccc::finding_input_config<traccc::scalar> finding_input_cfg(desc);
     traccc::propagation_options<traccc::scalar> propagation_opts(desc);
 
     po::variables_map vm;

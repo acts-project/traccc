@@ -9,6 +9,7 @@ traccc_add_test(cpu
     "compare_with_acts_seeding.cpp"
     "seq_single_module.cpp"
     "test_cca.cpp"
+    "test_ckf_combinatorics_telescope.cpp"
     "test_ckf_sparse_tracks_telescope.cpp"
     "test_clusterization_resolution.cpp"
     "test_copy.cpp"

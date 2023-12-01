@@ -187,10 +187,10 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
     }
 }
 
-// Test parameters: <initial momentum, theta direction>
+// Test parameters: <initial momentum, theta direction, charge>
 class TelescopeDetectorSimulation
-    : public ::testing::TestWithParam<std::tuple<std::string, scalar, scalar>> {
-};
+    : public ::testing::TestWithParam<
+          std::tuple<std::string, scalar, scalar, scalar>> {};
 
 TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
@@ -229,6 +229,8 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     const vector3 ori{0.f, 0.f, 0.f};
     const scalar theta = std::get<2>(GetParam());
 
+    const scalar charge = std::get<3>(GetParam());
+
     // Track generator
     using generator_type =
         detray::uniform_track_generator<traccc::free_track_parameters>;
@@ -238,6 +240,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     gen_cfg.origin(ori);
     gen_cfg.theta_range(theta, theta);
     gen_cfg.p_mag(mom);
+    gen_cfg.charge(charge);
     generator_type generator(gen_cfg);
 
     // Create smearer
@@ -282,31 +285,31 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 INSTANTIATE_TEST_SUITE_P(
     Simulation, TelescopeDetectorSimulation,
     ::testing::Values(
-        std::make_tuple("0", 0.1f * detray::unit<scalar>::GeV, 0.01f),
-        std::make_tuple("1", 1.f * detray::unit<scalar>::GeV, 0.01f),
-        std::make_tuple("2", 10.f * detray::unit<scalar>::GeV, 0.01f),
-        std::make_tuple("3", 100.f * detray::unit<scalar>::GeV, 0.01f),
+        std::make_tuple("0", 0.1f * detray::unit<scalar>::GeV, 0.01f, -1.f),
+        std::make_tuple("1", 1.f * detray::unit<scalar>::GeV, 0.01f, -1.f),
+        std::make_tuple("2", 10.f * detray::unit<scalar>::GeV, 0.01f, -1.f),
+        std::make_tuple("3", 100.f * detray::unit<scalar>::GeV, 0.01f, -1.f),
         std::make_tuple("4", 0.1f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f),
+                        detray::constant<scalar>::pi / 12.f, 1.f),
         std::make_tuple("5", 1.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f),
+                        detray::constant<scalar>::pi / 12.f, 1.f),
         std::make_tuple("6", 10.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f),
+                        detray::constant<scalar>::pi / 12.f, 1.f),
         std::make_tuple("7", 100.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f),
+                        detray::constant<scalar>::pi / 12.f, 1.f),
         std::make_tuple("8", 0.1f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f),
+                        detray::constant<scalar>::pi / 8.f, -1.f),
         std::make_tuple("9", 1.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f),
+                        detray::constant<scalar>::pi / 8.f, -1.f),
         std::make_tuple("10", 10.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f),
+                        detray::constant<scalar>::pi / 8.f, -1.f),
         std::make_tuple("11", 100.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f),
+                        detray::constant<scalar>::pi / 8.f, -1.f),
         std::make_tuple("12", 0.1f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f),
+                        detray::constant<scalar>::pi / 6.f, 1.f),
         std::make_tuple("13", 1.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f),
+                        detray::constant<scalar>::pi / 6.f, 1.f),
         std::make_tuple("14", 10.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f),
+                        detray::constant<scalar>::pi / 6.f, 1.f),
         std::make_tuple("15", 100.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f)));
+                        detray::constant<scalar>::pi / 6.f, 1.f)));

@@ -7,11 +7,9 @@
 
 // Project include(s).
 #include "traccc/finding/candidate_link.hpp"
-#include "traccc/utils/compare.hpp"
 
 // System include
 #include <algorithm>
-#include <iostream>
 #include <limits>
 
 namespace traccc {
@@ -35,7 +33,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     auto end = std::unique_copy(measurements.begin(), measurements.end(),
                                 uniques.begin(), measurement_equal_comp());
-    unsigned int n_modules = end - uniques.begin();
+    const unsigned int n_modules = end - uniques.begin();
 
     // Get upper bounds of unique elements
     std::vector<unsigned int> upper_bounds;
@@ -213,9 +211,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     // Create propagator state
                     typename propagator_type::state propagation(
                         trk_state.filtered(), field, det);
+                    propagation._stepping().set_overstep_tolerance(
+                        m_cfg.overstep_tolerance);
                     propagation._stepping.template set_constraint<
                         detray::step::constraint::e_accuracy>(
                         m_cfg.constrained_step_size);
+                    propagation.set_mask_tolerance(m_cfg.mask_tolerance);
 
                     typename detray::pathlimit_aborter::state s0;
                     typename detray::parameter_transporter<

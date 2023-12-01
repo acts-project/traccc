@@ -113,7 +113,7 @@ class kalman_fitter {
         typename resetter::state m_resetter_state{};
 
         /// Fitting result per track
-        fitter_info<transform3_type> m_fit_info;
+        fitting_result<transform3_type> m_fit_res;
     };
 
     /// Run the kalman fitter for a given number of iterations
@@ -228,22 +228,22 @@ class kalman_fitter {
 
     TRACCC_HOST_DEVICE
     void update_statistics(state& fitter_state) {
-        auto& fit_info = fitter_state.m_fit_info;
+        auto& fit_res = fitter_state.m_fit_res;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
         // Fit parameter = smoothed track parameter at the first surface
-        fit_info.fit_params = track_states[0].smoothed();
+        fit_res.fit_params = track_states[0].smoothed();
 
         for (const auto& trk_state : track_states) {
 
             const detray::surface<detector_type> sf{m_detector,
                                                     trk_state.surface_link()};
             sf.template visit_mask<statistics_updater<transform3_type>>(
-                fit_info, trk_state);
+                fit_res, trk_state);
         }
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
-        fit_info.ndf = fit_info.ndf - 5.f;
+        fit_res.ndf = fit_res.ndf - 5.f;
     }
 
     private:

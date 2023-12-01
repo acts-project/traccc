@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
     traccc::propagation_options<scalar> propagation_opts(desc);
-    desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
+    desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
     po::variables_map vm;
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     det_opts.read(vm);
 
     propagation_opts.read(vm);
-    auto run_cpu = vm["run_cpu"].as<bool>();
+    auto run_cpu = vm["run-cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " " << common_opts.input_directory
               << " " << common_opts.events << std::endl;
@@ -234,9 +234,9 @@ int main(int argc, char* argv[]) {
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
 
             // Compare the track parameters made on the host and on the device.
-            traccc::collection_comparator<traccc::fitter_info<transform3>>
-                compare_fitter_infos{"fitted tracks"};
-            compare_fitter_infos(
+            traccc::collection_comparator<traccc::fitting_result<transform3>>
+                compare_fitting_results{"fitted tracks"};
+            compare_fitting_results(
                 vecmem::get_data(track_states.get_headers()),
                 vecmem::get_data(track_states_cuda.get_headers()));
         }
@@ -250,9 +250,9 @@ int main(int argc, char* argv[]) {
                 const auto& trk_states_per_track =
                     track_states_cuda.at(i).items;
 
-                const auto& fit_info = track_states_cuda[i].header;
+                const auto& fit_res = track_states_cuda[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_info,
+                fit_performance_writer.write(trk_states_per_track, fit_res,
                                              host_det, evt_map2);
             }
         }

@@ -61,7 +61,7 @@ using namespace traccc;
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
-            const traccc::finding_input_config& finding_cfg,
+            const traccc::finding_input_config<traccc::scalar>& finding_cfg,
             const traccc::propagation_options<traccc::scalar>& propagation_opts,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
@@ -179,10 +179,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         rk_stepper_type, device_navigator_type>::config_type cfg;
     cfg.min_track_candidates_per_track = finding_cfg.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_cfg.track_candidates_range[1];
+    cfg.chi2_max = finding_cfg.chi2_max;
     cfg.constrained_step_size = propagation_opts.step_constraint;
-
-    // few tracks (~1 out of 1000 tracks) are missed when chi2_max = 15
-    cfg.chi2_max = 30.f;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -443,9 +441,9 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                 const auto& trk_states_per_track =
                     track_states_cuda.at(i).items;
 
-                const auto& fit_info = track_states_cuda[i].header;
+                const auto& fit_res = track_states_cuda[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_info,
+                fit_performance_writer.write(trk_states_per_track, fit_res,
                                              host_det, evt_map);
             }
         }
@@ -488,9 +486,9 @@ int main(int argc, char* argv[]) {
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
     traccc::seeding_input_config seeding_input_cfg(desc);
-    traccc::finding_input_config finding_input_cfg(desc);
+    traccc::finding_input_config<traccc::scalar> finding_input_cfg(desc);
     traccc::propagation_options<traccc::scalar> propagation_opts(desc);
-    desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
+    desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
     po::variables_map vm;
@@ -505,7 +503,7 @@ int main(int argc, char* argv[]) {
     seeding_input_cfg.read(vm);
     finding_input_cfg.read(vm);
     propagation_opts.read(vm);
-    auto run_cpu = vm["run_cpu"].as<bool>();
+    auto run_cpu = vm["run-cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " " << det_opts.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events

@@ -56,7 +56,7 @@ class fitting_performance_writer {
     /// @param evt_map event map to find the truth values
     template <typename detector_t>
     void write(const track_state_collection_types::host& track_states_per_track,
-               const fitter_info<transform3>& fit_info, const detector_t& det,
+               const fitting_result<transform3>& fit_res, const detector_t& det,
                event_map2& evt_map) {
 
         auto& m_p_map = evt_map.meas_ptc_map;
@@ -95,10 +95,10 @@ class fitting_performance_writer {
             ptc.charge / getter::norm(global_mom);
 
         // For the moment, only fill with the first measurements
-        if (fit_info.ndf > 0 && !trk_state.is_hole) {
+        if (fit_res.ndf > 0 && !trk_state.is_hole) {
             write_res(truth_param, trk_state.smoothed(), ptc);
         }
-        write_stat(fit_info, track_states_per_track);
+        write_stat(fit_res, track_states_per_track);
     }
 
     /// Writing caches into the file
@@ -111,7 +111,7 @@ class fitting_performance_writer {
                    const particle& ptc);
 
     /// Non-templated part of the @c write(...) function
-    void write_stat(const fitter_info<transform3>& fit_info,
+    void write_stat(const fitting_result<transform3>& fit_res,
                     const track_state_collection_types::host& track_states);
 
     /// Configuration for the tool
