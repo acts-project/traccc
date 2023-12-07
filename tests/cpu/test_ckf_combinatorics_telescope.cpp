@@ -51,6 +51,8 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
 
+    const unsigned int nmax_per_seed = 500;
+
     /*****************************
      * Build a telescope geometry
      *****************************/
@@ -116,9 +118,15 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     typename traccc::finding_algorithm<rk_stepper_type,
                                        host_navigator_type>::config_type cfg;
 
+    typename traccc::finding_algorithm<
+        rk_stepper_type, host_navigator_type>::config_type cfg_limit;
+    cfg_limit.max_num_branches_per_initial_seed = nmax_per_seed;
+
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
+    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
+        host_finding_limit(cfg_limit);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -149,9 +157,15 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         auto track_candidates =
             host_finding(host_det, field, measurements_per_event, seeds);
 
+        auto track_candidates_limit =
+            host_finding_limit(host_det, field, measurements_per_event, seeds);
+
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
         ASSERT_EQ(track_candidates.size(),
                   std::pow(n_truth_tracks, plane_positions.size() + 1));
+
+        ASSERT_EQ(track_candidates_limit.size(),
+                  n_truth_tracks * nmax_per_seed);
     }
 }
 
