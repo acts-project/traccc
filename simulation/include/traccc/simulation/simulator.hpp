@@ -36,6 +36,7 @@ struct simulator {
         scalar_type overstep_tolerance{-100.f * detray::unit<scalar_type>::um};
         scalar_type step_constraint{std::numeric_limits<scalar_type>::max()};
         scalar_type mask_tolerance = 15.f * detray::unit<scalar_type>::um;
+        scalar_type rk_tolerance = 1e-4;
     };
 
     using transform3 = typename detector_t::transform3;
@@ -97,6 +98,7 @@ struct simulator {
                     detray::step::constraint::e_accuracy>(
                     m_cfg.step_constraint);
                 propagation.set_mask_tolerance(m_cfg.mask_tolerance);
+                propagation._stepping.set_tolerance(m_cfg.rk_tolerance);
 
                 p.propagate(propagation, actor_states);
 

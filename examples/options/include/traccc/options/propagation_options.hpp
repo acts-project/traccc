@@ -28,6 +28,7 @@ struct propagation_options {
     scalar_t step_constraint{std::numeric_limits<scalar_t>::max()};
     scalar_t overstep_tolerance{-100.f * detray::unit<scalar_t>::um};
     scalar_t mask_tolerance{15.f * detray::unit<scalar_t>::um};
+    scalar_t rk_tolerance{1e-4};
 
     propagation_options(po::options_description& desc) {
         desc.add_options()("constraint-step-size-mm",
@@ -40,6 +41,9 @@ struct propagation_options {
         desc.add_options()("mask-tolerance-um",
                            po::value<scalar_t>()->default_value(15.f),
                            "The mask tolerance [um]");
+        desc.add_options()("rk-tolerance",
+                           po::value<scalar_t>()->default_value(1e-4),
+                           "The Runge-Kutta stepper tolerance");
     }
 
     void read(const po::variables_map& vm) {
@@ -49,6 +53,7 @@ struct propagation_options {
                              detray::unit<scalar_t>::um;
         mask_tolerance =
             vm["mask-tolerance-um"].as<scalar_t>() * detray::unit<scalar_t>::um;
+        rk_tolerance = vm["rk-tolerance"].as<scalar_t>();
     }
 };
 

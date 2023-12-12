@@ -180,6 +180,7 @@ class kalman_fitter {
             .template set_constraint<detray::step::constraint::e_accuracy>(
                 m_cfg.step_constraint);
         propagation.set_mask_tolerance(m_cfg.mask_tolerance);
+        propagation._stepping.set_tolerance(m_cfg.rk_tolerance);
 
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());

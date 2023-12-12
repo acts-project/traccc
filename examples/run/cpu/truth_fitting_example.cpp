@@ -127,6 +127,8 @@ int main(int argc, char* argv[]) {
     fit_cfg.step_constraint = propagation_opts.step_constraint;
     fit_cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
     fit_cfg.mask_tolerance = propagation_opts.mask_tolerance;
+    fit_cfg.rk_tolerance = propagation_opts.rk_tolerance;
+
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     // Seed generator

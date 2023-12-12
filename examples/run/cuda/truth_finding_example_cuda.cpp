@@ -156,9 +156,10 @@ int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
     cfg.min_track_candidates_per_track = i_cfg.track_candidates_range[0];
     cfg.max_track_candidates_per_track = i_cfg.track_candidates_range[1];
     cfg.chi2_max = i_cfg.chi2_max;
-    cfg.constrained_step_size = propagation_opts.step_constraint;
+    cfg.step_constraint = propagation_opts.step_constraint;
     cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
     cfg.mask_tolerance = propagation_opts.mask_tolerance;
+    cfg.rk_tolerance = propagation_opts.rk_tolerance;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -171,6 +172,7 @@ int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
     fit_cfg.step_constraint = propagation_opts.step_constraint;
     fit_cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
     fit_cfg.mask_tolerance = propagation_opts.mask_tolerance;
+    fit_cfg.rk_tolerance = propagation_opts.rk_tolerance;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(

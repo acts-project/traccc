@@ -65,8 +65,9 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     propagation._stepping().set_overstep_tolerance(cfg.overstep_tolerance);
     propagation._stepping
         .template set_constraint<detray::step::constraint::e_accuracy>(
-            cfg.constrained_step_size);
+            cfg.step_constraint);
     propagation.set_mask_tolerance(cfg.mask_tolerance);
+    propagation._stepping.set_tolerance(cfg.rk_tolerance);
 
     // Actor state
     // @TODO: simplify the syntax here

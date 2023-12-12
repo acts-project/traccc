@@ -138,6 +138,7 @@ int main(int argc, char* argv[]) {
     sim.get_config().step_constraint = propagation_opts.step_constraint;
     sim.get_config().overstep_tolerance = propagation_opts.overstep_tolerance;
     sim.get_config().mask_tolerance = propagation_opts.mask_tolerance;
+    sim.get_config().rk_tolerance = propagation_opts.rk_tolerance;
 
     sim.run();
 
