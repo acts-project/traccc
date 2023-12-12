@@ -215,8 +215,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         m_cfg.overstep_tolerance);
                     propagation._stepping.template set_constraint<
                         detray::step::constraint::e_accuracy>(
-                        m_cfg.constrained_step_size);
+                        m_cfg.step_constraint);
                     propagation.set_mask_tolerance(m_cfg.mask_tolerance);
+                    propagation._stepping.set_tolerance(m_cfg.rk_tolerance);
 
                     typename detray::pathlimit_aborter::state s0;
                     typename detray::parameter_transporter<
