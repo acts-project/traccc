@@ -1,0 +1,83 @@
+{
+   "version" : 3,
+   "configurePresets": [
+      {
+         "name" : "base",
+         "displayName" : "Base Configuration",
+         "warnings": {
+            "deprecated": true
+         },
+         "cacheVariables": {
+            "CMAKE_BUILD_TYPE"        : "RelWithDebInfo",
+            "TRACCC_BUILD_TESTING"    : "TRUE",
+            "TRACCC_BUILD_EXAMPLES"   : "TRUE",
+            "TRACCC_FAIL_ON_WARNINGS" : "TRUE",
+            "TRACCC_USE_ROOT"         : "FALSE"
+         }
+      },
+      {
+         "name" : "cuda",
+         "displayName" : "CUDA Code Development",
+         "inherits": ["base"],
+         "cacheVariables": {
+            "TRACCC_BUILD_CUDA" : "TRUE",
+            "VECMEM_BUILD_CUDA_LIBRARY" : "TRUE"
+         }
+      },
+      {
+         "name" : "sycl",
+         "displayName" : "SYCL Code Development",
+         "inherits": ["base"],
+         "cacheVariables": {
+            "TRACCC_BUILD_SYCL" : "TRUE",
+            "VECMEM_BUILD_SYCL_LIBRARY" : "TRUE"
+         }
+      },
+      {
+         "name" : "alpaka",
+         "displayName" : "Alpaka Code Development",
+         "inherits": ["cuda"],
+         "cacheVariables": {
+            "TRACCC_BUILD_ALPAKA" : "TRUE"
+         }
+      },
+      {
+         "name" : "kokkos",
+         "displayName" : "Kokkos Code Development",
+         "inherits": ["cuda"],
+         "cacheVariables": {
+            "TRACCC_BUILD_KOKKOS" : "TRUE"
+         }
+      },
+      {
+         "name" : "root",
+         "displayName" : "ROOT Enabled Code Development",
+         "inherits": ["base"],
+         "cacheVariables": {
+            "TRACCC_USE_ROOT" : "TRUE",
+            "TRACCC_USE_SYSTEM_TBB" : "TRUE"
+         }
+      },
+      {
+         "name" : "array",
+         "displayName" : "ARRAY Backended Code Development",
+         "inherits": ["base"],
+         "cacheVariables": {
+            "TRACCC_ALGEBRA_PLUGINS" : "ARRAY"
+         }
+      },
+      {
+         "name" : "eigen",
+         "displayName" : "EIGEN Backended Code Development",
+         "inherits": ["base"],
+         "cacheVariables": {
+            "TRACCC_ALGEBRA_PLUGINS" : "EIGEN"
+         }
+      },
+      {
+         "name" : "default",
+         "displayName": "Default Build Configuration",
+         "inherits": ["root", "array"]
+      }
+   ]
+}
