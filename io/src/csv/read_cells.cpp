@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,6 +13,7 @@
 // System include(s).
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -74,8 +75,10 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
 
 namespace traccc::io::csv {
 
-void read_cells(cell_reader_output& out, std::string_view filename,
-                const geometry* geom, const digitization_config* dconfig) {
+void read_cells(
+    cell_reader_output& out, std::string_view filename, const geometry* geom,
+    const digitization_config* dconfig,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
 
     // Construct the cell reader object.
     auto reader = make_cell_reader(filename);
@@ -95,6 +98,18 @@ void read_cells(cell_reader_output& out, std::string_view filename,
     // Read all cells from input file.
     csv::cell iocell;
     while (reader.read(iocell)) {
+
+        // Modify the geometry ID of the cell if a barcode map is provided.
+        if (barcode_map != nullptr) {
+            const auto it = barcode_map->find(iocell.geometry_id);
+            if (it != barcode_map->end()) {
+                iocell.geometry_id = it->second.value();
+            } else {
+                throw std::runtime_error(
+                    "Could not find barcode for geometry ID " +
+                    std::to_string(iocell.geometry_id));
+            }
+        }
 
         // Look for current module in cell counter vector.
         auto rit = std::find_if(result_modules.rbegin(), result_modules.rend(),

@@ -9,6 +9,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/utils.hpp"
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
@@ -25,12 +26,18 @@
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/io/common/detector_reader.hpp"
+
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
+#include <cstdint>
 #include <exception>
 #include <iostream>
+#include <map>
 
 namespace po = boost::program_options;
 
@@ -38,8 +45,31 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts) {
 
-    // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    // Memory resource used by the application.
+    vecmem::host_memory_resource host_mr;
+
+    // Construct a detector object.
+    detray::io::detector_reader_config reader_cfg{};
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
+    if (!det_opts.material_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            det_opts.material_file);
+    }
+    if (!det_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    }
+    auto [detector, _] =
+        detray::io::read_detector<detray::detector<> >(host_mr, reader_cfg);
+
+    // Construct an "old style geometry" from the detector object.
+    traccc::geometry surface_transforms =
+        traccc::io::alt_read_geometry(detector);
+
+    // Construct a map from Acts surface identifiers to Detray barcodes.
+    std::map<std::uint64_t, detray::geometry::barcode> barcode_map;
+    for (const auto& surface : detector.surface_lookup()) {
+        barcode_map[surface.source()] = surface.barcode();
+    }
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -57,9 +87,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
     traccc::spacepoint_grid_config grid_config(finder_config);
     traccc::seedfilter_config filter_config;
 
-    // Memory resource used by the EDM.
-    vecmem::host_memory_resource host_mr;
-
+    // Algorithms
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
@@ -79,7 +107,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
         // Read the cells from the relevant event file
         traccc::io::read_cells(readOut, event, common_opts.input_directory,
                                common_opts.input_data_format,
-                               &surface_transforms, &digi_cfg);
+                               &surface_transforms, &digi_cfg, &barcode_map);
         traccc::cell_collection_types::host& cells_per_event = readOut.cells;
         traccc::cell_module_collection_types::host& modules_per_event =
             readOut.modules;
