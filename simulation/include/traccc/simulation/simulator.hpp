@@ -50,7 +50,8 @@ struct simulator {
     using navigator_type = detray::navigator<detector_t>;
     using stepper_type =
         detray::rk_stepper<typename bfield_type::view_t, transform3,
-                           detray::constrained_step<>>;
+                           detray::constrained_step<>,
+                           detray::stepper_default_policy>;
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 

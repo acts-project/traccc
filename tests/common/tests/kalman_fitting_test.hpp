@@ -59,7 +59,8 @@ class KalmanFittingTests
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type = detray::rk_stepper<b_field_t::view_t, transform3,
-                                               detray::constrained_step<>>;
+                                               detray::constrained_step<>,
+                                               detray::stepper_default_policy>;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using host_fitter_type =
         kalman_fitter<rk_stepper_type, host_navigator_type>;
