@@ -239,7 +239,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     gen_cfg.phi_steps(phi_steps);
     gen_cfg.origin(ori);
     gen_cfg.theta_range(theta, theta);
-    gen_cfg.p_mag(mom);
+    gen_cfg.p_tot(mom);
     gen_cfg.charge(charge);
     generator_type generator(gen_cfg);
 
