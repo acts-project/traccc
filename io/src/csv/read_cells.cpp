@@ -30,7 +30,8 @@ const auto comp = [](const traccc::cell& c1, const traccc::cell& c2) {
 /// properties
 traccc::cell_module get_module(traccc::io::csv::cell c,
                                const traccc::geometry* geom,
-                               const traccc::digitization_config* dconfig) {
+                               const traccc::digitization_config* dconfig,
+                               const std::uint64_t original_geometry_id) {
 
     traccc::cell_module result;
     result.surface_link = detray::geometry::barcode{c.geometry_id};
@@ -54,11 +55,11 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
 
         // Check if the module ID is known.
         const traccc::digitization_config::Iterator geo_it =
-            dconfig->find(result.surface_link.value());
+            dconfig->find(original_geometry_id);
         if (geo_it == dconfig->end()) {
             throw std::runtime_error(
                 "Could not find digitization config for geometry ID " +
-                std::to_string(result.surface_link.value()));
+                std::to_string(original_geometry_id));
         }
 
         // Set the value on the module description.
@@ -100,6 +101,7 @@ void read_cells(
     while (reader.read(iocell)) {
 
         // Modify the geometry ID of the cell if a barcode map is provided.
+        const std::uint64_t original_geometry_id = iocell.geometry_id;
         if (barcode_map != nullptr) {
             const auto it = barcode_map->find(iocell.geometry_id);
             if (it != barcode_map->end()) {
@@ -119,7 +121,8 @@ void read_cells(
                                 });
         if (rit == result_modules.rend()) {
             // Add new cell and new cell counter if a new module is found
-            const cell_module mod = get_module(iocell, geom, dconfig);
+            const cell_module mod =
+                get_module(iocell, geom, dconfig, original_geometry_id);
             allCells.push_back({iocell, result_modules.size()});
             result_modules.push_back(mod);
             cellCounts.push_back(1);
