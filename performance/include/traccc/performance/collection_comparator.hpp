@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -49,6 +49,10 @@ class collection_comparator {
     void operator()(
         const typename collection_types<TYPE>::const_view& lhs,
         const typename collection_types<TYPE>::const_view& rhs) const;
+
+    scalar compare(const typename collection_types<TYPE>::const_view& lhs,
+                   const typename collection_types<TYPE>::const_view& rhs,
+                   scalar uncertainty) const;
 
     private:
     /// Container type name to print
