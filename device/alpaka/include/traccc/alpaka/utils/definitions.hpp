@@ -11,7 +11,7 @@
 #include <alpaka/example/ExampleDefaultAcc.hpp>
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#include "vecmem/utils/cuda/copy.h"
+#include "/home/wthompson/Work/traccc-build/_deps/vecmem-src/cuda/include/vecmem/utils/cuda/copy.hpp"
 #endif
 
 #include "vecmem/utils/copy.hpp"

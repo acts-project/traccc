@@ -6,6 +6,7 @@
  */
 
 // Project include(s)
+#pragma once
 #include "traccc/io/data_format.hpp"
 
 // Boost
