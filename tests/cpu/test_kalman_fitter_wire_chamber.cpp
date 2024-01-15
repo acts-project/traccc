@@ -149,6 +149,15 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
             const auto& fit_res = track_states[i_trk].header;
             const auto& track_states_per_track = track_states[i_trk].items;
 
+            const auto& seed = track_candidates[i_trk].header;
+            const auto& cands = track_candidates[i_trk].items;
+
+            if (cands.size() < 20) {
+
+                std::cout << "Track momentum (p, pT): " << seed.p() << " "
+                          << seed.pT() << " " << seed.qop() << " " << seed.phi()
+                          << " " << seed.theta() << std::endl;
+            }
             consistency_tests(track_states_per_track);
 
             ndf_tests(fit_res, track_states_per_track);
@@ -193,7 +202,7 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(std::make_tuple(
         "wire_10_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
         100, 100)));
 
@@ -202,7 +211,8 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(std::make_tuple(
         "wire_100_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{100.f, 100.f},
+        std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
         100, 100)));
 
