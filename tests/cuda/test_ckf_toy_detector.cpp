@@ -249,8 +249,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     CkfToyDetectorValidation1, CkfToyDetectorTests,
     ::testing::Values(std::make_tuple(
-        "toy_n_particles_1000", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "toy_n_particles_10000", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{1.f, 100.f}, std::array<scalar, 2u>{-3.f, 3.f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
-        1000, 1)));
+        10000, 1)));

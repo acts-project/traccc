@@ -152,12 +152,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
             const auto& seed = track_candidates[i_trk].header;
             const auto& cands = track_candidates[i_trk].items;
 
-            if (cands.size() < 20) {
-
-                std::cout << "Track momentum (p, pT): " << seed.p() << " "
-                          << seed.pT() << " " << seed.qop() << " " << seed.phi()
-                          << " " << seed.theta() << std::endl;
-            }
             consistency_tests(track_states_per_track);
 
             ndf_tests(fit_res, track_states_per_track);
