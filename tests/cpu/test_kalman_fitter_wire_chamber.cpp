@@ -149,9 +149,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
             const auto& fit_res = track_states[i_trk].header;
             const auto& track_states_per_track = track_states[i_trk].items;
 
-            const auto& seed = track_candidates[i_trk].header;
-            const auto& cands = track_candidates[i_trk].items;
-
             consistency_tests(track_states_per_track);
 
             ndf_tests(fit_res, track_states_per_track);
