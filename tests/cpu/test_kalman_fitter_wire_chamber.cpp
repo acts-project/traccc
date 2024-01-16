@@ -193,7 +193,7 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(std::make_tuple(
         "wire_10_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
         100, 100)));
 
@@ -202,7 +202,8 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(std::make_tuple(
         "wire_100_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{100.f, 100.f},
+        std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
         100, 100)));
 
