@@ -79,7 +79,7 @@ endif()
 find_package( CUDAToolkit )
 if( CUDAToolkit_FOUND )
    target_link_libraries( traccc_performance
-      PRIVATE CUDA::cudart )
+      PRIVATE CUDA::cudart ${CMAKE_DL_LIBS} )
    target_compile_definitions( traccc_performance
       PRIVATE TRACCC_HAVE_NVTX )
 endif()
