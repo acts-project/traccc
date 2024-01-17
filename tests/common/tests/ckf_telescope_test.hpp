@@ -15,4 +15,7 @@ namespace traccc {
 /// Combinatorial Kalman Finding Test with Sparse tracks
 class CkfSparseTrackTelescopeTests : public KalmanFittingTelescopeTests {};
 
+/// Combinatorial Kalman Finding Test with Identical tracks
+class CkfCombinatoricsTelescopeTests : public KalmanFittingTelescopeTests {};
+
 }  // namespace traccc

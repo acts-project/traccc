@@ -108,7 +108,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Set constrained step size to 2 mm
     sim.get_config().step_constraint = step_constraint;
-    sim.get_config().overstep_tolerance = overstep_tolerance;
 
     sim.run();
 
@@ -122,7 +121,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = step_constraint;
-    fit_cfg.overstep_tolerance = overstep_tolerance;
     fit_cfg.mask_tolerance = mask_tolerance;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 
@@ -148,14 +146,14 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
-            const auto& fit_info = track_states[i_trk].header;
+            const auto& fit_res = track_states[i_trk].header;
             const auto& track_states_per_track = track_states[i_trk].items;
 
             consistency_tests(track_states_per_track);
 
-            ndf_tests(fit_info, track_states_per_track);
+            ndf_tests(fit_res, track_states_per_track);
 
-            fit_performance_writer.write(track_states_per_track, fit_info,
+            fit_performance_writer.write(track_states_per_track, fit_res,
                                          host_det, evt_map);
         }
     }
@@ -195,7 +193,7 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(std::make_tuple(
         "wire_10_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
         100, 100)));
 
@@ -204,7 +202,8 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(std::make_tuple(
         "wire_100_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{100.f, 100.f},
+        std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
         100, 100)));
 

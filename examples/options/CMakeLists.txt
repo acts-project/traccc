@@ -24,7 +24,6 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/options/handle_argument_errors.cpp"
   "src/options/mt_options.cpp"
   "src/options/seeding_input_options.cpp"
-  "src/options/finding_input_options.cpp"
   "src/options/full_tracking_input_options.cpp"
   "src/options/throughput_options.cpp"
   )

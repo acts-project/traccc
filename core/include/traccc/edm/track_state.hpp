@@ -21,7 +21,7 @@ namespace traccc {
 
 /// Fitting result per track
 template <typename algebra_t>
-struct fitter_info {
+struct fitting_result {
     using scalar_type = typename algebra_t::scalar_type;
 
     /// Fitted track parameter
@@ -174,6 +174,6 @@ using track_state_collection_types = collection_types<track_state<transform3>>;
 
 /// Declare all track_state container types
 using track_state_container_types =
-    container_types<fitter_info<transform3>, track_state<transform3>>;
+    container_types<fitting_result<transform3>, track_state<transform3>>;
 
 }  // namespace traccc

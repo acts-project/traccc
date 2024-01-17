@@ -12,24 +12,24 @@
 
 namespace traccc::details {
 
-/// @c traccc::is_same_object specialisation for @c traccc::fitter_info
+/// @c traccc::is_same_object specialisation for @c traccc::fitting_result
 template <>
-class is_same_object<fitter_info<transform3>> {
+class is_same_object<fitting_result<transform3>> {
 
     public:
     /// Constructor with a reference object, and an allowed uncertainty
-    is_same_object(const fitter_info<transform3>& ref,
+    is_same_object(const fitting_result<transform3>& ref,
                    scalar unc = float_epsilon);
 
     /// Specialised implementation for @c traccc::measurement
-    bool operator()(const fitter_info<transform3>& obj) const;
+    bool operator()(const fitting_result<transform3>& obj) const;
 
     private:
     /// The reference object
-    std::reference_wrapper<const fitter_info<transform3>> m_ref;
+    std::reference_wrapper<const fitting_result<transform3>> m_ref;
     /// The uncertainty
     scalar m_unc;
 
-};  // class is_same_object<fitter_info<transform3>>
+};  // class is_same_object<fitting_result<transform3>>
 
 }  // namespace traccc::details

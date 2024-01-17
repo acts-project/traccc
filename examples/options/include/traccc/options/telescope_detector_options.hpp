@@ -28,34 +28,36 @@ struct telescope_detector_options {
     scalar_t half_length;
 
     telescope_detector_options(po::options_description& desc) {
-        desc.add_options()("empty_material",
+        desc.add_options()("empty-material",
                            po::value<bool>()->default_value(false),
                            "Build detector without materials");
-        desc.add_options()("n_planes",
+        desc.add_options()("n-planes",
                            po::value<unsigned int>()->default_value(9),
                            "Number of planes");
-        desc.add_options()("thickness",
+        desc.add_options()("thickness-mm",
                            po::value<scalar_t>()->default_value(0.5f),
                            "Slab thickness in [mm]");
         desc.add_options()("spacing",
                            po::value<scalar_t>()->default_value(20.f),
                            "Space between planes in [mm]");
-        desc.add_options()("smearing",
+        desc.add_options()("smearing-um",
                            po::value<scalar_t>()->default_value(50.f),
                            "Measurement smearing in [um]");
-        desc.add_options()("half_length",
+        desc.add_options()("half-length-mm",
                            po::value<scalar_t>()->default_value(1000000.f),
                            "Half length of plane [mm]");
     }
 
     void read(const po::variables_map& vm) {
-        empty_material = vm["empty_material"].as<bool>();
-        n_planes = vm["n_planes"].as<unsigned int>();
-        thickness = vm["thickness"].as<scalar_t>() * detray::unit<scalar_t>::mm;
-        spacing = vm["spacing"].as<scalar_t>() * detray::unit<scalar_t>::mm;
-        smearing = vm["smearing"].as<scalar_t>() * detray::unit<scalar_t>::um;
+        empty_material = vm["empty-material"].as<bool>();
+        n_planes = vm["n-planes"].as<unsigned int>();
+        thickness =
+            vm["thickness-mm"].as<scalar_t>() * detray::unit<scalar_t>::mm;
+        spacing = vm["spacing-mm"].as<scalar_t>() * detray::unit<scalar_t>::mm;
+        smearing =
+            vm["smearing-um"].as<scalar_t>() * detray::unit<scalar_t>::um;
         half_length =
-            vm["half_length"].as<scalar_t>() * detray::unit<scalar_t>::mm;
+            vm["half-length-mm"].as<scalar_t>() * detray::unit<scalar_t>::mm;
     }
 };
 

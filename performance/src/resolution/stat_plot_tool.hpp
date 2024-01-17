@@ -54,9 +54,9 @@ class stat_plot_tool {
     /// @brief fill the cache
     ///
     /// @param cache the cache for statistics plots
-    /// @param fit_info fitting information that contains statistics
+    /// @param fit_res fitting information that contains statistics
     void fill(stat_plot_cache& cache,
-              const fitter_info<transform3>& fit_info) const;
+              const fitting_result<transform3>& fit_res) const;
 
     /// @brief fill the cache
     ///
