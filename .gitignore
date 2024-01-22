@@ -30,6 +30,13 @@
 *.exe
 *.out
 *.app
+
+
+boost_1_80_0.tar.bz2
+.vscode/
+root/
+build/
+build_wrapper_output_directory/
 boost_1_80_0.tar.bz2.3
 boost_1_80_0.tar.bz2.2
 ./boost_1_80_0
@@ -10023,3 +10030,4 @@ boost_1_80_0/boost/parameter/aux_/pack/deduce_tag.hpp
 boost_1_80_0/boost/parameter/aux_/pack/deduced_item.hpp
 boost_1_80_0/boost/parameter/aux_/pack/insert_tagged.hpp
 boost_1_80_0/boost/parameter/aux_/pack/is_named_argument.hpp
+boost_1_80_0/
