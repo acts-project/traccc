@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "make_measurement_hit_id_reader.hpp"
+#include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 
 namespace traccc::io::csv {
 

@@ -7,6 +7,9 @@
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   enable_language(CUDA)
   set_source_files_properties(seeding_example_alpaka.cpp PROPERTIES LANGUAGE CUDA)
+elseif(alpaka_ACC_GPU_HIP_ENABLE)
+  enable_language(HIP)
+  set_source_files_properties(seeding_example_alpaka.cpp PROPERTIES LANGUAGE HIP)
 endif()
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)

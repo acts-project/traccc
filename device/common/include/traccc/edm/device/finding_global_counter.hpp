@@ -11,17 +11,8 @@ namespace traccc::device {
 
 struct finding_global_counter {
 
-    // Total number of measurements associated with input parameters
-    unsigned int n_total_measurements;
-
-    // Number of measurements per thread
-    unsigned int n_measurements_per_thread;
-
-    // Number of threads for find_track kernel
-    unsigned int n_total_threads;
-
-    // Divider for the number of measurements
-    unsigned int divider;
+    // Sum of the number of measurements for every parameter
+    unsigned int n_measurements_sum;
 
     // Number of found measurements for the current step
     unsigned int n_candidates;

@@ -22,10 +22,12 @@ template <typename fitter_t>
 class fitting_algorithm
     : public algorithm<track_state_container_types::host(
           const typename fitter_t::detector_type&,
+          const typename fitter_t::bfield_type&,
           const typename track_candidate_container_types::host&)> {
 
     public:
     using transform3_type = typename fitter_t::transform3_type;
+    using bfield_type = typename fitter_t::bfield_type;
     /// Configuration type
     using config_type = typename fitter_t::config_type;
 
@@ -40,10 +42,11 @@ class fitting_algorithm
     /// @return the container of the fitted track parameters
     track_state_container_types::host operator()(
         const typename fitter_t::detector_type& det,
+        const typename fitter_t::bfield_type& field,
         const typename track_candidate_container_types::host& track_candidates)
         const override {
 
-        fitter_t fitter(det, m_cfg);
+        fitter_t fitter(det, field, m_cfg);
 
         track_state_container_types::host output_states;
 
@@ -71,7 +74,7 @@ class fitting_algorithm
             fitter.fit(seed_param, fitter_state);
 
             output_states.push_back(
-                std::move(fitter_state.m_fit_info),
+                std::move(fitter_state.m_fit_res),
                 std::move(fitter_state.m_fit_actor_state.m_track_states));
         }
 

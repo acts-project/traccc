@@ -10,15 +10,11 @@
 
 traccc::full_tracking_input_config::full_tracking_input_config(
     po::options_description& desc) {
-
-    desc.add_options()("detector_file", po::value<std::string>()->required(),
-                       "specify detector file");
-    desc.add_options()("digitization_config_file",
+    desc.add_options()("digitization-config-file",
                        po::value<std::string>()->required(),
                        "specify the digitization configuration file");
 }
 
 void traccc::full_tracking_input_config::read(const po::variables_map& vm) {
-    detector_file = vm["detector_file"].as<std::string>();
-    digitization_config_file = vm["digitization_config_file"].as<std::string>();
+    digitization_config_file = vm["digitization-config-file"].as<std::string>();
 }

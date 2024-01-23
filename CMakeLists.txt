@@ -14,6 +14,7 @@ set( CMAKE_CXX_EXTENSIONS FALSE CACHE BOOL "Disable (host) C++ extensions" )
 set( CMAKE_CUDA_STANDARD 17 CACHE STRING "The (CUDA) C++ standard to use" )
 set( CMAKE_CUDA_EXTENSIONS FALSE CACHE BOOL "Disable (CUDA) C++ extensions" )
 set( CMAKE_SYCL_STANDARD 17 CACHE STRING "The (SYCL) C++ standard to use" )
+set( CMAKE_HIP_STANDARD 17 CACHE STRING "The (HIP) C++ standard to use" )
 
 # Flag controlling whether warnings should make the build fail.
 option( TRACCC_FAIL_ON_WARNINGS
@@ -278,13 +279,14 @@ if( TRACCC_BUILD_ALPAKA )
    add_subdirectory( device/alpaka )
 endif()
 add_subdirectory( io )
+add_subdirectory( performance )
 add_subdirectory( plugins )
+add_subdirectory( simulation )
 
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
    find_package( Boost REQUIRED COMPONENTS program_options filesystem)
 
-   add_subdirectory( performance )
    add_subdirectory( examples )
 endif()
 

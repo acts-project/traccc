@@ -9,33 +9,32 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/finding/device/make_module_map.hpp"
 
 namespace traccc::device {
 
-/// Function counting the number of measurements on surface for every track and
-/// its total number
+/// Function evalulating the number of measurements to be iterated per thread
+/// and the total number of measurements
 ///
-/// @param[in] globalIndex         The index of the current thread
-/// @param[in] det_data            Detector view object
-/// @param[in] measurements_view   Measurement container view object
-/// @param[in] module_map_view     Sorted module map of <module ID, header ID>
-/// @param[in] n_params            The number of input parameters
-/// @param[in] params_view         Input parameters view object
-/// @param[out] n_measurements_view   The number of measurements of tracks
-/// @param[out] n_total_measurements  Total number of meausurments
+/// @param[in] globalIndex           The index of the current thread
+/// @param[in] params_view           Input parameters view object
+/// @param[in] barcodes_view         Barcodes view object
+/// @param[in] upper_bounds          Upper bounds of measurements w.r.t geometry
+/// ID
+/// @param[out] n_measurements_view  The number of measurements per parameter
+/// @param[out] ref_meas_idx         The first index of measurements per
+/// parameter
+/// @param[out] n_measurements_sum   The sum of the number of measurements per
+/// parameter
 ///
-template <typename detector_t>
 TRACCC_DEVICE inline void count_measurements(
-    std::size_t globalIndex, typename detector_t::detector_view_type det_data,
-    measurement_container_types::const_view measurements_view,
-    vecmem::data::vector_view<const thrust::pair<geometry_id, unsigned int>>
-        module_map_view,
-    const int n_params,
+    std::size_t globalIndex,
     bound_track_parameters_collection_types::const_view params_view,
+    vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
+    vecmem::data::vector_view<const unsigned int> upper_bounds_view,
+    const unsigned int n_in_params,
     vecmem::data::vector_view<unsigned int> n_measurements_view,
-    unsigned int& n_total_measurements);
+    vecmem::data::vector_view<unsigned int> ref_meas_idx_view,
+    unsigned int& n_measurements_sum);
 
 }  // namespace traccc::device
 

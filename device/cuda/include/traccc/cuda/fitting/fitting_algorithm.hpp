@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
@@ -27,7 +28,8 @@ namespace traccc::cuda {
 template <typename fitter_t>
 class fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
-          const typename fitter_t::detector_type::detector_view_type&,
+          const typename fitter_t::detector_type::view_type&,
+          const typename fitter_t::bfield_type&,
           const vecmem::data::jagged_vector_view<
               typename fitter_t::intersection_type>&,
           const typename track_candidate_container_types::const_view&)> {
@@ -39,13 +41,17 @@ class fitting_algorithm
 
     /// Constructor for the fitting algorithm
     ///
-    /// @param mr The memory resource to use
-    fitting_algorithm(const config_type& cfg,
-                      const traccc::memory_resource& mr);
+    /// @param cfg  Configuration object
+    /// @param mr   The memory resource to use
+    /// @param copy Copy object
+    /// @param str  Cuda stream object
+    fitting_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
+                      vecmem::copy& copy, stream& str);
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(
-        const typename fitter_t::detector_type::detector_view_type& det_view,
+        const typename fitter_t::detector_type::view_type& det_view,
+        const typename fitter_t::bfield_type& field_view,
         const vecmem::data::jagged_vector_view<
             typename fitter_t::intersection_type>& navigation_buffer,
         const typename track_candidate_container_types::const_view&
@@ -56,8 +62,10 @@ class fitting_algorithm
     config_type m_cfg;
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
-    /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
+    /// The copy object to use
+    vecmem::copy& m_copy;
+    /// The CUDA stream to use
+    stream& m_stream;
 };
 
 }  // namespace traccc::cuda

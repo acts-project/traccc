@@ -19,6 +19,15 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
   set_source_files_properties(src/seeding/track_params_estimation.cpp PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(src/seeding/seed_finding.cpp PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(src/seeding/seeding_algorithm.cpp PROPERTIES LANGUAGE CUDA)
+elseif(alpaka_ACC_GPU_HIP_ENABLE)
+  enable_language(HIP)
+
+  set_source_files_properties(src/utils/make_prefix_sum_buff.cpp PROPERTIES LANGUAGE HIP)
+  set_source_files_properties(src/seeding/spacepoint_binning.cpp PROPERTIES LANGUAGE HIP)
+
+  set_source_files_properties(src/seeding/track_params_estimation.cpp PROPERTIES LANGUAGE HIP)
+  set_source_files_properties(src/seeding/seed_finding.cpp PROPERTIES LANGUAGE HIP)
+  set_source_files_properties(src/seeding/seeding_algorithm.cpp PROPERTIES LANGUAGE HIP)
 endif()
 
 traccc_add_library( traccc_alpaka alpaka TYPE SHARED

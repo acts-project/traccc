@@ -11,15 +11,19 @@ include( traccc-compiler-options-cpp )
 add_library( traccc_tests_common STATIC
     "common/tests/atlas_cuts.hpp"
     "common/tests/cca_test.hpp"
+    "common/tests/ckf_telescope_test.hpp"
     "common/tests/data_test.hpp"
     "common/tests/kalman_fitting_test.hpp"
+    "common/tests/kalman_fitting_telescope_test.hpp"
+    "common/tests/kalman_fitting_toy_detector_test.hpp"
+    "common/tests/kalman_fitting_wire_chamber_test.hpp"
     "common/tests/kalman_fitting_test.cpp"
     "common/tests/space_point.hpp" )
 target_include_directories( traccc_tests_common
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_tests_common
     PUBLIC dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
-           detray::core detray::utils covfie::core traccc::core traccc::io )
+           detray::core detray::utils detray::io covfie::core traccc::core traccc::io )
 
 # Use ROOT in traccc_tests_common, if requested.
 if( TRACCC_USE_ROOT )
@@ -34,6 +38,10 @@ endif()
 add_subdirectory( core )
 add_subdirectory( cpu )
 add_subdirectory( io )
+
+if( TRACCC_BUILD_EXAMPLES )
+    add_subdirectory( examples )
+endif()
 
 if( TRACCC_BUILD_CUDA )
     add_subdirectory( cuda )

@@ -4,6 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-cpp )
+
 # Set up the "build" of the traccc::core library.
 traccc_add_library( traccc_core core TYPE SHARED
   # Common definitions.
@@ -32,10 +35,10 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/geometry/pixel_data.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
-  "include/traccc/utils/compare.hpp"
   "include/traccc/utils/type_traits.hpp"
   "include/traccc/utils/memory_resource.hpp"
   "include/traccc/utils/seed_generator.hpp"
+  "include/traccc/utils/subspace.hpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/measurement_creation_helper.hpp"
   "include/traccc/clusterization/detail/sparse_ccl.hpp"
@@ -66,6 +69,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/detail/singlet.hpp"
   "include/traccc/seeding/detail/seeding_config.hpp"
   "include/traccc/seeding/detail/spacepoint_grid.hpp"
+  "include/traccc/seeding/experimental/spacepoint_formation.hpp"
+  "include/traccc/seeding/experimental/spacepoint_formation.ipp"
   "include/traccc/seeding/seed_selecting_helper.hpp"
   "include/traccc/seeding/seed_filtering.hpp"
   "src/seeding/seed_filtering.cpp"
@@ -84,7 +89,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cpp" )
 target_link_libraries( traccc_core
-  PUBLIC Eigen3::Eigen vecmem::core detray::core traccc::Thrust 
+  PUBLIC Eigen3::Eigen vecmem::core detray::core traccc::Thrust
          traccc::algebra )
 
 # Prevent Eigen from getting confused when building code for a

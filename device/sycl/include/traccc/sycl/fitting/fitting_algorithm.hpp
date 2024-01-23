@@ -29,7 +29,8 @@ namespace traccc::sycl {
 template <typename fitter_t>
 class fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
-          const typename fitter_t::detector_type::detector_view_type&,
+          const typename fitter_t::detector_type::view_type&,
+          const typename fitter_t::bfield_type&,
           const vecmem::data::jagged_vector_view<
               typename fitter_t::intersection_type>&,
           const typename track_candidate_container_types::const_view&)> {
@@ -48,7 +49,8 @@ class fitting_algorithm
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(
-        const typename fitter_t::detector_type::detector_view_type& det_view,
+        const typename fitter_t::detector_type::view_type& det_view,
+        const typename fitter_t::bfield_type& field_view,
         const vecmem::data::jagged_vector_view<
             typename fitter_t::intersection_type>& navigation_buffer,
         const typename track_candidate_container_types::const_view&

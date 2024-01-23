@@ -29,9 +29,12 @@ traccc_add_test(
     # Define the sources for the test.
     test_basic.cu
     test_cca.cpp
-    test_ckf_sparse_tracks.cpp
+    test_ckf_toy_detector.cpp
     test_copy.cu
-    test_kalman_filter.cpp
+    test_kalman_fitter_telescope.cpp
+    test_clusterization.cpp
+    test_copy.cu
+    test_spacepoint_formation.cpp
     test_thrust.cu
     test_sync.cu
     test_array_wrapper.cu
@@ -41,12 +44,14 @@ traccc_add_test(
     GTest::gtest
     vecmem::cuda
     detray::core
+    detray::io
     detray::utils
     traccc::core
     traccc::device_common
     traccc::cuda
     traccc::performance
     traccc::io
+    traccc::simulation
     traccc_tests_cuda_main
     traccc_tests_common
 )

@@ -12,17 +12,21 @@ traccc_add_test(
     sycl
 
     # Define the sources for the test.
-    test_kalman_filter.sycl
+    test_kalman_fitter_telescope.sycl
+    test_clusterization.sycl
+    test_spacepoint_formation.sycl
 
     LINK_LIBRARIES
     GTest::gtest_main
     vecmem::sycl
     detray::core
+    detray::io
     detray::utils
     traccc::core
     traccc::device_common
     traccc::sycl
     traccc::performance
     traccc::io
+    traccc::simulation
     traccc_tests_common
 )

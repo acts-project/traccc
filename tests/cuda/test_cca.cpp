@@ -23,8 +23,8 @@ cca_function_t f = [](const traccc::cell_collection_types::host& cells,
     auto measurements = cc(cells);
 
     for (std::size_t i = 0; i < measurements.size(); i++) {
-        result[modules.at(measurements.at(i).module_link).module].push_back(
-            measurements.at(i));
+        result[modules.at(measurements.at(i).module_link).surface_link.value()]
+            .push_back(measurements.at(i));
     }
 
     return result;

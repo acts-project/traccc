@@ -4,6 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
+# Project include(s).
+include( traccc-compiler-options-cpp )
+
 # Set up the build of the traccc::performance library.
 traccc_add_library( traccc_performance performance TYPE SHARED
    # Efficiency calculation code.
@@ -76,7 +79,7 @@ endif()
 find_package( CUDAToolkit )
 if( CUDAToolkit_FOUND )
    target_link_libraries( traccc_performance
-      PRIVATE CUDA::cudart )
+      PRIVATE CUDA::cudart ${CMAKE_DL_LIBS} )
    target_compile_definitions( traccc_performance
       PRIVATE TRACCC_HAVE_NVTX )
 endif()
