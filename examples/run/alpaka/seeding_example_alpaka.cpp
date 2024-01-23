@@ -10,56 +10,77 @@
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/definitions/common.hpp"
+#include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
+#include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_filter.hpp"
+#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/detector_input_options.hpp"
+#include "traccc/options/finding_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/options/propagation_options.hpp"
 #include "traccc/options/seeding_input_options.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/timer.hpp"
+#include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/core/detector_metadata.hpp"
+#include "detray/detectors/bfield.hpp"
+#include "detray/io/common/detector_reader.hpp"
+#include "detray/propagator/navigator.hpp"
+#include "detray/propagator/propagator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
+#include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #endif
-
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// ACTS include(s).
-#include <Acts/Definitions/Units.hpp>
-
 // System include(s).
-#include <chrono>
 #include <exception>
 #include <iomanip>
 #include <iostream>
 
+using namespace traccc;
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
+            const traccc::finding_input_config<traccc::scalar>& finding_cfg,
+            const traccc::propagation_options<traccc::scalar>& propagation_opts,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
 
-    // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    using host_detector_type = detray::detector<>;
+    using device_detector_type =
+        detray::detector<detray::default_metadata,
+                         detray::device_container_types>;
 
-    // Output stats
-    uint64_t n_modules = 0;
-    uint64_t n_spacepoints = 0;
-    uint64_t n_seeds = 0;
-    uint64_t n_seeds_alpaka = 0;
-
-    // Configs
-    traccc::seedfinder_config finder_config;
-    traccc::spacepoint_grid_config grid_config(finder_config);
-    traccc::seedfilter_config filter_config;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using rk_stepper_type =
+        detray::rk_stepper<b_field_t::view_t,
+                           typename host_detector_type::transform3,
+                           detray::constrained_step<>>;
+    using host_navigator_type = detray::navigator<const host_detector_type>;
+    using host_fitter_type =
+        traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
+    using device_navigator_type = detray::navigator<const device_detector_type>;
+    using device_fitter_type =
+        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -68,22 +89,15 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     vecmem::cuda::copy copy;
     vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
+    vecmem::cuda::managed_memory_resource mng_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 #else
     vecmem::copy copy;
+    vecmem::host_memory_resource mng_mr;
     traccc::memory_resource mr{host_mr, &host_mr};
 #endif
 
-    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
-                                 host_mr);
-    traccc::track_params_estimation tp(host_mr);
-
-    // Alpaka Spacepoint Binning
-    traccc::alpaka::seeding_algorithm sa_alpaka{finder_config, grid_config,
-                                                filter_config, mr, copy};
-    traccc::alpaka::track_params_estimation tp_alpaka{mr, copy};
-
-    // performance writer
+    // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
 
@@ -97,13 +111,64 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         nsd_performance_writer.initialize();
     }
 
+    // Output stats
+    uint64_t n_modules = 0;
+    uint64_t n_spacepoints = 0;
+    uint64_t n_seeds = 0;
+    uint64_t n_seeds_alpaka = 0;
+
+    /*****************************
+     * Build a geometry
+     *****************************/
+
+    // B field value and its type
+    // @TODO: Set B field as argument
+    const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    auto field = detray::bfield::create_const_field(B);
+
+    // Read the detector
+    detray::io::detector_reader_config reader_cfg{};
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
+    if (!det_opts.material_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            det_opts.material_file);
+    }
+    if (!det_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    }
+    auto [host_det, names] =
+        detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
+
+    traccc::geometry surface_transforms =
+        traccc::io::alt_read_geometry(host_det);
+
+    // Detector view object
+    auto det_view = detray::get_data(host_det);
+
+    // Seeding algorithms
+    traccc::seedfinder_config finder_config;
+    traccc::spacepoint_grid_config grid_config(finder_config);
+    traccc::seedfilter_config filter_config;
+
+    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
+                                 host_mr);
+    traccc::track_params_estimation tp(host_mr);
+
+    // Alpaka Algorithms
+    traccc::alpaka::seeding_algorithm sa_alpaka{finder_config, grid_config,
+                                                filter_config, mr, copy};
+    traccc::alpaka::track_params_estimation tp_alpaka{mr, copy};
+
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-        traccc::io::spacepoint_reader_output reader_output(mr.host);
+        // Instantiate host containers/collections
+        traccc::io::spacepoint_reader_output sp_reader_output(mr.host);
+        traccc::io::measurement_reader_output meas_reader_output(mr.host);
+
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -124,12 +189,18 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
-                    reader_output, event, common_opts.input_directory,
+                    sp_reader_output, event, common_opts.input_directory,
                     surface_transforms, common_opts.input_data_format);
+
+                // Read measurements
+                traccc::io::read_measurements(meas_reader_output, event,
+                                              common_opts.input_directory,
+                                              common_opts.input_data_format);
             }  // stop measuring hit reading timer
 
-            traccc::spacepoint_collection_types::host& spacepoints_per_event =
-                reader_output.spacepoints;
+            auto& spacepoints_per_event = sp_reader_output.spacepoints;
+            auto& modules_per_event = sp_reader_output.modules;
+            // auto& measurements_per_event = meas_reader_output.measurements;
 
             /*----------------------------
                 Seeding algorithm
@@ -203,8 +274,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             // Compare the seeds made on the host and on the device
             traccc::collection_comparator<traccc::seed> compare_seeds{
                 "seeds", traccc::details::comparator_factory<traccc::seed>{
-                             vecmem::get_data(reader_output.spacepoints),
-                             vecmem::get_data(reader_output.spacepoints)}};
+                             vecmem::get_data(sp_reader_output.spacepoints),
+                             vecmem::get_data(sp_reader_output.spacepoints)}};
             compare_seeds(vecmem::get_data(seeds),
                           vecmem::get_data(seeds_alpaka));
 
@@ -219,8 +290,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
              Statistics
           ---------------*/
 
-        n_spacepoints += reader_output.spacepoints.size();
-        n_modules += reader_output.modules.size();
+        n_spacepoints += sp_reader_output.spacepoints.size();
+        n_modules += sp_reader_output.modules.size();
         n_seeds_alpaka += seeds_alpaka.size();
         n_seeds += seeds.size();
 
@@ -229,24 +300,13 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
           ------------*/
 
         if (common_opts.check_performance) {
-            traccc::event_map evt_map(event, common_opts.detector_file,
-                                      common_opts.input_directory,
-                                      common_opts.input_directory, host_mr);
-
-            std::vector<traccc::nseed<3>> nseeds;
-
-            std::transform(
-                seeds_alpaka.cbegin(), seeds_alpaka.cend(),
-                std::back_inserter(nseeds),
-                [](const traccc::seed& s) { return traccc::nseed<3>(s); });
-
-            nsd_performance_writer.register_event(
-                event, nseeds.begin(), nseeds.end(),
-                reader_output.spacepoints.begin(), evt_map);
+            traccc::event_map2 evt_map(event, common_opts.input_directory,
+                                       common_opts.input_directory,
+                                       common_opts.input_directory);
 
             sd_performance_writer.write(
                 vecmem::get_data(seeds_alpaka),
-                vecmem::get_data(reader_output.spacepoints), evt_map);
+                vecmem::get_data(sp_reader_output.spacepoints), evt_map);
         }
     }
 
@@ -279,6 +339,8 @@ int main(int argc, char* argv[]) {
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
     traccc::seeding_input_config seeding_input_cfg(desc);
+    traccc::finding_input_config<traccc::scalar> finding_input_cfg(desc);
+    traccc::propagation_options<traccc::scalar> propagation_opts(desc);
     desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
@@ -291,15 +353,15 @@ int main(int argc, char* argv[]) {
     // Read options
     common_opts.read(vm);
     det_opts.read(vm);
-
     seeding_input_cfg.read(vm);
+    // finding_input_cfg.read(vm);
+    // propagation_opts.read(vm);
     auto run_cpu = vm["run-cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " " << det_opts.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    int ret = seq_run(seeding_input_cfg, common_opts, det_opts, run_cpu);
-
-    return ret;
+    return seq_run(seeding_input_cfg, finding_input_cfg, propagation_opts,
+                   common_opts, det_opts, run_cpu);
 }

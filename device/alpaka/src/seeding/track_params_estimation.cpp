@@ -21,15 +21,13 @@ struct EstimateTrackParamsKernel {
         TAcc const& acc,
         spacepoint_collection_types::const_view spacepoints_view,
         seed_collection_types::const_view seed_view,
-        cell_module_collection_types::const_view modules_view,
         const vector3 bfield,
         const std::array<traccc::scalar, traccc::e_bound_size> stddev,
         bound_track_parameters_collection_types::view params_view) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
         device::estimate_track_params(globalThreadIdx, spacepoints_view,
-                                      seed_view, modules_view, bfield, stddev,
-                                      params_view);
+                                      seed_view, bfield, stddev, params_view);
     }
 };
 
@@ -57,7 +55,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
         return params_buffer;
     }
 
-    auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
+    auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto const threadsPerBlock = deviceProperties.m_blockThreadExtentMax[0];
@@ -67,7 +65,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // Run the kernel
     ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{},
-                        spacepoints_view, seeds_view, modules_view, bfield,
+                        spacepoints_view, seeds_view, bfield,
                         stddev, vecmem::get_data(params_buffer));
     ::alpaka::wait(queue);
 

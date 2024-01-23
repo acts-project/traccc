@@ -49,10 +49,10 @@ traccc_add_library( traccc_alpaka alpaka TYPE SHARED
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)
     target_link_libraries( traccc_alpaka
-        PUBLIC traccc::core vecmem::core
+        PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
         PRIVATE CUDA::cudart traccc::device_common vecmem::cuda alpaka::alpaka)
 else()
     target_link_libraries( traccc_alpaka
-        PUBLIC traccc::core vecmem::core
+        PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
         PRIVATE traccc::device_common alpaka::alpaka)
 endif()
