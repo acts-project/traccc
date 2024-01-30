@@ -21,7 +21,7 @@ throughput_options::throughput_options(po::options_description& desc) {
     desc.add_options()("input-data-format",
                        po::value<std::string>()->default_value("csv"),
                        "Format of the input file(s)");
-    desc.add_options()("input_directory", po::value<std::string>()->required(),
+    desc.add_options()("input-directory", po::value<std::string>()->required(),
                        "Directory holding the input files");
     desc.add_options()("detector-file", po::value<std::string>()->required(),
                        "Detector geometry description file");

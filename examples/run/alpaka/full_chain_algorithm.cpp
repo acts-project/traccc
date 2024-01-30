@@ -52,19 +52,11 @@ full_chain_algorithm::full_chain_algorithm(
       m_filter_config(filter_config) {
 
     // Tell the user what device is being used.
-
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    // Alpaka's get device properties doesn't populate most of this info:
     int device = 0;
-    CUDA_ERROR_CHECK(cudaGetDevice(&device));
-    cudaDeviceProp props;
-    CUDA_ERROR_CHECK(cudaGetDeviceProperties(&props, device));
-    std::cout << "Using CUDA device: " << props.name << " [id: " << device
-              << ", bus: " << props.pciBusID
-              << ", device: " << props.pciDeviceID << "]" << std::endl;
-#else
-    std::cout << "Using Alpaka CPU device" << std::endl;
-#endif
+    auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
+    auto const props = ::alpaka::getAccDevProps<Acc>(devAcc);
+    std::cout << "Using Alpaka device: " << ::alpaka::getName(devAcc)
+              << " [id: " << device << "] " << std::endl;
 }
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
