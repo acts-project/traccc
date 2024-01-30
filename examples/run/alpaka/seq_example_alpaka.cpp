@@ -16,6 +16,7 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/options/common_options.hpp"
+#include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/performance/collection_comparator.hpp"
@@ -40,10 +41,11 @@
 namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
-            const traccc::common_options& common_opts, bool run_cpu) {
+            const traccc::common_options& common_opts,
+            const traccc::detector_input_options& det_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(common_opts.detector_file);
+    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -203,7 +205,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                              elapsedTimes);
                 params_alpaka_buffer =
                     tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                              modules_buffer, {0.f, 0.f, finder_config.bFieldInZ});
+                              {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params timer
 
             // CPU
@@ -212,7 +214,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
                 params = tp(spacepoints_per_event, seeds,
-                            modules_per_event, {0.f, 0.f, finder_config.bFieldInZ});
+                            {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
@@ -266,7 +268,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         if (common_opts.check_performance) {
 
             traccc::event_map evt_map(
-                event, common_opts.detector_file, i_cfg.digitization_config_file,
+                event, det_opts.detector_file, i_cfg.digitization_config_file,
                 common_opts.input_directory, common_opts.input_directory,
                 common_opts.input_directory, host_mr);
             sd_performance_writer.write(
@@ -306,8 +308,9 @@ int main(int argc, char* argv[]) {
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
+    traccc::detector_input_options det_opts(desc);
     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
-    desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
+    desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
     po::variables_map vm;
@@ -318,13 +321,14 @@ int main(int argc, char* argv[]) {
 
     // Read options
     common_opts.read(vm);
+    det_opts.read(vm);
     full_tracking_input_cfg.read(vm);
-    auto run_cpu = vm["run_cpu"].as<bool>();
+    auto run_cpu = vm["run-cpu"].as<bool>();
 
     std::cout << "Running " << argv[0] << " "
-              << common_opts.detector_file << " "
+              << full_tracking_input_cfg.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    return seq_run(full_tracking_input_cfg, common_opts, run_cpu);
+    return seq_run(full_tracking_input_cfg, common_opts, det_opts, run_cpu);
 }

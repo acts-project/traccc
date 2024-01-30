@@ -13,6 +13,7 @@ namespace traccc {
 namespace po = boost::program_options;
 
 struct full_tracking_input_config {
+    std::string detector_file;
     std::string digitization_config_file;
 
     full_tracking_input_config(po::options_description& desc);

@@ -99,8 +99,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_module_collection_types::const_view& modules) const {
 
     // Setup alpaka
-    auto devHost = ::alpaka::getDevByIdx<Host>(0u);
-    auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
+    auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
+    auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
     auto queue = Queue{devAcc};
 
     // Number of cells

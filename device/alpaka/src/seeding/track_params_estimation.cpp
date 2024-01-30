@@ -20,8 +20,7 @@ struct EstimateTrackParamsKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
         spacepoint_collection_types::const_view spacepoints_view,
-        seed_collection_types::const_view seed_view,
-        const vector3 bfield,
+        seed_collection_types::const_view seed_view, const vector3 bfield,
         const std::array<traccc::scalar, traccc::e_bound_size> stddev,
         bound_track_parameters_collection_types::view params_view) const {
         auto const globalThreadIdx =
@@ -38,9 +37,7 @@ track_params_estimation::track_params_estimation(
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const seed_collection_types::const_view& seeds_view,
-    const cell_module_collection_types::const_view& modules_view,
-    const vector3& bfield,
+    const seed_collection_types::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
 
     // Get the size of the seeds view

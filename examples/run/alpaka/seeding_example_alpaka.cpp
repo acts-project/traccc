@@ -60,8 +60,8 @@ using namespace traccc;
 namespace po = boost::program_options;
 
 int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
-            const traccc::finding_input_config<traccc::scalar>& finding_cfg,
-            const traccc::propagation_options<traccc::scalar>& propagation_opts,
+            const traccc::finding_input_config<traccc::scalar>& /*finding_cfg*/,
+            const traccc::propagation_options<traccc::scalar>& /*propagation_opts*/,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
 
@@ -244,7 +244,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
                                              elapsedTimes);
                 params_alpaka_buffer = tp_alpaka(
                     spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                    modules_buffer, {0.f, 0.f, finder_config.bFieldInZ});
+                    {0.f, 0.f, finder_config.bFieldInZ});
             }  // stop measuring track params alpaka timer
             // CPU
 
