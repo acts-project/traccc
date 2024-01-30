@@ -114,7 +114,6 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const track_params_estimation::output_type track_params =
         m_track_parameter_estimation(spacepoints.first,
                                      m_seeding(spacepoints.first),
-                                     modules_buffer,
                                      {0.f, 0.f, m_finder_config.bFieldInZ});
 
     // Get the final data back to the host.
