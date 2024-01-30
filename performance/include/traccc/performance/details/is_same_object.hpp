@@ -45,6 +45,7 @@ class is_same_object {
 #include "traccc/performance/impl/is_same_object.ipp"
 
 // Include specialisations for the core library types.
+#include "traccc/performance/impl/is_same_fitting_result.ipp"
 #include "traccc/performance/impl/is_same_measurement.ipp"
 #include "traccc/performance/impl/is_same_seed.ipp"
 #include "traccc/performance/impl/is_same_spacepoint.ipp"

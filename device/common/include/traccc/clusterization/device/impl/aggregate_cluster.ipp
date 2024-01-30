@@ -106,7 +106,10 @@ inline void aggregate_cluster(
      */
     out.local = mean;
     out.variance = var;
+    out.surface_link = this_module.surface_link;
     out.module_link = module_link;
+    // The following will need to be filled properly "soon".
+    out.meas_dim = 2u;
 }
 
 }  // namespace traccc::device

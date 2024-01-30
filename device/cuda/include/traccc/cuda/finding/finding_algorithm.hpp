@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
@@ -37,17 +38,21 @@ namespace traccc::cuda {
 template <typename stepper_t, typename navigator_t>
 class finding_algorithm
     : public algorithm<track_candidate_container_types::buffer(
-          const typename navigator_t::detector_type::detector_view_type&,
+          const typename navigator_t::detector_type::view_type&,
+          const typename stepper_t::magnetic_field_type&,
           const vecmem::data::jagged_vector_view<
               typename navigator_t::intersection_type>&,
-          const typename measurement_container_types::const_view&,
-          bound_track_parameters_collection_types::buffer&&)> {
+          const typename measurement_collection_types::view&,
+          const bound_track_parameters_collection_types::buffer&)> {
 
     /// Transform3 type
     using transform3_type = typename stepper_t::transform3_type;
 
     /// Detector type
     using detector_type = typename navigator_t::detector_type;
+
+    /// Field type
+    using bfield_type = typename stepper_t::magnetic_field_type;
 
     /// Actor types
     using interactor = detray::pointwise_material_interactor<transform3_type>;
@@ -73,8 +78,10 @@ class finding_algorithm
     ///
     /// @param cfg  Configuration object
     /// @param mr   The memory resource to use
-    finding_algorithm(const config_type& cfg,
-                      const traccc::memory_resource& mr);
+    /// @param copy Copy object
+    /// @param str  Cuda stream object
+    finding_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
+                      vecmem::copy& copy, stream& str);
 
     /// Get config object (const access)
     const finding_config<scalar_type>& get_config() const { return m_cfg; }
@@ -85,19 +92,23 @@ class finding_algorithm
     /// @param navigation_buffer  Buffer for navigation candidates
     /// @param seeds     Input seeds
     track_candidate_container_types::buffer operator()(
-        const typename detector_type::detector_view_type& det_view,
+        const typename detector_type::view_type& det_view,
+        const bfield_type& field_view,
         const vecmem::data::jagged_vector_view<
             typename navigator_t::intersection_type>& navigation_buffer,
-        const typename measurement_container_types::const_view& measurements,
-        bound_track_parameters_collection_types::buffer&& seeds) const override;
+        const typename measurement_collection_types::view& measurements,
+        const bound_track_parameters_collection_types::buffer& seeds)
+        const override;
 
     private:
-    /// Memory resource used by the algorithm
-    traccc::memory_resource m_mr;
-    /// Copy object used by the algorithm
-    std::unique_ptr<vecmem::copy> m_copy;
     /// Config object
     config_type m_cfg;
+    /// Memory resource used by the algorithm
+    traccc::memory_resource m_mr;
+    /// The copy object to use
+    vecmem::copy& m_copy;
+    /// The CUDA stream to use
+    stream& m_stream;
 };
 
 }  // namespace traccc::cuda

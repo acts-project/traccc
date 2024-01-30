@@ -30,6 +30,14 @@ class stat_plot_tool {
         std::unique_ptr<TH1> reduced_chi2_hist;
         // Histogram for the pvalue
         std::unique_ptr<TH1> pval_hist;
+        // Histogram for chi2 of filtered states
+        std::map<unsigned int, std::unique_ptr<TH1>> chi2_filtered_hist;
+        // Histogram for chi2 of smoothed states
+        std::map<unsigned int, std::unique_ptr<TH1>> chi2_smoothed_hist;
+        // Histogram for p-value of filtered states
+        std::map<unsigned int, std::unique_ptr<TH1>> pval_filtered_hist;
+        // Histogram for p-value of smoothed states
+        std::map<unsigned int, std::unique_ptr<TH1>> pval_smoothed_hist;
 #endif  // TRACCC_HAVE_ROOT
     };
 
@@ -46,9 +54,16 @@ class stat_plot_tool {
     /// @brief fill the cache
     ///
     /// @param cache the cache for statistics plots
-    /// @param fit_info fitting information that contains statistics
+    /// @param fit_res fitting information that contains statistics
     void fill(stat_plot_cache& cache,
-              const fitter_info<transform3>& fit_info) const;
+              const fitting_result<transform3>& fit_res) const;
+
+    /// @brief fill the cache
+    ///
+    /// @param cache the cache for statistics plots
+    /// @param trk_state track state at local measurements
+    void fill(stat_plot_cache& cache,
+              const track_state<transform3>& trk_state) const;
 
     /// @brief write the statistics plots into ROOT
     ///

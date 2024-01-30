@@ -24,25 +24,24 @@ struct statistics_updater {
     /// @param mask_group mask group that contains the mask of the current
     /// surface
     /// @param index mask index of the current surface
-    /// @param fit_info fitting information such as NDoF or Chi2
+    /// @param fit_res fitting information such as NDoF or Chi2
     /// @param trk_state track state of the current surface
     template <typename mask_group_t, typename index_t>
     TRACCC_HOST_DEVICE inline void operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
-        fitter_info<algebra_t>& fit_info,
+        fitting_result<algebra_t>& fit_res,
         const track_state<algebra_t>& trk_state) {
 
         if (!trk_state.is_hole) {
 
             // Measurement dimension
-            constexpr const unsigned int D =
-                mask_group_t::value_type::shape::meas_dim;
+            const unsigned int D = trk_state.get_measurement().meas_dim;
 
             // NDoF = NDoF + number of coordinates per measurement
-            fit_info.ndf += static_cast<scalar_type>(D);
+            fit_res.ndf += static_cast<scalar_type>(D);
 
             // total_chi2 = total_chi2 + chi2
-            fit_info.chi2 += trk_state.smoothed_chi2();
+            fit_res.chi2 += trk_state.smoothed_chi2();
         }
     }
 };

@@ -21,7 +21,7 @@ namespace traccc {
 
 /// Fitting result per track
 template <typename algebra_t>
-struct fitter_info {
+struct fitting_result {
     using scalar_type = typename algebra_t::scalar_type;
 
     /// Fitted track parameter
@@ -71,20 +71,32 @@ struct track_state {
 
     /// @return the local position of measurement with 2 X 1 matrix
     // FIXME: The conversion from vector to matrix is inefficient
-    TRACCC_HOST_DEVICE
-    inline matrix_type<2, 1> measurement_local() const {
-        matrix_type<2, 1> ret = matrix_operator().template zero<2, 1>();
+    template <size_type D>
+    TRACCC_HOST_DEVICE inline matrix_type<D, 1> measurement_local() const {
+        static_assert(((D == 1u) || (D == 2u)),
+                      "The measurement dimension should be 1 or 2");
+
+        matrix_type<D, 1> ret;
         matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
-        matrix_operator().element(ret, 1, 0) = m_measurement.local[1];
+        if constexpr (D == 2u) {
+            matrix_operator().element(ret, 1, 0) = m_measurement.local[1];
+        }
         return ret;
     }
 
     /// @return the covariance of local position of measurement
-    TRACCC_HOST_DEVICE
-    inline matrix_type<2, 2> measurement_covariance() const {
-        matrix_type<2, 2> ret = matrix_operator().template zero<2, 2>();
+    template <size_type D>
+    TRACCC_HOST_DEVICE inline matrix_type<D, D> measurement_covariance() const {
+        static_assert(((D == 1u) || (D == 2u)),
+                      "The measurement dimension should be 1 or 2");
+
+        matrix_type<D, D> ret;
         matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
-        matrix_operator().element(ret, 1, 1) = m_measurement.variance[1];
+        if constexpr (D == 2u) {
+            matrix_operator().element(ret, 0, 1) = 0.f;
+            matrix_operator().element(ret, 1, 0) = 0.f;
+            matrix_operator().element(ret, 1, 1) = m_measurement.variance[1];
+        }
         return ret;
     }
 
@@ -162,6 +174,6 @@ using track_state_collection_types = collection_types<track_state<transform3>>;
 
 /// Declare all track_state container types
 using track_state_container_types =
-    container_types<fitter_info<transform3>, track_state<transform3>>;
+    container_types<fitting_result<transform3>, track_state<transform3>>;
 
 }  // namespace traccc

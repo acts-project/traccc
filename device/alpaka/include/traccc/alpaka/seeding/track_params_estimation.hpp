@@ -46,7 +46,7 @@ struct track_params_estimation
     /// @param bfield (Temporary) Magnetic field vector
     /// @param stddev standard deviation for setting the covariance (Default
     /// value from arXiv:2112.09470v1)
-    /// @return                  vector of bound track parameters
+    /// @return A vector of bound track parameters
     ///
     output_type operator()(
         const spacepoint_collection_types::const_view& spacepoints_view,

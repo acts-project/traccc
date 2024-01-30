@@ -1,8 +1,11 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2023 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
+
+# Project include(s).
+include( traccc-compiler-options-cpp )
 
 # Look for OpenMP.
 find_package( OpenMP COMPONENTS CXX )
@@ -27,6 +30,17 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/utils.hpp"
   "include/traccc/io/details/read_surfaces.hpp"
   "include/traccc/io/reader_edm.hpp"
+  "include/traccc/io/csv/cell.hpp"
+  "include/traccc/io/csv/hit.hpp"
+  "include/traccc/io/csv/measurement_hit_id.hpp"
+  "include/traccc/io/csv/measurement.hpp"
+  "include/traccc/io/csv/particle.hpp"
+  "include/traccc/io/csv/surface.hpp"
+  "include/traccc/io/csv/make_cell_reader.hpp"
+  "include/traccc/io/csv/make_hit_reader.hpp"
+  "include/traccc/io/csv/make_measurement_hit_id_reader.hpp"
+  "include/traccc/io/csv/make_particle_reader.hpp"
+  "include/traccc/io/csv/make_surface_reader.hpp"
   # Implementation
   "src/data_format.cpp"
   "src/event_map2.cpp"
@@ -43,34 +57,23 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/read_binary.hpp"
   "src/write_binary.hpp"
   "src/details/read_surfaces.cpp"
-  "src/csv/surface.hpp"
-  "src/csv/make_surface_reader.hpp"
   "src/csv/make_surface_reader.cpp"
   "src/csv/read_surfaces.hpp"
   "src/csv/read_surfaces.cpp"
-  "src/csv/cell.hpp"
-  "src/csv/make_cell_reader.hpp"
   "src/csv/make_cell_reader.cpp"
   "src/csv/read_cells.hpp"
   "src/csv/read_cells.cpp"
-  "src/csv/hit.hpp"
-  "src/csv/make_hit_reader.hpp"
-  "src/csv/make_hit_reader.cpp"
   "src/csv/read_spacepoints.hpp"
   "src/csv/read_spacepoints.cpp"
-  "src/csv/measurement.hpp"
-  "src/csv/make_measurement_reader.hpp"
   "src/csv/make_measurement_reader.cpp"
   "src/csv/read_measurements.hpp"
   "src/csv/read_measurements.cpp"
-  "src/csv/measurement_hit_id.hpp"
-  "src/csv/make_measurement_hit_id_reader.hpp"
   "src/csv/make_measurement_hit_id_reader.cpp"
-  "src/csv/particle.hpp"
-  "src/csv/make_particle_reader.hpp"
+  "src/csv/make_hit_reader.cpp"  
   "src/csv/make_particle_reader.cpp"
   "src/csv/read_particles.hpp"
-  "src/csv/read_particles.cpp" )
+  "src/csv/read_particles.cpp" 
+  )
 target_link_libraries( traccc_io
   PUBLIC vecmem::core traccc::core ActsCore
   PRIVATE dfelibs::dfelibs ActsPluginJson )

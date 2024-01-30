@@ -189,8 +189,8 @@ seed_finding::output_type seed_finding::operator()(
     const sp_grid_const_view& g2_view) const {
 
     // Setup alpaka
-    auto devHost = ::alpaka::getDevByIdx<Host>(0u);
-    auto devAcc = ::alpaka::getDevByIdx<Acc>(0u);
+    auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
+    auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto maxThreads = deviceProperties.m_blockThreadExtentMax[0];

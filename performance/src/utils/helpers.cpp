@@ -24,6 +24,22 @@ std::unique_ptr<TH1> book_histo(std::string_view hist_name,
     return result;
 }
 
+std::unique_ptr<TH2> book_histo(std::string_view hist_name,
+                                std::string_view hist_title,
+                                const binning& var_x_binning,
+                                const binning& var_y_binning) {
+
+    auto result = std::make_unique<TH2F>(
+        hist_name.data(), hist_title.data(), var_x_binning.n_bins,
+        var_x_binning.min, var_x_binning.max, var_y_binning.n_bins,
+        var_y_binning.min, var_y_binning.max);
+
+    result->GetXaxis()->SetTitle(var_x_binning.title.c_str());
+    result->GetYaxis()->SetTitle(var_y_binning.title.c_str());
+    result->Sumw2();
+    return result;
+}
+
 std::unique_ptr<TEfficiency> book_eff(std::string_view eff_name,
                                       std::string_view eff_title,
                                       const binning& var_binning) {

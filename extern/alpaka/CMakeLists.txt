@@ -18,7 +18,7 @@ message( STATUS "Building Alpaka as part of the TRACCC project" )
 
 # Declare where to get Alpaka from.
 set( TRACCC_ALPAKA_SOURCE
-   "URL;https://github.com/alpaka-group/alpaka/archive/refs/tags/0.9.0.tar.gz;URL_MD5;eebc14d31d55cc5474d2f9474a64b742"
+   "URL;https://github.com/alpaka-group/alpaka/archive/refs/tags/1.0.0.tar.gz;URL_MD5;e4bcc48411eed1daf8bc33a031a9f7dc"
    CACHE STRING "Source for Alpaka, when built as part of this project" )
 mark_as_advanced( TRACCC_ALPAKA_SOURCE )
 FetchContent_Declare( Alpaka ${TRACCC_ALPAKA_SOURCE} )
@@ -44,3 +44,11 @@ if( DEFINED _buildTestingValue )
 else()
    unset( BUILD_TESTING CACHE )
 endif()
+
+# Include the alpaka-functions.cmake file.
+# This has specific versions of the traccc-functions, with the add_library
+# and add_executable functions swapped to the alpaka versions.
+#
+# These versions ensure Alpaka flags are passed over, and the relevant
+# accelerator backends are enabled, including file properties.
+include( ${CMAKE_CURRENT_LIST_DIR}/cmake/alpaka-functions.cmake )

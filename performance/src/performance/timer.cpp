@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -39,8 +39,8 @@ timer::~timer() {
     const std::chrono::nanoseconds totalTime = end - m_start;
     const auto pos =
         std::find_if(m_timing_info.data.begin(), m_timing_info.data.end(),
-                     [&m_name = m_name](const timing_info_pair& element) {
-                         return element.first == m_name;
+                     [&name = m_name](const timing_info_pair& element) {
+                         return element.first == name;
                      });
 
     if (pos == m_timing_info.data.end()) {

@@ -36,7 +36,7 @@ struct seed_generator {
     seed_generator(const detector_t& det,
                    const std::array<scalar, e_bound_size>& stddevs,
                    const std::size_t sd = 0)
-        : m_detector(std::make_unique<detector_t>(det)), m_stddevs(stddevs) {
+        : m_detector(det), m_stddevs(stddevs) {
         generator.seed(sd);
     }
 
@@ -49,7 +49,7 @@ struct seed_generator {
         const free_track_parameters& free_param) {
 
         // Get bound parameter
-        const detray::surface<detector_t> sf{*m_detector, surface_link};
+        const detray::surface<detector_t> sf{m_detector, surface_link};
 
         const cxt_t ctx{};
         auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());
@@ -68,10 +68,10 @@ struct seed_generator {
             detray::pointwise_material_interactor<transform3_type>;
 
         intersection_type sfi;
-        sfi.sf_desc = m_detector->surface(surface_link);
+        sfi.sf_desc = m_detector.surface(surface_link);
         sf.template visit_mask<detray::intersection_update>(
             detray::detail::ray<transform3_type>(free_param.vector()), sfi,
-            m_detector->transform_store());
+            m_detector.transform_store());
 
         // Apply interactor
         typename interactor_type::state interactor_state;
@@ -100,8 +100,8 @@ struct seed_generator {
     std::random_device rd{};
     std::mt19937 generator{rd()};
 
-    /// Detector objects
-    std::unique_ptr<detector_t> m_detector;
+    // Detector object
+    const detector_t& m_detector;
     /// Standard deviations for parameter smearing
     std::array<scalar, e_bound_size> m_stddevs;
 };

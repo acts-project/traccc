@@ -7,60 +7,45 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/utils/compare.hpp"
-
-// Thrust include(s).
-#include <thrust/binary_search.h>
-#include <thrust/execution_policy.h>
-
 namespace traccc::device {
 
-template <typename detector_t>
 TRACCC_DEVICE inline void count_measurements(
-    std::size_t globalIndex, typename detector_t::detector_view_type det_data,
-    measurement_container_types::const_view measurements_view,
-    vecmem::data::vector_view<const thrust::pair<geometry_id, unsigned int>>
-        module_map_view,
-    const int n_params,
+    std::size_t globalIndex,
     bound_track_parameters_collection_types::const_view params_view,
+    vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
+    vecmem::data::vector_view<const unsigned int> upper_bounds_view,
+    const unsigned int n_in_params,
     vecmem::data::vector_view<unsigned int> n_measurements_view,
-    unsigned int& n_total_measurements) {
+    vecmem::data::vector_view<unsigned int> ref_meas_idx_view,
+    unsigned int& n_measurements_sum) {
 
-    // Detector
-    detector_t det(det_data);
-
-    // Measurement
-    measurement_container_types::const_device measurements(measurements_view);
-
-    // module map
-    vecmem::device_vector<const thrust::pair<geometry_id, unsigned int>>
-        module_map(module_map_view);
-
-    // N measurements
-    vecmem::device_vector<unsigned int> n_measurements(n_measurements_view);
-
-    // Parameters
     bound_track_parameters_collection_types::const_device params(params_view);
+    vecmem::device_vector<const detray::geometry::barcode> barcodes(
+        barcodes_view);
+    vecmem::device_vector<const unsigned int> upper_bounds(upper_bounds_view);
+    vecmem::device_vector<unsigned int> n_measurements(n_measurements_view);
+    vecmem::device_vector<unsigned int> ref_meas_idx(ref_meas_idx_view);
 
-    if (globalIndex >= n_params) {
+    if (globalIndex >= n_in_params) {
         return;
     }
 
-    // Get module id
-    const auto module_id = params.at(globalIndex).surface_link();
+    // Get barcode
+    const auto bcd = params.at(globalIndex).surface_link();
+    const auto lo =
+        thrust::lower_bound(thrust::seq, barcodes.begin(), barcodes.end(), bcd);
+    const auto bcd_id = std::distance(barcodes.begin(), lo);
 
-    // Search for measuremetns header ID
-    const auto lower = thrust::lower_bound(
-        thrust::seq, module_map.begin(), module_map.end(), module_id.value(),
-        compare_pair_int<thrust::pair, unsigned int>());
-    const auto header_id = (*lower).second;
+    // Get the reference measurement index and the number of measurements per
+    // parameter
+    ref_meas_idx.at(globalIndex) =
+        lo == barcodes.begin() ? 0u : upper_bounds[bcd_id - 1];
+    n_measurements.at(globalIndex) =
+        upper_bounds[bcd_id] - ref_meas_idx.at(globalIndex);
 
-    n_measurements.at(globalIndex) = measurements.at(header_id).items.size();
-
-    vecmem::device_atomic_ref<unsigned int> num_total_measurements(
-        n_total_measurements);
-    num_total_measurements.fetch_add(n_measurements.at(globalIndex));
+    // Increase the total number of measurements with atomic addition
+    vecmem::device_atomic_ref<unsigned int> n_meas_sum(n_measurements_sum);
+    n_meas_sum.fetch_add(n_measurements.at(globalIndex));
 }
 
 }  // namespace traccc::device

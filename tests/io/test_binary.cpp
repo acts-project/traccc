@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,7 +29,7 @@ TEST(io_binary, cell) {
 
     // Set event configuration
     const std::size_t event = 0;
-    const std::string cells_directory = "tml_full/ttbar_mu200/";
+    const std::string cells_directory = "tml_full/ttbar_mu100/";
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -93,7 +93,7 @@ TEST(io_binary, cell) {
         ASSERT_EQ(cells_csv[i], cells_binary[i]);
     }
     for (std::size_t i = 0; i < modules_csv.size(); i++) {
-        ASSERT_EQ(modules_csv[i].module, modules_binary[i].module);
+        ASSERT_EQ(modules_csv[i].surface_link, modules_binary[i].surface_link);
         ASSERT_EQ(modules_csv[i].placement, modules_binary[i].placement);
     }
 }
@@ -171,7 +171,7 @@ TEST(io_binary, spacepoint) {
 TEST(io_binary, measurement) {
     // Set event configuration
     const std::size_t event = 0;
-    const std::string measurements_directory = "tml_full/ttbar_mu200/";
+    const std::string measurements_directory = "tml_full/ttbar_mu300/";
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -226,6 +226,6 @@ TEST(io_binary, measurement) {
         ASSERT_EQ(measurements_csv[i], measurements_binary[i]);
     }
     for (std::size_t i = 0; i < modules_csv.size(); i++) {
-        ASSERT_EQ(modules_csv[i].module, modules_binary[i].module);
+        ASSERT_EQ(modules_csv[i].surface_link, modules_binary[i].surface_link);
     }
 }

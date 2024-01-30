@@ -50,7 +50,7 @@ class seeding_performance_writer {
             {"Num", plot_helpers::binning("N", 30, -0.5, 29.5)}};
 
         /// Cut values
-        scalar pT_cut = 1.;
+        scalar pT_cut = 1.f * traccc::unit<scalar>::GeV;
     };
 
     /// Construct from configuration and log level.

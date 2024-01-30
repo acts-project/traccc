@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "make_cell_reader.hpp"
+#include "traccc/io/csv/make_cell_reader.hpp"
 
 namespace traccc::io::csv {
 

@@ -38,7 +38,7 @@ TEST_F(io, csv_read_single_module) {
     ASSERT_EQ(modules.size(), 1u);
     auto module = single_module_cells.modules.at(0);
 
-    ASSERT_EQ(module.module, 0u);
+    ASSERT_EQ(module.surface_link.value(), 0u);
     ASSERT_EQ(cells.at(0).channel0, 123u);
     ASSERT_EQ(cells.at(0).channel1, 32u);
     ASSERT_EQ(cells.at(5).channel0, 174u);
@@ -65,7 +65,7 @@ TEST_F(io, csv_read_two_modules) {
     ASSERT_EQ(cells.at(5).channel1, 880u);
     ASSERT_EQ(cells.at(5).module_link, 0u);
 
-    ASSERT_EQ(modules.at(0u).module, 0u);
+    ASSERT_EQ(modules.at(0u).surface_link.value(), 0u);
 
     // Check cells in second module
     ASSERT_EQ(cells.at(6).channel0, 0u);
@@ -75,7 +75,7 @@ TEST_F(io, csv_read_two_modules) {
     ASSERT_EQ(cells.at(13).channel1, 98u);
     ASSERT_EQ(cells.at(13).module_link, 1u);
 
-    ASSERT_EQ(modules.at(1u).module, 1u);
+    ASSERT_EQ(modules.at(1u).surface_link.value(), 1u);
 }
 
 // This reads in the tml pixel barrel first event
