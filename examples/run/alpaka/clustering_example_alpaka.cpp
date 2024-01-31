@@ -61,16 +61,15 @@ struct ClusteringKernel
 
         unsigned int i = linearizedGlobalThreadIdx[0];
 
-        // if (geoIDBuf[i] == 576460889742377216) {
+        // if (geoIDBuf[i] == 576461027181406464) {
             for (int x = 0; x < numElements; x++) {
                 if ((geoIDBuf[x] == geoIDBuf[i]) &&
                     (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1) &&
                     (-1 <= (c1Buf[x] - c1Buf[i]) && (c1Buf[x] - c1Buf[i]) <= 1)) {
-                    if (x!=i) {
+                    if (x == i-1 || x == i+1) {
                         // printf("c0: %u, c1: %u FOUND c0: %u, c1: %u  i: %u, x: %u\n", c0Buf[i], c1Buf[i], c0Buf[x], c1Buf[x], i, x);
                         // printf("diff in c0: %d, c1: %d, true check: %d\n", c0Buf[x] - c0Buf[i], c1Buf[x] - c1Buf[i], (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1));
                         outputBuf[i] = x;
-                        // break;
                     }
                 }
             }
@@ -277,18 +276,17 @@ auto main(int argc, char* argv[]) -> int
                 geoIDTotal += 1;
             } 
 
-            if (outputBuf[y] == y+1) {
+            // if the next cell is: 
+            if (outputBuf[y] == y+1) { // in the same cluster
                 currClusterC0[numInCluster] = c0Buf[y];
                 currClusterC1[numInCluster] = c1Buf[y];
                 numInCluster++;
                 outputBuf[y] = rootIndex;
-            } else if (outputBuf[y] == y-1 || outputBuf[y] == y) {
+            } else if (outputBuf[y] == y-1 || outputBuf[y] == y) { // a cluster by itself (cluster size of 1) or if its the end of a cluster
                 currClusterC0[numInCluster] = c0Buf[y];
                 currClusterC1[numInCluster] = c1Buf[y];
                 numInCluster++;
                 clustersInGeoID++;
-
-                printf("out[%lu]: %u\n", y, outputBuf[y]);
 
                 printf("cluster %d: ", clustersInGeoID);
                 for (uint16_t i = 0; i < numInCluster; i++){
@@ -298,7 +296,7 @@ auto main(int argc, char* argv[]) -> int
                 printf("\ncluser size: %d\n", numInCluster);
                 printf("----------------------------------------------------------\n");
 
-                std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0);
+                std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0); // reset cluster c0 and c1 buffers
                 std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
                 
                 rootIndex = outputBuf[y];
@@ -306,6 +304,7 @@ auto main(int argc, char* argv[]) -> int
             }
 
             
+            // printf("out[%lu]: %u\n", y, outputBuf[y]);
             // printf("to test c0_0: %d, c0_1: %d, c1_0: %d, c1_1: %d\n", c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]]);
             // // printf("boolean test: c0: %d, c1: %d\n", -1 <= c0Buf[y] - c0Buf[outputBuf[y]] <= 1);
             // printf("correct?: %d\n", outputTest(c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]], geoIDBuf[y], geoIDBuf[outputBuf[y]]));
