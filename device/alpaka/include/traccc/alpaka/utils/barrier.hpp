@@ -25,7 +25,7 @@ struct barrier {
 
     ALPAKA_FN_ACC
     bool blockOr(bool predicate) {
-        return ::alpaka::syncBlockThreadsPredicate<::alpaka::BlockCount>(
+        return ::alpaka::syncBlockThreadsPredicate<::alpaka::BlockOr>(
             *m_acc, predicate);
     }
 
