@@ -17,9 +17,9 @@ namespace traccc
         hitCsvReader(std::string fileName);
 
         struct cells {
-            u_int64_t geoID[500000];
-            u_int16_t channel0[500000];
-            u_int16_t channel1[500000];
+            u_int64_t geoID[55000];
+            u_int16_t channel0[55000];
+            u_int16_t channel1[55000];
 
             // std::vector<u_int64_t> geoID;
             // std::vector<u_int16_t> channel0;

@@ -278,9 +278,10 @@ auto main(int argc, char* argv[]) -> int
 
     // results testing 
     int numInCluster = 0;
+    int clustersInGeoID = 0;
+    int clustersTotal = 0;
     uint16_t currClusterC0[100];
     uint16_t currClusterC1[100];
-    int clustersInGeoID = 0; // TODO
     int rootIndex = 0;
     uint64_t tempGeoID = geoIDBuf[0];
     double printTime = 0;
@@ -320,6 +321,7 @@ auto main(int argc, char* argv[]) -> int
                 std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
                 
                 rootIndex = outputBuf[y];
+                clustersTotal += 1;
                 numInCluster = 0;
             }
 
@@ -329,6 +331,9 @@ auto main(int argc, char* argv[]) -> int
             // // printf("boolean test: c0: %d, c1: %d\n", -1 <= c0Buf[y] - c0Buf[outputBuf[y]] <= 1);
             // printf("correct?: %d\n", outputTest(c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]], geoIDBuf[y], geoIDBuf[outputBuf[y]]));
         }
+
+        printf("Total clusters found: %d\n", clustersTotal);
+        
         const auto endT = std::chrono::high_resolution_clock::now();
         printTime += std::chrono::duration<double>(endT - beginT).count();
         std::cout << "Time for cluster printing and calc: " << std::chrono::duration<double>(endT - beginT).count() << 's'
