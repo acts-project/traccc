@@ -10031,3 +10031,4 @@ boost_1_80_0/boost/parameter/aux_/pack/deduced_item.hpp
 boost_1_80_0/boost/parameter/aux_/pack/insert_tagged.hpp
 boost_1_80_0/boost/parameter/aux_/pack/is_named_argument.hpp
 boost_1_80_0/
+.vscode/settings.json
