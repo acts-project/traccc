@@ -62,15 +62,13 @@ struct ClusteringKernel
         unsigned int i = linearizedGlobalThreadIdx[0];
 
         // if (geoIDBuf[i] == 576461027181406464) {
-            for (int x = 0; x < numElements; x++) {
+            for (int x = i-1; x <= i+1; x+=2) {
                 if ((geoIDBuf[x] == geoIDBuf[i]) &&
                     (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1) &&
                     (-1 <= (c1Buf[x] - c1Buf[i]) && (c1Buf[x] - c1Buf[i]) <= 1)) {
-                    if (x == i-1 || x == i+1) {
                         // printf("c0: %u, c1: %u FOUND c0: %u, c1: %u  i: %u, x: %u\n", c0Buf[i], c1Buf[i], c0Buf[x], c1Buf[x], i, x);
                         // printf("diff in c0: %d, c1: %d, true check: %d\n", c0Buf[x] - c0Buf[i], c1Buf[x] - c1Buf[i], (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1));
                         outputBuf[i] = x;
-                    }
                 }
             }
         // }
@@ -103,7 +101,16 @@ auto main(int argc, char* argv[]) -> int
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
+    double timeTotal = 0;
+    
+    const auto beginT = std::chrono::high_resolution_clock::now();
+    
     traccc::hitCsvReader csvHits(common_opts.input_directory);
+
+    const auto endT = std::chrono::high_resolution_clock::now();
+    timeTotal += std::chrono::duration<double>(endT - beginT).count();
+    std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
+    
 
 // Fallback for the CI with disabled sequential backend
 #if defined(ALPAKA_CI) && !defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED)
@@ -172,7 +179,6 @@ auto main(int argc, char* argv[]) -> int
 
     // Assign data 
     Idx const numElements(nElementsPerDim);
-    double timeTotal = 0;
     // uint64_t tempGeoID = csvHits.data.geoID[0];
     {
         const auto beginT = std::chrono::high_resolution_clock::now();
@@ -268,9 +274,11 @@ auto main(int argc, char* argv[]) -> int
             cellsRead += 1;
             if (geoIDBuf[y] != tempGeoID) {
                 clustersTotal += clustersInGeoID;
+                // /* printing start
                 printf("number of clusters in geoID 0x%lu: %d\n", tempGeoID, clustersInGeoID);
                 printf("Total clusters found: %d\n", clustersTotal);
                 printf("==========================================================\n");
+                // printing end */
                 tempGeoID = geoIDBuf[y];
                 clustersInGeoID = 0;
                 geoIDTotal += 1;
@@ -288,6 +296,7 @@ auto main(int argc, char* argv[]) -> int
                 numInCluster++;
                 clustersInGeoID++;
 
+                // /* printing start
                 printf("cluster %d: ", clustersInGeoID);
                 for (uint16_t i = 0; i < numInCluster; i++){
                     printf("(%u, %u), ", currClusterC0[i], currClusterC1[i]);
@@ -295,6 +304,7 @@ auto main(int argc, char* argv[]) -> int
 
                 printf("\ncluser size: %d\n", numInCluster);
                 printf("----------------------------------------------------------\n");
+                // printing end */
 
                 std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0); // reset cluster c0 and c1 buffers
                 std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
@@ -319,7 +329,7 @@ auto main(int argc, char* argv[]) -> int
                   << std::endl;
     }
 
-    printf("Time for completion %fs \nTime for completion w/o print + calc time %fs\n", timeTotal + printTime, timeTotal);
+    printf("Wall time: %fs \nWall time w/o print + calc time: %fs\n", timeTotal + printTime, timeTotal);
 
     return EXIT_SUCCESS;
 #endif
