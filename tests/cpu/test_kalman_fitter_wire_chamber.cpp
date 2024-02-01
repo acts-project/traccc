@@ -44,8 +44,9 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
     const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const unsigned int n_truth_tracks = std::get<6>(GetParam());
-    const unsigned int n_events = std::get<7>(GetParam());
+    const scalar charge = std::get<6>(GetParam());
+    const unsigned int n_truth_tracks = std::get<7>(GetParam());
+    const unsigned int n_events = std::get<8>(GetParam());
 
     // Performance writer
     traccc::fitting_performance_writer::config fit_writer_cfg;
@@ -59,10 +60,11 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     vecmem::host_memory_resource host_mr;
 
     // Read back detector file
+    const std::string path = name + "/";
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file("wire_chamber_geometry.json")
-        .add_file("wire_chamber_homogeneous_material.json")
-        //.add_file("wire_chamber_surface_grids.json")
+    reader_cfg.add_file(path + "wire_chamber_geometry.json")
+        .add_file(path + "wire_chamber_homogeneous_material.json")
+        //.add_file(path + "wire_chamber_surface_grids.json")
         .do_check(true);
 
     const auto [host_det, names] =
@@ -84,6 +86,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     gen_cfg.phi_range(phi_range[0], phi_range[1]);
     gen_cfg.theta_range(theta_range[0], theta_range[1]);
     gen_cfg.mom_range(mom_range[0], mom_range[1]);
+    gen_cfg.charge(charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -96,7 +99,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
     // Run simulator
-    const std::string path = name + "/";
     const std::string full_path = io::data_directory() + path;
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
@@ -106,7 +108,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Set constrained step size to 2 mm
     sim.get_config().step_constraint = step_constraint;
-    sim.get_config().overstep_tolerance = overstep_tolerance;
 
     sim.run();
 
@@ -120,7 +121,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = step_constraint;
-    fit_cfg.overstep_tolerance = overstep_tolerance;
     fit_cfg.mask_tolerance = mask_tolerance;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 
@@ -146,14 +146,14 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
-            const auto& fit_info = track_states[i_trk].header;
+            const auto& fit_res = track_states[i_trk].header;
             const auto& track_states_per_track = track_states[i_trk].items;
 
             consistency_tests(track_states_per_track);
 
-            ndf_tests(fit_info, track_states_per_track);
+            ndf_tests(fit_res, track_states_per_track);
 
-            fit_performance_writer.write(track_states_per_track, fit_info,
+            fit_performance_writer.write(track_states_per_track, fit_res,
                                          host_det, evt_map);
         }
     }
@@ -177,34 +177,41 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     ASSERT_GE(success_rate, 0.99f);
     ASSERT_LE(success_rate, 1.00f);
-
-    // Remove the data
-    std::filesystem::remove_all(full_path);
 }
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation0, KalmanFittingWireChamberTests,
     ::testing::Values(std::make_tuple(
-        "2_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "wire_2_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{2.f, 2.f},
         std::array<scalar, 2u>{-1.f, 1.f},
-        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, 100,
-        100)));
+        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
+        100, 100)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation1, KalmanFittingWireChamberTests,
     ::testing::Values(std::make_tuple(
-        "10_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "wire_10_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-1.f, 1.f},
-        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, 100,
-        100)));
+        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
+        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
+        100, 100)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation2, KalmanFittingWireChamberTests,
     ::testing::Values(std::make_tuple(
-        "100_GeV", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        "wire_100_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{-1.f, 1.f},
-        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, 100,
-        100)));
+        std::array<scalar, 2u>{100.f, 100.f},
+        std::array<scalar, 2u>{-0.3f, 0.3f},
+        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
+        100, 100)));
+
+INSTANTIATE_TEST_SUITE_P(
+    KalmanFitWireChamberValidation3, KalmanFittingWireChamberTests,
+    ::testing::Values(std::make_tuple(
+        "wire_2_GeV_anti_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{2.f, 2.f},
+        std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, 1.f,
+        100, 100)));

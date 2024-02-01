@@ -40,13 +40,14 @@ namespace traccc {
 /// (4) momentum range
 /// (5) eta range
 /// (6) phi range
-/// (7) number of tracks per event
-/// (8) number of events
+/// (7) charge
+/// (8) number of tracks per event
+/// (9) number of events
 class KalmanFittingTests
     : public ::testing::TestWithParam<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
           std::array<scalar, 2u>, std::array<scalar, 2u>,
-          std::array<scalar, 2u>, unsigned int, unsigned int>> {
+          std::array<scalar, 2u>, scalar, unsigned int, unsigned int>> {
 
     public:
     /// Type declarations
@@ -82,16 +83,13 @@ class KalmanFittingTests
     /// Validadte the NDF
     ///
     /// @param host_det Detector object
-    /// @param fit_info Fitting statistics result of a track
+    /// @param fit_res Fitting statistics result of a track
     /// @param track_candidates_per_track Track candidates of a track
     /// @param track_states_per_track Track states of a track
     ///
     void ndf_tests(
-        const fitter_info<transform3>& fit_info,
+        const fitting_result<transform3>& fit_res,
         const track_state_collection_types::host& track_states_per_track);
-
-    virtual void consistency_tests(const track_state_collection_types::host&
-                                       track_states_per_track) const = 0;
 
     // The number of tracks successful with KF
     std::size_t n_success{0u};

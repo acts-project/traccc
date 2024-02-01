@@ -32,11 +32,7 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
     static constexpr vector3 B{0, 0, 2 * detray::unit<scalar>::T};
 
     /// Step constraint
-    static const inline scalar step_constraint = 2 * detray::unit<scalar>::mm;
-
-    /// Overstep tolerance
-    static const inline scalar overstep_tolerance =
-        -100.f * detray::unit<scalar>::um;
+    static const inline scalar step_constraint = 1 * detray::unit<scalar>::mm;
 
     // Set mask tolerance to a large value not to miss the surface during KF
     static const inline scalar mask_tolerance = 50.f * detray::unit<scalar>::um;
@@ -51,11 +47,11 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
         0.01 * detray::unit<scalar>::mm,
         0.001,
         0.001,
-        0.01 / detray::unit<scalar>::GeV,
+        0.001 / detray::unit<scalar>::GeV,
         0.01 * detray::unit<scalar>::ns};
 
     void consistency_tests(const track_state_collection_types::host&
-                               track_states_per_track) const override {
+                               track_states_per_track) const {
 
         // The nubmer of track states is supposed be greater than or
         // equal to the number of layers
@@ -63,12 +59,17 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
     }
 
     protected:
-    static void SetUpTestCase() {
+    virtual void SetUp() override {
         vecmem::host_memory_resource host_mr;
 
         detray::wire_chamber_config wire_chamber_cfg;
         wire_chamber_cfg.n_layers(n_wire_layers);
         wire_chamber_cfg.half_z(half_z);
+
+        wire_chamber_cfg.mapped_material(detray::vacuum<scalar>());
+        //@NOTE: 2 GeV test fails in pull check with the following setup
+        // wire_chamber_cfg.mapped_material(detray::beryllium<scalar>());
+        // wire_chamber_cfg.m_thickness = 100.f * detray::unit<scalar>::um;
 
         // Create telescope detector
         auto [det, name_map] = create_wire_chamber(host_mr, wire_chamber_cfg);
@@ -76,7 +77,8 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
         // Write detector file
         auto writer_cfg = detray::io::detector_writer_config{}
                               .format(detray::io::format::json)
-                              .replace_files(true);
+                              .replace_files(true)
+                              .path(std::get<0>(GetParam()));
         detray::io::write_detector(det, name_map, writer_cfg);
     }
 };

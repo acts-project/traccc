@@ -7,11 +7,9 @@
 
 // Project include(s).
 #include "traccc/finding/candidate_link.hpp"
-#include "traccc/utils/compare.hpp"
 
 // System include
 #include <algorithm>
-#include <iostream>
 #include <limits>
 
 namespace traccc {
@@ -35,7 +33,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     auto end = std::unique_copy(measurements.begin(), measurements.end(),
                                 uniques.begin(), measurement_equal_comp());
-    unsigned int n_modules = end - uniques.begin();
+    const unsigned int n_modules = end - uniques.begin();
 
     // Get upper bounds of unique elements
     std::vector<unsigned int> upper_bounds;
@@ -75,6 +73,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     // Copy seed to input parameters
     std::vector<bound_track_parameters> in_params;
+    std::vector<unsigned int> n_trks_per_seed(seeds.size(), 0);
+
     in_params.reserve(seeds.size());
     for (const auto& seed : seeds) {
         in_params.push_back(seed);
@@ -100,10 +100,17 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         const unsigned int previous_step =
             (step == 0) ? std::numeric_limits<unsigned int>::max() : step - 1;
 
+        std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0);
+
         for (unsigned int in_param_id = 0; in_param_id < n_in_params;
              in_param_id++) {
 
             bound_track_parameters& in_param = in_params[in_param_id];
+            unsigned int orig_param_id =
+                (step == 0
+                     ? in_param_id
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .seed_idx);
 
             /*************************
              * Material interaction
@@ -165,6 +172,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 if (n_branches > m_cfg.max_num_branches_per_surface) {
                     break;
                 }
+                if (n_trks_per_seed[orig_param_id] >=
+                    m_cfg.max_num_branches_per_initial_seed) {
+                    break;
+                }
 
                 bound_track_parameters bound_param(in_param.surface_link(),
                                                    in_param.vector(),
@@ -188,9 +199,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         static_cast<unsigned int>(links[step].size());
 
                     n_branches++;
+                    n_trks_per_seed[orig_param_id]++;
 
                     links[step].push_back(
-                        {{previous_step, in_param_id}, item_id});
+                        {{previous_step, in_param_id}, item_id, orig_param_id});
 
                     /*********************************
                      * Propagate to the next surface
@@ -199,9 +211,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     // Create propagator state
                     typename propagator_type::state propagation(
                         trk_state.filtered(), field, det);
+                    propagation._stepping().set_overstep_tolerance(
+                        m_cfg.overstep_tolerance);
                     propagation._stepping.template set_constraint<
                         detray::step::constraint::e_accuracy>(
-                        m_cfg.constrained_step_size);
+                        m_cfg.step_constraint);
+                    propagation.set_mask_tolerance(m_cfg.mask_tolerance);
+                    propagation._stepping.set_tolerance(m_cfg.rk_tolerance);
 
                     typename detray::pathlimit_aborter::state s0;
                     typename detray::parameter_transporter<

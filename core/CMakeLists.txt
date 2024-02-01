@@ -35,7 +35,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/geometry/pixel_data.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
-  "include/traccc/utils/compare.hpp"
   "include/traccc/utils/type_traits.hpp"
   "include/traccc/utils/memory_resource.hpp"
   "include/traccc/utils/seed_generator.hpp"

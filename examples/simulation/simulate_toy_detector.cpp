@@ -76,6 +76,7 @@ int simulate(std::string output_directory, unsigned int events,
     gen_cfg.phi_range(pg_opts.phi_range[0], pg_opts.phi_range[1]);
     gen_cfg.theta_range(pg_opts.theta_range[0], pg_opts.theta_range[1]);
     gen_cfg.mom_range(pg_opts.mom_range[0], pg_opts.mom_range[1]);
+    gen_cfg.charge(pg_opts.charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -100,6 +101,8 @@ int simulate(std::string output_directory, unsigned int events,
         full_path);
     sim.get_config().step_constraint = propagation_opts.step_constraint;
     sim.get_config().overstep_tolerance = propagation_opts.overstep_tolerance;
+    sim.get_config().mask_tolerance = propagation_opts.mask_tolerance;
+    sim.get_config().rk_tolerance = propagation_opts.rk_tolerance;
 
     sim.run();
 
@@ -120,7 +123,7 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    desc.add_options()("output_directory", po::value<std::string>()->required(),
+    desc.add_options()("output-directory", po::value<std::string>()->required(),
                        "specify the directory of output data");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
@@ -134,7 +137,7 @@ int main(int argc, char* argv[]) {
     traccc::handle_argument_errors(vm, desc);
 
     // Read options
-    auto output_directory = vm["output_directory"].as<std::string>();
+    auto output_directory = vm["output-directory"].as<std::string>();
     auto events = vm["events"].as<unsigned int>();
     pg_opts.read(vm);
     propagation_opts.read(vm);

@@ -119,12 +119,8 @@ void res_plot_tool::fill(res_plot_cache& cache,
                    std::sqrt(getter::element(fit_param.covariance(), idx, idx));
         } else if (par_name == "qopT") {
             residual = fit_param.qopT() - truth_param.qopT();
-
-            const scalar sigma =
-                std::sqrt(getter::element(fit_param.covariance(),
-                                          e_bound_qoverp, e_bound_qoverp)) /
-                std::sin(fit_param.theta());
-            pull = residual / sigma;
+        } else if (par_name == "qopz") {
+            residual = fit_param.qopz() - truth_param.qopz();
         }
 
         // Avoid unused variable warnings when building the code without ROOT.
@@ -140,7 +136,9 @@ void res_plot_tool::fill(res_plot_cache& cache,
                      cache.resolutions_pT[par_name]->GetNbinsX() - 1);
 
         cache.residuals.at(par_name)->Fill(residual);
-        cache.pulls.at(par_name)->Fill(pull);
+        if (idx < e_bound_size) {
+            cache.pulls.at(par_name)->Fill(pull);
+        }
         cache.residuals_eta.at(par_name)->Fill(eta, residual);
         cache.residuals_pT.at(par_name)->Fill(pT, residual);
         cache.residuals_per_eta.at(par_name).at(eta_idx)->Fill(residual);

@@ -1,3 +1,9 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2022-2023 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
 stages:
   - build
   - test
@@ -8,24 +14,19 @@ build_cuda:
   stage: build
   image: ghcr.io/acts-project/ubuntu2004_cuda:v30
   artifacts:
-    paths: 
+    paths:
       - build
   script:
       - git clone $CLONE_URL src
       - git -C src checkout $HEAD_SHA
-      - >
-        cmake -S src -B build -GNinja
-        -DCMAKE_BUILD_TYPE=Release
-        -DTRACCC_BUILD_TESTING=ON
-        -DTRACCC_BUILD_CUDA=ON
-      - cmake --build build
-
+      - cmake --preset cuda -DCMAKE_BUILD_TYPE=Release -S src -B build -G Ninja
+      - cmake --build build --parallel 2
 
 test_cuda:
   stage: test
   tags: [docker-gpu-nvidia]
   image: ghcr.io/acts-project/ubuntu2004_cuda:v30
-  needs: 
+  needs:
     - build_cuda
   script:
     - git clone $CLONE_URL src
@@ -36,4 +37,3 @@ test_cuda:
     - cd build
     - nvidia-smi
     - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
-

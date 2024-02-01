@@ -81,10 +81,10 @@ void fitting_performance_writer::write_res(
 }
 
 void fitting_performance_writer::write_stat(
-    const fitter_info<transform3>& fit_info,
+    const fitting_result<transform3>& fit_res,
     const track_state_collection_types::host& track_states) {
 
-    m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, fit_info);
+    m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, fit_res);
 
     for (const auto& trk_state : track_states) {
         m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, trk_state);
