@@ -36,7 +36,7 @@ using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
 template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocksPerGrid,
                            Idx threadsPerBlockOrElementsPerThread) {
-    if constexpr (std::is_same_v<TAcc, ::alpaka::AccGpuCudaRt<Dim, Idx>>) {
+    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt>) {
         const auto elementsPerThread = Idx{1};
         return WorkDiv{blocksPerGrid, threadsPerBlockOrElementsPerThread,
                        elementsPerThread};
