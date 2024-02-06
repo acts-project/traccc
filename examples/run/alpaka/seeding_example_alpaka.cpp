@@ -59,28 +59,14 @@
 using namespace traccc;
 namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
-            const traccc::finding_input_config<traccc::scalar>& /*finding_cfg*/,
-            const traccc::propagation_options<traccc::scalar>& /*propagation_opts*/,
-            const traccc::common_options& common_opts,
-            const traccc::detector_input_options& det_opts, bool run_cpu) {
+int seq_run(
+    const traccc::seeding_input_config& /*i_cfg*/,
+    const traccc::finding_input_config<traccc::scalar>& /*finding_cfg*/,
+    const traccc::propagation_options<traccc::scalar>& /*propagation_opts*/,
+    const traccc::common_options& common_opts,
+    const traccc::detector_input_options& det_opts, bool run_cpu) {
 
     using host_detector_type = detray::detector<>;
-    // using device_detector_type =
-    //     detray::detector<detray::default_metadata,
-    //                      detray::device_container_types>;
-
-    // using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
-    // using rk_stepper_type =
-    //     detray::rk_stepper<b_field_t::view_t,
-    //                        typename host_detector_type::transform3,
-    //                        detray::constrained_step<>>;
-    // using host_navigator_type = detray::navigator<const host_detector_type>;
-    // using host_fitter_type =
-    //     traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
-    // using device_navigator_type = detray::navigator<const device_detector_type>;
-    // using device_fitter_type =
-    //     traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -121,11 +107,6 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
      * Build a geometry
      *****************************/
 
-    // B field value and its type
-    // @TODO: Set B field as argument
-    // const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
-    // auto field = detray::bfield::create_const_field(B);
-
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
@@ -141,9 +122,6 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
     traccc::geometry surface_transforms =
         traccc::io::alt_read_geometry(host_det);
-
-    // Detector view object
-    // auto det_view = detray::get_data(host_det);
 
     // Seeding algorithms
     traccc::seedfinder_config finder_config;

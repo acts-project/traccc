@@ -37,7 +37,7 @@ track_params_estimation::track_params_estimation(
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
     const seed_collection_types::const_view& seeds_view,
-    const cell_module_collection_types::const_view& modules_view,
+    const cell_module_collection_types::const_view& /*modules_view*/,
     const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
 
