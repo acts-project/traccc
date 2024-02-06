@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,8 +23,6 @@
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/telescope_metadata.hpp"
-#include "detray/detectors/toy_metadata.hpp"
 #include "detray/masks/unbounded.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/rk_stepper.hpp"

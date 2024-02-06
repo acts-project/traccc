@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -115,6 +115,7 @@ TEST_P(CkfToyDetectorTests, Run) {
                                  writer_type>(
         n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
+    sim.get_config().propagation.navigation.search_window = search_window;
     sim.run();
 
     /*****************************
@@ -143,6 +144,8 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Finding algorithm configuration
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg;
+
+    cfg.propagation.navigation.search_window = search_window;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>

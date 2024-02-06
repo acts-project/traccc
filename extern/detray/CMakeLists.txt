@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2023 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -18,7 +18,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.51.0.tar.gz;URL_MD5;0e5c419aaec167ff5efbef950fe572c8"
+"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.53.0.tar.gz;URL_MD5;a9fafe0aa1f8f61406373b0d8d800c83"
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
@@ -31,7 +31,7 @@ set( DETRAY_CUSTOM_SCALARTYPE "float" CACHE STRING
 set( DETRAY_BUILD_TESTING FALSE CACHE BOOL
    "Turn off the build of the Detray unit tests" )
 set( DETRAY_BUILD_TUTORIALS FALSE CACHE BOOL
-   "Turn off the build of the Detray tutorials" )   
+   "Turn off the build of the Detray tutorials" )
 set( DETRAY_EIGEN_PLUGIN TRUE CACHE BOOL
    "Turn on the build of the Detray Eigen code" )
 set( DETRAY_VC_PLUGIN TRUE CACHE BOOL

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,6 +15,9 @@
 #include "detray/detectors/create_toy_geometry.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/io/common/detector_writer.hpp"
+
+// System include(s)
+#include <array>
 
 namespace traccc {
 
@@ -34,6 +37,9 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
         50.f * detray::unit<scalar>::um, 50.f * detray::unit<scalar>::um};
+
+    // Grid search window
+    static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
