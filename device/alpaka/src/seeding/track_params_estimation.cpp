@@ -20,8 +20,7 @@ struct EstimateTrackParamsKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
         spacepoint_collection_types::const_view spacepoints_view,
-        seed_collection_types::const_view seed_view,
-        const vector3 bfield,
+        seed_collection_types::const_view seed_view, const vector3 bfield,
         const std::array<traccc::scalar, traccc::e_bound_size> stddev,
         bound_track_parameters_collection_types::view params_view) const {
         auto const globalThreadIdx =
@@ -65,8 +64,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // Run the kernel
     ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{},
-                        spacepoints_view, seeds_view, bfield,
-                        stddev, vecmem::get_data(params_buffer));
+                        spacepoints_view, seeds_view, bfield, stddev,
+                        vecmem::get_data(params_buffer));
     ::alpaka::wait(queue);
 
     return params_buffer;
