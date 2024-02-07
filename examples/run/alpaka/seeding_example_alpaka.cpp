@@ -10,7 +10,9 @@
 #include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
@@ -19,6 +21,15 @@
 #include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/core/detector_metadata.hpp"
+#include "detray/detectors/bfield.hpp"
+#include "detray/io/common/detector_reader.hpp"
+#include "detray/propagator/navigator.hpp"
+#include "detray/propagator/propagator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -41,8 +52,27 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
 
-    // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    /// Type declarations
+    using host_detector_type = detray::detector<>;
+
+    // Memory resource used by the EDM.
+    vecmem::host_memory_resource host_mr;
+
+    // Read the detector
+    detray::io::detector_reader_config reader_cfg{};
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
+    if (!det_opts.material_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            det_opts.material_file);
+    }
+    if (!det_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    }
+    auto [host_det, names] =
+        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+
+    traccc::geometry surface_transforms =
+        traccc::io::alt_read_geometry(host_det);
 
     // Output stats
     uint64_t n_modules = 0;
@@ -54,9 +84,6 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     traccc::seedfinder_config finder_config;
     traccc::spacepoint_grid_config grid_config(finder_config);
     traccc::seedfilter_config filter_config;
-
-    // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     vecmem::cuda::copy copy;

@@ -16,11 +16,13 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
     traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
         LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
         traccc::core traccc::device_common traccc::cuda traccc::alpaka alpaka::alpaka
+        detray::utils detray::io
         traccc::options )
 else()
     traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
         LINK_LIBRARIES vecmem::core traccc::io traccc::performance
         traccc::core traccc::device_common traccc::alpaka alpaka::alpaka
+        detray::utils detray::io
         traccc::options )
 endif()
 
