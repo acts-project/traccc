@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -57,17 +57,14 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     const bound_track_parameters in_par = in_params.at(globalIndex);
 
     // Create propagator
-    propagator_t propagator({}, {});
+    propagator_t propagator(cfg.propagation);
 
     // Create propagator state
     typename propagator_t::state propagation(
         in_par, field_data, det, std::move(nav_candidates.at(globalIndex)));
-    propagation._stepping().set_overstep_tolerance(cfg.overstep_tolerance);
     propagation._stepping
         .template set_constraint<detray::step::constraint::e_accuracy>(
-            cfg.step_constraint);
-    propagation.set_mask_tolerance(cfg.mask_tolerance);
-    propagation._stepping.set_tolerance(cfg.rk_tolerance);
+            cfg.propagation.stepping.step_constraint);
 
     // Actor state
     // @TODO: simplify the syntax here

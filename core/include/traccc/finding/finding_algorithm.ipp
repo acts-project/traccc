@@ -69,7 +69,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     std::vector<typename candidate_link::link_index_type> tips;
 
     // Create propagator
-    propagator_type propagator({}, {});
+    propagator_type propagator(m_cfg.propagation);
 
     // Copy seed to input parameters
     std::vector<bound_track_parameters> in_params;
@@ -211,13 +211,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     // Create propagator state
                     typename propagator_type::state propagation(
                         trk_state.filtered(), field, det);
-                    propagation._stepping().set_overstep_tolerance(
-                        m_cfg.overstep_tolerance);
                     propagation._stepping.template set_constraint<
                         detray::step::constraint::e_accuracy>(
-                        m_cfg.step_constraint);
-                    propagation.set_mask_tolerance(m_cfg.mask_tolerance);
-                    propagation._stepping.set_tolerance(m_cfg.rk_tolerance);
+                        m_cfg.propagation.stepping.step_constraint);
 
                     typename detray::pathlimit_aborter::state s0;
                     typename detray::parameter_transporter<

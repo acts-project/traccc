@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -129,20 +129,14 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     cfg.min_track_candidates_per_track = finding_cfg.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_cfg.track_candidates_range[1];
     cfg.chi2_max = finding_cfg.chi2_max;
-    cfg.step_constraint = propagation_opts.step_constraint;
-    cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
-    cfg.mask_tolerance = propagation_opts.mask_tolerance;
-    cfg.rk_tolerance = propagation_opts.rk_tolerance;
+    cfg.propagation = propagation_opts.propagation;
 
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.step_constraint = propagation_opts.step_constraint;
-    fit_cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
-    fit_cfg.mask_tolerance = propagation_opts.mask_tolerance;
-    fit_cfg.rk_tolerance = propagation_opts.rk_tolerance;
+    fit_cfg.propagation = propagation_opts.propagation;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 

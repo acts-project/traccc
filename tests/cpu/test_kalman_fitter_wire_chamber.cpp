@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -64,7 +64,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file(path + "wire_chamber_geometry.json")
         .add_file(path + "wire_chamber_homogeneous_material.json")
-        //.add_file(path + "wire_chamber_surface_grids.json")
+        .add_file(path + "wire_chamber_surface_grids.json")
         .do_check(true);
 
     const auto [host_det, names] =
@@ -107,7 +107,10 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         std::move(smearer_writer_cfg), full_path);
 
     // Set constrained step size to 2 mm
-    sim.get_config().step_constraint = step_constraint;
+    sim.get_config().propagation.stepping.step_constraint = step_constraint;
+    sim.get_config().propagation.navigation.mask_tolerance =
+        25.f * detray::unit<scalar>::um;
+    sim.get_config().propagation.navigation.search_window = search_window;
 
     sim.run();
 
@@ -120,8 +123,9 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.step_constraint = step_constraint;
-    fit_cfg.mask_tolerance = mask_tolerance;
+    fit_cfg.propagation.stepping.step_constraint = step_constraint;
+    fit_cfg.propagation.navigation.mask_tolerance = mask_tolerance;
+    fit_cfg.propagation.navigation.search_window = search_window;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 
     // Iterate over events
