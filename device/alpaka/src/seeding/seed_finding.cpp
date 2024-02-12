@@ -342,7 +342,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    threadsPerBlock = WARP_SIZE * 2 < maxThreads ? WARP_SIZE * 2 : maxThreads;
+    threadsPerBlock = warpSize * 2 < maxThreads ? warpSize * 2 : maxThreads;
     blocksPerGrid =
         (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);

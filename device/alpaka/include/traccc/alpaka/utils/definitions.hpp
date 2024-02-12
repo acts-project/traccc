@@ -18,10 +18,11 @@
 
 namespace traccc::alpaka {
 
+static constexpr std::size_t warpSize =
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#define WARP_SIZE 32
+    32;
 #else
-#define WARP_SIZE 4
+    4;
 #endif
 
 using Dim = ::alpaka::DimInt<1>;
@@ -33,17 +34,14 @@ using Host = ::alpaka::DevCpu;
 using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
 template <typename TAcc>
-inline WorkDiv makeWorkDiv(Idx blocks, Idx threadsOrElements) {
+inline WorkDiv makeWorkDiv(Idx blocksPerGrid, Idx threadsOrElements) {
     const Idx blocksPerGrid = std::max(Idx{1}, blocks);
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    if constexpr (std::is_same_v<TAcc, ::alpaka::AccGpuCudaRt<Dim, Idx>>) {
-        const auto elementsPerThread = Idx{1};
+    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt>) {
         const Idx threadsPerBlock(threadsOrElements);
+        const Idx elementsPerThread = Idx{1};
         return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
-    } else
-#endif
-    {
-        const auto threadsPerBlock = Idx{1};
+    } else {
+        const Idx threadsPerBlock = Idx{1};
         const Idx elementsPerThread(threadsOrElements);
         return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     }
