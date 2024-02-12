@@ -312,7 +312,8 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     // Checks that every removed track had at least
     // (_config.maximum_shared_hits) commun measurements with other tracks
     // ===========================================================================
-    for (std::size_t track_index = 0; track_index < initial_track_states.size();
+    n_initial_track_states = initial_track_states.size();
+    for (std::size_t track_index = 0; track_index < n_initial_track_states;
          ++track_index) {
         auto const& [fit_res, states] = initial_track_states.at(track_index);
 
