@@ -214,7 +214,8 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     state_t& state) const {
 
     // For each track of the input container
-    for (std::size_t track_index = 0; track_index < track_states.size();
+    std::size_t n_track_states = track_states.size();
+    for (std::size_t track_index = 0; track_index < n_track_states;
          ++track_index) {
 
         // fit_res is a fitting_result<transform3>
