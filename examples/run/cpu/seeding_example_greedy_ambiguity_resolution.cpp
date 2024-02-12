@@ -204,8 +204,10 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         track_states = host_fitting(host_det, field, track_candidates);
         n_fitted_tracks += track_states.size();
 
-        track_states_ar = host_ambiguity_resolution(track_states);
-        n_ambiguity_free_tracks += track_states_ar.size();
+        if (common_opts.perform_ambiguity_resolution) {
+            track_states_ar = host_ambiguity_resolution(track_states);
+            n_ambiguity_free_tracks += track_states_ar.size();
+        }
 
         /*------------
            Statistics
@@ -219,8 +221,13 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         std::cout << "track_candidates count = " << track_candidates.size()
                   << "\n";
         std::cout << "track_states count = " << track_states.size() << "\n";
-        std::cout << "ambiguity_free_tracks count = " << track_states_ar.size()
-                  << "\n";
+
+        if (common_opts.perform_ambiguity_resolution) {
+            std::cout << "ambiguity_free_tracks count = "
+                      << track_states_ar.size() << "\n";
+        } else {
+            std::cout << "ambiguity resolution deactivated" << std::endl;
+        }
 
         /*------------
           Writer
@@ -263,8 +270,13 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
               << std::endl;
     std::cout << "- created (cpu)  " << n_fitted_tracks << " fitted tracks"
               << std::endl;
-    std::cout << "- created (cpu)  " << n_ambiguity_free_tracks
-              << " ambiguity free tracks" << std::endl;
+
+    if (common_opts.perform_ambiguity_resolution) {
+        std::cout << "- created (cpu)  " << n_ambiguity_free_tracks
+                  << " ambiguity free tracks" << std::endl;
+    } else {
+        std::cout << "- ambiguity resolution: deactivated" << std::endl;
+    }
 
     return 0;
 }

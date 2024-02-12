@@ -26,6 +26,9 @@ traccc::common_options::common_options(po::options_description& desc) {
     desc.add_options()("check-performance",
                        po::value<bool>()->default_value(false),
                        "generate performance result");
+    desc.add_options()("perform-ambiguity-resolution",
+                       po::value<bool>()->default_value(true),
+                       "perform ambiguity resolution");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -41,4 +44,5 @@ void traccc::common_options::read(const po::variables_map& vm) {
     target_cells_per_partition =
         vm["target-cells-per-partition"].as<unsigned short>();
     check_performance = vm["check-performance"].as<bool>();
+    perform_ambiguity_resolution = vm["perform-ambiguity-resolution"].as<bool>();
 }
