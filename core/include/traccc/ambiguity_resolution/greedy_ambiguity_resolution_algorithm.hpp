@@ -77,7 +77,7 @@ class greedy_ambiguity_resolution_algorithm
         /// There is no (track_id) in this algorithm, only (track_index).
 
         /// Associates each track_index with the track's chi2 value
-        std::vector<float> track_chi2;
+        std::vector<traccc::scalar> track_chi2;
 
         /// Associates each track_index to the track's (measurement_id)s list
         std::vector<std::vector<std::size_t>> measurements_per_track;
