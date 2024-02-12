@@ -16,6 +16,10 @@
 // VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
 
+// Thrust include(s).
+#include <thrust/execution_policy.h>
+#include <thrust/sort.h>
+
 namespace traccc {
 namespace cuda {
 
@@ -71,6 +75,13 @@ track_params_estimation::output_type track_params_estimation::operator()(
     kernels::estimate_track_params<<<num_blocks, num_threads, 0, stream>>>(
         spacepoints_view, seeds_view, bfield, stddev, params_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
+
+    bound_track_parameters_collection_types::device params_device(
+        params_buffer);
+
+    // Sort the parameters w.r.t theta
+    thrust::sort(thrust::cuda::par.on(stream), params_device.begin(),
+                 params_device.end(), bound_track_parameters_sort_comp());
 
     return params_buffer;
 }

@@ -29,4 +29,13 @@ using bound_covariance = bound_track_parameters::covariance_type;
 using bound_track_parameters_collection_types =
     collection_types<bound_track_parameters>;
 
+/// Comparator based on theta
+struct bound_track_parameters_sort_comp {
+    TRACCC_HOST_DEVICE
+    bool operator()(const bound_track_parameters& lhs,
+                    const bound_track_parameters& rhs) {
+        return lhs.theta() < rhs.theta();
+    }
+};
+
 }  // namespace traccc
