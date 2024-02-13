@@ -13,8 +13,7 @@
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_toy_geometry.hpp"
-#include "detray/io/common/detector_reader.hpp"
-#include "detray/io/common/detector_writer.hpp"
+#include "detray/io/frontend/detector_writer.hpp"
 
 // System include(s)
 #include <array>
