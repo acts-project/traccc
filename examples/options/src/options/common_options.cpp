@@ -44,5 +44,6 @@ void traccc::common_options::read(const po::variables_map& vm) {
     target_cells_per_partition =
         vm["target-cells-per-partition"].as<unsigned short>();
     check_performance = vm["check-performance"].as<bool>();
-    perform_ambiguity_resolution = vm["perform-ambiguity-resolution"].as<bool>();
+    perform_ambiguity_resolution =
+        vm["perform-ambiguity-resolution"].as<bool>();
 }
