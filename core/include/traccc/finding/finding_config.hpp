@@ -24,7 +24,7 @@ struct finding_config {
 
     /// Min/Max number of track candidates per track
     unsigned int min_track_candidates_per_track = 3;
-    unsigned int max_track_candidates_per_track = 10000;
+    unsigned int max_track_candidates_per_track = 100;
 
     /// Maximum number of branches per initial seed
     unsigned int max_num_branches_per_initial_seed =
