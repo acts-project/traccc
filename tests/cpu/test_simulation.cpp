@@ -18,7 +18,6 @@
 #include "detray/detectors/create_telescope_detector.hpp"
 #include "detray/detectors/create_toy_geometry.hpp"
 #include "detray/geometry/surface.hpp"
-#include "detray/io/common/detail/utils.hpp"
 #include "detray/masks/masks.hpp"
 #include "detray/masks/unbounded.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"

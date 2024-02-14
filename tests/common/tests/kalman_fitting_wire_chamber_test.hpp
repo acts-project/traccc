@@ -13,8 +13,7 @@
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_wire_chamber.hpp"
-#include "detray/io/common/detector_reader.hpp"
-#include "detray/io/common/detector_writer.hpp"
+#include "detray/io/frontend/detector_writer.hpp"
 
 // System include(s)
 #include <array>
@@ -72,7 +71,6 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
         wire_chamber_cfg.n_layers(n_wire_layers);
         wire_chamber_cfg.half_z(half_z);
 
-        wire_chamber_cfg.mapped_material(detray::vacuum<scalar>());
         //@NOTE: 2 GeV test fails in pull check with the following setup
         // wire_chamber_cfg.mapped_material(detray::beryllium<scalar>());
         // wire_chamber_cfg.m_thickness = 100.f * detray::unit<scalar>::um;

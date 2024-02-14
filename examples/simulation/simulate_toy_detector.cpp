@@ -21,7 +21,7 @@
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_toy_geometry.hpp"
-#include "detray/io/common/detector_writer.hpp"
+#include "detray/io/frontend/detector_writer.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).

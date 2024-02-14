@@ -20,6 +20,7 @@
 #include "tests/kalman_fitting_wire_chamber_test.hpp"
 
 // detray include(s).
+#include "detray/io/frontend/detector_reader.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
