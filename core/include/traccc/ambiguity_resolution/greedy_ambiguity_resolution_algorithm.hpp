@@ -107,11 +107,7 @@ class greedy_ambiguity_resolution_algorithm
     /// @param cfg  Configuration object
     // greedy_ambiguity_resolution_algorithm(const config_type& cfg) :
     // _config(cfg) {}
-    greedy_ambiguity_resolution_algorithm(const config_t& cfg) : _config{cfg} {}
-
-    /// Default constructor for the greedy ambiguity resolution algorithm,
-    /// with default configuration
-    greedy_ambiguity_resolution_algorithm() {}
+    greedy_ambiguity_resolution_algorithm(const config_t& cfg = {}) : _config{cfg} {}
 
     /// Run the algorithm
     ///
