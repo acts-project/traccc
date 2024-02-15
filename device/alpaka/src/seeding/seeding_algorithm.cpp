@@ -6,9 +6,10 @@
  */
 
 // Library include(s).
+#include "traccc/alpaka/seeding/seeding_algorithm.hpp"
+
 #include "../utils/utils.hpp"
 #include "traccc/alpaka/utils/definitions.hpp"
-#include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 
 // Project include(s).
 #include "traccc/seeding/detail/seeding_config.hpp"
