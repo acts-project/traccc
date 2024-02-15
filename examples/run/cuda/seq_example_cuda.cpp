@@ -140,12 +140,21 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             copy(vecmem::get_data(modules_per_event), modules_buffer);
 
             {
-                traccc::performance::timer t("Clusterization (cuda)",
-                                             elapsedTimes);
-                // Reconstruct it into spacepoints on the device.
-                spacepoints_cuda_buffer =
-                    ca_cuda(cells_buffer, modules_buffer).first;
-                stream.synchronize();
+                {
+                    traccc::performance::timer t("Clusterization (cuda)",
+                                                elapsedTimes);
+                    const auto beginT = std::chrono::high_resolution_clock::now();
+                    
+                    // Reconstruct it into spacepoints on the device.
+                    spacepoints_cuda_buffer =
+                        ca_cuda(cells_buffer, modules_buffer).first;
+                    stream.synchronize();
+                    const auto endT = std::chrono::high_resolution_clock::now();
+                    // timeTotal += std::chrono::duration<double>(endT - beginT).count();
+                    std::cout << "Time for cuda clustering execution: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                              << std::endl;
+
+                }
             }  // stop measuring clusterization cuda timer
 
             if (run_cpu) {

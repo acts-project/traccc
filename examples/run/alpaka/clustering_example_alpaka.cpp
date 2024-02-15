@@ -101,7 +101,7 @@ auto main(int argc, char* argv[]) -> int
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    printf("*******************************************************\n");
+    // printf("*******************************************************\n");
 
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
@@ -114,7 +114,7 @@ auto main(int argc, char* argv[]) -> int
 
     const auto endT = std::chrono::high_resolution_clock::now();
     timeTotal += std::chrono::duration<double>(endT - beginT).count();
-    std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
+    // std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
     
 
 // Fallback for the CI with disabled sequential backend
@@ -197,8 +197,8 @@ auto main(int argc, char* argv[]) -> int
 
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count() << "s, " 
-                  << std::to_string(numElements) << std::endl;
+        // std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count() << "s, " 
+                //   << std::to_string(numElements) << std::endl;
     }
 
     using BufAccU64 = alpaka::Buf<Acc, Data, Dim, Idx>;
@@ -219,8 +219,8 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
+        // std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                //   << std::endl;
     }
 
     ClusteringKernel clusteringKernel;
@@ -255,8 +255,8 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
+        // std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                //   << std::endl;
     }
 
     // results testing 
@@ -301,7 +301,7 @@ auto main(int argc, char* argv[]) -> int
                 numInCluster++;
                 clustersInGeoID++;
 
-                // /* printing start
+                /* printing start, sample cluster printed every 1000 
                 if (y%1000 == 0){
                     printf("cluster %d: ", clustersInGeoID);
                     for (uint16_t i = 0; i < numInCluster; i++){
@@ -327,18 +327,18 @@ auto main(int argc, char* argv[]) -> int
             // printf("correct?: %d\n", outputTest(c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]], geoIDBuf[y], geoIDBuf[outputBuf[y]]));
         }
         
-        printf("For event %d: \n", event);
+        // printf("For event %d: \n", event);
 
-        printf("  Cells Read: %d\n", cellsRead);
+        // printf("  Cells Read: %d\n", cellsRead);
         printf("  Total clusters found: %d\n", clustersTotal);
-        printf("  Total unique geoIDs found: %d\n", geoIDTotal);
+        // printf("  Total unique geoIDs found: %d\n", geoIDTotal);
         const auto endT = std::chrono::high_resolution_clock::now();
         printTime += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "  Time for cluster printing and calc: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
+        // std::cout << "  Time for cluster printing and calc: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                //   << std::endl;
     }
-    printf("  Wall time: %fs \n  Wall time w/o print + calc time: %fs\n", timeTotal + printTime, timeTotal);
-    printf("*******************************************************\n");
+    // printf("  Wall time: %fs \n  Wall time w/o print + calc time: %fs\n", timeTotal + printTime, timeTotal);
+    // printf("*******************************************************\n");
 
     } // event for loop end
 
