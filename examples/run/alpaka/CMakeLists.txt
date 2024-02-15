@@ -15,6 +15,6 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
   list (APPEND LIBRARIES vecmem::cuda traccc::cuda)
 endif()
 
-traccc_add_alpaka_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
+traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
 

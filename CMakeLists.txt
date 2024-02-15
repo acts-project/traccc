@@ -165,6 +165,9 @@ if( TRACCC_SETUP_ALPAKA )
    else()
       add_subdirectory( extern/alpaka )
    endif()
+
+   # Include the Alpaka CMake code.
+   list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/extern/alpaka/cmake" )
 endif()
 
 # Set up Algebra Plugins.
