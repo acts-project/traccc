@@ -49,6 +49,9 @@ class greedy_ambiguity_resolution_algorithm
 
     public:
     struct config_t {
+
+        config_t(){};
+
         /// Maximum amount of shared hits per track. One (1) means "no shared
         /// hit allowed".
         std::uint32_t maximum_shared_hits = 1;
@@ -96,18 +99,13 @@ class greedy_ambiguity_resolution_algorithm
         std::set<std::size_t> selected_tracks;
     };
 
-    void verbose_info(std::string s) const;
-
-    void verbose_error(std::string s) const;
-
-    void verbose_flood(std::string s) const;
-
     /// Constructor for the greedy ambiguity resolution algorithm
     ///
     /// @param cfg  Configuration object
     // greedy_ambiguity_resolution_algorithm(const config_type& cfg) :
     // _config(cfg) {}
-    greedy_ambiguity_resolution_algorithm(const config_t& cfg = {}) : _config{cfg} {}
+    greedy_ambiguity_resolution_algorithm(const config_t cfg = {})
+        : _config{cfg} {}
 
     /// Run the algorithm
     ///
@@ -117,6 +115,7 @@ class greedy_ambiguity_resolution_algorithm
         const typename track_state_container_types::host& track_states)
         const override;
 
+    private:
     /// Computes the initial state for the input data. This function accumulates
     /// information that will later be used to accelerate the ambiguity
     /// resolution.
@@ -150,7 +149,6 @@ class greedy_ambiguity_resolution_algorithm
         const typename track_state_container_types::host& initial_track_states,
         state_t& final_state) const;
 
-    private:
     config_t _config;
 };
 

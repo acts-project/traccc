@@ -30,21 +30,43 @@
 
 namespace traccc {
 
-void greedy_ambiguity_resolution_algorithm::verbose_info(std::string s) const {
-    if (_config.verbose_info)
-        std::cout << "@greedy_ambiguity_resolution_algorithm: " << s << "\n";
-}
+namespace {
 
-void greedy_ambiguity_resolution_algorithm::verbose_error(std::string s) const {
-    if (_config.verbose_error)
-        std::cout << "ERROR @greedy_ambiguity_resolution_algorithm: " << s
-                  << "\n";
-}
+#define LOG_INFO(msg)                       \
+    if (_config.verbose_info) {             \
+        logger::info() << msg << std::endl; \
+    }
 
-void greedy_ambiguity_resolution_algorithm::verbose_flood(std::string s) const {
-    if (_config.verbose_flood)
-        std::cout << "@greedy_ambiguity_resolution_algorithm: " << s << "\n";
-}
+#define LOG_FLOOD(msg)                       \
+    if (_config.verbose_flood) {             \
+        logger::flood() << msg << std::endl; \
+    }
+
+#define LOG_ERROR(msg)                       \
+    if (_config.verbose_error) {             \
+        logger::error() << msg << std::endl; \
+    }
+
+// This logger is specific to the greedy_ambiguity_resolution_algorithm, and to
+// this translation unit.
+struct logger {
+    static std::ostream& error() {
+        std::cout << "ERROR @greedy_ambiguity_resolution_algorithm: ";
+        return std::cout;
+    }
+
+    static std::ostream& info() {
+        std::cout << "@greedy_ambiguity_resolution_algorithm: ";
+        return std::cout;
+    }
+
+    static std::ostream& flood() {
+        std::cout << "@greedy_ambiguity_resolution_algorithm: ";
+        return std::cout;
+    }
+};
+
+}  // namespace
 
 /// Run the algorithm
 ///
@@ -59,7 +81,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     resolve(state);
 
     if (_config.check_obvious_errs) {
-        verbose_info("Checking result validity...");
+        LOG_INFO("Checking result validity...");
         check_obvious_errors(track_states, state);
     }
 
@@ -68,8 +90,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     track_state_container_types::host res;
     res.reserve(state.selected_tracks.size());
 
-    verbose_info("state.selected_tracks.size() = " +
-                 std::to_string(state.selected_tracks.size()));
+    LOG_INFO("state.selected_tracks.size() = " << state.selected_tracks.size());
 
     for (std::size_t index : state.selected_tracks) {
         // track_states is a host_container<fitting_result<transform3>,
@@ -199,45 +220,48 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
          ++track_index) {
         auto const& [fit_res, states] = initial_track_states.at(track_index);
 
-        // If the current track has been removed from selected_tracks
-        if (final_state.selected_tracks.find(track_index) ==
+        // Skip this track if it has to be kept (i.e. exists in selected_tracks)
+        if (final_state.selected_tracks.find(track_index) !=
             final_state.selected_tracks.end()) {
+            continue;
+        }
 
-            std::size_t shared_hits = 0;
+        // So if the current track has been removed from selected_tracks:
 
-            for (auto const& st : states) {
-                auto meas_id = st.get_measurement().measurement_id;
+        std::size_t shared_hits = 0;
+        for (auto const& st : states) {
+            auto meas_id = st.get_measurement().measurement_id;
 
-                std::unordered_map<std::size_t, std::size_t>::iterator meas_it =
-                    initial_measurement_count.find(meas_id);
+            std::unordered_map<std::size_t, std::size_t>::iterator meas_it =
+                initial_measurement_count.find(meas_id);
 
-                if (meas_it == initial_measurement_count.end()) {
-                    // Should never happen
-                    verbose_error(
-                        "track_index(" + std::to_string(track_index) +
-                        ") which is a removed track, has a measurement not "
-                        "present in initial_measurement_count. This should "
-                        "never happen and is an implementation error.");
-                    all_removed_tracks_alright = false;
-                } else if (meas_it->second > 1) {
-                    ++shared_hits;
-                }
-            }
-
-            if (shared_hits < _config.maximum_shared_hits) {
-                verbose_error(
-                    "track_index(" + std::to_string(track_index) +
-                    ") which is a removed track, should at least share " +
-                    std::to_string(_config.maximum_shared_hits) +
-                    " measurement(s) with other tracks, but only shares " +
-                    std::to_string(shared_hits) + ".");
+            if (meas_it == initial_measurement_count.end()) {
+                // Should never happen
+                LOG_ERROR(
+                    "track_index("
+                    << track_index
+                    << ") which is a removed track, has a measurement not "
+                    << "present in initial_measurement_count. This should "
+                    << "never happen and is an implementation error.\n");
                 all_removed_tracks_alright = false;
+            } else if (meas_it->second > 1) {
+                ++shared_hits;
             }
+        }
+
+        if (shared_hits < _config.maximum_shared_hits) {
+            LOG_ERROR("track_index("
+                      << track_index
+                      << ") which is a removed track, should at least share "
+                      << _config.maximum_shared_hits
+                      << " measurement(s) with other tracks, but only shares "
+                      << shared_hits);
+            all_removed_tracks_alright = false;
         }
     }
 
     if (all_removed_tracks_alright) {
-        verbose_info(
+        LOG_INFO(
             "OK 1/2: every removed track had at least one commun measurement "
             "with another track.");
     }
@@ -272,28 +296,31 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     for (auto const& val : tracks_per_measurements) {
         auto const& tracks_per_mes = val.second;
         if (tracks_per_mes.size() > _config.maximum_shared_hits) {
-            std::string msg =
-                "Measurement " + std::to_string(val.first) +
-                " is shared between " + std::to_string(tracks_per_mes.size()) +
-                " tracks, superior to _config.maximum_shared_hits(" +
-                std::to_string(_config.maximum_shared_hits) +
-                "). It is shared between tracks:";
+            std::stringstream ss;
+            ss << "Measurement " << val.first << " is shared between "
+               << tracks_per_mes.size()
+               << " tracks, superior to _config.maximum_shared_hits("
+               << _config.maximum_shared_hits
+               << "). It is shared between tracks:";
+
             for (std::size_t track_index : tracks_per_mes) {
-                msg += " " + std::to_string(track_index);
+                ss << " " << track_index;
             }
-            verbose_error(msg);
+
+            LOG_ERROR(ss.str());
 
             // Displays each track's measurements:
             for (std::size_t track_index : tracks_per_mes) {
-                msg = "    Track(" + std::to_string(track_index) +
-                      ")'s measurements:";
+                std::stringstream ssm;
+                ssm << "    Track(" << track_index << ")'s measurements:";
                 auto const& [fit_res, states] =
                     initial_track_states.at(track_index);
+
                 for (auto const& st : states) {
                     auto meas_id = st.get_measurement().measurement_id;
-                    msg += " " + std::to_string(meas_id);
+                    ssm << " " << meas_id;
                 }
-                verbose_error(msg);
+                LOG_ERROR(ssm.str());
             }
 
             independent_tracks = false;
@@ -301,11 +328,10 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     }
 
     if (independent_tracks) {
-        verbose_info(
+        LOG_INFO(
             "OK 2/2: each selected_track shares at most "
-            "(_config.maximum_shared_hits - 1)(=" +
-            std::to_string(_config.maximum_shared_hits - 1) +
-            ") measurement(s)");
+            "(_config.maximum_shared_hits - 1)(="
+            << _config.maximum_shared_hits - 1 << ") measurement(s)");
     }
 
     return (all_removed_tracks_alright && independent_tracks);
@@ -360,7 +386,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
     for (std::size_t i = 0; i < _config.maximum_iterations; ++i) {
         // Lazy out if there is nothing to filter on.
         if (state.selected_tracks.empty()) {
-            verbose_info("No tracks left - exit loop");
+            LOG_INFO("No tracks left - exit loop");
             break;
         }
 
@@ -370,9 +396,10 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             state.selected_tracks.begin(), state.selected_tracks.end(),
             shared_measurements_comperator);
 
-        verbose_flood("Current maximum shared measurements " +
-                      std::to_string(state.shared_measurements_per_track
-                                         [maximum_shared_measurements]));
+        LOG_FLOOD(
+            "Current maximum shared measurements "
+            << state
+                   .shared_measurements_per_track[maximum_shared_measurements]);
 
         if (state.shared_measurements_per_track[maximum_shared_measurements] <
             _config.maximum_shared_hits) {
@@ -384,17 +411,18 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             *std::max_element(state.selected_tracks.begin(),
                               state.selected_tracks.end(), track_comperator);
 
-        verbose_flood(
-            "Remove track " + std::to_string(bad_track) + " n_meas " +
-            std::to_string(state.measurements_per_track[bad_track].size()) +
-            " nShared " +
-            std::to_string(state.shared_measurements_per_track[bad_track]) +
-            " chi2 " + std::to_string(state.track_chi2[bad_track]));
+        LOG_FLOOD("Remove track "
+                  << bad_track << " n_meas "
+                  << state.measurements_per_track[bad_track].size()
+                  << " nShared "
+                  << state.shared_measurements_per_track[bad_track] << " chi2 "
+                  << state.track_chi2[bad_track]);
+
         remove_track(state, bad_track);
         ++iteration_count;
     }
 
-    verbose_info("Iteration_count: " + std::to_string(iteration_count));
+    LOG_INFO("Iteration_count: " << iteration_count);
 }
 
 }  // namespace traccc
