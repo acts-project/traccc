@@ -18,7 +18,7 @@ message( STATUS "Building Algebra Plugins as part of the TRACCC project" )
 
 # Declare where to get Algebra Plugins from.
 set( TRACCC_ALGEBRA_PLUGINS_SOURCE
-   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.19.0.tar.gz;URL_MD5;8357b024b1bcdb70350d8a378055cfee"
+   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.22.0.tar.gz;URL_MD5;42bcaad8d19a2c773993a974816dfdf5"
    CACHE STRING "Source for Algebra Plugins, when built as part of this project" )
 
 mark_as_advanced( TRACCC_ALGEBRA_PLUGINS_SOURCE )

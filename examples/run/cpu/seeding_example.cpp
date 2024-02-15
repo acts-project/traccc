@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,6 +16,7 @@
 #include "traccc/io/utils.hpp"
 
 // algorithms
+#include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -38,7 +39,7 @@
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/io/common/detector_reader.hpp"
+#include "detray/io/frontend/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
@@ -87,6 +88,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     uint64_t n_seeds = 0;
     uint64_t n_found_tracks = 0;
     uint64_t n_fitted_tracks = 0;
+    uint64_t n_ambiguity_free_tracks = 0;
 
     /*****************************
      * Build a geometry
@@ -129,22 +131,18 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     cfg.min_track_candidates_per_track = finding_cfg.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_cfg.track_candidates_range[1];
     cfg.chi2_max = finding_cfg.chi2_max;
-    cfg.step_constraint = propagation_opts.step_constraint;
-    cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
-    cfg.mask_tolerance = propagation_opts.mask_tolerance;
-    cfg.rk_tolerance = propagation_opts.rk_tolerance;
+    cfg.propagation = propagation_opts.propagation;
 
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.step_constraint = propagation_opts.step_constraint;
-    fit_cfg.overstep_tolerance = propagation_opts.overstep_tolerance;
-    fit_cfg.mask_tolerance = propagation_opts.mask_tolerance;
-    fit_cfg.rk_tolerance = propagation_opts.rk_tolerance;
+    fit_cfg.propagation = propagation_opts.propagation;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
+
+    traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution{};
 
     // Loop over events
     for (unsigned int event = common_opts.skip;
@@ -174,6 +172,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         // Run CKF and KF if we are using a detray geometry
         traccc::track_candidate_container_types::host track_candidates;
         traccc::track_state_container_types::host track_states;
+        traccc::track_state_container_types::host track_states_ar;
 
         // Read measurements
         traccc::io::measurement_reader_output meas_read_out(&host_mr);
@@ -198,6 +197,11 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
         track_states = host_fitting(host_det, field, track_candidates);
         n_fitted_tracks += track_states.size();
+
+        if (common_opts.perform_ambiguity_resolution) {
+            track_states_ar = host_ambiguity_resolution(track_states);
+            n_ambiguity_free_tracks += track_states_ar.size();
+        }
 
         /*------------
            Statistics
@@ -247,6 +251,13 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
               << std::endl;
     std::cout << "- created (cpu)  " << n_fitted_tracks << " fitted tracks"
               << std::endl;
+
+    if (common_opts.perform_ambiguity_resolution) {
+        std::cout << "- created (cpu)  " << n_ambiguity_free_tracks
+                  << " ambiguity free tracks" << std::endl;
+    } else {
+        std::cout << "- ambiguity resolution: deactivated" << std::endl;
+    }
 
     return 0;
 }

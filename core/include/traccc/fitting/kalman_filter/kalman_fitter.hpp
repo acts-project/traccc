@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -160,10 +160,11 @@ class kalman_fitter {
         vector_type<intersection_type>&& nav_candidates = {}) {
 
         // Create propagator
-        propagator_type propagator({}, {});
+        propagator_type propagator(m_cfg.propagation);
 
         // Set path limit
-        fitter_state.m_aborter_state.set_path_limit(m_cfg.pathlimit);
+        fitter_state.m_aborter_state.set_path_limit(
+            m_cfg.propagation.stepping.path_limit);
 
         // Create propagator state
         typename propagator_type::state propagation(
@@ -174,13 +175,9 @@ class kalman_fitter {
         propagation._navigation.set_volume(seed_params.surface_link().volume());
 
         // Set overstep tolerance, stepper constraint and mask tolerance
-        propagation._stepping().set_overstep_tolerance(
-            m_cfg.overstep_tolerance);
         propagation._stepping
             .template set_constraint<detray::step::constraint::e_accuracy>(
-                m_cfg.step_constraint);
-        propagation.set_mask_tolerance(m_cfg.mask_tolerance);
-        propagation._stepping.set_tolerance(m_cfg.rk_tolerance);
+                m_cfg.propagation.stepping.step_constraint);
 
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());

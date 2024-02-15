@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,7 +23,7 @@
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/io/common/detector_reader.hpp"
+#include "detray/io/frontend/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
@@ -135,10 +135,7 @@ int main(int argc, char* argv[]) {
         events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
 
-    sim.get_config().step_constraint = propagation_opts.step_constraint;
-    sim.get_config().overstep_tolerance = propagation_opts.overstep_tolerance;
-    sim.get_config().mask_tolerance = propagation_opts.mask_tolerance;
-    sim.get_config().rk_tolerance = propagation_opts.rk_tolerance;
+    sim.get_config().propagation = propagation_opts.propagation;
 
     sim.run();
 
