@@ -6,6 +6,7 @@
  */
 //
 // Local include(s).
+#include "../utils/utils.hpp"
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
