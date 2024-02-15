@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -60,7 +60,7 @@ TEST(spacepoint_formation, cuda) {
                          detray::device_container_types>;
 
     // Surface lookup
-    auto surfaces = det.surface_lookup();
+    auto surfaces = det.surfaces();
 
     // Prepare measurement collection
     measurement_collection_types::host measurements{&mng_mr};

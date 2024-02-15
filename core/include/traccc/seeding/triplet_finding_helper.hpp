@@ -36,7 +36,7 @@ struct triplet_finding_helper {
         scalar& curvature, scalar& impact_parameter);
 };
 
-bool triplet_finding_helper::isCompatible(
+bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
     const internal_spacepoint<spacepoint>& spM, const lin_circle& lb,
     const lin_circle& lt, const seedfinder_config& config,
     const scalar& iSinTheta2, const scalar& scatteringInRegion2,

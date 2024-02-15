@@ -5,6 +5,8 @@
 # Mozilla Public License Version 2.0
 
 # Project include(s).
+message( STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}" )
+include( traccc-alpaka-functions )
 include( traccc-compiler-options-cpp )
 
 set(PUBLIC_LIBRARIES traccc::core detray::core detray::utils vecmem::core covfie::core)

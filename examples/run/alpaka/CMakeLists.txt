@@ -17,9 +17,9 @@ set(LIBRARIES vecmem::core traccc::io traccc::performance
     traccc::core traccc::device_common traccc::alpaka alpaka::alpaka
     traccc::options ${EXTRA_LIBS})
 
-traccc_add_alpaka_executable( seq_example_alpaka "seq_example_alpaka.cpp"
+traccc_add_executable( seq_example_alpaka "seq_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
-traccc_add_alpaka_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
+traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
 
 #
@@ -32,9 +32,9 @@ target_link_libraries( traccc_examples_alpaka
    PUBLIC vecmem::core traccc::core traccc::device_common
           traccc::alpaka alpaka::alpaka ${EXTRA_LIBS})
 
-traccc_add_alpaka_executable( throughput_st_alpaka "throughput_st.cpp"
+traccc_add_executable( throughput_st_alpaka "throughput_st.cpp"
    LINK_LIBRARIES ${LIBRARIES} traccc_examples_alpaka)
 
-traccc_add_alpaka_executable( throughput_mt_alpaka "throughput_mt.cpp"
+traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
    LINK_LIBRARIES TBB::tbb ${LIBRARIES} traccc_examples_alpaka )
 

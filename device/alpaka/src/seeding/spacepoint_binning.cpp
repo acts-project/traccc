@@ -8,6 +8,7 @@
 // Local include(s).
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
 
+#include "../utils/utils.hpp"
 #include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).

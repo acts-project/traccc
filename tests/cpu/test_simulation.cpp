@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,7 +18,6 @@
 #include "detray/detectors/create_telescope_detector.hpp"
 #include "detray/detectors/create_toy_geometry.hpp"
 #include "detray/geometry/surface.hpp"
-#include "detray/io/common/detail/utils.hpp"
 #include "detray/masks/masks.hpp"
 #include "detray/masks/unbounded.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
@@ -112,7 +111,9 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
         n_events, detector, field, std::move(generator), std::move(writer_cfg));
 
     // Lift step size constraints
-    sim.get_config().step_constraint = std::numeric_limits<scalar>::max();
+    sim.get_config().propagation.stepping.step_constraint =
+        std::numeric_limits<scalar>::max();
+    sim.get_config().propagation.navigation.search_window = {3u, 3u};
 
     // Do the simulation
     sim.run();
@@ -260,7 +261,8 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
         directory);
 
     // Lift step size constraints
-    sim.get_config().step_constraint = std::numeric_limits<scalar>::max();
+    sim.get_config().propagation.stepping.step_constraint =
+        std::numeric_limits<scalar>::max();
 
     // Run simulation
     sim.run();
