@@ -8,6 +8,7 @@
 // Local include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 
+#include "../utils/utils.hpp"
 #include "traccc/alpaka/utils/barrier.hpp"
 #include "traccc/alpaka/utils/definitions.hpp"
 

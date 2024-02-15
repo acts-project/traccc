@@ -21,7 +21,7 @@ using Host = ::alpaka::DevCpu;
 using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
 
 template <typename TAcc>
-inline WorkDiv makeWorkDiv(Idx blocksPerGrid, Idx threadsOrElements) {
+inline WorkDiv makeWorkDiv(Idx blocks, Idx threadsOrElements) {
     const Idx blocksPerGrid = std::max(Idx{1}, blocks);
     if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt>) {
         const Idx threadsPerBlock(threadsOrElements);
