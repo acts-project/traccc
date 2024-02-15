@@ -16,6 +16,7 @@
 #include "traccc/io/utils.hpp"
 
 // algorithms
+#include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -87,6 +88,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     uint64_t n_seeds = 0;
     uint64_t n_found_tracks = 0;
     uint64_t n_fitted_tracks = 0;
+    uint64_t n_ambiguity_free_tracks = 0;
 
     /*****************************
      * Build a geometry
@@ -140,6 +142,8 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
+    traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution{};
+
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
@@ -168,6 +172,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         // Run CKF and KF if we are using a detray geometry
         traccc::track_candidate_container_types::host track_candidates;
         traccc::track_state_container_types::host track_states;
+        traccc::track_state_container_types::host track_states_ar;
 
         // Read measurements
         traccc::io::measurement_reader_output meas_read_out(&host_mr);
@@ -192,6 +197,11 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
         track_states = host_fitting(host_det, field, track_candidates);
         n_fitted_tracks += track_states.size();
+
+        if (common_opts.perform_ambiguity_resolution) {
+            track_states_ar = host_ambiguity_resolution(track_states);
+            n_ambiguity_free_tracks += track_states_ar.size();
+        }
 
         /*------------
            Statistics
@@ -241,6 +251,13 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
               << std::endl;
     std::cout << "- created (cpu)  " << n_fitted_tracks << " fitted tracks"
               << std::endl;
+
+    if (common_opts.perform_ambiguity_resolution) {
+        std::cout << "- created (cpu)  " << n_ambiguity_free_tracks
+                  << " ambiguity free tracks" << std::endl;
+    } else {
+        std::cout << "- ambiguity resolution: deactivated" << std::endl;
+    }
 
     return 0;
 }

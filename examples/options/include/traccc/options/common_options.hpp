@@ -22,6 +22,7 @@ struct common_options {
     int skip;
     unsigned short target_cells_per_partition;
     bool check_performance;
+    bool perform_ambiguity_resolution;
 
     common_options(po::options_description& desc);
     void read(const po::variables_map& vm);
