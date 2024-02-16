@@ -273,6 +273,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_spacepoints_cuda += spacepoints_per_event_cuda.size();
         n_seeds_cuda += seeds_cuda.size();
 
+        std::cout << "- created (cuda) " << spacepoints_per_event_cuda.size()
+                << " spacepoints     " << std::endl;
+
         if (common_opts.check_performance) {
 
             traccc::event_map evt_map(event, common_opts.detector_file,

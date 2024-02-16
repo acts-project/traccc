@@ -265,8 +265,8 @@ auto main(int argc, char* argv[]) -> int
     int clustersTotal = 0;
     int geoIDTotal = 0;
     int cellsRead = 0;
-    uint16_t currClusterC0[100];
-    uint16_t currClusterC1[100];
+    uint16_t currClusterC0[1400];
+    uint16_t currClusterC1[1400];
     int rootIndex = 0;
     uint64_t tempGeoID = geoIDBuf[0];
     double printTime = 0;
@@ -279,6 +279,7 @@ auto main(int argc, char* argv[]) -> int
             cellsRead += 1;
             if (geoIDBuf[y] != tempGeoID) {
                 clustersTotal += clustersInGeoID;
+                printf("in geoID 0x%lu\n", tempGeoID);
                 /* printing start
                 printf("number of clusters in geoID 0x%lu: %d\n", tempGeoID, clustersInGeoID);
                 printf("Total clusters found: %d\n", clustersTotal);
@@ -312,6 +313,8 @@ auto main(int argc, char* argv[]) -> int
                     printf("----------------------------------------------------------\n");
                 }
                 // printing end */
+
+                printf(" cluser size: %d\n", numInCluster);
 
                 std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0); // reset cluster c0 and c1 buffers
                 std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
