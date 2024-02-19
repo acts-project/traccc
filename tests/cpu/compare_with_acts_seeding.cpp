@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -207,8 +207,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // same
     EXPECT_EQ(grid->numLocalBins().size(), 2);
 
-    detray::axis::circular axis0 = internal_spacepoints_per_event.axis_p0();
-    detray::axis::regular axis1 = internal_spacepoints_per_event.axis_p1();
+    detray::axis2::circular axis0 = internal_spacepoints_per_event.axis_p0();
+    detray::axis2::regular axis1 = internal_spacepoints_per_event.axis_p1();
 
     auto acts_axis0 = grid->axes()[0];
     auto acts_axis1 = grid->axes()[1];

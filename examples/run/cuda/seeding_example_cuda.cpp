@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -40,7 +40,7 @@
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/io/common/detector_reader.hpp"
+#include "detray/io/frontend/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
@@ -183,7 +183,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
     cfg.min_track_candidates_per_track = finding_cfg.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_cfg.track_candidates_range[1];
     cfg.chi2_max = finding_cfg.chi2_max;
-    cfg.constrained_step_size = propagation_opts.step_constraint;
+    cfg.propagation = propagation_opts.propagation;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -193,7 +193,7 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.step_constraint = propagation_opts.step_constraint;
+    fit_cfg.propagation = propagation_opts.propagation;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(

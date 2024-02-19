@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,9 +10,6 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-
-// Detray include(s).
-#include "detray/detectors/create_toy_geometry.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

@@ -47,10 +47,10 @@ struct doublet_finding_helper {
 };
 
 template <details::spacepoint_type otherSpType>
-bool doublet_finding_helper::isCompatible(
-    const internal_spacepoint<spacepoint>& sp1,
-    const internal_spacepoint<spacepoint>& sp2,
-    const seedfinder_config& config) {
+bool TRACCC_HOST_DEVICE
+doublet_finding_helper::isCompatible(const internal_spacepoint<spacepoint>& sp1,
+                                     const internal_spacepoint<spacepoint>& sp2,
+                                     const seedfinder_config& config) {
 
     static_assert(otherSpType == details::spacepoint_type::bottom ||
                   otherSpType == details::spacepoint_type::top);
@@ -86,7 +86,7 @@ bool doublet_finding_helper::isCompatible(
 }
 
 template <details::spacepoint_type otherSpType>
-lin_circle doublet_finding_helper::transform_coordinates(
+lin_circle TRACCC_HOST_DEVICE doublet_finding_helper::transform_coordinates(
     const internal_spacepoint<spacepoint>& sp1,
     const internal_spacepoint<spacepoint>& sp2) {
 

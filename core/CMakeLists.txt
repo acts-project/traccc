@@ -87,7 +87,10 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/seed_finding.hpp"
   "src/seeding/seed_finding.cpp"
   "include/traccc/seeding/spacepoint_binning.hpp"
-  "src/seeding/spacepoint_binning.cpp" )
+  "src/seeding/spacepoint_binning.cpp"
+  # Ambiguity resolution
+  "include/traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+  "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp" )
 target_link_libraries( traccc_core
   PUBLIC Eigen3::Eigen vecmem::core detray::core traccc::Thrust
          traccc::algebra )

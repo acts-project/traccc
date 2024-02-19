@@ -78,6 +78,8 @@ void read_measurements(measurement_reader_output& out,
         meas.subs.set_indices(indices);
         meas.surface_link = detray::geometry::barcode{iomeas.geometry_id};
         meas.module_link = link;
+        // Keeps measurement_id for ambiguity resolution
+        meas.measurement_id = iomeas.measurement_id;
 
         result_measurements.push_back(meas);
     }

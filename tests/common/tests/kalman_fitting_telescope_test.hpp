@@ -12,8 +12,7 @@
 
 // Detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
-#include "detray/io/common/detector_reader.hpp"
-#include "detray/io/common/detector_writer.hpp"
+#include "detray/io/frontend/detector_writer.hpp"
 
 namespace traccc {
 
@@ -29,7 +28,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
     /// @NOTE: Increasing the number of planes will make
     /// test_ckf_combinatorics_telescope take too much time
     static const inline std::vector<scalar> plane_positions = {
-        20., 40., 60., 80., 100., 120., 140, 160, 180.};
+        0., 20., 40., 60., 80., 100., 120., 140, 160};
 
     /// B field value and its type
     static constexpr vector3 B{2 * detray::unit<scalar>::T, 0, 0};

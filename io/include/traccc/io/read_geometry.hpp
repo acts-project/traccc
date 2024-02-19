@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -34,13 +34,11 @@ geometry read_geometry(std::string_view filename,
 template <typename detector_t>
 geometry alt_read_geometry(const detector_t& det) {
 
-    const auto transforms = det.transform_store();
-    const auto surfaces = det.surface_lookup();
     std::map<traccc::geometry_id, traccc::transform3> maps;
     using cxt_t = typename detector_t::geometry_context;
     const cxt_t ctx0{};
 
-    for (const auto& sf_desc : surfaces) {
+    for (const auto& sf_desc : det.surfaces()) {
         const detray::surface<detector_t> sf{det, sf_desc.barcode()};
 
         maps.insert({sf.barcode().value(), sf.transform(ctx0)});

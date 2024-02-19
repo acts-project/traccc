@@ -12,6 +12,7 @@
 #include "traccc/utils/subspace.hpp"
 
 // Detray include(s).
+#include "detray/masks/masks.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
 
 // System include(s).
@@ -58,11 +59,15 @@ struct measurement_smearer {
         io::csv::measurement& iomeas) {
 
         // Line detector
-        if (mask_t::shape::name == "line") {
+        if constexpr (std::is_same_v<typename mask_t::shape,
+                                     detray::line<true>> ||
+                      std::is_same_v<typename mask_t::shape,
+                                     detray::line<false>>) {
             iomeas.local_key = 2;
         }
         // Annulus strip
-        else if (mask_t::shape::name == "(stereo) annulus2D") {
+        else if constexpr (std::is_same_v<typename mask_t::shape,
+                                          detray::annulus2D<>>) {
             iomeas.local_key = 4;
         }
         // Else
@@ -91,16 +96,22 @@ struct measurement_smearer {
             const auto proj = subs.projector<1u>();
             matrix_type<1u, 1u> meas = proj * bound_params.vector();
 
-            if (mask_t::shape::name == "line") {
+            if constexpr (std::is_same_v<typename mask_t::shape,
+                                         detray::line<true>> ||
+                          std::is_same_v<typename mask_t::shape,
+                                         detray::line<false>>) {
                 iomeas.local0 =
                     std::max(std::abs(matrix_operator().element(meas, 0u, 0u)) +
                                  offset[0],
                              static_cast<scalar_type>(0.f));
+            } else if constexpr (std::is_same_v<typename mask_t::shape,
+                                                detray::annulus2D<>>) {
+                iomeas.local1 =
+                    matrix_operator().element(meas, 0u, 0u) + offset[0];
             } else {
                 iomeas.local0 =
                     matrix_operator().element(meas, 0u, 0u) + offset[0];
             }
-
         } else if (meas_dim == 2u) {
             const auto proj = subs.projector<2u>();
             matrix_type<2u, 1u> meas = proj * bound_params.vector();

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,8 +13,10 @@
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_wire_chamber.hpp"
-#include "detray/io/common/detector_reader.hpp"
-#include "detray/io/common/detector_writer.hpp"
+#include "detray/io/frontend/detector_writer.hpp"
+
+// System include(s)
+#include <array>
 
 namespace traccc {
 
@@ -32,10 +34,13 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
     static constexpr vector3 B{0, 0, 2 * detray::unit<scalar>::T};
 
     /// Step constraint
-    static const inline scalar step_constraint = 2 * detray::unit<scalar>::mm;
+    static const inline scalar step_constraint = 1 * detray::unit<scalar>::mm;
 
     // Set mask tolerance to a large value not to miss the surface during KF
     static const inline scalar mask_tolerance = 50.f * detray::unit<scalar>::um;
+
+    // Grid search window
+    static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
@@ -47,7 +52,7 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
         0.01 * detray::unit<scalar>::mm,
         0.001,
         0.001,
-        0.01 / detray::unit<scalar>::GeV,
+        0.001 / detray::unit<scalar>::GeV,
         0.01 * detray::unit<scalar>::ns};
 
     void consistency_tests(const track_state_collection_types::host&
@@ -66,7 +71,6 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
         wire_chamber_cfg.n_layers(n_wire_layers);
         wire_chamber_cfg.half_z(half_z);
 
-        wire_chamber_cfg.mapped_material(detray::vacuum<scalar>());
         //@NOTE: 2 GeV test fails in pull check with the following setup
         // wire_chamber_cfg.mapped_material(detray::beryllium<scalar>());
         // wire_chamber_cfg.m_thickness = 100.f * detray::unit<scalar>::um;

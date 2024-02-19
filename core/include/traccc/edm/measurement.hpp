@@ -39,6 +39,9 @@ struct measurement {
     /// Geometry ID
     detray::geometry::barcode surface_link;
 
+    // Unique measurement ID
+    std::size_t measurement_id = 0;
+
     /// Link to Module vector index
     using link_type = cell_module_collection_types::view::size_type;
     link_type module_link = 0;
