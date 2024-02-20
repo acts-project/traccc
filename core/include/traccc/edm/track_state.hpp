@@ -77,7 +77,11 @@ struct track_state {
                       "The measurement dimension should be 1 or 2");
 
         matrix_type<D, 1> ret;
-        matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
+	if(m_measurement.subs.get_indices()[0]==0)	
+	  matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
+	else
+	  matrix_operator().element(ret, 0, 0) = m_measurement.local[1];
+
         if constexpr (D == 2u) {
             matrix_operator().element(ret, 1, 0) = m_measurement.local[1];
         }
@@ -91,7 +95,11 @@ struct track_state {
                       "The measurement dimension should be 1 or 2");
 
         matrix_type<D, D> ret;
-        matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
+	if(m_measurement.subs.get_indices()[0]==0)	
+	  matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
+	else
+	  matrix_operator().element(ret, 0, 0) = m_measurement.variance[1];
+
         if constexpr (D == 2u) {
             matrix_operator().element(ret, 0, 1) = 0.f;
             matrix_operator().element(ret, 1, 0) = 0.f;
