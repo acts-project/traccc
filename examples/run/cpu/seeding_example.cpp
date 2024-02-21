@@ -23,6 +23,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
+#include "traccc/efficiency/ambiguity_resolution_performance_writer.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -81,6 +82,9 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
         traccc::finding_performance_writer::config{});
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{});
+
+    traccc::ambiguity_resolution_performance_writer ar_performance_writer(
+        traccc::ambiguity_resolution_performance_writer::config{});
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -198,6 +202,10 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
         track_states = host_fitting(host_det, field, track_candidates);
         n_fitted_tracks += track_states.size();
 
+        /*-----------------------------------------
+           Ambiguity Resolution with Greedy Solver
+          -----------------------------------------*/
+
         if (common_opts.perform_ambiguity_resolution) {
             track_states_ar = host_ambiguity_resolution(track_states);
             n_ambiguity_free_tracks += track_states_ar.size();
@@ -226,6 +234,11 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_map);
 
+            if (common_opts.perform_ambiguity_resolution) {
+                ar_performance_writer.write(traccc::get_data(track_states_ar),
+                                            evt_map);
+            }
+
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
@@ -241,6 +254,9 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
         sd_performance_writer.finalize();
         find_performance_writer.finalize();
         fit_performance_writer.finalize();
+        if (common_opts.perform_ambiguity_resolution) {
+            ar_performance_writer.finalize();
+        }
     }
 
     std::cout << "==> Statistics ... " << std::endl;
