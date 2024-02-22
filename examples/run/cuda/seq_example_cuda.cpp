@@ -116,11 +116,15 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             {
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
+                const auto beginT = std::chrono::high_resolution_clock::now();
                 // Read the cells from the relevant event file into host memory.
                 traccc::io::read_cells(read_out_per_event, event,
                                        common_opts.input_directory,
                                        common_opts.input_data_format,
                                        &surface_transforms, &digi_cfg);
+                const auto endT = std::chrono::high_resolution_clock::now();
+                std::cout << "Time for file reading: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                            << std::endl;
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
@@ -150,7 +154,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                         ca_cuda(cells_buffer, modules_buffer).first;
                     stream.synchronize();
                     const auto endT = std::chrono::high_resolution_clock::now();
-                    // timeTotal += std::chrono::duration<double>(endT - beginT).count();
                     std::cout << "Time for cuda clustering execution: " << std::chrono::duration<double>(endT - beginT).count() << 's'
                               << std::endl;
 

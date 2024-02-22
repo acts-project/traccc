@@ -109,6 +109,7 @@ auto main(int argc, char* argv[]) -> int
     printf("For event %d: \n", event);
 
     double timeTotal = 0;
+    double IOTime = 0;
     
     const auto beginT = std::chrono::high_resolution_clock::now();
     
@@ -116,6 +117,7 @@ auto main(int argc, char* argv[]) -> int
 
     const auto endT = std::chrono::high_resolution_clock::now();
     timeTotal += std::chrono::duration<double>(endT - beginT).count();
+    IOTime += std::chrono::duration<double>(endT - beginT).count();
     // std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
     
 
@@ -188,8 +190,6 @@ auto main(int argc, char* argv[]) -> int
     Idx const numElements(nElementsPerDim);
     // uint64_t tempGeoID = csvHits.data.geoID[0];
     {   
-
-
         const auto beginT = std::chrono::high_resolution_clock::now();
         for(Idx i(0); i < numElements; ++i)
         {   
@@ -201,8 +201,10 @@ auto main(int argc, char* argv[]) -> int
 
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
+        IOTime += std::chrono::duration<double>(endT - beginT).count();
         // std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count() << "s, " 
-                //   << std::to_string(numElements) << std::endl;
+        //           << std::to_string(numElements) << std::endl;
+        std::cout << "Time for IO: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
     }
 
     using BufAccU64 = alpaka::Buf<Acc, Data, Dim, Idx>;
@@ -269,8 +271,8 @@ auto main(int argc, char* argv[]) -> int
     int clustersTotal = 0;
     int geoIDTotal = 0;
     int cellsRead = 0;
-    uint16_t currClusterC0[1400]; // max cluster size, sensor width is ~1400px
-    uint16_t currClusterC1[1400];
+    uint16_t currClusterC0[300]; // max cluster size
+    uint16_t currClusterC1[300];
     int rootIndex = 0;
     uint64_t tempGeoID = geoIDBuf[0];
     double printTime = 0;
@@ -278,15 +280,13 @@ auto main(int argc, char* argv[]) -> int
     // cluster calc and printing
     {
         const auto beginT = std::chrono::high_resolution_clock::now();
-        // printf("==========================================================\n");
         for (uint y = 0; y < numElements; y++) {
-            if (event == 8) {
+            // if (event == 8) {
             cellsRead += 1;
             if (geoIDBuf[y] != tempGeoID) {
                 clustersTotal += clustersInGeoID;
-                printf("in geoID 0x%lu, totClusters: %d\n", tempGeoID, clustersTotal);
                 /* printing start
-                printf("number of clusters in geoID 0x%lu: %d\n", tempGeoID, clustersInGeoID);
+                printf("number of clusters in geoID 0x%lu: %d, total clusters: %d\n", tempGeoID, clustersInGeoID, clustersTotal);
                 printf("Total clusters found: %d\n", clustersTotal);
                 printf("==========================================================\n");
                 // printing end */
@@ -307,24 +307,13 @@ auto main(int argc, char* argv[]) -> int
                 numInCluster++;
                 clustersInGeoID++;
 
-                // /* printing start, sample cluster printed every 1000 
+                /* printing start 
                 printf("cluster %d: ", clustersInGeoID);
-                // if (y%1000 <= 50){
                     for (uint16_t i = 0; i < numInCluster; i++){
                         printf("(%u, %u), ", currClusterC0[i], currClusterC1[i]);
                     }
-                    // printf("----------------------------------------------------------\n");
-                // }
                 printf("\ncluser size: %d\n", numInCluster);
                 // printing end */
-
-                // overcount debugging
-                // if (numInCluster > 50) {
-                //     printf(" cluser size: %d\n", numInCluster);
-                //     for (uint16_t i = 0; i < 10; i++){
-                //         printf("(%u, %u), ", currClusterC0[i], currClusterC1[i]);
-                //     }
-                // }
 
                 std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0); // reset cluster c0 and c1 buffers
                 std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
@@ -339,7 +328,7 @@ auto main(int argc, char* argv[]) -> int
             // // printf("boolean test: c0: %d, c1: %d\n", -1 <= c0Buf[y] - c0Buf[outputBuf[y]] <= 1);
             // printf("correct?: %d\n", outputTest(c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]], geoIDBuf[y], geoIDBuf[outputBuf[y]]));
         
-        } // temp geoID search
+        // } // temp geoID search
         } // cells loop end
         
 
