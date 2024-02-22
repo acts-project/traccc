@@ -77,13 +77,16 @@ struct track_state {
                       "The measurement dimension should be 1 or 2");
 
         matrix_type<D, 1> ret;
-        if (m_measurement.subs.get_indices()[0] == 0)
+        if (m_measurement.subs.get_indices()[0] == e_bound_loc0) {
             matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
-        else
+            if constexpr (D == 2u) {
+                matrix_operator().element(ret, 1, 0) = m_measurement.local[1];
+            }
+        } else if (m_measurement.subs.get_indices()[0] == e_bound_loc1) {
             matrix_operator().element(ret, 0, 0) = m_measurement.local[1];
-
-        if constexpr (D == 2u) {
-            matrix_operator().element(ret, 1, 0) = m_measurement.local[1];
+            if constexpr (D == 2u) {
+                matrix_operator().element(ret, 1, 0) = m_measurement.local[0];
+            }
         }
         return ret;
     }
@@ -95,15 +98,25 @@ struct track_state {
                       "The measurement dimension should be 1 or 2");
 
         matrix_type<D, D> ret;
-        if (m_measurement.subs.get_indices()[0] == 0)
-            matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
-        else
-            matrix_operator().element(ret, 0, 0) = m_measurement.variance[1];
+        if (m_measurement.subs.get_indices()[0] == e_bound_loc0) {
 
-        if constexpr (D == 2u) {
-            matrix_operator().element(ret, 0, 1) = 0.f;
-            matrix_operator().element(ret, 1, 0) = 0.f;
-            matrix_operator().element(ret, 1, 1) = m_measurement.variance[1];
+            matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
+            if constexpr (D == 2u) {
+                matrix_operator().element(ret, 0, 1) = 0.f;
+                matrix_operator().element(ret, 1, 0) = 0.f;
+                matrix_operator().element(ret, 1, 1) =
+                    m_measurement.variance[1];
+            }
+
+        } else if (m_measurement.subs.get_indices()[0] == e_bound_loc1) {
+
+            matrix_operator().element(ret, 0, 0) = m_measurement.variance[1];
+            if constexpr (D == 2u) {
+                matrix_operator().element(ret, 0, 1) = 0.f;
+                matrix_operator().element(ret, 1, 0) = 0.f;
+                matrix_operator().element(ret, 1, 1) =
+                    m_measurement.variance[0];
+            }
         }
         return ret;
     }
