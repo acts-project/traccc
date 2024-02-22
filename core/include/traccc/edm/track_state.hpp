@@ -87,11 +87,10 @@ struct track_state {
             if constexpr (D == 2u) {
                 matrix_operator().element(ret, 1, 0) = m_measurement.local[0];
             }
-        } else {  // same as e_bound_loc0
-            matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
-            if constexpr (D == 2u) {
-                matrix_operator().element(ret, 1, 0) = m_measurement.local[1];
-            }
+        } else {
+            assert(
+                "The measurement index out of e_bound_loc0 and e_bound_loc1 "
+                "should not happen.");
         }
 
         return ret;
@@ -123,15 +122,10 @@ struct track_state {
                 matrix_operator().element(ret, 1, 1) =
                     m_measurement.variance[0];
             }
-        } else {  // same as e_bound_loc0
-
-            matrix_operator().element(ret, 0, 0) = m_measurement.variance[0];
-            if constexpr (D == 2u) {
-                matrix_operator().element(ret, 0, 1) = 0.f;
-                matrix_operator().element(ret, 1, 0) = 0.f;
-                matrix_operator().element(ret, 1, 1) =
-                    m_measurement.variance[1];
-            }
+        } else {
+            assert(
+                "The measurement index out of e_bound_loc0 and e_bound_loc1 "
+                "should not happen.");
         }
         return ret;
     }
