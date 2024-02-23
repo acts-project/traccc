@@ -23,7 +23,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
-#include "traccc/efficiency/ambiguity_resolution_performance_writer.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -83,8 +82,10 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{});
 
-    traccc::ambiguity_resolution_performance_writer ar_performance_writer(
-        traccc::ambiguity_resolution_performance_writer::config{});
+    traccc::finding_performance_writer::config ar_writer_cfg;
+    ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
+    ar_writer_cfg.algorithm_name = "ambiguity_resolution";
+    traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
 
     // Output stats
     uint64_t n_spacepoints = 0;
