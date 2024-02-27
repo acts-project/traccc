@@ -26,7 +26,7 @@ struct finding_input_config {
         desc.add_options()("track-candidates-range",
                            po::value<Reals<unsigned int, 2>>()
                                ->value_name("MIN:MAX")
-                               ->default_value({3, 10000}),
+                               ->default_value({3, 100}),
                            "Range of track candidates number");
         desc.add_options()(
             "chi2-max",
