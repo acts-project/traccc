@@ -61,17 +61,17 @@ struct ClusteringKernel
 
         unsigned int i = linearizedGlobalThreadIdx[0];
 
-        // if (geoIDBuf[i] == 576461027181406464) {
-            for (int x = i-1; x <= i+1; x+=2) {
-                if ((geoIDBuf[x] == geoIDBuf[i]) &&
-                    (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1) &&
-                    (-1 <= (c1Buf[x] - c1Buf[i]) && (c1Buf[x] - c1Buf[i]) <= 1)) {
-                        // printf("c0: %u, c1: %u FOUND c0: %u, c1: %u  i: %u, x: %u\n", c0Buf[i], c1Buf[i], c0Buf[x], c1Buf[x], i, x);
-                        // printf("diff in c0: %d, c1: %d, true check: %d\n", c0Buf[x] - c0Buf[i], c1Buf[x] - c1Buf[i], (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1));
-                        outputBuf[i] = x;
-                }
+        
+        for (int x = i-1; x <= i+1; x+=2) {
+            if ((geoIDBuf[x] == geoIDBuf[i]) &&
+                (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1) &&
+                (-1 <= (c1Buf[x] - c1Buf[i]) && (c1Buf[x] - c1Buf[i]) <= 1)) {
+                    // printf("c0: %u, c1: %u FOUND c0: %u, c1: %u  i: %u, x: %u\n", c0Buf[i], c1Buf[i], c0Buf[x], c1Buf[x], i, x);
+                    // printf("diff in c0: %d, c1: %d, true check: %d\n", c0Buf[x] - c0Buf[i], c1Buf[x] - c1Buf[i], (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1));
+                    outputBuf[i] = x;
             }
-        // }
+        }
+        
     }
 };
 
@@ -132,7 +132,7 @@ auto main(int argc, char* argv[]) -> int
     using Acc = alpaka::ExampleDefaultAcc<Dim, Idx>;
     using Host = alpaka::AccCpuSerial<Dim, Idx>;
     // std::cout << "Using alpaka accelerator: " << alpaka::getAccName<Acc>() << "\n"
-    //         << "Using host: " << alpaka::getAccName<Host>() << std::endl;
+    //           << "Using host: " << alpaka::getAccName<Host>() << std::endl;
 
     using AccQueueProperty = alpaka::Blocking;
     using DevQueue = alpaka::Queue<Acc, AccQueueProperty>;
@@ -203,8 +203,8 @@ auto main(int argc, char* argv[]) -> int
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
         IOTime += std::chrono::duration<double>(endT - beginT).count();
         // std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count() << "s, " 
-        //           << std::to_string(numElements) << std::endl;
-        std::cout << "Time for IO: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
+                //   << std::to_string(numElements) << std::endl;
+        std::cout << "Time for IO: " << IOTime << "s" << std::endl;
     }
 
     using BufAccU64 = alpaka::Buf<Acc, Data, Dim, Idx>;
@@ -225,8 +225,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        // std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                //   << std::endl;
+        // std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
     }
 
     ClusteringKernel clusteringKernel;
@@ -247,8 +246,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue); // wait in case we are using an asynchronous queue to time actual kernel runtime
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for clustering kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
+        // std::cout << "Time for clustering kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
     }
 
     {
@@ -261,8 +259,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        // std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                //   << std::endl;
+        // std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
     }
 
     // results testing 
@@ -337,10 +334,9 @@ auto main(int argc, char* argv[]) -> int
         // printf("  Total unique geoIDs found: %d\n", geoIDTotal);
         const auto endT = std::chrono::high_resolution_clock::now();
         printTime += std::chrono::duration<double>(endT - beginT).count();
-        // std::cout << "  Time for cluster printing and calc: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                //   << std::endl;
+        std::cout << "  Time for cluster printing and calc: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
     }
-    // printf("  Wall time: %fs \n  Wall time w/o print + calc time: %fs\n", timeTotal + printTime, timeTotal);
+    printf("  Wall time: %fs \n  Wall time w/o print + calc time: %fs\n", timeTotal + printTime, timeTotal);
     // printf("*******************************************************\n");
 
     std::fill(std::begin(csvHits.data.geoID), std::end(csvHits.data.geoID), 0); // reset cluster c0 and c1 buffers
