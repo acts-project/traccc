@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,8 +15,7 @@
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/masks/masks.hpp"
-#include "detray/propagator/navigator.hpp"
+#include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"

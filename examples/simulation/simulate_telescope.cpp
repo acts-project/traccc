@@ -22,8 +22,11 @@
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/geometry/mask.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
-#include "detray/masks/unbounded.hpp"
+#include "detray/materials/material.hpp"
+#include "detray/navigation/detail/ray.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
@@ -77,8 +80,8 @@ int simulate(std::string output_directory, unsigned int events,
     const scalar thickness = telescope_opts.thickness;
 
     // Use rectangle surfaces
-    detray::mask<detray::rectangle2D<>> rectangle{
-        0u, telescope_opts.half_length, telescope_opts.half_length};
+    detray::mask<detray::rectangle2D> rectangle{0u, telescope_opts.half_length,
+                                                telescope_opts.half_length};
 
     detray::tel_det_config<> tel_cfg{rectangle};
     tel_cfg.positions(plane_positions);

@@ -10,9 +10,6 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 
-// Detray include(s).
-#include "detray/geometry/barcode.hpp"
-
 // Thrust include(s).
 #include <thrust/pair.h>
 
