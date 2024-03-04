@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,6 +16,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
@@ -25,6 +26,10 @@
 #include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/io/frontend/detector_reader.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -36,6 +41,7 @@
 #include <exception>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 
 namespace po = boost::program_options;
 
@@ -43,8 +49,43 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
 
-    // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    // Memory resource used by the application.
+    vecmem::host_memory_resource host_mr;
+
+    // Construct a traccc::geometry object.
+    traccc::geometry surface_transforms;
+    using barcode_map_type = std::map<std::uint64_t, detray::geometry::barcode>;
+    std::unique_ptr<barcode_map_type> barcode_map;
+    if (det_opts.use_detray_detector) {
+
+        // Construct a detector object.
+        detray::io::detector_reader_config reader_cfg{};
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            det_opts.detector_file);
+        if (!det_opts.material_file.empty()) {
+            reader_cfg.add_file(traccc::io::data_directory() +
+                                det_opts.material_file);
+        }
+        if (!det_opts.grid_file.empty()) {
+            reader_cfg.add_file(traccc::io::data_directory() +
+                                det_opts.grid_file);
+        }
+        auto [detector, _] =
+            detray::io::read_detector<detray::detector<>>(host_mr, reader_cfg);
+
+        // Construct an "old style geometry" from the detector object.
+        surface_transforms = traccc::io::alt_read_geometry(detector);
+
+        // Construct a map from Acts surface identifiers to Detray barcodes.
+        barcode_map = std::make_unique<barcode_map_type>();
+        for (const auto& surface : detector.surfaces()) {
+            (*barcode_map)[surface.source] = surface.barcode();
+        }
+
+    } else {
+        // Construct a geometry object from the detector file.
+        surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    }
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -65,8 +106,10 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
     traccc::spacepoint_grid_config grid_config(finder_config);
     traccc::seedfilter_config filter_config;
 
+    // Constant B field for the track finding and fitting
+    const traccc::vector3 field_vec = {0.f, 0.f, finder_config.bFieldInZ};
+
     // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
     vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
@@ -118,10 +161,10 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                traccc::io::read_cells(read_out_per_event, event,
-                                       common_opts.input_directory,
-                                       common_opts.input_data_format,
-                                       &surface_transforms, &digi_cfg);
+                traccc::io::read_cells(
+                    read_out_per_event, event, common_opts.input_directory,
+                    common_opts.input_data_format, &surface_transforms,
+                    &digi_cfg, barcode_map.get());
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
@@ -202,9 +245,8 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
             {
                 traccc::performance::timer t("Track params (cuda)",
                                              elapsedTimes);
-                params_cuda_buffer =
-                    tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                params_cuda_buffer = tp_cuda(spacepoints_cuda_buffer,
+                                             seeds_cuda_buffer, field_vec);
                 stream.synchronize();
             }  // stop measuring track params timer
 
@@ -213,8 +255,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
             if (run_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(spacepoints_per_event, seeds,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                params = tp(spacepoints_per_event, seeds, field_vec);
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time

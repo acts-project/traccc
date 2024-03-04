@@ -25,6 +25,8 @@ struct detector_input_options {
     std::string material_file;
     /// The file containing the surface grid description
     std::string grid_file;
+    /// Use detray::detector for the geometry handling
+    bool use_detray_detector = false;
 
     /// Constructor on top of a common @c program_options object
     ///
