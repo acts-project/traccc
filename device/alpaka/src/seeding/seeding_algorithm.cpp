@@ -9,7 +9,6 @@
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 
 #include "../utils/utils.hpp"
-#include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
 #include "traccc/seeding/detail/seeding_config.hpp"

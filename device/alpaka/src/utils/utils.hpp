@@ -10,6 +10,12 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
 
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#include <vecmem/utils/cuda/copy.hpp>
+#endif
+
+#include <vecmem/utils/copy.hpp>
+
 namespace traccc::alpaka {
 
 using Dim = ::alpaka::DimInt<1>;
@@ -19,6 +25,13 @@ using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
 using Host = ::alpaka::DevCpu;
 using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
+
+static constexpr std::size_t warpSize =
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    32;
+#else
+    4;
+#endif
 
 template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocksPerGrid,
