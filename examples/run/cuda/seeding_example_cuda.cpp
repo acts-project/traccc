@@ -60,9 +60,9 @@
 using namespace traccc;
 namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
-            const traccc::finding_input_config<traccc::scalar>& finding_cfg,
-            const traccc::propagation_options<traccc::scalar>& propagation_opts,
+int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
+            const traccc::finding_input_options& finding_cfg,
+            const traccc::propagation_options& propagation_opts,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
 
@@ -485,9 +485,9 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::seeding_input_config seeding_input_cfg(desc);
-    traccc::finding_input_config<traccc::scalar> finding_input_cfg(desc);
-    traccc::propagation_options<traccc::scalar> propagation_opts(desc);
+    traccc::seeding_input_options seeding_input_cfg(desc);
+    traccc::finding_input_options finding_input_cfg(desc);
+    traccc::propagation_options propagation_opts(desc);
     desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
@@ -505,8 +505,13 @@ int main(int argc, char* argv[]) {
     propagation_opts.read(vm);
     auto run_cpu = vm["run-cpu"].as<bool>();
 
-    std::cout << "Running " << argv[0] << " " << det_opts.detector_file << " "
-              << common_opts.input_directory << " " << common_opts.events
+    // Tell the user what's happening.
+    std::cout << "\nRunning the tracking chain using CUDA\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << seeding_input_cfg << "\n"
+              << finding_input_cfg << "\n"
+              << propagation_opts << "\n"
               << std::endl;
 
     return seq_run(seeding_input_cfg, finding_input_cfg, propagation_opts,

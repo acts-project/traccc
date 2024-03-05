@@ -52,8 +52,8 @@ int main(int argc, char* argv[]) {
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
     traccc::detector_input_options det_opts(desc);
-    traccc::particle_gen_options<scalar> pg_opts(desc);
-    traccc::propagation_options<scalar> propagation_opts(desc);
+    traccc::particle_gen_options pg_opts(desc);
+    traccc::propagation_options propagation_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);

@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::propagation_options<scalar> propagation_opts(desc);
+    traccc::propagation_options propagation_opts(desc);
     desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
@@ -78,8 +78,12 @@ int main(int argc, char* argv[]) {
     propagation_opts.read(vm);
     auto run_cpu = vm["run-cpu"].as<bool>();
 
-    std::cout << "Running " << argv[0] << " " << common_opts.input_directory
-              << " " << common_opts.events << std::endl;
+    // Tell the user what's happening.
+    std::cout << "\nRunning truth track fitting using CUDA\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << propagation_opts << "\n"
+              << std::endl;
 
     /// Type declarations
     using host_detector_type = detray::detector<detray::default_metadata,
