@@ -1,12 +1,19 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
 #include "traccc/finding/candidate_link.hpp"
+
+// detray include(s).
+#include "detray/geometry/barcode.hpp"
+#include "detray/geometry/surface.hpp"
+#include "detray/navigation/detail/ray.hpp"
+#include "detray/navigation/intersection/ray_intersector.hpp"
+#include "detray/navigation/intersection_kernel.hpp"
 
 // System include
 #include <algorithm>
@@ -127,7 +134,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
             const auto sf_desc = det.surface(in_param.surface_link());
             sfi.sf_desc = sf_desc;
-            sf.template visit_mask<detray::intersection_update>(
+            sf.template visit_mask<
+                detray::intersection_update<detray::ray_intersector>>(
                 detray::detail::ray<transform3_type>(free_vec), sfi,
                 det.transform_store());
 
