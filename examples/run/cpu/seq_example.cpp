@@ -34,7 +34,7 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::full_tracking_input_config& i_cfg,
+int seq_run(const traccc::full_tracking_input_options& i_cfg,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts) {
 
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::full_tracking_input_config full_tracking_input_cfg(desc);
+    traccc::full_tracking_input_options full_tracking_input_cfg(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -175,9 +175,11 @@ int main(int argc, char* argv[]) {
     det_opts.read(vm);
     full_tracking_input_cfg.read(vm);
 
-    std::cout << "Running " << argv[0] << " "
-              << full_tracking_input_cfg.detector_file << " "
-              << common_opts.input_directory << " " << common_opts.events
+    // Tell the user what's happening.
+    std::cout << "\nRunning the full tracking chain on the host\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << full_tracking_input_cfg << "\n"
               << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts, det_opts);

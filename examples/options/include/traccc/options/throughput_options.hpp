@@ -26,17 +26,18 @@ struct throughput_options {
     /// The data format of the input files
     data_format input_data_format = data_format::csv;
     /// Directory of the input files
-    std::string input_directory;
+    std::string input_directory = "tml_full/ttbar_mu20/";
     /// The file describing the detector geometry
-    std::string detector_file;
+    std::string detector_file = "tml_detector/trackml-detector.csv";
     /// The file describing the detector digitization configuration
-    std::string digitization_config_file;
+    std::string digitization_config_file =
+        "tml_detector/default-geometric-config-generic.json";
 
     /// The average number of cells in each partition.
     /// Equal to the number of threads in the clusterization kernels multiplied
     /// by CELLS_PER_THREAD defined in clusterization. Adapt to different GPUs'
     /// capabilities.
-    unsigned short target_cells_per_partition;
+    unsigned short target_cells_per_partition = 1024;
 
     /// The number of input events to load into memory
     std::size_t loaded_events = 10;
@@ -55,7 +56,7 @@ struct throughput_options {
     ///
     throughput_options(boost::program_options::options_description& desc);
 
-    /// Read the command line options
+    /// Read/process the command line options
     ///
     /// @param vm The command line options to interpret/read
     ///

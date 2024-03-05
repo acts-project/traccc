@@ -39,9 +39,9 @@ using namespace traccc;
 namespace po = boost::program_options;
 
 int simulate(std::string output_directory, unsigned int events,
-             const traccc::particle_gen_options<scalar>& pg_opts,
-             const traccc::propagation_options<scalar>& propagation_opts,
-             const traccc::telescope_detector_options<scalar>& telescope_opts) {
+             const traccc::particle_gen_options& pg_opts,
+             const traccc::propagation_options& propagation_opts,
+             const traccc::telescope_detector_options& telescope_opts) {
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =
@@ -156,9 +156,9 @@ int main(int argc, char* argv[]) {
                        "specify the directory of output data");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
-    traccc::particle_gen_options<scalar> pg_opts(desc);
-    traccc::propagation_options<scalar> propagation_opts(desc);
-    traccc::telescope_detector_options<scalar> telescope_opts(desc);
+    traccc::particle_gen_options pg_opts(desc);
+    traccc::propagation_options propagation_opts(desc);
+    traccc::telescope_detector_options telescope_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
