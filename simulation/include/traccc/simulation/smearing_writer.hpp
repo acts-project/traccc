@@ -23,9 +23,6 @@
 #include "detray/tracks/bound_track_parameters.hpp"
 #include "detray/tracks/free_track_parameters.hpp"
 
-// Detray I/O include(s).
-#include "detray/io/common/detail/utils.hpp"
-
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
 #include <dfe/dfe_namedtuple.hpp>

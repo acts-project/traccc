@@ -12,8 +12,7 @@
 
 // Detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
-#include "detray/io/common/detector_reader.hpp"
-#include "detray/io/common/detector_writer.hpp"
+#include "detray/io/frontend/detector_writer.hpp"
 
 namespace traccc {
 

@@ -22,7 +22,7 @@
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_telescope_detector.hpp"
-#include "detray/io/common/detector_writer.hpp"
+#include "detray/io/frontend/detector_writer.hpp"
 #include "detray/masks/unbounded.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
