@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/alpaka/utils/definitions.hpp"
+#include "utils.hpp"
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"

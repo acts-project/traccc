@@ -18,10 +18,12 @@
 // VecMem include(s).
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 #endif
 
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <memory>
