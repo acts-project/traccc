@@ -5,7 +5,6 @@
 # Mozilla Public License Version 2.0
 
 # Project include(s).
-message( STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}" )
 include( traccc-alpaka-functions )
 include( traccc-compiler-options-cpp )
 
@@ -21,7 +20,6 @@ endif()
 
 traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Utility definitions.
-  "include/traccc/alpaka/utils/definitions.hpp"
   "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
   # Seed finding code.

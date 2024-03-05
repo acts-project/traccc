@@ -7,11 +7,9 @@
 //
 // Local include(s).
 #include "../utils/utils.hpp"
-#include "traccc/alpaka/utils/definitions.hpp"
-#include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/alpaka/utils/definitions.hpp"
 
 // Project include(s).
+#include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/device/estimate_track_params.hpp"
 
 namespace traccc::alpaka {

@@ -8,7 +8,6 @@
 // Project include(s).
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -48,8 +47,11 @@
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 #endif
+
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <exception>

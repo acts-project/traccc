@@ -8,7 +8,6 @@
 #pragma once
 
 // Project include(s)
-#include "traccc/alpaka/utils/definitions.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
