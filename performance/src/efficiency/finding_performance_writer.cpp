@@ -52,24 +52,27 @@ finding_performance_writer::finding_performance_writer(const config& cfg)
     : m_cfg(cfg),
       m_data(std::make_unique<details::finding_performance_writer_data>(cfg)) {
 
-    m_data->m_eff_plot_tool.book("finding", m_data->m_eff_plot_cache);
-    m_data->m_duplication_plot_tool.book("finding",
+    m_data->m_eff_plot_tool.book(m_cfg.algorithm_name,
+                                 m_data->m_eff_plot_cache);
+    m_data->m_duplication_plot_tool.book(m_cfg.algorithm_name,
                                          m_data->m_duplication_plot_cache);
 }
 
 finding_performance_writer::~finding_performance_writer() {}
 
-void finding_performance_writer::write(
-    const track_candidate_container_types::const_view& track_candidates_view,
-    const event_map2& evt_map) {
+namespace {
 
-    std::map<particle_id, std::size_t> match_counter;
+// For track finding
+std::vector<std::vector<measurement>> prepare_data(
+    const track_candidate_container_types::const_view& track_candidates_view) {
+    std::vector<std::vector<measurement>> result;
 
     // Iterate over the tracks.
     track_candidate_container_types::const_device track_candidates(
         track_candidates_view);
 
     const unsigned int n_tracks = track_candidates.size();
+    result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
         const auto& cands = track_candidates.at(i).items;
@@ -79,6 +82,48 @@ void finding_performance_writer::write(
         for (const auto& cand : cands) {
             measurements.push_back(cand);
         }
+        result.push_back(std::move(measurements));
+    }
+    return result;
+}
+
+// For track finding
+std::vector<std::vector<measurement>> prepare_data(
+    const track_state_container_types::const_view& track_states_view) {
+    std::vector<std::vector<measurement>> result;
+
+    // Iterate over the tracks.
+    track_state_container_types::const_device track_states(track_states_view);
+
+    const unsigned int n_tracks = track_states.size();
+    result.reserve(n_tracks);
+
+    for (unsigned int i = 0; i < n_tracks; i++) {
+        auto const& [fit_res, states] = track_states.at(i);
+        std::vector<measurement> measurements;
+        measurements.reserve(states.size());
+        for (const auto& st : states) {
+            measurements.push_back(st.get_measurement());
+        }
+        result.push_back(std::move(measurements));
+    }
+    return result;
+}
+
+}  // namespace
+
+void finding_performance_writer::write_common(
+    const std::vector<std::vector<measurement>>& tracks,
+    const event_map2& evt_map) {
+
+    std::map<particle_id, std::size_t> match_counter;
+
+    // Iterate over the tracks.
+    const unsigned int n_tracks = tracks.size();
+
+    for (unsigned int i = 0; i < n_tracks; i++) {
+
+        const std::vector<measurement>& measurements = tracks[i];
 
         // Check which particle matches this seed.
         std::vector<particle_hit_count> particle_hit_counts =
@@ -110,6 +155,24 @@ void finding_performance_writer::write(
                                              ptc,
                                              n_matched_seeds_for_particle - 1);
     }
+}
+
+/// For track finding
+void finding_performance_writer::write(
+    const track_candidate_container_types::const_view& track_candidates_view,
+    const event_map2& evt_map) {
+    std::vector<std::vector<measurement>> tracks =
+        prepare_data(track_candidates_view);
+    write_common(tracks, evt_map);
+}
+
+/// For ambiguity resolution
+void finding_performance_writer::write(
+    const track_state_container_types::const_view& track_states_view,
+    const event_map2& evt_map) {
+    std::vector<std::vector<measurement>> tracks =
+        prepare_data(track_states_view);
+    write_common(tracks, evt_map);
 }
 
 void finding_performance_writer::finalize() {
