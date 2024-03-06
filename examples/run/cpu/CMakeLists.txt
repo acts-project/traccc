@@ -1,23 +1,23 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
 traccc_add_executable( seeding_example "seeding_example.cpp"
-   LINK_LIBRARIES vecmem::core traccc::core traccc::io 
+   LINK_LIBRARIES vecmem::core traccc::core traccc::io
    traccc::performance traccc::options detray::utils detray::io)
 
 traccc_add_executable( seq_example "seq_example.cpp"
-   LINK_LIBRARIES vecmem::core traccc::core traccc::io 
+   LINK_LIBRARIES vecmem::core traccc::core traccc::io
    traccc::performance traccc::options)
 
 traccc_add_executable( truth_finding_example "truth_finding_example.cpp"
-   LINK_LIBRARIES vecmem::core detray::utils traccc::core traccc::io 
+   LINK_LIBRARIES vecmem::core detray::utils traccc::core traccc::io
    traccc::performance traccc::options)
 
 traccc_add_executable( truth_fitting_example "truth_fitting_example.cpp"
-   LINK_LIBRARIES vecmem::core detray::io detray::utils traccc::core 
+   LINK_LIBRARIES vecmem::core detray::io detray::utils traccc::core
    traccc::io traccc::performance traccc::options)
 
 traccc_add_executable( ccl_example "ccl_example.cpp"

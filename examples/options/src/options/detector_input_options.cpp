@@ -28,6 +28,9 @@ traccc::detector_input_options::detector_input_options(
     desc.add_options()("grid-file",
                        po::value(&grid_file)->default_value(grid_file),
                        "specify surface grid file");
+    desc.add_options()("use-detray-detector",
+                       po::bool_switch(&use_detray_detector),
+                       "Use detray::detector for the geometry handling");
 }
 
 void traccc::detector_input_options::read(const po::variables_map&) {}
@@ -35,9 +38,11 @@ void traccc::detector_input_options::read(const po::variables_map&) {}
 std::ostream& operator<<(std::ostream& out, const detector_input_options& opt) {
 
     out << ">>> Detector options <<<\n"
-        << "  Detector file : " << opt.detector_file << "\n"
-        << "  Material file : " << opt.material_file << "\n"
-        << "  Grid file     : " << opt.grid_file;
+        << "  Detector file        : " << opt.detector_file << "\n"
+        << "  Material file        : " << opt.material_file << "\n"
+        << "  Grid file            : " << opt.grid_file << "\n"
+        << "  Use detray::detector : "
+        << (opt.use_detray_detector ? "yes" : "no") << "\n";
     return out;
 }
 
