@@ -118,7 +118,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                      ? in_param_id
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .seed_idx);
-
+	    unsigned int skip_counter =
+	      	    (step == 0
+                     ? 0
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .n_skipped);
+	    
             /*************************
              * Material interaction
              *************************/
@@ -169,7 +174,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     range.second = upper_bounds[bcd_id];
                 }
             } else {
-                continue;
+	      range.first = 0u;
+	      range.second = 0u;
             }
 
             unsigned int n_branches = 0;
@@ -210,7 +216,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     n_trks_per_seed[orig_param_id]++;
 
                     links[step].push_back(
-                        {{previous_step, in_param_id}, item_id, orig_param_id});
+					  {{previous_step, in_param_id}, item_id, orig_param_id, skip_counter});
 
                     /*********************************
                      * Propagate to the next surface
@@ -245,7 +251,19 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     propagator.propagate_sync(propagation,
                                               std::tie(s0, s1, s2, s3, s4, s5));
                     */
-                    // If a surface found, add the parameter for the next
+
+		    if(step - skip_counter == m_cfg.max_track_candidates_per_track -1 ){
+		      tips.push_back({step, cur_link_id}); 
+		      break;
+		      //exit from item_id loop
+		    }
+		    if(skip_counter + 1 == m_cfg.max_num_skipping_per_cand) {
+		      tips.push_back({step, cur_link_id});
+		      break;
+		      //exit from item_id loop
+		    }
+
+		    // If a surface found, add the parameter for the next
                     // step
                     if (s4.success) {
                         out_params.push_back(
@@ -258,8 +276,85 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                              step >= m_cfg.min_track_candidates_per_track - 1) {
                         tips.push_back({step, cur_link_id});
                     }
+
+		    // If no more CKF step is expected, current candidate is kept
+		    // as a tip
+		    if(step == m_cfg.max_track_candidates_per_track - 1){
+		      tips.push_back({step, cur_link_id});
+		    }
+		      
                 }
             }
+	    //After the loop over the measurements
+
+	    if(n_branches == 0) {
+	      //let's skip this CKF step for the current candidate
+	      if (n_trks_per_seed[orig_param_id] >=
+		  m_cfg.max_num_branches_per_initial_seed) {
+		
+		continue;
+	      }
+
+	      bound_track_parameters bound_param(in_param.surface_link(),
+						 in_param.vector(),
+						 in_param.covariance());
+
+	      measurement dummy_meas;
+	    
+	      dummy_meas.local = in_param.bound_local();
+	      dummy_meas.variance = dummy_meas.variance + point2{10.,10.};
+	      dummy_meas.surface_link = in_param.surface_link();
+
+	      track_state<transform3_type> trk_state(dummy_meas);
+
+	      // Run the Kalman update
+	      sf.template visit_mask<gain_matrix_updater<transform3_type>>(
+				       trk_state, bound_param);
+	      
+	      unsigned int cur_link_id =
+		static_cast<unsigned int>(links[step].size());
+	      
+	      links[step].push_back(
+				    {{previous_step, in_param_id},
+				     std::numeric_limits<unsigned int>::max(),
+				     orig_param_id, skip_counter+1});
+
+	      // Create propagator state
+	      typename propagator_type::state propagation(
+							  trk_state.filtered(), field, det);
+	      propagation._stepping.template set_constraint<
+		detray::step::constraint::e_accuracy>(
+						      m_cfg.propagation.stepping.step_constraint);
+
+	      typename detray::pathlimit_aborter::state s0;
+	      typename detray::parameter_transporter<
+		transform3_type>::state s1;
+	      typename interactor::state s3;
+	      typename interaction_register<interactor>::state s2{s3};
+	      typename detray::next_surface_aborter::state s4{
+		m_cfg.min_step_length_for_surface_aborter};
+
+	      propagation._navigation.set_volume(
+						 trk_state.filtered().surface_link().volume());
+	      
+	      // Propagate to the next surface
+	      propagator.propagate_sync(propagation,
+					std::tie(s0, s1, s2, s3, s4));
+	      
+	      // If a surface found, add the parameter for the next
+	      // step
+	      if (s4.success) {
+		out_params.push_back(
+				     propagation._stepping._bound_params);
+		param_to_link[step].push_back(cur_link_id);
+	      }
+	      // Unless the track found a surface, it is considered a
+	      // tip
+	      else if (!s4.success &&
+		       step >= m_cfg.min_track_candidates_per_track - 1) {
+		tips.push_back({step, cur_link_id});
+	      }
+	    }
         }
 
         in_params = std::move(out_params);
@@ -280,17 +375,34 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             continue;
         }
 
-        vecmem::vector<track_candidate> cands_per_track;
-        cands_per_track.resize(tip.first + 1);
-
         // Get the link corresponding to tip
         auto L = links[tip.first][tip.second];
+
+        // Skip if the number of tracks candidates is too small
+        if (tip.first + 1 -L.n_skipped  < m_cfg.min_track_candidates_per_track) {
+            continue;
+        }
+
+        vecmem::vector<track_candidate> cands_per_track;
+        cands_per_track.resize(tip.first + 1);
 
         // Reversely iterate to fill the track candidates
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
              it++) {
 
-            auto& cand = *it;
+  	  while (L.meas_idx >  measurements.size()){
+
+	    if(L.previous.first>tip.first+1) break; //should not happen.
+	    
+	    const auto link_pos =
+	      param_to_link[L.previous.first][L.previous.second];
+
+            L = links[L.previous.first][link_pos];
+
+	    
+	  }
+
+	  auto& cand = *it;
 
             cand = measurements.at(L.meas_idx);
 

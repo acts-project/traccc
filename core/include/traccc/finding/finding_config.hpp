@@ -30,6 +30,10 @@ struct finding_config {
     unsigned int max_num_branches_per_initial_seed =
         std::numeric_limits<unsigned int>::max();
 
+  /// Maximum allowed number of skipped steps per candidate
+  unsigned int max_num_skipping_per_cand = 3;
+
+  
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
