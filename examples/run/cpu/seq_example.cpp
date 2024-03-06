@@ -26,10 +26,6 @@
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
-// Detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
-
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
@@ -46,42 +42,11 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts) {
 
-    // Memory resource used by the application.
-    vecmem::host_memory_resource host_mr;
-
-    // Construct a traccc::geometry object.
-    traccc::geometry surface_transforms;
-    using barcode_map_type = std::map<std::uint64_t, detray::geometry::barcode>;
-    std::unique_ptr<barcode_map_type> barcode_map;
-    if (det_opts.use_detray_detector) {
-
-        // Construct a detector object.
-        detray::io::detector_reader_config reader_cfg{};
-        reader_cfg.add_file(traccc::io::data_directory() +
-                            det_opts.detector_file);
-        if (!det_opts.material_file.empty()) {
-            reader_cfg.add_file(traccc::io::data_directory() +
-                                det_opts.material_file);
-        }
-        if (!det_opts.grid_file.empty()) {
-            reader_cfg.add_file(traccc::io::data_directory() +
-                                det_opts.grid_file);
-        }
-        auto [detector, _] =
-            detray::io::read_detector<detray::detector<> >(host_mr, reader_cfg);
-
-        // Construct an "old style geometry" from the detector object.
-        surface_transforms = traccc::io::alt_read_geometry(detector);
-
-        // Construct a map from Acts surface identifiers to Detray barcodes.
-        barcode_map = std::make_unique<barcode_map_type>();
-        for (const auto& surface : detector.surfaces()) {
-            (*barcode_map)[surface.source] = surface.barcode();
-        }
-    } else {
-        // Construct a geometry object from the detector file.
-        surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
-    }
+    // Read in the geometry.
+    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
+        det_opts.detector_file,
+        (det_opts.use_detray_detector ? traccc::data_format::json
+                                      : traccc::data_format::csv));
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -101,6 +66,9 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
 
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f, finder_config.bFieldInZ};
+
+    // Memory resource used by the application.
+    vecmem::host_memory_resource host_mr;
 
     // Algorithms
     traccc::clusterization_algorithm ca(host_mr);

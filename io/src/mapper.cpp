@@ -199,7 +199,7 @@ generate_measurement_cell_map(std::size_t event,
     measurement_creation mc(resource);
 
     // Read the surface transforms
-    auto surface_transforms = io::read_geometry(detector_file);
+    auto [surface_transforms, _] = io::read_geometry(detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg = io::read_digitization_config(digi_config_file);
@@ -266,7 +266,7 @@ measurement_particle_map generate_measurement_particle_map(
     measurement_particle_map result;
 
     // Read the surface transforms
-    auto surface_transforms = io::read_geometry(detector_file);
+    auto [surface_transforms, _] = io::read_geometry(detector_file);
 
     // Read the spacepoints from the relevant event file
     traccc::io::spacepoint_reader_output readOut(&resource);

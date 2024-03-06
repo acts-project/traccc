@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,8 +23,11 @@ void read(demonstrator_input& out, std::size_t events,
           std::string_view directory, std::string_view detector_file,
           std::string_view digi_config_file, data_format format) {
 
-    // Read in the detector configuration.
-    const geometry geom = io::read_geometry(detector_file);
+    // Read in the detector configuration. We can't use structured bindings for
+    // the return value of read_geometry(...), because the old Intel compiler
+    // used in the CI, when using OpenMP, crashes on such code. :-(
+    const auto geom_pair = io::read_geometry(detector_file);
+    const auto& geom = geom_pair.first;
     const digitization_config digi_cfg =
         io::read_digitization_config(digi_config_file);
 
