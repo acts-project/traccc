@@ -33,6 +33,9 @@ struct candidate_link {
 
     // Index to the initial seed
     unsigned int seed_idx;
+
+    // How many times it skipped a surface
+    unsigned int n_skipped;
 };
 
 }  // namespace traccc
