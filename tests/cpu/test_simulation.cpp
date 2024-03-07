@@ -17,9 +17,10 @@
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_telescope_detector.hpp"
 #include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/geometry/mask.hpp"
+#include "detray/geometry/shapes/line.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/geometry/surface.hpp"
-#include "detray/masks/masks.hpp"
-#include "detray/masks/unbounded.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
 #include "detray/utils/statistics.hpp"
@@ -37,11 +38,11 @@ constexpr scalar tol{1e-7f};
 
 TEST(simulation, simulation) {
 
-    const mask<line<false, line_intersector>> ln{
-        0u, 10.f * detray::unit<scalar>::mm, 50.f * detray::unit<scalar>::mm};
+    const mask<line<false>> ln{0u, 10.f * detray::unit<scalar>::mm,
+                               50.f * detray::unit<scalar>::mm};
 
-    const mask<rectangle2D<plane_intersector>> re{
-        0u, 10.f * detray::unit<scalar>::mm, 10.f * detray::unit<scalar>::mm};
+    const mask<rectangle2D> re{0u, 10.f * detray::unit<scalar>::mm,
+                               10.f * detray::unit<scalar>::mm};
 
     detray::bound_track_parameters<transform3> bound_params;
     auto& bound_vec = bound_params.vector();
@@ -206,8 +207,8 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     // energy (or non-relativistic) particle due to the large scattering
     const scalar thickness = 0.005f * detray::unit<scalar>::cm;
 
-    tel_det_config<rectangle2D<>> tel_cfg{1000.f * detray::unit<scalar>::mm,
-                                          1000.f * detray::unit<scalar>::mm};
+    tel_det_config<rectangle2D> tel_cfg{1000.f * detray::unit<scalar>::mm,
+                                        1000.f * detray::unit<scalar>::mm};
     tel_cfg.positions(positions).mat_thickness(thickness);
 
     const auto [detector, names] = create_telescope_detector(host_mr, tel_cfg);

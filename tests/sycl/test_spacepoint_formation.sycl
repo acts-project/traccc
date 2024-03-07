@@ -12,7 +12,9 @@
 
 // Detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
-#include "detray/intersection/detail/trajectories.hpp"
+#include "detray/geometry/mask.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
+#include "detray/navigation/detail/ray.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -51,7 +53,7 @@ TEST(spacepoint_formation, sycl) {
     vecmem::sycl::copy copy{&q};
 
     // Use rectangle surfaces
-    detray::mask<detray::rectangle2D<>> rectangle{
+    detray::mask<detray::rectangle2D> rectangle{
         0u, 10000.f * detray::unit<scalar>::mm,
         10000.f * detray::unit<scalar>::mm};
 
@@ -69,7 +71,7 @@ TEST(spacepoint_formation, sycl) {
     // Create telescope geometry
     auto [det, name_map] = create_telescope_detector(shared_mr, tel_cfg);
     using device_detector_type =
-        detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
+        detray::detector<detray::telescope_metadata<detray::rectangle2D>,
                          detray::device_container_types>;
 
     // Surface lookup

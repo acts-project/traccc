@@ -12,7 +12,8 @@
 
 // Detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
-#include "detray/intersection/detail/trajectories.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
+#include "detray/navigation/detail/ray.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -28,7 +29,7 @@ TEST(spacepoint_formation, cpu) {
     vecmem::host_memory_resource host_mr;
 
     // Use rectangle surfaces
-    detray::mask<detray::rectangle2D<>> rectangle{
+    detray::mask<detray::rectangle2D> rectangle{
         0u, 10000.f * detray::unit<scalar>::mm,
         10000.f * detray::unit<scalar>::mm};
 

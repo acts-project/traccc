@@ -28,7 +28,7 @@
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
-#include "detray/propagator/navigator.hpp"
+#include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 
@@ -43,8 +43,8 @@
 using namespace traccc;
 namespace po = boost::program_options;
 
-int seq_run(const traccc::finding_input_config<traccc::scalar>& i_cfg,
-            const traccc::propagation_options<scalar>& propagation_opts,
+int seq_run(const traccc::finding_input_options& i_cfg,
+            const traccc::propagation_options& propagation_opts,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts) {
 
@@ -203,8 +203,8 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::finding_input_config<traccc::scalar> finding_input_cfg(desc);
-    traccc::propagation_options<scalar> propagation_opts(desc);
+    traccc::finding_input_options finding_input_cfg(desc);
+    traccc::propagation_options propagation_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -218,8 +218,13 @@ int main(int argc, char* argv[]) {
     finding_input_cfg.read(vm);
     propagation_opts.read(vm);
 
-    std::cout << "Running " << argv[0] << " " << common_opts.input_directory
-              << " " << common_opts.events << std::endl;
+    // Tell the user what's happening.
+    std::cout << "\nRunning truth track finding on the host\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << finding_input_cfg << "\n"
+              << propagation_opts << "\n"
+              << std::endl;
 
     return seq_run(finding_input_cfg, propagation_opts, common_opts, det_opts);
 }

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,7 +12,10 @@
 
 // Detray include(s).
 #include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/geometry/mask.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
+#include "detray/navigation/detail/ray.hpp"
 
 namespace traccc {
 
@@ -38,8 +41,8 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
     static constexpr scalar thickness = 0.5 * detray::unit<scalar>::mm;
 
     // Rectangle mask for the telescope geometry
-    static constexpr detray::mask<detray::rectangle2D<>> rectangle{0u, 100000.f,
-                                                                   100000.f};
+    static constexpr detray::mask<detray::rectangle2D> rectangle{0u, 100000.f,
+                                                                 100000.f};
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{

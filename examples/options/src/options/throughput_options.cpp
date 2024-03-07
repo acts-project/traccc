@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,47 +14,59 @@
 
 namespace traccc {
 
+/// Convenience namespace shorthand
 namespace po = boost::program_options;
+
+/// Type alias for the data format enumeration
+using data_format_type = std::string;
+/// Name of the data format option
+static const char* data_format_option = "input-data-format";
 
 throughput_options::throughput_options(po::options_description& desc) {
 
-    desc.add_options()("input-data-format",
-                       po::value<std::string>()->default_value("csv"),
+    desc.add_options()(data_format_option,
+                       po::value<data_format_type>()->default_value("csv"),
                        "Format of the input file(s)");
-    desc.add_options()("input_directory", po::value<std::string>()->required(),
-                       "Directory holding the input files");
-    desc.add_options()("detector-file", po::value<std::string>()->required(),
+    desc.add_options()(
+        "input-directory",
+        po::value(&input_directory)->default_value(input_directory),
+        "Directory holding the input files");
+    desc.add_options()("detector-file",
+                       po::value(&detector_file)->default_value(detector_file),
                        "Detector geometry description file");
     desc.add_options()("digitization-config-file",
-                       po::value<std::string>()->required(),
+                       po::value(&digitization_config_file)
+                           ->default_value(digitization_config_file),
                        "Digitization configuration file");
     desc.add_options()(
         "target-cells-per-partition",
-        po::value<unsigned short>()->default_value(1024),
+        po::value(&target_cells_per_partition)
+            ->default_value(target_cells_per_partition),
         "Average number of cells in a partition. Equal to the number of "
         "threads in the clusterization kernels multiplied by CELLS_PER_THREAD "
         "defined in clusterization.");
     desc.add_options()("loaded-events",
-                       po::value<std::size_t>()->default_value(10),
+                       po::value(&loaded_events)->default_value(loaded_events),
                        "Number of input events to load");
-    desc.add_options()("processed-events",
-                       po::value<std::size_t>()->default_value(100),
-                       "Number of events to process");
-    desc.add_options()("cold-run-events",
-                       po::value<std::size_t>()->default_value(10),
-                       "Number of events to run 'cold'");
     desc.add_options()(
-        "log-file",
-        po::value<std::string>()->default_value(
-            "\0", "File where result logs will be printed (in append mode)."));
+        "processed-events",
+        po::value(&processed_events)->default_value(processed_events),
+        "Number of events to process");
+    desc.add_options()(
+        "cold-run-events",
+        po::value(&cold_run_events)->default_value(cold_run_events),
+        "Number of events to run 'cold'");
+    desc.add_options()(
+        "log-file", po::value(&log_file),
+        "File where result logs will be printed (in append mode).");
 }
 
 void throughput_options::read(const po::variables_map& vm) {
 
     // Set the input data format.
-    if (vm.count("input-data-format")) {
-        const std::string input_format_string =
-            vm["input-data-format"].as<std::string>();
+    if (vm.count(data_format_option)) {
+        const auto input_format_string =
+            vm[data_format_option].as<data_format_type>();
         if (input_format_string == "csv") {
             input_data_format = data_format::csv;
         } else if (input_format_string == "binary") {
@@ -63,33 +75,22 @@ void throughput_options::read(const po::variables_map& vm) {
             throw std::invalid_argument("Invalid input data format specified");
         }
     }
-
-    // Set the rest of the options.
-    input_directory = vm["input-directory"].as<std::string>();
-    detector_file = vm["detector-file"].as<std::string>();
-    digitization_config_file = vm["digitization-config-file"].as<std::string>();
-    target_cells_per_partition =
-        vm["target-cells-per-partition"].as<unsigned short>();
-    loaded_events = vm["loaded-events"].as<std::size_t>();
-    processed_events = vm["processed-events"].as<std::size_t>();
-    cold_run_events = vm["cold-run-events"].as<std::size_t>();
-    log_file = vm["log-file"].as<std::string>();
 }
 
 std::ostream& operator<<(std::ostream& out, const throughput_options& opt) {
 
     out << ">>> Throughput options <<<\n"
-        << "Input data format          : " << opt.input_data_format << "\n"
-        << "Input directory            : " << opt.input_directory << "\n"
-        << "Detector geometry          : " << opt.detector_file << "\n"
-        << "Digitization config        : " << opt.digitization_config_file
+        << "  Input data format          : " << opt.input_data_format << "\n"
+        << "  Input directory            : " << opt.input_directory << "\n"
+        << "  Detector geometry          : " << opt.detector_file << "\n"
+        << "  Digitization config        : " << opt.digitization_config_file
         << "\n"
-        << "Target cells per partition : " << opt.target_cells_per_partition
+        << "  Target cells per partition : " << opt.target_cells_per_partition
         << "\n"
-        << "Loaded event(s)            : " << opt.loaded_events << "\n"
-        << "Cold run event(s)          : " << opt.cold_run_events << "\n"
-        << "Processed event(s)         : " << opt.processed_events << "\n"
-        << "Log_file                   : " << opt.log_file;
+        << "  Loaded event(s)            : " << opt.loaded_events << "\n"
+        << "  Cold run event(s)          : " << opt.cold_run_events << "\n"
+        << "  Processed event(s)         : " << opt.processed_events << "\n"
+        << "  Log_file                   : " << opt.log_file;
     return out;
 }
 

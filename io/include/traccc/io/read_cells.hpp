@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,6 +18,8 @@
 
 // System include(s).
 #include <cstddef>
+#include <cstdint>
+#include <map>
 #include <string_view>
 
 namespace traccc::io {
@@ -33,12 +35,15 @@ namespace traccc::io {
 /// @param format The format of the cell data files (to read)
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
+/// @param bardoce_map An object to perform barcode re-mapping with
+///                    (For Acts->Detray identifier re-mapping, if necessary)
 ///
-void read_cells(cell_reader_output &out, std::size_t event,
-                std::string_view directory,
-                data_format format = data_format::csv,
-                const geometry *geom = nullptr,
-                const digitization_config *dconfig = nullptr);
+void read_cells(
+    cell_reader_output &out, std::size_t event, std::string_view directory,
+    data_format format = data_format::csv, const geometry *geom = nullptr,
+    const digitization_config *dconfig = nullptr,
+    const std::map<std::uint64_t, detray::geometry::barcode> *barcode_map =
+        nullptr);
 
 /// Read cell data into memory
 ///
@@ -49,10 +54,14 @@ void read_cells(cell_reader_output &out, std::size_t event,
 /// @param format The format of the cell data files (to read)
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
+/// @param bardoce_map An object to perform barcode re-mapping with
+///                    (For Acts->Detray identifier re-mapping, if necessary)
 ///
 void read_cells(cell_reader_output &out, std::string_view filename,
                 data_format format = data_format::csv,
                 const geometry *geom = nullptr,
-                const digitization_config *dconfig = nullptr);
+                const digitization_config *dconfig = nullptr,
+                const std::map<std::uint64_t, detray::geometry::barcode>
+                    *barcode_map = nullptr);
 
 }  // namespace traccc::io

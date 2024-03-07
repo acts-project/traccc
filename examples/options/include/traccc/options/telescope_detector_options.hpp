@@ -1,64 +1,53 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
-#include "traccc/options/options.hpp"
+#pragma once
 
-// Detray include(s).
-#include "detray/definitions/units.hpp"
-
-// Boost
+// Boost include(s).
 #include <boost/program_options.hpp>
+
+// System include(s).
+#include <iosfwd>
 
 namespace traccc {
 
-namespace po = boost::program_options;
-
-template <typename scalar_t>
+/// Command line options used in the telescope detector tests
 struct telescope_detector_options {
-    bool empty_material;
-    unsigned int n_planes;
-    scalar_t thickness;
-    scalar_t spacing;
-    scalar_t smearing;
-    scalar_t half_length;
 
-    telescope_detector_options(po::options_description& desc) {
-        desc.add_options()("empty-material",
-                           po::value<bool>()->default_value(false),
-                           "Build detector without materials");
-        desc.add_options()("n-planes",
-                           po::value<unsigned int>()->default_value(9),
-                           "Number of planes");
-        desc.add_options()("thickness-mm",
-                           po::value<scalar_t>()->default_value(0.5f),
-                           "Slab thickness in [mm]");
-        desc.add_options()("spacing",
-                           po::value<scalar_t>()->default_value(20.f),
-                           "Space between planes in [mm]");
-        desc.add_options()("smearing-um",
-                           po::value<scalar_t>()->default_value(50.f),
-                           "Measurement smearing in [um]");
-        desc.add_options()("half-length-mm",
-                           po::value<scalar_t>()->default_value(1000000.f),
-                           "Half length of plane [mm]");
-    }
+    /// Build detector without materials
+    bool empty_material = false;
+    /// Number of planes
+    unsigned int n_planes = 9;
+    /// Slab thickness in [mm]
+    float thickness = 0.5f;
+    /// Space between planes in [mm]
+    float spacing = 20.f;
+    /// Measurement smearing in [um]
+    float smearing = 50.f;
+    /// Half length of plane [mm]
+    float half_length = 1000000.f;
 
-    void read(const po::variables_map& vm) {
-        empty_material = vm["empty-material"].as<bool>();
-        n_planes = vm["n-planes"].as<unsigned int>();
-        thickness =
-            vm["thickness-mm"].as<scalar_t>() * detray::unit<scalar_t>::mm;
-        spacing = vm["spacing-mm"].as<scalar_t>() * detray::unit<scalar_t>::mm;
-        smearing =
-            vm["smearing-um"].as<scalar_t>() * detray::unit<scalar_t>::um;
-        half_length =
-            vm["half-length-mm"].as<scalar_t>() * detray::unit<scalar_t>::mm;
-    }
-};
+    /// Constructor on top of a common @c program_options object
+    ///
+    /// @param desc The program options to add to
+    ///
+    telescope_detector_options(
+        boost::program_options::options_description& desc);
+
+    /// Read/process the command line options
+    ///
+    /// @param vm The command line options to interpret/read
+    ///
+    void read(const boost::program_options::variables_map& vm);
+
+};  // struct telescope_detector_options
+
+/// Printout helper for @c traccc::telescope_detector_options
+std::ostream& operator<<(std::ostream& out,
+                         const telescope_detector_options& opt);
 
 }  // namespace traccc
