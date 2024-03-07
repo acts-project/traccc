@@ -42,12 +42,15 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::full_tracking_input_config& i_cfg,
+int seq_run(const traccc::full_tracking_input_options& i_cfg,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
+        det_opts.detector_file,
+        (det_opts.use_detray_detector ? traccc::data_format::json
+                                      : traccc::data_format::csv));
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -123,10 +126,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                traccc::io::read_cells(read_out_per_event, event,
-                                       common_opts.input_directory,
-                                       common_opts.input_data_format,
-                                       &surface_transforms, &digi_cfg);
+                traccc::io::read_cells(
+                    read_out_per_event, event, common_opts.input_directory,
+                    common_opts.input_data_format, &surface_transforms,
+                    &digi_cfg, barcode_map.get());
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
@@ -311,7 +314,7 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::full_tracking_input_config full_tracking_input_cfg(desc);
+    traccc::full_tracking_input_options full_tracking_input_cfg(desc);
     desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
@@ -327,9 +330,11 @@ int main(int argc, char* argv[]) {
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run-cpu"].as<bool>();
 
-    std::cout << "Running " << argv[0] << " "
-              << full_tracking_input_cfg.detector_file << " "
-              << common_opts.input_directory << " " << common_opts.events
+    // Tell the user what's happening.
+    std::cout << "\nRunning the full tracking chain using Alpaka\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << full_tracking_input_cfg << "\n"
               << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts, det_opts, run_cpu);
