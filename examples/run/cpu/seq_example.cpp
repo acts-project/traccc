@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/utils.hpp"
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
@@ -29,17 +30,23 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
+#include <cstdint>
 #include <exception>
 #include <iostream>
+#include <map>
+#include <memory>
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::full_tracking_input_config& i_cfg,
+int seq_run(const traccc::full_tracking_input_options& i_cfg,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts) {
 
-    // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    // Read in the geometry.
+    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
+        det_opts.detector_file,
+        (det_opts.use_detray_detector ? traccc::data_format::json
+                                      : traccc::data_format::csv));
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -57,9 +64,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::spacepoint_grid_config grid_config(finder_config);
     traccc::seedfilter_config filter_config;
 
-    // Memory resource used by the EDM.
+    // Constant B field for the track finding and fitting
+    const traccc::vector3 field_vec = {0.f, 0.f, finder_config.bFieldInZ};
+
+    // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
 
+    // Algorithms
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
@@ -79,7 +90,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // Read the cells from the relevant event file
         traccc::io::read_cells(readOut, event, common_opts.input_directory,
                                common_opts.input_data_format,
-                               &surface_transforms, &digi_cfg);
+                               &surface_transforms, &digi_cfg,
+                               barcode_map.get());
         traccc::cell_collection_types::host& cells_per_event = readOut.cells;
         traccc::cell_module_collection_types::host& modules_per_event =
             readOut.modules;
@@ -107,8 +119,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           Track params estimation
           ----------------------------*/
 
-        auto params = tp(spacepoints_per_event, seeds,
-                         {0.f, 0.f, finder_config.bFieldInZ});
+        auto params = tp(spacepoints_per_event, seeds, field_vec);
 
         /*----------------------------
           Statistics
@@ -162,7 +173,7 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::full_tracking_input_config full_tracking_input_cfg(desc);
+    traccc::full_tracking_input_options full_tracking_input_cfg(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -175,9 +186,11 @@ int main(int argc, char* argv[]) {
     det_opts.read(vm);
     full_tracking_input_cfg.read(vm);
 
-    std::cout << "Running " << argv[0] << " "
-              << full_tracking_input_cfg.detector_file << " "
-              << common_opts.input_directory << " " << common_opts.events
+    // Tell the user what's happening.
+    std::cout << "\nRunning the full tracking chain on the host\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << full_tracking_input_cfg << "\n"
               << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts, det_opts);

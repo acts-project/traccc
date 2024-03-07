@@ -18,7 +18,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.54.0.tar.gz;URL_MD5;cb114d24fbd531a69c3eb95c25dd9845"
+"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.55.0.tar.gz;URL_MD5;d1fe192c1250b9e3c161b37aaad882ad"
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
@@ -41,8 +41,6 @@ set( DETRAY_SETUP_VECMEM FALSE CACHE BOOL
    "Do not set up VecMem as part of Detray" )
 set( DETRAY_SETUP_ALGEBRA_PLUGINS FALSE CACHE BOOL
    "Do not set up Algebra Plugins as part of Detray" )
-set( DETRAY_SETUP_DFELIBS FALSE CACHE BOOL
-   "Do not set up dfelibs as part of Detray" )
 set( DETRAY_SETUP_GOOGLETEST FALSE CACHE BOOL
    "Do not set up GoogleTest as part of Detray" )
 set( DETRAY_SETUP_BENCHMARK FALSE CACHE BOOL

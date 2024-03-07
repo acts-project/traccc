@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -33,12 +33,13 @@
 
 namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
+int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts, bool run_cpu) {
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(det_opts.detector_file);
+    auto [surface_transforms, _] =
+        traccc::io::read_geometry(det_opts.detector_file);
 
     // Output stats
     uint64_t n_modules = 0;
@@ -156,7 +157,7 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::seeding_input_config seeding_input_cfg(desc);
+    traccc::seeding_input_options seeding_input_cfg(desc);
     desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
 
@@ -173,8 +174,11 @@ int main(int argc, char* argv[]) {
     seeding_input_cfg.read(vm);
     auto run_cpu = vm["run-cpu"].as<bool>();
 
-    std::cout << "Running " << argv[0] << " " << det_opts.detector_file << " "
-              << common_opts.input_directory << " " << common_opts.events
+    // Tell the user what's happening.
+    std::cout << "\nRunning the tracking chain using Kokkos\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << seeding_input_cfg << "\n"
               << std::endl;
 
     int ret = seq_run(seeding_input_cfg, common_opts, det_opts, run_cpu);

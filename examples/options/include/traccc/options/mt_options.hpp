@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -28,7 +28,7 @@ struct mt_options {
     ///
     mt_options(boost::program_options::options_description& desc);
 
-    /// Read the command line options
+    /// Read/process the command line options
     ///
     /// @param vm The command line options to interpret/read
     ///

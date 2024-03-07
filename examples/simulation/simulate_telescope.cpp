@@ -22,8 +22,11 @@
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/geometry/mask.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
-#include "detray/masks/unbounded.hpp"
+#include "detray/materials/material.hpp"
+#include "detray/navigation/detail/ray.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
@@ -36,9 +39,9 @@ using namespace traccc;
 namespace po = boost::program_options;
 
 int simulate(std::string output_directory, unsigned int events,
-             const traccc::particle_gen_options<scalar>& pg_opts,
-             const traccc::propagation_options<scalar>& propagation_opts,
-             const traccc::telescope_detector_options<scalar>& telescope_opts) {
+             const traccc::particle_gen_options& pg_opts,
+             const traccc::propagation_options& propagation_opts,
+             const traccc::telescope_detector_options& telescope_opts) {
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =
@@ -77,8 +80,8 @@ int simulate(std::string output_directory, unsigned int events,
     const scalar thickness = telescope_opts.thickness;
 
     // Use rectangle surfaces
-    detray::mask<detray::rectangle2D<>> rectangle{
-        0u, telescope_opts.half_length, telescope_opts.half_length};
+    detray::mask<detray::rectangle2D> rectangle{0u, telescope_opts.half_length,
+                                                telescope_opts.half_length};
 
     detray::tel_det_config<> tel_cfg{rectangle};
     tel_cfg.positions(plane_positions);
@@ -153,9 +156,9 @@ int main(int argc, char* argv[]) {
                        "specify the directory of output data");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
-    traccc::particle_gen_options<scalar> pg_opts(desc);
-    traccc::propagation_options<scalar> propagation_opts(desc);
-    traccc::telescope_detector_options<scalar> telescope_opts(desc);
+    traccc::particle_gen_options pg_opts(desc);
+    traccc::propagation_options propagation_opts(desc);
+    traccc::telescope_detector_options telescope_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);

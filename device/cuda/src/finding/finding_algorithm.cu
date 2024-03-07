@@ -23,8 +23,7 @@
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/masks/unbounded.hpp"
-#include "detray/propagator/navigator.hpp"
+#include "detray/navigation/navigator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
