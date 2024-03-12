@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -18,7 +18,7 @@ message( STATUS "Building Thrust as part of the TRACCC project" )
 
 # Declare where to get Thrust from.
 set( TRACCC_THRUST_SOURCE
-   "GIT_REPOSITORY;https://github.com/NVIDIA/thrust.git;GIT_TAG;1.15.0"
+   "GIT_REPOSITORY;https://github.com/NVIDIA/thrust.git;GIT_TAG;2.1.0"
    CACHE STRING "Source for Thrust, when built as part of this project" )
 mark_as_advanced( TRACCC_THRUST_SOURCE )
 FetchContent_Declare( Thrust ${TRACCC_THRUST_SOURCE} )
