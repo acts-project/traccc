@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2023 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -87,4 +87,12 @@ target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
   PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
-  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda )
+  PRIVATE CUDA::cudart traccc::Thrust traccc::device_common vecmem::cuda )
+
+# For CUDA 11 turn on separable compilation. This is necessary for using
+# Thrust 2.1.0.
+if( ( "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA" ) AND
+    ( "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS "12.0" ) )
+  set_target_properties( traccc_cuda PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON )
+endif()
