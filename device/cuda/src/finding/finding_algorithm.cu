@@ -38,6 +38,7 @@
 #include <thrust/fill.h>
 #include <thrust/scan.h>
 #include <thrust/sort.h>
+#include <thrust/unique.h>
 
 // System include(s).
 #include <vector>
