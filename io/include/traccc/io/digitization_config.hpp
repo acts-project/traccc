@@ -15,6 +15,9 @@ namespace traccc {
 
 /// Type describing the digitization configuration of a detector module
 struct module_digitization_config {
+    /// Measurement indices
+    std::vector<unsigned int> indices{};
+    /// Module segmentation description
     Acts::BinUtility segmentation;
 };
 
