@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/options/options.hpp"
+#include "traccc/options/details/value_array.hpp"
 
 // Boost include(s).
 #include <boost/program_options.hpp>
@@ -24,15 +24,15 @@ struct particle_gen_options {
     /// The number of particles to generate per event
     unsigned int gen_nparticles{1u};
     /// Vertex position [mm]
-    Reals<float, 3> vertex{0., 0., 0.};
+    opts::value_array<float, 3> vertex{0., 0., 0.};
     /// Standard deviation of the vertex position [mm]
-    Reals<float, 3> vertex_stddev{0., 0., 0.};
+    opts::value_array<float, 3> vertex_stddev{0., 0., 0.};
     /// Range of momentum [GeV]
-    Reals<float, 2> mom_range{1., 1.};
+    opts::value_array<float, 2> mom_range{1., 1.};
     /// Range of phi [rad]
-    Reals<float, 2> phi_range{0., 0.};
+    opts::value_array<float, 2> phi_range{0., 0.};
     /// Range of theta [rad]
-    Reals<float, 2> theta_range{0., 0.};
+    opts::value_array<float, 2> theta_range{0., 0.};
     /// Charge of particles
     float charge{-1.f};
 

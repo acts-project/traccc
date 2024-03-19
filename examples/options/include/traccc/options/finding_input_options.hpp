@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/options/options.hpp"
+#include "traccc/options/details/value_array.hpp"
 
 // Boost include(s).
 #include <boost/program_options.hpp>
@@ -23,7 +23,7 @@ namespace traccc {
 struct finding_input_options {
 
     /// Number of track candidates per seed
-    Reals<unsigned int, 2> track_candidates_range{3, 100};
+    opts::value_array<unsigned int, 2> track_candidates_range{3, 100};
     /// Maximum chi2 for a measurement to be included in the track
     float chi2_max = 30.f;
     /// Maximum number of branches which each initial seed can have at a step

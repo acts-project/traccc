@@ -11,7 +11,6 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/options.hpp"
 #include "traccc/options/particle_gen_options.hpp"
 #include "traccc/options/propagation_options.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"

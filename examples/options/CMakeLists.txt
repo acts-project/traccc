@@ -7,13 +7,14 @@
 # Set up the "build" of the traccc::option library.
 traccc_add_library( traccc_options options TYPE SHARED
   # header files
+  "include/traccc/options/details/value_array.hpp"
+  "include/traccc/options/details/value_array.ipp"
   "include/traccc/options/common_options.hpp"
   "include/traccc/options/detector_input_options.hpp"
   "include/traccc/options/finding_input_options.hpp"
   "include/traccc/options/full_tracking_input_options.hpp"
   "include/traccc/options/handle_argument_errors.hpp"
   "include/traccc/options/mt_options.hpp"
-  "include/traccc/options/options.hpp"
   "include/traccc/options/particle_gen_options.hpp"
   "include/traccc/options/propagation_options.hpp"
   "include/traccc/options/seeding_input_options.hpp"
@@ -32,5 +33,10 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/options/telescope_detector_options.cpp"
   "src/options/throughput_options.cpp"
   )
-target_link_libraries( traccc_options PUBLIC traccc::io
-                       traccc::performance Boost::program_options)
+target_link_libraries( traccc_options
+   PUBLIC
+      Boost::program_options
+      traccc::io
+   PRIVATE
+      traccc::performance
+)

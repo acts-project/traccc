@@ -19,7 +19,7 @@ namespace traccc {
 namespace po = boost::program_options;
 
 /// Type alias for the eta range argument
-using eta_range_type = Reals<float, 2>;
+using eta_range_type = opts::value_array<float, 2>;
 /// Name of the eta range option
 static const char* eta_range_option = "gen-eta";
 
