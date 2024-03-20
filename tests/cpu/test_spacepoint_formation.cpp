@@ -11,7 +11,7 @@
 #include "traccc/seeding/experimental/spacepoint_formation.hpp"
 
 // Detray include(s).
-#include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/navigation/detail/ray.hpp"
 
@@ -44,7 +44,7 @@ TEST(spacepoint_formation, cpu) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    const auto [det, name_map] = create_telescope_detector(host_mr, tel_cfg);
+    const auto [det, name_map] = build_telescope_detector(host_mr, tel_cfg);
 
     // Surface lookup
     auto surfaces = det.surfaces();

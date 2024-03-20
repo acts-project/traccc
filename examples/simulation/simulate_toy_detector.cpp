@@ -20,7 +20,7 @@
 
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
@@ -59,7 +59,11 @@ int simulate(std::string output_directory, unsigned int events,
     auto field = detray::bfield::create_const_field(B);
 
     // Create the toy geometry
-    const auto [det, name_map] = detray::create_toy_geometry(host_mr, {4u, 7u});
+    detray::toy_det_config<scalar> toy_cfg{};
+    toy_cfg.n_brl_layers(4u).n_edc_layers(7u);
+    // @TODO: Increase the material budget again
+    toy_cfg.module_mat_thickness(0.11 * detray::unit<scalar>::mm);
+    const auto [det, name_map] = detray::build_toy_detector(host_mr, toy_cfg);
 
     /***************************
      * Generate simulation data
