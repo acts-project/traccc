@@ -11,7 +11,7 @@
 #include "traccc/sycl/seeding/experimental/spacepoint_formation.hpp"
 
 // Detray include(s).
-#include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/navigation/detail/ray.hpp"
@@ -69,7 +69,7 @@ TEST(spacepoint_formation, sycl) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    auto [det, name_map] = create_telescope_detector(shared_mr, tel_cfg);
+    auto [det, name_map] = build_telescope_detector(shared_mr, tel_cfg);
     using device_detector_type =
         detray::detector<detray::telescope_metadata<detray::rectangle2D>,
                          detray::device_container_types>;

@@ -21,7 +21,7 @@
 
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
@@ -89,7 +89,7 @@ int simulate(std::string output_directory, unsigned int events,
     tel_cfg.mat_thickness(thickness);
     tel_cfg.pilot_track(traj);
 
-    const auto [det, name_map] = create_telescope_detector(host_mr, tel_cfg);
+    const auto [det, name_map] = build_telescope_detector(host_mr, tel_cfg);
 
     /***************************
      * Generate simulation data
