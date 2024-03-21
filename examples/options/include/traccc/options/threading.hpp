@@ -14,19 +14,25 @@
 #include <cstddef>
 #include <iosfwd>
 
-namespace traccc {
+namespace traccc::opts {
 
-/// Options for multi-threaded code execution
-struct mt_options {
+/// Option(s) for multi-threaded code execution
+class threading {
+
+    public:
+    /// @name Options
+    /// @{
 
     /// The number of threads to use for the data processing
     std::size_t threads = 1;
+
+    /// @}
 
     /// Constructor on top of a common @c program_options object
     ///
     /// @param desc The program options to add to
     ///
-    mt_options(boost::program_options::options_description& desc);
+    threading(boost::program_options::options_description& desc);
 
     /// Read/process the command line options
     ///
@@ -34,9 +40,13 @@ struct mt_options {
     ///
     void read(const boost::program_options::variables_map& vm);
 
-};  // struct mt_options
+    private:
+    /// Description of this program option group
+    boost::program_options::options_description m_desc;
 
-/// Printout helper for @c traccc::mt_options
-std::ostream& operator<<(std::ostream& out, const mt_options& opt);
+};  // struct threading
 
-}  // namespace traccc
+/// Printout helper for @c traccc::opts::threading
+std::ostream& operator<<(std::ostream& out, const threading& opt);
+
+}  // namespace traccc::opts

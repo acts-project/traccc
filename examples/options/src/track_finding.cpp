@@ -6,35 +6,40 @@
  */
 
 // Project include(s).
-#include "traccc/options/finding_input_options.hpp"
+#include "traccc/options/track_finding.hpp"
 
-namespace traccc {
+namespace traccc::opts {
 
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-finding_input_options::finding_input_options(po::options_description& desc) {
+/// Description of this option group
+static const char* description = "Track Finding Options";
 
-    desc.add_options()("track-candidates-range",
-                       po::value(&track_candidates_range)
-                           ->value_name("MIN:MAX")
-                           ->default_value(track_candidates_range),
-                       "Range of track candidates number");
-    desc.add_options()(
+track_finding::track_finding(po::options_description& desc)
+    : m_desc{description} {
+
+    m_desc.add_options()("track-candidates-range",
+                         po::value(&track_candidates_range)
+                             ->value_name("MIN:MAX")
+                             ->default_value(track_candidates_range),
+                         "Range of track candidates number");
+    m_desc.add_options()(
         "chi2-max", po::value(&chi2_max)->default_value(chi2_max),
         "Maximum Chi suqare that measurements can be included in the track");
-    desc.add_options()(
+    m_desc.add_options()(
         "nmax_per_seed",
         po::value<unsigned int>(&nmax_per_seed)->default_value(nmax_per_seed),
         "Maximum number of branches which each initial seed can have at a "
         "step.");
+    desc.add(m_desc);
 }
 
-void finding_input_options::read(const po::variables_map&) {}
+void track_finding::read(const po::variables_map&) {}
 
-std::ostream& operator<<(std::ostream& out, const finding_input_options& opt) {
+std::ostream& operator<<(std::ostream& out, const track_finding& opt) {
 
-    out << ">>> Track finding options <<<\n"
+    out << ">>> " << description << " <<<\n"
         << "  Track candidates range    : " << opt.track_candidates_range
         << "\n"
         << "  Maximum Chi2              : " << opt.chi2_max << "\n"
@@ -42,4 +47,4 @@ std::ostream& operator<<(std::ostream& out, const finding_input_options& opt) {
     return out;
 }
 
-}  // namespace traccc
+}  // namespace traccc::opts

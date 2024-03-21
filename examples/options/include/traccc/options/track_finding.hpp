@@ -17,10 +17,14 @@
 #include <iosfwd>
 #include <limits>
 
-namespace traccc {
+namespace traccc::opts {
 
 /// Configuration for track finding
-struct finding_input_options {
+class track_finding {
+
+    public:
+    /// @name Options
+    /// @{
 
     /// Number of track candidates per seed
     opts::value_array<unsigned int, 2> track_candidates_range{3, 100};
@@ -29,11 +33,13 @@ struct finding_input_options {
     /// Maximum number of branches which each initial seed can have at a step
     unsigned int nmax_per_seed = std::numeric_limits<unsigned int>::max();
 
+    /// @}
+
     /// Constructor on top of a common @c program_options object
     ///
     /// @param desc The program options to add to
     ///
-    finding_input_options(boost::program_options::options_description& desc);
+    track_finding(boost::program_options::options_description& desc);
 
     /// Read/process the command line options
     ///
@@ -41,9 +47,13 @@ struct finding_input_options {
     ///
     void read(const boost::program_options::variables_map& vm);
 
-};  // struct finding_input_options
+    private:
+    /// Description of this program option group
+    boost::program_options::options_description m_desc;
 
-/// Printout helper for @c traccc::finding_input_options
-std::ostream& operator<<(std::ostream& out, const finding_input_options& opt);
+};  // class track_finding
 
-}  // namespace traccc
+/// Printout helper for @c traccc::opts::track_finding
+std::ostream& operator<<(std::ostream& out, const track_finding& opt);
+
+}  // namespace traccc::opts

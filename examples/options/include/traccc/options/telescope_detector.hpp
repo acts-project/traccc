@@ -13,10 +13,14 @@
 // System include(s).
 #include <iosfwd>
 
-namespace traccc {
+namespace traccc::opts {
 
 /// Command line options used in the telescope detector tests
-struct telescope_detector_options {
+class telescope_detector {
+
+    public:
+    /// @name Options
+    /// @{
 
     /// Build detector without materials
     bool empty_material = false;
@@ -31,12 +35,13 @@ struct telescope_detector_options {
     /// Half length of plane [mm]
     float half_length = 1000000.f;
 
+    /// @}
+
     /// Constructor on top of a common @c program_options object
     ///
     /// @param desc The program options to add to
     ///
-    telescope_detector_options(
-        boost::program_options::options_description& desc);
+    telescope_detector(boost::program_options::options_description& desc);
 
     /// Read/process the command line options
     ///
@@ -44,10 +49,13 @@ struct telescope_detector_options {
     ///
     void read(const boost::program_options::variables_map& vm);
 
-};  // struct telescope_detector_options
+    private:
+    /// Description of this program option group
+    boost::program_options::options_description m_desc;
 
-/// Printout helper for @c traccc::telescope_detector_options
-std::ostream& operator<<(std::ostream& out,
-                         const telescope_detector_options& opt);
+};  // ckass telescope_detector
 
-}  // namespace traccc
+/// Printout helper for @c traccc::opts::telescope_detector
+std::ostream& operator<<(std::ostream& out, const telescope_detector& opt);
+
+}  // namespace traccc::opts
