@@ -386,7 +386,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         }
 
         vecmem::vector<track_candidate> cands_per_track;
-        cands_per_track.resize(tip.first + 1);
+        cands_per_track.resize(tip.first + 1 - L.n_skipped);
 
         // Reversely iterate to fill the track candidates
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
