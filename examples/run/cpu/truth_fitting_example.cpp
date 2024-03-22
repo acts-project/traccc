@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/event/event_tree_writer.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/io/read_geometry.hpp"
@@ -88,6 +89,8 @@ int main(int argc, char* argv[]) {
     vecmem::host_memory_resource host_mr;
 
     // Performance writer
+    traccc::event_tree_writer evt_tree_writer(
+        traccc::event_tree_writer::config{});
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{});
 
@@ -158,6 +161,8 @@ int main(int argc, char* argv[]) {
 
         if (common_opts.check_performance) {
 
+            evt_tree_writer.write(traccc::get_data(track_states), evt_map2);
+
             for (unsigned int i = 0; i < n_fitted_tracks; i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
@@ -170,6 +175,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (common_opts.check_performance) {
+        evt_tree_writer.finalize();
         fit_performance_writer.finalize();
     }
 

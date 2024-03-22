@@ -25,6 +25,7 @@
 // performance
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/event/event_tree_writer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
 // options
@@ -75,6 +76,8 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
     vecmem::host_memory_resource host_mr;
 
     // Performance writer
+    traccc::event_tree_writer evt_tree_writer(
+        traccc::event_tree_writer::config{});
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
     traccc::finding_performance_writer find_performance_writer(
@@ -228,6 +231,9 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
             traccc::event_map2 evt_map(event, common_opts.input_directory,
                                        common_opts.input_directory,
                                        common_opts.input_directory);
+
+            evt_tree_writer.write(traccc::get_data(track_states), evt_map);
+
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
                                         evt_map);
@@ -252,6 +258,7 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
     }
 
     if (common_opts.check_performance) {
+        evt_tree_writer.finalize();
         sd_performance_writer.finalize();
         find_performance_writer.finalize();
         fit_performance_writer.finalize();
