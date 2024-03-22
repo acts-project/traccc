@@ -14,10 +14,15 @@
 #include "traccc/geometry/geometry.hpp"
 
 // Detray include(s).
-#include "detray/geometry/surface.hpp"
+#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/surface.hpp>
 
 // System include(s).
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <string_view>
+#include <utility>
 
 namespace traccc::io {
 
@@ -27,8 +32,9 @@ namespace traccc::io {
 /// @param format The format of the input file
 /// @return A description of the detector modules
 ///
-geometry read_geometry(std::string_view filename,
-                       data_format format = data_format::csv);
+std::pair<geometry,
+          std::unique_ptr<std::map<std::uint64_t, detray::geometry::barcode>>>
+read_geometry(std::string_view filename, data_format format = data_format::csv);
 
 /// Read in the detector geometry description from a detector object
 template <typename detector_t>

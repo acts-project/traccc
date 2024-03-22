@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,6 +15,7 @@
 // detray include(s).
 #include "detray/core/detector.hpp"
 #include "detray/detectors/telescope_metadata.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
 
 namespace traccc::cuda::experimental {
 
@@ -65,7 +66,7 @@ spacepoint_formation<detector_t>::operator()(
 }
 
 using telescope_detector_type =
-    detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
+    detray::detector<detray::telescope_metadata<detray::rectangle2D>,
                      detray::device_container_types>;
 template class spacepoint_formation<telescope_detector_type>;
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,6 +11,10 @@
 #include "traccc/edm/track_parameters.hpp"
 
 // detray include(s).
+#include "detray/geometry/barcode.hpp"
+#include "detray/geometry/surface.hpp"
+#include "detray/navigation/intersection/ray_intersector.hpp"
+#include "detray/navigation/intersection_kernel.hpp"
 #include "detray/propagator/actor_chain.hpp"
 #include "detray/propagator/actors/aborters.hpp"
 #include "detray/propagator/actors/parameter_resetter.hpp"
@@ -69,7 +73,8 @@ struct seed_generator {
 
         intersection_type sfi;
         sfi.sf_desc = m_detector.surface(surface_link);
-        sf.template visit_mask<detray::intersection_update>(
+        sf.template visit_mask<
+            detray::intersection_update<detray::ray_intersector>>(
             detray::detail::ray<transform3_type>(free_param.vector()), sfi,
             m_detector.transform_store());
 

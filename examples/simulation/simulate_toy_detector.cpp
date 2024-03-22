@@ -20,7 +20,7 @@
 
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 
@@ -34,8 +34,8 @@ using namespace traccc;
 namespace po = boost::program_options;
 
 int simulate(std::string output_directory, unsigned int events,
-             const traccc::particle_gen_options<scalar>& pg_opts,
-             const traccc::propagation_options<scalar>& propagation_opts) {
+             const traccc::particle_gen_options& pg_opts,
+             const traccc::propagation_options& propagation_opts) {
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =
@@ -59,7 +59,11 @@ int simulate(std::string output_directory, unsigned int events,
     auto field = detray::bfield::create_const_field(B);
 
     // Create the toy geometry
-    const auto [det, name_map] = detray::create_toy_geometry(host_mr, {4u, 7u});
+    detray::toy_det_config<scalar> toy_cfg{};
+    toy_cfg.n_brl_layers(4u).n_edc_layers(7u);
+    // @TODO: Increase the material budget again
+    toy_cfg.module_mat_thickness(0.11 * detray::unit<scalar>::mm);
+    const auto [det, name_map] = detray::build_toy_detector(host_mr, toy_cfg);
 
     /***************************
      * Generate simulation data
@@ -124,8 +128,8 @@ int main(int argc, char* argv[]) {
                        "specify the directory of output data");
     desc.add_options()("events", po::value<unsigned int>()->required(),
                        "number of events");
-    traccc::particle_gen_options<scalar> pg_opts(desc);
-    traccc::propagation_options<scalar> propagation_opts(desc);
+    traccc::particle_gen_options pg_opts(desc);
+    traccc::propagation_options propagation_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);

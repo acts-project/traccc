@@ -15,11 +15,12 @@
 
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_telescope_detector.hpp"
-#include "detray/detectors/create_toy_geometry.hpp"
+#include "detray/detectors/build_telescope_detector.hpp"
+#include "detray/detectors/build_toy_detector.hpp"
+#include "detray/geometry/mask.hpp"
+#include "detray/geometry/shapes/line.hpp"
+#include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/geometry/surface.hpp"
-#include "detray/masks/masks.hpp"
-#include "detray/masks/unbounded.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
 #include "detray/utils/statistics.hpp"
@@ -37,11 +38,11 @@ constexpr scalar tol{1e-7f};
 
 TEST(simulation, simulation) {
 
-    const mask<line<false, line_intersector>> ln{
-        0u, 10.f * detray::unit<scalar>::mm, 50.f * detray::unit<scalar>::mm};
+    const mask<line<false>> ln{0u, 10.f * detray::unit<scalar>::mm,
+                               50.f * detray::unit<scalar>::mm};
 
-    const mask<rectangle2D<plane_intersector>> re{
-        0u, 10.f * detray::unit<scalar>::mm, 10.f * detray::unit<scalar>::mm};
+    const mask<rectangle2D> re{0u, 10.f * detray::unit<scalar>::mm,
+                               10.f * detray::unit<scalar>::mm};
 
     detray::bound_track_parameters<transform3> bound_params;
     auto& bound_vec = bound_params.vector();
@@ -66,7 +67,7 @@ TEST(simulation, simulation) {
     ASSERT_NEAR(iomeas3.local1, -3.f, tol);
 }
 
-GTEST_TEST(detray_simulation, toy_geometry_simulation) {
+GTEST_TEST(detray_simulation, toy_detector_simulation) {
 
     // Create geometry
     vecmem::host_memory_resource host_mr;
@@ -77,7 +78,10 @@ GTEST_TEST(detray_simulation, toy_geometry_simulation) {
     auto field = detray::bfield::create_const_field(B);
 
     // Create geometry
-    const auto [detector, names] = create_toy_geometry(host_mr);
+    detray::toy_det_config<scalar> toy_cfg{};
+    // @TODO: Increase material budget again
+    toy_cfg.module_mat_thickness(0.15f * detray::unit<scalar>::mm);
+    const auto [detector, names] = detray::build_toy_detector(host_mr, toy_cfg);
 
     using geo_cxt_t = typename decltype(detector)::geometry_context;
     const geo_cxt_t ctx{};
@@ -206,11 +210,11 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     // energy (or non-relativistic) particle due to the large scattering
     const scalar thickness = 0.005f * detray::unit<scalar>::cm;
 
-    tel_det_config<rectangle2D<>> tel_cfg{1000.f * detray::unit<scalar>::mm,
-                                          1000.f * detray::unit<scalar>::mm};
+    tel_det_config<rectangle2D> tel_cfg{1000.f * detray::unit<scalar>::mm,
+                                        1000.f * detray::unit<scalar>::mm};
     tel_cfg.positions(positions).mat_thickness(thickness);
 
-    const auto [detector, names] = create_telescope_detector(host_mr, tel_cfg);
+    const auto [detector, names] = build_telescope_detector(host_mr, tel_cfg);
 
     // Directory name
     const std::string directory = std::get<0>(GetParam()) + "/";

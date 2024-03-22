@@ -40,7 +40,7 @@
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
-#include "detray/propagator/navigator.hpp"
+#include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 
@@ -53,9 +53,9 @@
 using namespace traccc;
 namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
-            const traccc::finding_input_config<traccc::scalar>& finding_cfg,
-            const traccc::propagation_options<traccc::scalar>& propagation_opts,
+int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
+            const traccc::finding_input_options& finding_cfg,
+            const traccc::propagation_options& propagation_opts,
             const traccc::common_options& common_opts,
             const traccc::detector_input_options& det_opts) {
 
@@ -81,6 +81,11 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         traccc::finding_performance_writer::config{});
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{});
+
+    traccc::finding_performance_writer::config ar_writer_cfg;
+    ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
+    ar_writer_cfg.algorithm_name = "ambiguity_resolution";
+    traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -198,6 +203,10 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         track_states = host_fitting(host_det, field, track_candidates);
         n_fitted_tracks += track_states.size();
 
+        /*-----------------------------------------
+           Ambiguity Resolution with Greedy Solver
+          -----------------------------------------*/
+
         if (common_opts.perform_ambiguity_resolution) {
             track_states_ar = host_ambiguity_resolution(track_states);
             n_ambiguity_free_tracks += track_states_ar.size();
@@ -226,6 +235,11 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_map);
 
+            if (common_opts.perform_ambiguity_resolution) {
+                ar_performance_writer.write(traccc::get_data(track_states_ar),
+                                            evt_map);
+            }
+
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
@@ -241,6 +255,9 @@ int seq_run(const traccc::seeding_input_config& /*i_cfg*/,
         sd_performance_writer.finalize();
         find_performance_writer.finalize();
         fit_performance_writer.finalize();
+        if (common_opts.perform_ambiguity_resolution) {
+            ar_performance_writer.finalize();
+        }
     }
 
     std::cout << "==> Statistics ... " << std::endl;
@@ -272,9 +289,9 @@ int main(int argc, char* argv[]) {
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
     traccc::detector_input_options det_opts(desc);
-    traccc::seeding_input_config seeding_input_cfg(desc);
-    traccc::finding_input_config<traccc::scalar> finding_input_cfg(desc);
-    traccc::propagation_options<traccc::scalar> propagation_opts(desc);
+    traccc::seeding_input_options seeding_input_cfg(desc);
+    traccc::finding_input_options finding_input_cfg(desc);
+    traccc::propagation_options propagation_opts(desc);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -289,8 +306,13 @@ int main(int argc, char* argv[]) {
     finding_input_cfg.read(vm);
     propagation_opts.read(vm);
 
-    std::cout << "Running " << argv[0] << " " << det_opts.detector_file << " "
-              << common_opts.input_directory << " " << common_opts.events
+    // Tell the user what's happening.
+    std::cout << "\nRunning the tracking chain on the host\n\n"
+              << common_opts << "\n"
+              << det_opts << "\n"
+              << seeding_input_cfg << "\n"
+              << finding_input_cfg << "\n"
+              << propagation_opts << "\n"
               << std::endl;
 
     return seq_run(seeding_input_cfg, finding_input_cfg, propagation_opts,

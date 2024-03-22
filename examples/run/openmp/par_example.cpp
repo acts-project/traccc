@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -39,8 +39,11 @@ int par_run(const std::string &detector_file,
             const std::string &digi_config_file, const std::string &cells_dir,
             unsigned int events) {
 
-    // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(detector_file);
+    // Read the surface transforms. We can't use structured bindings for
+    // the return value of read_geometry(...), because the old Intel compiler
+    // used in the CI, when using OpenMP, crashes on such code. :-(
+    auto geom_pair = traccc::io::read_geometry(detector_file);
+    auto &surface_transforms = geom_pair.first;
 
     // Read the digitization configuration file
     auto digi_cfg = traccc::io::read_digitization_config(digi_config_file);

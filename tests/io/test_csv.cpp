@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -103,7 +103,7 @@ TEST_F(io, csv_read_tml_single_muon) {
     vecmem::host_memory_resource resource;
 
     // Read the surface transforms
-    auto surface_transforms =
+    auto [surface_transforms, _] =
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the hits from the relevant event file

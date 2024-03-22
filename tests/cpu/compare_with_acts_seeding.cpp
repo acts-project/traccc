@@ -82,7 +82,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc::seed_finding sf(traccc_config, traccc::seedfilter_config());
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(detector_file);
+    auto [surface_transforms, _] = traccc::io::read_geometry(detector_file);
 
     // Read the hits from the relevant event file
     traccc::io::spacepoint_reader_output reader_output(&host_mr);

@@ -43,7 +43,7 @@ struct track_params_estimation
     track_params_estimation(const traccc::memory_resource& mr,
                             vecmem::copy& copy, stream& str);
 
-    /// Callable operator for track_params_esitmation
+    /// Callable operator for track_params_estimation
     ///
     /// @param spacepoints All spacepoints of the event
     /// @param seeds The reconstructed track seeds of the event

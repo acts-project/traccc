@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,8 +8,10 @@
 #pragma once
 
 // Detray include(s).
-#include "detray/intersection/detail/trajectories.hpp"
-#include "detray/intersection/intersection_kernel.hpp"
+#include "detray/geometry/surface.hpp"
+#include "detray/navigation/intersection/intersection.hpp"
+#include "detray/navigation/intersection/ray_intersector.hpp"
+#include "detray/navigation/intersection_kernel.hpp"
 
 namespace traccc::device {
 
@@ -55,7 +57,8 @@ TRACCC_DEVICE inline void apply_interaction(
     const auto& mask_store = det.mask_store();
     intersection_type sfi;
     sfi.sf_desc = det.surface(bound_param.surface_link());
-    sf.template visit_mask<detray::intersection_update>(
+    sf.template visit_mask<
+        detray::intersection_update<detray::ray_intersector>>(
         detray::detail::ray<transform3_type>(free_vec), sfi,
         det.transform_store());
 

@@ -13,7 +13,7 @@
 #include "traccc/edm/track_state.hpp"
 
 // detray include(s).
-#include "detray/propagator/navigator.hpp"
+#include "detray/navigation/navigator.hpp"
 
 namespace traccc {
 

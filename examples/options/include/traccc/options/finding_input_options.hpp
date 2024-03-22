@@ -1,52 +1,49 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
+#pragma once
+
 // Project include(s).
 #include "traccc/options/options.hpp"
 
-// Boost
+// Boost include(s).
 #include <boost/program_options.hpp>
+
+// System include(s).
+#include <iosfwd>
+#include <limits>
 
 namespace traccc {
 
-namespace po = boost::program_options;
+/// Configuration for track finding
+struct finding_input_options {
 
-template <typename scalar_t>
-struct finding_input_config {
-    Reals<unsigned int, 2> track_candidates_range;
-    scalar_t chi2_max;
-    unsigned int nmax_per_seed;
+    /// Number of track candidates per seed
+    Reals<unsigned int, 2> track_candidates_range{3, 100};
+    /// Maximum chi2 for a measurement to be included in the track
+    float chi2_max = 30.f;
+    /// Maximum number of branches which each initial seed can have at a step
+    unsigned int nmax_per_seed = std::numeric_limits<unsigned int>::max();
 
-    finding_input_config(po::options_description& desc) {
+    /// Constructor on top of a common @c program_options object
+    ///
+    /// @param desc The program options to add to
+    ///
+    finding_input_options(boost::program_options::options_description& desc);
 
-        desc.add_options()("track-candidates-range",
-                           po::value<Reals<unsigned int, 2>>()
-                               ->value_name("MIN:MAX")
-                               ->default_value({3, 100}),
-                           "Range of track candidates number");
-        desc.add_options()(
-            "chi2-max",
-            po::value<scalar_t>()->value_name("chi2-max")->default_value(30.f),
-            "Maximum Chi suqare that measurements can be included in the "
-            "track");
-        desc.add_options()(
-            "nmax_per_seed",
-            po::value<unsigned int>()
-                ->value_name("nmax_per_seed")
-                ->default_value(std::numeric_limits<unsigned int>::max()),
-            "Maximum number of branches which each initial seed can have at a "
-            "step.");
-    }
-    void read(const po::variables_map& vm) {
-        track_candidates_range =
-            vm["track-candidates-range"].as<Reals<unsigned int, 2>>();
-        chi2_max = vm["chi2-max"].as<scalar_t>();
-        nmax_per_seed = vm["nmax_per_seed"].as<unsigned int>();
-    }
-};
+    /// Read/process the command line options
+    ///
+    /// @param vm The command line options to interpret/read
+    ///
+    void read(const boost::program_options::variables_map& vm);
+
+};  // struct finding_input_options
+
+/// Printout helper for @c traccc::finding_input_options
+std::ostream& operator<<(std::ostream& out, const finding_input_options& opt);
 
 }  // namespace traccc

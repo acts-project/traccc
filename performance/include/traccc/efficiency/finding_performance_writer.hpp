@@ -12,6 +12,7 @@
 
 // Project include(s).
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_state.hpp"
 #include "traccc/io/event_map2.hpp"
 
 // System include(s).
@@ -35,6 +36,8 @@ class finding_performance_writer {
     /// Configuration for the tool
     struct config {
 
+        // Algorithm name, for ROOT display
+        std::string algorithm_name = "finding";
         /// Output filename.
         std::string file_path = "performance_track_finding.root";
         /// Output file mode
@@ -63,6 +66,9 @@ class finding_performance_writer {
                    track_candidates_view,
                const event_map2& evt_map);
 
+    void write(const track_state_container_types::const_view& track_states_view,
+               const event_map2& evt_map);
+
     void finalize();
 
     private:
@@ -71,6 +77,10 @@ class finding_performance_writer {
 
     /// Opaque data members for the class
     std::unique_ptr<details::finding_performance_writer_data> m_data;
+
+    /// Common method to both track finding and ambiguity resolution
+    void write_common(const std::vector<std::vector<measurement>>& tracks,
+                      const event_map2& evt_map);
 
 };  // class finding_performance_writer
 

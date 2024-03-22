@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -35,7 +35,7 @@ TEST(io_binary, cell) {
     vecmem::host_memory_resource host_mr;
 
     // Read the surface transforms
-    auto surface_transforms =
+    auto [surface_transforms, _] =
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read the digitization configuration file
@@ -109,7 +109,7 @@ TEST(io_binary, spacepoint) {
     vecmem::host_memory_resource host_mr;
 
     // Read the surface transforms
-    auto surface_transforms =
+    auto [surface_transforms, _] =
         traccc::io::read_geometry("tml_detector/trackml-detector.csv");
 
     // Read csv file

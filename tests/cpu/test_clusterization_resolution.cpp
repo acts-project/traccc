@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,7 +32,7 @@ TEST_P(SurfaceBinningTests, Run) {
     unsigned int event = std::get<3>(GetParam());
 
     // Read the surface transforms
-    auto surface_transforms = traccc::io::read_geometry(detector_file);
+    auto [surface_transforms, _] = traccc::io::read_geometry(detector_file);
 
     // Read the digitization configuration file
     auto digi_cfg = traccc::io::read_digitization_config(digi_config_file);
