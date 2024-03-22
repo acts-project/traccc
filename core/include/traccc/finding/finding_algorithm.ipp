@@ -260,11 +260,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         break;
                         // exit from item_id loop
                     }
-                    if (skip_counter + 1 == m_cfg.max_num_skipping_per_cand) {
-                        tips.push_back({step, cur_link_id});
-                        break;
-                        // exit from item_id loop
-                    }
 
                     // If a surface found, add the parameter for the next
                     // step
@@ -282,7 +277,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
                     // If no more CKF step is expected, current candidate is
                     // kept as a tip
-                    if (step == m_cfg.max_track_candidates_per_track - 1) {
+                    if (s4.success &&
+                        step == m_cfg.max_track_candidates_per_track - 1) {
                         tips.push_back({step, cur_link_id});
                     }
                 }
@@ -290,7 +286,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             // After the loop over the measurements
 
             if (n_branches == 0) {
-                // let's skip this CKF step for the current candidate
+                // let's skip this CKF step for the current track candidate
                 if (n_trks_per_seed[orig_param_id] >=
                     m_cfg.max_num_branches_per_initial_seed) {
 
@@ -320,6 +316,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                        std::numeric_limits<unsigned int>::max(),
                                        orig_param_id,
                                        skip_counter + 1});
+
+                if (skip_counter + 1 > m_cfg.max_num_skipping_per_cand) {
+                    tips.push_back({step, cur_link_id});
+                    continue;
+                    // exit from param_id loop
+                }
 
                 // Create propagator state
                 typename propagator_type::state propagation(
