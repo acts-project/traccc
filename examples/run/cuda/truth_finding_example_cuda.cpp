@@ -20,11 +20,13 @@
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/options/common_options.hpp"
-#include "traccc/options/detector_input_options.hpp"
-#include "traccc/options/finding_input_options.hpp"
+#include "traccc/options/accelerator.hpp"
+#include "traccc/options/detector.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/propagation_options.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/performance.hpp"
+#include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_propagation.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
@@ -55,10 +57,12 @@
 using namespace traccc;
 namespace po = boost::program_options;
 
-int seq_run(const traccc::finding_input_options& i_cfg,
-            const traccc::propagation_options& propagation_opts,
-            const traccc::common_options& common_opts,
-            const traccc::detector_input_options& det_opts, bool run_cpu) {
+int seq_run(const traccc::opts::track_finding& finding_opts,
+            const traccc::opts::track_propagation& propagation_opts,
+            const traccc::opts::input_data& input_opts,
+            const traccc::opts::detector& detector_opts,
+            const traccc::opts::performance& performance_opts,
+            const traccc::opts::accelerator& accelerator_opts) {
 
     /// Type declarations
     using host_detector_type = detray::detector<detray::default_metadata,
@@ -108,13 +112,15 @@ int seq_run(const traccc::finding_input_options& i_cfg,
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
-    if (!det_opts.material_file.empty()) {
+    reader_cfg.add_file(traccc::io::data_directory() +
+                        detector_opts.detector_file);
+    if (!detector_opts.material_file.empty()) {
         reader_cfg.add_file(traccc::io::data_directory() +
-                            det_opts.material_file);
+                            detector_opts.material_file);
     }
-    if (!det_opts.grid_file.empty()) {
-        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    if (!detector_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            detector_opts.grid_file);
     }
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
@@ -153,10 +159,10 @@ int seq_run(const traccc::finding_input_options& i_cfg,
     // Finding algorithm configuration
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg;
-    cfg.min_track_candidates_per_track = i_cfg.track_candidates_range[0];
-    cfg.max_track_candidates_per_track = i_cfg.track_candidates_range[1];
-    cfg.chi2_max = i_cfg.chi2_max;
-    cfg.propagation = propagation_opts.propagation;
+    cfg.min_track_candidates_per_track = finding_opts.track_candidates_range[0];
+    cfg.max_track_candidates_per_track = finding_opts.track_candidates_range[1];
+    cfg.chi2_max = finding_opts.chi2_max;
+    cfg.propagation = propagation_opts.config;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -166,7 +172,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.propagation = propagation_opts.propagation;
+    fit_cfg.propagation = propagation_opts.config;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
@@ -178,13 +184,12 @@ int seq_run(const traccc::finding_input_options& i_cfg,
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Iterate over events
-    for (unsigned int event = common_opts.skip;
-         event < common_opts.events + common_opts.skip; ++event) {
+    for (unsigned int event = input_opts.skip;
+         event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map2(event, common_opts.input_directory,
-                                    common_opts.input_directory,
-                                    common_opts.input_directory);
+        traccc::event_map2 evt_map2(event, input_opts.directory,
+                                    input_opts.directory, input_opts.directory);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
             evt_map2.generate_truth_candidates(sg, host_mr);
@@ -205,8 +210,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
         // Read measurements
         traccc::io::measurement_reader_output meas_reader_output(mr.host);
         traccc::io::read_measurements(meas_reader_output, event,
-                                      common_opts.input_directory,
-                                      common_opts.input_data_format);
+                                      input_opts.directory, input_opts.format);
         auto& measurements_per_event = meas_reader_output.measurements;
 
         traccc::measurement_collection_types::buffer measurements_cuda_buffer(
@@ -260,7 +264,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
             rk_stepper_type, host_navigator_type>::output_type track_candidates;
         traccc::fitting_algorithm<host_fitter_type>::output_type track_states;
 
-        if (run_cpu) {
+        if (accelerator_opts.compare_with_cpu) {
 
             {
                 traccc::performance::timer t("Track finding  (cpu)",
@@ -280,7 +284,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
             }
         }
 
-        if (run_cpu) {
+        if (accelerator_opts.compare_with_cpu) {
 
             // Show which event we are currently presenting the results for.
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
@@ -315,7 +319,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
         n_found_tracks_cuda += track_candidates_cuda.size();
         n_fitted_tracks_cuda += track_states_cuda.size();
 
-        if (common_opts.check_performance) {
+        if (performance_opts.run) {
             find_performance_writer.write(
                 traccc::get_data(track_candidates_cuda), evt_map2);
 
@@ -331,7 +335,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
         }
     }
 
-    if (common_opts.check_performance) {
+    if (performance_opts.run) {
         find_performance_writer.finalize();
         fit_performance_writer.finalize();
     }
@@ -358,12 +362,12 @@ int main(int argc, char* argv[]) {
 
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::common_options common_opts(desc);
-    traccc::detector_input_options det_opts(desc);
-    traccc::finding_input_options finding_input_cfg(desc);
-    traccc::propagation_options propagation_opts(desc);
-    desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
-                       "run cpu tracking as well");
+    traccc::opts::detector detector_opts{desc};
+    traccc::opts::input_data input_opts{desc};
+    traccc::opts::track_finding finding_opts{desc};
+    traccc::opts::track_propagation propagation_opts{desc};
+    traccc::opts::performance performance_opts{desc};
+    traccc::opts::accelerator accelerator_opts{desc};
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -372,21 +376,23 @@ int main(int argc, char* argv[]) {
     traccc::handle_argument_errors(vm, desc);
 
     // Read options
-    common_opts.read(vm);
-    det_opts.read(vm);
-
-    finding_input_cfg.read(vm);
+    detector_opts.read(vm);
+    input_opts.read(vm);
+    finding_opts.read(vm);
     propagation_opts.read(vm);
-    auto run_cpu = vm["run-cpu"].as<bool>();
+    performance_opts.read(vm);
+    accelerator_opts.read(vm);
 
     // Tell the user what's happening.
     std::cout << "\nRunning truth track finding using CUDA\n\n"
-              << common_opts << "\n"
-              << det_opts << "\n"
-              << finding_input_cfg << "\n"
+              << detector_opts << "\n"
+              << input_opts << "\n"
+              << finding_opts << "\n"
               << propagation_opts << "\n"
+              << performance_opts << "\n"
+              << accelerator_opts << "\n"
               << std::endl;
 
-    return seq_run(finding_input_cfg, propagation_opts, common_opts, det_opts,
-                   run_cpu);
+    return seq_run(finding_opts, propagation_opts, input_opts, detector_opts,
+                   performance_opts, accelerator_opts);
 }

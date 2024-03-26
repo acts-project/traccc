@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,8 +8,11 @@
 #pragma once
 
 // Command line option include(s).
+#include "traccc/options/clusterization.hpp"
+#include "traccc/options/detector.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/throughput_options.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/throughput.hpp"
 
 // I/O include(s).
 #include "traccc/io/demonstrator_edm.hpp"
@@ -41,18 +44,27 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     // Read in the command line options.
     po::options_description desc{description.data()};
     desc.add_options()("help,h", "Give help with the program's options");
-    throughput_options throughput_cfg{desc};
+    opts::detector detector_opts{desc};
+    opts::input_data input_opts{desc};
+    opts::clusterization clusterization_opts{desc};
+    opts::throughput throughput_opts{desc};
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     handle_argument_errors(vm, desc);
 
-    throughput_cfg.read(vm);
+    detector_opts.read(vm);
+    input_opts.read(vm);
+    clusterization_opts.read(vm);
+    throughput_opts.read(vm);
 
     // Greet the user.
     std::cout << "\n"
               << description << "\n\n"
-              << throughput_cfg << "\n"
+              << detector_opts << "\n"
+              << input_opts << "\n"
+              << clusterization_opts << "\n"
+              << throughput_opts << "\n"
               << std::endl;
 
     // Set seeding config
@@ -80,20 +92,19 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     {
         performance::timer t{"File reading", times};
         // Create empty inputs using the correct memory resource
-        for (std::size_t i = 0; i < throughput_cfg.loaded_events; ++i) {
+        for (std::size_t i = 0; i < input_opts.events; ++i) {
             input.push_back(demonstrator_input::value_type(&uncached_host_mr));
         }
         // Read event data into input vector
-        io::read(input, throughput_cfg.loaded_events,
-                 throughput_cfg.input_directory, throughput_cfg.detector_file,
-                 throughput_cfg.digitization_config_file,
-                 throughput_cfg.input_data_format);
+        io::read(input, input_opts.events, input_opts.directory,
+                 detector_opts.detector_file, detector_opts.digitization_file,
+                 input_opts.format);
     }
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, throughput_cfg.target_cells_per_partition, finder_config,
-        grid_config, filter_config);
+        alg_host_mr, clusterization_opts.target_cells_per_partition,
+        finder_config, grid_config, filter_config);
 
     // Seed the random number generator.
     std::srand(std::time(0));
@@ -109,11 +120,10 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         performance::timer t{"Warm-up processing", times};
 
         // Process the requested number of events.
-        for (std::size_t i = 0; i < throughput_cfg.cold_run_events; ++i) {
+        for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event =
-                std::rand() % throughput_cfg.loaded_events;
+            const std::size_t event = std::rand() % input_opts.events;
 
             // Process one event.
             rec_track_params +=
@@ -129,11 +139,10 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         performance::timer t{"Event processing", times};
 
         // Process the requested number of events.
-        for (std::size_t i = 0; i < throughput_cfg.processed_events; ++i) {
+        for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event =
-                std::rand() % throughput_cfg.loaded_events;
+            const std::size_t event = std::rand() % input_opts.events;
 
             // Process one event.
             rec_track_params +=
@@ -151,11 +160,11 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     std::cout << "Time totals:" << std::endl;
     std::cout << times << std::endl;
     std::cout << "Throughput:" << std::endl;
-    std::cout << performance::throughput{throughput_cfg.cold_run_events, times,
+    std::cout << performance::throughput{throughput_opts.cold_run_events, times,
                                          "Warm-up processing"}
               << "\n"
-              << performance::throughput{throughput_cfg.processed_events, times,
-                                         "Event processing"}
+              << performance::throughput{throughput_opts.processed_events,
+                                         times, "Event processing"}
               << std::endl;
 
     // Return gracefully.
