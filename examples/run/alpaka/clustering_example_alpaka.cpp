@@ -303,7 +303,8 @@ auto main(int argc, char* argv[]) -> int
                 currClusterC1[numInCluster] = c1Buf[y];
                 numInCluster++;
                 clustersInGeoID++;
-
+                
+                // uncomment printing start to see what clusters consist of  
                 /* printing start 
                 printf("cluster %d: ", clustersInGeoID);
                     for (uint16_t i = 0; i < numInCluster; i++){
