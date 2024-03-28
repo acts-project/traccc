@@ -13,7 +13,11 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
   include( traccc-compiler-options-cuda )
 
   list (APPEND LIBRARIES vecmem::cuda traccc::cuda)
-endif()
+elseif(alpaka_ACC_GPU_HIP_ENABLE)
+  enable_language(HIP)
+  find_package( HIPToolkit REQUIRED )
+  list(APPEND LIBRARIES HIP::hiprt vecmem::hip)
+ endif()
 
 traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
