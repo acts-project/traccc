@@ -254,13 +254,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                               std::tie(s0, s1, s2, s3, s4, s5));
                     */
 
-                    if (step - skip_counter ==
-                        m_cfg.max_track_candidates_per_track - 1) {
-                        tips.push_back({step, cur_link_id});
-                        break;
-                        // exit from item_id loop
-                    }
-
                     // If a surface found, add the parameter for the next
                     // step
                     if (s4.success) {
