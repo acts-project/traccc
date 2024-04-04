@@ -18,7 +18,7 @@ message( STATUS "Building Acts as part of the TRACCC project" )
 
 # Declare where to get Acts from.
 set( TRACCC_ACTS_SOURCE
-   "URL;https://github.com/acts-project/acts/archive/refs/tags/v21.1.0.tar.gz;URL_MD5;6c852dabc9c750326377761a1d298139"
+   "URL;https://github.com/acts-project/acts/archive/refs/tags/v26.0.0.tar.gz;URL_MD5;6848960f4b75711144e163c4d1b04c8b"
    CACHE STRING "Source for Acts, when built as part of this project" )
 mark_as_advanced( TRACCC_ACTS_SOURCE )
 FetchContent_Declare( Acts ${TRACCC_ACTS_SOURCE} )
