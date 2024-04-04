@@ -206,7 +206,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     Acts::SpacePointGridOptions gridOpts;
     gridOpts.bFieldInZ = acts_options.bFieldInZ;
 
-
     // create grid with bin sizes according to the configured geometry
     std::unique_ptr<Acts::SpacePointGrid<SpacePoint>> grid =
         Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf, gridOpts);
@@ -253,9 +252,9 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // Run the ACTS seeding
     std::vector<Acts::Seed<SpacePoint>> seedVector;
     for (; !(groupIt == endOfGroups); ++groupIt) {
-      auto [bottom, middle, top] = *groupIt;
+        auto [bottom, middle, top] = *groupIt;
         auto seed_group = a.createSeedsForGroup(acts_options, spGroup.grid(),
-            bottom, middle, top);
+                                                bottom, middle, top);
         seedVector.insert(seedVector.end(), seed_group.begin(),
                           seed_group.end());
     }
