@@ -14,14 +14,12 @@
 
 namespace traccc::opts {
 
-threading::threading(boost::program_options::options_description& desc)
-    : interface("Multi-Threading Options") {
+threading::threading() : interface("Multi-Threading Options") {
 
     m_desc.add_options()(
         "cpu-threads",
         boost::program_options::value(&threads)->default_value(threads),
         "The number of CPU threads to use");
-    desc.add(m_desc);
 }
 
 void threading::read(const boost::program_options::variables_map&) {

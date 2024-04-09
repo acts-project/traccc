@@ -16,9 +16,9 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/performance.hpp"
+#include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -43,7 +43,6 @@
 #include <iostream>
 
 using namespace traccc;
-namespace po = boost::program_options;
 
 int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
@@ -200,39 +199,20 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 //
 int main(int argc, char* argv[]) {
 
-    // Set up the program options
-    po::options_description desc("Basic Options");
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::track_finding finding_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::performance performance_opts;
+    traccc::opts::program_options program_opts{
+        "Truth Track Finding on the Host",
+        {detector_opts, input_opts, finding_opts, propagation_opts,
+         performance_opts},
+        argc,
+        argv};
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::opts::detector detector_opts{desc};
-    traccc::opts::input_data input_opts{desc};
-    traccc::opts::track_finding finding_opts{desc};
-    traccc::opts::track_propagation propagation_opts{desc};
-    traccc::opts::performance performance_opts{desc};
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    detector_opts.read(vm);
-    input_opts.read(vm);
-    finding_opts.read(vm);
-    propagation_opts.read(vm);
-    performance_opts.read(vm);
-
-    // Tell the user what's happening.
-    std::cout << "\nRunning truth track finding on the host\n\n"
-              << detector_opts << "\n"
-              << input_opts << "\n"
-              << finding_opts << "\n"
-              << propagation_opts << "\n"
-              << performance_opts << "\n"
-              << std::endl;
-
+    // Run the application.
     return seq_run(finding_opts, propagation_opts, input_opts, detector_opts,
                    performance_opts);
 }

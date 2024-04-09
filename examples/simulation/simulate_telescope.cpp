@@ -10,8 +10,8 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/generation.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/output_data.hpp"
+#include "traccc/options/program_options.hpp"
 #include "traccc/options/telescope_detector.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
@@ -35,7 +35,6 @@
 #include <boost/filesystem.hpp>
 
 using namespace traccc;
-namespace po = boost::program_options;
 
 int simulate(const traccc::opts::generation& generation_opts,
              const traccc::opts::output_data& output_opts,
@@ -149,35 +148,19 @@ int simulate(const traccc::opts::generation& generation_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    // Set up the program options
-    po::options_description desc("Allowed options");
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::opts::generation generation_opts(desc);
-    traccc::opts::output_data output_opts(desc);
-    traccc::opts::track_propagation propagation_opts(desc);
-    traccc::opts::telescope_detector telescope_opts(desc);
+    // Program options.
+    traccc::opts::generation generation_opts;
+    traccc::opts::output_data output_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::telescope_detector telescope_opts;
+    traccc::opts::program_options program_opts{
+        "Telescope-Detector Simulation",
+        {generation_opts, output_opts, propagation_opts, telescope_opts},
+        argc,
+        argv};
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    auto output_directory = vm["output-directory"].as<std::string>();
-    generation_opts.read(vm);
-    output_opts.read(vm);
-    propagation_opts.read(vm);
-    telescope_opts.read(vm);
-
-    std::cout << "\nRunning telescope-detector simulation\n\n"
-              << generation_opts << "\n"
-              << output_opts << "\n"
-              << propagation_opts << "\n"
-              << telescope_opts << std::endl;
-
+    // Run the application.
     return simulate(generation_opts, output_opts, propagation_opts,
                     telescope_opts);
 }

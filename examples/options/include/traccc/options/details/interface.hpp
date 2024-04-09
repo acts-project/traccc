@@ -42,6 +42,9 @@ class interface {
     ///
     std::ostream& print(std::ostream& out) const;
 
+    /// Get the description of this program option group
+    const boost::program_options::options_description& options() const;
+
     protected:
     /// Print the specific options of the derived class
     virtual std::ostream& print_impl(std::ostream& out) const;

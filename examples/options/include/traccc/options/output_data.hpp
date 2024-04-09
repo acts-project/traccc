@@ -11,9 +11,6 @@
 #include "traccc/io/data_format.hpp"
 #include "traccc/options/details/interface.hpp"
 
-// Boost include(s).
-#include <boost/program_options.hpp>
-
 // System include(s).
 #include <string>
 
@@ -33,11 +30,8 @@ class output_data : public interface {
 
     /// @}
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    output_data(boost::program_options::options_description& desc);
+    /// Constructor
+    output_data();
 
     /// Read/process the command line options
     ///

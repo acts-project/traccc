@@ -22,8 +22,7 @@ using data_format_type = std::string;
 /// Name of the data format option
 static const char* data_format_option = "output-data-format";
 
-output_data::output_data(boost::program_options::options_description& desc)
-    : interface("Output Data Options") {
+output_data::output_data() : interface("Output Data Options") {
 
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
@@ -31,7 +30,6 @@ output_data::output_data(boost::program_options::options_description& desc)
     m_desc.add_options()("output-directory",
                          po::value(&directory)->default_value(directory),
                          "Directory to store the output files");
-    desc.add(m_desc);
 }
 
 void output_data::read(const boost::program_options::variables_map& vm) {

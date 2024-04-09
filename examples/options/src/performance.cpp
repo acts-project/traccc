@@ -13,18 +13,16 @@
 
 namespace traccc::opts {
 
-performance::performance(boost::program_options::options_description& desc)
-    : interface("Performance Measurement Options") {
+performance::performance() : interface("Performance Measurement Options") {
 
     m_desc.add_options()("check-performance",
                          boost::program_options::bool_switch(&run),
                          "Run performance checks");
-    desc.add(m_desc);
 }
 
 std::ostream& performance::print_impl(std::ostream& out) const {
 
-    out << "  - Run performance checks: " << (run ? "yes" : "no");
+    out << "  Run performance checks: " << (run ? "yes" : "no");
     return out;
 }
 

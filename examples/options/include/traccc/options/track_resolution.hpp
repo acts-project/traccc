@@ -10,9 +10,6 @@
 // Project include(s).
 #include "traccc/options/details/interface.hpp"
 
-// Boost include(s).
-#include <boost/program_options.hpp>
-
 namespace traccc::opts {
 
 /// Configuration for track ambiguity resulution
@@ -27,11 +24,8 @@ class track_resolution : public interface {
 
     /// @}
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    track_resolution(boost::program_options::options_description& desc);
+    /// Constructor
+    track_resolution();
 
     private:
     /// Print the specific options of this class

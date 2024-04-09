@@ -13,8 +13,7 @@
 
 namespace traccc::opts {
 
-detector::detector(boost::program_options::options_description& desc)
-    : interface("Detector Options") {
+detector::detector() : interface("Detector Options") {
 
     namespace po = boost::program_options;
 
@@ -36,7 +35,6 @@ detector::detector(boost::program_options::options_description& desc)
         "digitization-file",
         po::value(&digitization_file)->default_value(digitization_file),
         "Digitization file");
-    desc.add(m_desc);
 }
 
 std::ostream& detector::print_impl(std::ostream& out) const {

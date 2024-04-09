@@ -11,8 +11,8 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/generation.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/output_data.hpp"
+#include "traccc/options/program_options.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
@@ -35,27 +35,21 @@
 #include <boost/filesystem.hpp>
 
 using namespace traccc;
-namespace po = boost::program_options;
 
 // The main routine
 //
 int main(int argc, char* argv[]) {
 
-    // Set up the program options
-    po::options_description desc("Allowed options");
-
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::opts::detector det_opts(desc);
-    traccc::opts::generation generation_opts(desc);
-    traccc::opts::output_data output_opts(desc);
-    traccc::opts::track_propagation propagation_opts(desc);
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
+    // Program options.
+    traccc::opts::detector det_opts;
+    traccc::opts::generation generation_opts;
+    traccc::opts::output_data output_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::program_options program_opts{
+        "Detector Simulation",
+        {det_opts, generation_opts, output_opts, propagation_opts},
+        argc,
+        argv};
 
     /// Type declarations
     using host_detector_type = detray::detector<>;
@@ -65,18 +59,6 @@ int main(int argc, char* argv[]) {
     using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
                                        uniform_gen_t>;
-
-    // Read options
-    det_opts.read(vm);
-    generation_opts.read(vm);
-    output_opts.read(vm);
-    propagation_opts.read(vm);
-
-    std::cout << "\nRunning detector simulation\n\n"
-              << det_opts << "\n"
-              << generation_opts << "\n"
-              << output_opts << "\n"
-              << propagation_opts << std::endl;
 
     // B field value and its type
     // @TODO: Set B field as argument

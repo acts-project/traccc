@@ -13,16 +13,13 @@
 
 namespace traccc::opts {
 
-clusterization::clusterization(
-    boost::program_options::options_description& desc)
-    : interface("Clusterization Options") {
+clusterization::clusterization() : interface("Clusterization Options") {
 
     m_desc.add_options()(
         "target-cells-per-partition",
         boost::program_options::value(&target_cells_per_partition)
             ->default_value(target_cells_per_partition),
         "The number of cells to merge in a partition");
-    desc.add(m_desc);
 }
 
 std::ostream& clusterization::print_impl(std::ostream& out) const {

@@ -13,17 +13,15 @@
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/write.hpp"
 #include "traccc/options/detector.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/output_data.hpp"
+#include "traccc/options/program_options.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
 #include <cstdlib>
-
-namespace po = boost::program_options;
 
 int create_binaries(const traccc::opts::detector& detector_opts,
                     const traccc::opts::input_data& input_opts,
@@ -87,25 +85,16 @@ int create_binaries(const traccc::opts::detector& detector_opts,
 //
 int main(int argc, char* argv[]) {
 
-    // Set up the program options
-    po::options_description desc("Basic Options");
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::output_data output_opts;
+    traccc::opts::program_options program_opts{
+        "Binary File Creation",
+        {detector_opts, input_opts, output_opts},
+        argc,
+        argv};
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::opts::detector detector_opts{desc};
-    traccc::opts::input_data input_opts{desc};
-    traccc::opts::output_data output_opts{desc};
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    detector_opts.read(vm);
-    input_opts.read(vm);
-    output_opts.read(vm);
-
+    // Run the application.
     return create_binaries(detector_opts, input_opts, output_opts);
 }

@@ -10,9 +10,6 @@
 // Local include(s).
 #include "traccc/options/details/interface.hpp"
 
-// Boost include(s).
-#include <boost/program_options.hpp>
-
 namespace traccc::opts {
 
 /// Options for the cell clusterization algorithm(s)
@@ -27,11 +24,8 @@ class clusterization : public interface {
 
     /// @}
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    clusterization(boost::program_options::options_description& desc);
+    /// Constructor
+    clusterization();
 
     private:
     /// Print the specific options of this class

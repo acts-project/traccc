@@ -14,9 +14,6 @@
 // Detray include(s).
 #include <detray/propagator/propagation_config.hpp>
 
-// Boost include(s).
-#include <boost/program_options.hpp>
-
 namespace traccc::opts {
 
 /// Command line options used in the propagation tests
@@ -31,11 +28,8 @@ class track_propagation : public interface {
 
     /// @}
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    track_propagation(boost::program_options::options_description& desc);
+    /// Constructor
+    track_propagation();
 
     /// Read/process the command line options
     ///
@@ -47,7 +41,7 @@ class track_propagation : public interface {
     /// Print the specific options of this class
     std::ostream& print_impl(std::ostream& out) const override;
 
-    /// Search window
+    /// Search window (helper variable)
     value_array<unsigned int, 2> m_search_window = {0u, 0u};
 
 };  // class track_propagation

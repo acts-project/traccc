@@ -16,8 +16,7 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-throughput::throughput(po::options_description& desc)
-    : interface("Throughput Measurement Options") {
+throughput::throughput() : interface("Throughput Measurement Options") {
 
     m_desc.add_options()(
         "processed-events",
@@ -30,7 +29,6 @@ throughput::throughput(po::options_description& desc)
     m_desc.add_options()(
         "log-file", po::value(&log_file),
         "File where result logs will be printed (in append mode).");
-    desc.add(m_desc);
 }
 
 std::ostream& throughput::print_impl(std::ostream& out) const {

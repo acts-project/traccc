@@ -18,8 +18,7 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-generation::generation(po::options_description& desc)
-    : interface("Particle Generation Options") {
+generation::generation() : interface("Particle Generation Options") {
 
     m_desc.add_options()("gen-events",
                          po::value(&events)->default_value(events),
@@ -51,7 +50,6 @@ generation::generation(po::options_description& desc)
         "Range of eta");
     m_desc.add_options()("charge", po::value(&charge)->default_value(charge),
                          "Charge of particles");
-    desc.add(m_desc);
 }
 
 void generation::read(const po::variables_map&) {

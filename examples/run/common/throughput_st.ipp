@@ -10,9 +10,10 @@
 // Command line option include(s).
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/program_options.hpp"
 #include "traccc/options/throughput.hpp"
+#include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
 #include "traccc/io/demonstrator_edm.hpp"
@@ -38,40 +39,18 @@ template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_st(std::string_view description, int argc, char* argv[],
                   bool use_host_caching) {
 
-    // Convenience typedef.
-    namespace po = boost::program_options;
-
-    // Read in the command line options.
-    po::options_description desc{description.data()};
-    desc.add_options()("help,h", "Give help with the program's options");
-    opts::detector detector_opts{desc};
-    opts::input_data input_opts{desc};
-    opts::clusterization clusterization_opts{desc};
-    opts::throughput throughput_opts{desc};
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    handle_argument_errors(vm, desc);
-
-    detector_opts.read(vm);
-    input_opts.read(vm);
-    clusterization_opts.read(vm);
-    throughput_opts.read(vm);
-
-    // Greet the user.
-    std::cout << "\n"
-              << description << "\n\n"
-              << detector_opts << "\n"
-              << input_opts << "\n"
-              << clusterization_opts << "\n"
-              << throughput_opts << "\n"
-              << std::endl;
-
-    // Set seeding config
-    // @FIXME: Seeding config should be configured by options
-    seedfinder_config finder_config;
-    spacepoint_grid_config grid_config(finder_config);
-    seedfilter_config filter_config;
+    // Program options.
+    opts::detector detector_opts;
+    opts::input_data input_opts;
+    opts::clusterization clusterization_opts;
+    opts::track_seeding seeding_opts;
+    opts::throughput throughput_opts;
+    opts::program_options program_opts{
+        description,
+        {detector_opts, input_opts, clusterization_opts, seeding_opts,
+         throughput_opts},
+        argc,
+        argv};
 
     // Set up the timing info holder.
     performance::timing_info times;
@@ -104,7 +83,9 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         alg_host_mr, clusterization_opts.target_cells_per_partition,
-        finder_config, grid_config, filter_config);
+        seeding_opts.seedfinder,
+        spacepoint_grid_config{seeding_opts.seedfinder},
+        seeding_opts.seedfilter);
 
     // Seed the random number generator.
     std::srand(std::time(0));

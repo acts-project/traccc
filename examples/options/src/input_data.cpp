@@ -22,8 +22,7 @@ using data_format_type = std::string;
 /// Name of the data format option
 static const char* data_format_option = "input-data-format";
 
-input_data::input_data(po::options_description& desc)
-    : interface("Input Data Options") {
+input_data::input_data() : interface("Input Data Options") {
 
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
@@ -36,7 +35,6 @@ input_data::input_data(po::options_description& desc)
                          "Number of input events to process");
     m_desc.add_options()("input-skip", po::value(&skip)->default_value(skip),
                          "Number of input events to skip");
-    desc.add(m_desc);
 }
 
 void input_data::read(const po::variables_map& vm) {

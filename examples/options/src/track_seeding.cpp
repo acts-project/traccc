@@ -10,10 +10,6 @@
 
 namespace traccc::opts {
 
-track_seeding::track_seeding(boost::program_options::options_description& desc)
-    : interface("Track Seeding Options") {
-
-    desc.add(m_desc);
-}
+track_seeding::track_seeding() : interface("Track Seeding Options") {}
 
 }  // namespace traccc::opts

@@ -16,8 +16,7 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-track_finding::track_finding(po::options_description& desc)
-    : interface("Track Finding Options") {
+track_finding::track_finding() : interface("Track Finding Options") {
 
     m_desc.add_options()("track-candidates-range",
                          po::value(&track_candidates_range)
@@ -32,7 +31,6 @@ track_finding::track_finding(po::options_description& desc)
         po::value<unsigned int>(&nmax_per_seed)->default_value(nmax_per_seed),
         "Maximum number of branches which each initial seed can have at a "
         "step.");
-    desc.add(m_desc);
 }
 
 std::ostream& track_finding::print_impl(std::ostream& out) const {

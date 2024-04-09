@@ -29,9 +29,9 @@
 
 // options
 #include "traccc/options/detector.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/performance.hpp"
+#include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
@@ -54,7 +54,6 @@
 #include <iostream>
 
 using namespace traccc;
-namespace po = boost::program_options;
 
 int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_finding& finding_opts,
@@ -285,44 +284,22 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 //
 int main(int argc, char* argv[]) {
 
-    // Set up the program options
-    po::options_description desc("Basic Options");
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_finding finding_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::track_resolution resolution_opts;
+    traccc::opts::performance performance_opts;
+    traccc::opts::program_options program_opts{
+        "Full Tracking Chain on the Host (without clusterization)",
+        {detector_opts, input_opts, seeding_opts, finding_opts,
+         propagation_opts, resolution_opts, performance_opts},
+        argc,
+        argv};
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::opts::detector detector_opts{desc};
-    traccc::opts::input_data input_opts{desc};
-    traccc::opts::track_seeding seeding_opts{desc};
-    traccc::opts::track_finding finding_opts{desc};
-    traccc::opts::track_propagation propagation_opts{desc};
-    traccc::opts::track_resolution resolution_opts{desc};
-    traccc::opts::performance performance_opts{desc};
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    detector_opts.read(vm);
-    input_opts.read(vm);
-    seeding_opts.read(vm);
-    finding_opts.read(vm);
-    propagation_opts.read(vm);
-    resolution_opts.read(vm);
-    performance_opts.read(vm);
-
-    // Tell the user what's happening.
-    std::cout << "\nRunning the tracking chain on the host\n\n"
-              << detector_opts << "\n"
-              << input_opts << "\n"
-              << seeding_opts << "\n"
-              << finding_opts << "\n"
-              << propagation_opts << "\n"
-              << resolution_opts << "\n"
-              << performance_opts << std::endl;
-
+    // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts,
                    resolution_opts, input_opts, detector_opts,
                    performance_opts);

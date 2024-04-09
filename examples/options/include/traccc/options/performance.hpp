@@ -10,9 +10,6 @@
 // Project include(s).
 #include "traccc/options/details/interface.hpp"
 
-// Boost include(s).
-#include <boost/program_options.hpp>
-
 namespace traccc::opts {
 
 /// Command line options used to configure performance measurements
@@ -27,11 +24,8 @@ class performance : public interface {
 
     /// @}
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    performance(boost::program_options::options_description& desc);
+    /// Constructor
+    performance();
 
     private:
     /// Print the specific options of this class

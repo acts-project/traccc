@@ -19,7 +19,7 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-telescope_detector::telescope_detector(po::options_description& desc)
+telescope_detector::telescope_detector()
     : interface("Telescope Detector Options") {
 
     m_desc.add_options()("empty-material", po::bool_switch(&empty_material),
@@ -38,7 +38,6 @@ telescope_detector::telescope_detector(po::options_description& desc)
     m_desc.add_options()("half-length-mm",
                          po::value(&half_length)->default_value(half_length),
                          "Half length of plane [mm]");
-    desc.add(m_desc);
 }
 
 void telescope_detector::read(const po::variables_map&) {

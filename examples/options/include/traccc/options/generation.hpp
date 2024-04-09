@@ -11,9 +11,6 @@
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
-// Boost include(s).
-#include <boost/program_options.hpp>
-
 // System include(s).
 #include <cstddef>
 
@@ -48,11 +45,8 @@ class generation : public interface {
 
     /// @}
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    generation(boost::program_options::options_description& desc);
+    /// Constructor
+    generation();
 
     /// Read/process the command line options
     ///

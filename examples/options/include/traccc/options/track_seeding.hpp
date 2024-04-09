@@ -11,9 +11,6 @@
 #include "traccc/options/details/interface.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 
-// Boost include(s).
-#include <boost/program_options.hpp>
-
 // System include(s).
 #include <iosfwd>
 
@@ -33,11 +30,8 @@ class track_seeding : public interface {
 
     /// @}
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    track_seeding(boost::program_options::options_description& desc);
+    /// Constructor
+    track_seeding();
 
 };  // struct track_seeding
 

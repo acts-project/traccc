@@ -16,13 +16,12 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-track_resolution::track_resolution(po::options_description& desc)
+track_resolution::track_resolution()
     : interface("Track Ambiguity Resolution Options") {
 
     m_desc.add_options()("perform-ambiguity-resolution",
                          po::value(&run)->default_value(run),
                          "Perform track ambiguity resolution");
-    desc.add(m_desc);
 }
 
 std::ostream& track_resolution::print_impl(std::ostream& out) const {

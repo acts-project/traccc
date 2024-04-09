@@ -21,6 +21,11 @@ std::ostream& interface::print(std::ostream& out) const {
     return print_impl(out);
 }
 
+const boost::program_options::options_description& interface::options() const {
+
+    return m_desc;
+}
+
 std::ostream& interface::print_impl(std::ostream& out) const {
 
     return (out << "  None");

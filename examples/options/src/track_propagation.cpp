@@ -19,7 +19,7 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-track_propagation::track_propagation(po::options_description& desc)
+track_propagation::track_propagation()
     : interface("Track Propagation Options") {
 
     m_desc.add_options()("constraint-step-size-mm",
@@ -42,7 +42,6 @@ track_propagation::track_propagation(po::options_description& desc)
         "rk-tolerance",
         po::value(&(config.stepping.rk_error_tol))->default_value(1e-4),
         "The Runge-Kutta stepper tolerance");
-    desc.add(m_desc);
 }
 
 void track_propagation::read(const po::variables_map&) {
