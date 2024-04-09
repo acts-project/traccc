@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
 // Detray include(s).
@@ -16,13 +17,10 @@
 // Boost include(s).
 #include <boost/program_options.hpp>
 
-// System include(s).
-#include <iosfwd>
-
 namespace traccc::opts {
 
 /// Command line options used in the propagation tests
-class track_propagation {
+class track_propagation : public interface {
 
     public:
     /// @name Options
@@ -43,17 +41,15 @@ class track_propagation {
     ///
     /// @param vm The command line options to interpret/read
     ///
-    void read(const boost::program_options::variables_map& vm);
+    void read(const boost::program_options::variables_map& vm) override;
 
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
+
     /// Search window
     value_array<unsigned int, 2> m_search_window = {0u, 0u};
 
 };  // class track_propagation
-
-/// Printout helper for @c traccc::opts::track_propagation
-std::ostream& operator<<(std::ostream& out, const track_propagation& opt);
 
 }  // namespace traccc::opts

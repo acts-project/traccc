@@ -9,6 +9,7 @@
 #include "traccc/options/input_data.hpp"
 
 // System include(s).
+#include <iostream>
 #include <stdexcept>
 
 namespace traccc::opts {
@@ -16,16 +17,13 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-/// Description of this option group
-static const char* description = "Input Data Options";
-
 /// Type alias for the data format enumeration
 using data_format_type = std::string;
 /// Name of the data format option
 static const char* data_format_option = "input-data-format";
 
-input_data::input_data(boost::program_options::options_description& desc)
-    : m_desc{description} {
+input_data::input_data(po::options_description& desc)
+    : interface("Input Data Options") {
 
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
@@ -41,7 +39,7 @@ input_data::input_data(boost::program_options::options_description& desc)
     desc.add(m_desc);
 }
 
-void input_data::read(const boost::program_options::variables_map& vm) {
+void input_data::read(const po::variables_map& vm) {
 
     // Decode the input data format.
     if (vm.count(data_format_option)) {
@@ -59,13 +57,12 @@ void input_data::read(const boost::program_options::variables_map& vm) {
     }
 }
 
-std::ostream& operator<<(std::ostream& out, const input_data& opt) {
+std::ostream& input_data::print_impl(std::ostream& out) const {
 
-    out << ">>> " << description << " <<<\n"
-        << "  Input data format             : " << opt.format << "\n"
-        << "  Input directory               : " << opt.directory << "\n"
-        << "  Number of input events        : " << opt.events << "\n"
-        << "  Number of input events to skip: " << opt.skip;
+    out << "  Input data format             : " << format << "\n"
+        << "  Input directory               : " << directory << "\n"
+        << "  Number of input events        : " << events << "\n"
+        << "  Number of input events to skip: " << skip;
     return out;
 }
 

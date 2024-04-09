@@ -7,18 +7,20 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/options/details/interface.hpp"
+
 // Boost include(s).
 #include <boost/program_options.hpp>
 
 // System include(s).
 #include <cstddef>
-#include <iosfwd>
 #include <string>
 
 namespace traccc::opts {
 
 /// Command line options used in the throughput tests
-class throughput {
+class throughput : public interface {
 
     public:
     /// @name Options
@@ -41,19 +43,10 @@ class throughput {
     ///
     throughput(boost::program_options::options_description& desc);
 
-    /// Read/process the command line options
-    ///
-    /// @param vm The command line options to interpret/read
-    ///
-    void read(const boost::program_options::variables_map& vm);
-
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // class throughput
-
-/// Printout helper for @c traccc::opts::throughput
-std::ostream& operator<<(std::ostream& out, const throughput& opt);
 
 }  // namespace traccc::opts

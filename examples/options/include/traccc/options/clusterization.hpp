@@ -7,16 +7,16 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/options/details/interface.hpp"
+
 // Boost include(s).
 #include <boost/program_options.hpp>
-
-// System include(s).
-#include <iosfwd>
 
 namespace traccc::opts {
 
 /// Options for the cell clusterization algorithm(s)
-class clusterization {
+class clusterization : public interface {
 
     public:
     /// @name Options
@@ -33,19 +33,10 @@ class clusterization {
     ///
     clusterization(boost::program_options::options_description& desc);
 
-    /// Read/process the command line options
-    ///
-    /// @param vm The command line options to interpret/read
-    ///
-    void read(const boost::program_options::variables_map& vm);
-
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // class clusterization
-
-/// Printout helper for @c traccc::opts::clusterization
-std::ostream& operator<<(std::ostream& out, const clusterization& opt);
 
 }  // namespace traccc::opts

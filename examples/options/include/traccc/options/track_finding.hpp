@@ -8,19 +8,19 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
 // Boost include(s).
 #include <boost/program_options.hpp>
 
 // System include(s).
-#include <iosfwd>
 #include <limits>
 
 namespace traccc::opts {
 
 /// Configuration for track finding
-class track_finding {
+class track_finding : public interface {
 
     public:
     /// @name Options
@@ -41,19 +41,10 @@ class track_finding {
     ///
     track_finding(boost::program_options::options_description& desc);
 
-    /// Read/process the command line options
-    ///
-    /// @param vm The command line options to interpret/read
-    ///
-    void read(const boost::program_options::variables_map& vm);
-
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // class track_finding
-
-/// Printout helper for @c traccc::opts::track_finding
-std::ostream& operator<<(std::ostream& out, const track_finding& opt);
 
 }  // namespace traccc::opts

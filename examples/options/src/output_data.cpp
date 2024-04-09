@@ -9,6 +9,7 @@
 #include "traccc/options/output_data.hpp"
 
 // System include(s).
+#include <iostream>
 #include <stdexcept>
 
 namespace traccc::opts {
@@ -16,16 +17,13 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-/// Description of this option group
-static const char* description = "Output Data Options";
-
 /// Type alias for the data format enumeration
 using data_format_type = std::string;
 /// Name of the data format option
 static const char* data_format_option = "output-data-format";
 
 output_data::output_data(boost::program_options::options_description& desc)
-    : m_desc{description} {
+    : interface("Output Data Options") {
 
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
@@ -54,11 +52,10 @@ void output_data::read(const boost::program_options::variables_map& vm) {
     }
 }
 
-std::ostream& operator<<(std::ostream& out, const output_data& opt) {
+std::ostream& output_data::print_impl(std::ostream& out) const {
 
-    out << ">>> " << description << " <<<\n"
-        << "  Output data format : " << opt.format << "\n"
-        << "  Output directory   : " << opt.directory;
+    out << "  Output data format: " << format << "\n"
+        << "  Output directory  : " << directory;
     return out;
 }
 

@@ -19,11 +19,8 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-/// Description of this option group
-static const char* description = "Telescope Detector Options";
-
 telescope_detector::telescope_detector(po::options_description& desc)
-    : m_desc{description} {
+    : interface("Telescope Detector Options") {
 
     m_desc.add_options()("empty-material", po::bool_switch(&empty_material),
                          "Build detector without materials");
@@ -52,19 +49,17 @@ void telescope_detector::read(const po::variables_map&) {
     half_length *= detray::unit<float>::mm;
 }
 
-std::ostream& operator<<(std::ostream& out, const telescope_detector& opt) {
+std::ostream& telescope_detector::print_impl(std::ostream& out) const {
 
-    out << ">>> " << description << " <<<\n"
-        << "  Empty material   : " << (opt.empty_material ? "true" : "false")
-        << "\n"
-        << "  Number of planes : " << opt.n_planes << "\n"
-        << "  Slab thickness   : " << opt.thickness / detray::unit<float>::mm
+    out << "  Empty material  : " << (empty_material ? "true" : "false") << "\n"
+        << "  Number of planes: " << n_planes << "\n"
+        << "  Slab thickness  : " << thickness / detray::unit<float>::mm
         << " [mm]\n"
-        << "  Spacing          : " << opt.spacing / detray::unit<float>::mm
+        << "  Spacing         : " << spacing / detray::unit<float>::mm
         << " [mm]\n"
-        << "  Smearing         : " << opt.smearing / detray::unit<float>::um
+        << "  Smearing        : " << smearing / detray::unit<float>::um
         << " [um]\n"
-        << "  Half length      : " << opt.half_length / detray::unit<float>::mm
+        << "  Half length     : " << half_length / detray::unit<float>::mm
         << " [mm]";
     return out;
 }

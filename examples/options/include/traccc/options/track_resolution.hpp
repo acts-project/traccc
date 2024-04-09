@@ -7,16 +7,16 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/options/details/interface.hpp"
+
 // Boost include(s).
 #include <boost/program_options.hpp>
-
-// System include(s).
-#include <iosfwd>
 
 namespace traccc::opts {
 
 /// Configuration for track ambiguity resulution
-class track_resolution {
+class track_resolution : public interface {
 
     public:
     /// @name Options
@@ -33,19 +33,10 @@ class track_resolution {
     ///
     track_resolution(boost::program_options::options_description& desc);
 
-    /// Read/process the command line options
-    ///
-    /// @param vm The command line options to interpret/read
-    ///
-    void read(const boost::program_options::variables_map& vm);
-
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // class track_resolution
-
-/// Printout helper for @c traccc::opts::track_resolution
-std::ostream& operator<<(std::ostream& out, const track_resolution& opt);
 
 }  // namespace traccc::opts

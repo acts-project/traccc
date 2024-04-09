@@ -14,31 +14,26 @@
 
 namespace traccc::opts {
 
-/// Convenience namespace shorthand
-namespace po = boost::program_options;
+threading::threading(boost::program_options::options_description& desc)
+    : interface("Multi-Threading Options") {
 
-/// Description of this option group
-static const char* description = "Multi-Threading Options";
-
-threading::threading(po::options_description& desc) : m_desc{description} {
-
-    m_desc.add_options()("cpu-threads",
-                         po::value(&threads)->default_value(threads),
-                         "The number of CPU threads to use");
+    m_desc.add_options()(
+        "cpu-threads",
+        boost::program_options::value(&threads)->default_value(threads),
+        "The number of CPU threads to use");
     desc.add(m_desc);
 }
 
-void threading::read(const po::variables_map&) {
+void threading::read(const boost::program_options::variables_map&) {
 
     if (threads == 0) {
         throw std::invalid_argument{"Must use threads>0"};
     }
 }
 
-std::ostream& operator<<(std::ostream& out, const threading& opt) {
+std::ostream& threading::print_impl(std::ostream& out) const {
 
-    out << ">>> " << description << " <<<\n"
-        << "  CPU threads: " << opt.threads;
+    out << "  CPU threads: " << threads;
     return out;
 }
 

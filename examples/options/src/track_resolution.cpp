@@ -16,11 +16,8 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-/// Description of this option group
-static const char* description = "Track Ambiguity Resolution Options";
-
 track_resolution::track_resolution(po::options_description& desc)
-    : m_desc{description} {
+    : interface("Track Ambiguity Resolution Options") {
 
     m_desc.add_options()("perform-ambiguity-resolution",
                          po::value(&run)->default_value(run),
@@ -28,12 +25,9 @@ track_resolution::track_resolution(po::options_description& desc)
     desc.add(m_desc);
 }
 
-void track_resolution::read(const po::variables_map&) {}
+std::ostream& track_resolution::print_impl(std::ostream& out) const {
 
-std::ostream& operator<<(std::ostream& out, const track_resolution& opts) {
-
-    out << ">>> " << description << " <<<\n"
-        << "  Run ambiguity resolution : " << (opts.run ? "yes" : "no");
+    out << "  Run ambiguity resolution : " << (run ? "yes" : "no");
     return out;
 }
 

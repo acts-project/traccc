@@ -8,16 +8,16 @@
 // Project include(s).
 #include "traccc/options/track_finding.hpp"
 
+// System include(s).
+#include <iostream>
+
 namespace traccc::opts {
 
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-/// Description of this option group
-static const char* description = "Track Finding Options";
-
 track_finding::track_finding(po::options_description& desc)
-    : m_desc{description} {
+    : interface("Track Finding Options") {
 
     m_desc.add_options()("track-candidates-range",
                          po::value(&track_candidates_range)
@@ -35,15 +35,11 @@ track_finding::track_finding(po::options_description& desc)
     desc.add(m_desc);
 }
 
-void track_finding::read(const po::variables_map&) {}
+std::ostream& track_finding::print_impl(std::ostream& out) const {
 
-std::ostream& operator<<(std::ostream& out, const track_finding& opt) {
-
-    out << ">>> " << description << " <<<\n"
-        << "  Track candidates range    : " << opt.track_candidates_range
-        << "\n"
-        << "  Maximum Chi2              : " << opt.chi2_max << "\n"
-        << "  Maximum branches per step : " << opt.nmax_per_seed;
+    out << "  Track candidates range   : " << track_candidates_range << "\n"
+        << "  Maximum Chi2             : " << chi2_max << "\n"
+        << "  Maximum branches per step: " << nmax_per_seed;
     return out;
 }
 

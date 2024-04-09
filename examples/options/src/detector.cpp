@@ -13,13 +13,10 @@
 
 namespace traccc::opts {
 
-/// Convenience namespace shorthand
-namespace po = boost::program_options;
+detector::detector(boost::program_options::options_description& desc)
+    : interface("Detector Options") {
 
-/// Description of this option group
-static const char* description = "Detector Options";
-
-detector::detector(po::options_description& desc) : m_desc{description} {
+    namespace po = boost::program_options;
 
     m_desc.add_options()(
         "detector-file",
@@ -42,17 +39,14 @@ detector::detector(po::options_description& desc) : m_desc{description} {
     desc.add(m_desc);
 }
 
-void detector::read(const po::variables_map&) {}
+std::ostream& detector::print_impl(std::ostream& out) const {
 
-std::ostream& operator<<(std::ostream& out, const detector& opt) {
-
-    out << ">>> " << description << " <<<\n"
-        << "  Detector file       : " << opt.detector_file << "\n"
-        << "  Material file       : " << opt.material_file << "\n"
-        << "  Surface rid file    : " << opt.grid_file << "\n"
-        << "  Use detray::detector: "
-        << (opt.use_detray_detector ? "yes" : "no") << "\n"
-        << "  Digitization file   : " << opt.digitization_file;
+    out << "  Detector file       : " << detector_file << "\n"
+        << "  Material file       : " << material_file << "\n"
+        << "  Surface rid file    : " << grid_file << "\n"
+        << "  Use detray::detector: " << (use_detray_detector ? "yes" : "no")
+        << "\n"
+        << "  Digitization file   : " << digitization_file;
     return out;
 }
 

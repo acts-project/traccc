@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
 // Boost include(s).
@@ -15,12 +16,11 @@
 
 // System include(s).
 #include <cstddef>
-#include <iosfwd>
 
 namespace traccc::opts {
 
 /// Configuration for particle / event generation
-class generation {
+class generation : public interface {
 
     public:
     /// @name Options
@@ -32,15 +32,15 @@ class generation {
     /// The number of particles to generate per event
     unsigned int gen_nparticles{1u};
     /// Vertex position [mm]
-    opts::value_array<float, 3> vertex{0., 0., 0.};
+    opts::value_array<float, 3> vertex{0.f, 0.f, 0.f};
     /// Standard deviation of the vertex position [mm]
-    opts::value_array<float, 3> vertex_stddev{0., 0., 0.};
+    opts::value_array<float, 3> vertex_stddev{0.f, 0.f, 0.f};
     /// Range of momentum [GeV]
-    opts::value_array<float, 2> mom_range{1., 1.};
+    opts::value_array<float, 2> mom_range{1.f, 1.f};
     /// Range of phi [rad]
-    opts::value_array<float, 2> phi_range{0., 0.};
+    opts::value_array<float, 2> phi_range{-180.f, 180.f};
     /// Range of eta
-    opts::value_array<float, 2> eta_range{0., 0.};
+    opts::value_array<float, 2> eta_range{-2.f, 2.f};
     /// Range of theta [rad]
     opts::value_array<float, 2> theta_range{0., 0.};
     /// Charge of particles
@@ -58,15 +58,12 @@ class generation {
     ///
     /// @param vm The command line options to interpret/read
     ///
-    void read(const boost::program_options::variables_map& vm);
+    void read(const boost::program_options::variables_map& vm) override;
 
     private:
-    /// The program options group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // struct generation
-
-/// Printout helper for @c traccc::opts::generation
-std::ostream& operator<<(std::ostream& out, const generation& opt);
 
 }  // namespace traccc::opts

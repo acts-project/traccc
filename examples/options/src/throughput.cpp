@@ -10,17 +10,14 @@
 
 // System include(s).
 #include <iostream>
-#include <stdexcept>
 
 namespace traccc::opts {
 
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-/// Description of this option group
-static const char* description = "Throughput Measurement Options";
-
-throughput::throughput(po::options_description& desc) : m_desc{description} {
+throughput::throughput(po::options_description& desc)
+    : interface("Throughput Measurement Options") {
 
     m_desc.add_options()(
         "processed-events",
@@ -36,14 +33,11 @@ throughput::throughput(po::options_description& desc) : m_desc{description} {
     desc.add(m_desc);
 }
 
-void throughput::read(const po::variables_map&) {}
+std::ostream& throughput::print_impl(std::ostream& out) const {
 
-std::ostream& operator<<(std::ostream& out, const throughput& opt) {
-
-    out << ">>> " << description << " <<<\n"
-        << "  Cold run event(s)          : " << opt.cold_run_events << "\n"
-        << "  Processed event(s)         : " << opt.processed_events << "\n"
-        << "  Log file                   : " << opt.log_file;
+    out << "  Cold run event(s) : " << cold_run_events << "\n"
+        << "  Processed event(s): " << processed_events << "\n"
+        << "  Log file          : " << log_file;
     return out;
 }
 

@@ -7,6 +7,7 @@
 # Set up the "build" of the traccc::option library.
 traccc_add_library( traccc_options options TYPE SHARED
   # header files
+  "include/traccc/options/details/interface.hpp"
   "include/traccc/options/details/value_array.hpp"
   "include/traccc/options/details/value_array.ipp"
   "include/traccc/options/accelerator.hpp"
@@ -25,6 +26,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "include/traccc/options/track_resolution.hpp"
   "include/traccc/options/track_seeding.hpp"
   # source files
+  "src/details/interface.cpp"
   "src/accelerator.cpp"
   "src/clusterization.cpp"
   "src/detector.cpp"

@@ -7,17 +7,19 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/options/details/interface.hpp"
+
 // Boost include(s).
 #include <boost/program_options.hpp>
 
 // System include(s).
 #include <cstddef>
-#include <iosfwd>
 
 namespace traccc::opts {
 
 /// Option(s) for multi-threaded code execution
-class threading {
+class threading : public interface {
 
     public:
     /// @name Options
@@ -38,15 +40,12 @@ class threading {
     ///
     /// @param vm The command line options to interpret/read
     ///
-    void read(const boost::program_options::variables_map& vm);
+    void read(const boost::program_options::variables_map& vm) override;
 
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // struct threading
-
-/// Printout helper for @c traccc::opts::threading
-std::ostream& operator<<(std::ostream& out, const threading& opt);
 
 }  // namespace traccc::opts

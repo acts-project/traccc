@@ -7,16 +7,16 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/options/details/interface.hpp"
+
 // Boost include(s).
 #include <boost/program_options.hpp>
-
-// System include(s).
-#include <iosfwd>
 
 namespace traccc::opts {
 
 /// Command line options used in the telescope detector tests
-class telescope_detector {
+class telescope_detector : public interface {
 
     public:
     /// @name Options
@@ -47,15 +47,12 @@ class telescope_detector {
     ///
     /// @param vm The command line options to interpret/read
     ///
-    void read(const boost::program_options::variables_map& vm);
+    void read(const boost::program_options::variables_map& vm) override;
 
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // ckass telescope_detector
-
-/// Printout helper for @c traccc::opts::telescope_detector
-std::ostream& operator<<(std::ostream& out, const telescope_detector& opt);
 
 }  // namespace traccc::opts

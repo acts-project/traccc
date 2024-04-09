@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/options/details/interface.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 
 // Boost include(s).
@@ -19,7 +20,7 @@
 namespace traccc::opts {
 
 /// Command line options used to configure track seeding
-class track_seeding {
+class track_seeding : public interface {
 
     public:
     /// @name Options
@@ -38,19 +39,6 @@ class track_seeding {
     ///
     track_seeding(boost::program_options::options_description& desc);
 
-    /// Read/process the command line options
-    ///
-    /// @param vm The command line options to interpret/read
-    ///
-    void read(const boost::program_options::variables_map& vm);
-
-    private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
-
 };  // struct track_seeding
-
-/// Printout helper for @c traccc::opts::track_seeding
-std::ostream& operator<<(std::ostream& out, const track_seeding& opt);
 
 }  // namespace traccc::opts

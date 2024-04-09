@@ -18,10 +18,8 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
-/// Description of this option group
-static const char* description = "Particle Generation Options";
-
-generation::generation(po::options_description& desc) : m_desc{description} {
+generation::generation(po::options_description& desc)
+    : interface("Particle Generation Options") {
 
     m_desc.add_options()("gen-events",
                          po::value(&events)->default_value(events),
@@ -63,19 +61,17 @@ void generation::read(const po::variables_map&) {
     theta_range = eta_to_theta_range(eta_range);
 }
 
-std::ostream& operator<<(std::ostream& out, const generation& opt) {
+std::ostream& generation::print_impl(std::ostream& out) const {
 
-    out << ">>> " << description << " <<<\n"
-        << "  Number of events to generate    : " << opt.events << "\n"
-        << "  Number of particles to generate : " << opt.gen_nparticles << "\n"
-        << "  Vertex                          : " << opt.vertex << " mm\n"
-        << "  Vertex standard deviation       : " << opt.vertex_stddev
-        << " mm\n"
-        << "  Momentum range                  : " << opt.mom_range << " GeV\n"
-        << "  Phi range                       : " << opt.phi_range << " rad\n"
-        << "  Eta range                       : " << opt.eta_range << "\n"
-        << "  Theta range                     : " << opt.theta_range << " rad\n"
-        << "  Charge                          : " << opt.charge;
+    out << "  Number of events to generate   : " << events << "\n"
+        << "  Number of particles to generate: " << gen_nparticles << "\n"
+        << "  Vertex                         : " << vertex << " mm\n"
+        << "  Vertex standard deviation      : " << vertex_stddev << " mm\n"
+        << "  Momentum range                 : " << mom_range << " GeV\n"
+        << "  Phi range                      : " << phi_range << " rad\n"
+        << "  Eta range                      : " << eta_range << "\n"
+        << "  Theta range                    : " << theta_range << " rad\n"
+        << "  Charge                         : " << charge;
     return out;
 }
 

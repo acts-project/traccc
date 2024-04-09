@@ -9,18 +9,18 @@
 
 // Project include(s).
 #include "traccc/io/data_format.hpp"
+#include "traccc/options/details/interface.hpp"
 
 // Boost include(s).
 #include <boost/program_options.hpp>
 
 // System include(s).
-#include <iosfwd>
 #include <string>
 
 namespace traccc::opts {
 
 /// Options for the output data that a given application would produce
-class output_data {
+class output_data : public interface {
 
     public:
     /// @name Options
@@ -43,15 +43,12 @@ class output_data {
     ///
     /// @param vm The command line options to interpret/read
     ///
-    void read(const boost::program_options::variables_map& vm);
+    void read(const boost::program_options::variables_map& vm) override;
 
     private:
-    /// Description of this program option group
-    boost::program_options::options_description m_desc;
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
 };  // class output_data
-
-/// Printout helper for @c traccc::opts::output_data
-std::ostream& operator<<(std::ostream& out, const output_data& opt);
 
 }  // namespace traccc::opts
