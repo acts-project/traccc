@@ -15,6 +15,24 @@
 
 namespace traccc::opts {
 
+template <typename TYPE, std::size_t SIZE>
+value_array<TYPE, SIZE>& value_array<TYPE, SIZE>::operator*=(TYPE factor) {
+
+    for (auto& v : *this) {
+        v *= factor;
+    }
+    return *this;
+}
+
+template <typename TYPE, std::size_t SIZE>
+value_array<TYPE, SIZE>& value_array<TYPE, SIZE>::operator/=(TYPE factor) {
+
+    for (auto& v : *this) {
+        v /= factor;
+    }
+    return *this;
+}
+
 namespace details {
 
 /// Separator character for the float arguments
@@ -62,6 +80,24 @@ std::ostream& operator<<(std::ostream& os,
         }
     }
     return os;
+}
+
+template <typename TYPE, std::size_t SIZE>
+value_array<TYPE, SIZE> operator*(const value_array<TYPE, SIZE>& values,
+                                  TYPE factor) {
+
+    value_array<TYPE, SIZE> result = values;
+    result *= factor;
+    return result;
+}
+
+template <typename TYPE, std::size_t SIZE>
+value_array<TYPE, SIZE> operator/(const value_array<TYPE, SIZE>& values,
+                                  TYPE factor) {
+
+    value_array<TYPE, SIZE> result = values;
+    result /= factor;
+    return result;
 }
 
 }  // namespace traccc::opts

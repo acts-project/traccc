@@ -19,7 +19,23 @@ namespace traccc::opts {
 ///   and we can provide overloads in the same namespace.
 ///
 template <typename TYPE, std::size_t SIZE>
-class value_array : public std::array<TYPE, SIZE> {};
+class value_array : public std::array<TYPE, SIZE> {
+
+    public:
+    /// Helper function for normalizing the values in an array
+    ///
+    /// @param factor The factor to normalize by
+    /// @return The normalized array
+    ///
+    value_array& operator*=(TYPE factor);
+    /// Helper function for normalizing the values in an array
+    ///
+    /// @param factor The factor to normalize by
+    /// @return The normalized array
+    ///
+    value_array& operator/=(TYPE factor);
+
+};  // class value_array
 
 /// Extract a fixed number of values from an input of the form 'x:y:z'.
 ///
@@ -43,6 +59,26 @@ std::istream& operator>>(std::istream& is, value_array<TYPE, SIZE>& values);
 template <typename TYPE, std::size_t SIZE>
 std::ostream& operator<<(std::ostream& os,
                          const value_array<TYPE, SIZE>& values);
+
+/// Helper function for normalizing the values in an array
+///
+/// @param values The array to normalize
+/// @param factor The factor to normalize by
+/// @return The normalized array
+///
+template <typename TYPE, std::size_t SIZE>
+value_array<TYPE, SIZE> operator*(const value_array<TYPE, SIZE>& values,
+                                  TYPE factor);
+
+/// Helper function for normalizing the values in an array
+///
+/// @param values The array to normalize
+/// @param factor The factor to normalize by
+/// @return The normalized array
+///
+template <typename TYPE, std::size_t SIZE>
+value_array<TYPE, SIZE> operator/(const value_array<TYPE, SIZE>& values,
+                                  TYPE factor);
 
 }  // namespace traccc::opts
 

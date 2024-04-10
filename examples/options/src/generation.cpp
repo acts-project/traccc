@@ -54,8 +54,10 @@ generation::generation() : interface("Particle Generation Options") {
 
 void generation::read(const po::variables_map&) {
 
-    phi_range[0] *= detray::unit<float>::degree;
-    phi_range[1] *= detray::unit<float>::degree;
+    vertex *= detray::unit<float>::mm;
+    vertex_stddev *= detray::unit<float>::mm;
+    mom_range *= detray::unit<float>::GeV;
+    phi_range *= detray::unit<float>::degree;
     theta_range = eta_to_theta_range(eta_range);
 }
 
@@ -63,12 +65,17 @@ std::ostream& generation::print_impl(std::ostream& out) const {
 
     out << "  Number of events to generate   : " << events << "\n"
         << "  Number of particles to generate: " << gen_nparticles << "\n"
-        << "  Vertex                         : " << vertex << " mm\n"
-        << "  Vertex standard deviation      : " << vertex_stddev << " mm\n"
-        << "  Momentum range                 : " << mom_range << " GeV\n"
-        << "  Phi range                      : " << phi_range << " rad\n"
+        << "  Vertex                         : "
+        << vertex / detray::unit<float>::mm << " mm\n"
+        << "  Vertex standard deviation      : "
+        << vertex_stddev / detray::unit<float>::mm << " mm\n"
+        << "  Momentum range                 : "
+        << mom_range / detray::unit<float>::GeV << " GeV\n"
+        << "  Phi range                      : "
+        << phi_range / detray::unit<float>::degree << " deg\n"
         << "  Eta range                      : " << eta_range << "\n"
-        << "  Theta range                    : " << theta_range << " rad\n"
+        << "  Theta range                    : "
+        << theta_range / detray::unit<float>::degree << " deg\n"
         << "  Charge                         : " << charge;
     return out;
 }
