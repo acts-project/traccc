@@ -324,6 +324,10 @@ Attaching file performance_track_finding.root as _file0...
 root [1] finding_trackeff_vs_eta->Draw()
 ```
 
+## Specific documentation on ROOT for traccc
+
+A small documentation on how to build and use `ROOT` for traccc [is accessible following this link](doc/root/README.md).
+
 ## Troubleshooting
 
 The following are potentially useful instructions for troubleshooting various
