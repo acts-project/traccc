@@ -20,7 +20,7 @@ namespace traccc::opts {
 class generation : public interface {
 
     public:
-    /// @name Options
+    /// @name Configurable options
     /// @{
 
     /// The number of events to generate
@@ -38,10 +38,16 @@ class generation : public interface {
     opts::value_array<float, 2> phi_range{-180.f, 180.f};
     /// Range of eta
     opts::value_array<float, 2> eta_range{-2.f, 2.f};
-    /// Range of theta [rad]
-    opts::value_array<float, 2> theta_range{0., 0.};
     /// Charge of particles
     float charge{-1.f};
+
+    /// @}
+
+    /// @name Derived options
+    /// @{
+
+    /// Range of theta [rad]
+    opts::value_array<float, 2> theta_range{0.f, 0.f};
 
     /// @}
 
