@@ -6,34 +6,33 @@
  */
 
 // Local include(s).
-#include "traccc/options/mt_options.hpp"
+#include "traccc/options/threading.hpp"
 
 // System include(s).
 #include <iostream>
 #include <stdexcept>
 
-namespace traccc {
+namespace traccc::opts {
 
-mt_options::mt_options(boost::program_options::options_description& desc) {
+threading::threading() : interface("Multi-Threading Options") {
 
-    desc.add_options()(
-        "threads",
+    m_desc.add_options()(
+        "cpu-threads",
         boost::program_options::value(&threads)->default_value(threads),
         "The number of CPU threads to use");
 }
 
-void mt_options::read(const boost::program_options::variables_map&) {
+void threading::read(const boost::program_options::variables_map&) {
 
     if (threads == 0) {
         throw std::invalid_argument{"Must use threads>0"};
     }
 }
 
-std::ostream& operator<<(std::ostream& out, const mt_options& opt) {
+std::ostream& threading::print_impl(std::ostream& out) const {
 
-    out << ">>> Multi-threading options <<<\n"
-        << "  CPU threads: " << opt.threads;
+    out << "  CPU threads: " << threads;
     return out;
 }
 
-}  // namespace traccc
+}  // namespace traccc::opts

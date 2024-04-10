@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,10 +8,13 @@
 #pragma once
 
 // Command line option include(s).
-#include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/mt_options.hpp"
-#include "traccc/options/throughput_options.hpp"
-#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/options/clusterization.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/program_options.hpp"
+#include "traccc/options/threading.hpp"
+#include "traccc/options/throughput.hpp"
+#include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
 #include "traccc/io/demonstrator_edm.hpp"
@@ -45,42 +48,28 @@ template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_mt(std::string_view description, int argc, char* argv[],
                   bool use_host_caching) {
 
-    // Convenience typedef.
-    namespace po = boost::program_options;
-
-    // Read in the command line options.
-    po::options_description desc{description.data()};
-    desc.add_options()("help,h", "Give help with the program's options");
-    throughput_options throughput_cfg{desc};
-    mt_options mt_cfg{desc};
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    handle_argument_errors(vm, desc);
-
-    throughput_cfg.read(vm);
-    mt_cfg.read(vm);
-
-    // Greet the user.
-    std::cout << "\n"
-              << description << "\n\n"
-              << throughput_cfg << "\n"
-              << mt_cfg << "\n"
-              << std::endl;
-
-    // Set seeding config
-    // @FIXME: Seeding config should be configured by options
-    seedfinder_config finder_config;
-    spacepoint_grid_config grid_config(finder_config);
-    seedfilter_config filter_config;
+    // Program options.
+    opts::detector detector_opts;
+    opts::input_data input_opts;
+    opts::clusterization clusterization_opts;
+    opts::track_seeding seeding_opts;
+    opts::throughput throughput_opts;
+    opts::threading threading_opts;
+    opts::program_options program_opts{
+        description,
+        {detector_opts, input_opts, clusterization_opts, seeding_opts,
+         throughput_opts, threading_opts},
+        argc,
+        argv};
 
     // Set up the timing info holder.
     performance::timing_info times;
 
     // Set up the TBB arena and thread group.
     tbb::global_control global_thread_limit(
-        tbb::global_control::max_allowed_parallelism, mt_cfg.threads + 1);
-    tbb::task_arena arena{static_cast<int>(mt_cfg.threads), 0};
+        tbb::global_control::max_allowed_parallelism,
+        threading_opts.threads + 1);
+    tbb::task_arena arena{static_cast<int>(threading_opts.threads), 0};
     tbb::task_group group;
 
     // Memory resource to use in the test.
@@ -92,25 +81,24 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     {
         performance::timer t{"File reading", times};
         // Create empty inputs using the correct memory resource
-        for (std::size_t i = 0; i < throughput_cfg.loaded_events; ++i) {
+        for (std::size_t i = 0; i < input_opts.events; ++i) {
             input.push_back(demonstrator_input::value_type(&uncached_host_mr));
         }
         // Read event data into input vector
-        io::read(input, throughput_cfg.loaded_events,
-                 throughput_cfg.input_directory, throughput_cfg.detector_file,
-                 throughput_cfg.digitization_config_file,
-                 throughput_cfg.input_data_format);
+        io::read(input, input_opts.events, input_opts.directory,
+                 detector_opts.detector_file, detector_opts.digitization_file,
+                 input_opts.format);
     }
 
     // Set up cached memory resources on top of the host memory resource
     // separately for each CPU thread.
     std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
-        cached_host_mrs{mt_cfg.threads + 1};
+        cached_host_mrs{threading_opts.threads + 1};
 
     // Set up the full-chain algorithm(s). One for each thread.
     std::vector<FULL_CHAIN_ALG> algs;
-    algs.reserve(mt_cfg.threads + 1);
-    for (std::size_t i = 0; i < mt_cfg.threads + 1; ++i) {
+    algs.reserve(threading_opts.threads + 1);
+    for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
 
         cached_host_mrs.at(i) =
             std::make_unique<vecmem::binary_page_memory_resource>(
@@ -120,8 +108,11 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 ? static_cast<vecmem::memory_resource&>(
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
-        algs.push_back({alg_host_mr, throughput_cfg.target_cells_per_partition,
-                        finder_config, grid_config, filter_config});
+        algs.push_back({alg_host_mr,
+                        clusterization_opts.target_cells_per_partition,
+                        seeding_opts.seedfinder,
+                        {seeding_opts.seedfinder},
+                        seeding_opts.seedfilter});
     }
 
     // Seed the random number generator.
@@ -138,11 +129,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         performance::timer t{"Warm-up processing", times};
 
         // Process the requested number of events.
-        for (std::size_t i = 0; i < throughput_cfg.cold_run_events; ++i) {
+        for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event =
-                std::rand() % throughput_cfg.loaded_events;
+            const std::size_t event = std::rand() % input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
@@ -167,14 +157,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         performance::timer t{"Event processing", times};
 
         // Process the requested number of events.
-        for (std::size_t i = 0; i < throughput_cfg.processed_events; ++i) {
+        for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event =
-                std::rand() % throughput_cfg.loaded_events;
-
-            // std::cout << "running event " << i << " : " << event <<
-            // std::endl;
+            const std::size_t event = std::rand() % input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
@@ -202,22 +188,22 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     std::cout << "Time totals:" << std::endl;
     std::cout << times << std::endl;
     std::cout << "Throughput:" << std::endl;
-    std::cout << performance::throughput{throughput_cfg.cold_run_events, times,
+    std::cout << performance::throughput{throughput_opts.cold_run_events, times,
                                          "Warm-up processing"}
               << "\n"
-              << performance::throughput{throughput_cfg.processed_events, times,
-                                         "Event processing"}
+              << performance::throughput{throughput_opts.processed_events,
+                                         times, "Event processing"}
               << std::endl;
 
     // Print results to log file
-    if (throughput_cfg.log_file != "\0") {
+    if (throughput_opts.log_file != "\0") {
         std::ofstream logFile;
-        logFile.open(throughput_cfg.log_file, std::fstream::app);
-        logFile << "\"" << throughput_cfg.input_directory << "\""
-                << "," << mt_cfg.threads << "," << throughput_cfg.loaded_events
-                << "," << throughput_cfg.cold_run_events << ","
-                << throughput_cfg.processed_events << ","
-                << throughput_cfg.target_cells_per_partition << ","
+        logFile.open(throughput_opts.log_file, std::fstream::app);
+        logFile << "\"" << input_opts.directory << "\""
+                << "," << threading_opts.threads << "," << input_opts.events
+                << "," << throughput_opts.cold_run_events << ","
+                << throughput_opts.processed_events << ","
+                << clusterization_opts.target_cells_per_partition << ","
                 << times.get_time("Warm-up processing").count() << ","
                 << times.get_time("Event processing").count() << std::endl;
         logFile.close();

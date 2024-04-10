@@ -21,36 +21,35 @@
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
-#include "traccc/options/common_options.hpp"
-#include "traccc/options/detector_input_options.hpp"
-#include "traccc/options/full_tracking_input_options.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/performance.hpp"
+#include "traccc/options/program_options.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
 #include <cstdint>
+#include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <map>
 #include <memory>
 
-namespace po = boost::program_options;
-
-int seq_run(const traccc::full_tracking_input_options& i_cfg,
-            const traccc::common_options& common_opts,
-            const traccc::detector_input_options& det_opts) {
+int seq_run(const traccc::opts::input_data& input_opts,
+            const traccc::opts::detector& detector_opts,
+            const traccc::opts::performance& performance_opts) {
 
     // Read in the geometry.
     auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
-        det_opts.detector_file,
-        (det_opts.use_detray_detector ? traccc::data_format::json
-                                      : traccc::data_format::csv));
+        detector_opts.detector_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
 
     // Read the digitization configuration file
     auto digi_cfg =
-        traccc::io::read_digitization_config(i_cfg.digitization_config_file);
+        traccc::io::read_digitization_config(detector_opts.digitization_file);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -82,16 +81,15 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
         traccc::seeding_performance_writer::config{});
 
     // Loop over events
-    for (unsigned int event = common_opts.skip;
-         event < common_opts.events + common_opts.skip; ++event) {
+    for (unsigned int event = input_opts.skip;
+         event < input_opts.events + input_opts.skip; ++event) {
 
         traccc::io::cell_reader_output readOut(&host_mr);
 
         // Read the cells from the relevant event file
-        traccc::io::read_cells(readOut, event, common_opts.input_directory,
-                               common_opts.input_data_format,
-                               &surface_transforms, &digi_cfg,
-                               barcode_map.get());
+        traccc::io::read_cells(readOut, event, input_opts.directory,
+                               input_opts.format, &surface_transforms,
+                               &digi_cfg, barcode_map.get());
         traccc::cell_collection_types::host& cells_per_event = readOut.cells;
         traccc::cell_module_collection_types::host& modules_per_event =
             readOut.modules;
@@ -135,11 +133,11 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
              Writer
           ------------*/
 
-        if (common_opts.check_performance) {
+        if (performance_opts.run) {
             traccc::event_map evt_map(
-                event, det_opts.detector_file, i_cfg.digitization_config_file,
-                common_opts.input_directory, common_opts.input_directory,
-                common_opts.input_directory, host_mr);
+                event, detector_opts.detector_file,
+                detector_opts.digitization_file, input_opts.directory,
+                input_opts.directory, input_opts.directory, host_mr);
 
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
@@ -147,7 +145,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
         }
     }
 
-    if (common_opts.check_performance) {
+    if (performance_opts.run) {
         sd_performance_writer.finalize();
     }
 
@@ -160,38 +158,23 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
               << std::endl;
     std::cout << "- created " << n_seeds << " seeds" << std::endl;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    // Set up the program options
-    po::options_description desc("Allowed options");
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::common_options common_opts(desc);
-    traccc::detector_input_options det_opts(desc);
-    traccc::full_tracking_input_options full_tracking_input_cfg(desc);
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::performance performance_opts;
+    traccc::opts::program_options program_opts{
+        "Full Tracking Chain on the Host",
+        {detector_opts, input_opts, performance_opts},
+        argc,
+        argv};
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    common_opts.read(vm);
-    det_opts.read(vm);
-    full_tracking_input_cfg.read(vm);
-
-    // Tell the user what's happening.
-    std::cout << "\nRunning the full tracking chain on the host\n\n"
-              << common_opts << "\n"
-              << det_opts << "\n"
-              << full_tracking_input_cfg << "\n"
-              << std::endl;
-
-    return seq_run(full_tracking_input_cfg, common_opts, det_opts);
+    // Run the application.
+    return seq_run(input_opts, detector_opts, performance_opts);
 }

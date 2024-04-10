@@ -7,30 +7,48 @@
 # Set up the "build" of the traccc::option library.
 traccc_add_library( traccc_options options TYPE SHARED
   # header files
-  "include/traccc/options/common_options.hpp"
-  "include/traccc/options/detector_input_options.hpp"
-  "include/traccc/options/finding_input_options.hpp"
-  "include/traccc/options/full_tracking_input_options.hpp"
+  "include/traccc/options/details/interface.hpp"
+  "include/traccc/options/details/value_array.hpp"
+  "include/traccc/options/details/value_array.ipp"
+  "include/traccc/options/accelerator.hpp"
+  "include/traccc/options/clusterization.hpp"
+  "include/traccc/options/detector.hpp"
+  "include/traccc/options/generation.hpp"
   "include/traccc/options/handle_argument_errors.hpp"
-  "include/traccc/options/mt_options.hpp"
-  "include/traccc/options/options.hpp"
-  "include/traccc/options/particle_gen_options.hpp"
-  "include/traccc/options/propagation_options.hpp"
-  "include/traccc/options/seeding_input_options.hpp"
-  "include/traccc/options/telescope_detector_options.hpp"
-  "include/traccc/options/throughput_options.hpp"
+  "include/traccc/options/input_data.hpp"
+  "include/traccc/options/output_data.hpp"
+  "include/traccc/options/performance.hpp"
+  "include/traccc/options/program_options.hpp"
+  "include/traccc/options/telescope_detector.hpp"
+  "include/traccc/options/threading.hpp"
+  "include/traccc/options/throughput.hpp"
+  "include/traccc/options/track_finding.hpp"
+  "include/traccc/options/track_propagation.hpp"
+  "include/traccc/options/track_resolution.hpp"
+  "include/traccc/options/track_seeding.hpp"
   # source files
-  "src/options/common_options.cpp"
-  "src/options/detector_input_options.cpp"
-  "src/options/finding_input_options.cpp"
-  "src/options/full_tracking_input_options.cpp"
-  "src/options/handle_argument_errors.cpp"
-  "src/options/mt_options.cpp"
-  "src/options/particle_gen_options.cpp"
-  "src/options/propagation_options.cpp"
-  "src/options/seeding_input_options.cpp"
-  "src/options/telescope_detector_options.cpp"
-  "src/options/throughput_options.cpp"
+  "src/details/interface.cpp"
+  "src/accelerator.cpp"
+  "src/clusterization.cpp"
+  "src/detector.cpp"
+  "src/generation.cpp"
+  "src/handle_argument_errors.cpp"
+  "src/input_data.cpp"
+  "src/output_data.cpp"
+  "src/performance.cpp"
+  "src/program_options.cpp"
+  "src/telescope_detector.cpp"
+  "src/threading.cpp"
+  "src/throughput.cpp"
+  "src/track_finding.cpp"
+  "src/track_propagation.cpp"
+  "src/track_resolution.cpp"
+  "src/track_seeding.cpp"
   )
-target_link_libraries( traccc_options PUBLIC traccc::io
-                       traccc::performance Boost::program_options)
+target_link_libraries( traccc_options
+   PUBLIC
+      Boost::program_options
+      traccc::io
+   PRIVATE
+      traccc::performance
+)
