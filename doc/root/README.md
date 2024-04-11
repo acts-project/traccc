@@ -10,7 +10,7 @@ Compiling ROOT and traccc with the same compiler (e.g. clang++) can avoid link e
 
 <br>
 
-Once ROOT and traccc are built, don't forget to source the ROOT script once before running traccc: `source "<path to root_build>/bin/thisroot.sh"`.
+Once `ROOT` and `traccc` are built, don't forget to source the `ROOT` script once before running traccc: `source "<path to root_build>/bin/thisroot.sh"`.
 
 <br>
 
@@ -78,11 +78,11 @@ The native `TBwoser` should look like this. You can open `.root` files and displ
 
 The `Number of duplicated track candidates` plots represents the number of `track duplicates` as a function of a given variable (example: `phi`). It varies between zero (no shared hits between tracks) and the number of `duplicated tracks` for a given value (example: of `phi`).
 
-![](images/duplucation_finding.png)
+![](images/duplication_finding.png)
 
 There are often many duplicated tracks at the end of the finding algorithm. The last algorithm in the chain is an ambiguity solver which attempts to decrease the number of duplicates while keeping as much valid tracks as possible. Here the `greedy solver` removed all the duplicates. It is an implementation of the greedy ambiguity resolution algorithm from ACTS adapted to `traccc`.
 
-![](images/duplucation_greedy-solver.png)
+![](images/duplication_greedy-solver.png)
 
 The `Tracking Efficiency` plots represents the number of `tracks matching the trajectory of a truth particle`, as a function of a given variable. It ranges from zero (no valid track found for a given value) to one (all the tracks were found for a given value).
 
