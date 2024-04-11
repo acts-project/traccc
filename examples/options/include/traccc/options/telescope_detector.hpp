@@ -7,16 +7,17 @@
 
 #pragma once
 
-// Boost include(s).
-#include <boost/program_options.hpp>
+// Project include(s).
+#include "traccc/options/details/interface.hpp"
 
-// System include(s).
-#include <iosfwd>
-
-namespace traccc {
+namespace traccc::opts {
 
 /// Command line options used in the telescope detector tests
-struct telescope_detector_options {
+class telescope_detector : public interface {
+
+    public:
+    /// @name Options
+    /// @{
 
     /// Build detector without materials
     bool empty_material = false;
@@ -31,23 +32,21 @@ struct telescope_detector_options {
     /// Half length of plane [mm]
     float half_length = 1000000.f;
 
-    /// Constructor on top of a common @c program_options object
-    ///
-    /// @param desc The program options to add to
-    ///
-    telescope_detector_options(
-        boost::program_options::options_description& desc);
+    /// @}
+
+    /// Constructor
+    telescope_detector();
 
     /// Read/process the command line options
     ///
     /// @param vm The command line options to interpret/read
     ///
-    void read(const boost::program_options::variables_map& vm);
+    void read(const boost::program_options::variables_map& vm) override;
 
-};  // struct telescope_detector_options
+    private:
+    /// Print the specific options of this class
+    std::ostream& print_impl(std::ostream& out) const override;
 
-/// Printout helper for @c traccc::telescope_detector_options
-std::ostream& operator<<(std::ostream& out,
-                         const telescope_detector_options& opt);
+};  // ckass telescope_detector
 
-}  // namespace traccc
+}  // namespace traccc::opts

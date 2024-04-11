@@ -11,7 +11,7 @@
 #include "kalman_fitting_test.hpp"
 
 // Detray include(s).
-#include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
@@ -77,7 +77,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
         tel_cfg.pilot_track(traj);
 
         // Create telescope detector
-        auto [det, name_map] = create_telescope_detector(host_mr, tel_cfg);
+        auto [det, name_map] = build_telescope_detector(host_mr, tel_cfg);
 
         // Write detector file
         auto writer_cfg = detray::io::detector_writer_config{}

@@ -11,7 +11,7 @@
 #include "traccc/edm/spacepoint.hpp"
 
 // Detray include(s).
-#include "detray/detectors/create_telescope_detector.hpp"
+#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/navigation/detail/ray.hpp"
 
 // VecMem include(s).
@@ -54,7 +54,7 @@ TEST(spacepoint_formation, cuda) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    auto [det, name_map] = create_telescope_detector(mng_mr, tel_cfg);
+    auto [det, name_map] = build_telescope_detector(mng_mr, tel_cfg);
     using device_detector_type =
         detray::detector<detray::telescope_metadata<detray::rectangle2D>,
                          detray::device_container_types>;
