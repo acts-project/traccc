@@ -1,64 +1,16 @@
 # Specific documentation on how to build and use ROOT for traccc
 
-Last update: April 10, 2024.
-
 ## Introduction
 
 `traccc` generates data than can be visualized by `ROOT`, in order to evaluate the performance of some algorithms. Let's recap the full compilation and execution of `traccc`, since the initial clone, starting with the installation of ROOT.
 
-To use `ROOT` in `traccc`, you need a working installation of `ROOT` compiled with the `C++17` standard. The [last precompiled version of root](https://root.cern/install/) may not be compiled with the `C++17` standard, so it may be necessary to [build ROOT from source as described on the official website](https://root.cern/install/build_from_source/).
+To use `ROOT` in `traccc`, you need a working installation of `ROOT` compiled with the `C++17` standard. The [last precompiled version of root](https://root.cern/install/) may not be compiled with the `C++17` standard, so it may be necessary to [build ROOT from source as described on the official website](https://root.cern/install/build_from_source/). For example, you can add the following flags to your cmake configuration: `-DCMAKE_CXX_STANDARD=17 -DCXX_STANDARD_STRING="17" -DCMAKE_CXX_COMPILER=clang++-16 -DCMAKE_C_COMPILER=clang-16 `.
+
+Compiling ROOT and traccc with the same compiler (e.g. clang++) can avoid link editing errors when compiling traccc.
 
 <br>
 
-## ROOT installation / compilation
-
-This documentation was not written by `ROOT` members, and is intended for information purposes only. This installation of `ROOT` proved to work on a freshly installed `Debian 12.5.0` computer equipped with a 4th generation Intel x86_64 CPU.
-
-```bash
-export root_source="<desired path to your root_src>" \
-&& export root_build="<desired path to your root_build>" \
-&& mkdir $root_build
-
-# Clone the ROOT repository
-git clone --branch latest-stable --depth=1 https://github.com/root-project/root.git $root_source
-
-# Configure with cmake
-cmake -S $root_source -B $root_build -DCMAKE_CXX_STANDARD=17 -DCXX_STANDARD_STRING="17" -DCMAKE_CXX_COMPILER=clang++-16 -DCMAKE_C_COMPILER=clang-16 
-# Should you be on a server without X11, you may want to add the "-Dx11=OFF" flag.
-
-# Build ROOT
-cd root_build/ && make -j `nproc`
-```
-
-<br>
-
-## traccc compilation
-
-```sh
-# Prerequisites: boost and curl
-sudo apt install -y libboost-all-dev curl
-
-# First, clone the traccc repository and download necessary data files
-# clone over ssh: git clone git@github.com:acts-project/traccc.git
-git clone https://github.com/acts-project/traccc.git \
-&& cd traccc \
-&& ./data/traccc_data_get_files.sh
-
-# Shortcuts to your source and build folders
-export traccc_build_folder="<desired path to your traccc_build>" \
-&& export traccc_source_folder="<source path>"
-
-# Remove previous compilation files, if any
-rm -rf $traccc_build_folder && mkdir $traccc_build_folder
-
-# Source the ROOT script
-source "<path to root_build>/bin/thisroot.sh"
-
-# Build traccc on CPU
-cmake -S $traccc_source_folder -B $traccc_build_folder -DCMAKE_CXX_COMPILER=clang++-16 -DCMAKE_C_COMPILER=clang-16 \
-&& cd $traccc_build_folder \
-&& make -j `nproc`
-```
+Once ROOT and traccc are built, don't forget to source the ROOT script once before running traccc: `source "<path to root_build>/bin/thisroot.sh"`.
 
 <br>
 
