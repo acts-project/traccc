@@ -21,12 +21,14 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/options/common_options.hpp"
-#include "traccc/options/detector_input_options.hpp"
-#include "traccc/options/finding_input_options.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/propagation_options.hpp"
-#include "traccc/options/seeding_input_options.hpp"
+#include "traccc/options/accelerator.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/performance.hpp"
+#include "traccc/options/program_options.hpp"
+#include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_propagation.hpp"
+#include "traccc/options/track_seeding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -59,13 +61,14 @@
 #include <iostream>
 
 using namespace traccc;
-namespace po = boost::program_options;
 
-int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
-            const traccc::finding_input_options& /*finding_cfg*/,
-            const traccc::propagation_options& /*propagation_opts*/,
-            const traccc::common_options& common_opts,
-            const traccc::detector_input_options& det_opts, bool run_cpu) {
+int seq_run(const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::track_finding& /*finding_opts*/,
+            const traccc::opts::track_propagation& /*propagation_opts*/,
+            const traccc::opts::input_data& input_opts,
+            const traccc::opts::detector& detector_opts,
+            const traccc::opts::performance& performance_opts,
+            const traccc::opts::accelerator& accelerator_opts) {
 
     using host_detector_type = detray::detector<>;
 
@@ -94,7 +97,7 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
             2.7f, 1.f * traccc::unit<traccc::scalar>::GeV),
         std::make_unique<traccc::stepped_percentage>(0.6f));
 
-    if (common_opts.check_performance) {
+    if (performance_opts.run) {
         nsd_performance_writer.initialize();
     }
 
@@ -110,13 +113,15 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
-    if (!det_opts.material_file.empty()) {
+    reader_cfg.add_file(traccc::io::data_directory() +
+                        detector_opts.detector_file);
+    if (!detector_opts.material_file.empty()) {
         reader_cfg.add_file(traccc::io::data_directory() +
-                            det_opts.material_file);
+                            detector_opts.material_file);
     }
-    if (!det_opts.grid_file.empty()) {
-        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    if (!detector_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            detector_opts.grid_file);
     }
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
@@ -125,24 +130,24 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
         traccc::io::alt_read_geometry(host_det);
 
     // Seeding algorithms
-    traccc::seedfinder_config finder_config;
-    traccc::spacepoint_grid_config grid_config(finder_config);
-    traccc::seedfilter_config filter_config;
-
-    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
-                                 host_mr);
+    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
+                                 {seeding_opts.seedfinder},
+                                 seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     // Alpaka Algorithms
-    traccc::alpaka::seeding_algorithm sa_alpaka{finder_config, grid_config,
-                                                filter_config, mr, copy};
+    traccc::alpaka::seeding_algorithm sa_alpaka{seeding_opts.seedfinder,
+                                                {seeding_opts.seedfinder},
+                                                seeding_opts.seedfilter,
+                                                mr,
+                                                copy};
     traccc::alpaka::track_params_estimation tp_alpaka{mr, copy};
 
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = common_opts.skip;
-         event < common_opts.events + common_opts.skip; ++event) {
+    for (unsigned int event = input_opts.skip;
+         event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
         traccc::io::spacepoint_reader_output sp_reader_output(mr.host);
@@ -168,13 +173,13 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
-                    sp_reader_output, event, common_opts.input_directory,
-                    surface_transforms, common_opts.input_data_format);
+                    sp_reader_output, event, input_opts.directory,
+                    surface_transforms, input_opts.format);
 
                 // Read measurements
                 traccc::io::read_measurements(meas_reader_output, event,
-                                              common_opts.input_directory,
-                                              common_opts.input_data_format);
+                                              input_opts.directory,
+                                              input_opts.format);
             }  // stop measuring hit reading timer
 
             auto& spacepoints_per_event = sp_reader_output.spacepoints;
@@ -207,7 +212,7 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
 
             // CPU
 
-            if (run_cpu) {
+            if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
                 seeds = sa(spacepoints_per_event);
             }  // stop measuring seeding cpu timer
@@ -221,17 +226,18 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
             {
                 traccc::performance::timer t("Track params (alpaka)",
                                              elapsedTimes);
-                params_alpaka_buffer = tp_alpaka(
-                    spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                    modules_buffer, {0.f, 0.f, finder_config.bFieldInZ});
+                params_alpaka_buffer =
+                    tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
+                              modules_buffer,
+                              {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
             }  // stop measuring track params alpaka timer
             // CPU
 
-            if (run_cpu) {
+            if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
                 params = tp(std::move(spacepoints_per_event), seeds,
-                            {0.f, 0.f, finder_config.bFieldInZ});
+                            {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
@@ -246,7 +252,7 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
         copy(seeds_alpaka_buffer, seeds_alpaka);
         copy(params_alpaka_buffer, params_alpaka);
 
-        if (run_cpu) {
+        if (accelerator_opts.compare_with_cpu) {
             // Show which event we are currently presenting the results for.
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
 
@@ -278,10 +284,10 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
           Writer
           ------------*/
 
-        if (common_opts.check_performance) {
-            traccc::event_map2 evt_map(event, common_opts.input_directory,
-                                       common_opts.input_directory,
-                                       common_opts.input_directory);
+        if (performance_opts.run) {
+            traccc::event_map2 evt_map(event, input_opts.directory,
+                                       input_opts.directory,
+                                       input_opts.directory);
 
             sd_performance_writer.write(
                 vecmem::get_data(seeds_alpaka),
@@ -289,7 +295,7 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
         }
     }
 
-    if (common_opts.check_performance) {
+    if (performance_opts.run) {
         sd_performance_writer.finalize();
         nsd_performance_writer.finalize();
 
@@ -310,42 +316,23 @@ int seq_run(const traccc::seeding_input_options& /*i_cfg*/,
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    // Set up the program options
-    po::options_description desc("Allowed options");
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::common_options common_opts(desc);
-    traccc::detector_input_options det_opts(desc);
-    traccc::seeding_input_options seeding_input_cfg(desc);
-    traccc::finding_input_options finding_input_cfg(desc);
-    traccc::propagation_options propagation_opts(desc);
-    desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
-                       "run cpu tracking as well");
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_finding finding_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::performance performance_opts;
+    traccc::opts::accelerator accelerator_opts;
+    traccc::opts::program_options program_opts{
+        "Full Tracking Chain Using Alpaka (without clusterization)",
+        {detector_opts, input_opts, seeding_opts, finding_opts,
+         propagation_opts, performance_opts, accelerator_opts},
+        argc,
+        argv};
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    common_opts.read(vm);
-    det_opts.read(vm);
-    seeding_input_cfg.read(vm);
-    finding_input_cfg.read(vm);
-    propagation_opts.read(vm);
-    auto run_cpu = vm["run-cpu"].as<bool>();
-
-    // Tell the user what's happening.
-    std::cout << "\nRunning the tracking chain using Alpaka\n\n"
-              << common_opts << "\n"
-              << det_opts << "\n"
-              << seeding_input_cfg << "\n"
-              << finding_input_cfg << "\n"
-              << propagation_opts << "\n"
-              << std::endl;
-
-    return seq_run(seeding_input_cfg, finding_input_cfg, propagation_opts,
-                   common_opts, det_opts, run_cpu);
+    // Run the application.
+    return seq_run(seeding_opts, finding_opts, propagation_opts, input_opts,
+                   detector_opts, performance_opts, accelerator_opts);
 }

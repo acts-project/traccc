@@ -17,10 +17,13 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/options/common_options.hpp"
-#include "traccc/options/detector_input_options.hpp"
-#include "traccc/options/full_tracking_input_options.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/options/accelerator.hpp"
+#include "traccc/options/clusterization.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/performance.hpp"
+#include "traccc/options/program_options.hpp"
+#include "traccc/options/track_seeding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
@@ -39,21 +42,22 @@
 #include <iostream>
 #include <memory>
 
-namespace po = boost::program_options;
-
-int seq_run(const traccc::full_tracking_input_options& i_cfg,
-            const traccc::common_options& common_opts,
-            const traccc::detector_input_options& det_opts, bool run_cpu) {
+int seq_run(const traccc::opts::detector& detector_opts,
+            const traccc::opts::input_data& input_opts,
+            const traccc::opts::clusterization& clusterization_opts,
+            const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::performance& performance_opts,
+            const traccc::opts::accelerator& accelerator_opts) {
 
     // Read in the geometry.
     auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
-        det_opts.detector_file,
-        (det_opts.use_detray_detector ? traccc::data_format::json
-                                      : traccc::data_format::csv));
+        detector_opts.detector_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
 
     // Read the digitization configuration file
     auto digi_cfg =
-        traccc::io::read_digitization_config(i_cfg.digitization_config_file);
+        traccc::io::read_digitization_config(detector_opts.digitization_file);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -65,13 +69,9 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
 
-    // Configs
-    traccc::seedfinder_config finder_config;
-    traccc::spacepoint_grid_config grid_config(finder_config);
-    traccc::seedfilter_config filter_config;
-
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f, finder_config.bFieldInZ};
+    const traccc::vector3 field_vec = {0.f, 0.f,
+                                       seeding_opts.seedfinder.bFieldInZ};
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -81,8 +81,9 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
-                                 host_mr);
+    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
+                                 {seeding_opts.seedfinder},
+                                 seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
 
     traccc::cuda::stream stream;
@@ -90,9 +91,10 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     traccc::cuda::clusterization_algorithm ca_cuda(
-        mr, copy, stream, common_opts.target_cells_per_partition);
-    traccc::cuda::seeding_algorithm sa_cuda(finder_config, grid_config,
-                                            filter_config, mr, copy, stream);
+        mr, copy, stream, clusterization_opts.target_cells_per_partition);
+    traccc::cuda::seeding_algorithm sa_cuda(
+        seeding_opts.seedfinder, {seeding_opts.seedfinder},
+        seeding_opts.seedfilter, mr, copy, stream);
     traccc::cuda::track_params_estimation tp_cuda(mr, copy, stream);
 
     // performance writer
@@ -102,8 +104,8 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = common_opts.skip;
-         event < common_opts.events + common_opts.skip; ++event) {
+    for (unsigned int event = input_opts.skip;
+         event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
         traccc::io::cell_reader_output read_out_per_event(mr.host);
@@ -126,10 +128,10 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
-                traccc::io::read_cells(
-                    read_out_per_event, event, common_opts.input_directory,
-                    common_opts.input_data_format, &surface_transforms,
-                    &digi_cfg, barcode_map.get());
+                traccc::io::read_cells(read_out_per_event, event,
+                                       input_opts.directory, input_opts.format,
+                                       &surface_transforms, &digi_cfg,
+                                       barcode_map.get());
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
@@ -157,7 +159,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
                 stream.synchronize();
             }  // stop measuring clusterization cuda timer
 
-            if (run_cpu) {
+            if (accelerator_opts.compare_with_cpu) {
 
                 /*-----------------------------
                     Clusterization (cpu)
@@ -196,7 +198,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
 
             // CPU
 
-            if (run_cpu) {
+            if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
                 seeds = sa(spacepoints_per_event);
             }  // stop measuring seeding cpu timer
@@ -217,7 +219,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
 
             // CPU
 
-            if (run_cpu) {
+            if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
                 params = tp(spacepoints_per_event, seeds, field_vec);
@@ -237,7 +239,7 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
         copy(seeds_cuda_buffer, seeds_cuda)->wait();
         copy(params_cuda_buffer, params_cuda)->wait();
 
-        if (run_cpu) {
+        if (accelerator_opts.compare_with_cpu) {
 
             // Show which event we are currently presenting the results for.
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
@@ -271,19 +273,19 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
         n_spacepoints_cuda += spacepoints_per_event_cuda.size();
         n_seeds_cuda += seeds_cuda.size();
 
-        if (common_opts.check_performance) {
+        if (performance_opts.run) {
 
             traccc::event_map evt_map(
-                event, det_opts.detector_file, i_cfg.digitization_config_file,
-                common_opts.input_directory, common_opts.input_directory,
-                common_opts.input_directory, host_mr);
+                event, detector_opts.detector_file,
+                detector_opts.digitization_file, input_opts.directory,
+                input_opts.directory, input_opts.directory, host_mr);
             sd_performance_writer.write(
                 vecmem::get_data(seeds_cuda),
                 vecmem::get_data(spacepoints_per_event_cuda), evt_map);
         }
     }
 
-    if (common_opts.check_performance) {
+    if (performance_opts.run) {
         sd_performance_writer.finalize();
     }
 
@@ -307,35 +309,22 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    // Set up the program options
-    po::options_description desc("Allowed options");
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::common_options common_opts(desc);
-    traccc::detector_input_options det_opts(desc);
-    traccc::full_tracking_input_options full_tracking_input_cfg(desc);
-    desc.add_options()("run-cpu", po::value<bool>()->default_value(false),
-                       "run cpu tracking as well");
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::clusterization clusterization_opts;
+    traccc::opts::track_seeding seeding_opts;
+    traccc::opts::performance performance_opts;
+    traccc::opts::accelerator accelerator_opts;
+    traccc::opts::program_options program_opts{
+        "Full Tracking Chain Using CUDA",
+        {detector_opts, input_opts, clusterization_opts, seeding_opts,
+         performance_opts, accelerator_opts},
+        argc,
+        argv};
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    common_opts.read(vm);
-    det_opts.read(vm);
-    full_tracking_input_cfg.read(vm);
-    auto run_cpu = vm["run-cpu"].as<bool>();
-
-    // Tell the user what's happening.
-    std::cout << "\nRunning the full tracking chain using CUDA\n\n"
-              << common_opts << "\n"
-              << det_opts << "\n"
-              << full_tracking_input_cfg << "\n"
-              << std::endl;
-
-    return seq_run(full_tracking_input_cfg, common_opts, det_opts, run_cpu);
+    // Run the application.
+    return seq_run(detector_opts, input_opts, clusterization_opts, seeding_opts,
+                   performance_opts, accelerator_opts);
 }
