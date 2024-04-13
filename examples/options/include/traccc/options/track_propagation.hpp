@@ -42,7 +42,7 @@ class track_propagation : public interface {
     std::ostream& print_impl(std::ostream& out) const override;
 
     /// Search window (helper variable)
-    value_array<unsigned int, 2> m_search_window = {0u, 0u};
+    value_array<unsigned int, 2> m_search_window = {3u, 3u};
 
 };  // class track_propagation
 
