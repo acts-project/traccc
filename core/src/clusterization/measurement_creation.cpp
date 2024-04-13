@@ -24,6 +24,8 @@ measurement_creation::output_type measurement_creation::operator()(
     output_type result(&(m_mr.get()));
     result.reserve(clusters.size());
 
+    std::size_t unique_measurement_id = 0;
+
     // Process the clusters one-by-one.
     for (std::size_t i = 0; i < clusters.size(); ++i) {
         // To calculate the mean and variance with high numerical stability
@@ -48,7 +50,10 @@ measurement_creation::output_type measurement_creation::operator()(
         const auto &module = modules.at(module_link);
 
         // Fill measurement from cluster
-        detail::fill_measurement(result, cluster, module, module_link);
+        // Give each measurement a unique ID, for the ambiguity resolution
+        // algorithm
+        detail::fill_measurement(result, cluster, module, module_link,
+                                 ++unique_measurement_id);
     }
 
     return result;

@@ -78,11 +78,12 @@ TRACCC_HOST inline void calc_cluster_properties(
 /// @param[in] cluster is the input cell vector
 /// @param[in] module is the cell module where the cluster belongs to
 /// @param[in] module_link is the module index
+/// @param[in] unique_mid unique measurement id, for ambiguity resolution
 ///
 TRACCC_HOST inline void fill_measurement(
     measurement_collection_types::host& measurements,
     const cell_collection_types::host& cluster, const cell_module& module,
-    const unsigned int module_link) {
+    const unsigned int module_link, std::size_t unique_mid) {
 
     // To calculate the mean and variance with high numerical stability
     // we use a weighted variant of Welford's algorithm. This is a
@@ -114,6 +115,9 @@ TRACCC_HOST inline void fill_measurement(
             m.variance + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
                                 pitch[1] * pitch[1] / static_cast<scalar>(12.)};
         // @todo add variance estimation
+
+        // For the ambiguity resolution algorithm, give a unique measurement ID
+        m.measurement_id = unique_mid;
 
         measurements.push_back(std::move(m));
     }
