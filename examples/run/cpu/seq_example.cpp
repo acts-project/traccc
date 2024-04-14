@@ -23,6 +23,7 @@
 // performance
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
 // options
@@ -54,6 +55,14 @@
 #include <iostream>
 #include <map>
 #include <memory>
+
+// Timer macros
+// I used a pointer to avoid indenting the whole code and make it more readable.
+#define TIMER_START(unique_var_name, str_name) \
+    auto unique_var_name =                     \
+        new traccc::performance::timer(str_name, elapsedTimes);
+
+#define TIMER_STOP(unique_var_name) delete unique_var_name;
 
 int seq_run(const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
@@ -161,12 +170,19 @@ int seq_run(const traccc::opts::input_data& input_opts,
     ar_writer_cfg.algorithm_name = "ambiguity_resolution";
     traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
 
+    // Timers
+    traccc::performance::timing_info elapsedTimes;
+
     // Loop over events
     for (unsigned int event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
+        // Start measuring wall time.
+        TIMER_START(timer_wall, "Wall time");
+
         traccc::io::cell_reader_output readOut(&host_mr);
 
+        TIMER_START(timer_cells, "Read cells");
         // Read the cells from the relevant event file
         traccc::io::read_cells(readOut, event, input_opts.directory,
                                input_opts.format, &surface_transforms,
@@ -174,49 +190,67 @@ int seq_run(const traccc::opts::input_data& input_opts,
         traccc::cell_collection_types::host& cells_per_event = readOut.cells;
         traccc::cell_module_collection_types::host& modules_per_event =
             readOut.modules;
+        TIMER_STOP(timer_cells);
 
         /*-------------------
             Clusterization
           -------------------*/
 
+        TIMER_START(timer_cluster, "Clusterization");
         auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
                                          vecmem::get_data(modules_per_event));
+        TIMER_STOP(timer_cluster);
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
+        TIMER_START(timer_spf, "Spacepoint formation");
         auto spacepoints_per_event =
             sf(vecmem::get_data(measurements_per_event),
                vecmem::get_data(modules_per_event));
+        TIMER_STOP(timer_spf);
 
         /*-----------------------
           Seeding algorithm
           -----------------------*/
 
+        TIMER_START(timer_seeding, "Seeding");
         auto seeds = sa(spacepoints_per_event);
+        TIMER_STOP(timer_seeding);
 
         /*----------------------------
           Track params estimation
           ----------------------------*/
 
+        TIMER_START(timer_params, "Track params estimation");
         auto params = tp(spacepoints_per_event, seeds, field_vec);
+        TIMER_STOP(timer_params);
 
         // Perform track finding and fitting only when using a Detray geometry.
         finding_algorithm::output_type track_candidates{&host_mr};
         fitting_algorithm::output_type track_states{&host_mr};
         if (detector_opts.use_detray_detector) {
+            TIMER_START(timer_finding, "Track finding");
             track_candidates =
                 finding_alg(detector, field, measurements_per_event, params);
+            TIMER_STOP(timer_finding);
+            TIMER_START(timer_fitting, "Track fitting");
             track_states = fitting_alg(detector, field, track_candidates);
+            TIMER_STOP(timer_fitting);
         }
 
         // Perform ambiguity resolution only if asked for.
         traccc::greedy_ambiguity_resolution_algorithm::output_type
             resolved_track_states{&host_mr};
         if (resolution_opts.run) {
+            TIMER_START(timer_ar, "Track ambiguity resolution");
             resolved_track_states = resolution_alg(track_states);
+            TIMER_STOP(timer_ar);
         }
+
+        // Stop measuring Wall time.
+        TIMER_STOP(timer_wall);
 
         /*----------------------------
           Statistics
@@ -284,6 +318,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     std::cout << "- fitted   " << n_fitted_tracks << " tracks" << std::endl;
     std::cout << "- resolved " << n_ambiguity_free_tracks << " tracks"
               << std::endl;
+    std::cout << "==> Elapsed times...\n" << elapsedTimes << std::endl;
 
     return EXIT_SUCCESS;
 }
