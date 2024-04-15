@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/component_connection_algorithm.hpp"
-#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
@@ -27,7 +27,7 @@ TEST(algorithms, seq_single_module) {
     vecmem::host_memory_resource resource;
 
     traccc::component_connection_algorithm cc(resource);
-    traccc::measurement_creation mc(resource);
+    traccc::measurement_creation_algorithm mc(resource);
 
     /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
     traccc::cell_collection_types::host cells = {{{1, 0, 1., 0., 0},
@@ -47,7 +47,8 @@ TEST(algorithms, seq_single_module) {
     auto clusters = cc(vecmem::get_data(cells));
     EXPECT_EQ(clusters.size(), 4u);
 
-    auto measurements = mc(clusters, modules);
+    auto clusters_data = traccc::get_data(clusters);
+    auto measurements = mc(clusters_data, vecmem::get_data(modules));
 
     EXPECT_EQ(measurements.size(), 4u);
 }

@@ -9,7 +9,7 @@
 
 // Library include(s).
 #include "traccc/clusterization/component_connection_algorithm.hpp"
-#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -57,7 +57,7 @@ class clusterization_algorithm
     component_connection_algorithm m_cc;
 
     /// Per-module measurement creation algorithm
-    measurement_creation m_mc;
+    measurement_creation_algorithm m_mc;
 
     /// @}
 
