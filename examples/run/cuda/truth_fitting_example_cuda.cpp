@@ -12,6 +12,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
+#include "traccc/event/track_property_writer.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/io/read_geometry.hpp"
@@ -96,6 +97,8 @@ int main(int argc, char* argv[]) {
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     // Performance writer
+    traccc::track_property_writer evt_tree_writer(
+        traccc::track_property_writer::config{});
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{});
 
@@ -237,6 +240,10 @@ int main(int argc, char* argv[]) {
         n_fitted_tracks_cuda += track_states_cuda.size();
 
         if (performance_opts.run) {
+
+            evt_tree_writer.write(traccc::get_data(track_states_cuda),
+                                  evt_map2);
+
             for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
                 const auto& trk_states_per_track =
                     track_states_cuda.at(i).items;
@@ -250,6 +257,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (performance_opts.run) {
+        evt_tree_writer.finalize();
         fit_performance_writer.finalize();
     }
 

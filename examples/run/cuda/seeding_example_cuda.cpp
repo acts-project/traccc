@@ -17,6 +17,7 @@
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_filter.hpp"
+#include "traccc/event/track_property_writer.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_geometry.hpp"
@@ -95,6 +96,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     // Performance writer
+    traccc::track_property_writer evt_tree_writer(
+        traccc::track_property_writer::config{});
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
     traccc::finding_performance_writer find_performance_writer(
@@ -436,6 +439,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             traccc::event_map2 evt_map(event, input_opts.directory,
                                        input_opts.directory,
                                        input_opts.directory);
+
+            evt_tree_writer.write(traccc::get_data(track_states), evt_map);
+
             sd_performance_writer.write(
                 vecmem::get_data(seeds_cuda),
                 vecmem::get_data(sp_reader_output.spacepoints), evt_map);
@@ -456,6 +462,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     }
 
     if (performance_opts.run) {
+        evt_tree_writer.finalize();
         sd_performance_writer.finalize();
         nsd_performance_writer.finalize();
         find_performance_writer.finalize();
