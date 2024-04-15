@@ -133,10 +133,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
     finding_cfg.max_track_candidates_per_track =
         finding_opts.track_candidates_range[1];
     finding_cfg.chi2_max = finding_opts.chi2_max;
-    finding_cfg.propagation = propagation_opts.config;
+    propagation_opts.setup(finding_cfg.propagation);
 
     fitting_algorithm::config_type fitting_cfg;
-    fitting_cfg.propagation = propagation_opts.config;
+    propagation_opts.setup(fitting_cfg.propagation);
 
     // Algorithms
     traccc::clusterization_algorithm ca(host_mr);
