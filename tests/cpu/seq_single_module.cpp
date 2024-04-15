@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/clusterization/component_connection_algorithm.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/edm/cell.hpp"
@@ -26,7 +26,7 @@ TEST(algorithms, seq_single_module) {
     // Memory resource used in the test.
     vecmem::host_memory_resource resource;
 
-    traccc::component_connection cc(resource);
+    traccc::component_connection_algorithm cc(resource);
     traccc::measurement_creation mc(resource);
 
     /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
@@ -44,7 +44,7 @@ TEST(algorithms, seq_single_module) {
     traccc::cell_module_collection_types::host modules(&resource);
     modules.push_back(module);
 
-    auto clusters = cc(cells);
+    auto clusters = cc(vecmem::get_data(cells));
     EXPECT_EQ(clusters.size(), 4u);
 
     auto measurements = mc(clusters, modules);

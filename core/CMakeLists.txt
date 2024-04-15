@@ -41,9 +41,10 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/utils/subspace.hpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/detail/measurement_creation_helper.hpp"
-  "include/traccc/clusterization/detail/sparse_ccl.hpp"
-  "include/traccc/clusterization/component_connection.hpp"
-  "src/clusterization/component_connection.cpp"
+  "include/traccc/clusterization/details/sparse_ccl.hpp"
+  "include/traccc/clusterization/impl/sparse_ccl.ipp"
+  "include/traccc/clusterization/component_connection_algorithm.hpp"
+  "src/clusterization/component_connection_algorithm.cpp"
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
   "include/traccc/clusterization/spacepoint_formation.hpp"

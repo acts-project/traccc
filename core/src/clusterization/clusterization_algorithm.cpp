@@ -17,7 +17,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::host& cells,
     const cell_module_collection_types::host& modules) const {
 
-    return m_mc(m_cc(cells), modules);
+    return m_mc(m_cc(vecmem::get_data(cells)), modules);
 }
 
 }  // namespace traccc

@@ -19,7 +19,7 @@
 #include "traccc/io/utils.hpp"
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/clusterization/component_connection_algorithm.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
 
 namespace traccc {
@@ -195,7 +195,7 @@ generate_measurement_cell_map(std::size_t event,
     measurement_cell_map result;
 
     // CCA algorithms
-    component_connection cc(resource);
+    component_connection_algorithm cc(resource);
     measurement_creation mc(resource);
 
     // Read the surface transforms
@@ -211,7 +211,7 @@ generate_measurement_cell_map(std::size_t event,
     cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
-    auto clusters_per_event = cc(cells_per_event);
+    auto clusters_per_event = cc(vecmem::get_data(cells_per_event));
     auto measurements_per_event = mc(clusters_per_event, modules_per_event);
 
     assert(measurements_per_event.size() == clusters_per_event.size());

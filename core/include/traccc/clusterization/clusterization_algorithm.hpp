@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/clusterization/component_connection_algorithm.hpp"
 #include "traccc/clusterization/measurement_creation.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -54,7 +54,7 @@ class clusterization_algorithm
     /// @{
 
     /// Per-module cluster creation algorithm
-    component_connection m_cc;
+    component_connection_algorithm m_cc;
 
     /// Per-module measurement creation algorithm
     measurement_creation m_mc;

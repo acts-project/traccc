@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -30,14 +30,16 @@ namespace traccc {
 /// the host- and device versions of the EDM, making use of a single
 /// implementation internally.
 ///
-class component_connection : public algorithm<cluster_container_types::host(
-                                 const cell_collection_types::host&)> {
+class component_connection_algorithm
+    : public algorithm<cluster_container_types::host(
+          const cell_collection_types::const_view&)> {
 
     public:
     /// Constructor for component_connection
     ///
     /// @param mr is the memory resource
-    component_connection(vecmem::memory_resource& mr) : m_mr(mr) {}
+    ///
+    component_connection_algorithm(vecmem::memory_resource& mr);
 
     /// @name Operator(s) to use in host code
     /// @{
@@ -45,13 +47,13 @@ class component_connection : public algorithm<cluster_container_types::host(
     /// Callable operator for the connected component, based on one single
     /// module
     ///
-    /// @param cells Collection of input cells sorted by module
+    /// @param cells_view Collection of input cells sorted by module
     ///
     /// c++20 piping interface:
     /// @return a cluster collection
     ///
     output_type operator()(
-        const cell_collection_types::host& cells) const override;
+        const cell_collection_types::const_view& cells_view) const override;
 
     /// @}
 
@@ -59,6 +61,6 @@ class component_connection : public algorithm<cluster_container_types::host(
     /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
-};  // class component_connection
+};  // class component_connection_algorithm
 
 }  // namespace traccc
