@@ -325,7 +325,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // @TODO Uncomment the line below once acts-project/acts#2132 is merged
     // EXPECT_EQ(seeds.size(), seedVector.size());
     EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.0023);
-    EXPECT_GT(float(n_seed_match)/seeds.size(), 0.9977);
+    EXPECT_GT(float(n_seed_match) / seeds.size(), 0.9977);
 }
 
 INSTANTIATE_TEST_SUITE_P(
