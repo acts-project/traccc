@@ -132,8 +132,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     EXPECT_EQ(spacepoints_per_event.size(), n_sp_match);
     EXPECT_EQ(spVec.size(), n_sp_match);
 
-    // ACTS seeding config
     Acts::SeedFinderConfig<SpacePoint> acts_config;
+    Acts::SeedFinderOptions acts_options;
 
     // silicon detector max
     acts_config.phiMin = traccc_config.phiMin;
@@ -165,19 +165,37 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.cotThetaMax = traccc_config.cotThetaMax;
     acts_config.sigmaScattering = traccc_config.sigmaScattering;
     acts_config.maxPtScattering = traccc_config.maxPtScattering;
-    acts_config.minPt = traccc_config.minPt;
-    acts_config.impactMax = traccc_config.impactMax;
-    acts_config.sigmaError = traccc_config.sigmaError;
 
-    // ACTS seeding option
-    Acts::SeedFinderOptions acts_options;
+    acts_config.minPt = traccc_config.minPt;
     acts_options.bFieldInZ = traccc_config.bFieldInZ;
+
     acts_options.beamPos[0] = traccc_config.beamPos[0];
     acts_options.beamPos[1] = traccc_config.beamPos[1];
 
-    // Seed filter config
+    acts_config.impactMax = traccc_config.impactMax;
+
+    acts_config.sigmaError = traccc_config.sigmaError;
+
+    int numPhiNeighbors = 1;
+
+    std::vector<std::pair<int, int>> zBinNeighborsTop;
+    std::vector<std::pair<int, int>> zBinNeighborsBottom;
+
+    auto bottomBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
+        Acts::BinFinder<SpacePoint>(zBinNeighborsBottom, numPhiNeighbors));
+    auto topBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
+        Acts::BinFinder<SpacePoint>(zBinNeighborsTop, numPhiNeighbors));
     Acts::SeedFilterConfig sfconf;
     sfconf.maxSeedsPerSpM = traccc::seedfilter_config().maxSeedsPerSpM;
+
+    Acts::ATLASCuts<SpacePoint> atlasCuts = Acts::ATLASCuts<SpacePoint>();
+    // covariance tool, sets covariances per spacepoint as required
+    auto ct = [=](const SpacePoint& sp, float, float,
+                  float) -> std::pair<Acts::Vector3, Acts::Vector2> {
+        Acts::Vector3 position(sp.x(), sp.y(), sp.z());
+        Acts::Vector2 covariance(sp.varianceR, sp.varianceZ);
+        return std::make_pair(position, covariance);
+    };
 
     // setup spacepoint grid config
     Acts::SpacePointGridConfig gridConf;
@@ -192,15 +210,12 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     gridConf.phiMin = acts_config.phiMin;
     gridConf.phiMax = acts_config.phiMax;
     gridConf.phiBinDeflectionCoverage = traccc_config.phiBinDeflectionCoverage;
-
-    // Spacepoint Grid Option
-    Acts::SpacePointGridOptions gridOption;
-    gridOption.bFieldInZ = acts_options.bFieldInZ;
+    Acts::SpacePointGridOptions gridOpts;
+    gridOpts.bFieldInZ = acts_options.bFieldInZ;
 
     // To internal units
     sfconf.toInternalUnits();
     sfconf.isInInternalUnits = true;
-    Acts::ATLASCuts<SpacePoint> atlasCuts = Acts::ATLASCuts<SpacePoint>();
     acts_config.seedFilter = std::make_unique<Acts::SeedFilter<SpacePoint>>(
         Acts::SeedFilter<SpacePoint>(sfconf, &atlasCuts));
 
@@ -208,28 +223,13 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_options =
         acts_options.toInternalUnits().calculateDerivedQuantities(acts_config);
     gridConf = gridConf.toInternalUnits();
-    gridOption = gridOption.toInternalUnits();
-
-    std::vector<std::pair<int, int>> empty_vec;
-    auto bottomBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
-        Acts::BinFinder<SpacePoint>(empty_vec, 1));
-    auto topBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
-        Acts::BinFinder<SpacePoint>(empty_vec, 1));
+    gridOpts = gridOpts.toInternalUnits();
 
     Acts::SeedFinder<SpacePoint> a(acts_config);
 
-    // covariance tool, sets covariances per spacepoint as required
-    auto ct = [=](const SpacePoint& sp, float, float,
-                  float) -> std::pair<Acts::Vector3, Acts::Vector2> {
-        Acts::Vector3 position(sp.x(), sp.y(), sp.z());
-        Acts::Vector2 covariance(sp.varianceR, sp.varianceZ);
-        return std::make_pair(position, covariance);
-    };
-
     // create grid with bin sizes according to the configured geometry
     std::unique_ptr<Acts::SpacePointGrid<SpacePoint>> grid =
-        Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf,
-                                                            gridOption);
+        Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf, gridOpts);
 
     // Currently traccc is using grid2. check if acts grid dimensionality is the
     // same
