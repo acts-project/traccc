@@ -319,8 +319,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     }
     seedVector = sorted_seedVector;
 
-    float seed_match_ratio = float(n_seed_match) / seeds.size();
-
     // Ensure that ACTS and traccc give the same result
     // @TODO Uncomment the line below once acts-project/acts#2132 is merged
     // EXPECT_EQ(seeds.size(), seedVector.size());
