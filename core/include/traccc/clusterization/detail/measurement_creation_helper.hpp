@@ -115,6 +115,9 @@ TRACCC_HOST inline void fill_measurement(
                                 pitch[1] * pitch[1] / static_cast<scalar>(12.)};
         // @todo add variance estimation
 
+        // For the ambiguity resolution algorithm, give a unique measurement ID
+        m.measurement_id = measurements.size();
+
         measurements.push_back(std::move(m));
     }
 }
