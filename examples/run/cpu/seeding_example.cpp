@@ -139,14 +139,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.min_track_candidates_per_track = finding_opts.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_opts.track_candidates_range[1];
     cfg.chi2_max = finding_opts.chi2_max;
-    cfg.propagation = propagation_opts.config;
+    propagation_opts.setup(cfg.propagation);
 
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.propagation = propagation_opts.config;
+    propagation_opts.setup(fit_cfg.propagation);
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
