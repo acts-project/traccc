@@ -37,6 +37,17 @@ class track_propagation : public interface {
     ///
     void read(const boost::program_options::variables_map& vm) override;
 
+    /// Set up a configuration object based on the command line options
+    ///
+    /// @param cfg The configuration object to fill
+    ///
+    void setup(detray::propagation::config<float>& cfg) const;
+    /// Set up a configuration object based on the command line options
+    ///
+    /// @param cfg The configuration object to fill
+    ///
+    void setup(detray::propagation::config<double>& cfg) const;
+
     private:
     /// Print the specific options of this class
     std::ostream& print_impl(std::ostream& out) const override;

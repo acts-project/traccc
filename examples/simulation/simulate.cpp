@@ -90,8 +90,12 @@ int main(int argc, char* argv[]) {
     // Origin of particles
     generator_type::configuration gen_cfg{};
     gen_cfg.n_tracks(generation_opts.gen_nparticles);
-    gen_cfg.origin(generation_opts.vertex);
-    gen_cfg.origin_stddev(generation_opts.vertex_stddev);
+    gen_cfg.origin(generator_type::point3{generation_opts.vertex[0],
+                                          generation_opts.vertex[1],
+                                          generation_opts.vertex[2]});
+    gen_cfg.origin_stddev(generator_type::point3{
+        generation_opts.vertex_stddev[0], generation_opts.vertex_stddev[1],
+        generation_opts.vertex_stddev[2]});
     gen_cfg.phi_range(generation_opts.phi_range[0],
                       generation_opts.phi_range[1]);
     gen_cfg.theta_range(generation_opts.theta_range[0],
@@ -121,7 +125,7 @@ int main(int argc, char* argv[]) {
         generation_opts.events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
 
-    sim.get_config().propagation = propagation_opts.config;
+    propagation_opts.setup(sim.get_config().propagation);
 
     sim.run();
 
