@@ -34,8 +34,8 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                                 vecmem::host_memory_resource resource) {
 
     // Algorithms
-    traccc::clusterization_algorithm ca(resource);
-    traccc::spacepoint_formation_algorithm sf(resource);
+    traccc::host::clusterization_algorithm ca(resource);
+    traccc::host::spacepoint_formation_algorithm sf(resource);
 
     // Output stats
     uint64_t n_modules = 0;
@@ -61,7 +61,8 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event, modules_per_event);
+        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
+                                         vecmem::get_data(modules_per_event));
 
         /*------------------------
             Spacepoint formation

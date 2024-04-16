@@ -7,7 +7,7 @@
  */
 
 // Project include(s).
-#include "traccc/clusterization/component_connection_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/io/read_cells.hpp"
 
@@ -83,7 +83,7 @@ void print_statistics(const traccc::cell_collection_types::host& data) {
     }
 }
 
-void run_on_event(traccc::component_connection_algorithm& cc,
+void run_on_event(traccc::host::sparse_ccl_algorithm& cc,
                   traccc::cell_collection_types::host& data) {
     traccc::cluster_container_types::host clusters = cc(vecmem::get_data(data));
 }
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
     vecmem::host_memory_resource mem;
 
-    traccc::component_connection_algorithm cc(mem);
+    traccc::host::sparse_ccl_algorithm cc(mem);
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 

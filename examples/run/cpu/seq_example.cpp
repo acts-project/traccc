@@ -139,8 +139,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     propagation_opts.setup(fitting_cfg.propagation);
 
     // Algorithms
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation_algorithm sf(host_mr);
+    traccc::host::clusterization_algorithm ca(host_mr);
+    traccc::host::spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
@@ -179,7 +179,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event, modules_per_event);
+        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
+                                         vecmem::get_data(modules_per_event));
 
         /*------------------------
             Spacepoint formation

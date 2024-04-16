@@ -18,7 +18,7 @@
 // System include(s).
 #include <functional>
 
-namespace traccc {
+namespace traccc::host {
 
 /// Algorithm forming space points out of measurements
 ///
@@ -55,4 +55,4 @@ class spacepoint_formation_algorithm
 
 };  // class spacepoint_formation_algorithm
 
-}  // namespace traccc
+}  // namespace traccc::host

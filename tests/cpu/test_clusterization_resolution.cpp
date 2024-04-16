@@ -41,8 +41,8 @@ TEST_P(SurfaceBinningTests, Run) {
     vecmem::host_memory_resource host_mr;
 
     // Algorithms
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation_algorithm sf(host_mr);
+    traccc::host::clusterization_algorithm ca(host_mr);
+    traccc::host::spacepoint_formation_algorithm sf(host_mr);
 
     // Read the cells from the relevant event file
     traccc::io::cell_reader_output readOut(&host_mr);
@@ -53,7 +53,8 @@ TEST_P(SurfaceBinningTests, Run) {
     const traccc::cell_module_collection_types::host& modules = readOut.modules;
 
     // Get Reconstructed Spacepoints
-    auto measurements_recon = ca(cells_truth, modules);
+    auto measurements_recon =
+        ca(vecmem::get_data(cells_truth), vecmem::get_data(modules));
     auto spacepoints_recon =
         sf(vecmem::get_data(measurements_recon), vecmem::get_data(modules));
 

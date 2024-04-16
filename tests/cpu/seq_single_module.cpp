@@ -6,8 +6,8 @@
  */
 
 // Project include(s).
-#include "traccc/clusterization/component_connection_algorithm.hpp"
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -24,8 +24,8 @@ TEST(algorithms, seq_single_module) {
     // Memory resource used in the test.
     vecmem::host_memory_resource resource;
 
-    traccc::component_connection_algorithm cc(resource);
-    traccc::measurement_creation_algorithm mc(resource);
+    traccc::host::sparse_ccl_algorithm cc(resource);
+    traccc::host::measurement_creation_algorithm mc(resource);
 
     /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
     traccc::cell_collection_types::host cells = {{{1, 0, 1., 0., 0},

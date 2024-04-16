@@ -27,9 +27,10 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const cell_collection_types::host& cells,
     const cell_module_collection_types::host& modules) const {
 
-    const spacepoint_formation_algorithm::output_type spacepoints =
+    const host::spacepoint_formation_algorithm::output_type spacepoints =
         m_spacepoint_formation(
-            vecmem::get_data(m_clusterization(cells, modules)),
+            vecmem::get_data(m_clusterization(vecmem::get_data(cells),
+                                              vecmem::get_data(modules))),
             vecmem::get_data(modules));
     return m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
                                         {0.f, 0.f, m_finder_config.bFieldInZ});

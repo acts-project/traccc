@@ -19,7 +19,7 @@
 // System include(s).
 #include <functional>
 
-namespace traccc {
+namespace traccc::host {
 
 /// Measurement creation out of clusters
 ///
@@ -61,4 +61,4 @@ class measurement_creation_algorithm
 
 };  // class measurement_creation_algorithm
 
-}  // namespace traccc
+}  // namespace traccc::host

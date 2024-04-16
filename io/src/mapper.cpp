@@ -19,8 +19,8 @@
 #include "traccc/io/utils.hpp"
 
 // Project include(s).
-#include "traccc/clusterization/component_connection_algorithm.hpp"
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 
 namespace traccc {
 
@@ -195,8 +195,8 @@ generate_measurement_cell_map(std::size_t event,
     measurement_cell_map result;
 
     // CCA algorithms
-    component_connection_algorithm cc(resource);
-    measurement_creation_algorithm mc(resource);
+    host::sparse_ccl_algorithm cc(resource);
+    host::measurement_creation_algorithm mc(resource);
 
     // Read the surface transforms
     auto [surface_transforms, _] = io::read_geometry(detector_file);

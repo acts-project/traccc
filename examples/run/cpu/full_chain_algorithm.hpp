@@ -57,9 +57,9 @@ class full_chain_algorithm
     /// @{
 
     /// Clusterization algorithm
-    clusterization_algorithm m_clusterization;
+    host::clusterization_algorithm m_clusterization;
     /// Spacepoint formation algorithm
-    spacepoint_formation_algorithm m_spacepoint_formation;
+    host::spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm

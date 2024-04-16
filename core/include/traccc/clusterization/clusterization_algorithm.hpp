@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,8 +8,8 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/clusterization/component_connection_algorithm.hpp"
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -20,7 +20,7 @@
 // System include(s).
 #include <functional>
 
-namespace traccc {
+namespace traccc::host {
 
 /// Clusterization algorithm, creating measurements from cells
 ///
@@ -29,8 +29,8 @@ namespace traccc {
 ///
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::host(
-          const cell_collection_types::host&,
-          const cell_module_collection_types::host&)> {
+          const cell_collection_types::const_view&,
+          const cell_module_collection_types::const_view&)> {
 
     public:
     /// Clusterization algorithm constructor
@@ -41,20 +41,20 @@ class clusterization_algorithm
 
     /// Construct measurements for each detector module
     ///
-    /// @param cells The cells for every detector module in the event
-    /// @param modules A collection of detector modules
+    /// @param cells_view The cells for every detector module in the event
+    /// @param modules_view A collection of detector modules
     /// @return The measurements reconstructed for every detector module
     ///
-    output_type operator()(
-        const cell_collection_types::host& cells,
-        const cell_module_collection_types::host& modules) const override;
+    output_type operator()(const cell_collection_types::const_view& cells_view,
+                           const cell_module_collection_types::const_view&
+                               modules_view) const override;
 
     private:
     /// @name Sub-algorithms used by this algorithm
     /// @{
 
     /// Per-module cluster creation algorithm
-    component_connection_algorithm m_cc;
+    sparse_ccl_algorithm m_cc;
 
     /// Per-module measurement creation algorithm
     measurement_creation_algorithm m_mc;
@@ -66,4 +66,4 @@ class clusterization_algorithm
 
 };  // class clusterization_algorithm
 
-}  // namespace traccc
+}  // namespace traccc::host

@@ -10,7 +10,7 @@
 
 #include "traccc/clusterization/details/spacepoint_formation.hpp"
 
-namespace traccc {
+namespace traccc::host {
 
 spacepoint_formation_algorithm::spacepoint_formation_algorithm(
     vecmem::memory_resource& mr)
@@ -41,4 +41,4 @@ spacepoint_formation_algorithm::operator()(
     return result;
 }
 
-}  // namespace traccc
+}  // namespace traccc::host

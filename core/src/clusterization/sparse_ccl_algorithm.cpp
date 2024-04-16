@@ -6,7 +6,7 @@
  */
 
 // Library include(s).
-#include "traccc/clusterization/component_connection_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 
 #include "traccc/clusterization/details/sparse_ccl.hpp"
 
@@ -14,14 +14,12 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
-namespace traccc {
+namespace traccc::host {
 
-component_connection_algorithm::component_connection_algorithm(
-    vecmem::memory_resource& mr)
+sparse_ccl_algorithm::sparse_ccl_algorithm(vecmem::memory_resource& mr)
     : m_mr(mr) {}
 
-component_connection_algorithm::output_type
-component_connection_algorithm::operator()(
+sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
     const cell_collection_types::const_view& cells_view) const {
 
     // Run SparseCCL to fill CCL indices.
@@ -44,4 +42,4 @@ component_connection_algorithm::operator()(
     return clusters;
 }
 
-}  // namespace traccc
+}  // namespace traccc::host

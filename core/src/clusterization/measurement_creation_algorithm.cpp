@@ -11,7 +11,7 @@
 #include "traccc/clusterization/details/measurement_creation.hpp"
 #include "traccc/definitions/primitives.hpp"
 
-namespace traccc {
+namespace traccc::host {
 
 measurement_creation_algorithm::measurement_creation_algorithm(
     vecmem::memory_resource &mr)
@@ -61,4 +61,4 @@ measurement_creation_algorithm::operator()(
     return result;
 }
 
-}  // namespace traccc
+}  // namespace traccc::host
