@@ -8,11 +8,9 @@
 // Project include(s).
 #include "traccc/clusterization/component_connection_algorithm.hpp"
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 
 // VecMem include(s).

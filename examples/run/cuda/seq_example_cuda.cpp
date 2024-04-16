@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
@@ -80,7 +80,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
     traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
+    traccc::spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
@@ -110,7 +110,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         // Instantiate host containers/collections
         traccc::io::cell_reader_output read_out_per_event(mr.host);
         traccc::clusterization_algorithm::output_type measurements_per_event;
-        traccc::spacepoint_formation::output_type spacepoints_per_event;
+        traccc::spacepoint_formation_algorithm::output_type
+            spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -180,7 +181,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer t("Spacepoint formation  (cpu)",
                                                  elapsedTimes);
                     spacepoints_per_event =
-                        sf(measurements_per_event, modules_per_event);
+                        sf(vecmem::get_data(measurements_per_event),
+                           vecmem::get_data(modules_per_event));
                 }  // stop measuring spacepoint formation cpu timer
             }
 

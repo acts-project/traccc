@@ -50,8 +50,10 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/measurement_creation_algorithm.cpp"
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
-  "include/traccc/clusterization/spacepoint_formation.hpp"
-  "src/clusterization/spacepoint_formation.cpp"
+  "include/traccc/clusterization/details/spacepoint_formation.hpp"
+  "include/traccc/clusterization/impl/spacepoint_formation.ipp"
+  "include/traccc/clusterization/spacepoint_formation_algorithm.hpp"
+  "src/clusterization/spacepoint_formation_algorithm.cpp"
   # Finding algorithmic code
   "include/traccc/finding/candidate_link.hpp"
   "include/traccc/finding/finding_algorithm.hpp"
