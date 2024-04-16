@@ -1,50 +1,31 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Project include(s).
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
-#include "traccc/edm/measurement.hpp"
+namespace traccc::details {
 
-namespace traccc::detail {
-
-/// Function used for retrieving the cell signal based on the module id
 TRACCC_HOST_DEVICE
 inline scalar signal_cell_modelling(scalar signal_in,
                                     const cell_module& /*module*/) {
     return signal_in;
 }
 
-/// Function for pixel segmentation
 TRACCC_HOST_DEVICE
 inline vector2 position_from_cell(const cell& cell, const cell_module& module) {
+
     // Retrieve the specific values based on module idx
     return {module.pixel.min_center_x + cell.channel0 * module.pixel.pitch_x,
             module.pixel.min_center_y + cell.channel1 * module.pixel.pitch_y};
 }
 
-/// Function used for calculating the properties of the cluster during
-/// measurement creation
-///
-/// @param[in] cluster The vector of cells describing the identified cluster
-/// @param[in] module  The cell module
-/// @param[out] mean   The mean position of the cluster/measurement
-/// @param[out] var    The variation on the mean position of the
-///                    cluster/measurement
-/// @param[out] totalWeight The total weight of the cluster/measurement
-///
-template <typename cell_collection_t>
-TRACCC_HOST inline void calc_cluster_properties(
-    const cell_collection_t& cluster, const cell_module& module, point2& mean,
-    point2& var, scalar& totalWeight) {
+TRACCC_HOST_DEVICE inline void calc_cluster_properties(
+    const cell_collection_types::const_device& cluster,
+    const cell_module& module, point2& mean, point2& var, scalar& totalWeight) {
 
     // Loop over the cells of the cluster.
     for (const cell& cell : cluster) {
@@ -70,19 +51,11 @@ TRACCC_HOST inline void calc_cluster_properties(
     }
 }
 
-/// Function used for calculating the properties of the cluster during
-/// measurement creation
-///
-/// @param[out] measurements is the measurement collection where the measurement
-/// object will be filled
-/// @param[in] cluster is the input cell vector
-/// @param[in] module is the cell module where the cluster belongs to
-/// @param[in] module_link is the module index
-///
-TRACCC_HOST inline void fill_measurement(
-    measurement_collection_types::host& measurements,
-    const cell_collection_types::host& cluster, const cell_module& module,
-    const unsigned int module_link) {
+TRACCC_HOST_DEVICE inline void fill_measurement(
+    measurement_collection_types::device& measurements,
+    std::size_t measurement_index,
+    const cell_collection_types::const_device& cluster,
+    const cell_module& module, const unsigned int module_link) {
 
     // To calculate the mean and variance with high numerical stability
     // we use a weighted variant of Welford's algorithm. This is a
@@ -97,10 +70,13 @@ TRACCC_HOST inline void fill_measurement(
     // Calculate the cluster properties
     scalar totalWeight = 0.;
     point2 mean{0., 0.}, var{0., 0.};
-    detail::calc_cluster_properties(cluster, module, mean, var, totalWeight);
+    calc_cluster_properties(cluster, module, mean, var, totalWeight);
 
     if (totalWeight > 0.) {
-        measurement m;
+
+        // Access the measurement in question.
+        measurement& m = measurements[measurement_index];
+
         m.module_link = module_link;
         m.surface_link = module.surface_link;
         // normalize the cell position
@@ -116,10 +92,8 @@ TRACCC_HOST inline void fill_measurement(
         // @todo add variance estimation
 
         // For the ambiguity resolution algorithm, give a unique measurement ID
-        m.measurement_id = measurements.size();
-
-        measurements.push_back(std::move(m));
+        m.measurement_id = measurement_index;
     }
 }
 
-}  // namespace traccc::detail
+}  // namespace traccc::details

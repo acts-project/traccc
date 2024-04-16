@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,7 +19,7 @@
 // System include(s).
 #include <functional>
 
-namespace traccc {
+namespace traccc::host {
 
 /// Measurement creation out of clusters
 ///
@@ -27,17 +27,17 @@ namespace traccc {
 /// for all of the clusters that were identified in that one detector
 /// module.
 ///
-class measurement_creation
+class measurement_creation_algorithm
     : public algorithm<measurement_collection_types::host(
-          const cluster_container_types::host &,
-          const cell_module_collection_types::host &)> {
+          const cluster_container_types::const_view &,
+          const cell_module_collection_types::const_view &)> {
 
     public:
     /// Measurement_creation algorithm constructor
     ///
     /// @param mr The memory resource to use in the algorithm
     ///
-    measurement_creation(vecmem::memory_resource &mr);
+    measurement_creation_algorithm(vecmem::memory_resource &mr);
 
     /// Callable operator for the connected component, based on one single
     /// module
@@ -51,13 +51,14 @@ class measurement_creation
     /// @return a measurement collection - usually same size or sometime
     /// slightly smaller than the input
     output_type operator()(
-        const cluster_container_types::host &clusters,
-        const cell_module_collection_types::host &modules) const override;
+        const cluster_container_types::const_view &clusters_view,
+        const cell_module_collection_types::const_view &modules_view)
+        const override;
 
     private:
     /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
-};  // class measurement_creation
+};  // class measurement_creation_algorithm
 
-}  // namespace traccc
+}  // namespace traccc::host
