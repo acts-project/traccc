@@ -40,8 +40,6 @@ inline void aggregate_cluster(
 
     for (unsigned short j = cid; j < partition_size; j++) {
 
-        assert(j < f.size());
-
         const unsigned int pos = j + start;
         /*
          * Terminate the process earlier if we have reached a cell sufficiently
@@ -58,7 +56,7 @@ inline void aggregate_cluster(
          * is part of our cluster. In that case, we take its values
          * for position and add them to our accumulators.
          */
-        if (f[j] == cid) {
+        if (f.at(j) == cid) {
 
             if (this_cell.channel1 > maxChannel1) {
                 maxChannel1 = this_cell.channel1;
@@ -93,6 +91,7 @@ inline void aggregate_cluster(
         }
     }
     if (totalWeight > static_cast<scalar>(0.)) {
+#pragma unroll
         for (char i = 0; i < 2; ++i) {
             var[i] /= totalWeight;
         }

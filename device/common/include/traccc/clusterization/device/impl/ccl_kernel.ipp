@@ -252,25 +252,6 @@ TRACCC_DEVICE inline void ccl_kernel(
 
     barrier.blockBarrier();
 
-    /*
-     * Count the number of clusters by checking how many cells have
-     * themself assigned as a parent.
-     */
-    {
-        vecmem::device_atomic_ref<unsigned int,
-                                  vecmem::device_address_space::local>
-            atom(outi);
-        for (details::index_t tst = 0, cid;
-             (cid = tst * blckDim + threadId) < size; ++tst) {
-
-            if (f[cid] == cid) {
-                atom.fetch_add(1);
-            }
-        }
-    }
-
-    barrier.blockBarrier();
-
     const vecmem::data::vector_view<unsigned short> f_view(
         max_cells_per_partition, &f[0]);
 
@@ -281,10 +262,10 @@ TRACCC_DEVICE inline void ccl_kernel(
             // position inside of the container.
             const measurement_collection_types::device::size_type meas_pos =
                 measurements_device.push_back({});
-            // Set up the newly created measurement.
+            // Set up the measurement under the appropriate index.
             aggregate_cluster(cells_device, modules_device, f_view,
                               partition_start, partition_end, cid,
-                              measurements_device[meas_pos], cell_links,
+                              measurements_device.at(meas_pos), cell_links,
                               meas_pos);
         }
     }
