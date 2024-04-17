@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
@@ -41,8 +41,8 @@ TEST_P(SurfaceBinningTests, Run) {
     vecmem::host_memory_resource host_mr;
 
     // Algorithms
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
+    traccc::host::clusterization_algorithm ca(host_mr);
+    traccc::host::spacepoint_formation_algorithm sf(host_mr);
 
     // Read the cells from the relevant event file
     traccc::io::cell_reader_output readOut(&host_mr);
@@ -53,8 +53,10 @@ TEST_P(SurfaceBinningTests, Run) {
     const traccc::cell_module_collection_types::host& modules = readOut.modules;
 
     // Get Reconstructed Spacepoints
-    auto measurements_recon = ca(cells_truth, modules);
-    auto spacepoints_recon = sf(measurements_recon, modules);
+    auto measurements_recon =
+        ca(vecmem::get_data(cells_truth), vecmem::get_data(modules));
+    auto spacepoints_recon =
+        sf(vecmem::get_data(measurements_recon), vecmem::get_data(modules));
 
     // Read the hits from the relevant event file
     traccc::io::spacepoint_reader_output sp_readOut(&host_mr);

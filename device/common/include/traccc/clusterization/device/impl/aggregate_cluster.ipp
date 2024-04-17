@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s)
-#include "traccc/clusterization/detail/measurement_creation_helper.hpp"
+#include "traccc/clusterization/details/measurement_creation.hpp"
 
 namespace traccc::device {
 
@@ -64,13 +64,13 @@ inline void aggregate_cluster(
                 maxChannel1 = this_cell.channel1;
             }
 
-            const float weight = traccc::detail::signal_cell_modelling(
+            const float weight = details::signal_cell_modelling(
                 this_cell.activation, this_module);
 
             if (weight > this_module.threshold) {
                 totalWeight += this_cell.activation;
                 const point2 cell_position =
-                    traccc::detail::position_from_cell(this_cell, this_module);
+                    details::position_from_cell(this_cell, this_module);
                 const point2 prev = mean;
                 const point2 diff = cell_position - prev;
 
