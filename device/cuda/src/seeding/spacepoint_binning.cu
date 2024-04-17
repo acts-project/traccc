@@ -1,14 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/spacepoint_binning.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/count_grid_capacities.hpp"
@@ -58,6 +58,8 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
+    // Get the warp size of the used device.
+    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Get the spacepoint sizes from the view
     const auto sp_size = m_copy.get_size(spacepoints_view);
@@ -77,14 +79,14 @@ sp_grid_buffer spacepoint_binning::operator()(
         grid_capacities_buff;
 
     // Calculate the number of threads and thread blocks to run the kernels for.
-    const unsigned int num_threads = WARP_SIZE * 8;
+    const unsigned int num_threads = warpSize * 8;
     const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
     // Fill the grid capacity container.
     kernels::count_grid_capacities<<<num_blocks, num_threads, 0, stream>>>(
         m_config, m_axes.first, m_axes.second, spacepoints_view,
         grid_capacities_view);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
@@ -104,7 +106,7 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Populate the grid.
     kernels::populate_grid<<<num_blocks, num_threads, 0, stream>>>(
         m_config, spacepoints_view, grid_view);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Return the freshly filled buffer.
     return grid_buffer;

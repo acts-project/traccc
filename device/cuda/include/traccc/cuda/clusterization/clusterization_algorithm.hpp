@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,12 +13,14 @@
 // Project include(s).
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
+
+// System include(s).
+#include <functional>
 
 namespace traccc::cuda {
 
@@ -28,11 +30,10 @@ namespace traccc::cuda {
 /// approach. Each thread handles a pre-determined number of detector cells.
 ///
 /// This algorithm returns a buffer which is not necessarily filled yet. A
-/// synchronisation statement is required before destroying this buffer.
+/// synchronisation statement is required before destroying the buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<std::pair<spacepoint_collection_types::buffer,
-                                 vecmem::data::vector_buffer<unsigned int>>(
+    : public algorithm<measurement_collection_types::buffer(
           const cell_collection_types::const_view&,
           const cell_module_collection_types::const_view&)> {
 
@@ -66,9 +67,9 @@ class clusterization_algorithm
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use
-    vecmem::copy& m_copy;
+    std::reference_wrapper<vecmem::copy> m_copy;
     /// The CUDA stream to use
-    stream& m_stream;
+    std::reference_wrapper<stream> m_stream;
 };
 
 }  // namespace traccc::cuda

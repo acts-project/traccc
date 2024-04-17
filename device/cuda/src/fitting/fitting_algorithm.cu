@@ -6,9 +6,9 @@
  */
 
 // Project include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 
@@ -58,6 +58,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
+    // Get the warp size of the used device.
+    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Number of tracks
     const track_candidate_container_types::const_device::header_vector::
@@ -80,14 +82,14 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     // Calculate the number of threads and thread blocks to run the track
     // fitting
     if (n_tracks > 0) {
-        const unsigned int nThreads = WARP_SIZE * 2;
+        const unsigned int nThreads = warpSize * 2;
         const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
         // Run the track fitting
         kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
             det_view, field_view, m_cfg, navigation_buffer,
             track_candidates_view, track_states_buffer);
-        CUDA_ERROR_CHECK(cudaGetLastError());
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 
     m_stream.synchronize();

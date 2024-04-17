@@ -16,12 +16,12 @@ TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
-    const vecmem::data::vector_view<unsigned short> f_view,
+    const vecmem::data::vector_view<const unsigned short>& f_view,
     const unsigned int start, const unsigned int end, const unsigned short cid,
     measurement& out, vecmem::data::vector_view<unsigned int> cell_links,
     const unsigned int link) {
 
-    const vecmem::device_vector<unsigned short> f(f_view);
+    const vecmem::device_vector<const unsigned short> f(f_view);
     vecmem::device_vector<unsigned int> cell_links_device(cell_links);
 
     /*
@@ -64,13 +64,13 @@ inline void aggregate_cluster(
                 maxChannel1 = this_cell.channel1;
             }
 
-            const float weight = details::signal_cell_modelling(
+            const float weight = traccc::details::signal_cell_modelling(
                 this_cell.activation, this_module);
 
             if (weight > this_module.threshold) {
                 totalWeight += this_cell.activation;
                 const point2 cell_position =
-                    details::position_from_cell(this_cell, this_module);
+                    traccc::details::position_from_cell(this_cell, this_module);
                 const point2 prev = mean;
                 const point2 diff = cell_position - prev;
 
@@ -110,6 +110,8 @@ inline void aggregate_cluster(
     out.module_link = module_link;
     // The following will need to be filled properly "soon".
     out.meas_dim = 2u;
+    // Set a unique identifier for the measurement.
+    out.measurement_id = link;
 }
 
 }  // namespace traccc::device

@@ -6,9 +6,9 @@
  */
 
 // Local include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/estimate_track_params.hpp"
@@ -44,6 +44,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
+    // Get the warp size of the used device.
+    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Get the size of the seeds view
     const std::size_t seeds_size = m_copy.get_size(seeds_view);
@@ -59,8 +61,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
     }
 
     // -- Num threads
-    // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 2;
+    // The dimension of block is the integer multiple of warp size (=32)
+    unsigned int num_threads = warpSize * 2;
 
     // -- Num blocks
     // The dimension of grid is (number_of_seeds + num_threads - 1) /
@@ -70,7 +72,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // run the kernel
     kernels::estimate_track_params<<<num_blocks, num_threads, 0, stream>>>(
         spacepoints_view, seeds_view, bfield, stddev, params_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return params_buffer;
 }

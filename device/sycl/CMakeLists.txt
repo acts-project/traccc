@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2023 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -15,7 +15,7 @@ enable_language( SYCL )
 traccc_add_library( traccc_sycl sycl TYPE SHARED
   # header files
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
-  "include/traccc/sycl/clusterization/experimental/clusterization_algorithm.hpp"
+  "include/traccc/sycl/clusterization/spacepoint_formation_algorithm.hpp"
   "include/traccc/sycl/fitting/fitting_algorithm.hpp"
   "include/traccc/sycl/seeding/experimental/spacepoint_formation.hpp"
   "include/traccc/sycl/seeding/seeding_algorithm.hpp"
@@ -28,7 +28,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/utils/barrier.hpp"
   # implementation files
   "src/clusterization/clusterization_algorithm.sycl"
-  "src/clusterization/experimental/clusterization_algorithm.sycl"
+  "src/clusterization/spacepoint_formation_algorithm.sycl"
   "src/fitting/fitting_algorithm.sycl"
   "src/seeding/experimental/spacepoint_formation.sycl"
   "src/seeding/seed_finding.sycl"
@@ -37,7 +37,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/seeding/track_params_estimation.sycl"
   "src/utils/get_queue.hpp"
   "src/utils/get_queue.sycl"
-  "src/utils/queue_wrapper.cpp" 
+  "src/utils/queue_wrapper.cpp"
   "src/utils/calculate1DimNdRange.sycl"
   "src/utils/make_prefix_sum_buff.sycl" )
 target_link_libraries( traccc_sycl

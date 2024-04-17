@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
@@ -92,6 +93,8 @@ class full_chain_algorithm
     unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
+    /// Spacepoint formation algorithm
+    spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm

@@ -42,6 +42,8 @@ full_chain_algorithm::full_chain_algorithm(
       m_target_cells_per_partition(target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_stream, m_target_cells_per_partition),
+      m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
+                             m_copy, m_stream),
       m_seeding(finder_config, grid_config, filter_config,
                 memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                 m_stream),
@@ -71,6 +73,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_target_cells_per_partition(parent.m_target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_stream, m_target_cells_per_partition),
+      m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
+                             m_copy, m_stream),
       m_seeding(
           parent.m_finder_config, parent.m_grid_config, parent.m_filter_config,
           memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy, m_stream),
@@ -100,11 +104,12 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     m_copy(vecmem::get_data(modules), modules_buffer);
 
     // Run the clusterization (asynchronously).
-    const clusterization_algorithm::output_type spacepoints =
+    const clusterization_algorithm::output_type measurements =
         m_clusterization(cells_buffer, modules_buffer);
+    const spacepoint_formation_algorithm::output_type spacepoints =
+        m_spacepoint_formation(measurements, modules_buffer);
     const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints.first,
-                                     m_seeding(spacepoints.first),
+        m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
                                      {0.f, 0.f, m_finder_config.bFieldInZ});
 
     // Get the final data back to the host.

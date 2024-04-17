@@ -9,6 +9,7 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
@@ -92,6 +93,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     traccc::cuda::clusterization_algorithm ca_cuda(
         mr, copy, stream, clusterization_opts.target_cells_per_partition);
+    traccc::cuda::spacepoint_formation_algorithm sf_cuda(mr, copy, stream);
     traccc::cuda::seeding_algorithm sa_cuda(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, mr, copy, stream);
@@ -117,6 +119,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::track_params_estimation::output_type params;
 
         // Instantiate cuda containers/collections
+        traccc::measurement_collection_types::buffer measurements_cuda_buffer(
+            0, *mr.host);
         traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
             0, *mr.host);
         traccc::seed_collection_types::buffer seeds_cuda_buffer(0, *mr.host);
@@ -156,10 +160,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Clusterization (cuda)",
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
-                spacepoints_cuda_buffer =
-                    ca_cuda(cells_buffer, modules_buffer).first;
+                measurements_cuda_buffer =
+                    ca_cuda(cells_buffer, modules_buffer);
                 stream.synchronize();
             }  // stop measuring clusterization cuda timer
+
+            {
+                traccc::performance::timer t("Spacepoint formation (cuda)",
+                                             elapsedTimes);
+                spacepoints_cuda_buffer =
+                    sf_cuda(measurements_cuda_buffer, modules_buffer);
+                stream.synchronize();
+            }  // stop measuring spacepoint formation cuda timer
 
             if (accelerator_opts.compare_with_cpu) {
 
