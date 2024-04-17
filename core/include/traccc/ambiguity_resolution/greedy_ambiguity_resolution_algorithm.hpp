@@ -66,7 +66,12 @@ class greedy_ambiguity_resolution_algorithm
         // of the algorithm.
         bool check_obvious_errs = true;
 
-        bool verbose_info = true;
+        // Displays a warning if:
+        // (number of measurements of ID 0 / total number of measurements)
+        // is greater than measurement_id_0_warning_threshold.
+        float measurement_id_0_warning_threshold = 0.1f;
+
+        bool verbose_info = false;
         bool verbose_error = true;
         bool verbose_flood = false;
     };
