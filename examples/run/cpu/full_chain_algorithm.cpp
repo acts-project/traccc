@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -27,8 +27,11 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const cell_collection_types::host& cells,
     const cell_module_collection_types::host& modules) const {
 
-    const spacepoint_formation::output_type spacepoints =
-        m_spacepoint_formation(m_clusterization(cells, modules), modules);
+    const host::spacepoint_formation_algorithm::output_type spacepoints =
+        m_spacepoint_formation(
+            vecmem::get_data(m_clusterization(vecmem::get_data(cells),
+                                              vecmem::get_data(modules))),
+            vecmem::get_data(modules));
     return m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
                                         {0.f, 0.f, m_finder_config.bFieldInZ});
 }

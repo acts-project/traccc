@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,38 +18,41 @@
 // System include(s).
 #include <functional>
 
-namespace traccc {
+namespace traccc::host {
 
 /// Algorithm forming space points out of measurements
 ///
 /// This algorithm performs the local-to-global transformation of the 2D
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
-class spacepoint_formation : public algorithm<spacepoint_collection_types::host(
-                                 const measurement_collection_types::host&,
-                                 const cell_module_collection_types::host&)> {
+class spacepoint_formation_algorithm
+    : public algorithm<spacepoint_collection_types::host(
+          const measurement_collection_types::const_view&,
+          const cell_module_collection_types::const_view&)> {
 
     public:
     /// Constructor for spacepoint_formation
     ///
     /// @param mr is the memory resource
     ///
-    spacepoint_formation(vecmem::memory_resource& mr);
+    spacepoint_formation_algorithm(vecmem::memory_resource& mr);
 
     /// Callable operator for the space point formation, based on one single
     /// module
     ///
-    /// @param measurements A collection of measurements
-    /// @param modules A collection of modules the measurements link to
+    /// @param measurements_view A collection of measurements
+    /// @param modules_view A collection of modules the measurements link to
     /// @return A spacepoint container, with one spacepoint for every
     ///         measurement
     ///
     output_type operator()(
-        const measurement_collection_types::host& measurements,
-        const cell_module_collection_types::host& modules) const override;
+        const measurement_collection_types::const_view& measurements_view,
+        const cell_module_collection_types::const_view& modules_view)
+        const override;
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-};
 
-}  // namespace traccc
+};  // class spacepoint_formation_algorithm
+
+}  // namespace traccc::host

@@ -14,7 +14,7 @@
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -139,8 +139,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     propagation_opts.setup(fitting_cfg.propagation);
 
     // Algorithms
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
+    traccc::host::clusterization_algorithm ca(host_mr);
+    traccc::host::spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
@@ -179,14 +179,16 @@ int seq_run(const traccc::opts::input_data& input_opts,
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event, modules_per_event);
+        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
+                                         vecmem::get_data(modules_per_event));
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
         auto spacepoints_per_event =
-            sf(measurements_per_event, modules_per_event);
+            sf(vecmem::get_data(measurements_per_event),
+               vecmem::get_data(modules_per_event));
 
         /*-----------------------
           Seeding algorithm

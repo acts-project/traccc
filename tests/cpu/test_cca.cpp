@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -25,14 +25,14 @@
 
 namespace {
 vecmem::host_memory_resource resource;
-traccc::clusterization_algorithm ca(resource);
+traccc::host::clusterization_algorithm ca(resource);
 
 cca_function_t f = [](const traccc::cell_collection_types::host& cells,
                       const traccc::cell_module_collection_types::host&
                           modules) {
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
-    auto measurements = ca(cells, modules);
+    auto measurements = ca(vecmem::get_data(cells), vecmem::get_data(modules));
     for (std::size_t i = 0; i < measurements.size(); i++) {
         result[modules.at(measurements.at(i).module_link).surface_link.value()]
             .push_back(measurements.at(i));

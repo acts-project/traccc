@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -52,8 +52,8 @@ int par_run(const std::string &detector_file,
     vecmem::host_memory_resource resource;
 
     // Algorithms
-    traccc::clusterization_algorithm ca(resource);
-    traccc::spacepoint_formation sf(resource);
+    traccc::host::clusterization_algorithm ca(resource);
+    traccc::host::spacepoint_formation_algorithm sf(resource);
 
     // Output stats
     uint64_t n_modules = 0;
@@ -61,7 +61,8 @@ int par_run(const std::string &detector_file,
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
 
-#pragma omp parallel for reduction (+:n_modules, n_cells, n_measurements, n_spacepoints)
+#pragma omp parallel for reduction(+ : n_modules, n_cells, n_measurements, \
+                                       n_spacepoints)
     // Loop over events
     for (unsigned int event = 0; event < events; ++event) {
 
@@ -78,14 +79,16 @@ int par_run(const std::string &detector_file,
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event, modules_per_event);
+        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
+                                         vecmem::get_data(modules_per_event));
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
         auto spacepoints_per_event =
-            sf(measurements_per_event, modules_per_event);
+            sf(vecmem::get_data(measurements_per_event),
+               vecmem::get_data(modules_per_event));
 
         /*----------------------------
           Statistics
