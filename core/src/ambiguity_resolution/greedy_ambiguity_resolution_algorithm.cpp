@@ -32,24 +32,24 @@ namespace traccc {
 
 namespace {
 
-#define LOG_INFO(msg)                       \
-    if (_config.verbose_info) {             \
-        logger::info() << msg << std::endl; \
-    }
-
-#define LOG_FLOOD(msg)                       \
-    if (_config.verbose_flood) {             \
-        logger::flood() << msg << std::endl; \
-    }
-
 #define LOG_ERROR(msg)                       \
     if (_config.verbose_error) {             \
         logger::error() << msg << std::endl; \
     }
 
 #define LOG_WARN(msg)                       \
-    if (_config.verbose_error) {            \
+    if (_config.verbose_warning) {          \
         logger::warn() << msg << std::endl; \
+    }
+
+#define LOG_INFO(msg)                       \
+    if (_config.verbose_info) {             \
+        logger::info() << msg << std::endl; \
+    }
+
+#define LOG_DEBUG(msg)                       \
+    if (_config.verbose_debug) {             \
+        logger::debug() << msg << std::endl; \
     }
 
 // This logger is specific to the greedy_ambiguity_resolution_algorithm, and to
@@ -70,8 +70,8 @@ struct logger {
         return std::cout;
     }
 
-    static std::ostream& flood() {
-        std::cout << "INFO: @greedy_ambiguity_resolution_algorithm: ";
+    static std::ostream& debug() {
+        std::cout << "DEBUG: @greedy_ambiguity_resolution_algorithm: ";
         return std::cout;
     }
 };
@@ -91,7 +91,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     resolve(state);
 
     if (_config.check_obvious_errs) {
-        LOG_FLOOD("Checking result validity...");
+        LOG_DEBUG("Checking result validity...");
         check_obvious_errors(track_states, state);
     }
 
@@ -100,7 +100,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     track_state_container_types::host res;
     res.reserve(state.selected_tracks.size());
 
-    LOG_FLOOD(
+    LOG_DEBUG(
         "state.selected_tracks.size() = " << state.selected_tracks.size());
 
     for (std::size_t index : state.selected_tracks) {
@@ -433,7 +433,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
     for (std::size_t i = 0; i < _config.maximum_iterations; ++i) {
         // Lazy out if there is nothing to filter on.
         if (state.selected_tracks.empty()) {
-            LOG_FLOOD("No tracks left - exit loop");
+            LOG_DEBUG("No tracks left - exit loop");
             break;
         }
 
@@ -443,7 +443,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             state.selected_tracks.begin(), state.selected_tracks.end(),
             shared_measurements_comperator);
 
-        LOG_FLOOD(
+        LOG_DEBUG(
             "Current maximum shared measurements "
             << state
                    .shared_measurements_per_track[maximum_shared_measurements]);
@@ -458,7 +458,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             *std::max_element(state.selected_tracks.begin(),
                               state.selected_tracks.end(), track_comperator);
 
-        LOG_FLOOD("Remove track "
+        LOG_DEBUG("Remove track "
                   << bad_track << " n_meas "
                   << state.measurements_per_track[bad_track].size()
                   << " nShared "
@@ -469,7 +469,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
         ++iteration_count;
     }
 
-    LOG_FLOOD("Iteration_count: " << iteration_count);
+    LOG_DEBUG("Iteration_count: " << iteration_count);
 }
 
 }  // namespace traccc

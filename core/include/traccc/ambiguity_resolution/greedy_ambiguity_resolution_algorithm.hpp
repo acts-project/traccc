@@ -71,9 +71,10 @@ class greedy_ambiguity_resolution_algorithm
         // is greater than measurement_id_0_warning_threshold.
         float measurement_id_0_warning_threshold = 0.1f;
 
-        bool verbose_info = false;
         bool verbose_error = true;
-        bool verbose_flood = false;
+        bool verbose_warning = true;
+        bool verbose_info = false;
+        bool verbose_debug = false;
     };
 
     struct state_t {
