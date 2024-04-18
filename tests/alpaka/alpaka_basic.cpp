@@ -10,6 +10,19 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
 
+#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
+#include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/vector.hpp>
+
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#include <vecmem/utils/hip/copy.hpp>
+#include <vecmem/memory/hip/device_memory_resource.hpp>
+#include <vecmem/memory/hip/host_memory_resource.hpp>
+#include <vecmem/utils/hip/copy.hpp>
+#endif
+
 // GoogleTest include(s).
 #include <gtest/gtest.h>
 
@@ -36,6 +49,7 @@ struct VectorOpKernel {
         }
     }
 };
+
 
 /// Copy vector to device, set element[i] = sin(i) on device, then compare with
 /// same calculation on host
@@ -83,5 +97,82 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
     // Calculate on the host and compare result
     for (uint32_t i = 0u; i < n; i++) {
         EXPECT_FLOAT_EQ(bufHost[i], std::sin(i));
+    }
+}
+
+struct VecMemOpKernel {
+    template <typename Acc>
+    ALPAKA_FN_ACC void operator()(Acc const& acc, vecmem::data::vector_view<float> result,
+                                  uint32_t n) const {
+        using namespace alpaka;
+        auto const globalThreadIdx =
+            getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u];
+
+        // It is possible to get index type from the accelerator,
+        // but for simplicity we just repeat the type here
+        if (globalThreadIdx < n) {
+            result.ptr()[globalThreadIdx] = process(acc, globalThreadIdx);
+        }
+    }
+};
+
+GTEST_TEST(AlpakaBasic, VecMemOp) {
+
+    using namespace alpaka;
+    using Dim = DimInt<1>;
+    using Idx = uint32_t;
+
+    // Select a device and create queue for it
+    using Acc = ExampleDefaultAcc<Dim, Idx>;
+    auto const platformAcc = alpaka::Platform<Acc>{};
+    auto const devAcc = getDevByIdx(platformAcc, 0u);
+
+    using Queue = Queue<Acc, Blocking>;
+    auto queue = Queue{devAcc};
+
+    uint32_t n = 10000;
+
+    uint32_t blocksPerGrid = n;
+    uint32_t threadsPerBlock = 1;
+    uint32_t elementsPerThread = 4;
+    using WorkDiv = WorkDivMembers<Dim, Idx>;
+    auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+
+    vecmem::host_memory_resource host_mr;
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
+    vecmem::cuda::copy vm_copy;
+    vecmem::cuda::device_memory_resource device_mr
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    vecmem::hip::copy vm_copy;
+    vecmem::hip::device_memory_resource device_mr;
+#else
+    vecmem::copy vm_copy;
+    vecmem::host_memory_resource device_mr;
+#endif
+
+    vecmem::vector<float> host_vector{n, &host_mr};
+
+    auto host_buffer = vecmem::get_data(host_vector);
+    auto device_buffer = vm_copy.to(vecmem::get_data(host_vector), device_mr,
+                                 vecmem::copy::type::host_to_device);
+    auto data_dev_vec_buf = vecmem::get_data(device_buffer);
+
+
+    std::cout << "Using alpaka accelerator: " << alpaka::getAccName<Acc>()
+              << std::endl;
+
+
+    // Create a device for host for memory allocation, using the first CPU
+    // available
+    auto const platformDevCpu = alpaka::Platform<DevCpu>{};
+    auto devHost = getDevByIdx(platformDevCpu, 0u);
+
+    alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{},
+                      data_dev_vec_buf, n);
+    
+    vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+
+    for (uint32_t i = 0u; i < n; i++) {
+        EXPECT_FLOAT_EQ(host_vector[i], std::sin(i));
     }
 }
