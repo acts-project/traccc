@@ -8,8 +8,9 @@
 #include <gtest/gtest.h>
 
 #include <functional>
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 
 #include "tests/cca_test.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
@@ -22,16 +23,30 @@ cca_function_t f = [](const traccc::cell_collection_types::host& cells,
                           modules) {
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
+    vecmem::host_memory_resource host_mr;
     traccc::cuda::stream stream;
-    vecmem::cuda::managed_memory_resource mng_mr;
-    traccc::memory_resource mr{mng_mr};
-    vecmem::cuda::copy copy;
-    traccc::cuda::clusterization_algorithm cc(mr, copy, stream, 1024);
+    vecmem::cuda::device_memory_resource device_mr;
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    auto measurements_buffer =
-        cc(vecmem::get_data(cells), vecmem::get_data(modules));
-    traccc::measurement_collection_types::const_device measurements(
-        measurements_buffer);
+    traccc::cuda::clusterization_algorithm cc({device_mr}, copy, stream, 1024);
+
+    traccc::cell_collection_types::buffer cells_buffer{
+        static_cast<traccc::cell_collection_types::buffer::size_type>(
+            cells.size()),
+        device_mr};
+    copy.setup(cells_buffer);
+    copy(vecmem::get_data(cells), cells_buffer)->ignore();
+
+    traccc::cell_module_collection_types::buffer modules_buffer{
+        static_cast<traccc::cell_module_collection_types::buffer::size_type>(
+            modules.size()),
+        device_mr};
+    copy.setup(modules_buffer);
+    copy(vecmem::get_data(modules), modules_buffer)->ignore();
+
+    auto measurements_buffer = cc(cells_buffer, modules_buffer);
+    traccc::measurement_collection_types::host measurements{&host_mr};
+    copy(measurements_buffer, measurements)->wait();
 
     for (std::size_t i = 0; i < measurements.size(); i++) {
         result[modules.at(measurements.at(i).module_link).surface_link.value()]
