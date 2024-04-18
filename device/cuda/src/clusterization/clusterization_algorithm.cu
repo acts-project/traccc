@@ -67,7 +67,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Create the result object, overestimating the number of measurements.
     measurement_collection_types::buffer measurements{
         num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
-    m_copy.get().setup(measurements);
+    m_copy.get().setup(measurements)->ignore();
 
     // If there are no cells, return right away.
     if (num_cells == 0) {
@@ -80,7 +80,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // debugging.
     //
     vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
-    m_copy.get().setup(cell_links);
+    m_copy.get().setup(cell_links)->ignore();
 
     // Launch ccl kernel. Each thread will handle a single cell.
     const device::details::ccl_kernel_helper helper{

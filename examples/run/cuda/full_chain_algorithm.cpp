@@ -98,10 +98,10 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     // Create device copy of input collections
     cell_collection_types::buffer cells_buffer(cells.size(),
                                                *m_cached_device_mr);
-    m_copy(vecmem::get_data(cells), cells_buffer);
+    m_copy(vecmem::get_data(cells), cells_buffer)->ignore();
     cell_module_collection_types::buffer modules_buffer(modules.size(),
                                                         *m_cached_device_mr);
-    m_copy(vecmem::get_data(modules), modules_buffer);
+    m_copy(vecmem::get_data(modules), modules_buffer)->ignore();
 
     // Run the clusterization (asynchronously).
     const clusterization_algorithm::output_type measurements =
