@@ -16,8 +16,7 @@
 // VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
 
-namespace traccc {
-namespace cuda {
+namespace traccc::cuda {
 
 namespace kernels {
 /// CUDA kernel for running @c traccc::device::estimate_track_params
@@ -35,7 +34,10 @@ __global__ void estimate_track_params(
 
 track_params_estimation::track_params_estimation(
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str)
-    : m_mr(mr), m_copy(copy), m_stream(str) {}
+    : m_mr(mr),
+      m_copy(copy),
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
@@ -44,8 +46,6 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
-    // Get the warp size of the used device.
-    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Get the size of the seeds view
     const std::size_t seeds_size = m_copy.get_size(seeds_view);
@@ -62,7 +62,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
     // -- Num threads
     // The dimension of block is the integer multiple of warp size (=32)
-    unsigned int num_threads = warpSize * 2;
+    unsigned int num_threads = m_warp_size * 2;
 
     // -- Num blocks
     // The dimension of grid is (number_of_seeds + num_threads - 1) /
@@ -77,5 +77,4 @@ track_params_estimation::output_type track_params_estimation::operator()(
     return params_buffer;
 }
 
-}  // namespace cuda
-}  // namespace traccc
+}  // namespace traccc::cuda

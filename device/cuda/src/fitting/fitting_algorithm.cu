@@ -45,7 +45,11 @@ template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
     vecmem::copy& copy, stream& str)
-    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_stream(str){};
+    : m_cfg(cfg),
+      m_mr(mr),
+      m_copy(copy),
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
@@ -58,8 +62,6 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
-    // Get the warp size of the used device.
-    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Number of tracks
     const track_candidate_container_types::const_device::header_vector::
@@ -82,7 +84,7 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     // Calculate the number of threads and thread blocks to run the track
     // fitting
     if (n_tracks > 0) {
-        const unsigned int nThreads = warpSize * 2;
+        const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
         // Run the track fitting

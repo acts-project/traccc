@@ -148,7 +148,8 @@ seed_finding::seed_finding(const seedfinder_config& config,
       m_seedfilter_config(filter_config),
       m_mr(mr),
       m_copy(copy),
-      m_stream(str) {}
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 seed_finding::output_type seed_finding::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
@@ -156,8 +157,6 @@ seed_finding::output_type seed_finding::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
-    // Get the warp size of the used device.
-    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -178,7 +177,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
-    const unsigned int nDoubletCountThreads = warpSize * 2;
+    const unsigned int nDoubletCountThreads = m_warp_size * 2;
     const unsigned int nDoubletCountBlocks =
         (num_spacepoints + nDoubletCountThreads - 1) / nDoubletCountThreads;
 
@@ -225,7 +224,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the doublet
     // finding kernel for.
-    const unsigned int nDoubletFindThreads = warpSize * 2;
+    const unsigned int nDoubletFindThreads = m_warp_size * 2;
     const unsigned int doublet_counter_buffer_size =
         m_copy.get_size(doublet_counter_buffer);
     const unsigned int nDoubletFindBlocks =
@@ -252,7 +251,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
-    const unsigned int nTripletCountThreads = warpSize * 2;
+    const unsigned int nTripletCountThreads = m_warp_size * 2;
     const unsigned int nTripletCountBlocks =
         (globalCounter_host->m_nMidBot + nTripletCountThreads - 1) /
         nTripletCountThreads;
@@ -267,7 +266,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the triplet
     // count reduction kernel for.
-    const unsigned int nTcReductionThreads = warpSize * 2;
+    const unsigned int nTcReductionThreads = m_warp_size * 2;
     const unsigned int nTcReductionBlocks =
         (doublet_counter_buffer_size + nTcReductionThreads - 1) /
         nTcReductionThreads;
@@ -296,7 +295,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
-    const unsigned int nTripletFindThreads = warpSize * 2;
+    const unsigned int nTripletFindThreads = m_warp_size * 2;
     const unsigned int nTripletFindBlocks =
         (m_copy.get_size(triplet_counter_midBot_buffer) + nTripletFindThreads -
          1) /
@@ -313,7 +312,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    const unsigned int nWeightUpdatingThreads = warpSize * 2;
+    const unsigned int nWeightUpdatingThreads = m_warp_size * 2;
     const unsigned int nWeightUpdatingBlocks =
         (globalCounter_host->m_nTriplets + nWeightUpdatingThreads - 1) /
         nWeightUpdatingThreads;
@@ -335,7 +334,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.
-    const unsigned int nSeedSelectingThreads = warpSize * 2;
+    const unsigned int nSeedSelectingThreads = m_warp_size * 2;
     const unsigned int nSeedSelectingBlocks =
         (doublet_counter_buffer_size + nSeedSelectingThreads - 1) /
         nSeedSelectingThreads;

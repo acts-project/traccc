@@ -51,15 +51,14 @@ spacepoint_binning::spacepoint_binning(
       m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
       m_copy(copy),
-      m_stream(str) {}
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
-    // Get the warp size of the used device.
-    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Get the spacepoint sizes from the view
     const auto sp_size = m_copy.get_size(spacepoints_view);
@@ -79,7 +78,7 @@ sp_grid_buffer spacepoint_binning::operator()(
         grid_capacities_buff;
 
     // Calculate the number of threads and thread blocks to run the kernels for.
-    const unsigned int num_threads = warpSize * 8;
+    const unsigned int num_threads = m_warp_size * 8;
     const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
     // Fill the grid capacity container.

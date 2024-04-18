@@ -159,7 +159,11 @@ template <typename stepper_t, typename navigator_t>
 finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
     vecmem::copy& copy, stream& str)
-    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_stream(str){};
+    : m_cfg(cfg),
+      m_mr(mr),
+      m_copy(copy),
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
@@ -173,8 +177,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
-    // Get the warp size of the used device.
-    const int warpSize = details::get_warp_size(m_stream.device());
 
     // Copy setup
     m_copy.setup(seeds_buffer);
@@ -251,7 +253,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     vecmem::data::vector_buffer<detray::geometry::barcode> barcodes_buffer{
         n_modules, m_mr.main};
 
-    unsigned int nThreads = warpSize * 2;
+    unsigned int nThreads = m_warp_size * 2;
     unsigned int nBlocks = (barcodes_buffer.size() + nThreads - 1) / nThreads;
 
     kernels::make_barcode_sequence<<<nBlocks, nThreads, 0, stream>>>(
@@ -289,7 +291,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
          * Kernel2: Apply material interaction
          ****************************************************************/
 
-        nThreads = warpSize * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::apply_interaction<detector_type>
             <<<nBlocks, nThreads, 0, stream>>>(det_view, navigation_buffer,
@@ -307,7 +309,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         vecmem::data::vector_buffer<unsigned int> ref_meas_idx_buffer(
             n_in_params, m_mr.main);
 
-        nThreads = warpSize * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::count_measurements<<<nBlocks, nThreads, 0, stream>>>(
             in_params_buffer, barcodes_buffer, upper_bounds_buffer, n_in_params,
@@ -391,7 +393,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                           vecmem::data::buffer_type::resizable};
         m_copy.setup(tips_map[step]);
 
-        nThreads = warpSize * 2;
+        nThreads = m_warp_size * 2;
 
         if (global_counter_host.n_candidates > 0) {
             nBlocks =
@@ -504,7 +506,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
-        nThreads = warpSize * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_tips_total + nThreads - 1) / nThreads;
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
             measurements, seeds_buffer, links_buffer, param_to_link_buffer,
