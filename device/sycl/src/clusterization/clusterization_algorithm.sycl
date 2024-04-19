@@ -92,9 +92,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                  target_cells_per_partition =
                      m_target_cells_per_partition](::sycl::nd_item<1> item) {
                     // Construct more readable variable names.
-                    device::details::index_t* f = &shared_idx[0];
-                    device::details::index_t* f_next =
-                        &shared_idx[helper.max_cells_per_partition];
+                    vecmem::data::vector_view<device::details::index_t> f_view{
+                        helper.max_cells_per_partition, &shared_idx[0]};
+                    vecmem::data::vector_view<device::details::index_t> gf_view{
+                        helper.max_cells_per_partition,
+                        &shared_idx[helper.max_cells_per_partition]};
                     unsigned int& partition_start = shared_uint[0];
                     unsigned int& partition_end = shared_uint[1];
                     unsigned int& outi = shared_uint[2];
@@ -108,7 +110,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                         item.get_group_linear_id(), cells_view, modules_view,
                         helper.max_cells_per_partition,
                         target_cells_per_partition, partition_start,
-                        partition_end, outi, f, f_next, barry_r,
+                        partition_end, outi, f_view, gf_view, barry_r,
                         measurements_view, cell_links_view);
                 });
         })

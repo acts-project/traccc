@@ -78,24 +78,24 @@ struct ccl_kernel_helper {
 /// @param partition_start    partition start point for this thread block
 /// @param partition_end      partition end point for this thread block
 /// @param outi               number of measurements for this partition
-/// @param f  array of "parent" indices for all cells in this partition
-/// @param gf array of "grandparent" indices for all cells in this partition
+/// @param f_view  array of "parent" indices for all cells in this partition
+/// @param gf_view array of "grandparent" indices for all cells in this
+///                partition
 /// @param barrier  A generic object for block-wide synchronisation
 /// @param[out] measurements_view collection of measurements
 /// @param[out] cell_links    collection of links to measurements each cell is
 /// put into
 template <typename barrier_t>
 TRACCC_DEVICE inline void ccl_kernel(
-    const details::index_t threadId, const details::index_t blckDim,
-    const unsigned int blockId,
+    details::index_t threadId, details::index_t blckDim, unsigned int blockId,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     const details::index_t max_cells_per_partition,
     const details::index_t target_cells_per_partition,
     unsigned int& partition_start, unsigned int& partition_end,
-    unsigned int& outi, details::index_t* f, details::index_t* gf,
-    barrier_t& barrier, measurement_collection_types::view measurements_view,
-    unsigned int& measurement_count,
+    unsigned int& outi, vecmem::data::vector_view<details::index_t> f_view,
+    vecmem::data::vector_view<details::index_t> gf_view, barrier_t& barrier,
+    measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links);
 
 }  // namespace traccc::device

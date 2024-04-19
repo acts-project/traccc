@@ -33,14 +33,17 @@ __global__ void ccl_kernel(
     __shared__ unsigned int partition_start, partition_end;
     __shared__ unsigned int outi;
     extern __shared__ device::details::index_t shared_v[];
-    device::details::index_t* f = &shared_v[0];
-    device::details::index_t* f_next = &shared_v[max_cells_per_partition];
+    vecmem::data::vector_view<device::details::index_t> f_view{
+        max_cells_per_partition, shared_v};
+    vecmem::data::vector_view<device::details::index_t> gf_view{
+        max_cells_per_partition, shared_v + max_cells_per_partition};
     traccc::cuda::barrier barry_r;
 
-    device::ccl_kernel(
-        threadIdx.x, blockDim.x, blockIdx.x, cells_view, modules_view,
-        max_cells_per_partition, target_cells_per_partition, partition_start,
-        partition_end, outi, f, f_next, barry_r, measurements_view, cell_links);
+    device::ccl_kernel(threadIdx.x, blockDim.x, blockIdx.x, cells_view,
+                       modules_view, max_cells_per_partition,
+                       target_cells_per_partition, partition_start,
+                       partition_end, outi, f_view, gf_view, barry_r,
+                       measurements_view, cell_links);
 }
 
 }  // namespace kernels

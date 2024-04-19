@@ -27,14 +27,15 @@ namespace traccc::device {
 /// @param[in] tid      The thread index
 /// @param[in] blckDim  The block size
 /// @param[inout] f     array holding the parent cell ID for the current
-/// iteration.
+///                     iteration.
 /// @param[inout] gf    array holding grandparent cell ID from the previous
-/// iteration.
+///                     iteration.
 /// @param[in] barrier  A generic object for block-wide synchronisation
 ///
 template <typename barrier_t>
 TRACCC_DEVICE void fast_sv_1(
-    details::index_t* f, details::index_t* gf,
+    vecmem::device_vector<details::index_t>& f,
+    vecmem::device_vector<details::index_t>& gf,
     unsigned char adjc[details::MAX_CELLS_PER_THREAD],
     details::index_t adjv[details::MAX_CELLS_PER_THREAD][8],
     const details::index_t tid, const details::index_t blckDim,
@@ -66,11 +67,11 @@ TRACCC_DEVICE void fast_sv_1(
 
             __builtin_assume(adjc[tst] <= 8);
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
-                details::index_t q = gf[adjv[tst][k]];
+                details::index_t q = gf.at(adjv[tst][k]);
 
-                if (gf[cid] > q) {
-                    f[f[cid]] = q;
-                    f[cid] = q;
+                if (gf.at(cid) > q) {
+                    f.at(f.at(cid)) = q;
+                    f.at(cid) = q;
                 }
             }
         }
@@ -90,8 +91,8 @@ TRACCC_DEVICE void fast_sv_1(
              * allows us to look at any shortcuts in the cluster IDs that we
              * can merge without adjacency information.
              */
-            if (f[cid] > gf[cid]) {
-                f[cid] = gf[cid];
+            if (f.at(cid) > gf.at(cid)) {
+                f.at(cid) = gf.at(cid);
             }
         }
 
@@ -108,8 +109,8 @@ TRACCC_DEVICE void fast_sv_1(
              * Update the array for the next generation, keeping track of any
              * changes we make.
              */
-            if (gf[cid] != f[f[cid]]) {
-                gf[cid] = f[f[cid]];
+            if (gf.at(cid) != f.at(f.at(cid))) {
+                gf.at(cid) = f.at(f.at(cid));
                 gf_changed = true;
             }
         }
@@ -133,8 +134,9 @@ TRACCC_DEVICE inline void ccl_kernel(
     const details::index_t max_cells_per_partition,
     const details::index_t target_cells_per_partition,
     unsigned int& partition_start, unsigned int& partition_end,
-    unsigned int& outi, details::index_t* f, details::index_t* gf,
-    barrier_t& barrier, measurement_collection_types::view measurements_view,
+    unsigned int& outi, vecmem::data::vector_view<details::index_t> f_view,
+    vecmem::data::vector_view<details::index_t> gf_view, barrier_t& barrier,
+    measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links) {
 
     // Construct device containers around the views.
@@ -142,6 +144,8 @@ TRACCC_DEVICE inline void ccl_kernel(
     const cell_module_collection_types::const_device modules_device(
         modules_view);
     measurement_collection_types::device measurements_device(measurements_view);
+    vecmem::device_vector<details::index_t> f(f_view);
+    vecmem::device_vector<details::index_t> gf(gf_view);
 
     const cell_collection_types::const_device::size_type num_cells =
         cells_device.size();
@@ -235,8 +239,8 @@ TRACCC_DEVICE inline void ccl_kernel(
          * At the start, the values of f and gf should be equal to the
          * ID of the cell.
          */
-        f[cid] = cid;
-        gf[cid] = cid;
+        f.at(cid) = cid;
+        gf.at(cid) = cid;
     }
 
     /*
@@ -249,16 +253,13 @@ TRACCC_DEVICE inline void ccl_kernel(
      * Run FastSV algorithm, which will update the father index to that of
      * the cell belonging to the same cluster with the lowest index.
      */
-    fast_sv_1(&f[0], &gf[0], adjc, adjv, threadId, blckDim, barrier);
+    fast_sv_1(f, gf, adjc, adjv, threadId, blckDim, barrier);
 
     barrier.blockBarrier();
 
-    const vecmem::data::vector_view<unsigned short> f_view(
-        max_cells_per_partition, &f[0]);
-
     for (details::index_t tst = 0, cid; (cid = tst * blckDim + threadId) < size;
          ++tst) {
-        if (f[cid] == cid) {
+        if (f.at(cid) == cid) {
             // Add a new measurement to the output buffer. Remembering its
             // position inside of the container.
             const measurement_collection_types::device::size_type meas_pos =
