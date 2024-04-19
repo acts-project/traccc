@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -37,6 +37,12 @@ struct cell_module {
 /// Declare all cell module collection types
 using cell_module_collection_types = collection_types<cell_module>;
 
+/// Comparison operator for cell modules
+TRACCC_HOST_DEVICE
+inline bool operator<(const cell_module& lhs, const cell_module& rhs) {
+    return lhs.surface_link < rhs.surface_link;
+}
+
 /// Equality operator for cell module
 TRACCC_HOST_DEVICE
 inline bool operator==(const cell_module& lhs, const cell_module& rhs) {
@@ -61,17 +67,16 @@ struct cell {
 /// Declare all cell collection types
 using cell_collection_types = collection_types<cell>;
 
+/// Comparison operator for cells
 TRACCC_HOST_DEVICE
 inline bool operator<(const cell& lhs, const cell& rhs) {
 
     if (lhs.module_link != rhs.module_link) {
         return lhs.module_link < rhs.module_link;
-    } else if (lhs.channel0 != rhs.channel0) {
-        return (lhs.channel0 < rhs.channel0);
     } else if (lhs.channel1 != rhs.channel1) {
         return (lhs.channel1 < rhs.channel1);
     } else {
-        return lhs.activation < rhs.activation;
+        return (lhs.channel0 < rhs.channel0);
     }
 }
 
