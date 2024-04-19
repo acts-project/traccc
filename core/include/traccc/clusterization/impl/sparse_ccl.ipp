@@ -52,6 +52,7 @@ TRACCC_HOST_DEVICE inline bool is_adjacent(const traccc::cell& a,
 TRACCC_HOST_DEVICE inline bool is_far_enough(const traccc::cell& a,
                                              const traccc::cell& b) {
 
+    assert((a.channel1 >= b.channel1) || (a.module_link != b.module_link));
     return (a.channel1 > (b.channel1 + 1)) || (a.module_link != b.module_link);
 }
 

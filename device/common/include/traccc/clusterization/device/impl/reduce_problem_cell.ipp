@@ -62,7 +62,7 @@ inline void reduce_problem_cell(
          * Note that this check now looks in the opposite direction! An
          * important difference.
          */
-        if (traccc::details::is_far_enough(reference_cell, cells.at(j))) {
+        if (traccc::details::is_far_enough(cells.at(j), reference_cell)) {
             break;
         }
 
