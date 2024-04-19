@@ -16,12 +16,12 @@ TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
-    const vecmem::data::vector_view<unsigned short> f_view,
+    const vecmem::data::vector_view<const unsigned short>& f_view,
     const unsigned int start, const unsigned int end, const unsigned short cid,
     measurement& out, vecmem::data::vector_view<unsigned int> cell_links,
     const unsigned int link) {
 
-    const vecmem::device_vector<unsigned short> f(f_view);
+    const vecmem::device_vector<const unsigned short> f(f_view);
     vecmem::device_vector<unsigned int> cell_links_device(cell_links);
 
     /*
@@ -40,8 +40,6 @@ inline void aggregate_cluster(
 
     for (unsigned short j = cid; j < partition_size; j++) {
 
-        assert(j < f.size());
-
         const unsigned int pos = j + start;
         /*
          * Terminate the process earlier if we have reached a cell sufficiently
@@ -58,26 +56,25 @@ inline void aggregate_cluster(
          * is part of our cluster. In that case, we take its values
          * for position and add them to our accumulators.
          */
-        if (f[j] == cid) {
+        if (f.at(j) == cid) {
 
             if (this_cell.channel1 > maxChannel1) {
                 maxChannel1 = this_cell.channel1;
             }
 
-            const float weight = details::signal_cell_modelling(
+            const scalar weight = traccc::details::signal_cell_modelling(
                 this_cell.activation, this_module);
 
             if (weight > this_module.threshold) {
-                totalWeight += this_cell.activation;
+                totalWeight += weight;
                 const point2 cell_position =
-                    details::position_from_cell(this_cell, this_module);
+                    traccc::details::position_from_cell(this_cell, this_module);
                 const point2 prev = mean;
                 const point2 diff = cell_position - prev;
 
                 mean = prev + (weight / totalWeight) * diff;
                 for (char i = 0; i < 2; ++i) {
-                    var[i] = var[i] +
-                             weight * (diff[i]) * (cell_position[i] - mean[i]);
+                    var[i] += weight * (diff[i]) * (cell_position[i] - mean[i]);
                 }
             }
 
@@ -93,6 +90,7 @@ inline void aggregate_cluster(
         }
     }
     if (totalWeight > static_cast<scalar>(0.)) {
+#pragma unroll
         for (char i = 0; i < 2; ++i) {
             var[i] /= totalWeight;
         }
@@ -110,6 +108,8 @@ inline void aggregate_cluster(
     out.module_link = module_link;
     // The following will need to be filled properly "soon".
     out.meas_dim = 2u;
+    // Set a unique identifier for the measurement.
+    out.measurement_id = link;
 }
 
 }  // namespace traccc::device

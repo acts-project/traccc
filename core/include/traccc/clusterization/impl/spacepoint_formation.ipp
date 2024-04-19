@@ -17,11 +17,9 @@ TRACCC_HOST_DEVICE inline void fill_spacepoint(spacepoint& sp,
                                                const cell_module& module) {
 
     // Transform measurement position to 3D
-    point3 local_3d = {meas.local[0], meas.local[1], 0.f};
-    point3 global = module.placement.point_to_global(local_3d);
-
-    // Fill spacepoint with this spacepoint
-    sp = {global, meas};
+    const point3 local_3d = {meas.local[0], meas.local[1], 0.f};
+    sp.global = module.placement.point_to_global(local_3d);
+    sp.meas = meas;
 }
 
 }  // namespace traccc::details

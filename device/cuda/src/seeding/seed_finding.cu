@@ -1,14 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/seed_finding.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s).
 #include "traccc/cuda/utils/make_prefix_sum_buff.hpp"
@@ -148,7 +148,8 @@ seed_finding::seed_finding(const seedfinder_config& config,
       m_seedfilter_config(filter_config),
       m_mr(mr),
       m_copy(copy),
-      m_stream(str) {}
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 seed_finding::output_type seed_finding::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
@@ -172,11 +173,11 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
         num_spacepoints, m_mr.main, vecmem::data::buffer_type::resizable};
-    m_copy.setup(doublet_counter_buffer);
+    m_copy.setup(doublet_counter_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
-    const unsigned int nDoubletCountThreads = WARP_SIZE * 2;
+    const unsigned int nDoubletCountThreads = m_warp_size * 2;
     const unsigned int nDoubletCountBlocks =
         (num_spacepoints + nDoubletCountThreads - 1) / nDoubletCountThreads;
 
@@ -185,9 +186,9 @@ seed_finding::output_type seed_finding::operator()(
         globalCounter_device =
             vecmem::make_unique_alloc<device::seeding_global_counter>(
                 m_mr.main);
-    CUDA_ERROR_CHECK(cudaMemsetAsync(globalCounter_device.get(), 0,
-                                     sizeof(device::seeding_global_counter),
-                                     stream));
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemsetAsync(globalCounter_device.get(), 0,
+                        sizeof(device::seeding_global_counter), stream));
 
     // Count the number of doublets that we need to produce.
     kernels::count_doublets<<<nDoubletCountBlocks, nDoubletCountThreads, 0,
@@ -195,17 +196,17 @@ seed_finding::output_type seed_finding::operator()(
         m_seedfinder_config, g2_view, sp_grid_prefix_sum_buff,
         doublet_counter_buffer, (*globalCounter_device).m_nMidBot,
         (*globalCounter_device).m_nMidTop);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Get the summary values.
     vecmem::unique_alloc_ptr<device::seeding_global_counter>
         globalCounter_host =
             vecmem::make_unique_alloc<device::seeding_global_counter>(
                 (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
-    CUDA_ERROR_CHECK(cudaMemcpyAsync(globalCounter_host.get(),
-                                     globalCounter_device.get(),
-                                     sizeof(device::seeding_global_counter),
-                                     cudaMemcpyDeviceToHost, stream));
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemcpyAsync(globalCounter_host.get(), globalCounter_device.get(),
+                        sizeof(device::seeding_global_counter),
+                        cudaMemcpyDeviceToHost, stream));
     m_stream.synchronize();
 
     if (globalCounter_host->m_nMidBot == 0 ||
@@ -216,14 +217,14 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the doublet counter buffers.
     device::device_doublet_collection_types::buffer doublet_buffer_mb = {
         globalCounter_host->m_nMidBot, m_mr.main};
-    m_copy.setup(doublet_buffer_mb);
+    m_copy.setup(doublet_buffer_mb)->ignore();
     device::device_doublet_collection_types::buffer doublet_buffer_mt = {
         globalCounter_host->m_nMidTop, m_mr.main};
-    m_copy.setup(doublet_buffer_mt);
+    m_copy.setup(doublet_buffer_mt)->ignore();
 
     // Calculate the number of threads and thread blocks to run the doublet
     // finding kernel for.
-    const unsigned int nDoubletFindThreads = WARP_SIZE * 2;
+    const unsigned int nDoubletFindThreads = m_warp_size * 2;
     const unsigned int doublet_counter_buffer_size =
         m_copy.get_size(doublet_counter_buffer);
     const unsigned int nDoubletFindBlocks =
@@ -235,22 +236,22 @@ seed_finding::output_type seed_finding::operator()(
         find_doublets<<<nDoubletFindBlocks, nDoubletFindThreads, 0, stream>>>(
             m_seedfinder_config, g2_view, doublet_counter_buffer,
             doublet_buffer_mb, doublet_buffer_mt);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Set up the triplet counter buffers
     device::triplet_counter_spM_collection_types::buffer
         triplet_counter_spM_buffer = {doublet_counter_buffer_size, m_mr.main};
-    m_copy.setup(triplet_counter_spM_buffer);
-    m_copy.memset(triplet_counter_spM_buffer, 0);
+    m_copy.setup(triplet_counter_spM_buffer)->ignore();
+    m_copy.memset(triplet_counter_spM_buffer, 0)->ignore();
     device::triplet_counter_collection_types::buffer
         triplet_counter_midBot_buffer = {globalCounter_host->m_nMidBot,
                                          m_mr.main,
                                          vecmem::data::buffer_type::resizable};
-    m_copy.setup(triplet_counter_midBot_buffer);
+    m_copy.setup(triplet_counter_midBot_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
-    const unsigned int nTripletCountThreads = WARP_SIZE * 2;
+    const unsigned int nTripletCountThreads = m_warp_size * 2;
     const unsigned int nTripletCountBlocks =
         (globalCounter_host->m_nMidBot + nTripletCountThreads - 1) /
         nTripletCountThreads;
@@ -261,11 +262,11 @@ seed_finding::output_type seed_finding::operator()(
         m_seedfinder_config, g2_view, doublet_counter_buffer, doublet_buffer_mb,
         doublet_buffer_mt, triplet_counter_spM_buffer,
         triplet_counter_midBot_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Calculate the number of threads and thread blocks to run the triplet
     // count reduction kernel for.
-    const unsigned int nTcReductionThreads = WARP_SIZE * 2;
+    const unsigned int nTcReductionThreads = m_warp_size * 2;
     const unsigned int nTcReductionBlocks =
         (doublet_counter_buffer_size + nTcReductionThreads - 1) /
         nTcReductionThreads;
@@ -275,12 +276,12 @@ seed_finding::output_type seed_finding::operator()(
                                      stream>>>(
         doublet_counter_buffer, triplet_counter_spM_buffer,
         (*globalCounter_device).m_nTriplets);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    CUDA_ERROR_CHECK(cudaMemcpyAsync(globalCounter_host.get(),
-                                     globalCounter_device.get(),
-                                     sizeof(device::seeding_global_counter),
-                                     cudaMemcpyDeviceToHost, stream));
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemcpyAsync(globalCounter_host.get(), globalCounter_device.get(),
+                        sizeof(device::seeding_global_counter),
+                        cudaMemcpyDeviceToHost, stream));
     m_stream.synchronize();
 
     if (globalCounter_host->m_nTriplets == 0) {
@@ -290,11 +291,11 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the triplet buffer.
     device::device_triplet_collection_types::buffer triplet_buffer = {
         globalCounter_host->m_nTriplets, m_mr.main};
-    m_copy.setup(triplet_buffer);
+    m_copy.setup(triplet_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
-    const unsigned int nTripletFindThreads = WARP_SIZE * 2;
+    const unsigned int nTripletFindThreads = m_warp_size * 2;
     const unsigned int nTripletFindBlocks =
         (m_copy.get_size(triplet_counter_midBot_buffer) + nTripletFindThreads -
          1) /
@@ -307,11 +308,11 @@ seed_finding::output_type seed_finding::operator()(
             doublet_counter_buffer, doublet_buffer_mt,
             triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
             triplet_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
-    const unsigned int nWeightUpdatingThreads = WARP_SIZE * 2;
+    const unsigned int nWeightUpdatingThreads = m_warp_size * 2;
     const unsigned int nWeightUpdatingBlocks =
         (globalCounter_host->m_nTriplets + nWeightUpdatingThreads - 1) /
         nWeightUpdatingThreads;
@@ -323,17 +324,17 @@ seed_finding::output_type seed_finding::operator()(
             nWeightUpdatingThreads,
         stream>>>(m_seedfilter_config, g2_view, triplet_counter_spM_buffer,
                   triplet_counter_midBot_buffer, triplet_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Create result object: collection of seeds
     seed_collection_types::buffer seed_buffer(
         globalCounter_host->m_nTriplets, m_mr.main,
         vecmem::data::buffer_type::resizable);
-    m_copy.setup(seed_buffer);
+    m_copy.setup(seed_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.
-    const unsigned int nSeedSelectingThreads = WARP_SIZE * 2;
+    const unsigned int nSeedSelectingThreads = m_warp_size * 2;
     const unsigned int nSeedSelectingBlocks =
         (doublet_counter_buffer_size + nSeedSelectingThreads - 1) /
         nSeedSelectingThreads;
@@ -347,7 +348,7 @@ seed_finding::output_type seed_finding::operator()(
                                       g2_view, triplet_counter_spM_buffer,
                                       triplet_counter_midBot_buffer,
                                       triplet_buffer, seed_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return seed_buffer;
 }

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,8 +19,7 @@
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-namespace traccc {
-namespace cuda {
+namespace traccc::cuda {
 
 /// track parameter estimation for cuda
 ///
@@ -71,7 +70,9 @@ struct track_params_estimation
     vecmem::copy& m_copy;
     /// The CUDA stream to use
     stream& m_stream;
+
+    /// Warp size of the GPU being used
+    int m_warp_size;
 };
 
-}  // namespace cuda
-}  // namespace traccc
+}  // namespace traccc::cuda

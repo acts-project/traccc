@@ -44,14 +44,16 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(
 TRACCC_HOST_DEVICE inline bool is_adjacent(const traccc::cell& a,
                                            const traccc::cell& b) {
 
-    return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 and
-           (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1 and
+    return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 &&
+           (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1 &&
            a.module_link == b.module_link;
 }
 
 TRACCC_HOST_DEVICE inline bool is_far_enough(const traccc::cell& a,
                                              const traccc::cell& b) {
-    return (a.channel1 - b.channel1) > 1 || a.module_link != b.module_link;
+
+    assert((a.channel1 >= b.channel1) || (a.module_link != b.module_link));
+    return (a.channel1 > (b.channel1 + 1)) || (a.module_link != b.module_link);
 }
 
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(

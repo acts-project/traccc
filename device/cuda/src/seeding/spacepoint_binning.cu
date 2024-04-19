@@ -1,14 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/spacepoint_binning.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/count_grid_capacities.hpp"
@@ -51,7 +51,8 @@ spacepoint_binning::spacepoint_binning(
       m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
       m_copy(copy),
-      m_stream(str) {}
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view) const {
@@ -71,40 +72,38 @@ sp_grid_buffer spacepoint_binning::operator()(
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
     vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
                                                                    m_mr.main);
-    m_copy.setup(grid_capacities_buff);
-    m_copy.memset(grid_capacities_buff, 0);
+    m_copy.setup(grid_capacities_buff)->ignore();
+    m_copy.memset(grid_capacities_buff, 0)->ignore();
     vecmem::data::vector_view<unsigned int> grid_capacities_view =
         grid_capacities_buff;
 
     // Calculate the number of threads and thread blocks to run the kernels for.
-    const unsigned int num_threads = WARP_SIZE * 8;
+    const unsigned int num_threads = m_warp_size * 8;
     const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
     // Fill the grid capacity container.
     kernels::count_grid_capacities<<<num_blocks, num_threads, 0, stream>>>(
         m_config, m_axes.first, m_axes.second, spacepoints_view,
         grid_capacities_view);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
                                                                 : &(m_mr.main));
-    m_copy(grid_capacities_buff, grid_capacities_host);
+    m_copy(grid_capacities_buff, grid_capacities_host)->wait();
 
-    m_stream.synchronize();
     // Create the grid buffer.
     sp_grid_buffer grid_buffer(
         m_axes.first, m_axes.second,
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable);
-    m_copy.setup(grid_buffer._buffer);
-    sp_grid_view grid_view = grid_buffer;
+    m_copy.setup(grid_buffer._buffer)->ignore();
 
     // Populate the grid.
     kernels::populate_grid<<<num_blocks, num_threads, 0, stream>>>(
-        m_config, spacepoints_view, grid_view);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+        m_config, spacepoints_view, grid_buffer);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Return the freshly filled buffer.
     return grid_buffer;

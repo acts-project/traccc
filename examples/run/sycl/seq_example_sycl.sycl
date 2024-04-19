@@ -20,6 +20,7 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 
@@ -119,6 +120,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     traccc::sycl::clusterization_algorithm ca_sycl(
         mr, copy, &q, clusterization_opts.target_cells_per_partition);
+    traccc::sycl::spacepoint_formation_algorithm sf_sycl(mr, copy, &q);
     traccc::sycl::seeding_algorithm sa_sycl(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, mr, copy, &q);
@@ -144,6 +146,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::track_params_estimation::output_type params;
 
         // Instantiate cuda containers/collections
+        traccc::measurement_collection_types::buffer measurements_sycl_buffer(
+            0, *mr.host);
         traccc::spacepoint_collection_types::buffer spacepoints_sycl_buffer(
             0, *mr.host);
         traccc::seed_collection_types::buffer seeds_sycl_buffer(0, *mr.host);
@@ -184,8 +188,17 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Clusterization (sycl)",
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
+                measurements_sycl_buffer =
+                    ca_sycl(cells_buffer, modules_buffer);
+                q.wait_and_throw();
+            }  // stop measuring clusterization sycl timer
+
+            {
+                traccc::performance::timer t("Spacepoint formation (sycl)",
+                                             elapsedTimes);
+                // Reconstruct it into spacepoints on the device.
                 spacepoints_sycl_buffer =
-                    ca_sycl(cells_buffer, modules_buffer).first;
+                    sf_sycl(measurements_sycl_buffer, modules_buffer);
                 q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 

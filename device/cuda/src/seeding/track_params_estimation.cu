@@ -1,14 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/estimate_track_params.hpp"
@@ -16,8 +16,7 @@
 // VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
 
-namespace traccc {
-namespace cuda {
+namespace traccc::cuda {
 
 namespace kernels {
 /// CUDA kernel for running @c traccc::device::estimate_track_params
@@ -35,7 +34,10 @@ __global__ void estimate_track_params(
 
 track_params_estimation::track_params_estimation(
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str)
-    : m_mr(mr), m_copy(copy), m_stream(str) {}
+    : m_mr(mr),
+      m_copy(copy),
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
@@ -51,7 +53,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
                                                                   m_mr.main);
-    m_copy.setup(params_buffer);
+    m_copy.setup(params_buffer)->ignore();
 
     // Check if anything needs to be done.
     if (seeds_size == 0) {
@@ -59,8 +61,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
     }
 
     // -- Num threads
-    // The dimension of block is the integer multiple of WARP_SIZE (=32)
-    unsigned int num_threads = WARP_SIZE * 2;
+    // The dimension of block is the integer multiple of warp size (=32)
+    unsigned int num_threads = m_warp_size * 2;
 
     // -- Num blocks
     // The dimension of grid is (number_of_seeds + num_threads - 1) /
@@ -70,10 +72,9 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // run the kernel
     kernels::estimate_track_params<<<num_blocks, num_threads, 0, stream>>>(
         spacepoints_view, seeds_view, bfield, stddev, params_buffer);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return params_buffer;
 }
 
-}  // namespace cuda
-}  // namespace traccc
+}  // namespace traccc::cuda

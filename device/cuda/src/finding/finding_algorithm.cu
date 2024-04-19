@@ -6,9 +6,9 @@
  */
 
 // Project include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/device/finding_global_counter.hpp"
 #include "traccc/finding/candidate_link.hpp"
@@ -159,7 +159,11 @@ template <typename stepper_t, typename navigator_t>
 finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
     vecmem::copy& copy, stream& str)
-    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_stream(str){};
+    : m_cfg(cfg),
+      m_mr(mr),
+      m_copy(copy),
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
@@ -249,22 +253,22 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     vecmem::data::vector_buffer<detray::geometry::barcode> barcodes_buffer{
         n_modules, m_mr.main};
 
-    unsigned int nThreads = WARP_SIZE * 2;
+    unsigned int nThreads = m_warp_size * 2;
     unsigned int nBlocks = (barcodes_buffer.size() + nThreads - 1) / nThreads;
 
     kernels::make_barcode_sequence<<<nBlocks, nThreads, 0, stream>>>(
         uniques_buffer, barcodes_buffer);
 
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     for (unsigned int step = 0; step < m_cfg.max_track_candidates_per_track;
          step++) {
 
         // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
@@ -279,20 +283,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         }
 
         // Reset the global counter
-        CUDA_ERROR_CHECK(cudaMemsetAsync(global_counter_device.get(), 0,
-                                         sizeof(device::finding_global_counter),
-                                         stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemsetAsync(global_counter_device.get(), 0,
+                            sizeof(device::finding_global_counter), stream));
 
         /*****************************************************************
          * Kernel2: Apply material interaction
          ****************************************************************/
 
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::apply_interaction<detector_type>
             <<<nBlocks, nThreads, 0, stream>>>(det_view, navigation_buffer,
                                                n_in_params, in_params_buffer);
-        CUDA_ERROR_CHECK(cudaGetLastError());
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         /*****************************************************************
          * Kernel3: Count the number of measurements per parameter
@@ -305,19 +309,19 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         vecmem::data::vector_buffer<unsigned int> ref_meas_idx_buffer(
             n_in_params, m_mr.main);
 
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::count_measurements<<<nBlocks, nThreads, 0, stream>>>(
             in_params_buffer, barcodes_buffer, upper_bounds_buffer, n_in_params,
             n_measurements_buffer, ref_meas_idx_buffer,
             (*global_counter_device).n_measurements_sum);
-        CUDA_ERROR_CHECK(cudaGetLastError());
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
@@ -361,14 +365,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     n_measurements_prefix_sum_buffer, ref_meas_idx_buffer, step,
                     n_max_candidates, updated_params_buffer, link_map[step],
                     (*global_counter_device).n_candidates);
-            CUDA_ERROR_CHECK(cudaGetLastError());
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
         // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
@@ -389,7 +393,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                           vecmem::data::buffer_type::resizable};
         m_copy.setup(tips_map[step]);
 
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
 
         if (global_counter_host.n_candidates > 0) {
             nBlocks =
@@ -402,13 +406,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     (*global_counter_device).n_candidates, out_params_buffer,
                     param_to_link_map[step], tips_map[step],
                     (*global_counter_device).n_out_params);
-            CUDA_ERROR_CHECK(cudaGetLastError());
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
@@ -502,13 +506,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_tips_total + nThreads - 1) / nThreads;
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
             measurements, seeds_buffer, links_buffer, param_to_link_buffer,
             tips_buffer, track_candidates_buffer);
 
-        CUDA_ERROR_CHECK(cudaGetLastError());
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
     m_stream.synchronize();
 

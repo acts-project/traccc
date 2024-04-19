@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -20,10 +20,12 @@ namespace traccc::cuda::details {
 struct opaque_stream {
 
     /// Default constructor
-    opaque_stream();
+    opaque_stream(int device);
     /// Destructor
     ~opaque_stream();
 
+    /// Device that the stream is associated to
+    int m_device;
     /// Stream managed by the object
     cudaStream_t m_stream;
 
