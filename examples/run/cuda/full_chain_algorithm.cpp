@@ -114,8 +114,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
 
     // Get the final data back to the host.
     bound_track_parameters_collection_types::host result(&m_host_mr);
-    m_copy(track_params, result);
-    m_stream.synchronize();
+    m_copy(track_params, result)->wait();
 
     // Return the host container.
     return result;

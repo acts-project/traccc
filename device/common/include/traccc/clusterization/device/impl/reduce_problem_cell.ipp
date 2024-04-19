@@ -21,6 +21,9 @@ inline void reduce_problem_cell(
     const unsigned int start, const unsigned int end, unsigned char& adjc,
     unsigned short adjv[8]) {
 
+    // Some sanity check(s).
+    assert(start <= end);
+
     // Index of the "reference cell".
     const unsigned int pos = cid + start;
 

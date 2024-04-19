@@ -223,6 +223,7 @@ TRACCC_DEVICE inline void ccl_kernel(
         /*
          * Look for adjacent cells to the current one.
          */
+        assert(tst < details::MAX_CELLS_PER_THREAD);
         reduce_problem_cell(cells_device, cid, partition_start, partition_end,
                             adjc[tst], adjv[tst]);
     }

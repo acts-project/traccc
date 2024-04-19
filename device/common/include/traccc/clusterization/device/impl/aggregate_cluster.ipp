@@ -62,7 +62,7 @@ inline void aggregate_cluster(
                 maxChannel1 = this_cell.channel1;
             }
 
-            const float weight = traccc::details::signal_cell_modelling(
+            const scalar weight = traccc::details::signal_cell_modelling(
                 this_cell.activation, this_module);
 
             if (weight > this_module.threshold) {
