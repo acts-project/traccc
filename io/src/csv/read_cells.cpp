@@ -13,6 +13,7 @@
 // System include(s).
 #include <algorithm>
 #include <cassert>
+#include <set>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -96,9 +97,26 @@ void read_cells(
     std::vector<std::pair<csv::cell, unsigned int>> allCells;
     allCells.reserve(50000);
 
+    // Keep track of duplicate cells
+    using cell_key_t =
+        std::tuple<decltype(std::declval<csv::cell>().geometry_id),
+                   decltype(std::declval<csv::cell>().channel0),
+                   decltype(std::declval<csv::cell>().channel1)>;
+
+    std::set<cell_key_t> seen;
+    std::size_t dedup = 0;
+
     // Read all cells from input file.
     csv::cell iocell;
     while (reader.read(iocell)) {
+        cell_key_t key = {iocell.geometry_id, iocell.channel0, iocell.channel1};
+
+        if (seen.find(key) != seen.end()) {
+            dedup++;
+            continue;
+        } else {
+            seen.insert(key);
+        }
 
         // Modify the geometry ID of the cell if a barcode map is provided.
         const std::uint64_t original_geometry_id = iocell.geometry_id;
@@ -133,6 +151,11 @@ void read_cells(
             allCells.push_back({iocell, pos});
             ++(cellCounts[pos]);
         }
+    }
+
+    if (dedup > 0) {
+        std::cout << "WARNING: @read_cells: Had to deduplicate " << dedup
+                  << " rows in input file \"" << filename << "\"" << std::endl;
     }
 
     // Transform the cellCounts vector into a prefix sum for accessing
