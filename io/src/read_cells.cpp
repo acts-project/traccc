@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,14 +18,15 @@ void read_cells(
     cell_reader_output& out, std::size_t event, std::string_view directory,
     data_format format, const geometry* geom,
     const digitization_config* dconfig,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
+    bool deduplicate) {
 
     switch (format) {
         case data_format::csv: {
             read_cells(out,
                        data_directory() + directory.data() +
                            get_event_filename(event, "-cells.csv"),
-                       format, geom, dconfig, barcode_map);
+                       format, geom, dconfig, barcode_map, deduplicate);
             break;
         }
         case data_format::binary: {
@@ -45,11 +46,13 @@ void read_cells(
 void read_cells(
     cell_reader_output& out, std::string_view filename, data_format format,
     const geometry* geom, const digitization_config* dconfig,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
+    bool deduplicate) {
 
     switch (format) {
         case data_format::csv:
-            return csv::read_cells(out, filename, geom, dconfig, barcode_map);
+            return csv::read_cells(out, filename, geom, dconfig, barcode_map,
+                                   deduplicate);
 
         default:
             throw std::invalid_argument("Unsupported data format");

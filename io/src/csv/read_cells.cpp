@@ -11,14 +11,30 @@
 #include "traccc/io/csv/make_cell_reader.hpp"
 
 // System include(s).
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <set>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace {
+
+/// Comparator used for sorting cells. This sorting is one of the assumptions
+/// made in the clusterization algorithm
+struct cell_order {
+    bool operator()(const traccc::cell& lhs, const traccc::cell& rhs) const {
+        if (lhs.module_link != rhs.module_link) {
+            return lhs.module_link < rhs.module_link;
+        } else if (lhs.channel1 != rhs.channel1) {
+            return (lhs.channel1 < rhs.channel1);
+        } else {
+            return (lhs.channel0 < rhs.channel0);
+        }
+    }
+};  // struct cell_order
 
 /// Helper function which finds module from csv::cell in the geometry and
 /// digitization config, and initializes the modules limits with the cell's
@@ -67,29 +83,23 @@ traccc::cell_module get_module(const std::uint64_t geometry_id,
     return result;
 }
 
-}  // namespace
-
-namespace traccc::io::csv {
-
-void read_cells(
-    cell_reader_output& out, std::string_view filename, const geometry* geom,
-    const digitization_config* dconfig,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+std::map<std::uint64_t, std::set<traccc::cell, ::cell_order> >
+read_deduplicated_cells(std::string_view filename) {
 
     // Temporary storage for all the cells and modules.
-    std::map<std::uint64_t, std::set<traccc::cell> > cellsMap;
+    std::map<std::uint64_t, std::set<traccc::cell, ::cell_order> > result;
 
     // Construct the cell reader object.
-    auto reader = make_cell_reader(filename);
+    auto reader = traccc::io::csv::make_cell_reader(filename);
 
     // Read all cells from input file.
-    csv::cell iocell;
+    traccc::io::csv::cell iocell;
     unsigned int nduplicates = 0;
     while (reader.read(iocell)) {
 
         // Add the cell to the module. At this point the module link of the
         // cells is not set up correctly yet.
-        if (cellsMap[iocell.geometry_id]
+        if (result[iocell.geometry_id]
                 .insert({iocell.channel0, iocell.channel1, iocell.value,
                          iocell.timestamp, 0})
                 .second == false) {
@@ -101,30 +111,84 @@ void read_cells(
                   << " duplicate cells found in " << filename << std::endl;
     }
 
-    // Fill the output containers with the ordered cells and modules.
-    for (const auto& [original_geometry_id, cells] : cellsMap) {
+    // Return the container.
+    return result;
+}
 
-        // Modify the geometry ID of the module if a barcode map is provided.
-        std::uint64_t geometry_id = original_geometry_id;
-        if (barcode_map != nullptr) {
-            const auto it = barcode_map->find(geometry_id);
-            if (it != barcode_map->end()) {
-                geometry_id = it->second.value();
-            } else {
-                throw std::runtime_error(
-                    "Could not find barcode for geometry ID " +
-                    std::to_string(geometry_id));
+std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
+    std::string_view filename) {
+
+    // Temporary storage for all the cells and modules.
+    std::map<std::uint64_t, std::vector<traccc::cell> > result;
+
+    // Construct the cell reader object.
+    auto reader = traccc::io::csv::make_cell_reader(filename);
+
+    // Read all cells from input file.
+    traccc::io::csv::cell iocell;
+    while (reader.read(iocell)) {
+
+        // Add the cell to the module. At this point the module link of the
+        // cells is not set up correctly yet.
+        result[iocell.geometry_id].push_back({iocell.channel0, iocell.channel1,
+                                              iocell.value, iocell.timestamp,
+                                              0});
+    }
+
+    // Sort the cells. Deduplication or not, they do need to be sorted.
+    for (auto& [_, cells] : result) {
+        std::sort(cells.begin(), cells.end(), ::cell_order());
+    }
+
+    // Return the container.
+    return result;
+}
+
+}  // namespace
+
+namespace traccc::io::csv {
+
+void read_cells(
+    cell_reader_output& out, std::string_view filename, const geometry* geom,
+    const digitization_config* dconfig,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
+    const bool deduplicate) {
+
+    // Helper lambda filling the output container.
+    const auto fill_output = [&out, geom, dconfig,
+                              barcode_map](const auto& cellsMap) {
+        // Fill the output containers with the ordered cells and modules.
+        for (const auto& [original_geometry_id, cells] : cellsMap) {
+            // Modify the geometry ID of the module if a barcode map is
+            // provided.
+            std::uint64_t geometry_id = original_geometry_id;
+            if (barcode_map != nullptr) {
+                const auto it = barcode_map->find(geometry_id);
+                if (it != barcode_map->end()) {
+                    geometry_id = it->second.value();
+                } else {
+                    throw std::runtime_error(
+                        "Could not find barcode for geometry ID " +
+                        std::to_string(geometry_id));
+                }
+            }
+
+            // Add the module and its cells to the output.
+            out.modules.push_back(
+                get_module(geometry_id, geom, dconfig, original_geometry_id));
+            for (auto& cell : cells) {
+                out.cells.push_back(cell);
+                // Set the module link.
+                out.cells.back().module_link = out.modules.size() - 1;
             }
         }
+    };
 
-        // Add the module and its cells to the output.
-        out.modules.push_back(
-            get_module(geometry_id, geom, dconfig, original_geometry_id));
-        for (auto& cell : cells) {
-            out.cells.push_back(cell);
-            // Set the module link.
-            out.cells.back().module_link = out.modules.size() - 1;
-        }
+    // Fill the output in the appropriate way.
+    if (deduplicate) {
+        fill_output(read_deduplicated_cells(filename));
+    } else {
+        fill_output(read_all_cells(filename));
     }
 }
 

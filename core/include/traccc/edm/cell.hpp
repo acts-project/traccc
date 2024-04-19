@@ -73,10 +73,12 @@ inline bool operator<(const cell& lhs, const cell& rhs) {
 
     if (lhs.module_link != rhs.module_link) {
         return lhs.module_link < rhs.module_link;
+    } else if (lhs.channel0 != rhs.channel0) {
+        return (lhs.channel0 < rhs.channel0);
     } else if (lhs.channel1 != rhs.channel1) {
         return (lhs.channel1 < rhs.channel1);
     } else {
-        return (lhs.channel0 < rhs.channel0);
+        return lhs.activation < rhs.activation;
     }
 }
 
