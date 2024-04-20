@@ -56,14 +56,6 @@
 #include <map>
 #include <memory>
 
-// Timer macros
-// I used a pointer to avoid indenting the whole code and make it more readable.
-#define TIMER_START(unique_var_name, str_name) \
-    auto unique_var_name =                     \
-        new traccc::performance::timer(str_name, elapsedTimes);
-
-#define TIMER_STOP(unique_var_name) delete unique_var_name;
-
 int seq_run(const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::clusterization& /*clusterization_opts*/,
@@ -177,93 +169,115 @@ int seq_run(const traccc::opts::input_data& input_opts,
     for (unsigned int event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
-        // Start measuring wall time.
-        TIMER_START(timer_wall, "Wall time");
-
-        traccc::io::cell_reader_output readOut(&host_mr);
-
-        TIMER_START(timer_cells, "Read cells");
-        // Read the cells from the relevant event file
-        traccc::io::read_cells(readOut, event, input_opts.directory,
-                               input_opts.format, &surface_transforms,
-                               &digi_cfg, barcode_map.get());
-        traccc::cell_collection_types::host& cells_per_event = readOut.cells;
-        traccc::cell_module_collection_types::host& modules_per_event =
-            readOut.modules;
-        TIMER_STOP(timer_cells);
-
-        /*-------------------
-            Clusterization
-          -------------------*/
-
-        TIMER_START(timer_cluster, "Clusterization");
-        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
-                                         vecmem::get_data(modules_per_event));
-        TIMER_STOP(timer_cluster);
-
-        /*------------------------
-            Spacepoint formation
-          ------------------------*/
-
-        TIMER_START(timer_spf, "Spacepoint formation");
-        auto spacepoints_per_event =
-            sf(vecmem::get_data(measurements_per_event),
-               vecmem::get_data(modules_per_event));
-        TIMER_STOP(timer_spf);
-
-        /*-----------------------
-          Seeding algorithm
-          -----------------------*/
-
-        TIMER_START(timer_seeding, "Seeding");
-        auto seeds = sa(spacepoints_per_event);
-        TIMER_STOP(timer_seeding);
-
-        /*----------------------------
-          Track params estimation
-          ----------------------------*/
-
-        TIMER_START(timer_params, "Track params estimation");
-        auto params = tp(spacepoints_per_event, seeds, field_vec);
-        TIMER_STOP(timer_params);
-
-        // Perform track finding and fitting only when using a Detray geometry.
+        traccc::host::clusterization_algorithm::output_type
+            measurements_per_event{&host_mr};
+        traccc::host::spacepoint_formation_algorithm::output_type
+            spacepoints_per_event{&host_mr};
+        traccc::seeding_algorithm::output_type seeds{&host_mr};
+        traccc::track_params_estimation::output_type params{&host_mr};
         finding_algorithm::output_type track_candidates{&host_mr};
         fitting_algorithm::output_type track_states{&host_mr};
-        if (detector_opts.use_detray_detector) {
-            TIMER_START(timer_finding, "Track finding");
-            track_candidates =
-                finding_alg(detector, field, measurements_per_event, params);
-            TIMER_STOP(timer_finding);
-            TIMER_START(timer_fitting, "Track fitting");
-            track_states = fitting_alg(detector, field, track_candidates);
-            TIMER_STOP(timer_fitting);
-        }
-
-        // Perform ambiguity resolution only if asked for.
         traccc::greedy_ambiguity_resolution_algorithm::output_type
             resolved_track_states{&host_mr};
-        if (resolution_opts.run) {
-            TIMER_START(timer_ar, "Track ambiguity resolution");
-            resolved_track_states = resolution_alg(track_states);
-            TIMER_STOP(timer_ar);
-        }
 
-        // Stop measuring Wall time.
-        TIMER_STOP(timer_wall);
+        {  // Start measuring wall time.
+            traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
 
-        /*----------------------------
-          Statistics
-          ----------------------------*/
+            traccc::io::cell_reader_output readOut(&host_mr);
 
-        n_modules += modules_per_event.size();
-        n_cells += cells_per_event.size();
-        n_measurements += measurements_per_event.size();
-        n_spacepoints += spacepoints_per_event.size();
-        n_seeds += seeds.size();
-        n_found_tracks += track_candidates.size();
-        n_fitted_tracks += track_states.size();
-        n_ambiguity_free_tracks += resolved_track_states.size();
+            {
+                traccc::performance::timer timer{"Read cells", elapsedTimes};
+                // Read the cells from the relevant event file
+                traccc::io::read_cells(readOut, event, input_opts.directory,
+                                       input_opts.format, &surface_transforms,
+                                       &digi_cfg, barcode_map.get());
+            }
+            traccc::cell_collection_types::host& cells_per_event =
+                readOut.cells;
+            traccc::cell_module_collection_types::host& modules_per_event =
+                readOut.modules;
+
+            /*-------------------
+                Clusterization
+              -------------------*/
+
+            {
+                traccc::performance::timer timer{"Clusterization",
+                                                 elapsedTimes};
+                measurements_per_event =
+                    ca(vecmem::get_data(cells_per_event),
+                       vecmem::get_data(modules_per_event));
+            }
+
+            /*------------------------
+                Spacepoint formation
+              ------------------------*/
+
+            {
+                traccc::performance::timer timer{"Spacepoint formation",
+                                                 elapsedTimes};
+                spacepoints_per_event =
+                    sf(vecmem::get_data(measurements_per_event),
+                       vecmem::get_data(modules_per_event));
+            }
+
+            /*-----------------------
+              Seeding algorithm
+              -----------------------*/
+
+            {
+                traccc::performance::timer timer{"Seeding", elapsedTimes};
+                seeds = sa(spacepoints_per_event);
+            }
+
+            /*----------------------------
+              Track params estimation
+              ----------------------------*/
+
+            {
+                traccc::performance::timer timer{"Track params estimation",
+                                                 elapsedTimes};
+                params = tp(spacepoints_per_event, seeds, field_vec);
+            }
+
+            // Perform track finding and fitting only when using a Detray
+            // geometry.
+            if (detector_opts.use_detray_detector) {
+                {
+                    traccc::performance::timer timer{"Track finding",
+                                                     elapsedTimes};
+                    track_candidates = finding_alg(
+                        detector, field, measurements_per_event, params);
+                }
+                {
+                    traccc::performance::timer timer{"Track fitting",
+                                                     elapsedTimes};
+                    track_states =
+                        fitting_alg(detector, field, track_candidates);
+                }
+            }
+
+            // Perform ambiguity resolution only if asked for.
+            if (resolution_opts.run) {
+                traccc::performance::timer timer{"Track ambiguity resolution",
+                                                 elapsedTimes};
+                resolved_track_states = resolution_alg(track_states);
+            }
+
+            /*----------------------------
+              Statistics
+              ----------------------------*/
+
+            n_modules += modules_per_event.size();
+            n_cells += cells_per_event.size();
+            n_measurements += measurements_per_event.size();
+            n_spacepoints += spacepoints_per_event.size();
+            n_seeds += seeds.size();
+            n_found_tracks += track_candidates.size();
+            n_fitted_tracks += track_states.size();
+            n_ambiguity_free_tracks += resolved_track_states.size();
+
+        }  // Stop measuring Wall time.
 
         /*------------
              Writer
