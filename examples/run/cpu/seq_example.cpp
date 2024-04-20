@@ -23,6 +23,7 @@
 // performance
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
 // options
@@ -161,75 +162,122 @@ int seq_run(const traccc::opts::input_data& input_opts,
     ar_writer_cfg.algorithm_name = "ambiguity_resolution";
     traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
 
+    // Timers
+    traccc::performance::timing_info elapsedTimes;
+
     // Loop over events
     for (unsigned int event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
-        traccc::io::cell_reader_output readOut(&host_mr);
-
-        // Read the cells from the relevant event file
-        traccc::io::read_cells(readOut, event, input_opts.directory,
-                               input_opts.format, &surface_transforms,
-                               &digi_cfg, barcode_map.get());
-        traccc::cell_collection_types::host& cells_per_event = readOut.cells;
-        traccc::cell_module_collection_types::host& modules_per_event =
-            readOut.modules;
-
-        /*-------------------
-            Clusterization
-          -------------------*/
-
-        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
-                                         vecmem::get_data(modules_per_event));
-
-        /*------------------------
-            Spacepoint formation
-          ------------------------*/
-
-        auto spacepoints_per_event =
-            sf(vecmem::get_data(measurements_per_event),
-               vecmem::get_data(modules_per_event));
-
-        /*-----------------------
-          Seeding algorithm
-          -----------------------*/
-
-        auto seeds = sa(spacepoints_per_event);
-
-        /*----------------------------
-          Track params estimation
-          ----------------------------*/
-
-        auto params = tp(spacepoints_per_event, seeds, field_vec);
-
-        // Perform track finding and fitting only when using a Detray geometry.
+        traccc::host::clusterization_algorithm::output_type
+            measurements_per_event{&host_mr};
+        traccc::host::spacepoint_formation_algorithm::output_type
+            spacepoints_per_event{&host_mr};
+        traccc::seeding_algorithm::output_type seeds{&host_mr};
+        traccc::track_params_estimation::output_type params{&host_mr};
         finding_algorithm::output_type track_candidates{&host_mr};
         fitting_algorithm::output_type track_states{&host_mr};
-        if (detector_opts.use_detray_detector) {
-            track_candidates =
-                finding_alg(detector, field, measurements_per_event, params);
-            track_states = fitting_alg(detector, field, track_candidates);
-        }
-
-        // Perform ambiguity resolution only if asked for.
         traccc::greedy_ambiguity_resolution_algorithm::output_type
             resolved_track_states{&host_mr};
-        if (resolution_opts.run) {
-            resolved_track_states = resolution_alg(track_states);
-        }
 
-        /*----------------------------
-          Statistics
-          ----------------------------*/
+        {  // Start measuring wall time.
+            traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
 
-        n_modules += modules_per_event.size();
-        n_cells += cells_per_event.size();
-        n_measurements += measurements_per_event.size();
-        n_spacepoints += spacepoints_per_event.size();
-        n_seeds += seeds.size();
-        n_found_tracks += track_candidates.size();
-        n_fitted_tracks += track_states.size();
-        n_ambiguity_free_tracks += resolved_track_states.size();
+            traccc::io::cell_reader_output readOut(&host_mr);
+
+            {
+                traccc::performance::timer timer{"Read cells", elapsedTimes};
+                // Read the cells from the relevant event file
+                traccc::io::read_cells(readOut, event, input_opts.directory,
+                                       input_opts.format, &surface_transforms,
+                                       &digi_cfg, barcode_map.get());
+            }
+            traccc::cell_collection_types::host& cells_per_event =
+                readOut.cells;
+            traccc::cell_module_collection_types::host& modules_per_event =
+                readOut.modules;
+
+            /*-------------------
+                Clusterization
+              -------------------*/
+
+            {
+                traccc::performance::timer timer{"Clusterization",
+                                                 elapsedTimes};
+                measurements_per_event =
+                    ca(vecmem::get_data(cells_per_event),
+                       vecmem::get_data(modules_per_event));
+            }
+
+            /*------------------------
+                Spacepoint formation
+              ------------------------*/
+
+            {
+                traccc::performance::timer timer{"Spacepoint formation",
+                                                 elapsedTimes};
+                spacepoints_per_event =
+                    sf(vecmem::get_data(measurements_per_event),
+                       vecmem::get_data(modules_per_event));
+            }
+
+            /*-----------------------
+              Seeding algorithm
+              -----------------------*/
+
+            {
+                traccc::performance::timer timer{"Seeding", elapsedTimes};
+                seeds = sa(spacepoints_per_event);
+            }
+
+            /*----------------------------
+              Track params estimation
+              ----------------------------*/
+
+            {
+                traccc::performance::timer timer{"Track params estimation",
+                                                 elapsedTimes};
+                params = tp(spacepoints_per_event, seeds, field_vec);
+            }
+
+            // Perform track finding and fitting only when using a Detray
+            // geometry.
+            if (detector_opts.use_detray_detector) {
+                {
+                    traccc::performance::timer timer{"Track finding",
+                                                     elapsedTimes};
+                    track_candidates = finding_alg(
+                        detector, field, measurements_per_event, params);
+                }
+                {
+                    traccc::performance::timer timer{"Track fitting",
+                                                     elapsedTimes};
+                    track_states =
+                        fitting_alg(detector, field, track_candidates);
+                }
+            }
+
+            // Perform ambiguity resolution only if asked for.
+            if (resolution_opts.run) {
+                traccc::performance::timer timer{"Track ambiguity resolution",
+                                                 elapsedTimes};
+                resolved_track_states = resolution_alg(track_states);
+            }
+
+            /*----------------------------
+              Statistics
+              ----------------------------*/
+
+            n_modules += modules_per_event.size();
+            n_cells += cells_per_event.size();
+            n_measurements += measurements_per_event.size();
+            n_spacepoints += spacepoints_per_event.size();
+            n_seeds += seeds.size();
+            n_found_tracks += track_candidates.size();
+            n_fitted_tracks += track_states.size();
+            n_ambiguity_free_tracks += resolved_track_states.size();
+
+        }  // Stop measuring Wall time.
 
         /*------------
              Writer
@@ -284,6 +332,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     std::cout << "- fitted   " << n_fitted_tracks << " tracks" << std::endl;
     std::cout << "- resolved " << n_ambiguity_free_tracks << " tracks"
               << std::endl;
+    std::cout << "==> Elapsed times...\n" << elapsedTimes << std::endl;
 
     return EXIT_SUCCESS;
 }
