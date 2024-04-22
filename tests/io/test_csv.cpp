@@ -29,9 +29,9 @@ class io : public traccc::tests::data_test {};
 TEST_F(io, csv_read_single_module) {
 
     traccc::io::cell_reader_output single_module_cells;
-    traccc::io::read_cells(single_module_cells,
-                           get_datafile("single_module/cells.csv"),
-                           traccc::data_format::csv);
+    traccc::io::read_cells(
+        single_module_cells, get_datafile("single_module/cells.csv"),
+        traccc::data_format::csv, nullptr, nullptr, nullptr, false);
     auto& cells = single_module_cells.cells;
     auto& modules = single_module_cells.modules;
     ASSERT_EQ(cells.size(), 6u);
@@ -49,9 +49,9 @@ TEST_F(io, csv_read_single_module) {
 TEST_F(io, csv_read_two_modules) {
 
     traccc::io::cell_reader_output two_module_cells;
-    traccc::io::read_cells(two_module_cells,
-                           get_datafile("two_modules/cells.csv"),
-                           traccc::data_format::csv);
+    traccc::io::read_cells(
+        two_module_cells, get_datafile("two_modules/cells.csv"),
+        traccc::data_format::csv, nullptr, nullptr, nullptr, false);
     auto& cells = two_module_cells.cells;
     auto& modules = two_module_cells.modules;
     ASSERT_EQ(modules.size(), 2u);

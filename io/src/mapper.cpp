@@ -207,7 +207,7 @@ generate_measurement_cell_map(std::size_t event,
     // Read the cells from the relevant event file
     traccc::io::cell_reader_output readOut(&resource);
     io::read_cells(readOut, event, cells_dir, traccc::data_format::csv,
-                   &surface_transforms, &digi_cfg);
+                   &surface_transforms, &digi_cfg, nullptr, false);
     cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
