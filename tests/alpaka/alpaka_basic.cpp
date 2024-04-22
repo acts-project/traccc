@@ -103,8 +103,8 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
 
 struct VecMemOpKernel {
     template <typename Acc>
-    ALPAKA_FN_ACC void operator()(Acc const& acc,
-                                  vecmem::data::vector_view<float> result) const {
+    ALPAKA_FN_ACC void operator()(
+        Acc const& acc, vecmem::data::vector_view<float> result) const {
         using namespace alpaka;
         auto const globalThreadIdx =
             getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u];
