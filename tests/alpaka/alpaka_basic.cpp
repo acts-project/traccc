@@ -16,7 +16,12 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
+#include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 #include <vecmem/utils/hip/copy.hpp>
 #include <vecmem/memory/hip/device_memory_resource.hpp>
 #include <vecmem/memory/hip/host_memory_resource.hpp>
@@ -141,7 +146,7 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     vecmem::host_memory_resource host_mr;
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     vecmem::cuda::copy vm_copy;
-    vecmem::cuda::device_memory_resource device_mr
+    vecmem::cuda::device_memory_resource device_mr;
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     vecmem::hip::copy vm_copy;
     vecmem::hip::device_memory_resource device_mr;
