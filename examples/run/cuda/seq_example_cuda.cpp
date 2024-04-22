@@ -9,6 +9,7 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
@@ -93,6 +94,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     traccc::cuda::clusterization_algorithm ca_cuda(
         mr, copy, stream, clusterization_opts.target_cells_per_partition);
+    traccc::cuda::measurement_sorting_algorithm ms_cuda(copy, stream);
     traccc::cuda::spacepoint_formation_algorithm sf_cuda(mr, copy, stream);
     traccc::cuda::seeding_algorithm sa_cuda(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
@@ -162,6 +164,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 // Reconstruct it into spacepoints on the device.
                 measurements_cuda_buffer =
                     ca_cuda(cells_buffer, modules_buffer);
+                ms_cuda(measurements_cuda_buffer);
                 stream.synchronize();
             }  // stop measuring clusterization cuda timer
 

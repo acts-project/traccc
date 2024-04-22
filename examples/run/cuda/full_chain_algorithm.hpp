@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
@@ -93,6 +94,8 @@ class full_chain_algorithm
     unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
+    /// Measurement sorting algorithm
+    measurement_sorting_algorithm m_measurement_sorting;
     /// Spacepoint formation algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
