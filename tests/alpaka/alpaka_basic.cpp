@@ -104,15 +104,14 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
 struct VecMemOpKernel {
     template <typename Acc>
     ALPAKA_FN_ACC void operator()(Acc const& acc,
-                                  vecmem::data::vector_view<float> result,
-                                  uint32_t n) const {
+                                  vecmem::data::vector_view<float> result) const {
         using namespace alpaka;
         auto const globalThreadIdx =
             getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u];
 
         // It is possible to get index type from the accelerator,
         // but for simplicity we just repeat the type here
-        if (globalThreadIdx < n) {
+        if (globalThreadIdx < result.size()) {
             result.ptr()[globalThreadIdx] = process(acc, globalThreadIdx);
         }
     }
@@ -167,7 +166,7 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     auto const platformDevCpu = alpaka::Platform<DevCpu>{};
     auto devHost = getDevByIdx(platformDevCpu, 0u);
 
-    alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{}, data_dev_vec_buf, n);
+    alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{}, data_dev_vec_buf);
 
     vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
 

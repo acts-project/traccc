@@ -7,11 +7,11 @@
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   enable_language(CUDA)
   set_source_files_properties(alpaka_basic.cpp PROPERTIES LANGUAGE CUDA)
-  list(APPEND PRIVATE_LIBRARIES vecmem::cuda)
+  list(APPEND DEVICE_LIBRARIES vecmem::cuda)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
   enable_language(HIP)
   set_source_files_properties(alpaka_basic.cpp PROPERTIES LANGUAGE HIP)
-  list(APPEND PRIVATE_LIBRARIES vecmem::hip)
+  list(APPEND DEVICE_LIBRARIES vecmem::hip)
 endif()
 
 traccc_add_test( alpaka
@@ -20,5 +20,5 @@ traccc_add_test( alpaka
    GTest::gtest_main
    alpaka::alpaka
    vecmem::core
-   PRIVATE ${PRIVATE_LIBRARIES}
+   ${DEVICE_LIBRARIES}
 )
