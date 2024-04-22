@@ -9,20 +9,17 @@
 // Alpaka include(s).
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
-
-#include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/copy.hpp>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-#include <vecmem/utils/cuda/copy.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-#include <vecmem/utils/hip/copy.hpp>
 #include <vecmem/memory/hip/device_memory_resource.hpp>
 #include <vecmem/memory/hip/host_memory_resource.hpp>
 #include <vecmem/utils/hip/copy.hpp>
@@ -54,7 +51,6 @@ struct VectorOpKernel {
         }
     }
 };
-
 
 /// Copy vector to device, set element[i] = sin(i) on device, then compare with
 /// same calculation on host
@@ -107,7 +103,8 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
 
 struct VecMemOpKernel {
     template <typename Acc>
-    ALPAKA_FN_ACC void operator()(Acc const& acc, vecmem::data::vector_view<float> result,
+    ALPAKA_FN_ACC void operator()(Acc const& acc,
+                                  vecmem::data::vector_view<float> result,
                                   uint32_t n) const {
         using namespace alpaka;
         auto const globalThreadIdx =
@@ -159,22 +156,19 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
 
     auto host_buffer = vecmem::get_data(host_vector);
     auto device_buffer = vm_copy.to(vecmem::get_data(host_vector), device_mr,
-                                 vecmem::copy::type::host_to_device);
+                                    vecmem::copy::type::host_to_device);
     auto data_dev_vec_buf = vecmem::get_data(device_buffer);
-
 
     std::cout << "Using alpaka accelerator: " << alpaka::getAccName<Acc>()
               << std::endl;
-
 
     // Create a device for host for memory allocation, using the first CPU
     // available
     auto const platformDevCpu = alpaka::Platform<DevCpu>{};
     auto devHost = getDevByIdx(platformDevCpu, 0u);
 
-    alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{},
-                      data_dev_vec_buf, n);
-    
+    alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{}, data_dev_vec_buf, n);
+
     vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
 
     for (uint32_t i = 0u; i < n; i++) {
