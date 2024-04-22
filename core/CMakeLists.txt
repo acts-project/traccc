@@ -48,6 +48,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/clusterization/impl/measurement_creation.ipp"
   "include/traccc/clusterization/measurement_creation_algorithm.hpp"
   "src/clusterization/measurement_creation_algorithm.cpp"
+  "include/traccc/clusterization/measurement_sorting_algorithm.hpp"
+  "src/clusterization/measurement_sorting_algorithm.cpp"
   "include/traccc/clusterization/details/spacepoint_formation.hpp"
   "include/traccc/clusterization/impl/spacepoint_formation.ipp"
   "include/traccc/clusterization/spacepoint_formation_algorithm.hpp"
