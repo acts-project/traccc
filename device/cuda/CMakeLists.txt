@@ -42,6 +42,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Clusterization
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"
+  "include/traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
+  "src/clusterization/measurement_sorting_algorithm.cu"
   "include/traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
   "src/clusterization/spacepoint_formation_algorithm.cu"
   # Finding
