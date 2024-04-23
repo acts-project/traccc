@@ -223,17 +223,18 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
      * Measurement Operations
      *****************************************************************/
 
-    measurement_collection_types::const_device measurements_device(
-        measurements);
+    measurement_collection_types::const_view::size_type n_measurements =
+        m_copy.get_size(measurements);
 
     // Get copy of barcode uniques
-    measurement_collection_types::buffer uniques_buffer{
-        measurements_device.size(), m_mr.main};
+    measurement_collection_types::buffer uniques_buffer{n_measurements,
+                                                        m_mr.main};
     measurement_collection_types::device uniques(uniques_buffer);
 
-    measurement* end = thrust::unique_copy(
-        thrust::cuda::par.on(stream), measurements_device.begin(),
-        measurements_device.end(), uniques.begin(), measurement_equal_comp());
+    measurement* end =
+        thrust::unique_copy(thrust::cuda::par.on(stream), measurements.ptr(),
+                            measurements.ptr() + n_measurements,
+                            uniques.begin(), measurement_equal_comp());
     unsigned int n_modules = end - uniques.begin();
 
     // Get upper bounds of unique elements
@@ -241,10 +242,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                                   m_mr.main};
     vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
 
-    thrust::upper_bound(thrust::cuda::par.on(stream),
-                        measurements_device.begin(), measurements_device.end(),
-                        uniques.begin(), uniques.begin() + n_modules,
-                        upper_bounds.begin(), measurement_sort_comp());
+    thrust::upper_bound(thrust::cuda::par.on(stream), measurements.ptr(),
+                        measurements.ptr() + n_measurements, uniques.begin(),
+                        uniques.begin() + n_modules, upper_bounds.begin(),
+                        measurement_sort_comp());
 
     /*****************************************************************
      * Kernel1: Create barcode sequence
