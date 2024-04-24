@@ -11,6 +11,11 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
   include( traccc-compiler-options-cuda )
 
   list (APPEND EXTRA_LIBS vecmem::cuda traccc::cuda)
+elseif(alpaka_ACC_GPU_HIP_ENABLE)
+  enable_language(HIP)
+  find_package( HIPToolkit REQUIRED )
+  
+  list(APPEND EXTRA_LIBS HIP::hiprt vecmem::hip)
 endif()
 
 set(LIBRARIES vecmem::core traccc::io traccc::performance

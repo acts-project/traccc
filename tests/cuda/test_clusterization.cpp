@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
-#include "traccc/cuda/clusterization/experimental/clusterization_algorithm.hpp"
+#include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 
 // VecMem include(s).
@@ -48,8 +48,7 @@ TEST(clusterization, cuda) {
     modules.push_back({});
 
     // Run Clusterization
-    traccc::cuda::experimental::clusterization_algorithm ca_cuda(mr, copy,
-                                                                 stream, 1024);
+    traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream, 1024);
 
     auto measurements_buffer =
         ca_cuda(vecmem::get_data(cells), vecmem::get_data(modules));

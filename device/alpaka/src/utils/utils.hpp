@@ -14,6 +14,10 @@
 #include <vecmem/utils/cuda/copy.hpp>
 #endif
 
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#include <vecmem/utils/hip/copy.hpp>
+#endif
+
 #include <vecmem/utils/copy.hpp>
 
 namespace traccc::alpaka {
@@ -27,7 +31,7 @@ using Host = ::alpaka::DevCpu;
 using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
 
 static constexpr std::size_t warpSize =
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     32;
 #else
     4;

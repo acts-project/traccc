@@ -12,45 +12,93 @@
 #include "traccc/io/utils.hpp"
 
 // algorithms
+#include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
+#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
+#include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/performance/timer.hpp"
+#include "traccc/resolution/fitting_performance_writer.hpp"
 
 // options
-#include "traccc/options/common_options.hpp"
-#include "traccc/options/detector_input_options.hpp"
-#include "traccc/options/full_tracking_input_options.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
+#include "traccc/options/clusterization.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/performance.hpp"
+#include "traccc/options/program_options.hpp"
+#include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_propagation.hpp"
+#include "traccc/options/track_resolution.hpp"
+#include "traccc/options/track_seeding.hpp"
+
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/detectors/bfield.hpp"
+#include "detray/io/frontend/detector_reader.hpp"
+#include "detray/navigation/navigator.hpp"
+#include "detray/propagator/propagator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
 #include <cstdint>
+#include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <map>
 #include <memory>
 
-namespace po = boost::program_options;
+int seq_run(const traccc::opts::input_data& input_opts,
+            const traccc::opts::detector& detector_opts,
+            const traccc::opts::clusterization& /*clusterization_opts*/,
+            const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::track_finding& finding_opts,
+            const traccc::opts::track_propagation& propagation_opts,
+            const traccc::opts::track_resolution& resolution_opts,
+            const traccc::opts::performance& performance_opts) {
 
-int seq_run(const traccc::full_tracking_input_options& i_cfg,
-            const traccc::common_options& common_opts,
-            const traccc::detector_input_options& det_opts) {
+    // Memory resource used by the application.
+    vecmem::host_memory_resource host_mr;
 
     // Read in the geometry.
     auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
-        det_opts.detector_file,
-        (det_opts.use_detray_detector ? traccc::data_format::json
-                                      : traccc::data_format::csv));
+        detector_opts.detector_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
+
+    using detector_type = detray::detector<detray::default_metadata,
+                                           detray::host_container_types>;
+    detector_type detector{host_mr};
+    if (detector_opts.use_detray_detector) {
+        // Set up the detector reader configuration.
+        detray::io::detector_reader_config cfg;
+        cfg.add_file(traccc::io::data_directory() +
+                     detector_opts.detector_file);
+        if (detector_opts.material_file.empty() == false) {
+            cfg.add_file(traccc::io::data_directory() +
+                         detector_opts.material_file);
+        }
+        if (detector_opts.grid_file.empty() == false) {
+            cfg.add_file(traccc::io::data_directory() +
+                         detector_opts.grid_file);
+        }
+
+        // Read the detector.
+        auto det = detray::io::read_detector<detector_type>(host_mr, cfg);
+        detector = std::move(det.first);
+    }
 
     // Read the digitization configuration file
     auto digi_cfg =
-        traccc::io::read_digitization_config(i_cfg.digitization_config_file);
+        traccc::io::read_digitization_config(detector_opts.digitization_file);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -58,140 +106,259 @@ int seq_run(const traccc::full_tracking_input_options& i_cfg,
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
+    uint64_t n_found_tracks = 0;
+    uint64_t n_fitted_tracks = 0;
+    uint64_t n_ambiguity_free_tracks = 0;
 
-    // Configs
-    traccc::seedfinder_config finder_config;
-    traccc::spacepoint_grid_config grid_config(finder_config);
-    traccc::seedfilter_config filter_config;
+    // Type definitions
+    using stepper_type =
+        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+                           detector_type::transform3,
+                           detray::constrained_step<>>;
+    using navigator_type = detray::navigator<const detector_type>;
+    using finding_algorithm =
+        traccc::finding_algorithm<stepper_type, navigator_type>;
+    using fitting_algorithm = traccc::fitting_algorithm<
+        traccc::kalman_fitter<stepper_type, navigator_type>>;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f, finder_config.bFieldInZ};
+    const traccc::vector3 field_vec = {0.f, 0.f,
+                                       seeding_opts.seedfinder.bFieldInZ};
+    const detray::bfield::const_field_t field =
+        detray::bfield::create_const_field(field_vec);
 
-    // Memory resource used by the application.
-    vecmem::host_memory_resource host_mr;
+    // Algorithm configuration(s).
+    finding_algorithm::config_type finding_cfg;
+    finding_cfg.min_track_candidates_per_track =
+        finding_opts.track_candidates_range[0];
+    finding_cfg.max_track_candidates_per_track =
+        finding_opts.track_candidates_range[1];
+    finding_cfg.chi2_max = finding_opts.chi2_max;
+    propagation_opts.setup(finding_cfg.propagation);
+
+    fitting_algorithm::config_type fitting_cfg;
+    propagation_opts.setup(fitting_cfg.propagation);
 
     // Algorithms
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
-                                 host_mr);
+    traccc::host::clusterization_algorithm ca(host_mr);
+    traccc::host::spacepoint_formation_algorithm sf(host_mr);
+    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
+                                 {seeding_opts.seedfinder},
+                                 seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
+    finding_algorithm finding_alg(finding_cfg);
+    fitting_algorithm fitting_alg(fitting_cfg);
+    traccc::greedy_ambiguity_resolution_algorithm resolution_alg;
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
+    traccc::finding_performance_writer find_performance_writer(
+        traccc::finding_performance_writer::config{});
+    traccc::fitting_performance_writer fit_performance_writer(
+        traccc::fitting_performance_writer::config{});
+    traccc::finding_performance_writer::config ar_writer_cfg;
+    ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
+    ar_writer_cfg.algorithm_name = "ambiguity_resolution";
+    traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
+
+    // Timers
+    traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = common_opts.skip;
-         event < common_opts.events + common_opts.skip; ++event) {
+    for (unsigned int event = input_opts.skip;
+         event < input_opts.events + input_opts.skip; ++event) {
 
-        traccc::io::cell_reader_output readOut(&host_mr);
+        traccc::host::clusterization_algorithm::output_type
+            measurements_per_event{&host_mr};
+        traccc::host::spacepoint_formation_algorithm::output_type
+            spacepoints_per_event{&host_mr};
+        traccc::seeding_algorithm::output_type seeds{&host_mr};
+        traccc::track_params_estimation::output_type params{&host_mr};
+        finding_algorithm::output_type track_candidates{&host_mr};
+        fitting_algorithm::output_type track_states{&host_mr};
+        traccc::greedy_ambiguity_resolution_algorithm::output_type
+            resolved_track_states{&host_mr};
 
-        // Read the cells from the relevant event file
-        traccc::io::read_cells(readOut, event, common_opts.input_directory,
-                               common_opts.input_data_format,
-                               &surface_transforms, &digi_cfg,
-                               barcode_map.get());
-        traccc::cell_collection_types::host& cells_per_event = readOut.cells;
-        traccc::cell_module_collection_types::host& modules_per_event =
-            readOut.modules;
+        {  // Start measuring wall time.
+            traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
 
-        /*-------------------
-            Clusterization
-          -------------------*/
+            traccc::io::cell_reader_output readOut(&host_mr);
 
-        auto measurements_per_event = ca(cells_per_event, modules_per_event);
+            {
+                traccc::performance::timer timer{"Read cells", elapsedTimes};
+                // Read the cells from the relevant event file
+                traccc::io::read_cells(readOut, event, input_opts.directory,
+                                       input_opts.format, &surface_transforms,
+                                       &digi_cfg, barcode_map.get());
+            }
+            traccc::cell_collection_types::host& cells_per_event =
+                readOut.cells;
+            traccc::cell_module_collection_types::host& modules_per_event =
+                readOut.modules;
 
-        /*------------------------
-            Spacepoint formation
-          ------------------------*/
+            /*-------------------
+                Clusterization
+              -------------------*/
 
-        auto spacepoints_per_event =
-            sf(measurements_per_event, modules_per_event);
+            {
+                traccc::performance::timer timer{"Clusterization",
+                                                 elapsedTimes};
+                measurements_per_event =
+                    ca(vecmem::get_data(cells_per_event),
+                       vecmem::get_data(modules_per_event));
+            }
 
-        /*-----------------------
-          Seeding algorithm
-          -----------------------*/
+            /*------------------------
+                Spacepoint formation
+              ------------------------*/
 
-        auto seeds = sa(spacepoints_per_event);
+            {
+                traccc::performance::timer timer{"Spacepoint formation",
+                                                 elapsedTimes};
+                spacepoints_per_event =
+                    sf(vecmem::get_data(measurements_per_event),
+                       vecmem::get_data(modules_per_event));
+            }
 
-        /*----------------------------
-          Track params estimation
-          ----------------------------*/
+            /*-----------------------
+              Seeding algorithm
+              -----------------------*/
 
-        auto params = tp(spacepoints_per_event, seeds, field_vec);
+            {
+                traccc::performance::timer timer{"Seeding", elapsedTimes};
+                seeds = sa(spacepoints_per_event);
+            }
 
-        /*----------------------------
-          Statistics
-          ----------------------------*/
+            /*----------------------------
+              Track params estimation
+              ----------------------------*/
 
-        n_modules += modules_per_event.size();
-        n_cells += cells_per_event.size();
-        n_measurements += measurements_per_event.size();
-        n_spacepoints += spacepoints_per_event.size();
-        n_seeds += seeds.size();
+            {
+                traccc::performance::timer timer{"Track params estimation",
+                                                 elapsedTimes};
+                params = tp(spacepoints_per_event, seeds, field_vec);
+            }
+
+            // Perform track finding and fitting only when using a Detray
+            // geometry.
+            if (detector_opts.use_detray_detector) {
+                {
+                    traccc::performance::timer timer{"Track finding",
+                                                     elapsedTimes};
+                    track_candidates = finding_alg(
+                        detector, field, measurements_per_event, params);
+                }
+                {
+                    traccc::performance::timer timer{"Track fitting",
+                                                     elapsedTimes};
+                    track_states =
+                        fitting_alg(detector, field, track_candidates);
+                }
+            }
+
+            // Perform ambiguity resolution only if asked for.
+            if (resolution_opts.run) {
+                traccc::performance::timer timer{"Track ambiguity resolution",
+                                                 elapsedTimes};
+                resolved_track_states = resolution_alg(track_states);
+            }
+
+            /*----------------------------
+              Statistics
+              ----------------------------*/
+
+            n_modules += modules_per_event.size();
+            n_cells += cells_per_event.size();
+            n_measurements += measurements_per_event.size();
+            n_spacepoints += spacepoints_per_event.size();
+            n_seeds += seeds.size();
+            n_found_tracks += track_candidates.size();
+            n_fitted_tracks += track_states.size();
+            n_ambiguity_free_tracks += resolved_track_states.size();
+
+        }  // Stop measuring Wall time.
 
         /*------------
              Writer
           ------------*/
 
-        if (common_opts.check_performance) {
-            traccc::event_map evt_map(
-                event, det_opts.detector_file, i_cfg.digitization_config_file,
-                common_opts.input_directory, common_opts.input_directory,
-                common_opts.input_directory, host_mr);
+        if (performance_opts.run) {
+
+            traccc::event_map2 evt_map(event, input_opts.directory,
+                                       input_opts.directory,
+                                       input_opts.directory);
 
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
                                         evt_map);
+            find_performance_writer.write(traccc::get_data(track_candidates),
+                                          evt_map);
+
+            for (unsigned int i = 0; i < track_states.size(); i++) {
+                const auto& trk_states_per_track = track_states.at(i).items;
+
+                const auto& fit_res = track_states[i].header;
+
+                fit_performance_writer.write(trk_states_per_track, fit_res,
+                                             detector, evt_map);
+            }
+
+            if (resolution_opts.run) {
+                ar_performance_writer.write(
+                    traccc::get_data(resolved_track_states), evt_map);
+            }
         }
     }
 
-    if (common_opts.check_performance) {
+    if (performance_opts.run) {
         sd_performance_writer.finalize();
+        find_performance_writer.finalize();
+        fit_performance_writer.finalize();
+        if (resolution_opts.run) {
+            ar_performance_writer.finalize();
+        }
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_cells << " cells from " << n_modules
+    std::cout << "- read     " << n_cells << " cells from " << n_modules
               << " modules" << std::endl;
-    std::cout << "- created " << n_measurements << " measurements. "
+    std::cout << "- created  " << n_measurements << " measurements. "
               << std::endl;
-    std::cout << "- created " << n_spacepoints << " space points. "
+    std::cout << "- created  " << n_spacepoints << " space points. "
               << std::endl;
-    std::cout << "- created " << n_seeds << " seeds" << std::endl;
+    std::cout << "- created  " << n_seeds << " seeds" << std::endl;
+    std::cout << "- found    " << n_found_tracks << " tracks" << std::endl;
+    std::cout << "- fitted   " << n_fitted_tracks << " tracks" << std::endl;
+    std::cout << "- resolved " << n_ambiguity_free_tracks << " tracks"
+              << std::endl;
+    std::cout << "==> Elapsed times...\n" << elapsedTimes << std::endl;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    // Set up the program options
-    po::options_description desc("Allowed options");
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::common_options common_opts(desc);
-    traccc::detector_input_options det_opts(desc);
-    traccc::full_tracking_input_options full_tracking_input_cfg(desc);
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::clusterization clusterization_opts;
+    traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_finding finding_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::track_resolution resolution_opts;
+    traccc::opts::performance performance_opts;
+    traccc::opts::program_options program_opts{
+        "Full Tracking Chain on the Host",
+        {detector_opts, input_opts, clusterization_opts, seeding_opts,
+         finding_opts, propagation_opts, resolution_opts, performance_opts},
+        argc,
+        argv};
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    common_opts.read(vm);
-    det_opts.read(vm);
-    full_tracking_input_cfg.read(vm);
-
-    // Tell the user what's happening.
-    std::cout << "\nRunning the full tracking chain on the host\n\n"
-              << common_opts << "\n"
-              << det_opts << "\n"
-              << full_tracking_input_cfg << "\n"
-              << std::endl;
-
-    return seq_run(full_tracking_input_cfg, common_opts, det_opts);
+    // Run the application.
+    return seq_run(input_opts, detector_opts, clusterization_opts, seeding_opts,
+                   finding_opts, propagation_opts, resolution_opts,
+                   performance_opts);
 }

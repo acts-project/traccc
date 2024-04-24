@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,8 +19,8 @@
 #include "traccc/io/utils.hpp"
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
-#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/measurement_creation_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 
 namespace traccc {
 
@@ -195,8 +195,8 @@ generate_measurement_cell_map(std::size_t event,
     measurement_cell_map result;
 
     // CCA algorithms
-    component_connection cc(resource);
-    measurement_creation mc(resource);
+    host::sparse_ccl_algorithm cc(resource);
+    host::measurement_creation_algorithm mc(resource);
 
     // Read the surface transforms
     auto [surface_transforms, _] = io::read_geometry(detector_file);
@@ -207,12 +207,14 @@ generate_measurement_cell_map(std::size_t event,
     // Read the cells from the relevant event file
     traccc::io::cell_reader_output readOut(&resource);
     io::read_cells(readOut, event, cells_dir, traccc::data_format::csv,
-                   &surface_transforms, &digi_cfg);
+                   &surface_transforms, &digi_cfg, nullptr, false);
     cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
-    auto clusters_per_event = cc(cells_per_event);
-    auto measurements_per_event = mc(clusters_per_event, modules_per_event);
+    auto clusters_per_event = cc(vecmem::get_data(cells_per_event));
+    auto clusters_data = traccc::get_data(clusters_per_event);
+    auto measurements_per_event =
+        mc(clusters_data, vecmem::get_data(modules_per_event));
 
     assert(measurements_per_event.size() == clusters_per_event.size());
     for (unsigned int i = 0; i < measurements_per_event.size(); ++i) {

@@ -10,7 +10,7 @@ traccc_add_executable( seeding_example "seeding_example.cpp"
 
 traccc_add_executable( seq_example "seq_example.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io
-   traccc::performance traccc::options)
+   traccc::performance traccc::options detray::utils detray::io)
 
 traccc_add_executable( truth_finding_example "truth_finding_example.cpp"
    LINK_LIBRARIES vecmem::core detray::utils traccc::core traccc::io

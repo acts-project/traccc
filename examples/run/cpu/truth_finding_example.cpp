@@ -15,11 +15,12 @@
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/options/common_options.hpp"
-#include "traccc/options/detector_input_options.hpp"
-#include "traccc/options/finding_input_options.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/propagation_options.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/performance.hpp"
+#include "traccc/options/program_options.hpp"
+#include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_propagation.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
@@ -36,17 +37,18 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
+#include <cstdlib>
 #include <exception>
 #include <iomanip>
 #include <iostream>
 
 using namespace traccc;
-namespace po = boost::program_options;
 
-int seq_run(const traccc::finding_input_options& i_cfg,
-            const traccc::propagation_options& propagation_opts,
-            const traccc::common_options& common_opts,
-            const traccc::detector_input_options& det_opts) {
+int seq_run(const traccc::opts::track_finding& finding_opts,
+            const traccc::opts::track_propagation& propagation_opts,
+            const traccc::opts::input_data& input_opts,
+            const traccc::opts::detector& detector_opts,
+            const traccc::opts::performance& performance_opts) {
 
     /// Type declarations
     using host_detector_type = detray::detector<detray::default_metadata,
@@ -81,13 +83,15 @@ int seq_run(const traccc::finding_input_options& i_cfg,
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
-    if (!det_opts.material_file.empty()) {
+    reader_cfg.add_file(traccc::io::data_directory() +
+                        detector_opts.detector_file);
+    if (!detector_opts.material_file.empty()) {
         reader_cfg.add_file(traccc::io::data_directory() +
-                            det_opts.material_file);
+                            detector_opts.material_file);
     }
-    if (!det_opts.grid_file.empty()) {
-        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    if (!detector_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            detector_opts.grid_file);
     }
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
@@ -110,10 +114,10 @@ int seq_run(const traccc::finding_input_options& i_cfg,
     // Finding algorithm configuration
     typename traccc::finding_algorithm<rk_stepper_type,
                                        host_navigator_type>::config_type cfg;
-    cfg.min_track_candidates_per_track = i_cfg.track_candidates_range[0];
-    cfg.max_track_candidates_per_track = i_cfg.track_candidates_range[1];
-    cfg.chi2_max = i_cfg.chi2_max;
-    cfg.propagation = propagation_opts.propagation;
+    cfg.min_track_candidates_per_track = finding_opts.track_candidates_range[0];
+    cfg.max_track_candidates_per_track = finding_opts.track_candidates_range[1];
+    cfg.chi2_max = finding_opts.chi2_max;
+    propagation_opts.setup(cfg.propagation);
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -121,7 +125,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.propagation = propagation_opts.propagation;
+    propagation_opts.setup(fit_cfg.propagation);
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
@@ -129,13 +133,12 @@ int seq_run(const traccc::finding_input_options& i_cfg,
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Iterate over events
-    for (unsigned int event = common_opts.skip;
-         event < common_opts.events + common_opts.skip; ++event) {
+    for (unsigned int event = input_opts.skip;
+         event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map2(event, common_opts.input_directory,
-                                    common_opts.input_directory,
-                                    common_opts.input_directory);
+        traccc::event_map2 evt_map2(event, input_opts.directory,
+                                    input_opts.directory, input_opts.directory);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
             evt_map2.generate_truth_candidates(sg, host_mr);
@@ -150,8 +153,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
         // Read measurements
         traccc::io::measurement_reader_output meas_read_out(&host_mr);
         traccc::io::read_measurements(meas_read_out, event,
-                                      common_opts.input_directory,
-                                      traccc::data_format::csv);
+                                      input_opts.directory, input_opts.format);
         traccc::measurement_collection_types::host& measurements_per_event =
             meas_read_out.measurements;
 
@@ -170,7 +172,7 @@ int seq_run(const traccc::finding_input_options& i_cfg,
 
         const unsigned int n_fitted_tracks = track_states.size();
 
-        if (common_opts.check_performance) {
+        if (performance_opts.run) {
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_map2);
 
@@ -185,46 +187,32 @@ int seq_run(const traccc::finding_input_options& i_cfg,
         }
     }
 
-    if (common_opts.check_performance) {
+    if (performance_opts.run) {
         find_performance_writer.finalize();
         fit_performance_writer.finalize();
     }
 
-    return 1;
+    return EXIT_SUCCESS;
 }
 
 // The main routine
 //
 int main(int argc, char* argv[]) {
-    // Set up the program options
-    po::options_description desc("Allowed options");
 
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    traccc::common_options common_opts(desc);
-    traccc::detector_input_options det_opts(desc);
-    traccc::finding_input_options finding_input_cfg(desc);
-    traccc::propagation_options propagation_opts(desc);
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::track_finding finding_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::performance performance_opts;
+    traccc::opts::program_options program_opts{
+        "Truth Track Finding on the Host",
+        {detector_opts, input_opts, finding_opts, propagation_opts,
+         performance_opts},
+        argc,
+        argv};
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
-
-    // Read options
-    common_opts.read(vm);
-    det_opts.read(vm);
-    finding_input_cfg.read(vm);
-    propagation_opts.read(vm);
-
-    // Tell the user what's happening.
-    std::cout << "\nRunning truth track finding on the host\n\n"
-              << common_opts << "\n"
-              << det_opts << "\n"
-              << finding_input_cfg << "\n"
-              << propagation_opts << "\n"
-              << std::endl;
-
-    return seq_run(finding_input_cfg, propagation_opts, common_opts, det_opts);
+    // Run the application.
+    return seq_run(finding_opts, propagation_opts, input_opts, detector_opts,
+                   performance_opts);
 }

@@ -9,12 +9,11 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/options/common_options.hpp"
-#include "traccc/options/detector_input_options.hpp"
-#include "traccc/options/handle_argument_errors.hpp"
-#include "traccc/options/options.hpp"
-#include "traccc/options/particle_gen_options.hpp"
-#include "traccc/options/propagation_options.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/generation.hpp"
+#include "traccc/options/output_data.hpp"
+#include "traccc/options/program_options.hpp"
+#include "traccc/options/track_propagation.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
@@ -36,30 +35,21 @@
 #include <boost/filesystem.hpp>
 
 using namespace traccc;
-namespace po = boost::program_options;
 
 // The main routine
 //
 int main(int argc, char* argv[]) {
 
-    // Set up the program options
-    po::options_description desc("Allowed options");
-
-    // Add options
-    desc.add_options()("help,h", "Give some help with the program's options");
-    desc.add_options()("output-directory", po::value<std::string>()->required(),
-                       "specify the directory of output data");
-    desc.add_options()("events", po::value<unsigned int>()->required(),
-                       "number of events");
-    traccc::detector_input_options det_opts(desc);
-    traccc::particle_gen_options pg_opts(desc);
-    traccc::propagation_options propagation_opts(desc);
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Check errors
-    traccc::handle_argument_errors(vm, desc);
+    // Program options.
+    traccc::opts::detector det_opts;
+    traccc::opts::generation generation_opts;
+    traccc::opts::output_data output_opts;
+    traccc::opts::track_propagation propagation_opts;
+    traccc::opts::program_options program_opts{
+        "Detector Simulation",
+        {det_opts, generation_opts, output_opts, propagation_opts},
+        argc,
+        argv};
 
     /// Type declarations
     using host_detector_type = detray::detector<>;
@@ -69,13 +59,6 @@ int main(int argc, char* argv[]) {
     using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
                                        uniform_gen_t>;
-
-    // Read options
-    auto output_directory = vm["output-directory"].as<std::string>();
-    auto events = vm["events"].as<unsigned int>();
-    det_opts.read(vm);
-    pg_opts.read(vm);
-    propagation_opts.read(vm);
 
     // B field value and its type
     // @TODO: Set B field as argument
@@ -106,13 +89,20 @@ int main(int argc, char* argv[]) {
 
     // Origin of particles
     generator_type::configuration gen_cfg{};
-    gen_cfg.n_tracks(pg_opts.gen_nparticles);
-    gen_cfg.origin(pg_opts.vertex);
-    gen_cfg.origin_stddev(pg_opts.vertex_stddev);
-    gen_cfg.phi_range(pg_opts.phi_range[0], pg_opts.phi_range[1]);
-    gen_cfg.theta_range(pg_opts.theta_range[0], pg_opts.theta_range[1]);
-    gen_cfg.mom_range(pg_opts.mom_range[0], pg_opts.mom_range[1]);
-    gen_cfg.charge(pg_opts.charge);
+    gen_cfg.n_tracks(generation_opts.gen_nparticles);
+    gen_cfg.origin(generator_type::point3{generation_opts.vertex[0],
+                                          generation_opts.vertex[1],
+                                          generation_opts.vertex[2]});
+    gen_cfg.origin_stddev(generator_type::point3{
+        generation_opts.vertex_stddev[0], generation_opts.vertex_stddev[1],
+        generation_opts.vertex_stddev[2]});
+    gen_cfg.phi_range(generation_opts.phi_range[0],
+                      generation_opts.phi_range[1]);
+    gen_cfg.theta_range(generation_opts.theta_range[0],
+                        generation_opts.theta_range[1]);
+    gen_cfg.mom_range(generation_opts.mom_range[0],
+                      generation_opts.mom_range[1]);
+    gen_cfg.charge(generation_opts.charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -126,16 +116,16 @@ int main(int argc, char* argv[]) {
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
     // Run simulator
-    const std::string full_path = io::data_directory() + output_directory;
+    const std::string full_path = io::data_directory() + output_opts.directory;
 
     boost::filesystem::create_directories(full_path);
 
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        events, host_det, field, std::move(generator),
+        generation_opts.events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
 
-    sim.get_config().propagation = propagation_opts.propagation;
+    propagation_opts.setup(sim.get_config().propagation);
 
     sim.run();
 

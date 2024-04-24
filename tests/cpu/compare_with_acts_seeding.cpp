@@ -32,12 +32,16 @@
 #include "Acts/Surfaces/DiscSurface.hpp"
 #include "Acts/Surfaces/PlaneSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
+#include "Acts/Utilities/Helpers.hpp"
 
 // VecMem
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
+
+// System include(s).
+#include <limits>
 
 inline bool operator==(const SpacePoint* acts_sp,
                        const traccc::spacepoint& traccc_sp) {
@@ -129,6 +133,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     EXPECT_EQ(spVec.size(), n_sp_match);
 
     Acts::SeedFinderConfig<SpacePoint> acts_config;
+    Acts::SeedFinderOptions acts_options;
 
     // silicon detector max
     acts_config.phiMin = traccc_config.phiMin;
@@ -136,6 +141,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     acts_config.rMin = traccc_config.rMin;
     acts_config.rMax = traccc_config.rMax;
+    acts_config.rMinMiddle = 0.f;
+    acts_config.rMaxMiddle = std::numeric_limits<traccc::scalar>::max();
     acts_config.deltaRMin = traccc_config.deltaRMin;
     acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
     acts_config.deltaRMinBottomSP = traccc_config.deltaRMin;
@@ -147,6 +154,11 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     acts_config.zMin = traccc_config.zMin;
     acts_config.zMax = traccc_config.zMax;
+
+    // z of last layers to avoid iterations
+    acts_config.zOutermostLayers =
+        std::make_pair(traccc_config.zMin, traccc_config.zMax);
+
     acts_config.maxSeedsPerSpM = traccc_config.maxSeedsPerSpM;
 
     // 2.7 eta
@@ -155,27 +167,28 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.maxPtScattering = traccc_config.maxPtScattering;
 
     acts_config.minPt = traccc_config.minPt;
-    acts_config.bFieldInZ = traccc_config.bFieldInZ;
+    acts_options.bFieldInZ = traccc_config.bFieldInZ;
 
-    acts_config.beamPos[0] = traccc_config.beamPos[0];
-    acts_config.beamPos[1] = traccc_config.beamPos[1];
+    acts_options.beamPos[0] = traccc_config.beamPos[0];
+    acts_options.beamPos[1] = traccc_config.beamPos[1];
 
     acts_config.impactMax = traccc_config.impactMax;
 
     acts_config.sigmaError = traccc_config.sigmaError;
 
+    int numPhiNeighbors = 1;
+
+    std::vector<std::pair<int, int>> zBinNeighborsTop;
+    std::vector<std::pair<int, int>> zBinNeighborsBottom;
+
     auto bottomBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
-        Acts::BinFinder<SpacePoint>());
+        Acts::BinFinder<SpacePoint>(zBinNeighborsBottom, numPhiNeighbors));
     auto topBinFinder = std::make_shared<Acts::BinFinder<SpacePoint>>(
-        Acts::BinFinder<SpacePoint>());
+        Acts::BinFinder<SpacePoint>(zBinNeighborsTop, numPhiNeighbors));
     Acts::SeedFilterConfig sfconf;
     sfconf.maxSeedsPerSpM = traccc::seedfilter_config().maxSeedsPerSpM;
 
     Acts::ATLASCuts<SpacePoint> atlasCuts = Acts::ATLASCuts<SpacePoint>();
-    acts_config.seedFilter = std::make_unique<Acts::SeedFilter<SpacePoint>>(
-        Acts::SeedFilter<SpacePoint>(sfconf, &atlasCuts));
-    Acts::SeedFinder<SpacePoint> a(acts_config);
-
     // covariance tool, sets covariances per spacepoint as required
     auto ct = [=](const SpacePoint& sp, float, float,
                   float) -> std::pair<Acts::Vector3, Acts::Vector2> {
@@ -187,7 +200,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // setup spacepoint grid config
     Acts::SpacePointGridConfig gridConf;
 
-    gridConf.bFieldInZ = acts_config.bFieldInZ;
     gridConf.minPt = acts_config.minPt;
     gridConf.rMax = acts_config.rMax;
     gridConf.zMax = acts_config.zMax;
@@ -198,10 +210,26 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     gridConf.phiMin = acts_config.phiMin;
     gridConf.phiMax = acts_config.phiMax;
     gridConf.phiBinDeflectionCoverage = traccc_config.phiBinDeflectionCoverage;
+    Acts::SpacePointGridOptions gridOpts;
+    gridOpts.bFieldInZ = acts_options.bFieldInZ;
+
+    // To internal units
+    sfconf.toInternalUnits();
+    sfconf.isInInternalUnits = true;
+    acts_config.seedFilter = std::make_unique<Acts::SeedFilter<SpacePoint>>(
+        Acts::SeedFilter<SpacePoint>(sfconf, &atlasCuts));
+
+    acts_config = acts_config.toInternalUnits().calculateDerivedQuantities();
+    acts_options =
+        acts_options.toInternalUnits().calculateDerivedQuantities(acts_config);
+    gridConf = gridConf.toInternalUnits();
+    gridOpts = gridOpts.toInternalUnits();
+
+    Acts::SeedFinder<SpacePoint> a(acts_config);
 
     // create grid with bin sizes according to the configured geometry
     std::unique_ptr<Acts::SpacePointGrid<SpacePoint>> grid =
-        Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf);
+        Acts::SpacePointGridCreator::createGrid<SpacePoint>(gridConf, gridOpts);
 
     // Currently traccc is using grid2. check if acts grid dimensionality is the
     // same
@@ -234,20 +262,30 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         EXPECT_NEAR(axis1_borders[i], acts_axis1_borders[i], 0.01);
     }
 
+    Acts::Extent rRangeSPExtent;
     auto spGroup = Acts::BinnedSPGroup<SpacePoint>(
         spVec.begin(), spVec.end(), ct, bottomBinFinder, topBinFinder,
-        std::move(grid), Acts::Extent(), acts_config);
+        std::move(grid), rRangeSPExtent, acts_config, acts_options);
 
-    auto groupIt = spGroup.begin();
-    auto endOfGroups = spGroup.end();
+    // safely clamp double to float
+    float up = Acts::clampValue<float>(
+        std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2);
 
-    // Run the ACTS seeding
+    const Acts::Range1D<float> rMiddleSPRange(
+        std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
+            acts_config.deltaRMiddleMinSPRange,
+        up - acts_config.deltaRMiddleMaxSPRange);
+
+    static thread_local decltype(a)::SeedingState state;
+
+    state.spacePointData.resize(spacepoints_per_event.size(),
+                                acts_config.useDetailedDoubleMeasurementInfo);
+
     std::vector<Acts::Seed<SpacePoint>> seedVector;
-    for (; !(groupIt == endOfGroups); ++groupIt) {
-        auto seed_group = a.createSeedsForGroup(
-            groupIt.bottom(), groupIt.middle(), groupIt.top());
-        seedVector.insert(seedVector.end(), seed_group.begin(),
-                          seed_group.end());
+    for (const auto [bottom, middle, top] : spGroup) {
+        a.createSeedsForGroup(acts_options, state, spGroup.grid(),
+                              std::back_inserter(seedVector), bottom, middle,
+                              top, rMiddleSPRange);
     }
 
     // Count the number of matching seeds
@@ -281,13 +319,11 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     }
     seedVector = sorted_seedVector;
 
-    float seed_match_ratio = float(n_seed_match) / seeds.size();
-
     // Ensure that ACTS and traccc give the same result
     // @TODO Uncomment the line below once acts-project/acts#2132 is merged
     // EXPECT_EQ(seeds.size(), seedVector.size());
-    EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.001);
-    EXPECT_TRUE(seed_match_ratio > 0.999);
+    EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.0023);
+    EXPECT_GT(float(n_seed_match) / seeds.size(), 0.9977);
 }
 
 INSTANTIATE_TEST_SUITE_P(

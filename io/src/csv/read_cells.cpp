@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,6 +13,9 @@
 // System include(s).
 #include <algorithm>
 #include <cassert>
+#include <iostream>
+#include <map>
+#include <set>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -21,20 +24,28 @@ namespace {
 
 /// Comparator used for sorting cells. This sorting is one of the assumptions
 /// made in the clusterization algorithm
-const auto comp = [](const traccc::cell& c1, const traccc::cell& c2) {
-    return c1.channel1 < c2.channel1;
-};
+struct cell_order {
+    bool operator()(const traccc::cell& lhs, const traccc::cell& rhs) const {
+        if (lhs.module_link != rhs.module_link) {
+            return lhs.module_link < rhs.module_link;
+        } else if (lhs.channel1 != rhs.channel1) {
+            return (lhs.channel1 < rhs.channel1);
+        } else {
+            return (lhs.channel0 < rhs.channel0);
+        }
+    }
+};  // struct cell_order
 
 /// Helper function which finds module from csv::cell in the geometry and
 /// digitization config, and initializes the modules limits with the cell's
 /// properties
-traccc::cell_module get_module(traccc::io::csv::cell c,
+traccc::cell_module get_module(const std::uint64_t geometry_id,
                                const traccc::geometry* geom,
                                const traccc::digitization_config* dconfig,
                                const std::uint64_t original_geometry_id) {
 
     traccc::cell_module result;
-    result.surface_link = detray::geometry::barcode{c.geometry_id};
+    result.surface_link = detray::geometry::barcode{geometry_id};
 
     // Find/set the 3D position of the detector module.
     if (geom != nullptr) {
@@ -72,6 +83,81 @@ traccc::cell_module get_module(traccc::io::csv::cell c,
     return result;
 }
 
+std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
+    std::string_view filename) {
+
+    // Temporary storage for all the cells and modules.
+    std::map<std::uint64_t, std::map<traccc::cell, float, ::cell_order> >
+        cellMap;
+
+    // Construct the cell reader object.
+    auto reader = traccc::io::csv::make_cell_reader(filename);
+
+    // Read all cells from input file.
+    traccc::io::csv::cell iocell;
+    unsigned int nduplicates = 0;
+    while (reader.read(iocell)) {
+
+        // Construct a cell object.
+        const traccc::cell cell{iocell.channel0, iocell.channel1, iocell.value,
+                                iocell.timestamp, 0};
+
+        // Add the cell to the module. At this point the module link of the
+        // cells is not set up correctly yet.
+        auto ret = cellMap[iocell.geometry_id].insert({cell, iocell.value});
+        if (ret.second == false) {
+            cellMap[iocell.geometry_id].at(cell) += iocell.value;
+            ++nduplicates;
+        }
+    }
+    if (nduplicates > 0) {
+        std::cout << "WARNING: @traccc::io::csv::read_cells: " << nduplicates
+                  << " duplicate cells found in " << filename << std::endl;
+    }
+
+    // Create and fill the result container. With summed activation values.
+    std::map<std::uint64_t, std::vector<traccc::cell> > result;
+    for (const auto& [geometry_id, cells] : cellMap) {
+        for (const auto& [cell, value] : cells) {
+            traccc::cell summed_cell{cell};
+            summed_cell.activation = value;
+            result[geometry_id].push_back(summed_cell);
+        }
+    }
+
+    // Return the container.
+    return result;
+}
+
+std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
+    std::string_view filename) {
+
+    // The result container.
+    std::map<std::uint64_t, std::vector<traccc::cell> > result;
+
+    // Construct the cell reader object.
+    auto reader = traccc::io::csv::make_cell_reader(filename);
+
+    // Read all cells from input file.
+    traccc::io::csv::cell iocell;
+    while (reader.read(iocell)) {
+
+        // Add the cell to the module. At this point the module link of the
+        // cells is not set up correctly yet.
+        result[iocell.geometry_id].push_back({iocell.channel0, iocell.channel1,
+                                              iocell.value, iocell.timestamp,
+                                              0});
+    }
+
+    // Sort the cells. Deduplication or not, they do need to be sorted.
+    for (auto& [_, cells] : result) {
+        std::sort(cells.begin(), cells.end(), ::cell_order());
+    }
+
+    // Return the container.
+    return result;
+}
+
 }  // namespace
 
 namespace traccc::io::csv {
@@ -79,107 +165,37 @@ namespace traccc::io::csv {
 void read_cells(
     cell_reader_output& out, std::string_view filename, const geometry* geom,
     const digitization_config* dconfig,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
+    const bool deduplicate) {
 
-    // Construct the cell reader object.
-    auto reader = make_cell_reader(filename);
+    // Get the cells and modules into an intermediate format.
+    auto cellsMap = (deduplicate ? read_deduplicated_cells(filename)
+                                 : read_all_cells(filename));
 
-    // Create cell counter vector.
-    std::vector<unsigned int> cellCounts;
-    cellCounts.reserve(5000);
-
-    cell_module_collection_types::host& result_modules = out.modules;
-    result_modules.reserve(5000);
-
-    // Create a cell collection, which holds on to a flat list of all the cells
-    // and the position of their respective cell counter & module.
-    std::vector<std::pair<csv::cell, unsigned int>> allCells;
-    allCells.reserve(50000);
-
-    // Read all cells from input file.
-    csv::cell iocell;
-    while (reader.read(iocell)) {
-
-        // Modify the geometry ID of the cell if a barcode map is provided.
-        const std::uint64_t original_geometry_id = iocell.geometry_id;
+    // Fill the output containers with the ordered cells and modules.
+    for (const auto& [original_geometry_id, cells] : cellsMap) {
+        // Modify the geometry ID of the module if a barcode map is
+        // provided.
+        std::uint64_t geometry_id = original_geometry_id;
         if (barcode_map != nullptr) {
-            const auto it = barcode_map->find(iocell.geometry_id);
+            const auto it = barcode_map->find(geometry_id);
             if (it != barcode_map->end()) {
-                iocell.geometry_id = it->second.value();
+                geometry_id = it->second.value();
             } else {
                 throw std::runtime_error(
                     "Could not find barcode for geometry ID " +
-                    std::to_string(iocell.geometry_id));
+                    std::to_string(geometry_id));
             }
         }
 
-        // Look for current module in cell counter vector.
-        auto rit = std::find_if(result_modules.rbegin(), result_modules.rend(),
-                                [&iocell](const cell_module& mod) {
-                                    return mod.surface_link.value() ==
-                                           iocell.geometry_id;
-                                });
-        if (rit == result_modules.rend()) {
-            // Add new cell and new cell counter if a new module is found
-            const cell_module mod =
-                get_module(iocell, geom, dconfig, original_geometry_id);
-            allCells.push_back({iocell, result_modules.size()});
-            result_modules.push_back(mod);
-            cellCounts.push_back(1);
-        } else {
-            // Add a new cell and update cell counter if repeat module is found
-            const unsigned int pos =
-                std::distance(result_modules.begin(), rit.base()) - 1;
-            allCells.push_back({iocell, pos});
-            ++(cellCounts[pos]);
+        // Add the module and its cells to the output.
+        out.modules.push_back(
+            get_module(geometry_id, geom, dconfig, original_geometry_id));
+        for (auto& cell : cells) {
+            out.cells.push_back(cell);
+            // Set the module link.
+            out.cells.back().module_link = out.modules.size() - 1;
         }
-    }
-
-    // Transform the cellCounts vector into a prefix sum for accessing
-    // positions in the result vector.
-    std::partial_sum(cellCounts.begin(), cellCounts.end(), cellCounts.begin());
-
-    // The total number cells.
-    const unsigned int totalCells = allCells.size();
-
-    // Construct the result collection.
-    cell_collection_types::host& result_cells = out.cells;
-    result_cells.resize(totalCells);
-
-    // Member "-1" of the prefix sum vector
-    unsigned int nCellsZero = 0;
-    // Fill the result object with the read csv cells
-    for (unsigned int i = 0; i < totalCells; ++i) {
-        const csv::cell& c = allCells[i].first;
-
-        // The position of the cell counter this cell belongs to
-        const unsigned int& counterPos = allCells[i].second;
-
-        unsigned int& prefix_sum_previous =
-            counterPos == 0 ? nCellsZero : cellCounts[counterPos - 1];
-        result_cells[prefix_sum_previous++] = traccc::cell{
-            c.channel0, c.channel1, c.value, c.timestamp, counterPos};
-    }
-
-    if (cellCounts.size() == 0) {
-        return;
-    }
-    /* This is might look a bit overcomplicated, and could be made simpler by
-     * having a copy of the prefix sum vector before incrementing its value when
-     * filling the vector. however this seems more efficient, but requires
-     * manually setting the 1st & 2nd modules instead of just the 1st.
-     */
-
-    // Sort the cells belonging to the first module.
-    std::sort(result_cells.begin(), result_cells.begin() + nCellsZero, comp);
-    // Sort the cells belonging to the second module.
-    std::sort(result_cells.begin() + nCellsZero,
-              result_cells.begin() + cellCounts[0], comp);
-
-    // Sort cells belonging to all other modules.
-    for (unsigned int i = 1; i < cellCounts.size() - 1; ++i) {
-        std::sort(result_cells.begin() + cellCounts[i - 1],
-                  result_cells.begin() + cellCounts[i], comp);
     }
 }
 

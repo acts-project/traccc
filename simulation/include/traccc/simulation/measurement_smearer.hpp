@@ -61,7 +61,7 @@ struct measurement_smearer {
 
         // Line detector
         if constexpr (std::is_same_v<typename mask_t::local_frame_type,
-                                     detray::line2<transform3>>) {
+                                     detray::line2D<transform3>>) {
             iomeas.local_key = 2;
         }
         // Annulus strip
@@ -96,7 +96,7 @@ struct measurement_smearer {
             matrix_type<1u, 1u> meas = proj * bound_params.vector();
 
             if constexpr (std::is_same_v<typename mask_t::local_frame_type,
-                                         detray::line2<transform3>>) {
+                                         detray::line2D<transform3>>) {
                 iomeas.local0 =
                     std::max(std::abs(matrix_operator().element(meas, 0u, 0u)) +
                                  offset[0],

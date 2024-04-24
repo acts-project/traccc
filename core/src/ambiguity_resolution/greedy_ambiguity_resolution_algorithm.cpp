@@ -32,36 +32,46 @@ namespace traccc {
 
 namespace {
 
+#define LOG_ERROR(msg)                       \
+    if (_config.verbose_error) {             \
+        logger::error() << msg << std::endl; \
+    }
+
+#define LOG_WARN(msg)                       \
+    if (_config.verbose_warning) {          \
+        logger::warn() << msg << std::endl; \
+    }
+
 #define LOG_INFO(msg)                       \
     if (_config.verbose_info) {             \
         logger::info() << msg << std::endl; \
     }
 
-#define LOG_FLOOD(msg)                       \
-    if (_config.verbose_flood) {             \
-        logger::flood() << msg << std::endl; \
-    }
-
-#define LOG_ERROR(msg)                       \
-    if (_config.verbose_error) {             \
-        logger::error() << msg << std::endl; \
+#define LOG_DEBUG(msg)                       \
+    if (_config.verbose_debug) {             \
+        logger::debug() << msg << std::endl; \
     }
 
 // This logger is specific to the greedy_ambiguity_resolution_algorithm, and to
 // this translation unit.
 struct logger {
     static std::ostream& error() {
-        std::cout << "ERROR @greedy_ambiguity_resolution_algorithm: ";
+        std::cout << "ERROR: @greedy_ambiguity_resolution_algorithm: ";
+        return std::cout;
+    }
+
+    static std::ostream& warn() {
+        std::cout << "WARNING: @greedy_ambiguity_resolution_algorithm: ";
         return std::cout;
     }
 
     static std::ostream& info() {
-        std::cout << "@greedy_ambiguity_resolution_algorithm: ";
+        std::cout << "INFO: @greedy_ambiguity_resolution_algorithm: ";
         return std::cout;
     }
 
-    static std::ostream& flood() {
-        std::cout << "@greedy_ambiguity_resolution_algorithm: ";
+    static std::ostream& debug() {
+        std::cout << "DEBUG: @greedy_ambiguity_resolution_algorithm: ";
         return std::cout;
     }
 };
@@ -81,7 +91,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     resolve(state);
 
     if (_config.check_obvious_errs) {
-        LOG_INFO("Checking result validity...");
+        LOG_DEBUG("Checking result validity...");
         check_obvious_errors(track_states, state);
     }
 
@@ -90,7 +100,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     track_state_container_types::host res;
     res.reserve(state.selected_tracks.size());
 
-    LOG_INFO("state.selected_tracks.size() = " << state.selected_tracks.size());
+    LOG_DEBUG(
+        "state.selected_tracks.size() = " << state.selected_tracks.size());
 
     for (std::size_t index : state.selected_tracks) {
         // track_states is a host_container<fitting_result<transform3>,
@@ -116,6 +127,14 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     const typename track_state_container_types::host& track_states,
     state_t& state) const {
 
+    // Number of measurements, to display a warning if too many measurements
+    // share the identifier 0
+    std::size_t mcount_all = 0;     // Total number of measurements
+    std::size_t mcount_idzero = 0;  // Number of measurements of id 0
+
+    // Displays a warning if (mcount_idzero / mcount_all) > warning_threshold
+    float warning_threshold = _config.measurement_id_0_warning_threshold;
+
     // For each track of the input container
     std::size_t n_track_states = track_states.size();
     for (std::size_t track_index = 0; track_index < n_track_states;
@@ -133,7 +152,12 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
         // Create the list of measurement_id of the current track
         std::vector<std::size_t> measurements;
         for (auto const& st : states) {
-            measurements.push_back(st.get_measurement().measurement_id);
+            std::size_t mid = st.get_measurement().measurement_id;
+            ++mcount_all;
+            if (mid == 0) {
+                ++mcount_idzero;
+            }
+            measurements.push_back(mid);
         }
 
         // Add this track chi2 value
@@ -166,18 +190,41 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
             }
         }
     }
+
+    if (mcount_all == 0) {
+        LOG_ERROR("No measurements.");
+    } else {
+        if (mcount_idzero == mcount_all) {
+            LOG_ERROR(
+                "Measurements must have unique IDs. But here, each measurement "
+                "has 0 as ID (measurement.measurement_id == 0). This may be "
+                "solved by loading measurement_id from the appropriate file, "
+                "or by assigning a unique ID to each new measurement during "
+                "CCA.");
+        } else {
+            double ratio = static_cast<float>(mcount_idzero) /
+                           static_cast<float>(mcount_all);
+            if (ratio > warning_threshold) {
+                std::size_t percent = ratio * 100;
+                LOG_WARN(std::to_string(percent) +
+                         "% of input measurements have an ID equal to 0 "
+                         "(measurement.measurement_id == 0). This may be "
+                         "suspicious.");
+            }
+        }
+    }
 }
 
 /// Check for obvious errors returned by the algorithm:
-/// - Returned tracks should be independent of each other: they should share a
-/// maximum of (_config.maximum_shared_hits - 1) hits per track.
-/// - Each removed track should share at least (_config.maximum_shared_hits)
-/// with another initial track.
+/// - Returned tracks should be independent of each other: they should
+/// share a maximum of (_config.maximum_shared_hits - 1) hits per track.
+/// - Each removed track should share at least
+/// (_config.maximum_shared_hits) with another initial track.
 ///
 /// @param initial_track_states The input track container, as given to
 /// compute_initial_state.
-/// @param final_state The state object after the resolve method has been
-/// called.
+/// @param final_state The state object after the resolve method has
+/// been called.
 bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     const typename track_state_container_types::host& initial_track_states,
     state_t& final_state) const {
@@ -213,7 +260,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     bool all_removed_tracks_alright = true;
     // =========================================================================
     // Checks that every removed track had at least
-    // (_config.maximum_shared_hits) commun measurements with other tracks
+    // (_config.maximum_shared_hits) common measurements with other tracks
     // =========================================================================
     std::size_t n_initial_track_states = initial_track_states.size();
     for (std::size_t track_index = 0; track_index < n_initial_track_states;
@@ -262,7 +309,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
 
     if (all_removed_tracks_alright) {
         LOG_INFO(
-            "OK 1/2: every removed track had at least one commun measurement "
+            "OK 1/2: every removed track had at least one common measurement "
             "with another track.");
     }
 
@@ -386,7 +433,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
     for (std::size_t i = 0; i < _config.maximum_iterations; ++i) {
         // Lazy out if there is nothing to filter on.
         if (state.selected_tracks.empty()) {
-            LOG_INFO("No tracks left - exit loop");
+            LOG_DEBUG("No tracks left - exit loop");
             break;
         }
 
@@ -396,7 +443,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             state.selected_tracks.begin(), state.selected_tracks.end(),
             shared_measurements_comperator);
 
-        LOG_FLOOD(
+        LOG_DEBUG(
             "Current maximum shared measurements "
             << state
                    .shared_measurements_per_track[maximum_shared_measurements]);
@@ -411,7 +458,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             *std::max_element(state.selected_tracks.begin(),
                               state.selected_tracks.end(), track_comperator);
 
-        LOG_FLOOD("Remove track "
+        LOG_DEBUG("Remove track "
                   << bad_track << " n_meas "
                   << state.measurements_per_track[bad_track].size()
                   << " nShared "
@@ -422,7 +469,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
         ++iteration_count;
     }
 
-    LOG_INFO("Iteration_count: " << iteration_count);
+    LOG_DEBUG("Iteration_count: " << iteration_count);
 }
 
 }  // namespace traccc
