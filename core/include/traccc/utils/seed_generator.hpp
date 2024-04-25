@@ -65,6 +65,7 @@ struct seed_generator {
 
         // Type definitions
         using transform3_type = typename detector_t::transform3;
+        using scalar_type = typename detector_t::scalar_type;
         using intersection_type =
             detray::intersection2D<typename detector_t::surface_type,
                                    transform3_type>;
@@ -76,7 +77,20 @@ struct seed_generator {
         sf.template visit_mask<
             detray::intersection_update<detray::ray_intersector>>(
             detray::detail::ray<transform3_type>(free_param.vector()), sfi,
-            m_detector.transform_store());
+            m_detector.transform_store(),
+            sf.is_portal() ? 0.f : 50.f * unit<scalar_type>::um,
+            -100.f * unit<scalar_type>::um);
+
+        if (!(std::abs(std::abs(sf.cos_angle(ctx, bound_param.dir(),
+                                             bound_param.bound_local())) -
+                       sfi.cos_incidence_angle) < 0.0001f)) {
+            std::cout << "seed gen" << std::endl;
+            std::cout << m_detector.surface(surface_link) << std::endl;
+            std::cout << sfi << std::endl;
+            std::cout << sf.cos_angle(ctx, bound_param.dir(),
+                                      bound_param.bound_local())
+                      << ", " << sfi.cos_incidence_angle << std::endl;
+        }
 
         // Apply interactor
         typename interactor_type::state interactor_state;

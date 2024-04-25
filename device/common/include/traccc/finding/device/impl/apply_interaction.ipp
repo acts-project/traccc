@@ -54,13 +54,22 @@ TRACCC_DEVICE inline void apply_interaction(
     const cxt_t ctx{};
     const auto free_vec = sf.bound_to_free_vector(ctx, bound_param.vector());
 
+    using scalar_type = typename detector_t::scalar_type;
     const auto& mask_store = det.mask_store();
     intersection_type sfi;
     sfi.sf_desc = det.surface(bound_param.surface_link());
     sf.template visit_mask<
         detray::intersection_update<detray::ray_intersector>>(
         detray::detail::ray<transform3_type>(free_vec), sfi,
-        det.transform_store());
+        det.transform_store(),
+        sf.is_portal() ? 0.f : 15.f * unit<scalar_type>::um,
+        -100.f * unit<scalar_type>::um);
+
+    if (!(std::abs(
+              sf.cos_angle(ctx, bound_param.dir(), bound_param.bound_local()) -
+              sfi.cos_incidence_angle) < 0.000001f)) {
+        printf("Problem");
+    }
 
     // Apply interactor
     typename interactor_type::state interactor_state;

@@ -142,7 +142,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             sf.template visit_mask<
                 detray::intersection_update<detray::ray_intersector>>(
                 detray::detail::ray<transform3_type>(free_vec), sfi,
-                det.transform_store());
+                det.transform_store(),
+                sf.is_portal() ? 0.f : 50.f * unit<scalar_type>::um,
+                -100.f * unit<scalar_type>::um);
+
+            if (!(std::abs(sf.cos_angle(ctx, in_param.dir(),
+                                        in_param.bound_local()) -
+                           sfi.cos_incidence_angle) < 0.0001f)) {
+                std::cout << "finding alg" << std::endl;
+                std::cout << det.surface(in_param.surface_link()) << std::endl;
+                std::cout << sfi << std::endl;
+                std::cout << sf.cos_angle(ctx, in_param.dir(),
+                                          in_param.bound_local())
+                          << ", " << sfi.cos_incidence_angle << std::endl;
+            }
 
             // Apply interactor
             typename interactor_type::state interactor_state;
