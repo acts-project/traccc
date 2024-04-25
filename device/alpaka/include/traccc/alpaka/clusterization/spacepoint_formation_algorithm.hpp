@@ -60,4 +60,4 @@ class spacepoint_formation_algorithm
     std::reference_wrapper<vecmem::copy> m_copy;
 };  // class spacepoint_formation_algorithm
 
-}  // namespace traccc::cuda
+}  // namespace traccc::alpaka

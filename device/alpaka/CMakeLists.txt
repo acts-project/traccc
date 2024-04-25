@@ -34,6 +34,8 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Clusterization
   "include/traccc/alpaka/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
+  "include/traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
+  "src/clusterization/measurement_sorting_algorithm.cpp"
   "include/traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
   "src/clusterization/spacepoint_formation_algorithm.cpp"
   # Seeding code

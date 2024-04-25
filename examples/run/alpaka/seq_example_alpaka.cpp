@@ -9,7 +9,7 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-// #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
+#include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
@@ -112,7 +112,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     traccc::alpaka::clusterization_algorithm ca_alpaka(
         mr, copy, clusterization_opts.target_cells_per_partition);
-    // traccc::cuda::measurement_sorting_algorithm ms_alpaka(copy);
+    traccc::alpaka::measurement_sorting_algorithm ms_alpaka(copy);
     traccc::alpaka::spacepoint_formation_algorithm sf_alpaka(mr, copy);
     traccc::alpaka::seeding_algorithm sa_alpaka(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
@@ -182,7 +182,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 // Reconstruct it into spacepoints on the device.
                 measurements_alpaka_buffer =
                     ca_alpaka(cells_buffer, modules_buffer);
-                // ms_alpaka(measurements_cuda_buffer);
+                ms_alpaka(measurements_alpaka_buffer);
             }  // stop measuring clusterization alpaka timer
 
             {

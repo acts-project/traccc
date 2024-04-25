@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-// #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
+#include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
@@ -112,8 +112,8 @@ class full_chain_algorithm
     unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
-    // /// Measurement sorting algorithm
-    // measurement_sorting_algorithm m_measurement_sorting;
+    /// Measurement sorting algorithm
+    measurement_sorting_algorithm m_measurement_sorting;
     /// Spacepoint formation algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
