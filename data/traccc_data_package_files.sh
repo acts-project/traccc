@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# (c) 2023 CERN for the benefit of the ACTS project
+# (c) 2023-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 #
@@ -27,7 +27,7 @@ usage() {
 }
 
 # Default script arguments.
-TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v6"}
+TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v7"}
 TRACCC_DATA_DIRECTORY_NAMES=("cca_test" "detray_simulation" "geometries" "odd"
    "single_module" "tml_detector" "tml_full" "tml_pixel_barrel" "tml_pixels"
    "two_modules")
