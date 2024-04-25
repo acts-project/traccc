@@ -28,7 +28,7 @@ using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
 using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
 using Host = ::alpaka::DevCpu;
-using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
+using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
 static constexpr std::size_t warpSize =
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
