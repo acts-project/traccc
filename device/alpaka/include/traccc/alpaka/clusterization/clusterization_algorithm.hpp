@@ -28,8 +28,7 @@ namespace traccc::alpaka {
 /// synchronisation statement is required before destroying this buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<std::pair<spacepoint_collection_types::buffer,
-                                 vecmem::data::vector_buffer<unsigned int>>(
+    : public algorithm<measurement_collection_types::buffer(
           const cell_collection_types::const_view&,
           const cell_module_collection_types::const_view&)> {
 
@@ -62,7 +61,7 @@ class clusterization_algorithm
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use
-    vecmem::copy& m_copy;
+    std::reference_wrapper<vecmem::copy> m_copy;
 };
 
 }  // namespace traccc::alpaka

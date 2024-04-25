@@ -16,18 +16,6 @@
 #include <iostream>
 #include <stdexcept>
 
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-/// Helper macro for checking the return value of CUDA function calls
-#define CUDA_ERROR_CHECK(EXP)                                                  \
-    do {                                                                       \
-        const cudaError_t errorCode = EXP;                                     \
-        if (errorCode != cudaSuccess) {                                        \
-            throw std::runtime_error(std::string("Failed to run " #EXP " (") + \
-                                     cudaGetErrorString(errorCode) + ")");     \
-        }                                                                      \
-    } while (false)
-#endif
-
 namespace traccc::alpaka {
 
 full_chain_algorithm::full_chain_algorithm(
@@ -37,7 +25,7 @@ full_chain_algorithm::full_chain_algorithm(
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config)
     : m_host_mr(host_mr),
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
       m_device_mr(),
 #else
       m_device_mr(host_mr),
@@ -47,6 +35,9 @@ full_chain_algorithm::full_chain_algorithm(
       m_target_cells_per_partition(target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_target_cells_per_partition),
+    //   m_measurement_sorting(m_copy),
+      m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
+                             m_copy),
       m_seeding(finder_config, grid_config, filter_config,
                 memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
       m_track_parameter_estimation(
@@ -66,7 +57,7 @@ full_chain_algorithm::full_chain_algorithm(
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     : m_host_mr(parent.m_host_mr),
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
       m_device_mr(),
 #else
       m_device_mr(parent.m_host_mr),
@@ -77,6 +68,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_target_cells_per_partition(parent.m_target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_target_cells_per_partition),
+    //   m_measurement_sorting(m_copy),
+      m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
+                             m_copy),
       m_seeding(parent.m_finder_config, parent.m_grid_config,
                 parent.m_filter_config,
                 memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
@@ -106,11 +100,14 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     m_copy(vecmem::get_data(modules), modules_buffer);
 
     // Run the clusterization
-    const clusterization_algorithm::output_type spacepoints =
+    const clusterization_algorithm::output_type measurements =
         m_clusterization(cells_buffer, modules_buffer);
+    const spacepoint_formation_algorithm::output_type spacepoints =
+        m_spacepoint_formation(m_measurement_sorting(measurements),
+                               modules_buffer);
     const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints.first,
-                                     m_seeding(spacepoints.first),
+        m_track_parameter_estimation(spacepoints,
+                                     m_seeding(spacepoints),
                                      {0.f, 0.f, m_finder_config.bFieldInZ});
 
     // Get the final data back to the host.

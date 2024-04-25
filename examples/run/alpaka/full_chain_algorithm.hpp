@@ -9,6 +9,8 @@
 
 // Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
+// #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
+#include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -19,6 +21,11 @@
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
+#endif
+
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#include <vecmem/memory/hip/device_memory_resource.hpp>
+#include <vecmem/utils/hip/copy.hpp>
 #endif
 
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -83,6 +90,11 @@ class full_chain_algorithm
     vecmem::cuda::device_memory_resource m_device_mr;
     /// Memory copy object
     vecmem::cuda::copy m_copy;
+#elif ALPAKA_ACC_GPU_HIP_ENABLED
+    /// Device memory resource
+    vecmem::hip::device_memory_resource m_device_mr;
+    /// Memory copy object
+    vecmem::hip::copy m_copy;
 #else
     /// Device memory resource
     vecmem::memory_resource& m_device_mr;
@@ -100,6 +112,10 @@ class full_chain_algorithm
     unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
+    // /// Measurement sorting algorithm
+    // measurement_sorting_algorithm m_measurement_sorting;
+    /// Spacepoint formation algorithm
+    spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm

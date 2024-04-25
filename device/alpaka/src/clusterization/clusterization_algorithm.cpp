@@ -11,10 +11,7 @@
 #include "../utils/barrier.hpp"
 
 // Project include(s)
-#include "traccc/clusterization/device/aggregate_cluster.hpp"
 #include "traccc/clusterization/device/ccl_kernel.hpp"
-#include "traccc/clusterization/device/form_spacepoints.hpp"
-#include "traccc/clusterization/device/reduce_problem_cell.hpp"
 
 // System include(s).
 #include <algorithm>
@@ -38,7 +35,6 @@ struct CCLKernel {
         const index_t max_cells_per_partition,
         const index_t target_cells_per_partition,
         measurement_collection_types::view measurements_view,
-        unsigned int* measurement_count,
         vecmem::data::vector_view<unsigned int> cell_links) const {
 
         index_t const localThreadIdx =
@@ -54,35 +50,17 @@ struct CCLKernel {
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         auto& outi = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
 
-        index_t* const shared_v = ::alpaka::getDynSharedMem<index_t>(acc);
-        index_t* f = &shared_v[0];
-        index_t* f_next = &shared_v[max_cells_per_partition];
+        device::details::index_t* const shared_v = ::alpaka::getDynSharedMem<device::details::index_t>(acc);
+        vecmem::data::vector_view<device::details::index_t> f_view{max_cells_per_partition, shared_v};
+        vecmem::data::vector_view<device::details::index_t> gf_view{max_cells_per_partition, shared_v + max_cells_per_partition};
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
         device::ccl_kernel(localThreadIdx, blockExtent, localBlockIdx,
                            cells_view, modules_view, max_cells_per_partition,
                            target_cells_per_partition, partition_start,
-                           partition_end, outi, f, f_next, barry_r,
-                           measurements_view, *measurement_count, cell_links);
-    }
-};
-
-struct FormSpacepointsKernel {
-    template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        measurement_collection_types::const_view measurements_view,
-        cell_module_collection_types::const_view modules_view,
-        const unsigned int* measurement_count,
-        spacepoint_collection_types::view spacepoints_view) const {
-
-        auto const globalThreadIdx =
-            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-
-        device::form_spacepoints(globalThreadIdx, measurements_view,
-                                 modules_view, *measurement_count,
-                                 spacepoints_view);
+                           partition_end, outi, f_view, gf_view, barry_r,
+                           measurements_view, cell_links);
     }
 };
 
@@ -104,27 +82,25 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Number of cells
     const cell_collection_types::view::size_type num_cells =
-        m_copy.get_size(cells);
+        m_copy.get().get_size(cells);
 
+    // Create the result object, overestimating the number of measurements.
+    measurement_collection_types::buffer measurements{
+        num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
+    m_copy.get().setup(measurements)->ignore();
+
+    // If there are no cells, return right away.
     if (num_cells == 0) {
-        return {output_type::first_type{0, m_mr.main},
-                output_type::second_type{0, m_mr.main}};
+        return measurements;
     }
 
-    // Create result object for the CCL kernel with size overestimation
-    measurement_collection_types::buffer measurements_buffer(num_cells,
-                                                                 m_mr.main);
-    m_copy.setup(measurements_buffer);
-
-    // Counter for number of measurements
-    auto bufHost_num_measurements =
-        ::alpaka::allocBuf<unsigned int, Idx>(devHost, 1u);
-    unsigned int* pBufHost_num_measurements(
-        ::alpaka::getPtrNative(bufHost_num_measurements));
-    *pBufHost_num_measurements = 0;
-    auto bufAcc_num_measurements =
-        ::alpaka::allocBuf<unsigned int, Idx>(devAcc, 1u);
-    ::alpaka::memcpy(queue, bufAcc_num_measurements, bufHost_num_measurements);
+    // Create buffer for linking cells to their measurements.
+    //
+    // @todo Construct cell clusters on demand in a member function for
+    // debugging.
+    //
+    vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
+    m_copy.get().setup(cell_links)->ignore();
 
     const unsigned short max_cells_per_partition =
         (m_target_cells_per_partition * MAX_CELLS_PER_THREAD +
@@ -138,41 +114,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         m_target_cells_per_partition;
     auto workDiv = makeWorkDiv<Acc>(num_partitions, threads_per_partition);
 
-    // Create buffer for linking cells to their spacepoints.
-    vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
-    m_copy.setup(cell_links);
-
     // Launch ccl kernel. Each thread will handle a single cell.
     ::alpaka::exec<Acc>(queue, workDiv, CCLKernel{}, cells, modules,
                         max_cells_per_partition, m_target_cells_per_partition,
-                        vecmem::get_data(measurements_buffer),
-                        ::alpaka::getPtrNative(bufAcc_num_measurements),
+                        vecmem::get_data(measurements),
                         vecmem::get_data(cell_links));
     ::alpaka::wait(queue);
 
-    // Copy number of measurements to host
-    ::alpaka::memcpy(queue, bufHost_num_measurements, bufAcc_num_measurements);
-
-    spacepoint_collection_types::buffer spacepoints_buffer(
-        *pBufHost_num_measurements, m_mr.main);
-    m_copy.setup(spacepoints_buffer);
-
-    // For the following kernel, we can now use whatever the desired number of
-    // threads per block.
-    auto spacepointsLocalSize = 1024;
-    const unsigned int num_blocks =
-        (*pBufHost_num_measurements + spacepointsLocalSize - 1) /
-        spacepointsLocalSize;
-    workDiv = makeWorkDiv<Acc>(num_blocks, spacepointsLocalSize);
-
-    // Turn 2D measurements into 3D spacepoints
-    ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel{},
-                        vecmem::get_data(measurements_buffer), modules,
-                        ::alpaka::getPtrNative(bufAcc_num_measurements),
-                        vecmem::get_data(spacepoints_buffer));
-    ::alpaka::wait(queue);
-
-    return {std::move(spacepoints_buffer), std::move(cell_links)};
+    return measurements;
 }
 
 }  // namespace traccc::alpaka
