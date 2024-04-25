@@ -6,9 +6,10 @@
  */
 
 // Local include(s).
-#include "../utils/utils.hpp"
-#include "../utils/barrier.hpp"
 #include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
+
+#include "../utils/barrier.hpp"
+#include "../utils/utils.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/form_spacepoints.hpp"
@@ -68,8 +69,8 @@ spacepoint_formation_algorithm::operator()(
 
     // Launch the spacepoint formation kernel.
     ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel{},
-        measurements_view, modules_view,
-        num_measurements, vecmem::get_data(spacepoints));
+                        measurements_view, modules_view, num_measurements,
+                        vecmem::get_data(spacepoints));
     ::alpaka::wait(queue);
 
     // Return the reconstructed spacepoints.

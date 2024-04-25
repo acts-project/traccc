@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
                                  vecmem::cuda::host_memory_resource
 #else
-                                  vecmem::host_memory_resource
+                                 vecmem::host_memory_resource
 #endif
                                  >(
         "Single-threaded Alpaka GPU throughput tests", argc, argv,

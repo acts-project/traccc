@@ -78,7 +78,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
           memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
-      m_filter_config(parent.m_filter_config) {}
+      m_filter_config(parent.m_filter_config) {
+}
 
 full_chain_algorithm::~full_chain_algorithm() {
 
@@ -106,8 +107,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         m_spacepoint_formation(m_measurement_sorting(measurements),
                                modules_buffer);
     const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints,
-                                     m_seeding(spacepoints),
+        m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
                                      {0.f, 0.f, m_finder_config.bFieldInZ});
 
     // Get the final data back to the host.

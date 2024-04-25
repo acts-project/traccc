@@ -1,14 +1,15 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-#include "../utils/utils.hpp"
+
 #include "../utils/barrier.hpp"
+#include "../utils/utils.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
@@ -18,30 +19,21 @@
 
 namespace traccc::alpaka {
 
-namespace {
-/// These indices in clusterization will only range from 0 to
-/// max_cells_per_partition, so we only need a short.
-using index_t = unsigned short;
-
-static constexpr int TARGET_CELLS_PER_THREAD = 8;
-static constexpr int MAX_CELLS_PER_THREAD = 12;
-}  // namespace
-
 struct CCLKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const cell_collection_types::const_view cells_view,
         const cell_module_collection_types::const_view modules_view,
-        const index_t max_cells_per_partition,
-        const index_t target_cells_per_partition,
+        const device::details::index_t max_cells_per_partition,
+        const device::details::index_t target_cells_per_partition,
         measurement_collection_types::view measurements_view,
         vecmem::data::vector_view<unsigned int> cell_links) const {
 
-        index_t const localThreadIdx =
+        auto const localThreadIdx =
             ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        unsigned int const localBlockIdx =
+        auto const localBlockIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
-        index_t const blockExtent =
+        auto const blockExtent =
             ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
 
         auto& partition_start =
@@ -50,9 +42,12 @@ struct CCLKernel {
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         auto& outi = ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
 
-        device::details::index_t* const shared_v = ::alpaka::getDynSharedMem<device::details::index_t>(acc);
-        vecmem::data::vector_view<device::details::index_t> f_view{max_cells_per_partition, shared_v};
-        vecmem::data::vector_view<device::details::index_t> gf_view{max_cells_per_partition, shared_v + max_cells_per_partition};
+        device::details::index_t* const shared_v =
+            ::alpaka::getDynSharedMem<device::details::index_t>(acc);
+        vecmem::data::vector_view<device::details::index_t> f_view{
+            max_cells_per_partition, shared_v};
+        vecmem::data::vector_view<device::details::index_t> gf_view{
+            max_cells_per_partition, shared_v + max_cells_per_partition};
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
@@ -102,23 +97,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
     m_copy.get().setup(cell_links)->ignore();
 
-    const unsigned short max_cells_per_partition =
-        (m_target_cells_per_partition * MAX_CELLS_PER_THREAD +
-         TARGET_CELLS_PER_THREAD - 1) /
-        TARGET_CELLS_PER_THREAD;
-    const unsigned int threads_per_partition =
-        (m_target_cells_per_partition + TARGET_CELLS_PER_THREAD - 1) /
-        TARGET_CELLS_PER_THREAD;
-    const unsigned int num_partitions =
-        (num_cells + m_target_cells_per_partition - 1) /
-        m_target_cells_per_partition;
-    auto workDiv = makeWorkDiv<Acc>(num_partitions, threads_per_partition);
-
     // Launch ccl kernel. Each thread will handle a single cell.
-    ::alpaka::exec<Acc>(queue, workDiv, CCLKernel{}, cells, modules,
-                        max_cells_per_partition, m_target_cells_per_partition,
-                        vecmem::get_data(measurements),
-                        vecmem::get_data(cell_links));
+    const device::details::ccl_kernel_helper helper{
+        m_target_cells_per_partition, num_cells};
+    auto workDiv =
+        makeWorkDiv<Acc>(helper.num_partitions, helper.threads_per_partition);
+
+    ::alpaka::exec<Acc>(
+        queue, workDiv, CCLKernel{}, cells, modules,
+        helper.max_cells_per_partition, m_target_cells_per_partition,
+        vecmem::get_data(measurements), vecmem::get_data(cell_links));
     ::alpaka::wait(queue);
 
     return measurements;

@@ -137,20 +137,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_alpaka = 0;
-    uint64_t n_found_tracks = 0;
+    // uint64_t n_found_tracks = 0;
     // uint64_t n_found_tracks_alpaka = 0;
-    uint64_t n_fitted_tracks = 0;
+    // uint64_t n_fitted_tracks = 0;
     // uint64_t n_fitted_tracks_alpaka = 0;
 
     /*****************************
      * Build a geometry
      *****************************/
 
-
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    // auto field = detray::bfield::create_const_field(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
@@ -171,7 +170,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::io::alt_read_geometry(host_det);
 
     // Detector view object
-    auto det_view = detray::get_data(host_det);
+    // auto det_view = detray::get_data(host_det);
 
     // Copy objects
     // traccc::device::container_d2h_copy_alg<
@@ -198,10 +197,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // Finding algorithm configuration
     // typename traccc::cuda::finding_algorithm<
     //     rk_stepper_type, device_navigator_type>::config_type cfg;
-    // cfg.min_track_candidates_per_track = finding_opts.track_candidates_range[0];
-    // cfg.max_track_candidates_per_track = finding_opts.track_candidates_range[1];
-    // cfg.chi2_max = finding_opts.chi2_max;
-    // propagation_opts.setup(cfg.propagation);
+    // cfg.min_track_candidates_per_track =
+    // finding_opts.track_candidates_range[0];
+    // cfg.max_track_candidates_per_track =
+    // finding_opts.track_candidates_range[1]; cfg.chi2_max =
+    // finding_opts.chi2_max; propagation_opts.setup(cfg.propagation);
 
     // // Finding algorithm object
     // traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -232,7 +232,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::track_candidate_container_types::host track_candidates;
         traccc::track_state_container_types::host track_states;
 
-        traccc::seed_collection_types::buffer seeds_alpaka_buffer(0, *(mr.host));
+        traccc::seed_collection_types::buffer seeds_alpaka_buffer(0,
+                                                                  *(mr.host));
         traccc::bound_track_parameters_collection_types::buffer
             params_alpaka_buffer(0, *mr.host);
 
@@ -240,7 +241,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         //     track_candidates_alpaka_buffer{{{}, *(mr.host)},
         //                                  {{}, *(mr.host), mr.host}};
 
-        // traccc::track_state_container_types::buffer track_states_alpaka_buffer{
+        // traccc::track_state_container_types::buffer
+        // track_states_alpaka_buffer{
         //     {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
 
         {  // Start measuring wall time
