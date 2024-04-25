@@ -11,9 +11,6 @@
 // detray include(s).
 #include "detray/geometry/barcode.hpp"
 #include "detray/geometry/surface.hpp"
-#include "detray/navigation/detail/ray.hpp"
-#include "detray/navigation/intersection/ray_intersector.hpp"
-#include "detray/navigation/intersection_kernel.hpp"
 
 // System include
 #include <algorithm>
@@ -129,40 +126,17 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *************************/
 
             // Get intersection at surface
-            const detray::surface<detector_type> sf{det,
-                                                    in_param.surface_link()};
+            const detray::surface sf{det, in_param.surface_link()};
 
             const cxt_t ctx{};
-            const auto free_vec =
-                sf.bound_to_free_vector(ctx, in_param.vector());
-            intersection_type sfi;
-
-            const auto sf_desc = det.surface(in_param.surface_link());
-            sfi.sf_desc = sf_desc;
-            sf.template visit_mask<
-                detray::intersection_update<detray::ray_intersector>>(
-                detray::detail::ray<transform3_type>(free_vec), sfi,
-                det.transform_store(),
-                sf.is_portal() ? 0.f : 50.f * unit<scalar_type>::um,
-                -100.f * unit<scalar_type>::um);
-
-            if (!(std::abs(sf.cos_angle(ctx, in_param.dir(),
-                                        in_param.bound_local()) -
-                           sfi.cos_incidence_angle) < 0.0001f)) {
-                std::cout << "finding alg" << std::endl;
-                std::cout << det.surface(in_param.surface_link()) << std::endl;
-                std::cout << sfi << std::endl;
-                std::cout << sf.cos_angle(ctx, in_param.dir(),
-                                          in_param.bound_local())
-                          << ", " << sfi.cos_incidence_angle << std::endl;
-            }
 
             // Apply interactor
             typename interactor_type::state interactor_state;
             interactor_type{}.update(
                 in_param, interactor_state,
                 static_cast<int>(detray::navigation::direction::e_forward), sf,
-                sfi.cos_incidence_angle);
+                std::abs(
+                    sf.cos_angle(ctx, in_param.dir(), in_param.bound_local())));
 
             /*************************
              * CKF
