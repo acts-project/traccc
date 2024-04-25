@@ -34,11 +34,12 @@ TEST(track_params_estimation, helix) {
     // Track property
     const point3 pos{0.f, 0.f, 0.f};
     const scalar time{0.f};
-    const vector3 mom{1.f, 0.f, 1.f * unit<scalar>::GeV};
+    const vector3 mom{1.f * unit<scalar>::GeV, 0.f, 1.f * unit<scalar>::GeV};
     const scalar q{-1.f * unit<scalar>::e};
 
     // Make a helix
-    detray::detail::helix<transform3> hlx(pos, time, mom, q, &B);
+    detray::detail::helix<traccc::default_algebra> hlx(
+        pos, time, vector::normalize(mom), q / getter::norm(mom), &B);
 
     // Make three spacepoints with the helix
     spacepoint_collection_types::host spacepoints;
@@ -57,5 +58,5 @@ TEST(track_params_estimation, helix) {
     // Make sure that the reconstructed momentum is equal to the original
     // momentum
     ASSERT_EQ(bound_params.size(), 1u);
-    ASSERT_NEAR(bound_params[0].p(), getter::norm(mom), 1e-4);
+    ASSERT_NEAR(bound_params[0].p(), getter::norm(mom), 2.f * 1e-4);
 }

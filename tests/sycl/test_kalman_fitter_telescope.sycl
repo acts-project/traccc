@@ -125,11 +125,11 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
-    traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
-                                                         smearing[1]);
+    traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
+        smearing[0], smearing[1]);
 
-    using writer_type =
-        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
+    using writer_type = traccc::smearing_writer<
+        traccc::measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 

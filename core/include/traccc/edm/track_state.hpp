@@ -22,7 +22,7 @@ namespace traccc {
 /// Fitting result per track
 template <typename algebra_t>
 struct fitting_result {
-    using scalar_type = typename algebra_t::scalar_type;
+    using scalar_type = detray::dscalar<algebra_t>;
 
     /// Fitted track parameter
     detray::bound_track_parameters<algebra_t> fit_params;
@@ -38,15 +38,15 @@ struct fitting_result {
 template <typename algebra_t>
 struct track_state {
 
+    using scalar_type = detray::dscalar<algebra_t>;
+
     using bound_track_parameters_type =
         detray::bound_track_parameters<algebra_t>;
-    using bound_matrix = typename bound_track_parameters_type::covariance_type;
-    using scalar_type = typename algebra_t::scalar_type;
-    using matrix_operator = typename algebra_t::matrix_actor;
-    using size_type = typename matrix_operator::size_ty;
+    using bound_matrix = detray::bound_matrix<algebra_t>;
+    using matrix_operator = detray::dmatrix_operator<algebra_t>;
+    using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
-    using matrix_type =
-        typename matrix_operator::template matrix_type<ROWS, COLS>;
+    using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
     track_state() = default;
 
@@ -211,10 +211,12 @@ struct track_state {
 };
 
 /// Declare all track_state collection types
-using track_state_collection_types = collection_types<track_state<transform3>>;
+using track_state_collection_types =
+    collection_types<track_state<default_algebra>>;
 
 /// Declare all track_state container types
 using track_state_container_types =
-    container_types<fitting_result<transform3>, track_state<transform3>>;
+    container_types<fitting_result<default_algebra>,
+                    track_state<default_algebra>>;
 
 }  // namespace traccc

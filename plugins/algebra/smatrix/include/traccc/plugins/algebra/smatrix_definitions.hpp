@@ -23,8 +23,6 @@
 #include <map>
 #include <tuple>
 
-#define __plugin algebra::smatrix
-
 namespace traccc {
 
 using scalar = TRACCC_CUSTOM_SCALARTYPE;

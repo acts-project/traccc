@@ -30,10 +30,14 @@ track_propagation::track_propagation()
                          po::value(&(config.navigation.overstep_tolerance))
                              ->default_value(-100.f),
                          "The overstep tolerance [um]");
+    m_desc.add_options()("min-mask-tolerance-mm",
+                         po::value(&(config.navigation.min_mask_tolerance))
+                             ->default_value(1e-5f),
+                         "The minimum mask tolerance [mm]");
     m_desc.add_options()(
-        "mask-tolerance-um",
-        po::value(&(config.navigation.mask_tolerance))->default_value(15.f),
-        "The mask tolerance [um]");
+        "max-mask-tolerance-mm",
+        po::value(&(config.navigation.max_mask_tolerance))->default_value(1.f),
+        "The maximum mask tolerance [mm]");
     m_desc.add_options()(
         "search-window",
         po::value(&m_search_window)->default_value(m_search_window),
@@ -48,7 +52,8 @@ void track_propagation::read(const po::variables_map&) {
 
     config.stepping.step_constraint *= detray::unit<float>::mm;
     config.navigation.overstep_tolerance *= detray::unit<float>::um;
-    config.navigation.mask_tolerance *= detray::unit<float>::um;
+    config.navigation.min_mask_tolerance *= detray::unit<float>::mm;
+    config.navigation.max_mask_tolerance *= detray::unit<float>::mm;
     config.navigation.search_window = m_search_window;
 }
 
@@ -71,7 +76,8 @@ void track_propagation::setup(detray::propagation::config<double>& cfg) const {
     cfg.stepping.do_covariance_transport =
         config.stepping.do_covariance_transport;
 
-    cfg.navigation.mask_tolerance = config.navigation.mask_tolerance;
+    cfg.navigation.min_mask_tolerance = config.navigation.min_mask_tolerance;
+    cfg.navigation.max_mask_tolerance = config.navigation.max_mask_tolerance;
     cfg.navigation.on_surface_tolerance =
         config.navigation.on_surface_tolerance;
     cfg.navigation.overstep_tolerance = config.navigation.overstep_tolerance;
@@ -82,18 +88,21 @@ void track_propagation::setup(detray::propagation::config<double>& cfg) const {
 
 std::ostream& track_propagation::print_impl(std::ostream& out) const {
 
-    out << "  Constraint step size : "
+    out << "  Constraint step size  : "
         << config.stepping.step_constraint / detray::unit<float>::mm
         << " [mm]\n"
-        << "  Overstep tolerance   : "
+        << "  Overstep tolerance    : "
         << config.navigation.overstep_tolerance / detray::unit<float>::um
         << " [um]\n"
-        << "  Mask tolerance       : "
-        << config.navigation.mask_tolerance / detray::unit<float>::um
-        << " [um]\n"
-        << "  Search window        : " << config.navigation.search_window[0]
+        << "  Minimum mask tolerance: "
+        << config.navigation.min_mask_tolerance / detray::unit<float>::mm
+        << " [mm]\n"
+        << "  Maximum mask tolerance: "
+        << config.navigation.max_mask_tolerance / detray::unit<float>::mm
+        << " [mm]\n"
+        << "  Search window         : " << config.navigation.search_window[0]
         << " x " << config.navigation.search_window[1] << "\n"
-        << "  Runge-Kutta tolerance: " << config.stepping.rk_error_tol;
+        << "  Runge-Kutta tolerance : " << config.stepping.rk_error_tol;
     return out;
 }
 

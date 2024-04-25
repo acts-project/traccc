@@ -45,13 +45,6 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
-    const std::array<scalar, 3u> origin = std::get<1>(GetParam());
-    const std::array<scalar, 3u> origin_stddev = std::get<2>(GetParam());
-    const std::array<scalar, 2u> mom_range = std::get<3>(GetParam());
-    const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
-    const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
-    const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const scalar charge = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
 
@@ -90,20 +83,21 @@ TEST_P(CkfToyDetectorTests, Run) {
                                        uniform_gen_t>;
     generator_type::configuration gen_cfg{};
     gen_cfg.n_tracks(n_truth_tracks);
-    gen_cfg.origin(origin);
-    gen_cfg.origin_stddev(origin_stddev);
-    gen_cfg.phi_range(phi_range[0], phi_range[1]);
-    gen_cfg.theta_range(theta_range[0], theta_range[1]);
-    gen_cfg.mom_range(mom_range[0], mom_range[1]);
-    gen_cfg.charge(charge);
+    gen_cfg.origin(std::get<1>(GetParam()));
+    gen_cfg.origin_stddev(std::get<2>(GetParam()));
+    gen_cfg.phi_range(std::get<5>(GetParam()));
+    gen_cfg.eta_range(std::get<4>(GetParam()));
+    gen_cfg.mom_range(std::get<3>(GetParam()));
+    gen_cfg.charge(std::get<6>(GetParam()));
+    gen_cfg.seed(42);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
-    traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
-                                                         smearing[1]);
+    traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
+        smearing[0], smearing[1]);
 
-    using writer_type =
-        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
+    using writer_type = traccc::smearing_writer<
+        traccc::measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
@@ -114,6 +108,7 @@ TEST_P(CkfToyDetectorTests, Run) {
                                  writer_type>(
         n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
+    sim.get_config().propagation.stepping.step_constraint = step_constraint;
     sim.get_config().propagation.navigation.search_window = search_window;
     sim.run();
 
@@ -244,15 +239,17 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(std::make_tuple(
         "toy_n_particles_1", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{1.f, 100.f}, std::array<scalar, 2u>{-3.f, 3.f},
-        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
-        1, 1)));
+        std::array<scalar, 2u>{1.f, 100.f}, std::array<scalar, 2u>{-4.f, 4.f},
+        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
+                               detray::constant<scalar>::pi},
+        -1.f, 1, 1)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfToyDetectorValidation1, CkfToyDetectorTests,
     ::testing::Values(std::make_tuple(
         "toy_n_particles_10000", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{1.f, 100.f}, std::array<scalar, 2u>{-3.f, 3.f},
-        std::array<scalar, 2u>{0.f, 2.0f * detray::constant<scalar>::pi}, -1.f,
-        10000, 1)));
+        std::array<scalar, 2u>{1.f, 100.f}, std::array<scalar, 2u>{-4.f, 4.f},
+        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
+                               detray::constant<scalar>::pi},
+        -1.f, 10000, 1)));

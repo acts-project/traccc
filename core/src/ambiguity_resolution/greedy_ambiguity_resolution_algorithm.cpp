@@ -21,6 +21,7 @@
 #include <vecmem/containers/vector.hpp>
 
 // Project include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -104,15 +105,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
         "state.selected_tracks.size() = " << state.selected_tracks.size());
 
     for (std::size_t index : state.selected_tracks) {
-        // track_states is a host_container<fitting_result<transform3>,
-        // track_state<transform3>>
+        // track_states is a host_container<fitting_result<default_algebra>,
+        // track_state<default_algebra>>
         auto const [sm_headers, sm_items] = track_states.at(index);
 
         // Copy header
-        fitting_result<transform3> header = sm_headers;
+        fitting_result<default_algebra> header = sm_headers;
 
         // Copy states
-        vecmem::vector<track_state<transform3>> states;
+        vecmem::vector<track_state<default_algebra>> states;
         states.reserve(sm_items.size());
         for (auto const& item : sm_items) {
             states.push_back(item);
@@ -140,8 +141,8 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     for (std::size_t track_index = 0; track_index < n_track_states;
          ++track_index) {
 
-        // fit_res is a fitting_result<transform3>
-        // states  is a vecmem_vector<track_state<transform3>>
+        // fit_res is a fitting_result<default_algebra>
+        // states  is a vecmem_vector<track_state<default_algebra>>
         auto const& [fit_res, states] = track_states.at(track_index);
 
         // Kick out tracks that do not fulfill our initial requirements
@@ -236,8 +237,8 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     // Initialize initial_measurement_count
     for (std::size_t track_index = 0; track_index < initial_track_states.size();
          ++track_index) {
-        // fit_res is a fitting_result<transform3>
-        // states  is a vecmem_vector<track_state<transform3>>
+        // fit_res is a fitting_result<default_algebra>
+        // states  is a vecmem_vector<track_state<default_algebra>>
         auto const& [fit_res, states] = initial_track_states.at(track_index);
 
         for (auto const& st : states) {

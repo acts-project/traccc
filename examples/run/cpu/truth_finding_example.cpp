@@ -56,7 +56,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t, traccc::transform3,
+        detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<>>;
 
     using host_navigator_type = detray::navigator<const host_detector_type>;

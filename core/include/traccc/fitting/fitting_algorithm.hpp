@@ -26,7 +26,7 @@ class fitting_algorithm
           const typename track_candidate_container_types::host&)> {
 
     public:
-    using transform3_type = typename fitter_t::transform3_type;
+    using algebra_type = typename fitter_t::algebra_type;
     using bfield_type = typename fitter_t::bfield_type;
     /// Configuration type
     using config_type = typename fitter_t::config_type;
@@ -61,7 +61,7 @@ class fitting_algorithm
 
             // Make a vector of track state
             auto& cands = track_candidates[i].items;
-            vecmem::vector<track_state<transform3_type>> input_states;
+            vecmem::vector<track_state<algebra_type>> input_states;
             input_states.reserve(cands.size());
             for (auto& cand : cands) {
                 input_states.emplace_back(cand);

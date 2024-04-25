@@ -113,7 +113,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Type definitions
     using stepper_type =
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           detector_type::transform3,
+                           detector_type::algebra_type,
                            detray::constrained_step<>>;
     using navigator_type = detray::navigator<const detector_type>;
     using finding_algorithm =

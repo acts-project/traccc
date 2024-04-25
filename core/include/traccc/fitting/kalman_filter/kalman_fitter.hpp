@@ -35,8 +35,14 @@ template <typename stepper_t, typename navigator_t>
 class kalman_fitter {
 
     public:
+    // Detector type
+    using detector_type = typename navigator_t::detector_type;
+
+    // Algebra type
+    using algebra_type = typename detector_type::algebra_type;
+
     // scalar type
-    using scalar_type = typename stepper_t::scalar_type;
+    using scalar_type = detray::dscalar<algebra_type>;
 
     // vector type
     template <typename T>
@@ -48,21 +54,15 @@ class kalman_fitter {
     /// Configuration type
     using config_type = fitting_config<scalar_type>;
 
-    // transform3 type
-    using transform3_type = typename stepper_t::transform3_type;
-
-    // Detector type
-    using detector_type = typename navigator_t::detector_type;
-
     // Field type
     using bfield_type = typename stepper_t::magnetic_field_type;
 
     // Actor types
     using aborter = detray::pathlimit_aborter;
-    using transporter = detray::parameter_transporter<transform3_type>;
-    using interactor = detray::pointwise_material_interactor<transform3_type>;
-    using fit_actor = traccc::kalman_actor<transform3_type, vector_type>;
-    using resetter = detray::parameter_resetter<transform3_type>;
+    using transporter = detray::parameter_transporter<algebra_type>;
+    using interactor = detray::pointwise_material_interactor<algebra_type>;
+    using fit_actor = traccc::kalman_actor<algebra_type, vector_type>;
+    using resetter = detray::parameter_resetter<algebra_type>;
 
     using actor_chain_type =
         detray::actor_chain<std::tuple, aborter, transporter, interactor,
@@ -87,14 +87,14 @@ class kalman_fitter {
         ///
         /// @param track_states the vector of track states
         TRACCC_HOST_DEVICE
-        state(vector_type<track_state<transform3_type>>&& track_states)
+        state(vector_type<track_state<algebra_type>>&& track_states)
             : m_fit_actor_state(std::move(track_states)) {}
 
         /// State constructor
         ///
         /// @param track_states the vector of track states
         TRACCC_HOST_DEVICE
-        state(const vector_type<track_state<transform3_type>>& track_states)
+        state(const vector_type<track_state<algebra_type>>& track_states)
             : m_fit_actor_state(track_states) {}
 
         /// @return the actor chain state
@@ -113,7 +113,7 @@ class kalman_fitter {
         typename resetter::state m_resetter_state{};
 
         /// Fitting result per track
-        fitting_result<transform3_type> m_fit_res;
+        fitting_result<algebra_type> m_fit_res;
     };
 
     /// Run the kalman fitter for a given number of iterations
@@ -211,15 +211,14 @@ class kalman_fitter {
         last.smoothed().set_covariance(last.filtered().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
 
-        for (typename vector_type<
-                 track_state<transform3_type>>::reverse_iterator it =
-                 track_states.rbegin() + 1;
+        for (typename vector_type<track_state<algebra_type>>::reverse_iterator
+                 it = track_states.rbegin() + 1;
              it != track_states.rend(); ++it) {
 
             // Run kalman smoother
             const detray::surface<detector_type> sf{m_detector,
                                                     it->surface_link()};
-            sf.template visit_mask<gain_matrix_smoother<transform3_type>>(
+            sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
                 *it, *(it - 1));
         }
     }
@@ -236,8 +235,8 @@ class kalman_fitter {
 
             const detray::surface<detector_type> sf{m_detector,
                                                     trk_state.surface_link()};
-            sf.template visit_mask<statistics_updater<transform3_type>>(
-                fit_res, trk_state);
+            sf.template visit_mask<statistics_updater<algebra_type>>(fit_res,
+                                                                     trk_state);
         }
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)

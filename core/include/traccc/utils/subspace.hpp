@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,8 +17,8 @@
 
 namespace traccc {
 
-template <typename algebra_t, typename algebra_t::size_type kFullSize,
-          typename algebra_t::size_type kSize = 2u>
+template <typename algebra_t, detray::dsize_type<algebra_t> kFullSize,
+          detray::dsize_type<algebra_t> kSize = 2u>
 struct subspace {
     static_assert(1u <= kSize, "Subspace size must be at least 1");
     static_assert(kSize <= kFullSize,
@@ -26,11 +26,10 @@ struct subspace {
 
     public:
     // Type declarations
-    using matrix_operator = typename algebra_t::matrix_actor;
-    using size_type = typename matrix_operator::size_ty;
+    using matrix_operator = detray::dmatrix_operator<algebra_t>;
+    using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
-    using matrix_type =
-        typename matrix_operator::template matrix_type<ROWS, COLS>;
+    using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
     using subspace_vector = matrix_type<kSize, 1u>;
     using fullspace_vector = matrix_type<kFullSize, 1u>;

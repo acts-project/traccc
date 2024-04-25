@@ -72,7 +72,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t, traccc::transform3,
+        detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<>>;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using host_fitter_type =
@@ -311,7 +311,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                       << std::endl;
 
             // Compare the track parameters made on the host and on the device.
-            traccc::collection_comparator<traccc::fitting_result<transform3>>
+            traccc::collection_comparator<
+                traccc::fitting_result<traccc::default_algebra>>
                 compare_fitting_results{"fitted tracks"};
             compare_fitting_results(
                 vecmem::get_data(track_states.get_headers()),
