@@ -65,7 +65,9 @@ TRACCC_DEVICE void fast_sv_1(
              ++tst) {
             const details::index_t cid = tst * blckDim + tid;
 
+#ifndef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
             __builtin_assume(adjc[tst] <= 8);
+#endif
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
                 details::index_t q = gf.at(adjv[tst][k]);
 

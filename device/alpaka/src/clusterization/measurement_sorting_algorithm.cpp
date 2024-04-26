@@ -8,6 +8,10 @@
 // Library include(s).
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#include <thrust/sort.h>
+#endif
+
 namespace traccc::alpaka {
 
 measurement_sorting_algorithm::measurement_sorting_algorithm(vecmem::copy& copy)
@@ -24,8 +28,16 @@ measurement_sorting_algorithm::operator()(
         m_copy.get().get_size(measurements_view);
 
     // Sort the measurements in place
+    // TODO: This obviously won't work for HIP, but we don't have a HIP
+    // equivalent of Thrust yet.
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    thrust::sort(thrust::device, measurements_view.ptr(),
+                 measurements_view.ptr() + n_measurements,
+                 measurement_sort_comp());
+#elif !defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     std::sort(measurements_view.ptr(), measurements_view.ptr() + n_measurements,
               measurement_sort_comp());
+#endif
 
     // Return the view of the sorted measurements.
     return measurements_view;
