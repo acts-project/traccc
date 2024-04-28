@@ -58,7 +58,9 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/clusterization_algorithm.cpp"
   # Finding algorithmic code
   "include/traccc/finding/candidate_link.hpp"
+  "include/traccc/finding/ckf_aborter.hpp"
   "include/traccc/finding/finding_algorithm.hpp"
+  "include/traccc/finding/finding_algorithm.ipp"
   "include/traccc/finding/finding_config.hpp"
   "include/traccc/finding/interaction_register.hpp"
   # Fitting algorithmic code

@@ -29,6 +29,18 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         return;
     }
 
+    // Links
+    vecmem::device_vector<const candidate_link> links(links_view);
+
+    // tips
+    vecmem::device_vector<typename candidate_link::link_index_type> tips(
+        tips_view);
+
+    if (links[globalIndex].n_skipped > cfg.max_num_skipping_per_cand) {
+        tips.push_back({step, globalIndex});
+        return;
+    }
+
     // Detector
     typename propagator_t::detector_type det(det_data);
 
@@ -40,18 +52,11 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     bound_track_parameters_collection_types::const_device in_params(
         in_params_view);
 
-    // Links
-    vecmem::device_vector<const candidate_link> links(links_view);
-
     // Out parameters
     bound_track_parameters_collection_types::device out_params(out_params_view);
 
     // Param to Link ID
     vecmem::device_vector<unsigned int> param_to_link(param_to_link_view);
-
-    // tips
-    vecmem::device_vector<typename candidate_link::link_index_type> tips(
-        tips_view);
 
     // Input bound track parameter
     const bound_track_parameters in_par = in_params.at(globalIndex);
@@ -79,8 +84,9 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         s3{};
     typename detray::detail::tuple_element<2, actor_list_type>::type::state s2{
         s3};
-    typename detray::detail::tuple_element<4, actor_list_type>::type::state s4{
-        cfg.min_step_length_for_surface_aborter};
+    typename detray::detail::tuple_element<4, actor_list_type>::type::state s4;
+    s4.min_step_length = cfg.min_step_length_for_next_surface;
+    s4.max_count = cfg.max_step_counts_for_next_surface;
 
     // @TODO: Should be removed once detray is fixed to set the volume in the
     // constructor
@@ -100,6 +106,12 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     }
     // Unless the track found a surface, it is considered a tip
     else if (!s4.success && step >= cfg.min_track_candidates_per_track - 1) {
+        tips.push_back({step, globalIndex});
+    }
+
+    // If no more CKF step is expected, current candidate is
+    // kept as a tip
+    if (s4.success && step == cfg.max_track_candidates_per_track - 1) {
         tips.push_back({step, globalIndex});
     }
 }

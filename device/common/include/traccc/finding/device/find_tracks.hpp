@@ -29,11 +29,16 @@ namespace traccc::device {
 /// @param[in] n_measurements_prefix_sum_view  Prefix sum of the number of
 /// measurements per parameter
 /// @param[in] ref_meas_idx_view  The first index of measurements per parameter
+/// @param[in] prev_links_view    link container from the previous step
+/// @param[in] prev_param_to_link_view  param_to_link container from the
+/// previous step
 /// @param[in] step               Step index
 /// @param[in] n_max_candidates   Number of maximum candidates
 /// @param[out] out_params_view   Output parameters
+/// @param[out] n_candidates_view  Number of candidates per input parameter
 /// @param[out] links_view        link container for the current step
-/// @param[out] n_candidates      The number of candidates for the current step
+/// @param[out] n_total_candidates  The number of total candidates for the
+/// current step
 ///
 template <typename detector_t, typename config_t>
 TRACCC_DEVICE inline void find_tracks(
@@ -44,10 +49,13 @@ TRACCC_DEVICE inline void find_tracks(
     vecmem::data::vector_view<const unsigned int>
         n_measurements_prefix_sum_view,
     vecmem::data::vector_view<const unsigned int> ref_meas_idx_view,
+    vecmem::data::vector_view<const candidate_link> prev_links_view,
+    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
     const unsigned int step, const unsigned int& n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
+    vecmem::data::vector_view<unsigned int> n_candidates_view,
     vecmem::data::vector_view<candidate_link> links_view,
-    unsigned int& n_candidates);
+    unsigned int& n_total_candidates);
 
 }  // namespace traccc::device
 

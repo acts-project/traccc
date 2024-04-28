@@ -19,6 +19,9 @@ struct finding_global_counter {
 
     // Number of parameters for the next step
     unsigned int n_out_params;
+
+    // Number of valid tracks that meet criteria
+    unsigned int n_valid_tracks;
 };
 
 }  // namespace traccc::device

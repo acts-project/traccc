@@ -12,6 +12,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/finding/ckf_aborter.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/interaction_register.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
@@ -62,7 +63,7 @@ class finding_algorithm
     using actor_type =
         detray::actor_chain<std::tuple, detray::pathlimit_aborter, transporter,
                             interaction_register<interactor>, interactor,
-                            detray::next_surface_aborter>;
+                            ckf_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;
