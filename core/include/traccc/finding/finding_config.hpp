@@ -36,8 +36,11 @@ struct finding_config {
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
-    scalar_t min_step_length_for_surface_aborter =
-        0.1f * detray::unit<scalar_t>::mm;
+    scalar_t min_step_length_for_next_surface =
+        0.5f * detray::unit<scalar_t>::mm;
+    /// Maximum step counts that track can make to reach the next surface
+    unsigned int max_step_counts_for_next_surface = 100;
+
     /// Maximum Chi-square that is allowed for branching
     scalar_t chi2_max = 30.f;
 

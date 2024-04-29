@@ -126,6 +126,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     uint64_t n_cells = 0;
     uint64_t n_modules = 0;
     uint64_t n_measurements = 0;
+    uint64_t n_measurements_cuda = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_spacepoints_cuda = 0;
     uint64_t n_seeds = 0;
@@ -159,7 +160,14 @@ int seq_run(const traccc::opts::detector& detector_opts,
         finding_opts.track_candidates_range[0];
     finding_cfg.max_track_candidates_per_track =
         finding_opts.track_candidates_range[1];
+    finding_cfg.min_step_length_for_next_surface =
+        finding_opts.min_step_length_for_next_surface;
+    finding_cfg.max_step_counts_for_next_surface =
+        finding_opts.max_step_counts_for_next_surface;
     finding_cfg.chi2_max = finding_opts.chi2_max;
+    finding_cfg.max_num_branches_per_initial_seed = finding_opts.nmax_per_seed;
+    finding_cfg.max_num_skipping_per_cand =
+        finding_opts.max_num_skipping_per_cand;
     propagation_opts.setup(finding_cfg.propagation);
 
     host_fitting_algorithm::config_type fitting_cfg;
@@ -390,10 +398,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
           compare cpu and cuda result
           ----------------------------------*/
 
+        traccc::measurement_collection_types::host measurements_per_event_cuda;
         traccc::spacepoint_collection_types::host spacepoints_per_event_cuda;
         traccc::seed_collection_types::host seeds_cuda;
         traccc::bound_track_parameters_collection_types::host params_cuda;
 
+        copy(measurements_cuda_buffer, measurements_per_event_cuda)->wait();
         copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
         copy(seeds_cuda_buffer, seeds_cuda)->wait();
         copy(params_cuda_buffer, params_cuda)->wait();
@@ -406,6 +416,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             // Show which event we are currently presenting the results for.
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
+
+            // Compare the measurements made on the host and on the device.
+            traccc::collection_comparator<traccc::measurement>
+                compare_measurements{"measurements"};
+            compare_measurements(vecmem::get_data(measurements_per_event),
+                                 vecmem::get_data(measurements_per_event_cuda));
 
             // Compare the spacepoints made on the host and on the device.
             traccc::collection_comparator<traccc::spacepoint>
@@ -430,10 +446,30 @@ int seq_run(const traccc::opts::detector& detector_opts,
             // Compare tracks found on the host and on the device.
             traccc::collection_comparator<
                 traccc::track_candidate_container_types::host::header_type>
-                compare_track_candidates{"track candidates"};
+                compare_track_candidates{"track candidates (header)"};
             compare_track_candidates(
                 vecmem::get_data(track_candidates.get_headers()),
                 vecmem::get_data(track_candidates_cuda.get_headers()));
+
+            unsigned int n_matches = 0;
+            for (unsigned int i = 0; i < track_candidates.size(); i++) {
+                auto iso = traccc::details::is_same_object(
+                    track_candidates.at(i).items);
+
+                for (unsigned int j = 0; j < track_candidates_cuda.size();
+                     j++) {
+                    if (iso(track_candidates_cuda.at(j).items)) {
+                        n_matches++;
+                        break;
+                    }
+                }
+            }
+
+            std::cout << "  Track candidates (item) matching rate: "
+                      << 100. * float(n_matches) /
+                             std::max(track_candidates.size(),
+                                      track_candidates_cuda.size())
+                      << "%" << std::endl;
 
             // Compare tracks fitted on the host and on the device.
             traccc::collection_comparator<
@@ -449,6 +485,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         n_measurements += measurements_per_event.size();
         n_spacepoints += spacepoints_per_event.size();
         n_seeds += seeds.size();
+        n_measurements_cuda += measurements_per_event_cuda.size();
         n_spacepoints_cuda += spacepoints_per_event_cuda.size();
         n_seeds_cuda += seeds_cuda.size();
         n_found_tracks += track_candidates.size();
@@ -477,6 +514,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
               << " modules" << std::endl;
     std::cout << "- created (cpu)  " << n_measurements << " measurements     "
               << std::endl;
+    std::cout << "- created (cuda)  " << n_measurements_cuda
+              << " measurements     " << std::endl;
     std::cout << "- created (cpu)  " << n_spacepoints << " spacepoints     "
               << std::endl;
     std::cout << "- created (cuda) " << n_spacepoints_cuda

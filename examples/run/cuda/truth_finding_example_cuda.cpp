@@ -160,7 +160,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         rk_stepper_type, device_navigator_type>::config_type cfg;
     cfg.min_track_candidates_per_track = finding_opts.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_opts.track_candidates_range[1];
+    cfg.min_step_length_for_next_surface =
+        finding_opts.min_step_length_for_next_surface;
+    cfg.max_step_counts_for_next_surface =
+        finding_opts.max_step_counts_for_next_surface;
     cfg.chi2_max = finding_opts.chi2_max;
+    cfg.max_num_branches_per_initial_seed = finding_opts.nmax_per_seed;
+    cfg.max_num_skipping_per_cand = finding_opts.max_num_skipping_per_cand;
     propagation_opts.setup(cfg.propagation);
 
     // Finding algorithm object

@@ -24,20 +24,43 @@ track_finding::track_finding() : interface("Track Finding Options") {
                              ->default_value(track_candidates_range),
                          "Range of track candidates number");
     m_desc.add_options()(
+        "min-step-length-for-next-surface",
+        po::value(&min_step_length_for_next_surface)
+            ->default_value(min_step_length_for_next_surface),
+        "Minimum step length that track should make to reach the next surface. "
+        "This should be set higher than the overstep tolerance not to make it "
+        "stay on the same surface");
+    m_desc.add_options()(
+        "max-step-counts-for-next-surface",
+        po::value<unsigned int>(&max_step_counts_for_next_surface)
+            ->default_value(max_step_counts_for_next_surface),
+        "Maximum step counts that track can make to reach the next surface");
+    m_desc.add_options()(
         "chi2-max", po::value(&chi2_max)->default_value(chi2_max),
         "Maximum Chi suqare that measurements can be included in the track");
     m_desc.add_options()(
-        "nmax_per_seed",
+        "nmax-per-seed",
         po::value<unsigned int>(&nmax_per_seed)->default_value(nmax_per_seed),
         "Maximum number of branches which each initial seed can have at a "
         "step.");
+    m_desc.add_options()(
+        "max-num-skipping-per-cand",
+        po::value<unsigned int>(&max_num_skipping_per_cand)
+            ->default_value(max_num_skipping_per_cand),
+        "Maximum allowed number of skipped steps per candidate");
 }
 
 std::ostream& track_finding::print_impl(std::ostream& out) const {
 
     out << "  Track candidates range   : " << track_candidates_range << "\n"
+        << "  Minimum step length for the next surface: "
+        << min_step_length_for_next_surface << " [mm] \n"
+        << "  Maximum step counts for the next surface: "
+        << max_step_counts_for_next_surface << "\n"
         << "  Maximum Chi2             : " << chi2_max << "\n"
-        << "  Maximum branches per step: " << nmax_per_seed;
+        << "  Maximum branches per step: " << nmax_per_seed << "\n"
+        << "  Maximum number of skipped steps per candidates: "
+        << max_num_skipping_per_cand;
     return out;
 }
 
