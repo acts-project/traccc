@@ -86,9 +86,9 @@ void read_csv_dd(traccc::detector_description::host& dd,
     }
 }
 
-std::map<std::uint64_t, detray::geometry::barcode> read_json_dd(
-    traccc::detector_description::host& dd, std::string_view geometry_file,
-    const traccc::digitization_config& digi) {
+void read_json_dd(traccc::detector_description::host& dd,
+                  std::string_view geometry_file,
+                  const traccc::digitization_config& digi) {
 
     // Construct a (temporary) Detray detector object from the geometry
     // configuration file.
@@ -96,9 +96,6 @@ std::map<std::uint64_t, detray::geometry::barcode> read_json_dd(
     traccc::default_detector::host detector{mr};
     const traccc::default_detector::host::geometry_context ctx{};
     traccc::io::read_detector(detector, mr, geometry_file);
-
-    // Construct the result map.
-    std::map<std::uint64_t, detray::geometry::barcode> barcode_map;
 
     // Iterate over the surfaces of the detector.
     const traccc::default_detector::host::surface_lookup_container& surfaces =
@@ -114,9 +111,6 @@ std::map<std::uint64_t, detray::geometry::barcode> read_json_dd(
         if (acts_geom_id.sensitive() == 0) {
             continue;
         }
-
-        // Extend the barcode map.
-        barcode_map[surface_desc.source] = surface_desc.barcode();
 
         // Add a new element to the detector description.
         dd.resize(dd.size() + 1);
@@ -144,21 +138,17 @@ std::map<std::uint64_t, detray::geometry::barcode> read_json_dd(
         // surface.
         fill_digi_info(dd, digi_it->segmentation);
     }
-
-    // Return the barcode map.
-    return barcode_map;
 }
 
 }  // namespace
 
 namespace traccc::io {
 
-std::optional<std::map<std::uint64_t, detray::geometry::barcode> >
-read_detector_description(detector_description::host& dd,
-                          std::string_view geometry_file,
-                          std::string_view digitization_file,
-                          const data_format geometry_format,
-                          const data_format digitization_format) {
+void read_detector_description(detector_description::host& dd,
+                               std::string_view geometry_file,
+                               std::string_view digitization_file,
+                               const data_format geometry_format,
+                               const data_format digitization_format) {
 
     // Read the digitization configuration.
     const digitization_config digi =
@@ -167,10 +157,11 @@ read_detector_description(detector_description::host& dd,
     // Fill the detector description with the correct type of geometry file.
     switch (geometry_format) {
         case data_format::json:
-            return ::read_json_dd(dd, geometry_file, digi);
+            ::read_json_dd(dd, geometry_file, digi);
+            break;
         case data_format::csv:
             ::read_csv_dd(dd, geometry_file, digi);
-            return std::nullopt;
+            break;
         default:
             throw std::invalid_argument("Unsupported geometry format.");
     }
