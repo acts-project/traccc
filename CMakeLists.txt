@@ -120,7 +120,7 @@ mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
 
 option( TRACCC_USE_SYSTEM_ROCTHRUST
-   "Pick up an existing installation of Thrust from the build environment"
+   "Pick up an existing installation of rocThrust from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_BUILD_HIP )
    if( TRACCC_USE_SYSTEM_ROCTHRUST )
