@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,11 +19,10 @@ template <typename algebra_t>
 struct gain_matrix_updater {
 
     // Type declarations
-    using matrix_operator = typename algebra_t::matrix_actor;
-    using size_type = typename matrix_operator::size_ty;
+    using matrix_operator = detray::dmatrix_operator<algebra_t>;
+    using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
-    using matrix_type =
-        typename matrix_operator::template matrix_type<ROWS, COLS>;
+    using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
     /// Gain matrix updater operation
     ///

@@ -19,9 +19,8 @@ TRACCC_DEVICE inline void apply_interaction(
     bound_track_parameters_collection_types::view params_view) {
 
     // Type definitions
-    using transform3_type = typename detector_t::transform3;
-    using interactor_type =
-        detray::pointwise_material_interactor<transform3_type>;
+    using algebra_type = typename detector_t::algebra_type;
+    using interactor_type = detray::pointwise_material_interactor<algebra_type>;
 
     // Detector
     detector_t det(det_data);

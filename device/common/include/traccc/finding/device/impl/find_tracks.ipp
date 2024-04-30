@@ -98,13 +98,13 @@ TRACCC_DEVICE inline void find_tracks(
         bound_track_parameters in_par = in_params.at(in_param_id);
 
         const auto& meas = measurements.at(meas_idx);
-        track_state<typename detector_t::transform3> trk_state(meas);
+        track_state<typename detector_t::algebra_type> trk_state(meas);
         const detray::surface<detector_t> sf{det, bcd};
 
         // Run the Kalman update
         sf.template visit_mask<
-            gain_matrix_updater<typename detector_t::transform3>>(trk_state,
-                                                                  in_par);
+            gain_matrix_updater<typename detector_t::algebra_type>>(trk_state,
+                                                                    in_par);
         // Get the chi-square
         const auto chi2 = trk_state.filtered_chi2();
 

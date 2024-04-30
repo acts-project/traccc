@@ -30,8 +30,8 @@ namespace traccc {
 template <typename smearer_t>
 struct smearing_writer : detray::actor {
 
-    using transform3_type = typename smearer_t::transform3_type;
-    using scalar_type = typename transform3_type::scalar_type;
+    using algebra_type = typename smearer_t::algebra_type;
+    using scalar_type = detray::dscalar<algebra_type>;
 
     using measurement_hit_id_writer =
         dfe::NamedTupleCsvWriter<io::csv::measurement_hit_id>;
@@ -68,7 +68,7 @@ struct smearing_writer : detray::actor {
         void set_seed(const uint_fast64_t sd) { m_meas_smearer.set_seed(sd); }
 
         void write_particle(
-            const detray::free_track_parameters<transform3_type>& track) {
+            const detray::free_track_parameters<algebra_type>& track) {
             io::csv::particle particle;
             const auto pos = track.pos();
             const auto mom = track.mom();
@@ -92,7 +92,7 @@ struct smearing_writer : detray::actor {
         template <typename mask_group_t, typename index_t>
         inline void operator()(
             const mask_group_t& mask_group, const index_t& index,
-            const detray::bound_track_parameters<transform3_type>& bound_params,
+            const detray::bound_track_parameters<algebra_type>& bound_params,
             smearer_t& smearer, io::csv::measurement& iomeas) const {
 
             const auto& mask = mask_group[index];

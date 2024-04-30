@@ -20,8 +20,6 @@
 #include <map>
 #include <tuple>
 
-#define __plugin algebra::eigen
-
 namespace traccc {
 
 using scalar = TRACCC_CUSTOM_SCALARTYPE;

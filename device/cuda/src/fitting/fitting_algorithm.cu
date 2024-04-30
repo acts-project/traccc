@@ -104,7 +104,7 @@ using default_detector_type =
     detray::detector<detray::default_metadata, detray::device_container_types>;
 using default_stepper_type =
     detray::rk_stepper<covfie::field<detray::bfield::const_bknd_t>::view_t,
-                       transform3, detray::constrained_step<>>;
+                       default_algebra, detray::constrained_step<>>;
 using default_navigator_type = detray::navigator<const default_detector_type>;
 using default_fitter_type =
     kalman_fitter<default_stepper_type, default_navigator_type>;

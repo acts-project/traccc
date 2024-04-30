@@ -181,10 +181,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                    in_param.covariance());
                 const auto& meas = measurements[item_id];
 
-                track_state<transform3_type> trk_state(meas);
+                track_state<algebra_type> trk_state(meas);
 
                 // Run the Kalman update
-                sf.template visit_mask<gain_matrix_updater<transform3_type>>(
+                sf.template visit_mask<gain_matrix_updater<algebra_type>>(
                     trk_state, bound_param);
 
                 // Get the chi-square
@@ -251,7 +251,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     m_cfg.propagation.stepping.step_constraint);
 
             typename detray::pathlimit_aborter::state s0;
-            typename detray::parameter_transporter<transform3_type>::state s1;
+            typename detray::parameter_transporter<algebra_type>::state s1;
             typename interactor::state s3;
             typename interaction_register<interactor>::state s2{s3};
             typename ckf_aborter::state s4;

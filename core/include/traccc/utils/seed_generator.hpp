@@ -28,7 +28,8 @@ namespace traccc {
 /// Seed track parameter generator
 template <typename detector_t>
 struct seed_generator {
-    using matrix_operator = typename transform3::matrix_actor;
+    using algebra_type = typename detector_t::algebra_type;
+    using matrix_operator = detray::dmatrix_operator<algebra_type>;
     using cxt_t = typename detector_t::geometry_context;
 
     /// Constructor with detector
@@ -62,9 +63,8 @@ struct seed_generator {
         bound_track_parameters bound_param{surface_link, bound_vec, bound_cov};
 
         // Type definitions
-        using transform3_type = typename detector_t::transform3;
         using interactor_type =
-            detray::pointwise_material_interactor<transform3_type>;
+            detray::pointwise_material_interactor<algebra_type>;
 
         // Apply interactor
         typename interactor_type::state interactor_state;

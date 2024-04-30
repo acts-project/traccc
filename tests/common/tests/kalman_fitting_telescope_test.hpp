@@ -24,7 +24,7 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
 
     public:
     /// Plane alignment direction (aligned to x-axis)
-    static const inline detray::detail::ray<transform3> traj{
+    static const inline detray::detail::ray<traccc::default_algebra> traj{
         {0, 0, 0}, 0, {1, 0, 0}, -1};
 
     /// Position of planes (in mm unit)

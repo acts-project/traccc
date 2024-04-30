@@ -139,7 +139,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Type definitions
     using stepper_type =
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           host_detector_type::transform3,
+                           host_detector_type::algebra_type,
                            detray::constrained_step<>>;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using device_navigator_type = detray::navigator<const device_detector_type>;

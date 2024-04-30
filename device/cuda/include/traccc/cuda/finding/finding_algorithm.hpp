@@ -46,25 +46,25 @@ class finding_algorithm
           const typename measurement_collection_types::view&,
           const bound_track_parameters_collection_types::buffer&)> {
 
-    /// Transform3 type
-    using transform3_type = typename stepper_t::transform3_type;
-
     /// Detector type
     using detector_type = typename navigator_t::detector_type;
+
+    /// algebra type
+    using algebra_type = typename detector_type::algebra_type;
+
+    /// scalar type
+    using scalar_type = detray::dscalar<algebra_type>;
 
     /// Field type
     using bfield_type = typename stepper_t::magnetic_field_type;
 
     /// Actor types
-    using interactor = detray::pointwise_material_interactor<transform3_type>;
-
-    /// scalar type
-    using scalar_type = typename transform3_type::scalar_type;
+    using interactor = detray::pointwise_material_interactor<algebra_type>;
 
     /// Actor chain for propagate to the next surface and its propagator type
     using actor_type =
         detray::actor_chain<std::tuple, detray::pathlimit_aborter,
-                            detray::parameter_transporter<transform3_type>,
+                            detray::parameter_transporter<algebra_type>,
                             interaction_register<interactor>, interactor,
                             ckf_aborter>;
 

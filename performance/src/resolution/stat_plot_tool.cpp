@@ -50,8 +50,9 @@ void stat_plot_tool::book(stat_plot_cache& cache) const {
 #endif  // TRACCC_HAVE_ROOT
 }
 
-void stat_plot_tool::fill(stat_plot_cache& cache,
-                          const fitting_result<transform3>& fit_res) const {
+void stat_plot_tool::fill(
+    stat_plot_cache& cache,
+    const fitting_result<traccc::default_algebra>& fit_res) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
@@ -67,8 +68,9 @@ void stat_plot_tool::fill(stat_plot_cache& cache,
 #endif  // TRACCC_HAVE_ROOT
 }
 
-void stat_plot_tool::fill(stat_plot_cache& cache,
-                          const track_state<transform3>& trk_state) const {
+void stat_plot_tool::fill(
+    stat_plot_cache& cache,
+    const track_state<traccc::default_algebra>& trk_state) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;

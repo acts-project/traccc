@@ -69,7 +69,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t,
-                           typename host_detector_type::transform3,
+                           typename host_detector_type::algebra_type,
                            detray::constrained_step<>>;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using host_fitter_type =

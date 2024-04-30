@@ -53,7 +53,7 @@ struct measurement {
     unsigned int meas_dim = 2u;
 
     /// subspace
-    subspace<transform3, e_bound_size, 2u> subs{{0u, 1u}};
+    subspace<default_algebra, e_bound_size, 2u> subs{{0u, 1u}};
 };
 
 /// Comparison / ordering operator for measurements

@@ -52,8 +52,8 @@ bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
 
     scalar deltaCotTheta = lb.cotTheta() - lt.cotTheta();
     scalar deltaCotTheta2 = deltaCotTheta * deltaCotTheta;
-    scalar error;
-    scalar dCotThetaMinusError2;
+    scalar error{0.f};
+    scalar dCotThetaMinusError2{0.f};
 
     // if the error is larger than the difference in theta, no need to
     // compare with scattering
