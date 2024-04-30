@@ -51,6 +51,7 @@ endif()
 # Flags controlling which parts of traccc to build.
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
+option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
    FALSE )
@@ -117,6 +118,17 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
    "Extra options for configuring how Thrust should be used" )
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+
+option( TRACCC_USE_SYSTEM_ROCTHRUST
+   "Pick up an existing installation of Thrust from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_BUILD_HIP )
+   if( TRACCC_USE_SYSTEM_ROCTHRUST )
+      find_package( rocThrust REQUIRED )
+   else()
+      add_subdirectory( extern/rocThrust )
+   endif()
+endif()
 
 # Set up TBB.
 option( TRACCC_SETUP_TBB
