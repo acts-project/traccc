@@ -15,11 +15,11 @@ clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr)
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells_view,
-    const cell_module_collection_types::const_view& modules_view) const {
+    const detector_description::const_view& dd_view) const {
 
     const sparse_ccl_algorithm::output_type clusters = m_cc(cells_view);
     const auto clusters_data = get_data(clusters);
-    return m_mc(clusters_data, modules_view);
+    return m_mc(clusters_data, dd_view);
 }
 
 }  // namespace traccc::host

@@ -13,23 +13,29 @@ namespace traccc::details {
 
 TRACCC_HOST_DEVICE
 inline scalar signal_cell_modelling(scalar signal_in,
-                                    const cell_module& /*mod*/) {
+                                    const detector_description::const_device&) {
     return signal_in;
 }
 
 TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(const cell& cell, const cell_module& mod) {
+inline vector2 position_from_cell(
+    const cell& cell, const detector_description::const_device& det_descr) {
 
     // Retrieve the specific values based on module idx
-    return {mod.pixel.min_corner_x +
-                (scalar{0.5} + cell.channel0) * mod.pixel.pitch_x,
-            mod.pixel.min_corner_y +
-                (scalar{0.5} + cell.channel1) * mod.pixel.pitch_y};
+    const cell::link_type module_link = cell.module_link;
+    return {
+        det_descr.reference_x().at(module_link) +
+            (scalar{0.5} + cell.channel0) * det_descr.pitch_x().at(module_link),
+        det_descr.reference_y().at(module_link) +
+            (scalar{0.5} + cell.channel1) *
+                det_descr.pitch_y().at(module_link)};
 }
 
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
-    const cell_collection_types::const_device& cluster, const cell_module& mod,
-    point2& mean, point2& var, scalar& totalWeight) {
+    const cell_collection_types::const_device& cluster,
+    const detector_description::const_device& det_descr, point2& mean,
+    point2& var, scalar& totalWeight) {
+
     point2 offset{0., 0.};
     bool first_processed = false;
 
@@ -37,14 +43,16 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     for (const cell& cell : cluster) {
 
         // Translate the cell readout value into a weight.
-        const scalar weight = signal_cell_modelling(cell.activation, mod);
+        const scalar weight = signal_cell_modelling(cell.activation, det_descr);
 
         // Only consider cells over a minimum threshold.
-        if (weight > mod.threshold) {
+        if (weight > det_descr.threshold().at(cell.module_link)) {
+
+            // Update all output properties with this cell.
             totalWeight += weight;
             scalar weight_factor = weight / totalWeight;
 
-            point2 cell_position = position_from_cell(cell, mod);
+            point2 cell_position = position_from_cell(cell, det_descr);
 
             if (!first_processed) {
                 offset = cell_position;
@@ -69,9 +77,9 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 
 TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement_collection_types::device& measurements,
-    std::size_t measurement_index,
-    const cell_collection_types::const_device& cluster, const cell_module& mod,
-    const unsigned int mod_link) {
+    const measurement_collection_types::device::size_type index,
+    const cell_collection_types::const_device& cluster,
+    const detector_description::const_device& det_descr) {
 
     // To calculate the mean and variance with high numerical stability
     // we use a weighted variant of Welford's algorithm. This is a
@@ -83,29 +91,36 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     // [2] The Art of Computer Programming, Donald E. Knuth, second
     //     edition, chapter 4.2.2.
 
+    // A security check.
+    assert(cluster.empty() == false);
+
     // Calculate the cluster properties
     scalar totalWeight = 0.f;
     point2 mean{0.f, 0.f}, var{0.f, 0.f};
-    calc_cluster_properties(cluster, mod, mean, var, totalWeight);
+    calc_cluster_properties(cluster, det_descr, mean, var, totalWeight);
 
     assert(totalWeight > 0.f);
 
     // Access the measurement in question.
-    measurement& m = measurements[measurement_index];
+    measurement& m = measurements[index];
 
-    m.module_link = mod_link;
-    m.surface_link = mod.surface_link;
+    // The index of the module the cluster is on.
+    const cell::link_type module_link = cluster.at(0).module_link;
+
+    m.module_link = module_link;
+    m.surface_link = det_descr.surface_link().at(module_link);
     // normalize the cell position
     m.local = mean;
 
     // plus pitch^2 / 12
-    const auto pitch = mod.pixel.get_pitch();
-    m.variance = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
-                              pitch[1] * pitch[1] / static_cast<scalar>(12.)};
-    // @todo add variance estimation
+    const scalar pitch_x = det_descr.pitch_x().at(module_link);
+    const scalar pitch_y = det_descr.pitch_y().at(module_link);
+    m.variance =
+        var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
+                            pitch_y * pitch_y / static_cast<scalar>(12.)};
 
     // For the ambiguity resolution algorithm, give a unique measurement ID
-    m.measurement_id = measurement_index;
+    m.measurement_id = index;
 
     // Adjust the measurement object for 1D surfaces.
     if (mod.pixel.dimension == 1) {
