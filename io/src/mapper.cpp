@@ -13,6 +13,7 @@
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 #include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
@@ -211,6 +212,12 @@ generate_measurement_cell_map(std::size_t event,
     host::sparse_ccl_algorithm cc(resource);
     host::measurement_creation_algorithm mc(resource);
 
+    // Construct a detector description object.
+    detector_description::host detector_description{resource};
+    io::read_detector_description(detector_description, detector_file,
+                                  digi_config_file, traccc::data_format::csv);
+    detector_description::data dd_data{vecmem::get_data(detector_description)};
+
     // Read the surface transforms
     auto [surface_transforms, _] = io::read_geometry(detector_file);
 
@@ -226,8 +233,7 @@ generate_measurement_cell_map(std::size_t event,
 
     auto clusters_per_event = cc(vecmem::get_data(cells_per_event));
     auto clusters_data = traccc::get_data(clusters_per_event);
-    auto measurements_per_event =
-        mc(clusters_data, vecmem::get_data(modules_per_event));
+    auto measurements_per_event = mc(clusters_data, dd_data);
 
     assert(measurements_per_event.size() == clusters_per_event.size());
     for (unsigned int i = 0; i < measurements_per_event.size(); ++i) {

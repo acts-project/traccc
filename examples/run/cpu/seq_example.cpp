@@ -7,6 +7,8 @@
 
 // io
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
@@ -71,33 +73,28 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
 
+    // Construct the detector description object.
+    traccc::detector_description::host det_descr{host_mr};
+    auto barcode_map2 = traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
+    traccc::detector_description::data det_descr_data{
+        vecmem::get_data(det_descr)};
+
+    // Construct a Detray detector object.
+    traccc::default_detector::host detector{host_mr};
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            detector, host_mr, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
+    }
+
     // Read in the geometry.
     auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
         detector_opts.detector_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json
                                            : traccc::data_format::csv));
-
-    using detector_type = detray::detector<detray::default_metadata,
-                                           detray::host_container_types>;
-    detector_type detector{host_mr};
-    if (detector_opts.use_detray_detector) {
-        // Set up the detector reader configuration.
-        detray::io::detector_reader_config cfg;
-        cfg.add_file(traccc::io::data_directory() +
-                     detector_opts.detector_file);
-        if (detector_opts.material_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.material_file);
-        }
-        if (detector_opts.grid_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.grid_file);
-        }
-
-        // Read the detector.
-        auto det = detray::io::read_detector<detector_type>(host_mr, cfg);
-        detector = std::move(det.first);
-    }
 
     // Read the digitization configuration file
     auto digi_cfg =
@@ -116,9 +113,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Type definitions
     using stepper_type =
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           detector_type::algebra_type,
+                           traccc::default_detector::host::algebra_type,
                            detray::constrained_step<>>;
-    using navigator_type = detray::navigator<const detector_type>;
+    using navigator_type =
+        detray::navigator<const traccc::default_detector::host>;
     using finding_algorithm =
         traccc::finding_algorithm<stepper_type, navigator_type>;
     using fitting_algorithm = traccc::fitting_algorithm<
@@ -205,8 +203,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 traccc::performance::timer timer{"Clusterization",
                                                  elapsedTimes};
                 measurements_per_event =
-                    ca(vecmem::get_data(cells_per_event),
-                       vecmem::get_data(modules_per_event));
+                    ca(vecmem::get_data(cells_per_event), det_descr_data);
             }
 
             /*------------------------
