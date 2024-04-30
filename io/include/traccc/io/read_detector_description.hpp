@@ -19,7 +19,6 @@
 // System include(s).
 #include <cstdint>
 #include <map>
-#include <optional>
 #include <string_view>
 
 namespace traccc::io {
@@ -33,11 +32,10 @@ namespace traccc::io {
 /// @param digitization_format The format of the digitization configuration
 ///                            file.
 ///
-std::optional<std::map<std::uint64_t, detray::geometry::barcode> >
-read_detector_description(detector_description::host& dd,
-                          std::string_view geometry_file,
-                          std::string_view digitization_file,
-                          data_format geometry_format = data_format::json,
-                          data_format digitization_format = data_format::json);
+void read_detector_description(
+    detector_description::host& dd, std::string_view geometry_file,
+    std::string_view digitization_file,
+    data_format geometry_format = data_format::json,
+    data_format digitization_format = data_format::json);
 
 }  // namespace traccc::io
