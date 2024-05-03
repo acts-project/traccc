@@ -69,6 +69,7 @@ void read_csv_dd(traccc::detector_description::host& dd,
         // the surface in question.
         dd.surface_link().back() = detray::geometry::barcode{geom_id};
         dd.placement().back() = transform;
+        dd.geometry_id().back() = geom_id;
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =
@@ -103,8 +104,9 @@ void read_json_dd(traccc::detector_description::host& dd,
     dd.reserve(surfaces.size());
     for (const auto& surface_desc : detector.surfaces()) {
 
-        // Acts geometry identifier for the surface.
-        const Acts::GeometryIdentifier acts_geom_id{surface_desc.source};
+        // Acts geometry identifier(s) for the surface.
+        const traccc::geometry_id geom_id{surface_desc.source};
+        const Acts::GeometryIdentifier acts_geom_id{geom_id};
 
         // Skip non-sensitive surfaces. They are not needed in the
         // "detector description".
@@ -123,6 +125,7 @@ void read_json_dd(traccc::detector_description::host& dd,
         // the surface in question.
         dd.surface_link().back() = surface_desc.barcode();
         dd.placement().back() = surface.transform(ctx);
+        dd.geometry_id().back() = geom_id;
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =
