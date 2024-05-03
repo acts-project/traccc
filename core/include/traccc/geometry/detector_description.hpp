@@ -75,6 +75,25 @@ class detector_description_interface : public BASE {
     /// @name Detector module information
     /// @{
 
+    /// Geometry identifier for the detector module (non-const)
+    ///
+    /// It is the "Acts geometry ID" for the module, as used in the simulation
+    /// files that we use.
+    ///
+    /// @return A (non-const) vector of @c traccc::geometry_id values
+    ///
+    TRACCC_HOST_DEVICE
+    auto& geometry_id() { return BASE::template get<2>(); }
+    /// Geometry identifier for the detector module (const)
+    ///
+    /// It is the "Acts geometry ID" for the module, as used in the simulation
+    /// files that we use.
+    ///
+    /// @return A (const) vector of @c traccc::geometry_id values
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& geometry_id() const { return BASE::template get<2>(); }
+
     /// Signal threshold for detection elements (non-const)
     ///
     /// It controls which elements (pixels and strips) are considered during
@@ -83,7 +102,7 @@ class detector_description_interface : public BASE {
     /// @return A (non-const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    auto& threshold() { return BASE::template get<2>(); }
+    auto& threshold() { return BASE::template get<3>(); }
     /// Signal threshold for detection elements (const)
     ///
     /// It controls which elements (pixels and strips) are considered during
@@ -92,7 +111,7 @@ class detector_description_interface : public BASE {
     /// @return A (const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    const auto& threshold() const { return BASE::template get<2>(); }
+    const auto& threshold() const { return BASE::template get<3>(); }
 
     /// Reference for local position calculation in X direction (non-const)
     ///
@@ -103,7 +122,7 @@ class detector_description_interface : public BASE {
     /// @return A (non-const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    auto& reference_x() { return BASE::template get<3>(); }
+    auto& reference_x() { return BASE::template get<4>(); }
     /// Reference for local position calculation in X direction (const)
     ///
     /// The position of a detector element (pixel or strip) is calculated
@@ -113,7 +132,7 @@ class detector_description_interface : public BASE {
     /// @return A (const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    const auto& reference_x() const { return BASE::template get<3>(); }
+    const auto& reference_x() const { return BASE::template get<4>(); }
 
     /// Reference for local position calculation in Y direction (non-const)
     ///
@@ -124,7 +143,7 @@ class detector_description_interface : public BASE {
     /// @return A (non-const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    auto& reference_y() { return BASE::template get<4>(); }
+    auto& reference_y() { return BASE::template get<5>(); }
     /// Reference for local position calculation in Y direction (const)
     ///
     /// The position of a detector element (pixel or strip) is calculated
@@ -134,7 +153,7 @@ class detector_description_interface : public BASE {
     /// @return A (const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    const auto& reference_y() const { return BASE::template get<4>(); }
+    const auto& reference_y() const { return BASE::template get<5>(); }
 
     /// Pitch for local position calculation in X direction (non-const)
     ///
@@ -145,7 +164,7 @@ class detector_description_interface : public BASE {
     /// @return A (non-const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    auto& pitch_x() { return BASE::template get<5>(); }
+    auto& pitch_x() { return BASE::template get<6>(); }
     /// Pitch for local position calculation in X direction (const)
     ///
     /// The position of a detector element (pixel or strip) is calculated
@@ -155,7 +174,7 @@ class detector_description_interface : public BASE {
     /// @return A (const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    const auto& pitch_x() const { return BASE::template get<5>(); }
+    const auto& pitch_x() const { return BASE::template get<6>(); }
 
     /// Pitch for local position calculation in Y direction (non-const)
     ///
@@ -166,7 +185,7 @@ class detector_description_interface : public BASE {
     /// @return A (non-const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    auto& pitch_y() { return BASE::template get<6>(); }
+    auto& pitch_y() { return BASE::template get<7>(); }
     /// Pitch for local position calculation in Y direction (const)
     ///
     /// The position of a detector element (pixel or strip) is calculated
@@ -176,7 +195,7 @@ class detector_description_interface : public BASE {
     /// @return A (const) vector of @c traccc::scalar objects
     ///
     TRACCC_HOST_DEVICE
-    const auto& pitch_y() const { return BASE::template get<6>(); }
+    const auto& pitch_y() const { return BASE::template get<7>(); }
 
     /// @}
 
@@ -186,7 +205,8 @@ class detector_description_interface : public BASE {
 using detector_description = vecmem::edm::container<
     detector_description_interface,
     vecmem::edm::type::vector<detray::geometry::barcode>,
-    vecmem::edm::type::vector<transform3>, vecmem::edm::type::vector<scalar>,
+    vecmem::edm::type::vector<transform3>,
+    vecmem::edm::type::vector<geometry_id>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>>;
 
