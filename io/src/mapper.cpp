@@ -199,12 +199,9 @@ cell_particle_map generate_cell_particle_map(std::size_t event,
     return result;
 }
 
-std::tuple<measurement_cell_map, cell_module_collection_types::host>
-generate_measurement_cell_map(std::size_t event,
-                              const std::string& detector_file,
-                              const std::string& digi_config_file,
-                              const std::string& cells_dir,
-                              vecmem::memory_resource& resource) {
+measurement_cell_map generate_measurement_cell_map(
+    std::size_t event, const std::string& cells_dir,
+    const detector_description::host& dd, vecmem::memory_resource& resource) {
 
     measurement_cell_map result;
 
@@ -212,26 +209,15 @@ generate_measurement_cell_map(std::size_t event,
     host::sparse_ccl_algorithm cc(resource);
     host::measurement_creation_algorithm mc(resource);
 
-    // Construct a detector description object.
-    detector_description::host detector_description{resource};
-    io::read_detector_description(detector_description, detector_file,
-                                  digi_config_file, traccc::data_format::csv);
-    detector_description::data dd_data{vecmem::get_data(detector_description)};
-
-    // Read the surface transforms
-    auto [surface_transforms, _] = io::read_geometry(detector_file);
-
-    // Read the digitization configuration file
-    auto digi_cfg = io::read_digitization_config(digi_config_file);
+    // Construct a detector description data object.
+    detector_description::const_data dd_data{vecmem::get_data(dd)};
 
     // Read the cells from the relevant event file
-    traccc::io::cell_reader_output readOut(&resource);
-    io::read_cells(readOut, event, cells_dir, traccc::data_format::csv,
-                   &surface_transforms, &digi_cfg, nullptr, false);
-    cell_collection_types::host& cells_per_event = readOut.cells;
-    cell_module_collection_types::host& modules_per_event = readOut.modules;
+    cell_collection_types::host cells(&resource);
+    io::read_cells(cells, event, cells_dir, &dd, traccc::data_format::csv,
+                   false);
 
-    auto clusters_per_event = cc(vecmem::get_data(cells_per_event));
+    auto clusters_per_event = cc(vecmem::get_data(cells));
     auto clusters_data = traccc::get_data(clusters_per_event);
     auto measurements_per_event = mc(clusters_data, dd_data);
 
@@ -242,28 +228,24 @@ generate_measurement_cell_map(std::size_t event,
         result[measurements_per_event[i]] = clus;
     }
 
-    return {result, modules_per_event};
+    return result;
 }
 
 measurement_particle_map generate_measurement_particle_map(
-    std::size_t event, const std::string& detector_file,
-    const std::string& digi_config_file, const std::string& cells_dir,
+    std::size_t event, const std::string& cells_dir,
     const std::string& hits_dir, const std::string& particle_dir,
-    vecmem::memory_resource& resource) {
+    const detector_description::host& dd, vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
 
     // generate measurement cell map
-    auto gen_m_c_map = generate_measurement_cell_map(
-        event, detector_file, digi_config_file, cells_dir, resource);
-    auto& m_c_map = std::get<0>(gen_m_c_map);
-    auto& modules = std::get<1>(gen_m_c_map);
+    auto m_c_map =
+        generate_measurement_cell_map(event, cells_dir, dd, resource);
 
     // generate geometry_id link map
     geoId_link_map link_map;
-
-    for (unsigned int i = 0; i < modules.size(); ++i) {
-        link_map[modules[i].surface_link.value()] = i;
+    for (unsigned int i = 0; i < dd.geometry_id().size(); ++i) {
+        link_map[dd.geometry_id()[i]] = i;
     }
 
     // generate cell particle map
@@ -280,14 +262,12 @@ measurement_particle_map generate_measurement_particle_map(
 }
 
 measurement_particle_map generate_measurement_particle_map(
-    std::size_t event, const std::string& detector_file,
+    std::size_t event,
     const std::string& hits_dir, const std::string& particle_dir,
+    const detector_description::host& detector_file,
     vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
-
-    // Read the surface transforms
-    auto [surface_transforms, _] = io::read_geometry(detector_file);
 
     // Read the spacepoints from the relevant event file
     traccc::io::spacepoint_reader_output readOut(&resource);
