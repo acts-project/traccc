@@ -15,6 +15,7 @@
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
+#include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
 
 // detray include(s).
@@ -66,7 +67,7 @@ class kalman_fitter {
 
     using actor_chain_type =
         detray::actor_chain<std::tuple, aborter, transporter, interactor,
-                            fit_actor, resetter>;
+                            fit_actor, resetter, kalman_step_aborter>;
 
     // Propagator type
     using propagator_type =
@@ -102,7 +103,7 @@ class kalman_fitter {
         typename actor_chain_type::state operator()() {
             return std::tie(m_aborter_state, m_transporter_state,
                             m_interactor_state, m_fit_actor_state,
-                            m_resetter_state);
+                            m_resetter_state, m_step_aborter_state);
         }
 
         /// Individual actor states
@@ -111,6 +112,7 @@ class kalman_fitter {
         typename interactor::state m_interactor_state{};
         typename fit_actor::state m_fit_actor_state;
         typename resetter::state m_resetter_state{};
+        kalman_step_aborter::state m_step_aborter_state{};
 
         /// Fitting result per track
         fitting_result<algebra_type> m_fit_res;

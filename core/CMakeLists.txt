@@ -68,6 +68,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
   "include/traccc/fitting/kalman_filter/kalman_actor.hpp"
   "include/traccc/fitting/kalman_filter/kalman_fitter.hpp"
+  "include/traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
   "include/traccc/fitting/kalman_filter/statistics_updater.hpp"
   "include/traccc/fitting/fitting_algorithm.hpp"
   # Seed finding algorithmic code.
