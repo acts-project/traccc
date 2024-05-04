@@ -29,7 +29,7 @@ namespace details {
 using index_t = unsigned short;
 
 static constexpr int TARGET_CELLS_PER_THREAD = 8;
-static constexpr int MAX_CELLS_PER_THREAD = 12;
+static constexpr int MAX_CELLS_PER_THREAD = 32;
 
 /// Helper struct for calculating some of the input parameters of @c ccl_kernel
 struct ccl_kernel_helper {
