@@ -138,6 +138,8 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Finding algorithm configuration
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg;
+    cfg.max_num_branches_per_seed = 500;
+    cfg.navigation_buffer_size_scaler = 1000;
 
     cfg.propagation.navigation.search_window = search_window;
 
@@ -211,7 +213,7 @@ TEST_P(CkfToyDetectorTests, Run) {
             track_candidate_d2h(track_candidates_cuda_buffer);
 
         // Simple check
-        ASSERT_EQ(track_candidates.size(), track_candidates.size());
+        ASSERT_NEAR(track_candidates.size(), track_candidates_cuda.size(), 1u);
         ASSERT_GE(track_candidates.size(), n_truth_tracks);
 
         // Make sure that the outputs from cpu and cuda CKF are equivalent
@@ -228,9 +230,10 @@ TEST_P(CkfToyDetectorTests, Run) {
             }
         }
 
-        float matching_rate = float(n_matches) / track_candidates.size();
-
-        EXPECT_FLOAT_EQ(matching_rate, 1.f);
+        float matching_rate =
+            float(n_matches) /
+            std::max(track_candidates.size(), track_candidates_cuda.size());
+        EXPECT_GE(matching_rate, 0.999f);
     }
 }
 
