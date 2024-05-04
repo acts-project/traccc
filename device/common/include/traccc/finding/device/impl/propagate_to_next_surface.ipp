@@ -23,14 +23,37 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     vecmem::data::vector_view<unsigned int> param_to_link_view,
     vecmem::data::vector_view<typename candidate_link::link_index_type>
         tips_view,
+    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view,
     unsigned int& n_out_params) {
 
     if (globalIndex >= n_in_params) {
         return;
     }
 
+    // Number of tracks per seed
+    vecmem::device_vector<unsigned int> n_tracks_per_seed(
+        n_tracks_per_seed_view);
+
     // Links
     vecmem::device_vector<const candidate_link> links(links_view);
+
+    // Seed id
+    unsigned int orig_param_id = links.at(globalIndex).seed_idx;
+
+    // Navigation candidate buffer
+    vecmem::jagged_device_vector<typename propagator_t::intersection_type>
+        nav_candidates(nav_candidates_buffer);
+
+    // Count the number of tracks per seed
+    vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+        n_tracks_per_seed.at(orig_param_id));
+
+    const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
+
+    if (s_pos >= cfg.max_num_branches_per_seed ||
+        globalIndex >= nav_candidates.size()) {
+        return;
+    }
 
     // tips
     vecmem::device_vector<typename candidate_link::link_index_type> tips(
@@ -43,10 +66,6 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     // Detector
     typename propagator_t::detector_type det(det_data);
-
-    // Navigation candidate buffer
-    vecmem::jagged_device_vector<typename propagator_t::intersection_type>
-        nav_candidates(nav_candidates_buffer);
 
     // Input parameters
     bound_track_parameters_collection_types::const_device in_params(

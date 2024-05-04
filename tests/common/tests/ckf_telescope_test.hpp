@@ -18,4 +18,12 @@ class CkfSparseTrackTelescopeTests : public KalmanFittingTelescopeTests {};
 /// Combinatorial Kalman Finding Test with Identical tracks
 class CkfCombinatoricsTelescopeTests : public KalmanFittingTelescopeTests {};
 
+/// Combinatorial Kalman Finding Test with Identical tracks (CPU)
+class CpuCkfCombinatoricsTelescopeTests
+    : public CkfCombinatoricsTelescopeTests {};
+
+/// Combinatorial Kalman Finding Test with Identical tracks (CUDA)
+class CudaCkfCombinatoricsTelescopeTests
+    : public CkfCombinatoricsTelescopeTests {};
+
 }  // namespace traccc

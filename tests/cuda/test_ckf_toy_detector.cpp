@@ -194,7 +194,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Navigation buffer
         auto navigation_buffer = detray::create_candidates_buffer(
             host_det,
-            device_finding.get_config().max_num_branches_per_seed *
+            device_finding.get_config().navigation_buffer_size_scaler *
                 seeds.size(),
             mr.main, mr.host);
 

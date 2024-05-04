@@ -16,8 +16,8 @@ namespace traccc {
 /// Configuration struct for track finding
 template <typename scalar_t>
 struct finding_config {
-    /// @NOTE: This paramter might be removed
-    unsigned int max_num_branches_per_seed = 100;
+    /// Maxmimum number of branches per seed
+    unsigned int max_num_branches_per_seed = 10;
 
     /// Maximum number of branches per surface
     unsigned int max_num_branches_per_surface = 10;
@@ -25,10 +25,6 @@ struct finding_config {
     /// Min/Max number of track candidates per track
     unsigned int min_track_candidates_per_track = 3;
     unsigned int max_track_candidates_per_track = 100;
-
-    /// Maximum number of branches per initial seed
-    unsigned int max_num_branches_per_initial_seed =
-        std::numeric_limits<unsigned int>::max();
 
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;
@@ -47,9 +43,16 @@ struct finding_config {
     /// Propagation configuration
     detray::propagation::config<scalar_t> propagation{};
 
-    /// GPU-specific parameter for the number of measurements to be
-    /// iterated per thread
+    /****************************
+     *  GPU-specfic parameters
+     ****************************/
+    /// The number of measurements to be iterated per thread
     unsigned int n_measurements_per_thread = 8;
+
+    /// Max number of candidates per seed used for navigation buffer creation
+    /// @NOTE: This is supposed to be larger than (at least equal to)
+    /// max_num_branches_per_seed
+    unsigned int navigation_buffer_size_scaler = 20;
 };
 
 }  // namespace traccc
