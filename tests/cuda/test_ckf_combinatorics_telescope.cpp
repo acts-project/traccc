@@ -1,16 +1,17 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
-#include "traccc/finding/finding_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
+#include "traccc/io/event_map2.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/ranges.hpp"
 
@@ -24,7 +25,10 @@
 #include "detray/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -35,7 +39,7 @@
 
 using namespace traccc;
 // This defines the local frame test suite
-TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
+TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
@@ -55,6 +59,9 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    vecmem::cuda::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
+    vecmem::cuda::managed_memory_resource mng_mr;
 
     // Read back detector file
     const std::string path = name + "/";
@@ -62,10 +69,13 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     reader_cfg.add_file(path + "telescope_detector_geometry.json")
         .add_file(path + "telescope_detector_homogeneous_material.json");
 
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+    auto [host_det, names] =
+        detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     auto field = detray::bfield::create_const_field(B);
+
+    // Detector view object
+    auto det_view = detray::get_data(host_det);
 
     /***************************
      * Generate simulation data
@@ -107,24 +117,42 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
      * Do the reconstruction
      *****************************/
 
+    // Stream object
+    traccc::cuda::stream stream;
+
+    // Copy objects
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
+
+    traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
+        measurement_h2d{mr, copy};
+
+    traccc::device::container_d2h_copy_alg<
+        traccc::track_candidate_container_types>
+        track_candidate_d2h{mr, copy};
+
+    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
+        track_state_d2h{mr, copy};
+
     // Seed generator
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg_no_limit;
-    cfg_no_limit.max_num_branches_per_seed =
-        std::numeric_limits<unsigned int>::max();
+    typename traccc::cuda::finding_algorithm<
+        rk_stepper_type, device_navigator_type>::config_type cfg_no_limit;
+    cfg_no_limit.max_num_branches_per_seed = 100000;
+    cfg_no_limit.navigation_buffer_size_scaler =
+        cfg_no_limit.max_num_branches_per_seed;
 
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg_limit;
+    typename traccc::cuda::finding_algorithm<
+        rk_stepper_type, device_navigator_type>::config_type cfg_limit;
     cfg_limit.max_num_branches_per_seed = 500;
+    cfg_limit.navigation_buffer_size_scaler = 5000;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg_no_limit);
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding_limit(cfg_limit);
+    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
+        device_finding(cfg_no_limit, mr, copy, stream);
+    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
+        device_finding_limit(cfg_limit, mr, copy, stream);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -144,6 +172,12 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
+        traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
+            static_cast<unsigned int>(seeds.size()), mr.main};
+        copy.setup(seeds_buffer);
+        copy(vecmem::get_data(seeds), seeds_buffer,
+             vecmem::copy::type::host_to_device);
+
         // Read measurements
         traccc::io::measurement_reader_output readOut(&host_mr);
         traccc::io::read_measurements(readOut, i_evt, path,
@@ -151,25 +185,66 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
         traccc::measurement_collection_types::host& measurements_per_event =
             readOut.measurements;
 
-        // Run finding
-        auto track_candidates =
-            host_finding(host_det, field, measurements_per_event, seeds);
+        traccc::measurement_collection_types::buffer measurements_buffer(
+            measurements_per_event.size(), mr.main);
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
 
-        auto track_candidates_limit =
-            host_finding_limit(host_det, field, measurements_per_event, seeds);
+        // Instantiate output cuda containers/collections
+        traccc::track_candidate_container_types::buffer
+            track_candidates_cuda_buffer{{{}, *(mr.host)},
+                                         {{}, *(mr.host), mr.host}};
+        copy.setup(track_candidates_cuda_buffer.headers);
+        copy.setup(track_candidates_cuda_buffer.items);
+
+        traccc::track_candidate_container_types::buffer
+            track_candidates_limit_cuda_buffer{{{}, *(mr.host)},
+                                               {{}, *(mr.host), mr.host}};
+        copy.setup(track_candidates_limit_cuda_buffer.headers);
+        copy.setup(track_candidates_limit_cuda_buffer.items);
+
+        // Navigation buffer
+        auto navigation_buffer = detray::create_candidates_buffer(
+            host_det,
+            device_finding.get_config().navigation_buffer_size_scaler *
+                seeds.size(),
+            mr.main, mr.host);
+
+        auto navigation_limit_buffer = detray::create_candidates_buffer(
+            host_det,
+            device_finding_limit.get_config().navigation_buffer_size_scaler *
+                seeds.size(),
+            mr.main, mr.host);
+
+        // Run device finding
+        track_candidates_cuda_buffer =
+            device_finding(det_view, field, navigation_buffer,
+                           measurements_buffer, seeds_buffer);
+
+        // Run device finding (Limit)
+        track_candidates_limit_cuda_buffer =
+            device_finding_limit(det_view, field, navigation_limit_buffer,
+                                 measurements_buffer, seeds_buffer);
+
+        traccc::track_candidate_container_types::host track_candidates_cuda =
+            track_candidate_d2h(track_candidates_cuda_buffer);
+        traccc::track_candidate_container_types::host
+            track_candidates_limit_cuda =
+                track_candidate_d2h(track_candidates_limit_cuda_buffer);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
-        ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());
-        ASSERT_EQ(track_candidates.size(),
+        ASSERT_TRUE(track_candidates_cuda.size() >
+                    track_candidates_limit_cuda.size());
+        ASSERT_EQ(track_candidates_cuda.size(),
                   std::pow(n_truth_tracks, plane_positions.size() + 1));
-        ASSERT_EQ(track_candidates_limit.size(),
+        ASSERT_EQ(track_candidates_limit_cuda.size(),
                   n_truth_tracks * cfg_limit.max_num_branches_per_seed);
     }
 }
 
 // Testing two identical tracks
 INSTANTIATE_TEST_SUITE_P(
-    CpuCkfCombinatoricsTelescopeValidation0, CpuCkfCombinatoricsTelescopeTests,
+    CudaCkfCombinatoricsTelescopeValidation0,
+    CudaCkfCombinatoricsTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -178,7 +253,8 @@ INSTANTIATE_TEST_SUITE_P(
 
 // Testing three identical tracks
 INSTANTIATE_TEST_SUITE_P(
-    CpuCkfCombinatoricsTelescopeValidation1, CpuCkfCombinatoricsTelescopeTests,
+    CudaCkfCombinatoricsTelescopeValidation1,
+    CudaCkfCombinatoricsTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},

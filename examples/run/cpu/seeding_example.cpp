@@ -143,7 +143,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.max_step_counts_for_next_surface =
         finding_opts.max_step_counts_for_next_surface;
     cfg.chi2_max = finding_opts.chi2_max;
-    cfg.max_num_branches_per_initial_seed = finding_opts.nmax_per_seed;
+    cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
     cfg.max_num_skipping_per_cand = finding_opts.max_num_skipping_per_cand;
     propagation_opts.setup(cfg.propagation);
 
