@@ -21,10 +21,11 @@
 
 namespace traccc::io::csv {
 
-void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
-                      std::string_view meas_filename,
-                      std::string_view meas_hit_map_filename,
-                      const geometry& geom) {
+void read_spacepoints(
+    spacepoint_reader_output& out, std::string_view filename,
+    std::string_view meas_filename, std::string_view meas_hit_map_filename,
+    const geometry& geom,
+    std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
     // Read measurements
     measurement_reader_output meas_reader_out;
     read_measurements(meas_reader_out, meas_filename, false);
@@ -59,7 +60,11 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
             m[iohit.geometry_id] = link;
             cell_module mod;
             mod.surface_link = detray::geometry::barcode{iohit.geometry_id};
-            mod.placement = geom[iohit.geometry_id];
+            if (barcode_map == nullptr) {
+                mod.placement = geom[iohit.geometry_id];
+            } else {
+                mod.placement = geom[(*barcode_map)[iohit.geometry_id].value()];
+            }
             result_modules.push_back(mod);
         }
 

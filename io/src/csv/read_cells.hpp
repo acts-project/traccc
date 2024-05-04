@@ -34,6 +34,7 @@ void read_cells(cell_reader_output& out, std::string_view filename,
                 const digitization_config* dconfig = nullptr,
                 const std::map<std::uint64_t, detray::geometry::barcode>*
                     barcode_map = nullptr,
+                std::map<uint64_t, uint64_t>* geo_map = nullptr,
                 bool deduplicate = true);
 
 }  // namespace traccc::io::csv

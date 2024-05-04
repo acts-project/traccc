@@ -1,4 +1,4 @@
-geometry_id,hit_id,channel0,channel1,timestamp,value
+geometry_id,measurement_id,channel0,channel1,timestamp,value
 576460889742407168,0,1,0,0,0.0041470062
 576460889742407168,0,0,1,0,0.00306466641
 576460889742407168,0,1,1,0,0.00868905429

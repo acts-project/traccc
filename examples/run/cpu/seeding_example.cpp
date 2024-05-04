@@ -165,7 +165,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         // Read the hits from the relevant event file
         traccc::io::spacepoint_reader_output readOut(&host_mr);
         traccc::io::read_spacepoints(readOut, event, input_opts.directory,
-                                     surface_transforms, input_opts.format);
+                                     surface_transforms, nullptr,
+                                     input_opts.format);
         traccc::spacepoint_collection_types::host& spacepoints_per_event =
             readOut.spacepoints;
 

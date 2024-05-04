@@ -32,9 +32,11 @@ namespace traccc::io {
 /// @param geom The description of the detector geometry
 /// @param format The format of the cell data files (to read)
 ///
-void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
-                      std::string_view directory, const geometry& geom,
-                      data_format format = data_format::csv);
+void read_spacepoints(
+    spacepoint_reader_output& out, std::size_t event,
+    std::string_view directory, const geometry& geom,
+    std::map<std::uint64_t, detray::geometry::barcode>* barcode_map = nullptr,
+    data_format format = data_format::csv);
 
 /// Read spacepoint data into memory
 ///
@@ -45,10 +47,11 @@ void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
 /// @param geom The description of the detector geometry
 /// @param format The format of the cell data files (to read)
 ///
-void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
-                      std::string_view meas_filename,
-                      std::string_view meas_hit_map_filename,
-                      const geometry& geom,
-                      data_format format = data_format::csv);
+void read_spacepoints(
+    spacepoint_reader_output& out, std::string_view filename,
+    std::string_view meas_filename, std::string_view meas_hit_map_filename,
+    const geometry& geom,
+    std::map<std::uint64_t, detray::geometry::barcode>* barcode_map = nullptr,
+    data_format format = data_format::csv);
 
 }  // namespace traccc::io

@@ -157,12 +157,75 @@ void finding_performance_writer::write_common(
     }
 }
 
+void finding_performance_writer::write_common(
+    const std::vector<std::vector<measurement>>& tracks,
+    const event_map& evt_map) {
+
+    std::map<particle_id, std::size_t> match_counter;
+
+    // Iterate over the tracks.
+    const unsigned int n_tracks = tracks.size();
+
+    for (unsigned int i = 0; i < n_tracks; i++) {
+
+        const std::vector<measurement>& measurements = tracks[i];
+
+        // Check which particle matches this seed.
+        std::vector<particle_hit_count> particle_hit_counts =
+            identify_contributing_particles(measurements, evt_map.meas_ptc_map);
+
+        if (particle_hit_counts.size() == 1) {
+            auto pid = particle_hit_counts.at(0).ptc.particle_id;
+            match_counter[pid]++;
+        }
+    }
+
+    for (auto const& [pid, ptc] : evt_map.ptc_map) {
+
+        // Count only charged particles which satisfiy pT_cut
+        if (ptc.charge == 0 || getter::perp(ptc.mom) < m_cfg.pT_cut) {
+            continue;
+        }
+
+        bool is_matched = false;
+        std::size_t n_matched_seeds_for_particle = 0;
+        auto it = match_counter.find(pid);
+        if (it != match_counter.end()) {
+            is_matched = true;
+            n_matched_seeds_for_particle = it->second;
+        }
+
+        m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_cache, ptc, is_matched);
+        m_data->m_duplication_plot_tool.fill(m_data->m_duplication_plot_cache,
+                                             ptc,
+                                             n_matched_seeds_for_particle - 1);
+    }
+}
+
+/// For track finding
+void finding_performance_writer::write(
+    const track_candidate_container_types::const_view& track_candidates_view,
+    const event_map& evt_map) {
+    std::vector<std::vector<measurement>> tracks =
+        prepare_data(track_candidates_view);
+    write_common(tracks, evt_map);
+}
+
 /// For track finding
 void finding_performance_writer::write(
     const track_candidate_container_types::const_view& track_candidates_view,
     const event_map2& evt_map) {
     std::vector<std::vector<measurement>> tracks =
         prepare_data(track_candidates_view);
+    write_common(tracks, evt_map);
+}
+
+/// For ambiguity resolution
+void finding_performance_writer::write(
+    const track_state_container_types::const_view& track_states_view,
+    const event_map& evt_map) {
+    std::vector<std::vector<measurement>> tracks =
+        prepare_data(track_states_view);
     write_common(tracks, evt_map);
 }
 

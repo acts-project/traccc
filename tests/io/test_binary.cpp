@@ -26,27 +26,28 @@
 
 // This defines the local frame test suite for binary cell container
 TEST(io_binary, cell) {
-
     // Set event configuration
     const std::size_t event = 0;
-    const std::string cells_directory = "tml_full/ttbar_mu100/";
+    // const std::string cells_directory = "tml_full/ttbar_mu100/";
+    const std::string cells_directory = "odd/geant4_10muon_1GeV/";
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
     // Read the surface transforms
-    auto [surface_transforms, _] =
-        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
+    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
+        "geometries/odd/odd-detray_geometry_detray.json",
+        traccc::data_format::json);
 
     // Read the digitization configuration file
     auto digi_cfg = traccc::io::read_digitization_config(
-        "tml_detector/default-geometric-config-generic.json");
+        "geometries/odd/odd-digi-geometric-config.json");
 
     // Read csv file
     traccc::io::cell_reader_output reader_csv(&host_mr);
     traccc::io::read_cells(reader_csv, event, cells_directory,
                            traccc::data_format::csv, &surface_transforms,
-                           &digi_cfg);
+                           &digi_cfg, barcode_map.get());
     const traccc::cell_collection_types::host& cells_csv = reader_csv.cells;
     const traccc::cell_module_collection_types::host& modules_csv =
         reader_csv.modules;
@@ -100,7 +101,6 @@ TEST(io_binary, cell) {
 
 // This defines the local frame test suite for binary spacepoint container
 TEST(io_binary, spacepoint) {
-
     // Set event configuration
     const std::size_t event = 0;
     const std::string hits_directory = "tml_full/ttbar_mu200/";
@@ -115,7 +115,8 @@ TEST(io_binary, spacepoint) {
     // Read csv file
     traccc::io::spacepoint_reader_output reader_csv(&host_mr);
     traccc::io::read_spacepoints(reader_csv, event, hits_directory,
-                                 surface_transforms, traccc::data_format::csv);
+                                 surface_transforms, nullptr,
+                                 traccc::data_format::csv);
     const traccc::spacepoint_collection_types::host& spacepoints_csv =
         reader_csv.spacepoints;
     const traccc::cell_module_collection_types::host& modules_csv =
@@ -129,7 +130,7 @@ TEST(io_binary, spacepoint) {
     // Read binary file
     traccc::io::spacepoint_reader_output reader_binary(&host_mr);
     traccc::io::read_spacepoints(reader_binary, event, hits_directory,
-                                 surface_transforms,
+                                 surface_transforms, nullptr,
                                  traccc::data_format::binary);
     const traccc::spacepoint_collection_types::host& spacepoints_binary =
         reader_binary.spacepoints;
