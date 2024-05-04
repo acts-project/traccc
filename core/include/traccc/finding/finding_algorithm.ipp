@@ -171,10 +171,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 if (n_branches > m_cfg.max_num_branches_per_surface) {
                     break;
                 }
-                if (n_trks_per_seed[orig_param_id] >=
-                    m_cfg.max_num_branches_per_initial_seed) {
-                    break;
-                }
 
                 bound_track_parameters bound_param(in_param.surface_link(),
                                                    in_param.vector(),
@@ -193,7 +189,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 // Found a good measurement
                 if (chi2 < m_cfg.chi2_max) {
                     n_branches++;
-                    n_trks_per_seed[orig_param_id]++;
 
                     links[step].push_back({{previous_step, in_param_id},
                                            item_id,
@@ -208,11 +203,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *****************************************************************/
 
             if (n_branches == 0) {
-                // let's skip this CKF step for the current track candidate
-                if (n_trks_per_seed[orig_param_id] >=
-                    m_cfg.max_num_branches_per_initial_seed) {
-                    continue;
-                }
 
                 // Put an invalid link with max item id
                 links[step].push_back({{previous_step, in_param_id},
@@ -234,6 +224,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         const unsigned int n_links = links[step].size();
         for (unsigned int link_id = 0; link_id < n_links; link_id++) {
+
+            const unsigned int seed_idx = links[step][link_id].seed_idx;
+            n_trks_per_seed[seed_idx]++;
+
+            if (n_trks_per_seed[seed_idx] > m_cfg.max_num_branches_per_seed) {
+                continue;
+            }
 
             // If number of skips is larger than the maximum value, consider the
             // link to be a tip
