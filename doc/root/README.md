@@ -117,3 +117,48 @@ ambiguity_resolution_trackeff_vs_phi->Draw()
 // Ambiguity resolution duplication rate
 ambiguity_resolution_nDuplicated_vs_phi->Draw()
 ```
+
+<br>
+
+## Finding and ambiguity resolution algorithms common plots
+
+File `performance/src/efficiency/finding_performance_writer.cpp`.
+
+If a track's measurements belongs to more than only one truth particle, it is ignored and will not take part in any performance plots.
+
+Truth particles with energy below the `pT_cut` are ignored. (0.1 GeV in practice for the finding performance writer)
+
+<br>
+
+### Duplication plot
+
+The `duplication plot` associates each truth particle with its duplication rate, starting from zero (zero means no duplicates), for any given value (e.g. pT/eta/phi).
+
+For each truth particle:
+- The duplication rate is the number (minus one) of reconstructed tracks that are only made from hits belonging to this single truth particle.
+- There is no duplication if there is only one reconstructed track associated with this truth particle.
+- The duplication rate is zero if there is no reconstructed track associated with the truth particle.
+
+<br>
+
+### Efficiency plot
+
+The `efficiency plot` describes the number of truth particles correctly found for any given value (e.g. pT/eta/phi).
+- In the code, each truth particle is associated with a boolean value: true if at least one reconstructed track is solely made of its measurements, false otherwise.
+- In the final plot, and for any given value (e.g. pT/eta/phi), the efficiency varies from zero to one: zero means no particle has been reconstructed for this value, and one means that for each truth particle sharing this value, there is at lest one reconstructed track solely made of its measurements.
+
+<br>
+
+### Algorithm
+
+For each reconstructed track, lists its measurements. Identify which truth particles are involved in this list of measurements. If there is only one truth particle involved, increment the duplication counter for this truth particle. If there is more than one truth particle associated with a given track, ignore the track. The particle counter associates each encountered `particle id` with a `duplication counter`. 
+
+For each charged truth particle with an energy above `pT_cut`:
+- If at least one track is solely made of its measurements, the truth particle will contribute to the efficiency graph.
+- Write the truth particle's `duplication counter` to the `duplication_plot_tool`.
+
+<br>
+
+## Fitting algorithm
+
+Work in progress.
