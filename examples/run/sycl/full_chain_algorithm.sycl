@@ -45,7 +45,9 @@ full_chain_algorithm::full_chain_algorithm(
     const unsigned short target_cells_per_partition,
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
-    const seedfilter_config& filter_config)
+    const seedfilter_config& filter_config,
+    const finding_algorithm::config_type&,
+    const fitting_algorithm::config_type&, detector_type*)
     : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
       m_host_mr(host_mr),
       m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(

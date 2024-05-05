@@ -21,22 +21,25 @@ namespace traccc::io {
 
 void read(demonstrator_input& out, std::size_t events,
           std::string_view directory, std::string_view detector_file,
-          std::string_view digi_config_file, data_format format) {
+          std::string_view digi_config_file, data_format event_format,
+          data_format geometry_format) {
 
     // Read in the detector configuration. We can't use structured bindings for
     // the return value of read_geometry(...), because the old Intel compiler
     // used in the CI, when using OpenMP, crashes on such code. :-(
-    const auto geom_pair = io::read_geometry(detector_file);
+    const auto geom_pair = io::read_geometry(detector_file, geometry_format);
     const auto& geom = geom_pair.first;
     const digitization_config digi_cfg =
         io::read_digitization_config(digi_config_file);
+    const auto& barcode_map = geom_pair.second;
 
     assert(out.size() >= events);
 
     // Read in the cell data for all events. In parallel if possible.
 #pragma omp parallel for
     for (std::size_t event = 0; event < events; ++event) {
-        io::read_cells(out[event], event, directory, format, &geom, &digi_cfg);
+        io::read_cells(out[event], event, directory, event_format, &geom,
+                       &digi_cfg, barcode_map.get());
     }
 }
 
