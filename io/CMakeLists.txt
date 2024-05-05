@@ -73,6 +73,8 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/make_particle_reader.cpp"
   "src/csv/read_particles.hpp"
   "src/csv/read_particles.cpp"
+  "src/obj/write_spacepoints.hpp"
+  "src/obj/write_spacepoints.cpp"
   )
 target_link_libraries( traccc_io
   PUBLIC vecmem::core traccc::core ActsCore
