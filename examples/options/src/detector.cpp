@@ -41,7 +41,7 @@ std::ostream& detector::print_impl(std::ostream& out) const {
 
     out << "  Detector file       : " << detector_file << "\n"
         << "  Material file       : " << material_file << "\n"
-        << "  Surface rid file    : " << grid_file << "\n"
+        << "  Surface grid file   : " << grid_file << "\n"
         << "  Use detray::detector: " << (use_detray_detector ? "yes" : "no")
         << "\n"
         << "  Digitization file   : " << digitization_file;
