@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,9 @@
 #include "read_binary.hpp"
 #include "traccc/io/utils.hpp"
 
+// System include(s).
+#include <filesystem>
+
 namespace traccc::io {
 
 void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
@@ -22,22 +25,34 @@ void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
         case data_format::csv: {
             read_spacepoints(
                 out,
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-hits.csv"),
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.csv"),
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurement-simhit-map.csv"),
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-hits.csv")))
+                                      .native()),
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.csv")))
+                                      .native()),
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurement-simhit-map.csv")))
+                                      .native()),
                 geom, format);
             break;
         }
         case data_format::binary: {
             details::read_binary_collection<spacepoint_collection_types::host>(
-                out.spacepoints, data_directory() + directory.data() +
-                                     get_event_filename(event, "-hits.dat"));
+                out.spacepoints,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-hits.dat")))
+                                      .native()));
             details::read_binary_collection<cell_module_collection_types::host>(
-                out.modules, data_directory() + directory.data() +
-                                 get_event_filename(event, "-modules.dat"));
+                out.modules,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-modules.dat")))
+                                      .native()));
             break;
         }
         default:

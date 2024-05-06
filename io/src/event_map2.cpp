@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,6 +13,10 @@
 #include "traccc/io/csv/make_measurement_reader.hpp"
 #include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/io/utils.hpp"
+
+// System include(s).
+#include <filesystem>
+
 namespace traccc {
 
 event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
@@ -20,19 +24,26 @@ event_map2::event_map2(std::size_t event, const std::string& measurement_dir,
                        const std::string particle_dir) {
 
     std::string io_measurement_hit_id_file =
-        io::data_directory() + hit_dir +
-        io::get_event_filename(event, "-measurement-simhit-map.csv");
+        io::get_absolute_path((std::filesystem::path(hit_dir) /
+                               std::filesystem::path(io::get_event_filename(
+                                   event, "-measurement-simhit-map.csv")))
+                                  .native());
 
-    std::string io_particle_file =
-        io::data_directory() + particle_dir +
-        io::get_event_filename(event, "-particles.csv");
+    std::string io_particle_file = io::get_absolute_path(
+        (std::filesystem::path(particle_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-particles.csv")))
+            .native());
 
-    std::string io_hit_file = io::data_directory() + hit_dir +
-                              io::get_event_filename(event, "-hits.csv");
+    std::string io_hit_file = io::get_absolute_path(
+        (std::filesystem::path(hit_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-hits.csv")))
+            .native());
 
     std::string io_measurement_file =
-        io::data_directory() + measurement_dir +
-        io::get_event_filename(event, "-measurements.csv");
+        io::get_absolute_path((std::filesystem::path(measurement_dir) /
+                               std::filesystem::path(io::get_event_filename(
+                                   event, "-measurements.csv")))
+                                  .native());
 
     auto mreader = io::csv::make_measurement_reader(io_measurement_file);
 
