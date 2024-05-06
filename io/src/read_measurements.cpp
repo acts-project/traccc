@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,9 @@
 #include "read_binary.hpp"
 #include "traccc/io/utils.hpp"
 
+// System include(s).
+#include <filesystem>
+
 namespace traccc::io {
 
 void read_measurements(measurement_reader_output& out, std::size_t event,
@@ -21,8 +24,10 @@ void read_measurements(measurement_reader_output& out, std::size_t event,
         case data_format::csv: {
             read_measurements(
                 out,
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.csv"),
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.csv")))
+                                      .native()),
                 format);
             break;
         }
@@ -30,11 +35,16 @@ void read_measurements(measurement_reader_output& out, std::size_t event,
 
             details::read_binary_collection<measurement_collection_types::host>(
                 out.measurements,
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.dat"));
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.dat")))
+                                      .native()));
             details::read_binary_collection<cell_module_collection_types::host>(
-                out.modules, data_directory() + directory.data() +
-                                 get_event_filename(event, "-modules.dat"));
+                out.modules,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-modules.dat")))
+                                      .native()));
             break;
         }
         default:

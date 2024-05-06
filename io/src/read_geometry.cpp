@@ -67,7 +67,7 @@ std::pair<geometry,
 read_geometry(std::string_view filename, data_format format) {
 
     // Construct the full file name.
-    const std::string full_filename = data_directory() + filename.data();
+    const std::string full_filename = get_absolute_path(filename);
 
     // Decide how to read the file.
     switch (format) {

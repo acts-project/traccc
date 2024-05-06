@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -141,8 +141,7 @@ bool is_same_object<fitting_result<traccc::default_algebra>>::operator()(
 
     return (is_same_object<bound_track_parameters>(m_ref.get().fit_params,
                                                    m_unc)(obj.fit_params) &&
-            is_same_angle(obj.ndf, m_ref.get().ndf, m_unc) &&
-            is_same_angle(obj.chi2, m_ref.get().chi2, m_unc));
+            is_same_scalar(obj.ndf, m_ref.get().ndf, m_unc));
 }
 
 /// @}

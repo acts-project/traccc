@@ -16,7 +16,6 @@
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
@@ -30,6 +29,7 @@
 #include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
+#include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
@@ -44,9 +44,10 @@ namespace traccc::cuda {
 ///
 /// At least as much as is implemented in the project at any given moment.
 ///
-class full_chain_algorithm : public algorithm<track_state_container_types::host(
-                                 const cell_collection_types::host&,
-                                 const cell_module_collection_types::host&)> {
+class full_chain_algorithm
+    : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
+          const cell_collection_types::host&,
+          const cell_module_collection_types::host&)> {
 
     public:
     /// @name Type declaration(s)
@@ -160,9 +161,6 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     finding_algorithm m_finding;
     /// Track fitting algorithm
     fitting_algorithm m_fitting;
-
-    /// Algorithm copying the result container back to the host
-    device::container_d2h_copy_alg<track_state_container_types> m_result_copy;
 
     /// @}
 

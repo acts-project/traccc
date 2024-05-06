@@ -12,6 +12,9 @@
 #include "read_binary.hpp"
 #include "traccc/io/utils.hpp"
 
+// System include(s).
+#include <filesystem>
+
 namespace traccc::io {
 
 void read_cells(
@@ -23,19 +26,28 @@ void read_cells(
 
     switch (format) {
         case data_format::csv: {
-            read_cells(out,
-                       data_directory() + directory.data() +
-                           get_event_filename(event, "-cells.csv"),
-                       format, geom, dconfig, barcode_map, deduplicate);
+            read_cells(
+                out,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-cells.csv")))
+                                      .native()),
+                format, geom, dconfig, barcode_map, deduplicate);
             break;
         }
         case data_format::binary: {
             details::read_binary_collection<cell_collection_types::host>(
-                out.cells, data_directory() + directory.data() +
-                               get_event_filename(event, "-cells.dat"));
+                out.cells,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-cells.dat")))
+                                      .native()));
             details::read_binary_collection<cell_module_collection_types::host>(
-                out.modules, data_directory() + directory.data() +
-                                 get_event_filename(event, "-modules.dat"));
+                out.modules,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-modules.dat")))
+                                      .native()));
             break;
         }
         default:
