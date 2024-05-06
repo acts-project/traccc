@@ -13,6 +13,7 @@
 
 // System include(s).
 #include <string>
+#include <string_view>
 
 namespace traccc::opts {
 
@@ -30,8 +31,13 @@ class output_data : public interface {
 
     /// @}
 
-    /// Constructor
-    output_data();
+    /// Constructor, with default arguments
+    ///
+    /// @param format The data format for the output
+    /// @param directory The directory for the output
+    ///
+    output_data(traccc::data_format format = data_format::csv,
+                std::string_view directory = "testing/");
 
     /// Read/process the command line options
     ///
