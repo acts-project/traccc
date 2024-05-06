@@ -62,7 +62,6 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting(fitting_config,
                 memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                 m_stream),
-      m_result_copy(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
@@ -113,7 +112,6 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_fitting(parent.m_fitting_config,
                 memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                 m_stream),
-      m_result_copy(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
@@ -179,8 +177,10 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             m_fitting(m_device_detector_view, m_field, navigation_buffer,
                       track_candidates);
 
-        // Return the final container, copied back to the host.
-        return m_result_copy(track_states);
+        // Copy a limited amount of result data back to the host.
+        output_type result{&m_host_mr};
+        m_copy(track_states.headers, result)->wait();
+        return result;
 
     }
     // If not, copy the track parameters back to the host, and return a dummy
