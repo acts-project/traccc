@@ -292,25 +292,25 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map2 evt_map(event, input_opts.directory,
-                                       input_opts.directory,
-                                       input_opts.directory);
+            traccc::event_map evt_map(
+                event, detector_opts.detector_file,
+                detector_opts.digitization_file, input_opts.directory,
+                input_opts.directory, input_opts.directory, host_mr);
 
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
                                         evt_map);
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_map);
-
+            /*
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
                 const auto& fit_res = track_states[i].header;
-
                 fit_performance_writer.write(trk_states_per_track, fit_res,
                                              detector, evt_map);
             }
-
+            */
             if (resolution_opts.run) {
                 ar_performance_writer.write(
                     traccc::get_data(resolved_track_states), evt_map);

@@ -150,11 +150,14 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
 
     while (creader.read(iocell)) {
         unsigned int link = 0;
-        auto it = link_map.find(iocell.geometry_id);
+        auto it = link_map.find(
+            detray::geometry::barcode{iocell.geometry_id}.value());
+
         if (it != link_map.end()) {
             link = (*it).second;
         }
-        result[hmap[iocell.hit_id]].push_back(
+
+        result[hmap[iocell.measurement_id]].push_back(
             cell{iocell.channel0, iocell.channel1, iocell.value,
                  iocell.timestamp, link});
     }
@@ -185,7 +188,8 @@ cell_particle_map generate_cell_particle_map(std::size_t event,
     return result;
 }
 
-std::tuple<measurement_cell_map, cell_module_collection_types::host>
+std::pair<std::tuple<measurement_cell_map, cell_module_collection_types::host>,
+          std::map<uint64_t, uint64_t>>
 generate_measurement_cell_map(std::size_t event,
                               const std::string& detector_file,
                               const std::string& digi_config_file,
@@ -193,13 +197,15 @@ generate_measurement_cell_map(std::size_t event,
                               vecmem::memory_resource& resource) {
 
     measurement_cell_map result;
+    std::map<uint64_t, uint64_t> geo_map;
 
     // CCA algorithms
     host::sparse_ccl_algorithm cc(resource);
     host::measurement_creation_algorithm mc(resource);
 
     // Read the surface transforms
-    auto [surface_transforms, _] = io::read_geometry(detector_file);
+    auto [surface_transforms, barcode_map] =
+        io::read_geometry(detector_file, traccc::data_format::json);
 
     // Read the digitization configuration file
     auto digi_cfg = io::read_digitization_config(digi_config_file);
@@ -207,7 +213,7 @@ generate_measurement_cell_map(std::size_t event,
     // Read the cells from the relevant event file
     traccc::io::cell_reader_output readOut(&resource);
     io::read_cells(readOut, event, cells_dir, traccc::data_format::csv,
-                   &surface_transforms, &digi_cfg, nullptr, false);
+                   &surface_transforms, &digi_cfg, barcode_map.get(), &geo_map);
     cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
@@ -223,7 +229,7 @@ generate_measurement_cell_map(std::size_t event,
         result[measurements_per_event[i]] = clus;
     }
 
-    return {result, modules_per_event};
+    return {{result, modules_per_event}, geo_map};
 }
 
 measurement_particle_map generate_measurement_particle_map(
@@ -235,7 +241,7 @@ measurement_particle_map generate_measurement_particle_map(
     measurement_particle_map result;
 
     // generate measurement cell map
-    auto gen_m_c_map = generate_measurement_cell_map(
+    auto [gen_m_c_map, geo_map] = generate_measurement_cell_map(
         event, detector_file, digi_config_file, cells_dir, resource);
     auto& m_c_map = std::get<0>(gen_m_c_map);
     auto& modules = std::get<1>(gen_m_c_map);
@@ -244,7 +250,7 @@ measurement_particle_map generate_measurement_particle_map(
     geoId_link_map link_map;
 
     for (unsigned int i = 0; i < modules.size(); ++i) {
-        link_map[modules[i].surface_link.value()] = i;
+        link_map[geo_map[modules[i].surface_link.value()]] = i;
     }
 
     // generate cell particle map
@@ -268,12 +274,13 @@ measurement_particle_map generate_measurement_particle_map(
     measurement_particle_map result;
 
     // Read the surface transforms
-    auto [surface_transforms, _] = io::read_geometry(detector_file);
+    auto [surface_transforms, barcode_map] =
+        io::read_geometry(detector_file, traccc::data_format::json);
 
     // Read the spacepoints from the relevant event file
     traccc::io::spacepoint_reader_output readOut(&resource);
     io::read_spacepoints(readOut, event, hits_dir, surface_transforms,
-                         traccc::data_format::csv);
+                         barcode_map.get(), traccc::data_format::csv);
     spacepoint_collection_types::host& spacepoints_per_event =
         readOut.spacepoints;
     cell_module_collection_types::host& modules = readOut.modules;

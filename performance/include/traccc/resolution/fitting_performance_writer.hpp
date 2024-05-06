@@ -54,10 +54,10 @@ class fitting_performance_writer {
     /// @param track_states_per_track vector of track states of a track
     /// @param det detector object
     /// @param evt_map event map to find the truth values
-    template <typename detector_t>
+    template <typename detector_t, typename event_map_t>
     void write(const track_state_collection_types::host& track_states_per_track,
                const fitting_result<traccc::default_algebra>& fit_res,
-               const detector_t& det, event_map2& evt_map) {
+               const detector_t& det, event_map_t& evt_map) {
 
         auto& m_p_map = evt_map.meas_ptc_map;
 

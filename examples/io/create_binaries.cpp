@@ -58,7 +58,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
         traccc::io::spacepoint_reader_output spacepoints_csv(&host_mr);
         traccc::io::read_spacepoints(spacepoints_csv, event,
                                      input_opts.directory, surface_transforms,
-                                     input_opts.format);
+                                     nullptr, input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,

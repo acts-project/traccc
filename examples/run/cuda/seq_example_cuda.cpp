@@ -17,6 +17,7 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
@@ -208,6 +209,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
+    traccc::finding_performance_writer find_performance_writer(
+        traccc::finding_performance_writer::config{});
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -502,11 +505,14 @@ int seq_run(const traccc::opts::detector& detector_opts,
             sd_performance_writer.write(
                 vecmem::get_data(seeds_cuda),
                 vecmem::get_data(spacepoints_per_event_cuda), evt_map);
+            find_performance_writer.write(
+                traccc::get_data(track_candidates_cuda), evt_map);
         }
     }
 
     if (performance_opts.run) {
         sd_performance_writer.finalize();
+        find_performance_writer.finalize();
     }
 
     std::cout << "==> Statistics ... " << std::endl;

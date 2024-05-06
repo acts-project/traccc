@@ -166,7 +166,7 @@ void read_cells(
     cell_reader_output& out, std::string_view filename, const geometry* geom,
     const digitization_config* dconfig,
     const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
-    const bool deduplicate) {
+    std::map<uint64_t, uint64_t>* geo_map, const bool deduplicate) {
 
     // Get the cells and modules into an intermediate format.
     auto cellsMap = (deduplicate ? read_deduplicated_cells(filename)
@@ -191,10 +191,15 @@ void read_cells(
         // Add the module and its cells to the output.
         out.modules.push_back(
             get_module(geometry_id, geom, dconfig, original_geometry_id));
+
         for (auto& cell : cells) {
             out.cells.push_back(cell);
             // Set the module link.
             out.cells.back().module_link = out.modules.size() - 1;
+        }
+
+        if (geo_map != nullptr) {
+            (*geo_map)[geometry_id] = original_geometry_id;
         }
     }
 }

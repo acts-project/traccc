@@ -53,7 +53,8 @@ cell_particle_map generate_cell_particle_map(
     const std::string& hits_dir, const std::string& particle_dir,
     const geoId_link_map& link_map = geoId_link_map());
 
-std::tuple<measurement_cell_map, cell_module_collection_types::host>
+std::pair<std::tuple<measurement_cell_map, cell_module_collection_types::host>,
+          std::map<uint64_t, uint64_t>>
 generate_measurement_cell_map(std::size_t event,
                               const std::string& detector_file,
                               const std::string& digi_config_file,

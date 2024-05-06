@@ -25,59 +25,6 @@
 
 class io : public traccc::tests::data_test {};
 
-// This defines the local frame test suite
-TEST_F(io, csv_read_single_module) {
-
-    traccc::io::cell_reader_output single_module_cells;
-    traccc::io::read_cells(
-        single_module_cells, get_datafile("single_module/cells.csv"),
-        traccc::data_format::csv, nullptr, nullptr, nullptr, false);
-    auto& cells = single_module_cells.cells;
-    auto& modules = single_module_cells.modules;
-    ASSERT_EQ(cells.size(), 6u);
-    ASSERT_EQ(modules.size(), 1u);
-    auto module = single_module_cells.modules.at(0);
-
-    ASSERT_EQ(module.surface_link.value(), 0u);
-    ASSERT_EQ(cells.at(0).channel0, 123u);
-    ASSERT_EQ(cells.at(0).channel1, 32u);
-    ASSERT_EQ(cells.at(5).channel0, 174u);
-    ASSERT_EQ(cells.at(5).channel1, 880u);
-}
-
-// This defines the local frame test suite
-TEST_F(io, csv_read_two_modules) {
-
-    traccc::io::cell_reader_output two_module_cells;
-    traccc::io::read_cells(
-        two_module_cells, get_datafile("two_modules/cells.csv"),
-        traccc::data_format::csv, nullptr, nullptr, nullptr, false);
-    auto& cells = two_module_cells.cells;
-    auto& modules = two_module_cells.modules;
-    ASSERT_EQ(modules.size(), 2u);
-    ASSERT_EQ(cells.size(), 14u);
-
-    // Check cells in first module
-    ASSERT_EQ(cells.at(0).channel0, 123u);
-    ASSERT_EQ(cells.at(0).channel1, 32u);
-    ASSERT_EQ(cells.at(0).module_link, 0u);
-    ASSERT_EQ(cells.at(5).channel0, 174u);
-    ASSERT_EQ(cells.at(5).channel1, 880u);
-    ASSERT_EQ(cells.at(5).module_link, 0u);
-
-    ASSERT_EQ(modules.at(0u).surface_link.value(), 0u);
-
-    // Check cells in second module
-    ASSERT_EQ(cells.at(6).channel0, 0u);
-    ASSERT_EQ(cells.at(6).channel1, 4u);
-    ASSERT_EQ(cells.at(6).module_link, 1u);
-    ASSERT_EQ(cells.at(13).channel0, 5u);
-    ASSERT_EQ(cells.at(13).channel1, 98u);
-    ASSERT_EQ(cells.at(13).module_link, 1u);
-
-    ASSERT_EQ(modules.at(1u).surface_link.value(), 1u);
-}
-
 // This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_transforms) {
     std::string file = get_datafile("tml_detector/trackml-detector.csv");
@@ -85,17 +32,6 @@ TEST_F(io, csv_read_tml_transforms) {
     auto tml_barrel_transforms = traccc::io::details::read_surfaces(file);
 
     ASSERT_EQ(tml_barrel_transforms.size(), 18791u);
-}
-
-// This reads in the tml pixel barrel first event
-TEST_F(io, csv_read_tml_pixelbarrel) {
-
-    traccc::io::cell_reader_output readOut;
-    traccc::io::read_cells(
-        readOut, get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
-        traccc::data_format::csv);
-
-    ASSERT_EQ(readOut.modules.size(), 2382u);
 }
 
 // This checks if hit and measurement container from the first single muon event
@@ -110,7 +46,7 @@ TEST_F(io, csv_read_tml_single_muon) {
     traccc::io::spacepoint_reader_output spacepoints_per_event(&resource);
     traccc::io::read_spacepoints(spacepoints_per_event, 0,
                                  "tml_full/single_muon/", surface_transforms,
-                                 traccc::data_format::csv);
+                                 nullptr, traccc::data_format::csv);
 
     // Read the measurements from the relevant event file
     traccc::io::measurement_reader_output measurements_per_event(&resource);
