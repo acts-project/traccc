@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,9 +16,9 @@
 
 std::size_t event = 0;
 
-std::string detector_file = "/tml_detector/trackml-detector.csv";
+std::string detector_file = "tml_detector/trackml-detector.csv";
 std::string digi_config_file =
-    "/tml_detector/default-geometric-config-generic.json";
+    "tml_detector/default-geometric-config-generic.json";
 std::string hits_dir = "../tests/io/mock_data/";
 std::string cells_dir = "../tests/io/mock_data/";
 std::string particles_dir = "../tests/io/mock_data/";
