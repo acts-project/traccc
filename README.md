@@ -4,16 +4,16 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category           | Algorithms             | CPU | CUDA | SYCL | Futhark |
-| ------------------ | ---------------------- | --- | ---- | ---- | ------- |
-| **Clusterization** | CCL                    | ✅  | ✅   | ✅   | ✅      |
-|                    | Measurement creation   | ✅  | ✅   | ✅   | ✅      |
-| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | ⚪      |
-|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
-|                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
-|                    | Track param estimation | ✅  | ✅   | ✅   | ⚪      |
-| **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡    | ⚪      |
-| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪      |
+| Category           | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos | Futhark |
+| ------------------ | ---------------------- | --- | ---- | ---- | ------ | ------ | ------- |
+| **Clusterization** | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | 🟡     | ⚪     | ✅      |
+|                    | Measurement creation   | ✅  | ✅   | ✅   | 🟡     | ⚪     | ✅      |
+| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | 🟡     | ⚪     | ⚪      |
+|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     | ⚪      |
+|                    | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
+|                    | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
+| **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡   | 🟡     | ⚪     | ⚪      |
+| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪     | ⚪     | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
@@ -265,7 +265,7 @@ Users can generate muon-like particle simulation data with the pre-built detray 
 
 ```sh
 # Generate telescope geometry data
-<build_directory>/bin/traccc_simulate_telescope --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:0 --events=10 --gen-nparticles=2000 --output-directory=detray_simulation/telescope_detector/n_particles_2000/ --gen-eta=1:3 
+<build_directory>/bin/traccc_simulate_telescope --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:0 --events=10 --gen-nparticles=2000 --output-directory=detray_simulation/telescope_detector/n_particles_2000/ --gen-eta=1:3
 
 # Generate toy geometry data
 <build_directory>/bin/traccc_simulate_toy_detector --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:360 --events=10 --gen-nparticles=2000 --output-directory=detray_simulation/toy_detector/n_particles_2000/ --gen-eta=-3:3 --constraint-step-size-mm=1 --search-window 3 3
@@ -276,7 +276,7 @@ Users can generate muon-like particle simulation data with the pre-built detray 
 
 The simulation will also generate the detector json files (geometry, material and surface_grid) in the current directory. It is user's responsibility to move them to an appropriate place (e.g. `<detector_directory>`) and match them to the input file arguments of reconstruction chains.
 
-If users have a geometry json file already, it is also possible to run simulation with `traccc_simulate` application 
+If users have a geometry json file already, it is also possible to run simulation with `traccc_simulate` application
 
 ```sh
 # Given that users have a geometry json file
@@ -291,7 +291,7 @@ There are three types of partial reconstruction chain users can operate: `seedin
 | `truth_finding_example` |                |         | ✅            | ✅            |
 | `truth_fitting_example` |                |         |               | ✅            |
 
-The dirft chamber will not produce meaningful results with `seeding_example` as the current seeding algorithm is only designed for 2D measurement objects. Truth finding works OK in general but the combinatoric explosion can occur for a few unlucky events, leading to poor pull value distributions. The followings are example commands: 
+The dirft chamber will not produce meaningful results with `seeding_example` as the current seeding algorithm is only designed for 2D measurement objects. Truth finding works OK in general but the combinatoric explosion can occur for a few unlucky events, leading to poor pull value distributions. The followings are example commands:
 
 ```sh
 # Run cuda seeding example for toy geometry
@@ -316,8 +316,8 @@ The dirft chamber will not produce meaningful results with `seeding_example` as 
 Users can open the performance root files (with `--check-performance=true`) and draw the histograms.
 
 ```sh
-$ root -l performance_track_finding.root 
-root [0] 
+$ root -l performance_track_finding.root
+root [0]
 Attaching file performance_track_finding.root as _file0...
 (TFile *) 0x3871910
 root [1] finding_trackeff_vs_eta->Draw()
