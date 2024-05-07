@@ -25,6 +25,7 @@
 // performance
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/efficiency/verbose_performance_metrics.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
 // options
@@ -90,6 +91,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
     ar_writer_cfg.algorithm_name = "ambiguity_resolution";
     traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
+
+    // Verbose performance metrics
+    traccc::details::verbose_performance_metrics find_metrics(false, "finding");
+    traccc::details::verbose_performance_metrics fit_metrics(false, "fitting");
+    traccc::details::verbose_performance_metrics ar_metrics(true);
+    traccc::details::verbose_performance_metrics ar_metrics_chk(
+        false, "ambiguity resolution (check v2)");
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -157,6 +165,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution{};
+    std::vector<std::size_t> host_ambiguity_resolution_si;  // selected indexes
 
     // Loop over events
     for (std::size_t event = input_opts.skip;
@@ -215,7 +224,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           -----------------------------------------*/
 
         if (resolution_opts.run) {
-            track_states_ar = host_ambiguity_resolution(track_states);
+            if (performance_opts.run) {
+                // Also gets the selected_track_indexes if we should run the
+                // performance analysis
+                track_states_ar = host_ambiguity_resolution(
+                    track_states, &host_ambiguity_resolution_si);
+            } else {
+                track_states_ar = host_ambiguity_resolution(track_states);
+            }
             n_ambiguity_free_tracks += track_states_ar.size();
         }
 
@@ -230,30 +246,44 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           Writer
           ------------*/
 
-        if (performance_opts.run) {
+        if (performance_opts.run || performance_opts.print_performance) {
 
             traccc::event_map2 evt_map(event, input_opts.directory,
                                        input_opts.directory,
                                        input_opts.directory);
-            sd_performance_writer.write(vecmem::get_data(seeds),
-                                        vecmem::get_data(spacepoints_per_event),
-                                        evt_map);
 
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_map);
+            // Performance writers
+            if (performance_opts.run) {
+                sd_performance_writer.write(
+                    vecmem::get_data(seeds),
+                    vecmem::get_data(spacepoints_per_event), evt_map);
 
-            if (resolution_opts.run) {
-                ar_performance_writer.write(traccc::get_data(track_states_ar),
-                                            evt_map);
+                find_performance_writer.write(
+                    traccc::get_data(track_candidates), evt_map);
+
+                if (resolution_opts.run) {
+                    ar_performance_writer.write(
+                        traccc::get_data(track_states_ar), evt_map);
+                }
+
+                for (unsigned int i = 0; i < track_states.size(); i++) {
+                    const auto& trk_states_per_track = track_states.at(i).items;
+
+                    const auto& fit_res = track_states[i].header;
+
+                    fit_performance_writer.write(trk_states_per_track, fit_res,
+                                                 host_det, evt_map);
+                }
             }
 
-            for (unsigned int i = 0; i < track_states.size(); i++) {
-                const auto& trk_states_per_track = track_states.at(i).items;
-
-                const auto& fit_res = track_states[i].header;
-
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             host_det, evt_map);
+            if (performance_opts.print_performance) {
+                if (resolution_opts.run) {
+                    ar_metrics.ambiguity_resolution(
+                        track_states, host_ambiguity_resolution_si, evt_map);
+                }
+                ar_metrics_chk.generic(track_states_ar, evt_map);
+                find_metrics.generic(track_candidates, evt_map);
+                fit_metrics.generic(track_states, evt_map);
             }
         }
     }
@@ -281,6 +311,25 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                   << " ambiguity free tracks" << std::endl;
     } else {
         std::cout << "- ambiguity resolution: deactivated" << std::endl;
+    }
+
+    if (performance_opts.print_performance) {
+        std::cout << "\nPerformance metrics:\n\n";
+        // Finding
+        find_metrics.print(std::cout);
+        std::cout << "\n";
+        // Fitting
+        fit_metrics.print(std::cout);
+        std::cout << "\n";
+        // Ambiguity resolution
+        if (resolution_opts.run) {
+            ar_metrics.print(std::cout);
+            std::cout << "\n";
+        }
+        // Check for ambiguity resolution (should have the same results compared
+        // to the "selected tracks" of ar_metrics)
+        ar_metrics_chk.print(std::cout);
+        std::cout << "\n";
     }
 
     return EXIT_SUCCESS;
