@@ -22,6 +22,10 @@ class performance : public interface {
     /// Whether to run performance checks
     bool run = false;
 
+    /// Whether to run verbose performance checks (ROOT is not needed) and print
+    /// valid/duplicate/false tracks metrics on the terminal.
+    bool print_performance = false;
+
     /// @}
 
     /// Constructor

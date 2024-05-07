@@ -18,11 +18,17 @@ performance::performance() : interface("Performance Measurement Options") {
     m_desc.add_options()("check-performance",
                          boost::program_options::bool_switch(&run),
                          "Run performance checks");
+
+    m_desc.add_options()("print-performance",
+                         boost::program_options::bool_switch(&print_performance),
+                         "Print small performance metrics on the terminal "
+                         "(valid/duplicate/fake tracks statistics)");
 }
 
 std::ostream& performance::print_impl(std::ostream& out) const {
 
     out << "  Run performance checks: " << (run ? "yes" : "no");
+    out << "  Print performance metrics: " << (print_performance ? "yes" : "no");
     return out;
 }
 
