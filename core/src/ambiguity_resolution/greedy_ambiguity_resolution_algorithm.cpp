@@ -85,7 +85,8 @@ struct logger {
 /// @return the container without ambiguous tracks
 track_state_container_types::host
 greedy_ambiguity_resolution_algorithm::operator()(
-    const typename track_state_container_types::host& track_states) const {
+    const typename track_state_container_types::host& track_states,
+    std::vector<std::size_t>* selected_indexes) const {
 
     state_t state;
     compute_initial_state(track_states, state);
@@ -121,7 +122,23 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         res.push_back(header, states);
     }
+
+    // Outputs the indexes (in the original container) of the selected tracks
+    if (selected_indexes != nullptr) {
+        selected_indexes->resize(0);
+        selected_indexes->reserve(state.selected_tracks.size());
+        for (std::size_t track_index : state.selected_tracks) {
+            selected_indexes->push_back(track_index);
+        }
+    }
     return res;
+}
+
+track_state_container_types::host
+greedy_ambiguity_resolution_algorithm::operator()(
+    const typename track_state_container_types::host& track_states) const {
+
+    return operator()(track_states, nullptr);
 }
 
 void greedy_ambiguity_resolution_algorithm::compute_initial_state(
