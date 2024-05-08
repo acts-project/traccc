@@ -106,10 +106,16 @@ inline void aggregate_cluster(
     out.variance = var;
     out.surface_link = this_module.surface_link;
     out.module_link = module_link;
-    // The following will need to be filled properly "soon".
-    out.meas_dim = 2u;
     // Set a unique identifier for the measurement.
     out.measurement_id = link;
+    // Adjust the output object for 1D surfaces.
+    if (this_module.pixel.dimension == 1) {
+        out.meas_dim = 1;
+        out.local[1] = 0.f;
+        out.variance[1] = 1000.f;
+    } else {
+        out.meas_dim = 2;
+    }
 }
 
 }  // namespace traccc::device
