@@ -7,10 +7,12 @@
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   enable_language(CUDA)
   set_source_files_properties(alpaka_basic.cpp PROPERTIES LANGUAGE CUDA)
+  include( traccc-compiler-options-cuda )
   list(APPEND DEVICE_LIBRARIES vecmem::cuda)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
   enable_language(HIP)
   set_source_files_properties(alpaka_basic.cpp PROPERTIES LANGUAGE HIP)
+  include( traccc-compiler-options-hip )
   list(APPEND DEVICE_LIBRARIES vecmem::hip)
 endif()
 
