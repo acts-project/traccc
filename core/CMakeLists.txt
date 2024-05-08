@@ -23,6 +23,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/cluster.hpp"
   "include/traccc/edm/spacepoint.hpp"
   "include/traccc/edm/measurement.hpp"
+  "include/traccc/edm/particle.hpp"
   "include/traccc/edm/track_parameters.hpp"
   "include/traccc/edm/container.hpp"
   "include/traccc/edm/internal_spacepoint.hpp"
