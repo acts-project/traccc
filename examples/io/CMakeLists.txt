@@ -6,3 +6,6 @@
 
 traccc_add_executable( create_binaries "create_binaries.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io traccc::options)
+
+traccc_add_executable( create_digitization_config "create_digitization_config.cpp"
+   LINK_LIBRARIES vecmem::core traccc::core traccc::io traccc::options detray::io)
