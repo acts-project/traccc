@@ -18,16 +18,17 @@ namespace traccc::io {
 
 void read_particles(particle_collection_types::host& particles,
                     std::size_t event, std::string_view directory,
-                    data_format format) {
+                    data_format format, std::string_view filename_postfix) {
 
     switch (format) {
         case data_format::csv:
             read_particles(
                 particles,
-                get_absolute_path((std::filesystem::path(directory) /
-                                   std::filesystem::path(get_event_filename(
-                                       event, "-particles.csv")))
-                                      .native()),
+                get_absolute_path(
+                    (std::filesystem::path(directory) /
+                     std::filesystem::path(get_event_filename(
+                         event, std::string{filename_postfix} + ".csv")))
+                        .native()),
                 format);
             break;
         default:
@@ -41,6 +42,56 @@ void read_particles(particle_collection_types::host& particles,
     switch (format) {
         case data_format::csv:
             csv::read_particles(particles, filename);
+            break;
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+void read_particles(
+    particle_container_types::host& particles, std::size_t event,
+    std::string_view directory, data_format format,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
+    std::string_view filename_postfix) {
+
+    switch (format) {
+        case data_format::csv:
+            read_particles(
+                particles,
+                get_absolute_path(
+                    (std::filesystem::path(directory) /
+                     std::filesystem::path(get_event_filename(
+                         event, std::string{filename_postfix} + ".csv")))
+                        .native()),
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-hits.csv")))
+                                      .native()),
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.csv")))
+                                      .native()),
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurement-simhit-map.csv")))
+                                      .native()),
+                format, barcode_map);
+            break;
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+void read_particles(
+    particle_container_types::host& particles, std::string_view particles_file,
+    std::string_view hits_file, std::string_view measurements_file,
+    std::string_view hit_map_file, data_format format,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+
+    switch (format) {
+        case data_format::csv:
+            csv::read_particles(particles, particles_file, hits_file,
+                                measurements_file, hit_map_file, barcode_map);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
