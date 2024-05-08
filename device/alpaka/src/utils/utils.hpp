@@ -40,7 +40,8 @@ static constexpr std::size_t warpSize =
 template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocksPerGrid,
                            Idx threadsPerBlockOrElementsPerThread) {
-    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt>) {
+    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt> ||
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuHipRt>) {
         const auto elementsPerThread = Idx{1};
         return WorkDiv{blocksPerGrid, threadsPerBlockOrElementsPerThread,
                        elementsPerThread};
