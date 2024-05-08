@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2023 CERN for the benefit of the ACTS project
+# (c) 2022-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -21,6 +21,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/efficiency/nseed_performance_writer.cpp"
    "src/efficiency/track_filter.cpp"
    "src/efficiency/track_matcher.cpp"
+   "include/traccc/efficiency/track_finding_analysis.hpp"
+   "src/efficiency/track_finding_analysis.cpp"
    # Resolution calculation code.
    "include/traccc/resolution/fitting_performance_writer.hpp"
    "include/traccc/resolution/res_plot_tool_config.hpp"
