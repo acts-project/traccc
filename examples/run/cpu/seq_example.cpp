@@ -9,6 +9,7 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_particles.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/io/write.hpp"
 
@@ -24,6 +25,7 @@
 // performance
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/efficiency/track_finding_analysis.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
@@ -301,29 +303,40 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map2 evt_map(event, input_opts.directory,
-                                       input_opts.directory,
-                                       input_opts.directory);
+            // traccc::event_map2 evt_map(event, input_opts.directory,
+            //                            input_opts.directory,
+            //                            input_opts.directory);
 
-            sd_performance_writer.write(vecmem::get_data(seeds),
-                                        vecmem::get_data(spacepoints_per_event),
-                                        evt_map);
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_map);
+            // sd_performance_writer.write(vecmem::get_data(seeds),
+            //                             vecmem::get_data(spacepoints_per_event),
+            //                             evt_map);
+            // find_performance_writer.write(traccc::get_data(track_candidates),
+            //                               evt_map);
 
-            for (unsigned int i = 0; i < track_states.size(); i++) {
-                const auto& trk_states_per_track = track_states.at(i).items;
+            // for (unsigned int i = 0; i < track_states.size(); i++) {
+            //     const auto& trk_states_per_track = track_states.at(i).items;
 
-                const auto& fit_res = track_states[i].header;
+            //     const auto& fit_res = track_states[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_map);
-            }
+            //     fit_performance_writer.write(trk_states_per_track, fit_res,
+            //                                  detector, evt_map);
+            // }
 
-            if (resolution_opts.run) {
-                ar_performance_writer.write(
-                    traccc::get_data(resolved_track_states), evt_map);
-            }
+            // if (resolution_opts.run) {
+            //     ar_performance_writer.write(
+            //         traccc::get_data(resolved_track_states), evt_map);
+            // }
+
+            // Read in the truth particles.
+            traccc::particle_container_types::host truth_particles{&host_mr};
+            traccc::io::read_particles(truth_particles, event,
+                                       input_opts.directory, input_opts.format,
+                                       barcode_map.get());
+
+            // Analyze the reconstructed particles vs. the truth ones.
+            traccc::performance::track_finding_analysis{}.analyze(
+                traccc::get_data(track_candidates),
+                traccc::get_data(truth_particles));
         }
     }
 
