@@ -93,6 +93,13 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
 
         // For the ambiguity resolution algorithm, give a unique measurement ID
         m.measurement_id = measurement_index;
+
+        // Adjust the measurement object for 1D surfaces.
+        if (module.pixel.dimension == 1) {
+            m.meas_dim = 1;
+            m.local[1] = 0.f;
+            m.variance[1] = module.pixel.variance_y;
+        }
     }
 }
 
