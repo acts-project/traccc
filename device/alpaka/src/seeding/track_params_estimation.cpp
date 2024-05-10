@@ -45,7 +45,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
                                                                   m_mr.main);
-    m_copy.setup(params_buffer);
+    m_copy.setup(params_buffer)->ignore();
 
     // Check if anything needs to be done.
     if (seeds_size == 0) {
