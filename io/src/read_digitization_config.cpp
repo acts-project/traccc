@@ -16,6 +16,7 @@
 #include <Acts/Plugins/Json/UtilitiesJsonConverter.hpp>
 
 // System include(s).
+#include <algorithm>
 #include <fstream>
 #include <string>
 
@@ -48,11 +49,13 @@ void from_json(const nlohmann::json& json, module_digitization_config& cfg) {
                 for (const auto& rms : jdata["rms"]) {
                     // A large RMS value associated to the second index happens
                     // to mean that this is a strip detector...
-                    if (rms > 1.0f) {
+                    const float frms = rms.get<float>();
+                    if (frms > 1.0f) {
                         cfg.dimensions = 1;
-                        return;
+                        cfg.variance_y = std::max(frms, cfg.variance_y);
                     }
                 }
+                break;
             }
         }
     }

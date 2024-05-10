@@ -19,11 +19,12 @@ namespace traccc {
 /// No checking on out of bounds done
 struct pixel_data {
 
-    scalar min_center_x = 0.;
-    scalar min_center_y = 0.;
-    scalar pitch_x = 1.;
-    scalar pitch_y = 1.;
+    scalar min_center_x = 0.f;
+    scalar min_center_y = 0.f;
+    scalar pitch_x = 1.f;
+    scalar pitch_y = 1.f;
     char dimension = 2;
+    scalar variance_y = 0.f;
 
     TRACCC_HOST_DEVICE
     vector2 get_pitch() const { return {pitch_x, pitch_y}; };
