@@ -14,6 +14,7 @@ Demonstrator tracking chain for accelerators.
 |                    | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
 | **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡   | 🟡     | ⚪     | ⚪      |
 | **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪     | ⚪     | ⚪      |
+| **Ambiguity resolver**  | Greedy resolver   | ✅  | ⚪   |  ⚪  | ⚪     | ⚪     | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
