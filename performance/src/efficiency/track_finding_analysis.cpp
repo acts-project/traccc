@@ -90,9 +90,10 @@ void track_finding_analysis::analyze(
             truth_particle = truth_particles.at(i_truth);
 
         // Calculate the truth particle's properties.
-        const scalar truth_eta = getter::eta(truth_particle.header.momentum);
-        const scalar truth_phi = getter::phi(truth_particle.header.momentum);
         const scalar truth_pt = getter::perp(truth_particle.header.momentum);
+        const scalar truth_eta = getter::eta(truth_particle.header.momentum);
+        [[maybe_unused]] const scalar truth_phi =
+            getter::phi(truth_particle.header.momentum);
 
         // Check if the truth particle should be considered.
         if ((std::find(m_config.m_truth_pdgid.begin(),
