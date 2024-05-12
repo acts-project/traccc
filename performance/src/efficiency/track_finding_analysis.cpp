@@ -8,15 +8,66 @@
 // Library include(s).
 #include "traccc/efficiency/track_finding_analysis.hpp"
 
-#include "traccc/performance/details/is_same_object.hpp"
+#ifdef TRACCC_HAVE_ROOT
+// ROOT include(s).
+#include <TEfficiency.h>
+#include <TFile.h>
+#endif  // TRACCC_HAVE_ROOT
 
 // System include(s).
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 
 namespace traccc::performance {
 
-track_finding_analysis::track_finding_analysis() {}
+namespace details {
+
+struct track_finding_analysis_data {
+#ifdef TRACCC_HAVE_ROOT
+    std::unique_ptr<TEfficiency> m_eta;
+    std::unique_ptr<TEfficiency> m_phi;
+    std::unique_ptr<TEfficiency> m_pt;
+#endif  // TRACCC_HAVE_ROOT
+};  // struct track_finding_analysis_data
+
+}  // namespace details
+
+track_finding_analysis::track_finding_analysis(const config& cfg)
+    : m_config{cfg},
+      m_data{std::make_unique<details::track_finding_analysis_data>()} {
+
+#ifdef TRACCC_HAVE_ROOT
+    // Helper lambda for creating the TEfficiency objects.
+    auto make_teff = [](std::string_view name,
+                        const plot_helpers::binning& bins) {
+        return std::make_unique<TEfficiency>(name.data(), bins.title.c_str(),
+                                             bins.n_bins, bins.min, bins.max);
+    };
+
+    m_data->m_eta = make_teff("track_finding_eff_eta", cfg.m_eta_binning);
+    m_data->m_phi = make_teff("track_finding_eff_phi", cfg.m_phi_binning);
+    m_data->m_pt = make_teff("track_finding_eff_pt", cfg.m_pt_binning);
+#endif  // TRACCC_HAVE_ROOT
+}
+
+track_finding_analysis::~track_finding_analysis() {
+
+#ifdef TRACCC_HAVE_ROOT
+    // Open the output file.
+    std::unique_ptr<TFile> ofile{
+        TFile::Open(m_config.m_output_name.c_str(), "RECREATE")};
+
+    // Save all the efficiency objects into it.
+    m_data->m_eta->Write();
+    m_data->m_phi->Write();
+    m_data->m_pt->Write();
+
+    // Tell the user what happened.
+    std::cout << "Saved track finding efficiency plots into: "
+              << m_config.m_output_name << std::endl;
+#endif  // TRACCC_HAVE_ROOT
+}
 
 void track_finding_analysis::analyze(
     const track_candidate_container_types::const_view& reco_particles_view,
@@ -31,27 +82,6 @@ void track_finding_analysis::analyze(
     // Helper type.
     using size_type = track_candidate_container_types::const_device::size_type;
 
-    // Print the properties of the reco particles.
-    for (size_type i_reco = 0; i_reco < reco_particles.size(); ++i_reco) {
-
-        // The reconstructed particle.
-        track_candidate_container_types::const_device::const_element_view
-            reco_particle = reco_particles.at(i_reco);
-
-        std::cout << "Reco particle eta: "
-                  << getter::eta(reco_particle.header.mom())
-                  << " phi: " << reco_particle.header.phi()
-                  << " pT: " << reco_particle.header.pT() << std::endl;
-        for (const measurement& meas : reco_particle.items) {
-            std::cout << "   Measurement local[0]:" << meas.local[0]
-                      << " local[1]: " << meas.local[1]
-                      << " variance[0]: " << meas.variance[0]
-                      << " variance[1]: " << meas.variance[1]
-                      << " meas_dim: " << meas.meas_dim
-                      << " surface link: " << meas.surface_link << std::endl;
-        }
-    }
-
     // Loop over the truth particles.
     for (size_type i_truth = 0; i_truth < truth_particles.size(); ++i_truth) {
 
@@ -59,13 +89,23 @@ void track_finding_analysis::analyze(
         particle_container_types::const_device::const_element_view
             truth_particle = truth_particles.at(i_truth);
 
-        // Require it to be a muon.
-        if (std::abs(truth_particle.header.particle_type) != 13) {
+        // Calculate the truth particle's properties.
+        const scalar truth_eta = getter::eta(truth_particle.header.momentum);
+        const scalar truth_phi = getter::phi(truth_particle.header.momentum);
+        const scalar truth_pt = getter::perp(truth_particle.header.momentum);
+
+        // Check if the truth particle should be considered.
+        if ((std::find(m_config.m_truth_pdgid.begin(),
+                       m_config.m_truth_pdgid.end(),
+                       truth_particle.header.particle_type) ==
+             m_config.m_truth_pdgid.end()) ||
+            (std::abs(truth_eta) > m_config.m_truth_eta_max) ||
+            (truth_pt < m_config.m_truth_pt_min)) {
             continue;
         }
 
         // Look for a matching reconstructed particle.
-        bool found = false;
+        [[maybe_unused]] bool found = false;
         for (size_type i_reco = 0; i_reco < reco_particles.size(); ++i_reco) {
 
             // The reconstructed particle.
@@ -79,19 +119,12 @@ void track_finding_analysis::analyze(
             }
         }
 
-        std::cout << "Truth particle eta: "
-                  << getter::eta(truth_particle.header.momentum)
-                  << " phi: " << getter::phi(truth_particle.header.momentum)
-                  << " pT: " << getter::perp(truth_particle.header.momentum)
-                  << " found: " << found << std::endl;
-        for (const measurement& meas : truth_particle.items) {
-            std::cout << "   Measurement local[0]:" << meas.local[0]
-                      << " local[1]: " << meas.local[1]
-                      << " variance[0]: " << meas.variance[0]
-                      << " variance[1]: " << meas.variance[1]
-                      << " meas_dim: " << meas.meas_dim
-                      << " surface link: " << meas.surface_link << std::endl;
-        }
+#ifdef TRACCC_HAVE_ROOT
+        // Fill the efficiency objects.
+        m_data->m_eta->Fill(found, truth_eta);
+        m_data->m_phi->Fill(found, truth_phi);
+        m_data->m_pt->Fill(found, truth_pt);
+#endif  // TRACCC_HAVE_ROOT
     }
 }
 
@@ -106,19 +139,33 @@ bool track_finding_analysis::match(
     unsigned int n_matches = 0;
     for (const measurement& reco_meas : reco.items) {
         for (const measurement& truth_meas : truth.items) {
-            if (details::is_same_object(reco_meas, 0.1)(truth_meas)) {
+            if (match(reco_meas, truth_meas)) {
                 ++n_matches;
             }
         }
     }
 
-    // Calculate a match rate.
-    float match_rate =
+    // Calculate a match rate, normalized to the number of reconstructed
+    // measurements.
+    const float match_rate =
         static_cast<float>(n_matches) / static_cast<float>(reco.items.size());
-    std::cout << "Match rate: " << match_rate << std::endl;
 
     // Define the match relatively naively.
-    return (match_rate > 0.8f);
+    return (match_rate >= m_config.m_measurement_match);
+}
+
+bool track_finding_analysis::match(const measurement& reco,
+                                   const measurement& truth) const {
+
+    return ((reco.module_link == truth.module_link) &&
+            (std::abs(reco.local[0] - truth.local[0]) <
+             m_config.m_measurement_uncertainty) &&
+            (std::abs(reco.local[1] - truth.local[1]) <
+             m_config.m_measurement_uncertainty) &&
+            (std::abs(reco.variance[0] - truth.variance[0]) <
+             m_config.m_measurement_uncertainty) &&
+            (std::abs(reco.variance[1] - truth.variance[1]) <
+             m_config.m_measurement_uncertainty));
 }
 
 }  // namespace traccc::performance

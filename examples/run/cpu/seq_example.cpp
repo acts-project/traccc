@@ -23,11 +23,8 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
-#include "traccc/efficiency/finding_performance_writer.hpp"
-#include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_finding_analysis.hpp"
 #include "traccc/performance/timer.hpp"
-#include "traccc/resolution/fitting_performance_writer.hpp"
 
 // options
 #include "traccc/options/clusterization.hpp"
@@ -152,17 +149,14 @@ int seq_run(const traccc::opts::input_data& input_opts,
     fitting_algorithm fitting_alg(fitting_cfg);
     traccc::greedy_ambiguity_resolution_algorithm resolution_alg;
 
-    // performance writer
-    traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
-    traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{});
-    traccc::fitting_performance_writer fit_performance_writer(
-        traccc::fitting_performance_writer::config{});
-    traccc::finding_performance_writer::config ar_writer_cfg;
-    ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
-    ar_writer_cfg.algorithm_name = "ambiguity_resolution";
-    traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
+    // Performance analysis object(s).
+    std::unique_ptr<traccc::performance::track_finding_analysis>
+        track_finding_efficiency;
+    if (performance_opts.run) {
+        track_finding_efficiency =
+            std::make_unique<traccc::performance::track_finding_analysis>(
+                traccc::performance::track_finding_analysis::config{});
+    }
 
     // Timers
     traccc::performance::timing_info elapsedTimes;
@@ -297,35 +291,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
         }  // Stop measuring Wall time.
 
-        /*------------
-             Writer
-          ------------*/
-
+        /*--------------------
+          Performance Analysis
+          --------------------*/
         if (performance_opts.run) {
-
-            // traccc::event_map2 evt_map(event, input_opts.directory,
-            //                            input_opts.directory,
-            //                            input_opts.directory);
-
-            // sd_performance_writer.write(vecmem::get_data(seeds),
-            //                             vecmem::get_data(spacepoints_per_event),
-            //                             evt_map);
-            // find_performance_writer.write(traccc::get_data(track_candidates),
-            //                               evt_map);
-
-            // for (unsigned int i = 0; i < track_states.size(); i++) {
-            //     const auto& trk_states_per_track = track_states.at(i).items;
-
-            //     const auto& fit_res = track_states[i].header;
-
-            //     fit_performance_writer.write(trk_states_per_track, fit_res,
-            //                                  detector, evt_map);
-            // }
-
-            // if (resolution_opts.run) {
-            //     ar_performance_writer.write(
-            //         traccc::get_data(resolved_track_states), evt_map);
-            // }
 
             // Read in the truth particles.
             traccc::particle_container_types::host truth_particles{&host_mr};
@@ -334,18 +303,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                        barcode_map.get());
 
             // Analyze the reconstructed particles vs. the truth ones.
-            traccc::performance::track_finding_analysis{}.analyze(
+            track_finding_efficiency->analyze(
                 traccc::get_data(track_candidates),
                 traccc::get_data(truth_particles));
-        }
-    }
-
-    if (performance_opts.run) {
-        sd_performance_writer.finalize();
-        find_performance_writer.finalize();
-        fit_performance_writer.finalize();
-        if (resolution_opts.run) {
-            ar_performance_writer.finalize();
         }
     }
 
