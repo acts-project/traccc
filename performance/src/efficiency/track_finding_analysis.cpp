@@ -29,7 +29,7 @@ struct track_finding_analysis_data {
     std::unique_ptr<TEfficiency> m_phi;
     std::unique_ptr<TEfficiency> m_pt;
 #endif  // TRACCC_HAVE_ROOT
-};  // struct track_finding_analysis_data
+};      // struct track_finding_analysis_data
 
 }  // namespace details
 
