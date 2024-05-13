@@ -2,12 +2,13 @@
 #
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2023 CERN for the benefit of the ACTS project
+# (c) 2023-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 #
 # Simple script running the selected instance of the multi-threaded throughput
-# executable on a whole set of "measurement points".
+# executable on a whole set of ODD ttbar simulations, with different pileup
+# values.
 #
 
 # Stop on errors.
@@ -21,33 +22,43 @@ usage() {
    echo ""
    echo "Basic options:"
    echo "  -x <executable>      Selects the executable to use"
+   echo "  -i <inputDir>        Selects the input directory with the ttbar"
+   echo "                       simulations"
+   echo "  -m <minThreads>      Minimum number of threads to test"
    echo "  -t <maxThreads>      Maximum number of threads to test"
+   echo "  -s <threadStep>      Steps to increase the thread count by"
    echo "  -r <repetitions>     The number of repetitions in the test"
    echo "  -e <eventMultiplier> Multiplier for the number of events per thread"
    echo "  -c <csvFile>         Name of the output CSV file"
    echo "  -h                   Print this help"
    echo ""
-   echo "Detailed options:"
-   echo "  -g <detectorGeomFile> Detector geometry CSV file"
-   echo "  -d <digiConfigFile>   Detector digitization JSON file"
-   echo ""
 }
 
 # Parse the command line arguments.
 TRACCC_EXECUTABLE=${TRACCC_EXECUTABLE:-"traccc_throughput_mt"}
+TRACCC_INPUT_DIR=${TRACCC_INPUT_DIR:-"odd/"}
+TRACCC_MIN_THREADS=${TRACCC_MIN_THREADS:-1}
 TRACCC_MAX_THREADS=${TRACCC_MAX_THREADS:-$(nproc)}
-TRACCC_REPETITIONS=${TRACCC_REPETITIONS:-1}
+TRACCC_THREAD_STEP=${TRACCC_THREAD_STEP:-1}
+TRACCC_REPETITIONS=${TRACCC_REPETITIONS:-5}
 TRACCC_EVT_MULTI=${TRACCC_EVT_MULTI:-"1"}
 TRACCC_CSV_FILE=${TRACCC_CSV_FILE:-"output.csv"}
-TRACCC_DET_FILE=${TRACCC_DET_FILE:-"tml_detector/trackml-detector.csv"}
-TRACCC_DIGI_FILE=${TRACCC_DIGI_FILE:-"tml_detector/default-geometric-config-generic.json"}
-while getopts ":x:t:r:e:c:g:d:h" opt; do
+while getopts ":x:i:m:t:r:e:c:h" opt; do
    case $opt in
       x)
          TRACCC_EXECUTABLE=$OPTARG
          ;;
+      i)
+         TRACCC_INPUT_DIR=$OPTARG
+         ;;
+      m)
+         TRACCC_MIN_THREADS=$OPTARG
+         ;;
       t)
          TRACCC_MAX_THREADS=$OPTARG
+         ;;
+      s)
+         TRACCC_THREAD_STEP=$OPTARG
          ;;
       r)
          TRACCC_REPETITIONS=$OPTARG
@@ -57,12 +68,6 @@ while getopts ":x:t:r:e:c:g:d:h" opt; do
          ;;
       c)
          TRACCC_CSV_FILE=$OPTARG
-         ;;
-      g)
-         TRACCC_DET_FILE=$OPTARG
-         ;;
-      d)
-         TRACCC_DIGI_FILE=$OPTARG
          ;;
       h)
          usage
@@ -84,12 +89,13 @@ done
 # Print the configuration received.
 echo "Using configuration:"
 echo "   EXECUTABLE  : ${TRACCC_EXECUTABLE}"
+echo "   INPUT_DIR   : ${TRACCC_INPUT_DIR}"
+echo "   MIN_THREADS : ${TRACCC_MIN_THREADS}"
 echo "   MAX_THREADS : ${TRACCC_MAX_THREADS}"
+echo "   THREAD_STEP : ${TRACCC_THREAD_STEP}"
 echo "   REPETITIONS : ${TRACCC_REPETITIONS}"
 echo "   EVT_MULTI   : ${TRACCC_EVT_MULTI}"
 echo "   CSV_FILE    : ${TRACCC_CSV_FILE}"
-echo "   DET_FILE    : ${TRACCC_DET_FILE}"
-echo "   DIGI_FILE   : ${TRACCC_DIGI_FILE}"
 
 # Check whether the output file already exists. Refuse to overwrite existing
 # files.
@@ -107,17 +113,17 @@ TRACCC_INPUT_DIRS=("ttbar_mu20"  "ttbar_mu40"  "ttbar_mu60"  "ttbar_mu80"
 # The number of events to process for the different mu values. Chosen to take
 # roughly the same amount of time to process on a CPU.
 declare -A TRACCC_EVT_COUNT
-TRACCC_EVT_COUNT["ttbar_mu20"]=$((1000*${TRACCC_EVT_MULTI}))
-TRACCC_EVT_COUNT["ttbar_mu40"]=$((500*${TRACCC_EVT_MULTI}))
-TRACCC_EVT_COUNT["ttbar_mu60"]=$((250*${TRACCC_EVT_MULTI}))
-TRACCC_EVT_COUNT["ttbar_mu80"]=$((200*${TRACCC_EVT_MULTI}))
-TRACCC_EVT_COUNT["ttbar_mu100"]=$((150*${TRACCC_EVT_MULTI}))
-TRACCC_EVT_COUNT["ttbar_mu140"]=$((90*${TRACCC_EVT_MULTI}))
-TRACCC_EVT_COUNT["ttbar_mu200"]=$((50*${TRACCC_EVT_MULTI}))
-TRACCC_EVT_COUNT["ttbar_mu300"]=$((20*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu20"]=$((50*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu40"]=$((50*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu60"]=$((25*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu80"]=$((25*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu100"]=$((20*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu140"]=$((15*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu200"]=$((8*${TRACCC_EVT_MULTI}))
+TRACCC_EVT_COUNT["ttbar_mu300"]=$((5*${TRACCC_EVT_MULTI}))
 
 # Put a header on the CSV file.
-echo "directory,threads,loaded_events,cold_run_events,processed_events,target_cells_per_partition,warm_up_time,processing_time" \
+echo "directory,threads,loaded_events,cold_run_events,processed_events,warm_up_time,processing_time" \
    > "${TRACCC_CSV_FILE}"
 
 # Counter for a nice printout.
@@ -125,11 +131,11 @@ COUNTER=1
 COUNT=$((${#TRACCC_INPUT_DIRS[@]}*${TRACCC_MAX_THREADS}*${TRACCC_REPETITIONS}))
 
 # Iterate over the number of threads.
-for NTHREAD in $(seq 1 ${TRACCC_MAX_THREADS}); do
+for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_THREADS}); do
    # Iterate over the input datasets.
    for EVTDIR in ${TRACCC_INPUT_DIRS[@]}; do
       # Perform the requested number of repetitions.
-      for REPEAT in $(seq 1 ${TRACCC_REPETITIONS}); do
+      for REPEAT in $(seq ${TRACCC_REPETITIONS}); do
 
          # Tell the user what's happening.
          echo ""
@@ -137,14 +143,18 @@ for NTHREAD in $(seq 1 ${TRACCC_MAX_THREADS}); do
          ((COUNTER++))
 
          # Run the throughput test.
-         ${TRACCC_EXECUTABLE}                                                 \
-            --detector_file="${TRACCC_DET_FILE}"                              \
-            --digitization_config_file="${TRACCC_DIGI_FILE}"                  \
-            --input_directory="tml_full/${EVTDIR}/"                           \
-            --threads=${NTHREAD}                                              \
-            --cold_run_events=$((20*${NTHREAD}))                              \
-            --processed_events=$((${TRACCC_EVT_COUNT[${EVTDIR}]}*${NTHREAD})) \
-            --log_file="${TRACCC_CSV_FILE}"
+         ${TRACCC_EXECUTABLE}                                                   \
+            --detector-file="geometries/odd/odd-detray_geometry_detray.json"    \
+            --material-file="geometries/odd/odd-detray_material_detray.json"    \
+            --grid-file="geometries/odd/odd-detray_surface_grids_detray.json"   \
+            --use-detray-detector                                               \
+            --digitization-file="geometries/odd/odd-digi-geometric-config.json" \
+            --input-directory="${TRACCC_INPUT_DIR}/geant4_${EVTDIR}/"           \
+            --input-events=500                                                  \
+            --cpu-threads=${NTHREAD}                                            \
+            --cold-run-events=$((5*${NTHREAD}))                                 \
+            --processed-events=$((${TRACCC_EVT_COUNT[${EVTDIR}]}*${NTHREAD}))   \
+            --log-file="${TRACCC_CSV_FILE}"
       done
    done
 done
