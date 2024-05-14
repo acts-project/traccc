@@ -31,7 +31,7 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2004:v30
             options: -DTRACCC_USE_ROOT=FALSE
           - name: HIP 
-            container: ghcr.io/acts-project/ubuntu2004_rocm:v36
+            container: ghcr.io/acts-project/ubuntu2204_rocm_clang:v1
             options: -DTRACCC_BUILD_HIP=TRUE
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2004_cuda:v30
