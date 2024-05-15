@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/math.hpp"
+
 // Detray include(s).
 #include "detray/geometry/surface.hpp"
 
@@ -43,7 +46,7 @@ TRACCC_DEVICE inline void apply_interaction(
     interactor_type{}.update(
         bound_param, interactor_state,
         static_cast<int>(detray::navigation::direction::e_forward), sf,
-        std::abs(
+        math::fabs(
             sf.cos_angle(ctx, bound_param.dir(), bound_param.bound_local())));
 }
 
