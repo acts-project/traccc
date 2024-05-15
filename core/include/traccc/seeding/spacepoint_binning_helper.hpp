@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
@@ -57,8 +58,8 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
         // evaluating the azimutal deflection including the maximum impact
         // parameter
         scalar deltaAngleWithMaxD0 =
-            std::abs(std::asin(grid_config.impactMax / (rMin)) -
-                     std::asin(grid_config.impactMax / grid_config.rMax));
+            math::fabs(std::asin(grid_config.impactMax / (rMin)) -
+                       std::asin(grid_config.impactMax / grid_config.rMax));
 
         // evaluating delta Phi based on the inner and outer angle, and the
         // azimutal deflection including the maximum impact parameter Divide by

@@ -11,6 +11,7 @@ include( traccc-compiler-options-cpp )
 traccc_add_library( traccc_core core TYPE SHARED
   # Common definitions.
   "include/traccc/definitions/track_parametrization.hpp"
+  "include/traccc/definitions/math.hpp"
   "include/traccc/definitions/primitives.hpp"
   "include/traccc/definitions/common.hpp"
   "include/traccc/definitions/qualifiers.hpp"

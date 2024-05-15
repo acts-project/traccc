@@ -9,6 +9,7 @@
 
 // traccc include(s).
 #include "traccc/definitions/common.hpp"
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/geometry/pixel_data.hpp"
@@ -88,8 +89,8 @@ inline bool operator==(const cell& lhs, const cell& rhs) {
 
     return ((lhs.module_link == rhs.module_link) &&
             (lhs.channel0 == rhs.channel0) && (lhs.channel1 == rhs.channel1) &&
-            (std::abs(lhs.activation - rhs.activation) < float_epsilon) &&
-            (std::abs(lhs.time - rhs.time) < float_epsilon));
+            (math::fabs(lhs.activation - rhs.activation) < float_epsilon) &&
+            (math::fabs(lhs.time - rhs.time) < float_epsilon));
 }
 
 }  // namespace traccc
