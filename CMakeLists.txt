@@ -119,17 +119,24 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
 
+# Set up rocThrust.
 option( TRACCC_SETUP_ROCTHRUST
    "Set up the rocThrust target(s) explicitly" FALSE )
 option( TRACCC_USE_SYSTEM_ROCTHRUST
    "Pick up an existing installation of rocThrust from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_SETUP_ROCTHRUST )
+   set( ROCM_WARN_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm warnings" )
+   set( ROCM_ERROR_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm errors" )
+   mark_as_advanced( ROCM_WARN_TOOLCHAIN_VAR ROCM_ERROR_TOOLCHAIN_VAR )
    if( TRACCC_USE_SYSTEM_ROCTHRUST )
       find_package( rocThrust REQUIRED )
    else()
       add_subdirectory( extern/rocThrust )
    endif()
+   # Dress up the rocthrust target a little.
+   target_compile_definitions( rocthrust INTERFACE
+      THRUST_IGNORE_CUB_VERSION_CHECK )
 endif()
 
 # Set up TBB.
