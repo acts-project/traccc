@@ -152,7 +152,8 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
 
         // Create the list of measurement_id of the current track
         std::vector<std::size_t> measurements;
-        std::set<std::size_t> already_added_mes;
+        std::unordered_map<std::size_t, std::size_t> already_added_mes;
+        bool duplicated_measurements = false;
 
         for (auto const& st : states) {
             std::size_t mid = st.get_measurement().measurement_id;
@@ -163,14 +164,40 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
 
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.
-            if (already_added_mes.find(mid) != already_added_mes.end()) {
+            auto dm = already_added_mes.insert(
+                std::pair<std::size_t, std::size_t>(mid, 1));
+
+            // If the measurement was already present in already_added_mes
+            if (!dm.second) {
+                // Increment the count for this measurement_id
+                ++(dm.first->second);
+                duplicated_measurements = true;
                 LOG_DEBUG("(1/3) Track " << track_index
                                          << " has duplicated measurement "
                                          << mid << ".");
             } else {
-                already_added_mes.insert(mid);
                 measurements.push_back(mid);
             }
+        }
+
+        // If at least one measurement is found multiple times in this track:
+        // print warning message and display the track's measurement list
+        if (duplicated_measurements) {
+            std::stringstream ss;
+            ss << "Track " << track_index << " has duplicated measurement(s):";
+
+            for (const auto& m : already_added_mes) {
+                if (m.second != 1) {
+                    ss << " " << m.first << " (" << m.second << " times)";
+                }
+            }
+
+            ss << ". Measurement list:";
+            for (auto const& st : states) {
+                ss << " " << st.get_measurement().measurement_id;
+            }
+
+            LOG_WARN(ss.str());
         }
 
         // Add this track chi2 value
