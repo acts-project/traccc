@@ -119,10 +119,12 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
 
+option( TRACCC_SETUP_ROCTHRUST
+   "Set up the rocThrust target(s) explicitly" FALSE )
 option( TRACCC_USE_SYSTEM_ROCTHRUST
    "Pick up an existing installation of rocThrust from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_BUILD_HIP )
+if( TRACCC_SETUP_ROCTHRUST )
    if( TRACCC_USE_SYSTEM_ROCTHRUST )
       find_package( rocThrust REQUIRED )
    else()

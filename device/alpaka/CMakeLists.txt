@@ -19,7 +19,6 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
   enable_language(HIP)
   find_package( HIPToolkit REQUIRED )
-  include( traccc-compiler-options-hip )
   list(APPEND PRIVATE_LIBRARIES HIP::hiprt vecmem::hip)
 endif()
 

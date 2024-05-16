@@ -12,7 +12,6 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
   enable_language(HIP)
   set_source_files_properties(alpaka_basic.cpp PROPERTIES LANGUAGE HIP)
-  include( traccc-compiler-options-hip )
   list(APPEND DEVICE_LIBRARIES vecmem::hip)
 endif()
 
@@ -24,3 +23,9 @@ traccc_add_test( alpaka
    vecmem::core
    ${DEVICE_LIBRARIES}
 )
+
+#Can only do this once target is defined, so need another if here
+if(alpaka_ACC_GPU_HIP_ENABLE)
+  set_target_properties( traccc_test_alpaka PROPERTIES
+     POSITION_INDEPENDENT_CODE TRUE )
+endif()
