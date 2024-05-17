@@ -245,6 +245,11 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 traccc::performance::timer timer{"Seeding", elapsedTimes};
                 seeds = sa(spacepoints_per_event);
             }
+            if (output_opts.directory != "") {
+                traccc::io::write(event, output_opts.directory,
+                                  output_opts.format, vecmem::get_data(seeds),
+                                  vecmem::get_data(spacepoints_per_event));
+            }
 
             /*----------------------------
               Track params estimation
@@ -264,6 +269,11 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                                      elapsedTimes};
                     track_candidates = finding_alg(
                         detector, field, measurements_per_event, params);
+                }
+                if (output_opts.directory != "") {
+                    traccc::io::write(
+                        event, output_opts.directory, output_opts.format,
+                        traccc::get_data(track_candidates), detector);
                 }
                 {
                     traccc::performance::timer timer{"Track fitting",

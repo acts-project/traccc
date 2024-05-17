@@ -8,7 +8,9 @@
 // Local include(s).
 #include "traccc/io/write.hpp"
 
+#include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
+#include "obj/write_track_candidates.hpp"
 #include "traccc/io/utils.hpp"
 #include "write_binary.hpp"
 
@@ -96,6 +98,43 @@ void write(std::size_t event, std::string_view directory,
                                        event, "-modules.dat")))
                                       .native()),
                 traccc::cell_module_collection_types::const_device{modules});
+            break;
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+void write(std::size_t event, std::string_view directory,
+           traccc::data_format format, seed_collection_types::const_view seeds,
+           spacepoint_collection_types::const_view spacepoints) {
+
+    switch (format) {
+        case data_format::obj:
+            obj::write_seeds(
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-seeds.obj")))
+                                      .native()),
+                seeds, spacepoints);
+            break;
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+void write(std::size_t event, std::string_view directory,
+           traccc::data_format format,
+           track_candidate_container_types::const_view tracks,
+           const detray::detector<>& detector) {
+
+    switch (format) {
+        case data_format::obj:
+            obj::write_track_candidates(
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-track-candidates.obj")))
+                                      .native()),
+                tracks, detector);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
