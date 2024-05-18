@@ -30,6 +30,9 @@ jobs:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v30
             options: -DTRACCC_USE_ROOT=FALSE
+          - name: HIP
+            container: ghcr.io/acts-project/ubuntu2004_rocm:v42
+            options: -DTRACCC_BUILD_HIP=TRUE -DTRACCC_SETUP_ROCTHRUST=TRUE
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2004_cuda:v30
             options: -DTRACCC_BUILD_CUDA=TRUE

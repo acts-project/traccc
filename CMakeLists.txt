@@ -51,6 +51,7 @@ endif()
 # Flags controlling which parts of traccc to build.
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
+option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
    FALSE )
@@ -117,6 +118,26 @@ set( TRACCC_THRUST_OPTIONS "" CACHE STRING
    "Extra options for configuring how Thrust should be used" )
 mark_as_advanced( TRACCC_THRUST_OPTIONS )
 thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+
+# Set up rocThrust.
+option( TRACCC_SETUP_ROCTHRUST
+   "Set up the rocThrust target(s) explicitly" FALSE )
+option( TRACCC_USE_SYSTEM_ROCTHRUST
+   "Pick up an existing installation of rocThrust from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_ROCTHRUST )
+   set( ROCM_WARN_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm warnings" )
+   set( ROCM_ERROR_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm errors" )
+   mark_as_advanced( ROCM_WARN_TOOLCHAIN_VAR ROCM_ERROR_TOOLCHAIN_VAR )
+   if( TRACCC_USE_SYSTEM_ROCTHRUST )
+      find_package( rocThrust REQUIRED )
+   else()
+      add_subdirectory( extern/rocThrust )
+   endif()
+   # Dress up the rocthrust target a little.
+   target_compile_definitions( rocthrust INTERFACE
+      THRUST_IGNORE_CUB_VERSION_CHECK )
+endif()
 
 # Set up TBB.
 option( TRACCC_SETUP_TBB
