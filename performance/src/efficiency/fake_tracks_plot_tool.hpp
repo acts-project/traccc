@@ -89,15 +89,15 @@ class fake_tracks_plot_tool {
         // fake tracks number vs pT
         cache.n_fake_vs_pT = plot_helpers::book_prof(
             TString(name) + "_nFakeTracks_vs_pT",
-            "Number of fake tracks candidates", b_pt, b_num);
+            "Averaged number of fake tracks per particle", b_pt, b_num);
         // fake tracks number vs eta
         cache.n_fake_vs_eta = plot_helpers::book_prof(
             TString(name) + "_nFakeTracks_vs_eta",
-            "Number of fake tracks candidates", b_eta, b_num);
+            "Averaged number of fake tracks per particle", b_eta, b_num);
         // fake tracks number vs phi
         cache.n_fake_vs_phi = plot_helpers::book_prof(
             TString(name) + "_nFakeTracks_vs_phi",
-            "Number of fake tracks candidates", b_phi, b_num);
+            "Averaged number of fake tracks per particle", b_phi, b_num);
 #endif  // TRACCC_HAVE_ROOT
     }
 
