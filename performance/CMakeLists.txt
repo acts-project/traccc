@@ -21,8 +21,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/efficiency/nseed_performance_writer.cpp"
    "src/efficiency/track_filter.cpp"
    "src/efficiency/track_matcher.cpp"
-   "include/traccc/efficiency/track_finding_analysis.hpp"
-   "src/efficiency/track_finding_analysis.cpp"
+   "include/traccc/efficiency/track_finding_efficiency.hpp"
+   "src/efficiency/track_finding_efficiency.cpp"
    # Resolution calculation code.
    "include/traccc/resolution/fitting_performance_writer.hpp"
    "include/traccc/resolution/res_plot_tool_config.hpp"
@@ -37,6 +37,11 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/utils/helpers.hpp"
    "src/utils/helpers.hpp"
    "src/utils/helpers.cpp"
+   # Reconstruction performance measurement helper/base code.
+   "include/traccc/performance/truth_filtering.hpp"
+   "src/performance/truth_filtering.cpp"
+   "include/traccc/performance/truth_matching.hpp"
+   "src/performance/truth_matching.cpp"
    # Value/object comparison code.
    "include/traccc/performance/details/is_same_angle.hpp"
    "src/performance/details/is_same_angle.cpp"

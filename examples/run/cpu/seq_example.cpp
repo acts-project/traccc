@@ -23,7 +23,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
-#include "traccc/efficiency/track_finding_analysis.hpp"
+#include "traccc/efficiency/track_finding_efficiency.hpp"
 #include "traccc/performance/timer.hpp"
 
 // options
@@ -150,12 +150,14 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::greedy_ambiguity_resolution_algorithm resolution_alg;
 
     // Performance analysis object(s).
-    std::unique_ptr<traccc::performance::track_finding_analysis>
+    std::unique_ptr<traccc::performance::track_finding_efficiency>
         track_finding_efficiency;
     if (performance_opts.run) {
         track_finding_efficiency =
-            std::make_unique<traccc::performance::track_finding_analysis>(
-                traccc::performance::track_finding_analysis::config{});
+            std::make_unique<traccc::performance::track_finding_efficiency>(
+                traccc::performance::track_finding_efficiency::config{},
+                traccc::performance::truth_filtering::config{},
+                traccc::performance::truth_matching::config{});
     }
 
     // Timers
