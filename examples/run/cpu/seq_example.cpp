@@ -23,6 +23,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
+#include "traccc/efficiency/seed_finding_efficiency.hpp"
 #include "traccc/efficiency/track_finding_efficiency.hpp"
 #include "traccc/performance/timer.hpp"
 
@@ -150,9 +151,16 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::greedy_ambiguity_resolution_algorithm resolution_alg;
 
     // Performance analysis object(s).
+    std::unique_ptr<traccc::performance::seed_finding_efficiency>
+        seed_finding_efficiency;
     std::unique_ptr<traccc::performance::track_finding_efficiency>
         track_finding_efficiency;
     if (performance_opts.run) {
+        seed_finding_efficiency =
+            std::make_unique<traccc::performance::seed_finding_efficiency>(
+                traccc::performance::seed_finding_efficiency::config{},
+                traccc::performance::truth_filtering::config{},
+                traccc::performance::truth_matching::config{});
         track_finding_efficiency =
             std::make_unique<traccc::performance::track_finding_efficiency>(
                 traccc::performance::track_finding_efficiency::config{},
@@ -304,7 +312,11 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                        input_opts.directory, input_opts.format,
                                        barcode_map.get());
 
-            // Analyze the reconstructed particles vs. the truth ones.
+            // Analyze the reconstructed objects vs. the truth particles.
+            seed_finding_efficiency->analyze(
+                vecmem::get_data(seeds),
+                vecmem::get_data(spacepoints_per_event),
+                traccc::get_data(truth_particles));
             track_finding_efficiency->analyze(
                 traccc::get_data(track_candidates),
                 traccc::get_data(truth_particles));

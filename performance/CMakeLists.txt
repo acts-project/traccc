@@ -21,6 +21,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/efficiency/nseed_performance_writer.cpp"
    "src/efficiency/track_filter.cpp"
    "src/efficiency/track_matcher.cpp"
+   "include/traccc/efficiency/seed_finding_efficiency.hpp"
+   "src/efficiency/seed_finding_efficiency.cpp"
    "include/traccc/efficiency/track_finding_efficiency.hpp"
    "src/efficiency/track_finding_efficiency.cpp"
    # Resolution calculation code.

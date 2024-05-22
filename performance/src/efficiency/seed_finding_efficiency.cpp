@@ -6,7 +6,7 @@
  */
 
 // Library include(s).
-#include "traccc/efficiency/track_finding_efficiency.hpp"
+#include "traccc/efficiency/seed_finding_efficiency.hpp"
 
 #ifdef TRACCC_HAVE_ROOT
 // ROOT include(s).
@@ -23,23 +23,23 @@ namespace traccc::performance {
 
 namespace details {
 
-struct track_finding_efficiency_data {
+struct seed_finding_efficiency_data {
 #ifdef TRACCC_HAVE_ROOT
     std::unique_ptr<TEfficiency> m_eta;
     std::unique_ptr<TEfficiency> m_phi;
     std::unique_ptr<TEfficiency> m_pt;
 #endif  // TRACCC_HAVE_ROOT
-};      // struct track_finding_efficiency_data
+};      // struct seed_finding_efficiency_data
 
 }  // namespace details
 
-track_finding_efficiency::track_finding_efficiency(
+seed_finding_efficiency::seed_finding_efficiency(
     const config& eff_cfg, const truth_filtering::config& filter_cfg,
     const truth_matching::config& matching_cfg)
     : truth_filtering{filter_cfg},
       truth_matching{matching_cfg},
       m_config{eff_cfg},
-      m_data{std::make_unique<details::track_finding_efficiency_data>()} {
+      m_data{std::make_unique<details::seed_finding_efficiency_data>()} {
 
 #ifdef TRACCC_HAVE_ROOT
     // Helper lambda for creating the TEfficiency objects.
@@ -49,13 +49,13 @@ track_finding_efficiency::track_finding_efficiency(
                                              bins.n_bins, bins.min, bins.max);
     };
 
-    m_data->m_eta = make_teff("track_finding_eff_eta", m_config.m_eta_binning);
-    m_data->m_phi = make_teff("track_finding_eff_phi", m_config.m_phi_binning);
-    m_data->m_pt = make_teff("track_finding_eff_pt", m_config.m_pt_binning);
+    m_data->m_eta = make_teff("seed_finding_eff_eta", m_config.m_eta_binning);
+    m_data->m_phi = make_teff("seed_finding_eff_phi", m_config.m_phi_binning);
+    m_data->m_pt = make_teff("seed_finding_eff_pt", m_config.m_pt_binning);
 #endif  // TRACCC_HAVE_ROOT
 }
 
-track_finding_efficiency::~track_finding_efficiency() {
+seed_finding_efficiency::~seed_finding_efficiency() {
 
 #ifdef TRACCC_HAVE_ROOT
     // Open the output file.
@@ -68,26 +68,23 @@ track_finding_efficiency::~track_finding_efficiency() {
     m_data->m_pt->Write();
 
     // Tell the user what happened.
-    std::cout << "Saved track finding efficiency plots into: "
+    std::cout << "Saved seed finding efficiency plots into: "
               << m_config.m_output_name << std::endl;
 #endif  // TRACCC_HAVE_ROOT
 }
 
-void track_finding_efficiency::analyze(
-    [[maybe_unused]] const track_candidate_container_types::const_view&
-        reco_particles_view,
-    [[maybe_unused]] const particle_container_types::const_view&
-        truth_particles_view) {
+void seed_finding_efficiency::analyze(
+    [[maybe_unused]] const seed_collection_types::const_view& seeds_view,
+    [[maybe_unused]] const spacepoint_collection_types::const_view& spacepoints,
+    [[maybe_unused]] const particle_container_types::const_view& truth_view) {
 
 #ifdef TRACCC_HAVE_ROOT
     // Construct device containers around the views.
-    track_candidate_container_types::const_device reco_particles{
-        reco_particles_view};
-    particle_container_types::const_device truth_particles{
-        truth_particles_view};
+    const seed_collection_types::const_device seeds{seeds_view};
+    const particle_container_types::const_device truth_particles{truth_view};
 
     // Helper type.
-    using size_type = track_candidate_container_types::const_device::size_type;
+    using size_type = particle_container_types::const_device::size_type;
 
     // Loop over the truth particles.
     for (size_type i_truth = 0; i_truth < truth_particles.size(); ++i_truth) {
@@ -101,16 +98,10 @@ void track_finding_efficiency::analyze(
             continue;
         }
 
-        // Look for a matching reconstructed particle.
+        // Look for a matching seed.
         [[maybe_unused]] bool found = false;
-        for (size_type i_reco = 0; i_reco < reco_particles.size(); ++i_reco) {
-
-            // The reconstructed particle.
-            track_candidate_container_types::const_device::const_element_view
-                reco_particle = reco_particles.at(i_reco);
-
-            // Check if it matches the truth particle.
-            if (matches(reco_particle, truth_particle)) {
+        for (const seed& s : seeds) {
+            if (matches(s, spacepoints, truth_particle)) {
                 found = true;
                 break;
             }
