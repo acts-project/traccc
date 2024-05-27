@@ -144,10 +144,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
     finding_cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
     finding_cfg.max_num_skipping_per_cand =
         finding_opts.max_num_skipping_per_cand;
-    propagation_opts.setup(finding_cfg.propagation);
+    finding_cfg.propagation = propagation_opts.config;
 
     fitting_algorithm::config_type fitting_cfg;
-    propagation_opts.setup(fitting_cfg.propagation);
+    fitting_cfg.propagation = propagation_opts.config;
 
     // Algorithms
     traccc::host::clusterization_algorithm ca(host_mr);

@@ -77,7 +77,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
     auto field = detray::bfield::create_const_field(B);
 
     // Create geometry
-    detray::toy_det_config<scalar> toy_cfg{};
+    detray::toy_det_config toy_cfg{};
     const auto [detector, names] = detray::build_toy_detector(host_mr, toy_cfg);
 
     using geo_cxt_t = typename decltype(detector)::geometry_context;

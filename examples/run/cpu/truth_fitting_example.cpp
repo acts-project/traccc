@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    propagation_opts.setup(fit_cfg.propagation);
+    fit_cfg.propagation = propagation_opts.config;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 

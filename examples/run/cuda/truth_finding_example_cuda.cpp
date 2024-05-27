@@ -167,7 +167,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     cfg.chi2_max = finding_opts.chi2_max;
     cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
     cfg.max_num_skipping_per_cand = finding_opts.max_num_skipping_per_cand;
-    propagation_opts.setup(cfg.propagation);
+    cfg.propagation = propagation_opts.config;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -177,7 +177,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    propagation_opts.setup(fit_cfg.propagation);
+    fit_cfg.propagation = propagation_opts.config;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(

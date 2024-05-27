@@ -56,7 +56,7 @@ int simulate(const traccc::opts::generation& generation_opts,
     auto field = detray::bfield::create_const_field(B);
 
     // Create the toy geometry
-    detray::toy_det_config<scalar> toy_cfg{};
+    detray::toy_det_config toy_cfg{};
     toy_cfg.n_brl_layers(4u).n_edc_layers(7u);
     // @TODO: Increase the material budget again
     toy_cfg.module_mat_thickness(0.11 * detray::unit<scalar>::mm);
@@ -104,7 +104,7 @@ int simulate(const traccc::opts::generation& generation_opts,
                                  writer_type>(
         generation_opts.events, det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
-    propagation_opts.setup(sim.get_config().propagation);
+    sim.get_config().propagation = propagation_opts.config;
 
     sim.run();
 
