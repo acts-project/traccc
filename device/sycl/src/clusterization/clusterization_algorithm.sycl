@@ -10,6 +10,7 @@
 #include "../sanity/ordered_on.hpp"
 #include "../utils/barrier.hpp"
 #include "../utils/get_queue.hpp"
+#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
@@ -31,11 +32,28 @@ class ccl_kernel;
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
-    const unsigned short target_cells_per_partition)
+    const config_type& config)
     : m_mr(mr),
       m_queue(queue),
       m_copy(copy),
-      m_target_cells_per_partition(target_cells_per_partition) {}
+      m_config(config),
+      m_f_backup(m_config.backup_size(), m_mr.main),
+      m_gf_backup(m_config.backup_size(), m_mr.main),
+      m_adjc_backup(m_config.backup_size(), m_mr.main),
+      m_adjv_backup(m_config.backup_size() * 8, m_mr.main),
+      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {
+    m_copy.get().setup(m_f_backup)->wait();
+    m_copy.get().setup(m_gf_backup)->wait();
+    m_copy.get().setup(m_adjc_backup)->wait();
+    m_copy.get().setup(m_adjv_backup)->wait();
+
+    details::get_queue(m_queue)
+        .memset(
+            m_backup_mutex.get(), 0,
+            sizeof(
+                std::remove_extent_t<decltype(m_backup_mutex)::element_type>))
+        .wait_and_throw();
+}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells_view,
@@ -61,17 +79,18 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         return measurements;
     }
 
-    // Construct the kernel launch parameters.
-    const device::details::ccl_kernel_helper helper{
-        m_target_cells_per_partition, num_cells};
+    std::size_t num_blocks =
+        (num_cells + m_config.target_partition_size() - 1) /
+        m_config.target_partition_size();
+
     ::sycl::nd_range cclKernelRange(
-        ::sycl::range<1>(helper.num_partitions * helper.threads_per_partition),
-        ::sycl::range<1>(helper.threads_per_partition));
+        ::sycl::range<1>(num_blocks * m_config.threads_per_partition),
+        ::sycl::range<1>(m_config.threads_per_partition));
 
     // Check if device is capable of allocating sufficient local memory
     assert(sizeof(device::details::index_t) * 2 *
-                   helper.max_cells_per_partition +
-               3 * sizeof(unsigned int) <
+                   m_config.max_partition_size() +
+               3 * sizeof(std::size_t) <
            details::get_queue(m_queue)
                .get_device()
                .get_info<::sycl::info::device::local_mem_size>());
@@ -85,42 +104,60 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy.get().setup(cell_links)->wait();
     vecmem::data::vector_view<unsigned int> cell_links_view(cell_links);
 
+    using vector_size_t =
+        vecmem::data::vector_view<device::details::index_t>::size_type;
+
+    // Ensure that the chosen maximum cell count is compatible with the maximum
+    // stack size.
+    assert(m_config.max_cells_per_thread <=
+           device::details::CELLS_PER_THREAD_STACK_LIMIT);
+
     // Run ccl kernel
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             // Allocate shared memory for the kernel.
-            vecmem::sycl::local_accessor<unsigned int> shared_uint(3, h);
+            vecmem::sycl::local_accessor<std::size_t> shared_uint(3, h);
             vecmem::sycl::local_accessor<device::details::index_t> shared_idx(
-                2 * helper.max_cells_per_partition, h);
+                2 * m_config.max_partition_size(), h);
 
             // Launch the kernel.
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
-                [shared_uint, shared_idx, helper, cells_view, modules_view,
+                [shared_uint, shared_idx, cells_view, modules_view,
                  measurements_view, cell_links_view,
-                 target_cells_per_partition =
-                     m_target_cells_per_partition](::sycl::nd_item<1> item) {
+                 f_backup_view = vecmem::get_data(m_f_backup),
+                 gf_backup_view = vecmem::get_data(m_gf_backup),
+                 adjc_backup_view = vecmem::get_data(m_adjc_backup),
+                 adjv_backup_view = vecmem::get_data(m_adjv_backup),
+                 mutex_ptr = m_backup_mutex.get(),
+                 cfg = m_config](::sycl::nd_item<1> item) {
                     // Construct more readable variable names.
                     vecmem::data::vector_view<device::details::index_t> f_view{
-                        helper.max_cells_per_partition, &shared_idx[0]};
+                        static_cast<vector_size_t>(cfg.max_partition_size()),
+                        &shared_idx[0]};
                     vecmem::data::vector_view<device::details::index_t> gf_view{
-                        helper.max_cells_per_partition,
-                        &shared_idx[helper.max_cells_per_partition]};
-                    unsigned int& partition_start = shared_uint[0];
-                    unsigned int& partition_end = shared_uint[1];
-                    unsigned int& outi = shared_uint[2];
+                        static_cast<vector_size_t>(cfg.max_partition_size()),
+                        &shared_idx[cfg.max_partition_size()]};
+                    std::size_t& partition_start = shared_uint[0];
+                    std::size_t& partition_end = shared_uint[1];
+                    std::size_t& outi = shared_uint[2];
+
+                    // Mutex for scratch space
+                    vecmem::device_atomic_ref<unsigned int> backup_mutex(
+                        *mutex_ptr);
 
                     // Barrier used in the algorithm.
                     traccc::sycl::barrier barry_r(item);
 
                     // Run the algorithm for this thread.
                     device::ccl_kernel(
-                        item.get_local_linear_id(), item.get_local_range(0),
-                        item.get_group_linear_id(), cells_view, modules_view,
-                        helper.max_cells_per_partition,
-                        target_cells_per_partition, partition_start,
-                        partition_end, outi, f_view, gf_view, barry_r,
-                        measurements_view, cell_links_view);
+                        cfg, item.get_local_linear_id(),
+                        item.get_local_range(0), item.get_group_linear_id(),
+                        cells_view, modules_view, partition_start,
+                        partition_end, outi, f_view, gf_view, f_backup_view,
+                        gf_backup_view, adjc_backup_view, adjv_backup_view,
+                        backup_mutex, barry_r, measurements_view,
+                        cell_links_view);
                 });
         })
         .wait_and_throw();

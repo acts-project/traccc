@@ -55,6 +55,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// Navigator type used by the track finding and fitting algorithms
     using navigator_type = detray::navigator<const detector_type>;
 
+    using clustering_algorithm = host::clusterization_algorithm;
     /// Track finding algorithm type
     using finding_algorithm =
         traccc::finding_algorithm<stepper_type, navigator_type>;
@@ -71,7 +72,8 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// @param dummy This is not used anywhere. Allows templating CPU/Device
     /// algorithm.
     ///
-    full_chain_algorithm(vecmem::memory_resource& mr, unsigned int dummy,
+    full_chain_algorithm(vecmem::memory_resource& mr,
+                         const clustering_algorithm::config_type& dummy,
                          const seedfinder_config& finder_config,
                          const spacepoint_grid_config& grid_config,
                          const seedfilter_config& filter_config,

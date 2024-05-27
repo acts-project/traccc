@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
@@ -34,6 +35,28 @@ using cca_function_t = std::function<
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
         const traccc::cell_collection_types::host &,
         const traccc::cell_module_collection_types::host &)>;
+
+inline traccc::clustering_config default_ccl_test_config() {
+    traccc::clustering_config rv;
+
+    rv.threads_per_partition = 128;
+    rv.max_cells_per_thread = 16;
+    rv.target_cells_per_thread = 8;
+    rv.backup_size_multiplier = 256;
+
+    return rv;
+}
+
+inline traccc::clustering_config tiny_ccl_test_config() {
+    traccc::clustering_config rv;
+
+    rv.threads_per_partition = 128;
+    rv.max_cells_per_thread = 1;
+    rv.target_cells_per_thread = 1;
+    rv.backup_size_multiplier = 16384;
+
+    return rv;
+}
 
 class ConnectedComponentAnalysisTests
     : public traccc::tests::data_test,
@@ -69,6 +92,23 @@ class ConnectedComponentAnalysisTests
             {"single_module_single_hit", 100},
             {"very_dense", 100},
             {"trackml_like", 30},
+        };
+        std::vector<std::string> out;
+
+        for (const std::pair<std::string, std::size_t> &c : cases) {
+            for (std::size_t i = 0; i < c.second; ++i) {
+                std::ostringstream ss;
+                ss << c.first << "_" << std::setfill('0') << std::setw(10) << i;
+                out.push_back(ss.str());
+            }
+        }
+
+        return out;
+    }
+
+    inline static std::vector<std::string> get_test_files_short(void) {
+        const std::vector<std::pair<std::string, std::size_t>> cases = {
+            {"trackml_like", 10},
         };
         std::vector<std::string> out;
 

@@ -28,7 +28,7 @@ TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
     const cell_collection_types::const_device& cells, unsigned short cid,
     unsigned int start, unsigned int end, unsigned char& adjc,
-    unsigned short adjv[8]);
+    unsigned short* adjv);
 
 }  // namespace traccc::device
 
