@@ -14,6 +14,7 @@
 #include <vecmem/utils/sycl/async_copy.hpp>
 
 #include "tests/cca_test.hpp"
+#include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
 namespace {
@@ -28,7 +29,8 @@ cca_function_t f = [](const traccc::cell_collection_types::host& cells,
     vecmem::sycl::device_memory_resource device_mr;
     vecmem::sycl::async_copy copy{&queue};
 
-    traccc::sycl::clusterization_algorithm cc({device_mr}, copy, &queue, 1024);
+    traccc::sycl::clusterization_algorithm cc({device_mr}, copy, &queue,
+                                              default_ccl_test_config());
 
     traccc::cell_collection_types::buffer cells_buffer{
         static_cast<traccc::cell_collection_types::buffer::size_type>(

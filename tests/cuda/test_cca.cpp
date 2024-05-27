@@ -28,7 +28,8 @@ cca_function_t f = [](const traccc::cell_collection_types::host& cells,
     vecmem::cuda::device_memory_resource device_mr;
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::cuda::clusterization_algorithm cc({device_mr}, copy, stream, 1024);
+    traccc::cuda::clusterization_algorithm cc({device_mr}, copy, stream,
+                                              default_ccl_test_config());
 
     traccc::cell_collection_types::buffer cells_buffer{
         static_cast<traccc::cell_collection_types::buffer::size_type>(

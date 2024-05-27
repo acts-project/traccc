@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
@@ -34,6 +35,17 @@ using cca_function_t = std::function<
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
         const traccc::cell_collection_types::host &,
         const traccc::cell_module_collection_types::host &)>;
+
+inline traccc::clustering_config default_ccl_test_config() {
+    traccc::clustering_config rv;
+
+    rv.threads_per_partition = 128;
+    rv.max_cells_per_thread = 16;
+    rv.target_cells_per_thread = 8;
+    rv.backup_size_multiplier = 256;
+
+    return rv;
+}
 
 class ConnectedComponentAnalysisTests
     : public traccc::tests::data_test,

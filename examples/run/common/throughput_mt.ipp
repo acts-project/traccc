@@ -136,6 +136,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
         cached_host_mrs{threading_opts.threads + 1};
 
+    typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
+        clusterization_opts);
+
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
@@ -160,7 +163,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
         algs.push_back(
             {alg_host_mr,
-             clusterization_opts,
+             clustering_cfg,
              seeding_opts.seedfinder,
              {seeding_opts.seedfinder},
              seeding_opts.seedfilter,

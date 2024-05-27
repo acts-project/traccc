@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "tests/cca_test.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
@@ -62,7 +63,8 @@ TEST(SYCLClustering, SingleModule) {
     modules.push_back({});
 
     // Run Clusterization
-    traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, &q, 1024);
+    traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, &q,
+                                                   default_ccl_test_config());
 
     auto measurements_buffer =
         ca_sycl(vecmem::get_data(cells), vecmem::get_data(modules));
