@@ -33,7 +33,7 @@ struct simulator {
     using scalar_type = typename detector_t::scalar_type;
 
     struct config {
-        detray::propagation::config<scalar_type> propagation;
+        detray::propagation::config propagation;
     };
 
     using algebra_type = typename detector_t::algebra_type;

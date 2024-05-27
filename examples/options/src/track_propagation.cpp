@@ -57,35 +57,6 @@ void track_propagation::read(const po::variables_map&) {
     config.navigation.search_window = m_search_window;
 }
 
-void track_propagation::setup(detray::propagation::config<float>& cfg) const {
-
-    cfg = config;
-    return;
-}
-
-void track_propagation::setup(detray::propagation::config<double>& cfg) const {
-
-    cfg.stepping.min_stepsize = config.stepping.min_stepsize;
-    cfg.stepping.rk_error_tol = config.stepping.rk_error_tol;
-    cfg.stepping.step_constraint = config.stepping.step_constraint;
-    cfg.stepping.path_limit = config.stepping.path_limit;
-    cfg.stepping.max_rk_updates = config.stepping.max_rk_updates;
-    cfg.stepping.use_mean_loss = config.stepping.use_mean_loss;
-    cfg.stepping.use_eloss_gradient = config.stepping.use_eloss_gradient;
-    cfg.stepping.use_field_gradient = config.stepping.use_field_gradient;
-    cfg.stepping.do_covariance_transport =
-        config.stepping.do_covariance_transport;
-
-    cfg.navigation.min_mask_tolerance = config.navigation.min_mask_tolerance;
-    cfg.navigation.max_mask_tolerance = config.navigation.max_mask_tolerance;
-    cfg.navigation.on_surface_tolerance =
-        config.navigation.on_surface_tolerance;
-    cfg.navigation.overstep_tolerance = config.navigation.overstep_tolerance;
-    cfg.navigation.search_window[0] = config.navigation.search_window[0];
-    cfg.navigation.search_window[1] = config.navigation.search_window[1];
-    return;
-}
-
 std::ostream& track_propagation::print_impl(std::ostream& out) const {
 
     out << "  Constraint step size  : "

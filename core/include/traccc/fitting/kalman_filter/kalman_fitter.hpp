@@ -53,7 +53,7 @@ class kalman_fitter {
     using intersection_type = typename navigator_t::intersection_type;
 
     /// Configuration type
-    using config_type = fitting_config<scalar_type>;
+    using config_type = fitting_config;
 
     // Field type
     using bfield_type = typename stepper_t::magnetic_field_type;

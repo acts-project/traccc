@@ -41,7 +41,7 @@ struct finding_config {
     scalar_t chi2_max = 30.f;
 
     /// Propagation configuration
-    detray::propagation::config<scalar_t> propagation{};
+    detray::propagation::config propagation{};
 
     /****************************
      *  GPU-specfic parameters

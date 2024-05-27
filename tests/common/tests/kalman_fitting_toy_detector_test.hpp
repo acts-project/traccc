@@ -56,7 +56,7 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
     virtual void SetUp() override {
         vecmem::host_memory_resource host_mr;
 
-        detray::toy_det_config<scalar> toy_cfg{};
+        detray::toy_det_config toy_cfg{};
         toy_cfg.n_brl_layers(n_barrels).n_edc_layers(n_endcaps).do_check(false);
 
         // Create the toy geometry
@@ -66,6 +66,8 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
         auto writer_cfg = detray::io::detector_writer_config{}
                               .format(detray::io::format::json)
                               .replace_files(true)
+                              .write_grids(true)
+                              .write_material(true)
                               .path(std::get<0>(GetParam()));
         detray::io::write_detector(det, name_map, writer_cfg);
     }
