@@ -59,21 +59,8 @@ void track_propagation::read(const po::variables_map&) {
 
 std::ostream& track_propagation::print_impl(std::ostream& out) const {
 
-    out << "  Constraint step size  : "
-        << config.stepping.step_constraint / detray::unit<float>::mm
-        << " [mm]\n"
-        << "  Overstep tolerance    : "
-        << config.navigation.overstep_tolerance / detray::unit<float>::um
-        << " [um]\n"
-        << "  Minimum mask tolerance: "
-        << config.navigation.min_mask_tolerance / detray::unit<float>::mm
-        << " [mm]\n"
-        << "  Maximum mask tolerance: "
-        << config.navigation.max_mask_tolerance / detray::unit<float>::mm
-        << " [mm]\n"
-        << "  Search window         : " << config.navigation.search_window[0]
-        << " x " << config.navigation.search_window[1] << "\n"
-        << "  Runge-Kutta tolerance : " << config.stepping.rk_error_tol;
+    out << config;
+
     return out;
 }
 
