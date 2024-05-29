@@ -17,8 +17,10 @@
 
 namespace traccc::io {
 
-void read_measurements(measurement_reader_output& out, std::size_t event,
-                       std::string_view directory, data_format format) {
+void read_measurements(
+    measurement_reader_output& out, std::size_t event,
+    std::string_view directory, data_format format,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
 
     switch (format) {
         case data_format::csv: {
@@ -28,7 +30,7 @@ void read_measurements(measurement_reader_output& out, std::size_t event,
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.csv")))
                                       .native()),
-                format);
+                format, barcode_map);
             break;
         }
         case data_format::binary: {
@@ -52,12 +54,16 @@ void read_measurements(measurement_reader_output& out, std::size_t event,
     }
 }
 
-void read_measurements(measurement_reader_output& out,
-                       std::string_view filename, data_format format) {
+void read_measurements(
+    measurement_reader_output& out, std::string_view filename,
+    data_format format,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
 
+    static constexpr bool sort_measurements = true;
     switch (format) {
         case data_format::csv:
-            return csv::read_measurements(out, filename);
+            return csv::read_measurements(out, filename, sort_measurements,
+                                          barcode_map);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

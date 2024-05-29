@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -187,7 +187,7 @@ void finding_performance_writer::write_common(
     for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
         // Count only charged particles which satisfy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.mom) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
             continue;
         }
 

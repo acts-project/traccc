@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,8 +18,10 @@
 
 namespace traccc::io::csv {
 
-void read_measurements(measurement_reader_output& out,
-                       std::string_view filename, const bool do_sort) {
+void read_measurements(
+    measurement_reader_output& out, std::string_view filename,
+    const bool do_sort,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
@@ -28,22 +30,34 @@ void read_measurements(measurement_reader_output& out,
     measurement_collection_types::host& result_measurements = out.measurements;
     cell_module_collection_types::host& result_modules = out.modules;
 
-    std::map<geometry_id, unsigned int> m;
+    std::map<detray::geometry::barcode, unsigned int> m;
 
     // Read the measurements from the input file.
     csv::measurement iomeas;
     while (reader.read(iomeas)) {
 
+        // Establish the "correct" geometry ID.
+        detray::geometry::barcode barcode{iomeas.geometry_id};
+        if (barcode_map != nullptr) {
+            auto it = barcode_map->find(iomeas.geometry_id);
+            if (it != barcode_map->end()) {
+                barcode = (*it).second;
+            } else {
+                throw std::runtime_error("Barcode not found for geometry ID " +
+                                         std::to_string(iomeas.geometry_id));
+            }
+        }
+
         unsigned int link;
-        auto it = m.find(iomeas.geometry_id);
+        auto it = m.find(barcode);
 
         if (it != m.end()) {
             link = (*it).second;
         } else {
             link = result_modules.size();
-            m[iomeas.geometry_id] = link;
+            m[barcode] = link;
             cell_module mod;
-            mod.surface_link = detray::geometry::barcode{iomeas.geometry_id};
+            mod.surface_link = barcode;
             result_modules.push_back(mod);
         }
 
@@ -76,7 +90,7 @@ void read_measurements(measurement_reader_output& out,
         }
 
         meas.subs.set_indices(indices);
-        meas.surface_link = detray::geometry::barcode{iomeas.geometry_id};
+        meas.surface_link = barcode;
         meas.module_link = link;
         // Keeps measurement_id for ambiguity resolution
         meas.measurement_id = iomeas.measurement_id;
@@ -88,63 +102,6 @@ void read_measurements(measurement_reader_output& out,
         std::sort(result_measurements.begin(), result_measurements.end(),
                   measurement_sort_comp());
     }
-}
-
-measurement_container_types::host read_measurements_container(
-    std::string_view filename, vecmem::memory_resource* mr) {
-
-    // Construct the measurement reader object.
-    auto reader = make_measurement_reader(filename);
-
-    // Create the result container.
-    measurement_container_types::host result;
-    if (mr != nullptr) {
-        result = measurement_container_types::host{mr};
-    }
-
-    // Read the measurements from the input file.
-    csv::measurement iomeas;
-    while (reader.read(iomeas)) {
-
-        // Construct the module ID for the measurement.
-        cell_module module;
-        module.surface_link = detray::geometry::barcode{iomeas.geometry_id};
-
-        // Construct the measurement object.
-        const traccc::measurement meas{
-            point2{iomeas.local0, iomeas.local1},
-            variance2{iomeas.var_local0, iomeas.var_local1},
-            detray::geometry::barcode{iomeas.geometry_id}};
-
-        // Find the detector module that this measurement belongs to.
-        const measurement_container_types::host::header_vector& headers =
-            result.get_headers();
-        auto rit = std::find(headers.rbegin(), headers.rend(), module);
-
-        // Add the measurement to the correct place in the container.
-        if (rit == headers.rend()) {
-            if (mr != nullptr) {
-                result.push_back(
-                    module,
-                    measurement_container_types::host::item_vector::value_type(
-                        {meas}, mr));
-            } else {
-                result.push_back(
-                    module,
-                    measurement_container_types::host::item_vector::value_type(
-                        {meas}));
-            }
-        } else {
-            // The reverse iterator.base() returns the equivalent normal
-            // iterator shifted by 1, so that the (r)end and (r)begin iterators
-            // match consistently, due to the extra past-the-last element
-            auto idx = std::distance(headers.begin(), rit.base()) - 1;
-            result.at(idx).items.push_back(meas);
-        }
-    }
-
-    // Return the container.
-    return result;
 }
 
 }  // namespace traccc::io::csv

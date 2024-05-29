@@ -119,9 +119,9 @@ TEST_F(io, csv_read_tml_single_muon) {
                                   traccc::data_format::csv);
 
     // Read the particles from the relevant event file
-    traccc::particle_collection_types::host particles_per_event =
-        traccc::io::read_particles(0, "tml_full/single_muon/",
-                                   traccc::data_format::csv, &resource);
+    traccc::particle_collection_types::host particles_per_event(&resource);
+    traccc::io::read_particles(particles_per_event, 0, "tml_full/single_muon/",
+                               traccc::data_format::csv);
 
     ASSERT_EQ(spacepoints_per_event.modules.size(), 11u);
     ASSERT_EQ(measurements_per_event.modules.size(), 11u);
@@ -130,4 +130,28 @@ TEST_F(io, csv_read_tml_single_muon) {
     ASSERT_EQ(measurements_per_event.measurements.size(), 11u);
 
     ASSERT_EQ(particles_per_event.size(), 1u);
+}
+
+/// Tests with ODD "single" muon events.
+TEST_F(io, csv_read_odd_single_muon) {
+
+    // Memory resource used by the test.
+    vecmem::host_memory_resource mr;
+
+    // Read the truth particles for the first event.
+    traccc::particle_container_types::host particles{&mr};
+    traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/",
+                               traccc::data_format::csv);
+
+    // Look at the read container.
+    ASSERT_EQ(particles.size(), 265u);
+    std::size_t n_muons = 0u;
+    for (std::size_t i = 0; i < particles.size(); ++i) {
+        // The muon(s) must have measurements associated to it/them.
+        if (std::abs(particles.at(i).header.particle_type) == 13) {
+            ++n_muons;
+            EXPECT_GT(particles.at(i).items.size(), 0u);
+        }
+    }
+    EXPECT_EQ(n_muons, 4u);
 }

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -22,8 +22,8 @@ std::string simple_charged_eta_pt_cut::get_name() const {
 }
 
 bool simple_charged_eta_pt_cut::operator()(const particle& p) const {
-    const scalar eta = getter::eta(p.mom);
-    const scalar pT = getter::perp(p.mom);
+    const scalar eta = getter::eta(p.momentum);
+    const scalar pT = getter::perp(p.momentum);
 
     return p.charge != 0 && std::abs(eta) <= m_eta && pT >= m_pT;
 }

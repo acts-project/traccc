@@ -58,12 +58,12 @@ TEST(mappper, particle_map) {
     std::size_t pid1 = 4503599660924928;
     std::size_t pid2 = 4503599744811008;
 
-    EXPECT_EQ(p_map[pid0].pos,
+    EXPECT_EQ(p_map[pid0].vertex,
               traccc::vector3({-0.0120002991, -9.48547313e-05, -15.1165705}));
 
-    EXPECT_EQ(p_map[pid1].pos, traccc::vector3({-0.4, -0.23412, -100.}));
+    EXPECT_EQ(p_map[pid1].vertex, traccc::vector3({-0.4, -0.23412, -100.}));
 
-    EXPECT_EQ(p_map[pid2].pos, traccc::vector3({-1999., -9.231, 23425.}));
+    EXPECT_EQ(p_map[pid2].vertex, traccc::vector3({-1999., -9.231, 23425.}));
 }
 
 // Test generate_hit_particle_map function
