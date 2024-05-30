@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -204,9 +204,9 @@ struct track_state {
     bound_matrix m_jacobian =
         matrix_operator().template zero<e_bound_size, e_bound_size>();
     bound_track_parameters_type m_predicted;
-    scalar_type m_filtered_chi2;
+    scalar_type m_filtered_chi2 = 0.f;
     bound_track_parameters_type m_filtered;
-    scalar_type m_smoothed_chi2;
+    scalar_type m_smoothed_chi2 = 0.f;
     bound_track_parameters_type m_smoothed;
 };
 
