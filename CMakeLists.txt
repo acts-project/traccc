@@ -245,7 +245,7 @@ option( TRACCC_USE_SYSTEM_ACTS
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_SETUP_ACTS )
    if( TRACCC_USE_SYSTEM_ACTS )
-      find_package( Acts REQUIRED )
+      find_package( Acts REQUIRED COMPONENTS PluginJson )
    else()
       add_subdirectory( extern/acts )
    endif()
