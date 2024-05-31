@@ -38,7 +38,7 @@ spacepoint_formation::output_type spacepoint_formation::operator()(
         for (std::size_t j = 0; j < data.at(i).items.size(); ++j) {
             ++total_measurements;
             measurements.push_back(data.at(i).items.at(j));
-            geom_ids.push_back(data.at(i).header.module);
+            geom_ids.push_back(data.at(i).header.mod);
         }
     }
 

@@ -50,12 +50,11 @@ measurement_creation_algorithm::operator()(
         assert(cluster.empty() == false);
 
         // Get the cell module
-        const unsigned int module_link = cluster.at(0).module_link;
-        const auto &module = modules.at(module_link);
+        const unsigned int mod_link = cluster.at(0).module_link;
+        const auto &mod = modules.at(mod_link);
 
         // Fill measurement from cluster
-        details::fill_measurement(measurements, i, cluster, module,
-                                  module_link);
+        details::fill_measurement(measurements, i, cluster, mod, mod_link);
     }
 
     return result;

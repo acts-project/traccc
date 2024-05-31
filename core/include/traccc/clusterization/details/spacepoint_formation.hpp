@@ -19,11 +19,11 @@ namespace traccc::details {
 ///
 /// @param sp The spacepoint to fill / set up
 /// @param measurement The measurement to create the spacepoint out of
-/// @param module The module that the measurement belongs to
+/// @param mod The module that the measurement belongs to
 ///
 TRACCC_HOST_DEVICE inline void fill_spacepoint(spacepoint& sp,
                                                const measurement& meas,
-                                               const cell_module& module);
+                                               const cell_module& mod);
 
 }  // namespace traccc::details
 

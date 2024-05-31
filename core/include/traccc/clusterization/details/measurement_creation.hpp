@@ -17,26 +17,25 @@ namespace traccc::details {
 
 /// Function used for retrieving the cell signal based on the module id
 TRACCC_HOST_DEVICE
-inline scalar signal_cell_modelling(scalar signal_in,
-                                    const cell_module& module);
+inline scalar signal_cell_modelling(scalar signal_in, const cell_module& mod);
 
 /// Function for pixel segmentation
 TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(const cell& cell, const cell_module& module);
+inline vector2 position_from_cell(const cell& cell, const cell_module& mod);
 
 /// Function used for calculating the properties of the cluster during
 /// measurement creation
 ///
 /// @param[in] cluster The vector of cells describing the identified cluster
-/// @param[in] module  The cell module
+/// @param[in] mod     The cell module
 /// @param[out] mean   The mean position of the cluster/measurement
 /// @param[out] var    The variation on the mean position of the
 ///                    cluster/measurement
 /// @param[out] totalWeight The total weight of the cluster/measurement
 ///
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
-    const cell_collection_types::const_device& cluster,
-    const cell_module& module, point2& mean, point2& var, scalar& totalWeight);
+    const cell_collection_types::const_device& cluster, const cell_module& mod,
+    point2& mean, point2& var, scalar& totalWeight);
 
 /// Function used for calculating the properties of the cluster during
 /// measurement creation
@@ -45,14 +44,14 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 ///                          object will be filled
 /// @param[in] measurement_index is the index of the measurement object to fill
 /// @param[in] cluster is the input cell vector
-/// @param[in] module is the cell module where the cluster belongs to
-/// @param[in] module_link is the module index
+/// @param[in] mod  is the cell module where the cluster belongs to
+/// @param[in] mod_link is the module index
 ///
 TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement_collection_types::device& measurements,
     std::size_t measurement_index,
-    const cell_collection_types::const_device& cluster,
-    const cell_module& module, const unsigned int module_link);
+    const cell_collection_types::const_device& cluster, const cell_module& mod,
+    const unsigned int mod_link);
 
 }  // namespace traccc::details
 
