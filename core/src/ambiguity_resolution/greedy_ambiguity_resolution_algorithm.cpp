@@ -152,13 +152,52 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
 
         // Create the list of measurement_id of the current track
         std::vector<std::size_t> measurements;
+        std::unordered_map<std::size_t, std::size_t> already_added_mes;
+        bool duplicated_measurements = false;
+
         for (auto const& st : states) {
             std::size_t mid = st.get_measurement().measurement_id;
             ++mcount_all;
             if (mid == 0) {
                 ++mcount_idzero;
             }
-            measurements.push_back(mid);
+
+            // If the same measurement is found multiple times in a single
+            // track: remove duplicates.
+            auto dm = already_added_mes.insert(
+                std::pair<std::size_t, std::size_t>(mid, 1));
+
+            // If the measurement was already present in already_added_mes
+            if (!dm.second) {
+                // Increment the count for this measurement_id
+                ++(dm.first->second);
+                duplicated_measurements = true;
+                LOG_DEBUG("(1/3) Track " << track_index
+                                         << " has duplicated measurement "
+                                         << mid << ".");
+            } else {
+                measurements.push_back(mid);
+            }
+        }
+
+        // If at least one measurement is found multiple times in this track:
+        // print warning message and display the track's measurement list
+        if (duplicated_measurements) {
+            std::stringstream ss;
+            ss << "Track " << track_index << " has duplicated measurement(s):";
+
+            for (const auto& m : already_added_mes) {
+                if (m.second != 1) {
+                    ss << " " << m.first << " (" << m.second << " times)";
+                }
+            }
+
+            ss << ". Measurement list:";
+            for (auto const& st : states) {
+                ss << " " << st.get_measurement().measurement_id;
+            }
+
+            LOG_WARN(ss.str());
         }
 
         // Add this track chi2 value
@@ -241,8 +280,20 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
         // states  is a vecmem_vector<track_state<default_algebra>>
         auto const& [fit_res, states] = initial_track_states.at(track_index);
 
+        std::set<std::size_t> already_added_mes;
+
         for (auto const& st : states) {
             std::size_t meas_id = st.get_measurement().measurement_id;
+
+            // If the same measurement is found multiple times in a single
+            // track: remove duplicates.
+            if (already_added_mes.find(meas_id) != already_added_mes.end()) {
+                LOG_DEBUG("(2/3) Track " << track_index
+                                         << " has duplicated measurement "
+                                         << meas_id << ".");
+                continue;
+            }
+            already_added_mes.insert(meas_id);
 
             std::unordered_map<std::size_t, std::size_t>::iterator meas_it =
                 initial_measurement_count.find(meas_id);
@@ -334,9 +385,22 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     // Initializes tracks_per_measurements
     for (std::size_t track_index : final_state.selected_tracks) {
         auto const& [fit_res, states] = initial_track_states.at(track_index);
+
+        std::set<std::size_t> already_added_mes;
+
         for (auto const& mes : states) {
             std::size_t meas_id = mes.get_measurement().measurement_id;
-            tracks_per_measurements[meas_id].push_back(track_index);
+
+            // If the same measurement is found multiple times in a single
+            // track: remove duplicates.
+            if (already_added_mes.find(meas_id) != already_added_mes.end()) {
+                LOG_DEBUG("(3/3) Track " << track_index
+                                         << " has duplicated measurement "
+                                         << meas_id << ".");
+            } else {
+                already_added_mes.insert(meas_id);
+                tracks_per_measurements[meas_id].push_back(track_index);
+            }
         }
     }
 
