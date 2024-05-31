@@ -46,7 +46,7 @@ component_connection::output_type component_connection::operator()(
     for (std::size_t i = 0, k = 0; i < data.size(); ++i) {
         for (std::size_t j = 0; j < data.at(i).items.size(); ++j, ++k) {
             host_event[k] = 0;
-            host_geometry[k] = data.at(i).header.module;
+            host_geometry[k] = data.at(i).header.mod;
             host_channel0[k] = data.at(i).items.at(j).channel0;
             host_channel1[k] = data.at(i).items.at(j).channel1;
             host_activation[k] = data.at(i).items.at(j).activation;
@@ -66,7 +66,7 @@ component_connection::output_type component_connection::operator()(
         v.reserve(data.at(i).items.size());
 
         for (std::size_t j = 0; j < std::get<1>(r).size(); ++j) {
-            if (std::get<1>(r)[j] == data.at(i).header.module) {
+            if (std::get<1>(r)[j] == data.at(i).header.mod) {
                 measurement m;
 
                 m.local = {std::get<2>(r)[j], std::get<3>(r)[j]};

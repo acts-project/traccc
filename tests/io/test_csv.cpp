@@ -36,9 +36,9 @@ TEST_F(io, csv_read_single_module) {
     auto& modules = single_module_cells.modules;
     ASSERT_EQ(cells.size(), 6u);
     ASSERT_EQ(modules.size(), 1u);
-    auto module = single_module_cells.modules.at(0);
+    auto mod = single_module_cells.modules.at(0);
 
-    ASSERT_EQ(module.surface_link.value(), 0u);
+    ASSERT_EQ(mod.surface_link.value(), 0u);
     ASSERT_EQ(cells.at(0).channel0, 123u);
     ASSERT_EQ(cells.at(0).channel1, 32u);
     ASSERT_EQ(cells.at(5).channel0, 174u);

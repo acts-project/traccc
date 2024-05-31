@@ -39,10 +39,10 @@ inline void form_spacepoints(
     // Get the measurement for this index
     const measurement& measurement = measurements.at(globalIndex);
     // Get the current cell module
-    const cell_module& module = modules.at(measurement.module_link);
+    const cell_module& mod = modules.at(measurement.module_link);
 
     // Fill the spacepoint using the common function.
-    details::fill_spacepoint(spacepoints.at(globalIndex), measurement, module);
+    details::fill_spacepoint(spacepoints.at(globalIndex), measurement, mod);
 }
 
 }  // namespace traccc::device

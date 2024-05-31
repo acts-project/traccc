@@ -38,9 +38,9 @@ TEST(algorithms, seq_single_module) {
                                                   {11, 13, 8, 0, 0},
                                                   {4, 14, 9, 0, 0}},
                                                  &resource};
-    traccc::cell_module module;
+    traccc::cell_module mod;
     traccc::cell_module_collection_types::host modules(&resource);
-    modules.push_back(module);
+    modules.push_back(mod);
 
     auto clusters = cc(vecmem::get_data(cells));
     EXPECT_EQ(clusters.size(), 4u);
