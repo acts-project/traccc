@@ -29,7 +29,8 @@ struct pod<> {};
 
 template <typename T, typename... Ts>
 struct pod<T, Ts...> {
-    static_assert(std::is_pod_v<T>, "Types in POD-tuple must each be POD.");
+    static_assert(std::is_standard_layout_v<T> && std::is_trivial_v<T>,
+                  "Types in POD-tuple must each be POD.");
 
     T v;
     pod<Ts...> r;
