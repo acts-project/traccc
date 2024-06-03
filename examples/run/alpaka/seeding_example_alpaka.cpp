@@ -86,7 +86,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t,
-                           typename host_detector_type::transform3,
+                           typename host_detector_type::algebra_type,
                            detray::constrained_step<>>;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using host_fitter_type =
@@ -209,11 +209,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // traccc::alpaka::finding_algorithm<rk_stepper_type, device_navigator_type>
     //     device_finding(cfg, mr, async_copy, stream);
 
-    // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    propagation_opts.setup(fit_cfg.propagation);
+    // // Fitting algorithm object
+    // typename traccc::fitting_algorithm<host_fitter_type>::config_type
+    // fit_cfg; fit_cfg.propagation = propagation_opts.config;
 
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
+    // traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
     // traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
     //     fit_cfg, mr, async_copy, stream);
 

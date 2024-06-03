@@ -31,3 +31,9 @@
 #else
 #define TRACCC_ALIGN(x) alignas(x)
 #endif
+
+#if __has_builtin(__builtin_assume)
+#define TRACCC_ASSUME(cond) __builtin_assume(cond)
+#else
+#define TRACCC_ASSUME(cond)
+#endif
