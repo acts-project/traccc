@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -26,11 +26,13 @@ namespace traccc::io {
 /// @param directory The directory to read the cell data from
 /// @param detector_file The file describing the detector geometry
 /// @param digi_config_file The file describing the detector digitization
-/// @param format The format of the event file(s)
+/// @param event_format The format of the event file(s)
+/// @param geometry_format The format of the geometry file
 ///
 void read(demonstrator_input& out, std::size_t events,
           std::string_view directory, std::string_view detector_file,
           std::string_view digi_config_file,
-          data_format format = data_format::csv);
+          data_format event_format = data_format::csv,
+          data_format geometry_format = data_format::csv);
 
 }  // namespace traccc::io

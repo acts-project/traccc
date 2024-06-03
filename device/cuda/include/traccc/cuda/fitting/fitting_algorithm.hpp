@@ -35,7 +35,7 @@ class fitting_algorithm
           const typename track_candidate_container_types::const_view&)> {
 
     public:
-    using transform3_type = typename fitter_t::transform3_type;
+    using algebra_type = typename fitter_t::algebra_type;
     /// Configuration type
     using config_type = typename fitter_t::config_type;
 

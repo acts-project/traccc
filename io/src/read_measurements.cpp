@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,29 +12,41 @@
 #include "read_binary.hpp"
 #include "traccc/io/utils.hpp"
 
+// System include(s).
+#include <filesystem>
+
 namespace traccc::io {
 
-void read_measurements(measurement_reader_output& out, std::size_t event,
-                       std::string_view directory, data_format format) {
+void read_measurements(
+    measurement_reader_output& out, std::size_t event,
+    std::string_view directory, data_format format,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
 
     switch (format) {
         case data_format::csv: {
             read_measurements(
                 out,
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.csv"),
-                format);
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.csv")))
+                                      .native()),
+                format, barcode_map);
             break;
         }
         case data_format::binary: {
 
             details::read_binary_collection<measurement_collection_types::host>(
                 out.measurements,
-                data_directory() + directory.data() +
-                    get_event_filename(event, "-measurements.dat"));
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.dat")))
+                                      .native()));
             details::read_binary_collection<cell_module_collection_types::host>(
-                out.modules, data_directory() + directory.data() +
-                                 get_event_filename(event, "-modules.dat"));
+                out.modules,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-modules.dat")))
+                                      .native()));
             break;
         }
         default:
@@ -42,12 +54,16 @@ void read_measurements(measurement_reader_output& out, std::size_t event,
     }
 }
 
-void read_measurements(measurement_reader_output& out,
-                       std::string_view filename, data_format format) {
+void read_measurements(
+    measurement_reader_output& out, std::string_view filename,
+    data_format format,
+    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
 
+    static constexpr bool sort_measurements = true;
     switch (format) {
         case data_format::csv:
-            return csv::read_measurements(out, filename);
+            return csv::read_measurements(out, filename, sort_measurements,
+                                          barcode_map);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

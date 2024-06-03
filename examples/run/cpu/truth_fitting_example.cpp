@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t, traccc::transform3,
+        detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<>>;
 
     using host_navigator_type = detray::navigator<const host_detector_type>;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    propagation_opts.setup(fit_cfg.propagation);
+    fit_cfg.propagation = propagation_opts.config;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 

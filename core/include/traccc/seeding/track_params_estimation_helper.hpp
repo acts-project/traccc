@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,6 +8,7 @@
 #pragma once
 
 // Library include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -117,8 +118,9 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
 
     // The estimated momentum, and its projection along the magnetic
     // field diretion
-    scalar pInGeV = std::abs(1.0f / getter::element(params, e_bound_qoverp, 0));
-    scalar pzInGeV = 1.0f / std::abs(qOverPt) * invTanTheta;
+    scalar pInGeV =
+        math::fabs(1.0f / getter::element(params, e_bound_qoverp, 0));
+    scalar pzInGeV = 1.0f / math::fabs(qOverPt) * invTanTheta;
     scalar massInGeV = mass / unit<scalar>::GeV;
 
     // The estimated velocity, and its projection along the magnetic

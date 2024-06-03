@@ -11,14 +11,25 @@
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
+#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/cell.hpp"
+#include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/utils/algorithm.hpp"
 
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/detectors/bfield.hpp"
+#include "detray/navigation/navigator.hpp"
+#include "detray/propagator/propagator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
+
 // VecMem include(s).
+#include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
@@ -34,11 +45,39 @@ namespace traccc::cuda {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<bound_track_parameters_collection_types::host(
+    : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
           const cell_collection_types::host&,
           const cell_module_collection_types::host&)> {
 
     public:
+    /// @name Type declaration(s)
+    /// @{
+
+    /// (Host) Detector type used during track finding and fitting
+    using host_detector_type = detray::detector<detray::default_metadata,
+                                                detray::host_container_types>;
+    /// (Device) Detector type used during track finding and fitting
+    using device_detector_type =
+        detray::detector<detray::default_metadata,
+                         detray::device_container_types>;
+
+    /// Stepper type used by the track finding and fitting algorithms
+    using stepper_type =
+        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+                           device_detector_type::algebra_type,
+                           detray::constrained_step<>>;
+    /// Navigator type used by the track finding and fitting algorithms
+    using navigator_type = detray::navigator<const device_detector_type>;
+
+    /// Track finding algorithm type
+    using finding_algorithm =
+        traccc::cuda::finding_algorithm<stepper_type, navigator_type>;
+    /// Track fitting algorithm type
+    using fitting_algorithm = traccc::cuda::fitting_algorithm<
+        traccc::kalman_fitter<stepper_type, navigator_type>>;
+
+    /// @}
+
     /// Algorithm constructor
     ///
     /// @param mr The memory resource to use for the intermediate and result
@@ -50,7 +89,10 @@ class full_chain_algorithm
                          const unsigned short target_cells_per_partiton,
                          const seedfinder_config& finder_config,
                          const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config);
+                         const seedfilter_config& filter_config,
+                         const finding_algorithm::config_type& finding_config,
+                         const fitting_algorithm::config_type& fitting_config,
+                         host_detector_type* detector);
 
     /// Copy constructor
     ///
@@ -86,6 +128,18 @@ class full_chain_algorithm
     /// (Asynchronous) Memory copy object
     mutable vecmem::cuda::async_copy m_copy;
 
+    /// Constant B field for the (seed) track parameter estimation
+    traccc::vector3 m_field_vec;
+    /// Constant B field for the track finding and fitting
+    detray::bfield::const_field_t m_field;
+
+    /// Host detector
+    host_detector_type* m_detector;
+    /// Buffer holding the detector's payload on the device
+    host_detector_type::buffer_type m_device_detector;
+    /// View of the detector's payload on the device
+    host_detector_type::view_type m_device_detector_view;
+
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
 
@@ -103,10 +157,27 @@ class full_chain_algorithm
     /// Track parameter estimation algorithm
     track_params_estimation m_track_parameter_estimation;
 
-    /// Configs
+    /// Track finding algorithm
+    finding_algorithm m_finding;
+    /// Track fitting algorithm
+    fitting_algorithm m_fitting;
+
+    /// @}
+
+    /// @name Algorithm configurations
+    /// @{
+
+    /// Configuration for the seed finding
     seedfinder_config m_finder_config;
+    /// Configuration for the spacepoint grid formation
     spacepoint_grid_config m_grid_config;
+    /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+
+    /// Configuration for the track finding
+    finding_algorithm::config_type m_finding_config;
+    /// Configuration for the track fitting
+    fitting_algorithm::config_type m_fitting_config;
 
     /// @}
 

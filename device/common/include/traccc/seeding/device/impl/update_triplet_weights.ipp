@@ -1,14 +1,17 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
+#pragma once
+
+// Project include(s).
+#include "traccc/definitions/math.hpp"
+
 // System include(s).
 #include <cassert>
-
-#pragma once
 
 namespace traccc::device {
 
@@ -82,7 +85,7 @@ inline void update_triplet_weights(
         // compared top SP should have at least deltaRMin distance
         const scalar otherTop_r = other_spT.radius();
         const scalar deltaR = currentTop_r - otherTop_r;
-        if (std::abs(deltaR) < filter_config.deltaRMin) {
+        if (math::fabs(deltaR) < filter_config.deltaRMin) {
             continue;
         }
 
@@ -106,7 +109,7 @@ inline void update_triplet_weights(
             // compatible seed (20mm instead of 5mm) add new compatible seed
             // only if distance larger than rmin to all other compatible
             // seeds
-            if (std::abs(previousDiameter - otherTop_r) <
+            if (math::fabs(previousDiameter - otherTop_r) <
                 filter_config.deltaRMin) {
                 newCompSeed = false;
                 break;

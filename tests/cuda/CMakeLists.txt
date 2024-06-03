@@ -29,6 +29,7 @@ traccc_add_test(
     # Define the sources for the test.
     test_basic.cu
     test_cca.cpp
+    test_ckf_combinatorics_telescope.cpp
     test_ckf_toy_detector.cpp
     test_copy.cu
     test_kalman_fitter_telescope.cpp

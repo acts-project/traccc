@@ -78,7 +78,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t,
-                           typename host_detector_type::transform3,
+                           typename host_detector_type::algebra_type,
                            detray::constrained_step<>>;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using host_fitter_type =
@@ -185,8 +185,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         rk_stepper_type, device_navigator_type>::config_type cfg;
     cfg.min_track_candidates_per_track = finding_opts.track_candidates_range[0];
     cfg.max_track_candidates_per_track = finding_opts.track_candidates_range[1];
+    cfg.min_step_length_for_next_surface =
+        finding_opts.min_step_length_for_next_surface;
+    cfg.max_step_counts_for_next_surface =
+        finding_opts.max_step_counts_for_next_surface;
     cfg.chi2_max = finding_opts.chi2_max;
-    propagation_opts.setup(cfg.propagation);
+    cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
+    cfg.max_num_skipping_per_cand = finding_opts.max_num_skipping_per_cand;
+    cfg.propagation = propagation_opts.config;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
@@ -196,7 +202,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    propagation_opts.setup(fit_cfg.propagation);
+    fit_cfg.propagation = propagation_opts.config;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
@@ -315,7 +321,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             // Navigation buffer
             auto navigation_buffer = detray::create_candidates_buffer(
                 host_det,
-                device_finding.get_config().max_num_branches_per_seed *
+                device_finding.get_config().navigation_buffer_size_scaler *
                     copy.get_size(seeds_cuda_buffer),
                 mr.main, mr.host);
 

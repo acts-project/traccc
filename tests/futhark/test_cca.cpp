@@ -35,7 +35,7 @@ cca_function_t f = [](const traccc::cell_container_types::host &data) {
             msv.push_back(mss.at(i).items.at(j));
         }
 
-        result.emplace(mss.at(i).header.module, std::move(msv));
+        result.emplace(mss.at(i).header.mod, std::move(msv));
     }
 
     return result;

@@ -22,6 +22,9 @@
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 
+// System include(s).
+#include <filesystem>
+
 namespace traccc {
 
 particle_map generate_particle_map(std::size_t event,
@@ -31,8 +34,10 @@ particle_map generate_particle_map(std::size_t event,
 
     // Read the particles from the relevant event file
     std::string io_particles_file =
-        io::data_directory() + particle_dir +
-        io::get_event_filename(event, "-particles_initial.csv");
+        io::get_absolute_path((std::filesystem::path(particle_dir) /
+                               std::filesystem::path(io::get_event_filename(
+                                   event, "-particles_initial.csv")))
+                                  .native());
 
     auto preader = io::csv::make_particle_reader(io_particles_file);
 
@@ -61,8 +66,10 @@ hit_particle_map generate_hit_particle_map(std::size_t event,
     auto pmap = generate_particle_map(event, particle_dir);
 
     // Read the hits from the relevant event file
-    std::string io_hits_file = io::data_directory() + hits_dir +
-                               io::get_event_filename(event, "-hits.csv");
+    std::string io_hits_file = io::get_absolute_path(
+        (std::filesystem::path(hits_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-hits.csv")))
+            .native());
 
     auto hreader = io::csv::make_hit_reader(io_hits_file);
 
@@ -93,8 +100,10 @@ hit_map generate_hit_map(std::size_t event, const std::string& hits_dir) {
     hit_map result;
 
     // Read the hits from the relevant event file
-    std::string io_hits_file = io::data_directory() + hits_dir +
-                               io::get_event_filename(event, "-hits.csv");
+    std::string io_hits_file = io::get_absolute_path(
+        (std::filesystem::path(hits_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-hits.csv")))
+            .native());
 
     auto hreader = io::csv::make_hit_reader(io_hits_file);
 
@@ -102,8 +111,10 @@ hit_map generate_hit_map(std::size_t event, const std::string& hits_dir) {
 
     // Read the hits from the relevant event file
     std::string io_measurement_hit_id_file =
-        io::data_directory() + hits_dir +
-        io::get_event_filename(event, "-measurement-simhit-map.csv");
+        io::get_absolute_path((std::filesystem::path(hits_dir) /
+                               std::filesystem::path(io::get_event_filename(
+                                   event, "-measurement-simhit-map.csv")))
+                                  .native());
 
     auto mhid_reader =
         io::csv::make_measurement_hit_id_reader(io_measurement_hit_id_file);
@@ -141,8 +152,10 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
     auto hmap = generate_hit_map(event, hits_dir);
 
     // Read the cells from the relevant event file
-    std::string io_cells_file = io::data_directory() + cells_dir +
-                                io::get_event_filename(event, "-cells.csv");
+    std::string io_cells_file = io::get_absolute_path(
+        (std::filesystem::path(cells_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-cells.csv")))
+            .native());
 
     auto creader = io::csv::make_cell_reader(io_cells_file);
 

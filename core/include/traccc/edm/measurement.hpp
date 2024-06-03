@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
@@ -53,7 +54,7 @@ struct measurement {
     unsigned int meas_dim = 2u;
 
     /// subspace
-    subspace<transform3, e_bound_size, 2u> subs{{0u, 1u}};
+    subspace<default_algebra, e_bound_size, 2u> subs{{0u, 1u}};
 };
 
 /// Comparison / ordering operator for measurements
@@ -62,7 +63,7 @@ TRACCC_HOST_DEVICE inline bool operator<(const measurement& lhs,
 
     if (lhs.surface_link != rhs.surface_link) {
         return lhs.surface_link < rhs.surface_link;
-    } else if (std::abs(lhs.local[0] - rhs.local[0]) > float_epsilon) {
+    } else if (math::fabs(lhs.local[0] - rhs.local[0]) > float_epsilon) {
         return (lhs.local[0] < rhs.local[0]);
     } else {
         return (lhs.local[1] < rhs.local[1]);
@@ -74,10 +75,10 @@ TRACCC_HOST_DEVICE
 inline bool operator==(const measurement& lhs, const measurement& rhs) {
 
     return ((lhs.surface_link == rhs.surface_link) &&
-            (std::abs(lhs.local[0] - rhs.local[0]) < float_epsilon) &&
-            (std::abs(lhs.local[1] - rhs.local[1]) < float_epsilon) &&
-            (std::abs(lhs.variance[0] - rhs.variance[0]) < float_epsilon) &&
-            (std::abs(lhs.variance[1] - rhs.variance[1]) < float_epsilon));
+            (math::fabs(lhs.local[0] - rhs.local[0]) < float_epsilon) &&
+            (math::fabs(lhs.local[1] - rhs.local[1]) < float_epsilon) &&
+            (math::fabs(lhs.variance[0] - rhs.variance[0]) < float_epsilon) &&
+            (math::fabs(lhs.variance[1] - rhs.variance[1]) < float_epsilon));
 }
 
 /// Comparator based on detray barcode value

@@ -33,6 +33,7 @@ namespace traccc::device {
 /// @param[out] out_params_view   Output parameters
 /// @param[out] param_to_link_view  Container for param index -> link index
 /// @param[out] tips_view         Tip link container for the current step
+/// @param[out] n_tracks_per_seed_view  Number of tracks per seed
 /// @param[out] n_out_params      The number of output parameters
 ///
 template <typename propagator_t, typename bfield_t, typename config_t>
@@ -49,6 +50,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     vecmem::data::vector_view<unsigned int> param_to_link_view,
     vecmem::data::vector_view<typename candidate_link::link_index_type>
         tips_view,
+    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view,
     unsigned int& n_out_params);
 
 }  // namespace traccc::device

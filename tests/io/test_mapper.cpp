@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,9 +16,9 @@
 
 std::size_t event = 0;
 
-std::string detector_file = "/tml_detector/trackml-detector.csv";
+std::string detector_file = "tml_detector/trackml-detector.csv";
 std::string digi_config_file =
-    "/tml_detector/default-geometric-config-generic.json";
+    "tml_detector/default-geometric-config-generic.json";
 std::string hits_dir = "../tests/io/mock_data/";
 std::string cells_dir = "../tests/io/mock_data/";
 std::string particles_dir = "../tests/io/mock_data/";
@@ -58,12 +58,12 @@ TEST(mappper, particle_map) {
     std::size_t pid1 = 4503599660924928;
     std::size_t pid2 = 4503599744811008;
 
-    EXPECT_EQ(p_map[pid0].pos,
+    EXPECT_EQ(p_map[pid0].vertex,
               traccc::vector3({-0.0120002991, -9.48547313e-05, -15.1165705}));
 
-    EXPECT_EQ(p_map[pid1].pos, traccc::vector3({-0.4, -0.23412, -100.}));
+    EXPECT_EQ(p_map[pid1].vertex, traccc::vector3({-0.4, -0.23412, -100.}));
 
-    EXPECT_EQ(p_map[pid2].pos, traccc::vector3({-1999., -9.231, 23425.}));
+    EXPECT_EQ(p_map[pid2].vertex, traccc::vector3({-1999., -9.231, 23425.}));
 }
 
 // Test generate_hit_particle_map function

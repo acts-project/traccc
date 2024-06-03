@@ -11,6 +11,7 @@ include( traccc-compiler-options-cpp )
 traccc_add_library( traccc_core core TYPE SHARED
   # Common definitions.
   "include/traccc/definitions/track_parametrization.hpp"
+  "include/traccc/definitions/math.hpp"
   "include/traccc/definitions/primitives.hpp"
   "include/traccc/definitions/common.hpp"
   "include/traccc/definitions/qualifiers.hpp"
@@ -22,6 +23,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/cluster.hpp"
   "include/traccc/edm/spacepoint.hpp"
   "include/traccc/edm/measurement.hpp"
+  "include/traccc/edm/particle.hpp"
   "include/traccc/edm/track_parameters.hpp"
   "include/traccc/edm/container.hpp"
   "include/traccc/edm/internal_spacepoint.hpp"
@@ -58,7 +60,9 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/clusterization_algorithm.cpp"
   # Finding algorithmic code
   "include/traccc/finding/candidate_link.hpp"
+  "include/traccc/finding/ckf_aborter.hpp"
   "include/traccc/finding/finding_algorithm.hpp"
+  "include/traccc/finding/finding_algorithm.ipp"
   "include/traccc/finding/finding_config.hpp"
   "include/traccc/finding/interaction_register.hpp"
   # Fitting algorithmic code
@@ -66,6 +70,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
   "include/traccc/fitting/kalman_filter/kalman_actor.hpp"
   "include/traccc/fitting/kalman_filter/kalman_fitter.hpp"
+  "include/traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
   "include/traccc/fitting/kalman_filter/statistics_updater.hpp"
   "include/traccc/fitting/fitting_algorithm.hpp"
   # Seed finding algorithmic code.

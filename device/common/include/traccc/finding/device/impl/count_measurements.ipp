@@ -34,6 +34,12 @@ TRACCC_DEVICE inline void count_measurements(
     const auto bcd = params.at(globalIndex).surface_link();
     const auto lo =
         thrust::lower_bound(thrust::seq, barcodes.begin(), barcodes.end(), bcd);
+
+    // If barcode is not found (no measurement)
+    if (lo == barcodes.end()) {
+        return;
+    }
+
     const auto bcd_id = std::distance(barcodes.begin(), lo);
 
     // Get the reference measurement index and the number of measurements per

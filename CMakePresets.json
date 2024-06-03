@@ -55,7 +55,8 @@
          "inherits": ["base"],
          "cacheVariables": {
             "TRACCC_USE_ROOT" : "TRUE",
-            "TRACCC_USE_SYSTEM_TBB" : "TRUE"
+            "TRACCC_USE_SYSTEM_TBB" : "TRUE",
+            "ALGEBRA_PLUGINS_USE_SYSTEM_VC" : "TRUE"
          }
       },
       {

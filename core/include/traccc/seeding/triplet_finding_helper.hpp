@@ -1,12 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Local include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/lin_circle.hpp"
@@ -52,13 +54,13 @@ bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
 
     scalar deltaCotTheta = lb.cotTheta() - lt.cotTheta();
     scalar deltaCotTheta2 = deltaCotTheta * deltaCotTheta;
-    scalar error;
-    scalar dCotThetaMinusError2;
+    scalar error{0.f};
+    scalar dCotThetaMinusError2{0.f};
 
     // if the error is larger than the difference in theta, no need to
     // compare with scattering
     if (deltaCotTheta2 - error2 > 0) {
-        deltaCotTheta = std::abs(deltaCotTheta);
+        deltaCotTheta = math::fabs(deltaCotTheta);
         // if deltaTheta larger than the scattering for the lower pT cut, skip
         error = std::sqrt(error2);
         dCotThetaMinusError2 = deltaCotTheta2 + error2 -
@@ -119,7 +121,7 @@ bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
     // A and B allow calculation of impact params in U/V plane with linear
     // function
     // (in contrast to having to solve a quadratic function in x/y plane)
-    impact_parameter = std::abs((A - B * spM.radius()) * spM.radius());
+    impact_parameter = math::fabs((A - B * spM.radius()) * spM.radius());
 
     if (impact_parameter > config.impactMax) {
         return false;

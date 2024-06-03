@@ -10,6 +10,7 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
+#include "traccc/io/write.hpp"
 
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
@@ -30,6 +31,7 @@
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/output_data.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
@@ -57,6 +59,7 @@
 #include <memory>
 
 int seq_run(const traccc::opts::input_data& input_opts,
+            const traccc::opts::output_data& output_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::clusterization& /*clusterization_opts*/,
             const traccc::opts::track_seeding& seeding_opts,
@@ -113,7 +116,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Type definitions
     using stepper_type =
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           detector_type::transform3,
+                           detector_type::algebra_type,
                            detray::constrained_step<>>;
     using navigator_type = detray::navigator<const detector_type>;
     using finding_algorithm =
@@ -133,11 +136,18 @@ int seq_run(const traccc::opts::input_data& input_opts,
         finding_opts.track_candidates_range[0];
     finding_cfg.max_track_candidates_per_track =
         finding_opts.track_candidates_range[1];
+    finding_cfg.min_step_length_for_next_surface =
+        finding_opts.min_step_length_for_next_surface;
+    finding_cfg.max_step_counts_for_next_surface =
+        finding_opts.max_step_counts_for_next_surface;
     finding_cfg.chi2_max = finding_opts.chi2_max;
-    propagation_opts.setup(finding_cfg.propagation);
+    finding_cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
+    finding_cfg.max_num_skipping_per_cand =
+        finding_opts.max_num_skipping_per_cand;
+    finding_cfg.propagation = propagation_opts.config;
 
     fitting_algorithm::config_type fitting_cfg;
-    propagation_opts.setup(fitting_cfg.propagation);
+    fitting_cfg.propagation = propagation_opts.config;
 
     // Algorithms
     traccc::host::clusterization_algorithm ca(host_mr);
@@ -220,6 +230,12 @@ int seq_run(const traccc::opts::input_data& input_opts,
                     sf(vecmem::get_data(measurements_per_event),
                        vecmem::get_data(modules_per_event));
             }
+            if (output_opts.directory != "") {
+                traccc::io::write(event, output_opts.directory,
+                                  output_opts.format,
+                                  vecmem::get_data(spacepoints_per_event),
+                                  vecmem::get_data(modules_per_event));
+            }
 
             /*-----------------------
               Seeding algorithm
@@ -228,6 +244,11 @@ int seq_run(const traccc::opts::input_data& input_opts,
             {
                 traccc::performance::timer timer{"Seeding", elapsedTimes};
                 seeds = sa(spacepoints_per_event);
+            }
+            if (output_opts.directory != "") {
+                traccc::io::write(event, output_opts.directory,
+                                  output_opts.format, vecmem::get_data(seeds),
+                                  vecmem::get_data(spacepoints_per_event));
             }
 
             /*----------------------------
@@ -248,6 +269,11 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                                      elapsedTimes};
                     track_candidates = finding_alg(
                         detector, field, measurements_per_event, params);
+                }
+                if (output_opts.directory != "") {
+                    traccc::io::write(
+                        event, output_opts.directory, output_opts.format,
+                        traccc::get_data(track_candidates), detector);
                 }
                 {
                     traccc::performance::timer timer{"Track fitting",
@@ -344,6 +370,7 @@ int main(int argc, char* argv[]) {
     // Program options.
     traccc::opts::detector detector_opts;
     traccc::opts::input_data input_opts;
+    traccc::opts::output_data output_opts{traccc::data_format::obj, ""};
     traccc::opts::clusterization clusterization_opts;
     traccc::opts::track_seeding seeding_opts;
     traccc::opts::track_finding finding_opts;
@@ -352,13 +379,14 @@ int main(int argc, char* argv[]) {
     traccc::opts::performance performance_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain on the Host",
-        {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, resolution_opts, performance_opts},
+        {detector_opts, input_opts, output_opts, clusterization_opts,
+         seeding_opts, finding_opts, propagation_opts, resolution_opts,
+         performance_opts},
         argc,
         argv};
 
     // Run the application.
-    return seq_run(input_opts, detector_opts, clusterization_opts, seeding_opts,
-                   finding_opts, propagation_opts, resolution_opts,
-                   performance_opts);
+    return seq_run(input_opts, output_opts, detector_opts, clusterization_opts,
+                   seeding_opts, finding_opts, propagation_opts,
+                   resolution_opts, performance_opts);
 }

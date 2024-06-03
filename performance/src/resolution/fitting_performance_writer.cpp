@@ -81,7 +81,7 @@ void fitting_performance_writer::write_res(
 }
 
 void fitting_performance_writer::write_stat(
-    const fitting_result<transform3>& fit_res,
+    const fitting_result<traccc::default_algebra>& fit_res,
     const track_state_collection_types::host& track_states) {
 
     m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, fit_res);

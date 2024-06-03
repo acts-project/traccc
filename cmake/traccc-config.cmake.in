@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2023 CERN for the benefit of the ACTS project
+# (c) 2022-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -9,6 +9,7 @@
 
 # Remember the options that traccc was built with.
 set( TRACCC_BUILD_CUDA     @TRACCC_BUILD_CUDA@ )
+set( TRACCC_BUILD_HIP      @TRACCC_BUILD_HIP@ )
 set( TRACCC_BUILD_SYCL     @TRACCC_BUILD_SYCL@ )
 set( TRACCC_BUILD_FUTHARK  @TRACCC_BUILD_FUTHARK@ )
 set( TRACCC_BUILD_KOKKOS   @TRACCC_BUILD_KOKKOS@ )

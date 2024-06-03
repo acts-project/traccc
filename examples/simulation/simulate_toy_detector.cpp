@@ -37,8 +37,7 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =
-        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>,
-                               std::seed_seq>;
+        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>>;
 
     // Memory resource
     vecmem::host_memory_resource host_mr;
@@ -57,7 +56,7 @@ int simulate(const traccc::opts::generation& generation_opts,
     auto field = detray::bfield::create_const_field(B);
 
     // Create the toy geometry
-    detray::toy_det_config<scalar> toy_cfg{};
+    detray::toy_det_config toy_cfg{};
     toy_cfg.n_brl_layers(4u).n_edc_layers(7u);
     // @TODO: Increase the material budget again
     toy_cfg.module_mat_thickness(0.11 * detray::unit<scalar>::mm);
@@ -73,28 +72,25 @@ int simulate(const traccc::opts::generation& generation_opts,
                                        uniform_gen_t>;
     generator_type::configuration gen_cfg{};
     gen_cfg.n_tracks(generation_opts.gen_nparticles);
-    gen_cfg.origin(generator_type::point3{generation_opts.vertex[0],
-                                          generation_opts.vertex[1],
-                                          generation_opts.vertex[2]});
-    gen_cfg.origin_stddev(generator_type::point3{
-        generation_opts.vertex_stddev[0], generation_opts.vertex_stddev[1],
-        generation_opts.vertex_stddev[2]});
-    gen_cfg.phi_range(generation_opts.phi_range[0],
-                      generation_opts.phi_range[1]);
-    gen_cfg.theta_range(generation_opts.theta_range[0],
-                        generation_opts.theta_range[1]);
-    gen_cfg.mom_range(generation_opts.mom_range[0],
-                      generation_opts.mom_range[1]);
+    gen_cfg.origin(traccc::point3{generation_opts.vertex[0],
+                                  generation_opts.vertex[1],
+                                  generation_opts.vertex[2]});
+    gen_cfg.origin_stddev(traccc::point3{generation_opts.vertex_stddev[0],
+                                         generation_opts.vertex_stddev[1],
+                                         generation_opts.vertex_stddev[2]});
+    gen_cfg.phi_range(generation_opts.phi_range);
+    gen_cfg.theta_range(generation_opts.theta_range);
+    gen_cfg.mom_range(generation_opts.mom_range);
     gen_cfg.charge(generation_opts.charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
-    traccc::measurement_smearer<transform3> meas_smearer(
+    traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
         50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
 
     // Type declarations
-    using writer_type =
-        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
+    using writer_type = traccc::smearing_writer<
+        traccc::measurement_smearer<traccc::default_algebra>>;
 
     // Writer config
     typename writer_type::config smearer_writer_cfg{meas_smearer};
@@ -108,7 +104,7 @@ int simulate(const traccc::opts::generation& generation_opts,
                                  writer_type>(
         generation_opts.events, det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
-    propagation_opts.setup(sim.get_config().propagation);
+    sim.get_config().propagation = propagation_opts.config;
 
     sim.run();
 

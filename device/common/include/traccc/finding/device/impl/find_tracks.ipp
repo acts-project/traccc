@@ -24,10 +24,13 @@ TRACCC_DEVICE inline void find_tracks(
     vecmem::data::vector_view<const unsigned int>
         n_measurements_prefix_sum_view,
     vecmem::data::vector_view<const unsigned int> ref_meas_idx_view,
+    vecmem::data::vector_view<const candidate_link> prev_links_view,
+    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
     const unsigned int step, const unsigned int& n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
+    vecmem::data::vector_view<unsigned int> n_candidates_view,
     vecmem::data::vector_view<candidate_link> links_view,
-    unsigned int& n_candidates) {
+    unsigned int& n_total_candidates) {
 
     // Detector
     detector_t det(det_data);
@@ -39,8 +42,18 @@ TRACCC_DEVICE inline void find_tracks(
     bound_track_parameters_collection_types::const_device in_params(
         in_params_view);
 
+    // Previous links
+    vecmem::device_vector<const candidate_link> prev_links(prev_links_view);
+
+    // Previous param_to_link
+    vecmem::device_vector<const unsigned int> prev_param_to_link(
+        prev_param_to_link_view);
+
     // Output parameters
     bound_track_parameters_collection_types::device out_params(out_params_view);
+
+    // Number of candidates per parameter
+    vecmem::device_vector<unsigned int> n_candidates(n_candidates_view);
 
     // Links
     vecmem::device_vector<candidate_link> links(links_view);
@@ -53,8 +66,8 @@ TRACCC_DEVICE inline void find_tracks(
     vecmem::device_vector<const unsigned int> ref_meas_idx(ref_meas_idx_view);
 
     // Last step ID
-    const unsigned int previous_step =
-        (step == 0) ? std::numeric_limits<unsigned int>::max() : step - 1;
+    const int previous_step =
+        (step == 0) ? std::numeric_limits<int>::max() : step - 1;
 
     const unsigned int n_measurements_sum = n_measurements_prefix_sum.back();
     const unsigned int stride = globalIndex * cfg.n_measurements_per_thread;
@@ -85,30 +98,50 @@ TRACCC_DEVICE inline void find_tracks(
         bound_track_parameters in_par = in_params.at(in_param_id);
 
         const auto& meas = measurements.at(meas_idx);
-        track_state<typename detector_t::transform3> trk_state(meas);
+        track_state<typename detector_t::algebra_type> trk_state(meas);
         const detray::surface<detector_t> sf{det, bcd};
 
         // Run the Kalman update
         sf.template visit_mask<
-            gain_matrix_updater<typename detector_t::transform3>>(trk_state,
-                                                                  in_par);
+            gain_matrix_updater<typename detector_t::algebra_type>>(trk_state,
+                                                                    in_par);
         // Get the chi-square
         const auto chi2 = trk_state.filtered_chi2();
 
         if (chi2 < cfg.chi2_max) {
 
             // Add measurement candidates to link
-            vecmem::device_atomic_ref<unsigned int> num_candidates(
-                n_candidates);
+            vecmem::device_atomic_ref<unsigned int> num_total_candidates(
+                n_total_candidates);
 
-            const unsigned int l_pos = num_candidates.fetch_add(1);
+            const unsigned int l_pos = num_total_candidates.fetch_add(1);
 
             if (l_pos >= n_max_candidates) {
-                n_candidates = n_max_candidates;
+                n_total_candidates = n_max_candidates;
                 return;
             }
 
-            links[l_pos] = {{previous_step, in_param_id}, meas_idx};
+            // Seed id
+            unsigned int orig_param_id =
+                (step == 0
+                     ? in_param_id
+                     : prev_links[prev_param_to_link[in_param_id]].seed_idx);
+            // Skip counter
+            unsigned int skip_counter =
+                (step == 0
+                     ? 0
+                     : prev_links[prev_param_to_link[in_param_id]].n_skipped);
+
+            links[l_pos] = {{previous_step, in_param_id},
+                            meas_idx,
+                            orig_param_id,
+                            skip_counter};
+
+            // Increase the number of candidates (or branches) per input
+            // parameter
+            vecmem::device_atomic_ref<unsigned int> num_candidates(
+                n_candidates[in_param_id]);
+            num_candidates.fetch_add(1);
 
             out_params[l_pos] = trk_state.filtered();
         }
