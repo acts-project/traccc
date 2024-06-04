@@ -23,16 +23,14 @@
 
 namespace traccc {
 
-template <typename transform3_t>
+template <typename algebra_t>
 struct measurement_smearer {
 
-    using transform3_type = transform3_t;
-    using matrix_operator = typename transform3_t::matrix_actor;
-    using scalar_type = typename transform3_t::scalar_type;
-    using size_type = typename matrix_operator::size_ty;
-    template <size_type ROWS, size_type COLS>
-    using matrix_type =
-        typename matrix_operator::template matrix_type<ROWS, COLS>;
+    using algebra_type = algebra_t;
+    using matrix_operator = detray::dmatrix_operator<algebra_t>;
+    using scalar_type = detray::dscalar<algebra_t>;
+    template <std::size_t ROWS, std::size_t COLS>
+    using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
     measurement_smearer(const scalar_type stddev_local0,
                         const scalar_type stddev_local1)
@@ -56,12 +54,12 @@ struct measurement_smearer {
     template <typename mask_t>
     void operator()(
         const mask_t& /*mask*/, const std::array<scalar_type, 2>& offset,
-        const detray::bound_track_parameters<transform3_t>& bound_params,
+        const detray::bound_track_parameters<algebra_t>& bound_params,
         io::csv::measurement& iomeas) {
 
         // Line detector
         if constexpr (std::is_same_v<typename mask_t::local_frame_type,
-                                     detray::line2D<transform3>>) {
+                                     detray::line2D<traccc::default_algebra>>) {
             iomeas.local_key = 2;
         }
         // Annulus strip
@@ -74,7 +72,7 @@ struct measurement_smearer {
             iomeas.local_key = 6;
         }
 
-        std::array<typename transform3::size_type, 2u> indices{0u, 0u};
+        std::array<detray::dsize_type<algebra_t>, 2u> indices{0u, 0u};
         unsigned int meas_dim = 0u;
         for (unsigned int ipar = 0; ipar < 2u; ++ipar) {
             if (((iomeas.local_key) & (1 << (ipar + 1))) != 0) {
@@ -89,14 +87,15 @@ struct measurement_smearer {
             }
         }
 
-        subspace<transform3, 6u, 2u> subs(indices);
+        subspace<traccc::default_algebra, 6u, 2u> subs(indices);
 
         if (meas_dim == 1u) {
             const auto proj = subs.projector<1u>();
             matrix_type<1u, 1u> meas = proj * bound_params.vector();
 
-            if constexpr (std::is_same_v<typename mask_t::local_frame_type,
-                                         detray::line2D<transform3>>) {
+            if constexpr (std::is_same_v<
+                              typename mask_t::local_frame_type,
+                              detray::line2D<traccc::default_algebra>>) {
                 iomeas.local0 =
                     std::max(std::abs(matrix_operator().element(meas, 0u, 0u)) +
                                  offset[0],

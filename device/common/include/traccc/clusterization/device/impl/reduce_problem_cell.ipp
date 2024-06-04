@@ -1,26 +1,19 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Project include(s).
+#include "traccc/clusterization/details/sparse_ccl.hpp"
+
+// System include(s).
+#include <cassert>
+
 namespace traccc::device {
-
-/*
- * Check if two cells are considered close enough to be part of the same
- * cluster.
- */
-TRACCC_HOST_DEVICE
-inline bool is_adjacent(channel_id ac0, channel_id ac1, channel_id bc0,
-                        channel_id bc1) {
-    unsigned int p0 = (ac0 - bc0);
-    unsigned int p1 = (ac1 - bc1);
-
-    return p0 * p0 <= 1 && p1 * p1 <= 1;
-}
 
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
@@ -28,13 +21,14 @@ inline void reduce_problem_cell(
     const unsigned int start, const unsigned int end, unsigned char& adjc,
     unsigned short adjv[8]) {
 
+    // Some sanity check(s).
+    assert(start <= end);
+
+    // Index of the "reference cell".
     const unsigned int pos = cid + start;
 
-    // Check if this code can benefit from changing to structs of arrays, as the
-    // recurring accesses to cell data in global memory is slow right now.
-    const channel_id c0 = cells[pos].channel0;
-    const channel_id c1 = cells[pos].channel1;
-    const unsigned int mod_id = cells[pos].module_link;
+    // Load the "reference cell" into a local variable.
+    const cell reference_cell = cells.at(pos);
 
     /*
      * First, we traverse the cells backwards, starting from the current
@@ -48,7 +42,7 @@ inline void reduce_problem_cell(
          * impossible for that cell to ever be adjacent to this one.
          * This is a small optimisation.
          */
-        if (cells[j].channel1 + 1 < c1 || cells[j].module_link != mod_id) {
+        if (traccc::details::is_far_enough(reference_cell, cells.at(j))) {
             break;
         }
 
@@ -56,7 +50,8 @@ inline void reduce_problem_cell(
          * If the cell examined is adjacent to the current cell, save it
          * in the current cell's adjacency set.
          */
-        if (is_adjacent(c0, c1, cells[j].channel0, cells[j].channel1)) {
+        if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
+            assert(adjc < 8);
             adjv[adjc++] = j - start;
         }
     }
@@ -70,11 +65,12 @@ inline void reduce_problem_cell(
          * Note that this check now looks in the opposite direction! An
          * important difference.
          */
-        if (cells[j].channel1 > c1 + 1 || cells[j].module_link != mod_id) {
+        if (traccc::details::is_far_enough(cells.at(j), reference_cell)) {
             break;
         }
 
-        if (is_adjacent(c0, c1, cells[j].channel0, cells[j].channel1)) {
+        if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
+            assert(adjc < 8);
             adjv[adjc++] = j - start;
         }
     }

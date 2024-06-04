@@ -33,12 +33,14 @@ add_library( traccc_examples_cpu STATIC
    "full_chain_algorithm.hpp"
    "full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cpu
-   PUBLIC vecmem::core traccc::core )
+   PUBLIC vecmem::core detray::core detray::utils traccc::core )
 
 traccc_add_executable( throughput_st "throughput_st.cpp"
-   LINK_LIBRARIES vecmem::core traccc::core traccc::io
-   traccc::performance traccc::options traccc_examples_cpu )
+   LINK_LIBRARIES vecmem::core detray::utils detray::io
+                  traccc::core traccc::io traccc::performance
+                  traccc::options traccc_examples_cpu )
 
 traccc_add_executable( throughput_mt "throughput_mt.cpp"
-   LINK_LIBRARIES TBB::tbb vecmem::core traccc::core traccc::io
-   traccc::performance traccc::options traccc_examples_cpu )
+   LINK_LIBRARIES TBB::tbb vecmem::core detray::utils detray::io
+                  traccc::core traccc::io traccc::performance
+                  traccc::options traccc_examples_cpu )

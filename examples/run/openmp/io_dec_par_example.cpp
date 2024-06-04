@@ -1,13 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -34,8 +34,8 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
                                 vecmem::host_memory_resource resource) {
 
     // Algorithms
-    traccc::clusterization_algorithm ca(resource);
-    traccc::spacepoint_formation sf(resource);
+    traccc::host::clusterization_algorithm ca(resource);
+    traccc::host::spacepoint_formation_algorithm sf(resource);
 
     // Output stats
     uint64_t n_modules = 0;
@@ -48,7 +48,8 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
     traccc::demonstrator_result aggregated_results(input_data.size(),
                                                    &resource);
 
-#pragma omp parallel for reduction (+:n_modules, n_cells, n_measurements, n_spacepoints)
+#pragma omp parallel for reduction(+ : n_modules, n_cells, n_measurements, \
+                                       n_spacepoints)
     for (size_t event = 0; event < input_data.size(); ++event) {
         traccc::cell_collection_types::host& cells_per_event =
             input_data.operator[](event).cells;
@@ -60,14 +61,16 @@ traccc::demonstrator_result run(traccc::demonstrator_input input_data,
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(cells_per_event, modules_per_event);
+        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
+                                         vecmem::get_data(modules_per_event));
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
         auto spacepoints_per_event =
-            sf(measurements_per_event, modules_per_event);
+            sf(vecmem::get_data(measurements_per_event),
+               vecmem::get_data(modules_per_event));
 
         /*----------------------------
           Statistics

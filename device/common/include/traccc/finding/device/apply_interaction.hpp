@@ -17,16 +17,12 @@ namespace traccc::device {
 ///
 /// @param[in] globalIndex     The index of the current thread
 /// @param[in] det_data        Detector view object
-/// @param[in] nav_candidates_buffer  Buffer for navigation candidates
 /// @param[in] n_params        The number of parameters (or tracks)
 /// @param[out] params_view    Collection of output bound track_parameters
 ///
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
     std::size_t globalIndex, typename detector_t::view_type det_data,
-    vecmem::data::jagged_vector_view<detray::intersection2D<
-        typename detector_t::surface_type, typename detector_t::transform3>>
-        nav_candidates_buffer,
     const int n_params,
     bound_track_parameters_collection_types::view params_view);
 

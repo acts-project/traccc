@@ -14,13 +14,12 @@
 namespace traccc {
 
 /// Configuration struct for track fitting
-template <typename scalar_t>
 struct fitting_config {
 
     std::size_t n_iterations = 1;
 
     /// Propagation configuration
-    detray::propagation::config<scalar_t> propagation{};
+    detray::propagation::config propagation{};
 };
 
 }  // namespace traccc

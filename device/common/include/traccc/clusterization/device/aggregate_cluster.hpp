@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,8 +12,8 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 
-// System include(s).
-#include <cstddef>
+// VecMem include(s).
+#include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
 
@@ -32,10 +32,9 @@ TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
-    const vecmem::data::vector_view<unsigned short> f_view,
-    const unsigned int start, const unsigned int end, const unsigned short cid,
-    measurement& out, vecmem::data::vector_view<unsigned int> cell_links,
-    const unsigned int link);
+    const vecmem::data::vector_view<const unsigned short>& f_view,
+    unsigned int start, unsigned int end, unsigned short cid, measurement& out,
+    vecmem::data::vector_view<unsigned int> cell_links, unsigned int link);
 
 }  // namespace traccc::device
 

@@ -6,18 +6,20 @@
  */
 
 // Project include(s).
+#include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
-#include "traccc/cuda/utils/definitions.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/device/finding_global_counter.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/device/add_links_for_holes.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/count_measurements.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
+#include "traccc/finding/device/prune_tracks.hpp"
 
 // detray include(s).
 #include "detray/core/detector.hpp"
@@ -60,17 +62,12 @@ __global__ void make_barcode_sequence(
 /// CUDA kernel for running @c traccc::device::apply_interaction
 template <typename detector_t>
 __global__ void apply_interaction(
-    typename detector_t::view_type det_data,
-    vecmem::data::jagged_vector_view<detray::intersection2D<
-        typename detector_t::surface_type, typename detector_t::transform3>>
-        nav_candidates_buffer,
-    const int n_params,
+    typename detector_t::view_type det_data, const int n_params,
     bound_track_parameters_collection_types::view params_view) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::apply_interaction<detector_t>(gid, det_data, nav_candidates_buffer,
-                                          n_params, params_view);
+    device::apply_interaction<detector_t>(gid, det_data, n_params, params_view);
 }
 
 /// CUDA kernel for running @c traccc::device::count_measurements
@@ -99,8 +96,11 @@ __global__ void find_tracks(
     vecmem::data::vector_view<const unsigned int>
         n_measurements_prefix_sum_view,
     vecmem::data::vector_view<const unsigned int> ref_meas_idx_view,
+    vecmem::data::vector_view<const candidate_link> prev_links_view,
+    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
     const unsigned int step, const unsigned int n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
+    vecmem::data::vector_view<unsigned int> n_candidates_view,
     vecmem::data::vector_view<candidate_link> links_view,
     unsigned int& n_candidates) {
 
@@ -108,8 +108,28 @@ __global__ void find_tracks(
 
     device::find_tracks<detector_t, config_t>(
         gid, cfg, det_data, measurements_view, in_params_view,
-        n_measurements_prefix_sum_view, ref_meas_idx_view, step,
-        n_max_candidates, out_params_view, links_view, n_candidates);
+        n_measurements_prefix_sum_view, ref_meas_idx_view, prev_links_view,
+        prev_param_to_link_view, step, n_max_candidates, out_params_view,
+        n_candidates_view, links_view, n_candidates);
+}
+
+/// CUDA kernel for running @c traccc::device::add_links_for_holes
+__global__ void add_links_for_holes(
+    vecmem::data::vector_view<const unsigned int> n_candidates_view,
+    bound_track_parameters_collection_types::const_view in_params_view,
+    vecmem::data::vector_view<const candidate_link> prev_links_view,
+    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
+    const unsigned int step, const unsigned int n_max_candidates,
+    bound_track_parameters_collection_types::view out_params_view,
+    vecmem::data::vector_view<candidate_link> links_view,
+    unsigned int& n_total_candidates) {
+
+    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    device::add_links_for_holes(gid, n_candidates_view, in_params_view,
+                                prev_links_view, prev_param_to_link_view, step,
+                                n_max_candidates, out_params_view, links_view,
+                                n_total_candidates);
 }
 
 /// CUDA kernel for running @c traccc::device::propagate_to_next_surface
@@ -127,6 +147,7 @@ __global__ void propagate_to_next_surface(
     vecmem::data::vector_view<unsigned int> param_to_link_view,
     vecmem::data::vector_view<typename candidate_link::link_index_type>
         tips_view,
+    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view,
     unsigned int& n_out_params) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -134,23 +155,40 @@ __global__ void propagate_to_next_surface(
     device::propagate_to_next_surface<propagator_t, bfield_t, config_t>(
         gid, cfg, det_data, field_data, nav_candidates_buffer, in_params_view,
         links_view, step, n_candidates, out_params_view, param_to_link_view,
-        tips_view, n_out_params);
+        tips_view, n_tracks_per_seed_view, n_out_params);
 }
 
 /// CUDA kernel for running @c traccc::device::build_tracks
+template <typename config_t>
 __global__ void build_tracks(
+    const config_t cfg,
     measurement_collection_types::const_view measurements_view,
     bound_track_parameters_collection_types::const_view seeds_view,
     vecmem::data::jagged_vector_view<const candidate_link> links_view,
     vecmem::data::jagged_vector_view<const unsigned int> param_to_link_view,
     vecmem::data::vector_view<const typename candidate_link::link_index_type>
         tips_view,
-    track_candidate_container_types::view track_candidates_view) {
+    track_candidate_container_types::view track_candidates_view,
+    vecmem::data::vector_view<unsigned int> valid_indices_view,
+    unsigned int& n_valid_tracks) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::build_tracks(gid, measurements_view, seeds_view, links_view,
-                         param_to_link_view, tips_view, track_candidates_view);
+    device::build_tracks(gid, cfg, measurements_view, seeds_view, links_view,
+                         param_to_link_view, tips_view, track_candidates_view,
+                         valid_indices_view, n_valid_tracks);
+}
+
+/// CUDA kernel for running @c traccc::device::prune_tracks
+__global__ void prune_tracks(
+    track_candidate_container_types::const_view track_candidates_view,
+    vecmem::data::vector_view<const unsigned int> valid_indices_view,
+    track_candidate_container_types::view prune_candidates_view) {
+
+    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    device::prune_tracks(gid, track_candidates_view, valid_indices_view,
+                         prune_candidates_view);
 }
 
 }  // namespace kernels
@@ -159,7 +197,11 @@ template <typename stepper_t, typename navigator_t>
 finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
     vecmem::copy& copy, stream& str)
-    : m_cfg(cfg), m_mr(mr), m_copy(copy), m_stream(str){};
+    : m_cfg(cfg),
+      m_mr(mr),
+      m_copy(copy),
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
@@ -178,13 +220,19 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     m_copy.setup(seeds_buffer);
     m_copy.setup(navigation_buffer);
 
+    const unsigned int n_seeds = m_copy.get_size(seeds_buffer);
+
     // Prepare input parameters with seeds
-    bound_track_parameters_collection_types::buffer in_params_buffer(
-        m_copy.get_size(seeds_buffer), m_mr.main);
+    bound_track_parameters_collection_types::buffer in_params_buffer(n_seeds,
+                                                                     m_mr.main);
     bound_track_parameters_collection_types::device in_params(in_params_buffer);
-    bound_track_parameters_collection_types::device seeds(seeds_buffer);
+    bound_track_parameters_collection_types::const_device seeds(seeds_buffer);
     thrust::copy(thrust::cuda::par.on(stream), seeds.begin(), seeds.end(),
                  in_params.begin());
+
+    // Number of tracks per seed
+    vecmem::data::vector_buffer<unsigned int> n_tracks_per_seed_buffer(
+        n_seeds, m_mr.main);
 
     // Create a map for links
     std::map<unsigned int, vecmem::data::vector_buffer<candidate_link>>
@@ -219,17 +267,18 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
      * Measurement Operations
      *****************************************************************/
 
-    measurement_collection_types::const_device measurements_device(
-        measurements);
+    measurement_collection_types::const_view::size_type n_measurements =
+        m_copy.get_size(measurements);
 
     // Get copy of barcode uniques
-    measurement_collection_types::buffer uniques_buffer{
-        measurements_device.size(), m_mr.main};
+    measurement_collection_types::buffer uniques_buffer{n_measurements,
+                                                        m_mr.main};
     measurement_collection_types::device uniques(uniques_buffer);
 
-    measurement* end = thrust::unique_copy(
-        thrust::cuda::par.on(stream), measurements_device.begin(),
-        measurements_device.end(), uniques.begin(), measurement_equal_comp());
+    measurement* end =
+        thrust::unique_copy(thrust::cuda::par.on(stream), measurements.ptr(),
+                            measurements.ptr() + n_measurements,
+                            uniques.begin(), measurement_equal_comp());
     unsigned int n_modules = end - uniques.begin();
 
     // Get upper bounds of unique elements
@@ -237,10 +286,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                                   m_mr.main};
     vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
 
-    thrust::upper_bound(thrust::cuda::par.on(stream),
-                        measurements_device.begin(), measurements_device.end(),
-                        uniques.begin(), uniques.begin() + n_modules,
-                        upper_bounds.begin(), measurement_sort_comp());
+    thrust::upper_bound(thrust::cuda::par.on(stream), measurements.ptr(),
+                        measurements.ptr() + n_measurements, uniques.begin(),
+                        uniques.begin() + n_modules, upper_bounds.begin(),
+                        measurement_sort_comp());
 
     /*****************************************************************
      * Kernel1: Create barcode sequence
@@ -249,22 +298,28 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     vecmem::data::vector_buffer<detray::geometry::barcode> barcodes_buffer{
         n_modules, m_mr.main};
 
-    unsigned int nThreads = WARP_SIZE * 2;
+    unsigned int nThreads = m_warp_size * 2;
     unsigned int nBlocks = (barcodes_buffer.size() + nThreads - 1) / nThreads;
 
     kernels::make_barcode_sequence<<<nBlocks, nThreads, 0, stream>>>(
         uniques_buffer, barcodes_buffer);
 
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     for (unsigned int step = 0; step < m_cfg.max_track_candidates_per_track;
          step++) {
 
+        // Previous step
+        const unsigned int prev_step = (step == 0 ? 0 : step - 1);
+
+        // Reset the number of tracks per seed
+        m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
+
         // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
@@ -279,20 +334,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         }
 
         // Reset the global counter
-        CUDA_ERROR_CHECK(cudaMemsetAsync(global_counter_device.get(), 0,
-                                         sizeof(device::finding_global_counter),
-                                         stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemsetAsync(global_counter_device.get(), 0,
+                            sizeof(device::finding_global_counter), stream));
 
         /*****************************************************************
          * Kernel2: Apply material interaction
          ****************************************************************/
 
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::apply_interaction<detector_type>
-            <<<nBlocks, nThreads, 0, stream>>>(det_view, navigation_buffer,
-                                               n_in_params, in_params_buffer);
-        CUDA_ERROR_CHECK(cudaGetLastError());
+            <<<nBlocks, nThreads, 0, stream>>>(det_view, n_in_params,
+                                               in_params_buffer);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         /*****************************************************************
          * Kernel3: Count the number of measurements per parameter
@@ -300,38 +355,41 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         vecmem::data::vector_buffer<unsigned int> n_measurements_buffer(
             n_in_params, m_mr.main);
+        vecmem::device_vector<unsigned int> n_measurements_device(
+            n_measurements_buffer);
+        thrust::fill(thrust::cuda::par.on(stream),
+                     n_measurements_device.begin(), n_measurements_device.end(),
+                     0u);
 
         // Create a buffer for the first measurement index of parameter
         vecmem::data::vector_buffer<unsigned int> ref_meas_idx_buffer(
             n_in_params, m_mr.main);
 
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::count_measurements<<<nBlocks, nThreads, 0, stream>>>(
             in_params_buffer, barcodes_buffer, upper_bounds_buffer, n_in_params,
             n_measurements_buffer, ref_meas_idx_buffer,
             (*global_counter_device).n_measurements_sum);
-        CUDA_ERROR_CHECK(cudaGetLastError());
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
         // Create the buffer for the prefix sum of the number of measurements
         // per parameter
-        vecmem::device_vector<unsigned int> n_measurements(
-            n_measurements_buffer);
         vecmem::data::vector_buffer<unsigned int>
             n_measurements_prefix_sum_buffer(n_in_params, m_mr.main);
         vecmem::device_vector<unsigned int> n_measurements_prefix_sum(
             n_measurements_prefix_sum_buffer);
-        thrust::inclusive_scan(thrust::cuda::par.on(stream),
-                               n_measurements.begin(), n_measurements.end(),
-                               n_measurements_prefix_sum.begin());
+        thrust::inclusive_scan(
+            thrust::cuda::par.on(stream), n_measurements_device.begin(),
+            n_measurements_device.end(), n_measurements_prefix_sum.begin());
 
         /*****************************************************************
          * Kernel4: Find valid tracks
@@ -340,8 +398,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         // Buffer for kalman-updated parameters spawned by the measurement
         // candidates
         const unsigned int n_max_candidates =
-            std::min(n_in_params * m_cfg.max_num_branches_per_surface,
-                     seeds.size() * m_cfg.max_num_branches_per_seed);
+            n_in_params * m_cfg.max_num_branches_per_surface;
+
+        vecmem::data::vector_buffer<unsigned int> n_candidates_buffer{
+            n_in_params, m_mr.main};
+        vecmem::device_vector<unsigned int> n_candidates_device(
+            n_candidates_buffer);
+        thrust::fill(thrust::cuda::par.on(stream), n_candidates_device.begin(),
+                     n_candidates_device.end(), 0u);
 
         bound_track_parameters_collection_types::buffer updated_params_buffer(
             n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
@@ -358,22 +422,39 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             kernels::find_tracks<detector_type, config_type>
                 <<<nBlocks, nThreads, 0, stream>>>(
                     m_cfg, det_view, measurements, in_params_buffer,
-                    n_measurements_prefix_sum_buffer, ref_meas_idx_buffer, step,
-                    n_max_candidates, updated_params_buffer, link_map[step],
+                    n_measurements_prefix_sum_buffer, ref_meas_idx_buffer,
+                    link_map[prev_step], param_to_link_map[prev_step], step,
+                    n_max_candidates, updated_params_buffer,
+                    n_candidates_buffer, link_map[step],
                     (*global_counter_device).n_candidates);
-            CUDA_ERROR_CHECK(cudaGetLastError());
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        /*****************************************************************
+         * Kernel5: Add a dummy links in case of no branches
+         *****************************************************************/
+
+        nBlocks = (n_in_params + nThreads - 1) / nThreads;
+
+        if (nBlocks > 0) {
+            kernels::add_links_for_holes<<<nBlocks, nThreads, 0, stream>>>(
+                n_candidates_buffer, in_params_buffer, link_map[prev_step],
+                param_to_link_map[prev_step], step, n_max_candidates,
+                updated_params_buffer, link_map[step],
+                (*global_counter_device).n_candidates);
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
         // Global counter object: Device -> Host
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
         /*****************************************************************
-         * Kernel5: Propagate to the next surface
+         * Kernel6: Propagate to the next surface
          *****************************************************************/
 
         // Buffer for out parameters for the next step
@@ -389,7 +470,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                           vecmem::data::buffer_type::resizable};
         m_copy.setup(tips_map[step]);
 
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
 
         if (global_counter_host.n_candidates > 0) {
             nBlocks =
@@ -401,14 +482,15 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     updated_params_buffer, link_map[step], step,
                     (*global_counter_device).n_candidates, out_params_buffer,
                     param_to_link_map[step], tips_map[step],
+                    n_tracks_per_seed_buffer,
                     (*global_counter_device).n_out_params);
-            CUDA_ERROR_CHECK(cudaGetLastError());
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
-        CUDA_ERROR_CHECK(cudaMemcpyAsync(&global_counter_host,
-                                         global_counter_device.get(),
-                                         sizeof(device::finding_global_counter),
-                                         cudaMemcpyDeviceToHost, stream));
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                            sizeof(device::finding_global_counter),
+                            cudaMemcpyDeviceToHost, stream));
 
         m_stream.synchronize();
 
@@ -471,9 +553,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         tips_buffer);
 
     unsigned int prefix_sum = 0;
-    for (unsigned int it = m_cfg.min_track_candidates_per_track - 1;
-         it < n_steps; it++) {
 
+    for (unsigned int it = 0; it < n_steps; it++) {
         vecmem::device_vector<typename candidate_link::link_index_type> in(
             tips_map[it]);
 
@@ -486,7 +567,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     }
 
     /*****************************************************************
-     * Kernel6: Build tracks
+     * Kernel7: Build tracks
      *****************************************************************/
 
     // Create track candidate buffer
@@ -499,20 +580,52 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     m_copy.setup(track_candidates_buffer.headers);
     m_copy.setup(track_candidates_buffer.items);
 
+    // Create buffer for valid indices
+    vecmem::data::vector_buffer<unsigned int> valid_indices_buffer(n_tips_total,
+                                                                   m_mr.main);
+
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
-        nThreads = WARP_SIZE * 2;
+        nThreads = m_warp_size * 2;
         nBlocks = (n_tips_total + nThreads - 1) / nThreads;
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            measurements, seeds_buffer, links_buffer, param_to_link_buffer,
-            tips_buffer, track_candidates_buffer);
-
-        CUDA_ERROR_CHECK(cudaGetLastError());
+            m_cfg, measurements, seeds_buffer, links_buffer,
+            param_to_link_buffer, tips_buffer, track_candidates_buffer,
+            valid_indices_buffer, (*global_counter_device).n_valid_tracks);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
+
+    // Global counter object: Device -> Host
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
+                        sizeof(device::finding_global_counter),
+                        cudaMemcpyDeviceToHost, stream));
+
     m_stream.synchronize();
 
-    return track_candidates_buffer;
+    // Create pruned candidate buffer
+    track_candidate_container_types::buffer prune_candidates_buffer{
+        {global_counter_host.n_valid_tracks, m_mr.main},
+        {std::vector<std::size_t>(global_counter_host.n_valid_tracks,
+                                  m_cfg.max_track_candidates_per_track),
+         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
+
+    m_copy.setup(prune_candidates_buffer.headers);
+    m_copy.setup(prune_candidates_buffer.items);
+
+    if (global_counter_host.n_valid_tracks > 0) {
+        nThreads = m_warp_size * 2;
+        nBlocks =
+            (global_counter_host.n_valid_tracks + nThreads - 1) / nThreads;
+
+        kernels::prune_tracks<<<nBlocks, nThreads, 0, stream>>>(
+            track_candidates_buffer, valid_indices_buffer,
+            prune_candidates_buffer);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    }
+
+    return prune_candidates_buffer;
 }
 
 // Explicit template instantiation
@@ -520,7 +633,7 @@ using default_detector_type =
     detray::detector<detray::default_metadata, detray::device_container_types>;
 using default_stepper_type =
     detray::rk_stepper<covfie::field<detray::bfield::const_bknd_t>::view_t,
-                       transform3, detray::constrained_step<>>;
+                       traccc::default_algebra, detray::constrained_step<>>;
 using default_navigator_type = detray::navigator<const default_detector_type>;
 template class finding_algorithm<default_stepper_type, default_navigator_type>;
 

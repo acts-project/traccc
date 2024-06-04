@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,172 +9,115 @@
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/utils/barrier.hpp"
-#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 
 // Project include(s)
-#include "traccc/clusterization/device/aggregate_cluster.hpp"
 #include "traccc/clusterization/device/ccl_kernel.hpp"
-#include "traccc/clusterization/device/form_spacepoints.hpp"
-#include "traccc/clusterization/device/reduce_problem_cell.hpp"
 
 // Vecmem include(s).
-#include <vecmem/memory/device_atomic_ref.hpp>
-#include <vecmem/utils/sycl/copy.hpp>
 #include <vecmem/utils/sycl/local_accessor.hpp>
 
-// System include(s).
-#include <algorithm>
-
 namespace traccc::sycl {
-
-namespace {
-/// These indices in clusterization will only range from 0 to
-/// max_cells_per_partition, so we only need a short
-using index_t = unsigned short;
-
-static constexpr int TARGET_CELLS_PER_THREAD = 8;
-static constexpr int MAX_CELLS_PER_THREAD = 12;
-}  // namespace
 
 namespace kernels {
 
 /// Class identifying the kernel running @c traccc::device::ccl_kernel
 class ccl_kernel;
 
-/// Class identifying the kernel running @c traccc::device::form_spacepoints
-class form_spacepoints;
-
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
     const unsigned short target_cells_per_partition)
-    : m_target_cells_per_partition(target_cells_per_partition),
-      m_max_work_group_size(
-          details::get_queue(queue)
-              .get_device()
-              .get_info<::sycl::info::device::max_work_group_size>()),
-      m_mr(mr),
+    : m_mr(mr),
       m_queue(queue),
-      m_copy(copy) {}
+      m_copy(copy),
+      m_target_cells_per_partition(target_cells_per_partition) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_collection_types::const_view& cells,
-    const cell_module_collection_types::const_view& modules) const {
+    const cell_collection_types::const_view& cells_view,
+    const cell_module_collection_types::const_view& modules_view) const {
 
-    // Number of cells
+    // Get the number of cells
     const cell_collection_types::view::size_type num_cells =
-        m_copy.get_size(cells);
+        m_copy.get().get_size(cells_view);
 
+    // Create the result object, overestimating the number of measurements.
+    measurement_collection_types::buffer measurements{
+        num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
+    m_copy.get().setup(measurements);
+    measurement_collection_types::view measurements_view(measurements);
+
+    // If there are no cells, return right away.
     if (num_cells == 0) {
-        return {output_type::first_type{0, m_mr.main},
-                output_type::second_type{0, m_mr.main}};
+        return measurements;
     }
 
-    // Create result object for the CCL kernel with size overestimation
-    measurement_collection_types::buffer measurements_buffer(num_cells,
-                                                             m_mr.main);
-    m_copy.setup(measurements_buffer)->wait();
-    measurement_collection_types::view measurements_view(measurements_buffer);
-
-    // Counter for number of measurements
-    vecmem::unique_alloc_ptr<unsigned int> num_measurements_device =
-        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
-    details::get_queue(m_queue)
-        .memset(num_measurements_device.get(), 0, sizeof(unsigned int))
-        .wait_and_throw();
-
-    const unsigned short max_cells_per_partition =
-        (m_target_cells_per_partition * MAX_CELLS_PER_THREAD +
-         TARGET_CELLS_PER_THREAD - 1) /
-        TARGET_CELLS_PER_THREAD;
-    const unsigned int threads_per_partition =
-        (m_target_cells_per_partition + TARGET_CELLS_PER_THREAD - 1) /
-        TARGET_CELLS_PER_THREAD;
-    const unsigned int num_partitions =
-        (num_cells + m_target_cells_per_partition - 1) /
-        m_target_cells_per_partition;
-    const unsigned int target_cells_per_partition =
-        m_target_cells_per_partition;
-
+    // Construct the kernel launch parameters.
+    const device::details::ccl_kernel_helper helper{
+        m_target_cells_per_partition, num_cells};
     ::sycl::nd_range cclKernelRange(
-        ::sycl::range<1>(num_partitions * threads_per_partition),
-        ::sycl::range<1>(threads_per_partition));
+        ::sycl::range<1>(helper.num_partitions * helper.threads_per_partition),
+        ::sycl::range<1>(helper.threads_per_partition));
 
     // Check if device is capable of allocating sufficient local memory
-    assert(sizeof(index_t) * 2 * max_cells_per_partition +
+    assert(sizeof(device::details::index_t) * 2 *
+                   helper.max_cells_per_partition +
                3 * sizeof(unsigned int) <
            details::get_queue(m_queue)
                .get_device()
                .get_info<::sycl::info::device::local_mem_size>());
 
-    // Create buffer for linking cells to their spacepoints.
+    // Create buffer for linking cells to their measurements.
+    //
+    // @todo Construct cell clusters on demand in a member function for
+    // debugging.
+    //
     vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
-    m_copy.setup(cell_links)->wait();
+    m_copy.get().setup(cell_links)->wait();
     vecmem::data::vector_view<unsigned int> cell_links_view(cell_links);
 
-    auto aux_num_measurements_device = num_measurements_device.get();
     // Run ccl kernel
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
+            // Allocate shared memory for the kernel.
             vecmem::sycl::local_accessor<unsigned int> shared_uint(3, h);
-            vecmem::sycl::local_accessor<index_t> shared_idx(
-                2 * max_cells_per_partition, h);
+            vecmem::sycl::local_accessor<device::details::index_t> shared_idx(
+                2 * helper.max_cells_per_partition, h);
 
+            // Launch the kernel.
             h.parallel_for<kernels::ccl_kernel>(
-                cclKernelRange, [=](::sycl::nd_item<1> item) {
-                    index_t* f = &shared_idx[0];
-                    index_t* f_next = &shared_idx[max_cells_per_partition];
+                cclKernelRange,
+                [shared_uint, shared_idx, helper, cells_view, modules_view,
+                 measurements_view, cell_links_view,
+                 target_cells_per_partition =
+                     m_target_cells_per_partition](::sycl::nd_item<1> item) {
+                    // Construct more readable variable names.
+                    vecmem::data::vector_view<device::details::index_t> f_view{
+                        helper.max_cells_per_partition, &shared_idx[0]};
+                    vecmem::data::vector_view<device::details::index_t> gf_view{
+                        helper.max_cells_per_partition,
+                        &shared_idx[helper.max_cells_per_partition]};
                     unsigned int& partition_start = shared_uint[0];
                     unsigned int& partition_end = shared_uint[1];
                     unsigned int& outi = shared_uint[2];
+
+                    // Barrier used in the algorithm.
                     traccc::sycl::barrier barry_r(item);
 
+                    // Run the algorithm for this thread.
                     device::ccl_kernel(
                         item.get_local_linear_id(), item.get_local_range(0),
-                        item.get_group_linear_id(), cells, modules,
-                        max_cells_per_partition, target_cells_per_partition,
-                        partition_start, partition_end, outi, f, f_next,
-                        barry_r, measurements_view,
-                        *aux_num_measurements_device, cell_links_view);
+                        item.get_group_linear_id(), cells_view, modules_view,
+                        helper.max_cells_per_partition,
+                        target_cells_per_partition, partition_start,
+                        partition_end, outi, f_view, gf_view, barry_r,
+                        measurements_view, cell_links_view);
                 });
         })
         .wait_and_throw();
 
-    // Copy number of measurements to host
-    vecmem::unique_alloc_ptr<unsigned int> num_measurements_host =
-        vecmem::make_unique_alloc<unsigned int>(
-            (m_mr.host != nullptr) ? *(m_mr.host) : m_mr.main);
-    details::get_queue(m_queue)
-        .memcpy(num_measurements_host.get(), num_measurements_device.get(),
-                sizeof(unsigned int))
-        .wait_and_throw();
-
-    spacepoint_collection_types::buffer spacepoints_buffer(
-        *num_measurements_host, m_mr.main);
-    m_copy.setup(spacepoints_buffer)->wait();
-    spacepoint_collection_types::view spacepoints_view(spacepoints_buffer);
-
-    // For the following kernel, we can now use whatever the desired number of
-    // threads per block.
-    auto spacepointsRange = traccc::sycl::calculate1DimNdRange(
-        *num_measurements_host, m_max_work_group_size);
-
-    // Run form spacepoints kernel, turning 2D measurements into 3D spacepoints
-    details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
-            h.parallel_for<kernels::form_spacepoints>(
-                spacepointsRange,
-                [measurements_view, modules, aux_num_measurements_device,
-                 spacepoints_view](::sycl::nd_item<1> item) {
-                    device::form_spacepoints(
-                        item.get_global_linear_id(), measurements_view, modules,
-                        *aux_num_measurements_device, spacepoints_view);
-                });
-        })
-        .wait_and_throw();
-
-    return {std::move(spacepoints_buffer), std::move(cell_links)};
+    // Return the reconstructed measurements.
+    return measurements;
 }
 
 }  // namespace traccc::sycl

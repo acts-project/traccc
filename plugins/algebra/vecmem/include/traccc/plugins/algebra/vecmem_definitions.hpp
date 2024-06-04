@@ -18,8 +18,6 @@
 #include <map>
 #include <tuple>
 
-#define __plugin algebra::vecmem
-
 namespace traccc {
 
 using scalar = TRACCC_CUSTOM_SCALARTYPE;

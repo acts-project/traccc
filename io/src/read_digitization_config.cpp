@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,6 +16,7 @@
 #include <Acts/Plugins/Json/UtilitiesJsonConverter.hpp>
 
 // System include(s).
+#include <algorithm>
 #include <fstream>
 #include <string>
 
@@ -31,10 +32,32 @@ void from_json(const nlohmann::json& json, module_digitization_config& cfg) {
     // Names/keywords used in the JSON file.
     static const char* geometric = "geometric";
     static const char* segmentation = "segmentation";
+    static const char* variances = "variances";
 
-    // Read the object, if possible.
+    // Read the binning information, if possible.
     if (json.find(geometric) != json.end()) {
-        from_json(json[geometric][segmentation], cfg.segmentation);
+        const auto& json_geom = json[geometric];
+        if (json_geom.find(segmentation) != json_geom.end()) {
+            from_json(json_geom[segmentation], cfg.segmentation);
+        }
+        if (json_geom.find(variances) != json_geom.end()) {
+            for (const auto& jdata : json_geom[variances]) {
+                const int index = jdata["index"];
+                if (index != 1) {
+                    continue;
+                }
+                for (const auto& rms : jdata["rms"]) {
+                    // A large RMS value associated to the second index happens
+                    // to mean that this is a strip detector...
+                    const float frms = rms.get<float>();
+                    if (frms > 1.0f) {
+                        cfg.dimensions = 1;
+                        cfg.variance_y = std::max(frms, cfg.variance_y);
+                    }
+                }
+                break;
+            }
+        }
     }
 }
 
@@ -64,7 +87,7 @@ digitization_config read_digitization_config(std::string_view filename,
                                              data_format format) {
 
     // Construct the full filename.
-    std::string full_filename = data_directory() + filename.data();
+    std::string full_filename = get_absolute_path(filename);
 
     // Decide how to read the file.
     switch (format) {

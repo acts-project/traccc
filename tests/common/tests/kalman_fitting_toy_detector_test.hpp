@@ -33,6 +33,9 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
     /// B field value and its type
     static constexpr vector3 B{0, 0, 2 * detray::unit<scalar>::T};
 
+    /// Step constraint
+    static const inline scalar step_constraint = 1.f * detray::unit<scalar>::mm;
+
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
         50.f * detray::unit<scalar>::um, 50.f * detray::unit<scalar>::um};
@@ -53,10 +56,8 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
     virtual void SetUp() override {
         vecmem::host_memory_resource host_mr;
 
-        detray::toy_det_config<scalar> toy_cfg{};
+        detray::toy_det_config toy_cfg{};
         toy_cfg.n_brl_layers(n_barrels).n_edc_layers(n_endcaps).do_check(false);
-        // @TODO: Increase material budget again
-        toy_cfg.module_mat_thickness(0.11f * unit<scalar>::mm);
 
         // Create the toy geometry
         auto [det, name_map] = detray::build_toy_detector(host_mr, toy_cfg);
@@ -65,6 +66,8 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
         auto writer_cfg = detray::io::detector_writer_config{}
                               .format(detray::io::format::json)
                               .replace_files(true)
+                              .write_grids(true)
+                              .write_material(true)
                               .path(std::get<0>(GetParam()));
         detray::io::write_detector(det, name_map, writer_cfg);
     }

@@ -84,7 +84,7 @@ void seeding_performance_writer::write(
     for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
         // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.mom) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
             continue;
         }
 
@@ -128,7 +128,7 @@ void seeding_performance_writer::write(
     for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
         // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.mom) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
             continue;
         }
 

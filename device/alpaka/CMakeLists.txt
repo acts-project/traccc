@@ -16,6 +16,10 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
   include( traccc-compiler-options-cuda )
 
   list(APPEND PRIVATE_LIBRARIES CUDA::cudart vecmem::cuda)
+elseif(alpaka_ACC_GPU_HIP_ENABLE)
+  enable_language(HIP)
+  find_package( HIPToolkit REQUIRED )
+  list(APPEND PRIVATE_LIBRARIES HIP::hiprt vecmem::hip)
 endif()
 
 traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED

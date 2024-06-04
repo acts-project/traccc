@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/common.hpp"
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/container.hpp"
@@ -47,9 +48,9 @@ struct spacepoint {
 TRACCC_HOST_DEVICE
 inline bool operator<(const spacepoint& lhs, const spacepoint& rhs) {
 
-    if (std::abs(lhs.x() - rhs.x()) > float_epsilon) {
+    if (math::fabs(lhs.x() - rhs.x()) > float_epsilon) {
         return (lhs.x() < rhs.x());
-    } else if (std::abs(lhs.y() - rhs.y()) > float_epsilon) {
+    } else if (math::fabs(lhs.y() - rhs.y()) > float_epsilon) {
         return (lhs.y() < rhs.y());
     } else {
         return (lhs.z() < rhs.z());
@@ -60,9 +61,9 @@ inline bool operator<(const spacepoint& lhs, const spacepoint& rhs) {
 TRACCC_HOST_DEVICE
 inline bool operator==(const spacepoint& lhs, const spacepoint& rhs) {
 
-    return ((std::abs(lhs.x() - rhs.x()) < float_epsilon) &&
-            (std::abs(lhs.y() - rhs.y()) < float_epsilon) &&
-            (std::abs(lhs.z() - rhs.z()) < float_epsilon) &&
+    return ((math::fabs(lhs.x() - rhs.x()) < float_epsilon) &&
+            (math::fabs(lhs.y() - rhs.y()) < float_epsilon) &&
+            (math::fabs(lhs.z() - rhs.z()) < float_epsilon) &&
             (lhs.meas == rhs.meas));
 }
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,7 @@
 
 // traccc include(s).
 #include "traccc/definitions/common.hpp"
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/geometry/pixel_data.hpp"
@@ -37,6 +38,12 @@ struct cell_module {
 /// Declare all cell module collection types
 using cell_module_collection_types = collection_types<cell_module>;
 
+/// Comparison operator for cell modules
+TRACCC_HOST_DEVICE
+inline bool operator<(const cell_module& lhs, const cell_module& rhs) {
+    return lhs.surface_link < rhs.surface_link;
+}
+
 /// Equality operator for cell module
 TRACCC_HOST_DEVICE
 inline bool operator==(const cell_module& lhs, const cell_module& rhs) {
@@ -61,6 +68,7 @@ struct cell {
 /// Declare all cell collection types
 using cell_collection_types = collection_types<cell>;
 
+/// Comparison operator for cells
 TRACCC_HOST_DEVICE
 inline bool operator<(const cell& lhs, const cell& rhs) {
 
@@ -81,8 +89,8 @@ inline bool operator==(const cell& lhs, const cell& rhs) {
 
     return ((lhs.module_link == rhs.module_link) &&
             (lhs.channel0 == rhs.channel0) && (lhs.channel1 == rhs.channel1) &&
-            (std::abs(lhs.activation - rhs.activation) < float_epsilon) &&
-            (std::abs(lhs.time - rhs.time) < float_epsilon));
+            (math::fabs(lhs.activation - rhs.activation) < float_epsilon) &&
+            (math::fabs(lhs.time - rhs.time) < float_epsilon));
 }
 
 }  // namespace traccc

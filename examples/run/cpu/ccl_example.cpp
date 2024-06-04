@@ -1,13 +1,13 @@
 /*
  * TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/io/read_cells.hpp"
 
@@ -83,9 +83,9 @@ void print_statistics(const traccc::cell_collection_types::host& data) {
     }
 }
 
-void run_on_event(traccc::component_connection& cc,
+void run_on_event(traccc::host::sparse_ccl_algorithm& cc,
                   traccc::cell_collection_types::host& data) {
-    traccc::cluster_container_types::host clusters = cc(data);
+    traccc::cluster_container_types::host clusters = cc(vecmem::get_data(data));
 }
 
 int main(int argc, char* argv[]) {
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
     vecmem::host_memory_resource mem;
 
-    traccc::component_connection cc(mem);
+    traccc::host::sparse_ccl_algorithm cc(mem);
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 

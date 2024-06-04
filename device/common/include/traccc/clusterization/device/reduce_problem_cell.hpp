@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,9 +10,6 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/cell.hpp"
-
-// System include(s).
-#include <cstddef>
 
 namespace traccc::device {
 
@@ -29,8 +26,8 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
-    const cell_collection_types::const_device& cells, const unsigned short cid,
-    const unsigned int start, const unsigned int end, unsigned char& adjc,
+    const cell_collection_types::const_device& cells, unsigned short cid,
+    unsigned int start, unsigned int end, unsigned char& adjc,
     unsigned short adjv[8]);
 
 }  // namespace traccc::device

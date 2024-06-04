@@ -33,20 +33,21 @@ struct simulator {
     using scalar_type = typename detector_t::scalar_type;
 
     struct config {
-        detray::propagation::config<scalar_type> propagation;
+        detray::propagation::config propagation;
     };
 
-    using transform3 = typename detector_t::transform3;
+    using algebra_type = typename detector_t::algebra_type;
     using bfield_type = bfield_t;
 
     using actor_chain_type =
-        detray::actor_chain<dtuple, detray::parameter_transporter<transform3>,
-                            detray::random_scatterer<transform3>,
-                            detray::parameter_resetter<transform3>, writer_t>;
+        detray::actor_chain<detray::dtuple,
+                            detray::parameter_transporter<algebra_type>,
+                            detray::random_scatterer<algebra_type>,
+                            detray::parameter_resetter<algebra_type>, writer_t>;
 
     using navigator_type = detray::navigator<detector_t>;
     using stepper_type =
-        detray::rk_stepper<typename bfield_type::view_t, transform3,
+        detray::rk_stepper<typename bfield_type::view_t, algebra_type,
                            detray::constrained_step<>>;
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
@@ -111,9 +112,9 @@ struct simulator {
     typename writer_t::config m_writer_cfg;
 
     /// Actor states
-    typename detray::parameter_transporter<transform3>::state m_transporter{};
-    typename detray::random_scatterer<transform3>::state m_scatterer{};
-    typename detray::parameter_resetter<transform3>::state m_resetter{};
+    typename detray::parameter_transporter<algebra_type>::state m_transporter{};
+    typename detray::random_scatterer<algebra_type>::state m_scatterer{};
+    typename detray::parameter_resetter<algebra_type>::state m_resetter{};
 };
 
 }  // namespace traccc

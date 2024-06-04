@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -27,11 +27,13 @@ namespace traccc::io::csv {
 /// @param geom The description of the detector geometry
 /// @param dconfig The detector's digitization configuration
 /// @param bardoce_map An object to perform barcode re-mapping with
+/// @param deduplicate Whether to deduplicate the cells
 ///
 void read_cells(cell_reader_output& out, std::string_view filename,
                 const geometry* geom = nullptr,
                 const digitization_config* dconfig = nullptr,
                 const std::map<std::uint64_t, detray::geometry::barcode>*
-                    barcode_map = nullptr);
+                    barcode_map = nullptr,
+                bool deduplicate = true);
 
 }  // namespace traccc::io::csv

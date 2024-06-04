@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
-#include "traccc/cuda/utils/definitions.hpp"
+#include "cuda_error_handling.hpp"
 #include "utils.hpp"
 
 // Project include(s).
@@ -53,8 +53,8 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
         (sizes_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
     kernels::fill_prefix_sum<<<blocks, threadsPerBlock>>>(sizes_sum_view,
                                                           prefix_sum_buff);
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     return prefix_sum_buff;
 }
@@ -85,7 +85,7 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     kernels::fill_prefix_sum<<<blocks, threadsPerBlock, 0,
                                details::get_stream(str)>>>(sizes_sum_view,
                                                            prefix_sum_buff);
-    CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return prefix_sum_buff;
 }

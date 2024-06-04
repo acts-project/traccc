@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,10 +9,21 @@
 
 // Project include(s).
 #include "traccc/edm/cell.hpp"
+#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
+
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/detectors/bfield.hpp"
+#include "detray/navigation/navigator.hpp"
+#include "detray/propagator/propagator.hpp"
+#include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -39,6 +50,30 @@ class full_chain_algorithm
           const cell_module_collection_types::host&)> {
 
     public:
+    /// @name (For now dummy...) Type declaration(s)
+    /// @{
+
+    /// Detector type used during track finding and fitting
+    using detector_type = detray::detector<detray::default_metadata,
+                                           detray::host_container_types>;
+
+    /// Stepper type used by the track finding and fitting algorithms
+    using stepper_type =
+        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+                           detector_type::algebra_type,
+                           detray::constrained_step<>>;
+    /// Navigator type used by the track finding and fitting algorithms
+    using navigator_type = detray::navigator<const detector_type>;
+
+    /// Track finding algorithm type
+    using finding_algorithm =
+        traccc::finding_algorithm<stepper_type, navigator_type>;
+    /// Track fitting algorithm type
+    using fitting_algorithm = traccc::fitting_algorithm<
+        traccc::kalman_fitter<stepper_type, navigator_type>>;
+
+    /// @}
+
     /// Algorithm constructor
     ///
     /// @param mr The memory resource to use for the intermediate and result
@@ -46,11 +81,15 @@ class full_chain_algorithm
     /// @param target_cells_per_partition The average number of cells in each
     /// partition.
     ///
-    full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const unsigned short target_cells_per_partition,
-                         const seedfinder_config& finder_config,
-                         const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config);
+    full_chain_algorithm(
+        vecmem::memory_resource& host_mr,
+        const unsigned short target_cells_per_partition,
+        const seedfinder_config& finder_config,
+        const spacepoint_grid_config& grid_config,
+        const seedfilter_config& filter_config,
+        const finding_algorithm::config_type& finding_config = {},
+        const fitting_algorithm::config_type& fitting_config = {},
+        detector_type* detector = nullptr);
 
     /// Copy constructor
     ///
@@ -94,6 +133,8 @@ class full_chain_algorithm
     unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
+    /// Spacepoint formation algorithm
+    spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,8 +19,11 @@
 #include "traccc/io/utils.hpp"
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
-#include "traccc/clusterization/measurement_creation.hpp"
+#include "traccc/clusterization/measurement_creation_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
+
+// System include(s).
+#include <filesystem>
 
 namespace traccc {
 
@@ -31,8 +34,10 @@ particle_map generate_particle_map(std::size_t event,
 
     // Read the particles from the relevant event file
     std::string io_particles_file =
-        io::data_directory() + particle_dir +
-        io::get_event_filename(event, "-particles_initial.csv");
+        io::get_absolute_path((std::filesystem::path(particle_dir) /
+                               std::filesystem::path(io::get_event_filename(
+                                   event, "-particles_initial.csv")))
+                                  .native());
 
     auto preader = io::csv::make_particle_reader(io_particles_file);
 
@@ -61,8 +66,10 @@ hit_particle_map generate_hit_particle_map(std::size_t event,
     auto pmap = generate_particle_map(event, particle_dir);
 
     // Read the hits from the relevant event file
-    std::string io_hits_file = io::data_directory() + hits_dir +
-                               io::get_event_filename(event, "-hits.csv");
+    std::string io_hits_file = io::get_absolute_path(
+        (std::filesystem::path(hits_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-hits.csv")))
+            .native());
 
     auto hreader = io::csv::make_hit_reader(io_hits_file);
 
@@ -93,8 +100,10 @@ hit_map generate_hit_map(std::size_t event, const std::string& hits_dir) {
     hit_map result;
 
     // Read the hits from the relevant event file
-    std::string io_hits_file = io::data_directory() + hits_dir +
-                               io::get_event_filename(event, "-hits.csv");
+    std::string io_hits_file = io::get_absolute_path(
+        (std::filesystem::path(hits_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-hits.csv")))
+            .native());
 
     auto hreader = io::csv::make_hit_reader(io_hits_file);
 
@@ -102,8 +111,10 @@ hit_map generate_hit_map(std::size_t event, const std::string& hits_dir) {
 
     // Read the hits from the relevant event file
     std::string io_measurement_hit_id_file =
-        io::data_directory() + hits_dir +
-        io::get_event_filename(event, "-measurement-simhit-map.csv");
+        io::get_absolute_path((std::filesystem::path(hits_dir) /
+                               std::filesystem::path(io::get_event_filename(
+                                   event, "-measurement-simhit-map.csv")))
+                                  .native());
 
     auto mhid_reader =
         io::csv::make_measurement_hit_id_reader(io_measurement_hit_id_file);
@@ -141,8 +152,10 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
     auto hmap = generate_hit_map(event, hits_dir);
 
     // Read the cells from the relevant event file
-    std::string io_cells_file = io::data_directory() + cells_dir +
-                                io::get_event_filename(event, "-cells.csv");
+    std::string io_cells_file = io::get_absolute_path(
+        (std::filesystem::path(cells_dir) /
+         std::filesystem::path(io::get_event_filename(event, "-cells.csv")))
+            .native());
 
     auto creader = io::csv::make_cell_reader(io_cells_file);
 
@@ -195,8 +208,8 @@ generate_measurement_cell_map(std::size_t event,
     measurement_cell_map result;
 
     // CCA algorithms
-    component_connection cc(resource);
-    measurement_creation mc(resource);
+    host::sparse_ccl_algorithm cc(resource);
+    host::measurement_creation_algorithm mc(resource);
 
     // Read the surface transforms
     auto [surface_transforms, _] = io::read_geometry(detector_file);
@@ -207,12 +220,14 @@ generate_measurement_cell_map(std::size_t event,
     // Read the cells from the relevant event file
     traccc::io::cell_reader_output readOut(&resource);
     io::read_cells(readOut, event, cells_dir, traccc::data_format::csv,
-                   &surface_transforms, &digi_cfg);
+                   &surface_transforms, &digi_cfg, nullptr, false);
     cell_collection_types::host& cells_per_event = readOut.cells;
     cell_module_collection_types::host& modules_per_event = readOut.modules;
 
-    auto clusters_per_event = cc(cells_per_event);
-    auto measurements_per_event = mc(clusters_per_event, modules_per_event);
+    auto clusters_per_event = cc(vecmem::get_data(cells_per_event));
+    auto clusters_data = traccc::get_data(clusters_per_event);
+    auto measurements_per_event =
+        mc(clusters_data, vecmem::get_data(modules_per_event));
 
     assert(measurements_per_event.size() == clusters_per_event.size());
     for (unsigned int i = 0; i < measurements_per_event.size(); ++i) {

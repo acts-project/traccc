@@ -22,7 +22,8 @@ using data_format_type = std::string;
 /// Name of the data format option
 static const char* data_format_option = "output-data-format";
 
-output_data::output_data() : interface("Output Data Options") {
+output_data::output_data(traccc::data_format f, std::string_view d)
+    : interface("Output Data Options"), format(f), directory(d) {
 
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
@@ -44,6 +45,8 @@ void output_data::read(const boost::program_options::variables_map& vm) {
             format = data_format::binary;
         } else if (input_format_string == "json") {
             format = data_format::json;
+        } else if (input_format_string == "obj") {
+            format = data_format::obj;
         } else {
             throw std::invalid_argument("Unknown input data format");
         }

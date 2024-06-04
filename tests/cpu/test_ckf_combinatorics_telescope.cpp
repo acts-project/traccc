@@ -35,7 +35,7 @@
 
 using namespace traccc;
 // This defines the local frame test suite
-TEST_P(CkfCombinatoricsTelescopeTests, Run) {
+TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
@@ -48,8 +48,6 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     const scalar charge = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
-
-    const unsigned int nmax_per_seed = 500;
 
     /*****************************
      * Build a telescope geometry
@@ -88,11 +86,11 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
-    traccc::measurement_smearer<transform3> meas_smearer(smearing[0],
-                                                         smearing[1]);
+    traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
+        smearing[0], smearing[1]);
 
-    using writer_type =
-        traccc::smearing_writer<traccc::measurement_smearer<transform3>>;
+    using writer_type = traccc::smearing_writer<
+        traccc::measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
 
@@ -113,16 +111,18 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<rk_stepper_type,
-                                       host_navigator_type>::config_type cfg;
+    typename traccc::finding_algorithm<
+        rk_stepper_type, host_navigator_type>::config_type cfg_no_limit;
+    cfg_no_limit.max_num_branches_per_seed =
+        std::numeric_limits<unsigned int>::max();
 
     typename traccc::finding_algorithm<
         rk_stepper_type, host_navigator_type>::config_type cfg_limit;
-    cfg_limit.max_num_branches_per_initial_seed = nmax_per_seed;
+    cfg_limit.max_num_branches_per_seed = 500;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg);
+        host_finding(cfg_no_limit);
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding_limit(cfg_limit);
 
@@ -159,17 +159,17 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
             host_finding_limit(host_det, field, measurements_per_event, seeds);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
+        ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());
         ASSERT_EQ(track_candidates.size(),
                   std::pow(n_truth_tracks, plane_positions.size() + 1));
-
         ASSERT_EQ(track_candidates_limit.size(),
-                  n_truth_tracks * nmax_per_seed);
+                  n_truth_tracks * cfg_limit.max_num_branches_per_seed);
     }
 }
 
 // Testing two identical tracks
 INSTANTIATE_TEST_SUITE_P(
-    CkfCombinatoricsTelescopeValidation0, CkfCombinatoricsTelescopeTests,
+    CpuCkfCombinatoricsTelescopeValidation0, CpuCkfCombinatoricsTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -178,7 +178,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 // Testing three identical tracks
 INSTANTIATE_TEST_SUITE_P(
-    CkfCombinatoricsTelescopeValidation1, CkfCombinatoricsTelescopeTests,
+    CpuCkfCombinatoricsTelescopeValidation1, CpuCkfCombinatoricsTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},

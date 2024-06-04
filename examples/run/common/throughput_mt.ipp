@@ -14,16 +14,24 @@
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/threading.hpp"
 #include "traccc/options/throughput.hpp"
+#include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
 #include "traccc/io/demonstrator_edm.hpp"
 #include "traccc/io/read.hpp"
+#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/utils.hpp"
 
 // Performance measurement include(s).
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
+
+// Detray include(s).
+#include "detray/core/detector.hpp"
+#include "detray/io/frontend/detector_reader.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -53,12 +61,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     opts::input_data input_opts;
     opts::clusterization clusterization_opts;
     opts::track_seeding seeding_opts;
+    opts::track_finding finding_opts;
+    opts::track_propagation propagation_opts;
     opts::throughput throughput_opts;
     opts::threading threading_opts;
     opts::program_options program_opts{
         description,
         {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         throughput_opts, threading_opts},
+         finding_opts, propagation_opts, throughput_opts, threading_opts},
         argc,
         argv};
 
@@ -75,6 +85,34 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     // Memory resource to use in the test.
     HOST_MR uncached_host_mr;
 
+    // Read in the geometry.
+    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
+        detector_opts.detector_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
+    using detector_type = detray::detector<detray::default_metadata,
+                                           detray::host_container_types>;
+    detector_type detector{uncached_host_mr};
+    if (detector_opts.use_detray_detector) {
+        // Set up the detector reader configuration.
+        detray::io::detector_reader_config cfg;
+        cfg.add_file(traccc::io::data_directory() +
+                     detector_opts.detector_file);
+        if (detector_opts.material_file.empty() == false) {
+            cfg.add_file(traccc::io::data_directory() +
+                         detector_opts.material_file);
+        }
+        if (detector_opts.grid_file.empty() == false) {
+            cfg.add_file(traccc::io::data_directory() +
+                         detector_opts.grid_file);
+        }
+
+        // Read the detector.
+        auto det =
+            detray::io::read_detector<detector_type>(uncached_host_mr, cfg);
+        detector = std::move(det.first);
+    }
+
     // Read in all input events into memory.
     demonstrator_input input(&uncached_host_mr);
 
@@ -85,15 +123,37 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
             input.push_back(demonstrator_input::value_type(&uncached_host_mr));
         }
         // Read event data into input vector
-        io::read(input, input_opts.events, input_opts.directory,
-                 detector_opts.detector_file, detector_opts.digitization_file,
-                 input_opts.format);
+        io::read(
+            input, input_opts.events, input_opts.directory,
+            detector_opts.detector_file, detector_opts.digitization_file,
+            input_opts.format,
+            (detector_opts.use_detray_detector ? traccc::data_format::json
+                                               : traccc::data_format::csv));
     }
 
     // Set up cached memory resources on top of the host memory resource
     // separately for each CPU thread.
     std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
         cached_host_mrs{threading_opts.threads + 1};
+
+    // Algorithm configuration(s).
+    typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg;
+    finding_cfg.min_track_candidates_per_track =
+        finding_opts.track_candidates_range[0];
+    finding_cfg.max_track_candidates_per_track =
+        finding_opts.track_candidates_range[1];
+    finding_cfg.min_step_length_for_next_surface =
+        finding_opts.min_step_length_for_next_surface;
+    finding_cfg.max_step_counts_for_next_surface =
+        finding_opts.max_step_counts_for_next_surface;
+    finding_cfg.chi2_max = finding_opts.chi2_max;
+    finding_cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
+    finding_cfg.max_num_skipping_per_cand =
+        finding_opts.max_num_skipping_per_cand;
+    finding_cfg.propagation = propagation_opts.config;
+
+    typename FULL_CHAIN_ALG::fitting_algorithm::config_type fitting_cfg;
+    fitting_cfg.propagation = propagation_opts.config;
 
     // Set up the full-chain algorithm(s). One for each thread.
     std::vector<FULL_CHAIN_ALG> algs;
@@ -108,11 +168,15 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 ? static_cast<vecmem::memory_resource&>(
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
-        algs.push_back({alg_host_mr,
-                        clusterization_opts.target_cells_per_partition,
-                        seeding_opts.seedfinder,
-                        {seeding_opts.seedfinder},
-                        seeding_opts.seedfilter});
+        algs.push_back(
+            {alg_host_mr,
+             clusterization_opts.target_cells_per_partition,
+             seeding_opts.seedfinder,
+             {seeding_opts.seedfinder},
+             seeding_opts.seedfilter,
+             finding_cfg,
+             fitting_cfg,
+             (detector_opts.use_detray_detector ? &detector : nullptr)});
     }
 
     // Seed the random number generator.

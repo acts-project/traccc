@@ -16,10 +16,11 @@
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 
@@ -108,8 +109,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     vecmem::sycl::device_memory_resource device_mr{&q};
     traccc::memory_resource mr{device_mr, &sycl_host_mr};
 
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
+    traccc::host::clusterization_algorithm ca(host_mr);
+    traccc::host::spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
@@ -119,6 +120,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     traccc::sycl::clusterization_algorithm ca_sycl(
         mr, copy, &q, clusterization_opts.target_cells_per_partition);
+    traccc::sycl::spacepoint_formation_algorithm sf_sycl(mr, copy, &q);
     traccc::sycl::seeding_algorithm sa_sycl(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, mr, copy, &q);
@@ -136,12 +138,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
         // Instantiate host containers/collections
         traccc::io::cell_reader_output read_out_per_event(mr.host);
-        traccc::clusterization_algorithm::output_type measurements_per_event;
-        traccc::spacepoint_formation::output_type spacepoints_per_event;
+        traccc::host::clusterization_algorithm::output_type
+            measurements_per_event;
+        traccc::host::spacepoint_formation_algorithm::output_type
+            spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
         // Instantiate cuda containers/collections
+        traccc::measurement_collection_types::buffer measurements_sycl_buffer(
+            0, *mr.host);
         traccc::spacepoint_collection_types::buffer spacepoints_sycl_buffer(
             0, *mr.host);
         traccc::seed_collection_types::buffer seeds_sycl_buffer(0, *mr.host);
@@ -182,8 +188,17 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Clusterization (sycl)",
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
+                measurements_sycl_buffer =
+                    ca_sycl(cells_buffer, modules_buffer);
+                q.wait_and_throw();
+            }  // stop measuring clusterization sycl timer
+
+            {
+                traccc::performance::timer t("Spacepoint formation (sycl)",
+                                             elapsedTimes);
+                // Reconstruct it into spacepoints on the device.
                 spacepoints_sycl_buffer =
-                    ca_sycl(cells_buffer, modules_buffer).first;
+                    sf_sycl(measurements_sycl_buffer, modules_buffer);
                 q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 
@@ -197,7 +212,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer t("Clusterization  (cpu)",
                                                  elapsedTimes);
                     measurements_per_event =
-                        ca(cells_per_event, modules_per_event);
+                        ca(vecmem::get_data(cells_per_event),
+                           vecmem::get_data(modules_per_event));
                 }
 
                 /*---------------------------------
@@ -208,7 +224,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer t("Spacepoint formation  (cpu)",
                                                  elapsedTimes);
                     spacepoints_per_event =
-                        sf(measurements_per_event, modules_per_event);
+                        sf(vecmem::get_data(measurements_per_event),
+                           vecmem::get_data(modules_per_event));
                 }
             }
 

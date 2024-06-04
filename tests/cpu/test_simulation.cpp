@@ -32,24 +32,23 @@
 #include <filesystem>
 
 using namespace traccc;
-using namespace detray;
 
 constexpr scalar tol{1e-7f};
 
-TEST(simulation, simulation) {
+TEST(traccc_simulation, simulation) {
 
-    const mask<line<false>> ln{0u, 10.f * detray::unit<scalar>::mm,
-                               50.f * detray::unit<scalar>::mm};
+    const detray::mask<detray::line<false>> ln{
+        0u, 10.f * detray::unit<scalar>::mm, 50.f * detray::unit<scalar>::mm};
 
-    const mask<rectangle2D> re{0u, 10.f * detray::unit<scalar>::mm,
-                               10.f * detray::unit<scalar>::mm};
+    const detray::mask<detray::rectangle2D> re{
+        0u, 10.f * detray::unit<scalar>::mm, 10.f * detray::unit<scalar>::mm};
 
-    detray::bound_track_parameters<transform3> bound_params;
+    detray::bound_track_parameters<traccc::default_algebra> bound_params;
     auto& bound_vec = bound_params.vector();
     getter::element(bound_vec, traccc::e_bound_loc0, 0u) = 1.f;
     getter::element(bound_vec, traccc::e_bound_loc1, 0u) = 2.f;
 
-    measurement_smearer<transform3> smearer(0.f, 0.f);
+    measurement_smearer<traccc::default_algebra> smearer(0.f, 0.f);
 
     traccc::io::csv::measurement iomeas1;
     smearer(ln, {-3.f, 2.f}, bound_params, iomeas1);
@@ -67,7 +66,7 @@ TEST(simulation, simulation) {
     ASSERT_NEAR(iomeas3.local1, -3.f, tol);
 }
 
-GTEST_TEST(detray_simulation, toy_detector_simulation) {
+GTEST_TEST(traccc_simulation, toy_detector_simulation) {
 
     // Create geometry
     vecmem::host_memory_resource host_mr;
@@ -78,9 +77,7 @@ GTEST_TEST(detray_simulation, toy_detector_simulation) {
     auto field = detray::bfield::create_const_field(B);
 
     // Create geometry
-    detray::toy_det_config<scalar> toy_cfg{};
-    // @TODO: Increase material budget again
-    toy_cfg.module_mat_thickness(0.15f * detray::unit<scalar>::mm);
+    detray::toy_det_config toy_cfg{};
     const auto [detector, names] = detray::build_toy_detector(host_mr, toy_cfg);
 
     using geo_cxt_t = typename decltype(detector)::geometry_context;
@@ -88,8 +85,7 @@ GTEST_TEST(detray_simulation, toy_detector_simulation) {
 
     // Create track generator
     using uniform_gen_t =
-        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>,
-                               std::seed_seq>;
+        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>>;
     using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
                                        uniform_gen_t>;
@@ -98,16 +94,19 @@ GTEST_TEST(detray_simulation, toy_detector_simulation) {
     const vector3 ori{0.f, 0.f, 0.f};
     gen_cfg.n_tracks(n_tracks);
     gen_cfg.origin(ori);
+    // @TODO The simulator sometimes gets stuck for lower momentum
+    gen_cfg.p_tot(5.f * detray::unit<scalar>::GeV);
     generator_type generator(gen_cfg);
 
     // Create smearer
-    measurement_smearer<transform3> smearer(67.f * detray::unit<scalar>::um,
-                                            170.f * detray::unit<scalar>::um);
+    measurement_smearer<traccc::default_algebra> smearer(
+        67.f * detray::unit<scalar>::um, 170.f * detray::unit<scalar>::um);
 
     std::size_t n_events{10u};
 
     using detector_type = decltype(detector);
-    using writer_type = smearing_writer<measurement_smearer<transform3>>;
+    using writer_type =
+        smearing_writer<measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config writer_cfg{smearer};
 
@@ -172,7 +171,8 @@ GTEST_TEST(detray_simulation, toy_detector_simulation) {
             const point3 pos{hits[i].tx, hits[i].ty, hits[i].tz};
             const vector3 mom{hits[i].tpx, hits[i].tpy, hits[i].tpz};
             const auto truth_local =
-                surface{detector, geometry::barcode(hits[i].geometry_id)}
+                detray::surface{detector,
+                                detray::geometry::barcode(hits[i].geometry_id)}
                     .global_to_local(ctx, pos, vector::normalize(mom));
 
             local0_diff.push_back(truth_local[0] - measurements[i].local0);
@@ -182,8 +182,8 @@ GTEST_TEST(detray_simulation, toy_detector_simulation) {
             ASSERT_EQ(meas_hit_ids[i].measurement_id, i);
         }
 
-        const auto var0 = statistics::variance(local0_diff);
-        const auto var1 = statistics::variance(local1_diff);
+        const auto var0 = detray::statistics::variance(local0_diff);
+        const auto var1 = detray::statistics::variance(local1_diff);
 
         EXPECT_NEAR((std::sqrt(var0) - smearer.stddev[0]) / smearer.stddev[0],
                     0.f, 0.1f);
@@ -210,11 +210,12 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     // energy (or non-relativistic) particle due to the large scattering
     const scalar thickness = 0.005f * detray::unit<scalar>::cm;
 
-    tel_det_config<rectangle2D> tel_cfg{1000.f * detray::unit<scalar>::mm,
-                                        1000.f * detray::unit<scalar>::mm};
+    detray::tel_det_config<detray::rectangle2D> tel_cfg{
+        1000.f * detray::unit<scalar>::mm, 1000.f * detray::unit<scalar>::mm};
     tel_cfg.positions(positions).mat_thickness(thickness);
 
-    const auto [detector, names] = build_telescope_detector(host_mr, tel_cfg);
+    const auto [detector, names] =
+        detray::build_telescope_detector(host_mr, tel_cfg);
 
     // Directory name
     const std::string directory = std::get<0>(GetParam()) + "/";
@@ -249,14 +250,15 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     generator_type generator(gen_cfg);
 
     // Create smearer
-    measurement_smearer<transform3> smearer(50.f * detray::unit<scalar>::um,
-                                            50.f * detray::unit<scalar>::um);
+    measurement_smearer<traccc::default_algebra> smearer(
+        50.f * detray::unit<scalar>::um, 50.f * detray::unit<scalar>::um);
 
     std::size_t n_events{1000u};
 
     using detector_type = decltype(detector);
     using generator_type = decltype(generator);
-    using writer_type = smearing_writer<measurement_smearer<transform3>>;
+    using writer_type =
+        smearing_writer<measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config writer_cfg{smearer};
 

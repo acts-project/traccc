@@ -14,6 +14,10 @@
 #include <vecmem/utils/cuda/copy.hpp>
 #endif
 
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#include <vecmem/utils/hip/copy.hpp>
+#endif
+
 #include <vecmem/utils/copy.hpp>
 
 namespace traccc::alpaka {
@@ -24,10 +28,10 @@ using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
 using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
 using Host = ::alpaka::DevCpu;
-using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
+using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
 static constexpr std::size_t warpSize =
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     32;
 #else
     4;
@@ -36,7 +40,8 @@ static constexpr std::size_t warpSize =
 template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocksPerGrid,
                            Idx threadsPerBlockOrElementsPerThread) {
-    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt>) {
+    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt> ||
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuHipRt>) {
         const auto elementsPerThread = Idx{1};
         return WorkDiv{blocksPerGrid, threadsPerBlockOrElementsPerThread,
                        elementsPerThread};

@@ -11,9 +11,6 @@
 // detray include(s).
 #include "detray/geometry/barcode.hpp"
 #include "detray/geometry/surface.hpp"
-#include "detray/navigation/detail/ray.hpp"
-#include "detray/navigation/intersection/ray_intersector.hpp"
-#include "detray/navigation/intersection_kernel.hpp"
 
 // System include
 #include <algorithm>
@@ -27,8 +24,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     const detector_type& det, const bfield_type& field,
     const measurement_collection_types::host& measurements,
     const bound_track_parameters_collection_types::host& seeds) const {
-
-    track_candidate_container_types::host output_candidates;
 
     /*****************************************************************
      * Measurement Operations
@@ -50,6 +45,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                    uniques[i], measurement_sort_comp());
         upper_bounds.push_back(std::distance(measurements.begin(), up));
     }
+    const auto n_meas = measurements.size();
 
     // Get the number of measurements of each module
     std::vector<unsigned int> sizes(n_modules);
@@ -62,10 +58,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     for (unsigned int i = 0; i < n_modules; i++) {
         barcodes.push_back(uniques[i].surface_link);
     }
-
-    /**********************
-     * Find tracks
-     **********************/
 
     std::vector<std::vector<candidate_link>> links;
     links.resize(m_cfg.max_track_candidates_per_track);
@@ -89,7 +81,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     std::vector<bound_track_parameters> out_params;
 
-    for (unsigned int step = 0; step < m_cfg.max_track_candidates_per_track;
+    for (int step = 0;
+         step < static_cast<int>(m_cfg.max_track_candidates_per_track);
          step++) {
 
         // Iterate over input parameters
@@ -104,10 +97,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         out_params.reserve(n_in_params);
 
         // Previous step ID
-        const unsigned int previous_step =
-            (step == 0) ? std::numeric_limits<unsigned int>::max() : step - 1;
+        const int previous_step =
+            (step == 0) ? std::numeric_limits<int>::max() : step - 1;
 
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0);
+
+        // Parameters updated by Kalman fitter
+        std::vector<bound_track_parameters> updated_params;
 
         for (unsigned int in_param_id = 0; in_param_id < n_in_params;
              in_param_id++) {
@@ -129,65 +125,50 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *************************/
 
             // Get intersection at surface
-            const detray::surface<detector_type> sf{det,
-                                                    in_param.surface_link()};
+            const detray::surface sf{det, in_param.surface_link()};
 
             const cxt_t ctx{};
-            const auto free_vec =
-                sf.bound_to_free_vector(ctx, in_param.vector());
-            intersection_type sfi;
-
-            const auto sf_desc = det.surface(in_param.surface_link());
-            sfi.sf_desc = sf_desc;
-            sf.template visit_mask<
-                detray::intersection_update<detray::ray_intersector>>(
-                detray::detail::ray<transform3_type>(free_vec), sfi,
-                det.transform_store());
 
             // Apply interactor
             typename interactor_type::state interactor_state;
             interactor_type{}.update(
                 in_param, interactor_state,
                 static_cast<int>(detray::navigation::direction::e_forward), sf,
-                sfi.cos_incidence_angle);
-
-            /*************************
-             * CKF
-             *************************/
+                std::abs(
+                    sf.cos_angle(ctx, in_param.dir(), in_param.bound_local())));
 
             // Get barcode and measurements range on surface
             const auto bcd = in_param.surface_link();
             std::pair<unsigned int, unsigned int> range;
 
             // Find the corresponding index of bcd in barcode vector
-            unsigned int bcd_id;
-            if (std::binary_search(barcodes.begin(), barcodes.end(), bcd)) {
-                const auto lo2 =
-                    std::lower_bound(barcodes.begin(), barcodes.end(), bcd);
-                bcd_id = std::distance(barcodes.begin(), lo2);
 
-                if (lo2 == barcodes.begin()) {
-                    range.first = 0u;
-                    range.second = upper_bounds[bcd_id];
-                } else {
-                    range.first = upper_bounds[bcd_id - 1];
-                    range.second = upper_bounds[bcd_id];
-                }
-            } else {
+            const auto lo2 =
+                std::lower_bound(barcodes.begin(), barcodes.end(), bcd);
+
+            const auto bcd_id = std::distance(barcodes.begin(), lo2);
+
+            if (lo2 == barcodes.begin()) {
+                range.first = 0u;
+                range.second = upper_bounds[bcd_id];
+            } else if (lo2 == barcodes.end()) {
                 range.first = 0u;
                 range.second = 0u;
+            } else {
+                range.first = upper_bounds[bcd_id - 1];
+                range.second = upper_bounds[bcd_id];
             }
 
             unsigned int n_branches = 0;
+
+            /*****************************************************************
+             * Find tracks (CKF)
+             *****************************************************************/
 
             // Iterate over the measurements
             for (unsigned int item_id = range.first; item_id < range.second;
                  item_id++) {
                 if (n_branches > m_cfg.max_num_branches_per_surface) {
-                    break;
-                }
-                if (n_trks_per_seed[orig_param_id] >=
-                    m_cfg.max_num_branches_per_initial_seed) {
                     break;
                 }
 
@@ -196,10 +177,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                    in_param.covariance());
                 const auto& meas = measurements[item_id];
 
-                track_state<transform3_type> trk_state(meas);
+                track_state<algebra_type> trk_state(meas);
 
                 // Run the Kalman update
-                sf.template visit_mask<gain_matrix_updater<transform3_type>>(
+                sf.template visit_mask<gain_matrix_updater<algebra_type>>(
                     trk_state, bound_param);
 
                 // Get the chi-square
@@ -207,149 +188,102 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
                 // Found a good measurement
                 if (chi2 < m_cfg.chi2_max) {
-
-                    // Current link ID
-                    unsigned int cur_link_id =
-                        static_cast<unsigned int>(links[step].size());
-
                     n_branches++;
-                    n_trks_per_seed[orig_param_id]++;
 
                     links[step].push_back({{previous_step, in_param_id},
                                            item_id,
                                            orig_param_id,
                                            skip_counter});
-
-                    /*********************************
-                     * Propagate to the next surface
-                     *********************************/
-
-                    // Create propagator state
-                    typename propagator_type::state propagation(
-                        trk_state.filtered(), field, det);
-                    propagation._stepping.template set_constraint<
-                        detray::step::constraint::e_accuracy>(
-                        m_cfg.propagation.stepping.step_constraint);
-
-                    typename detray::pathlimit_aborter::state s0;
-                    typename detray::parameter_transporter<
-                        transform3_type>::state s1;
-                    typename interactor::state s3;
-                    typename interaction_register<interactor>::state s2{s3};
-                    typename detray::next_surface_aborter::state s4{
-                        m_cfg.min_step_length_for_surface_aborter};
-                    // typename propagation::print_inspector::state s5{};
-
-                    // @TODO: Should be removed once detray is fixed to set the
-                    // volume in the constructor
-                    propagation._navigation.set_volume(
-                        trk_state.filtered().surface_link().volume());
-
-                    // Propagate to the next surface
-                    propagator.propagate_sync(propagation,
-                                              std::tie(s0, s1, s2, s3, s4));
-
-                    /*
-                    propagator.propagate_sync(propagation,
-                                              std::tie(s0, s1, s2, s3, s4, s5));
-                    */
-
-                    // If a surface found, add the parameter for the next
-                    // step
-                    if (s4.success) {
-                        out_params.push_back(
-                            propagation._stepping._bound_params);
-                        param_to_link[step].push_back(cur_link_id);
-                    }
-                    // Unless the track found a surface, it is considered a
-                    // tip
-                    else if (!s4.success &&
-                             step >= m_cfg.min_track_candidates_per_track - 1) {
-                        tips.push_back({step, cur_link_id});
-                    }
-
-                    // If no more CKF step is expected, current candidate is
-                    // kept as a tip
-                    if (s4.success &&
-                        step == m_cfg.max_track_candidates_per_track - 1) {
-                        tips.push_back({step, cur_link_id});
-                    }
+                    updated_params.push_back(trk_state.filtered());
                 }
             }
-            // After the loop over the measurements
+
+            /*****************************************************************
+             * Add a dummy links in case of no branches
+             *****************************************************************/
 
             if (n_branches == 0) {
-                // let's skip this CKF step for the current track candidate
-                if (n_trks_per_seed[orig_param_id] >=
-                    m_cfg.max_num_branches_per_initial_seed) {
 
-                    continue;
-                }
-
-                bound_track_parameters bound_param(in_param.surface_link(),
-                                                   in_param.vector(),
-                                                   in_param.covariance());
-
-                measurement dummy_meas;
-
-                dummy_meas.local = in_param.bound_local();
-                dummy_meas.variance = dummy_meas.variance + point2{10., 10.};
-                dummy_meas.surface_link = in_param.surface_link();
-
-                track_state<transform3_type> trk_state(dummy_meas);
-
-                // Run the Kalman update
-                sf.template visit_mask<gain_matrix_updater<transform3_type>>(
-                    trk_state, bound_param);
-
-                unsigned int cur_link_id =
-                    static_cast<unsigned int>(links[step].size());
-
+                // Put an invalid link with max item id
                 links[step].push_back({{previous_step, in_param_id},
                                        std::numeric_limits<unsigned int>::max(),
                                        orig_param_id,
                                        skip_counter + 1});
 
-                if (skip_counter + 1 > m_cfg.max_num_skipping_per_cand) {
-                    tips.push_back({step, cur_link_id});
-                    continue;
-                    // exit from param_id loop
-                }
+                bound_track_parameters bound_param(in_param.surface_link(),
+                                                   in_param.vector(),
+                                                   in_param.covariance());
+                updated_params.push_back(bound_param);
+                n_branches++;
+            }
+        }
 
-                // Create propagator state
-                typename propagator_type::state propagation(
-                    trk_state.filtered(), field, det);
-                propagation._stepping.template set_constraint<
-                    detray::step::constraint::e_accuracy>(
+        /*********************************
+         * Propagate to the next surface
+         *********************************/
+
+        const unsigned int n_links = links[step].size();
+        for (unsigned int link_id = 0; link_id < n_links; link_id++) {
+
+            const unsigned int seed_idx = links[step][link_id].seed_idx;
+            n_trks_per_seed[seed_idx]++;
+
+            if (n_trks_per_seed[seed_idx] > m_cfg.max_num_branches_per_seed) {
+                continue;
+            }
+
+            // If number of skips is larger than the maximum value, consider the
+            // link to be a tip
+            if (links[step][link_id].n_skipped >
+                m_cfg.max_num_skipping_per_cand) {
+                tips.push_back({step, link_id});
+                continue;
+            }
+
+            const auto& param = updated_params[link_id];
+            // Create propagator state
+            typename propagator_type::state propagation(param, field, det);
+            propagation._stepping
+                .template set_constraint<detray::step::constraint::e_accuracy>(
                     m_cfg.propagation.stepping.step_constraint);
 
-                typename detray::pathlimit_aborter::state s0;
-                typename detray::parameter_transporter<transform3_type>::state
-                    s1;
-                typename interactor::state s3;
-                typename interaction_register<interactor>::state s2{s3};
-                typename detray::next_surface_aborter::state s4{
-                    m_cfg.min_step_length_for_surface_aborter};
+            typename detray::pathlimit_aborter::state s0;
+            typename detray::parameter_transporter<algebra_type>::state s1;
+            typename interactor::state s3;
+            typename interaction_register<interactor>::state s2{s3};
+            typename ckf_aborter::state s4;
+            s4.min_step_length = m_cfg.min_step_length_for_next_surface;
+            s4.max_count = m_cfg.max_step_counts_for_next_surface;
 
-                propagation._navigation.set_volume(
-                    trk_state.filtered().surface_link().volume());
+            // @TODO: Should be removed once detray is fixed to set the
+            // volume in the constructor
+            propagation._navigation.set_volume(param.surface_link().volume());
 
-                // Propagate to the next surface
-                propagator.propagate_sync(propagation,
-                                          std::tie(s0, s1, s2, s3, s4));
+            // Propagate to the next surface
+            propagator.propagate_sync(propagation,
+                                      std::tie(s0, s1, s2, s3, s4));
 
-                // If a surface found, add the parameter for the next
-                // step
-                if (s4.success) {
-                    out_params.push_back(propagation._stepping._bound_params);
-                    param_to_link[step].push_back(cur_link_id);
-                }
-                // Unless the track found a surface, it is considered a
-                // tip
-                else if (!s4.success &&
-                         step >= m_cfg.min_track_candidates_per_track - 1) {
-                    tips.push_back({step, cur_link_id});
-                }
+            // If a surface found, add the parameter for the next
+            // step
+            if (s4.success) {
+                out_params.push_back(propagation._stepping._bound_params);
+                param_to_link[step].push_back(link_id);
+            }
+            // Unless the track found a surface, it is considered a
+            // tip
+            else if (!s4.success &&
+                     step >= static_cast<int>(
+                                 m_cfg.min_track_candidates_per_track) -
+                                 1) {
+                tips.push_back({step, link_id});
+            }
+
+            // If no more CKF step is expected, current candidate is
+            // kept as a tip
+            if (s4.success &&
+                step == static_cast<int>(m_cfg.max_track_candidates_per_track) -
+                            1) {
+                tips.push_back({step, link_id});
             }
         }
 
@@ -362,35 +296,52 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
      **********************/
 
     // Number of found tracks = number of tips
+    track_candidate_container_types::host output_candidates;
     output_candidates.reserve(tips.size());
 
     for (const auto& tip : tips) {
-
-        // Skip if the number of tracks candidates is too small
-        if (tip.first + 1 < m_cfg.min_track_candidates_per_track) {
-            continue;
-        }
-
         // Get the link corresponding to tip
         auto L = links[tip.first][tip.second];
 
+        // Count the number of skipped steps
+        unsigned int n_skipped{0u};
+        while (true) {
+
+            if (L.meas_idx > n_meas) {
+                n_skipped++;
+            }
+
+            if (L.previous.first == 0u) {
+                break;
+            }
+
+            const unsigned int link_pos =
+                param_to_link[L.previous.first][L.previous.second];
+            L = links[L.previous.first][link_pos];
+        }
+
+        const unsigned int n_cands = tip.first + 1 - n_skipped;
+
         // Skip if the number of tracks candidates is too small
-        if (tip.first + 1 - L.n_skipped <
-            m_cfg.min_track_candidates_per_track) {
+        if (n_cands < m_cfg.min_track_candidates_per_track ||
+            n_cands > m_cfg.max_track_candidates_per_track) {
             continue;
         }
 
+        // Retrieve tip
+        L = links[tip.first][tip.second];
+
         vecmem::vector<track_candidate> cands_per_track;
-        cands_per_track.resize(tip.first + 1 - L.n_skipped);
+        cands_per_track.resize(n_cands);
 
         // Reversely iterate to fill the track candidates
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
              it++) {
 
-            while (L.meas_idx > measurements.size()) {
-
-                if (L.previous.first > tip.first + 1)
-                    break;  // should not happen.
+            while (L.meas_idx > n_meas) {
+                if (L.previous.first < 0) {
+                    break;
+                }
 
                 const auto link_pos =
                     param_to_link[L.previous.first][L.previous.second];
@@ -398,8 +349,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 L = links[L.previous.first][link_pos];
             }
 
-            auto& cand = *it;
+            // Break if the measurement is still invalid
+            if (L.meas_idx > measurements.size()) {
+                break;
+            }
 
+            auto& cand = *it;
             cand = measurements.at(L.meas_idx);
 
             // Break the loop if the iterator is at the first candidate and

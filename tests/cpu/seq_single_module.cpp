@@ -1,18 +1,16 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
-#include "traccc/clusterization/component_connection.hpp"
-#include "traccc/clusterization/measurement_creation.hpp"
-#include "traccc/clusterization/spacepoint_formation.hpp"
+#include "traccc/clusterization/measurement_creation_algorithm.hpp"
+#include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 
 // VecMem include(s).
@@ -26,8 +24,8 @@ TEST(algorithms, seq_single_module) {
     // Memory resource used in the test.
     vecmem::host_memory_resource resource;
 
-    traccc::component_connection cc(resource);
-    traccc::measurement_creation mc(resource);
+    traccc::host::sparse_ccl_algorithm cc(resource);
+    traccc::host::measurement_creation_algorithm mc(resource);
 
     /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
     traccc::cell_collection_types::host cells = {{{1, 0, 1., 0., 0},
@@ -40,14 +38,15 @@ TEST(algorithms, seq_single_module) {
                                                   {11, 13, 8, 0, 0},
                                                   {4, 14, 9, 0, 0}},
                                                  &resource};
-    traccc::cell_module module;
+    traccc::cell_module mod;
     traccc::cell_module_collection_types::host modules(&resource);
-    modules.push_back(module);
+    modules.push_back(mod);
 
-    auto clusters = cc(cells);
+    auto clusters = cc(vecmem::get_data(cells));
     EXPECT_EQ(clusters.size(), 4u);
 
-    auto measurements = mc(clusters, modules);
+    auto clusters_data = traccc::get_data(clusters);
+    auto measurements = mc(clusters_data, vecmem::get_data(modules));
 
     EXPECT_EQ(measurements.size(), 4u);
 }

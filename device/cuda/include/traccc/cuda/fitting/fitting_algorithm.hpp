@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -35,7 +35,7 @@ class fitting_algorithm
           const typename track_candidate_container_types::const_view&)> {
 
     public:
-    using transform3_type = typename fitter_t::transform3_type;
+    using algebra_type = typename fitter_t::algebra_type;
     /// Configuration type
     using config_type = typename fitter_t::config_type;
 
@@ -66,6 +66,8 @@ class fitting_algorithm
     vecmem::copy& m_copy;
     /// The CUDA stream to use
     stream& m_stream;
+    /// Warp size of the GPU being used
+    int m_warp_size;
 };
 
 }  // namespace traccc::cuda

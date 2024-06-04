@@ -52,6 +52,13 @@
 #include <vecmem/utils/cuda/copy.hpp>
 #endif
 
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#include <vecmem/memory/hip/device_memory_resource.hpp>
+#include <vecmem/memory/hip/host_memory_resource.hpp>
+#include <vecmem/memory/hip/managed_memory_resource.hpp>
+#include <vecmem/utils/hip/copy.hpp>
+#endif
+
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
@@ -72,17 +79,21 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     using host_detector_type = detray::detector<>;
 
-    // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
-
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     vecmem::cuda::copy copy;
-    vecmem::cuda::host_memory_resource cuda_host_mr;
+    vecmem::cuda::host_memory_resource host_mr;
     vecmem::cuda::device_memory_resource device_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
-    traccc::memory_resource mr{device_mr, &cuda_host_mr};
+    traccc::memory_resource mr{device_mr, &host_mr};
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    vecmem::hip::copy copy;
+    vecmem::hip::host_memory_resource host_mr;
+    vecmem::hip::device_memory_resource device_mr;
+    vecmem::hip::managed_memory_resource mng_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
 #else
     vecmem::copy copy;
+    vecmem::host_memory_resource host_mr;
     vecmem::host_memory_resource mng_mr;
     traccc::memory_resource mr{host_mr, &host_mr};
 #endif
