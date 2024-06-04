@@ -79,21 +79,21 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     /// Type declarations
     using host_detector_type = detray::detector<>;
-    using device_detector_type =
-        detray::detector<detray::default_metadata,
-                         detray::device_container_types>;
+    // using device_detector_type =
+    //     detray::detector<detray::default_metadata,
+    //                      detray::device_container_types>;
 
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t,
-                           typename host_detector_type::algebra_type,
-                           detray::constrained_step<>>;
-    using host_navigator_type = detray::navigator<const host_detector_type>;
-    using host_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
-    using device_navigator_type = detray::navigator<const device_detector_type>;
-    using device_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
+    // using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    // using rk_stepper_type =
+    //     detray::rk_stepper<b_field_t::view_t,
+    //                        typename host_detector_type::algebra_type,
+    //                        detray::constrained_step<>>;
+    // using host_navigator_type = detray::navigator<const host_detector_type>;
+    // using host_fitter_type =
+    //     traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
+    // using device_navigator_type = detray::navigator<const
+    // device_detector_type>; using device_fitter_type =
+    //     traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     vecmem::cuda::copy copy;
@@ -148,7 +148,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // B field value and its type
     // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    // const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
     // auto field = detray::bfield::create_const_field(B);
 
     // Read the detector
