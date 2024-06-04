@@ -12,7 +12,7 @@ import argparse
 import ROOT
 
 
-def plotEfficiency(graph):
+def plotEfficiency(graph, col=ROOT.kBlack, opts="AP"):
     """Plot one efficiency histogram"""
 
     # Set the properties of the histogram.
@@ -23,12 +23,14 @@ def plotEfficiency(graph):
     graph.GetYaxis().SetRangeUser(0.0, 1.1)
     graph.GetXaxis().SetTitleSize(0.07)
     graph.GetXaxis().SetTitleOffset(0.6)
+    graph.SetLineColor(col)
+    graph.SetMarkerColor(col)
 
     # Draw the histogram.
-    graph.Draw("AP")
+    graph.Draw(opts)
 
     # Return gracefully.
-    return
+    return graph
 
 
 def main():
@@ -42,7 +44,8 @@ def main():
     parser.add_argument(
         "-i",
         "--input",
-        help="Input ROOT file",
+        nargs=2,
+        help="Input ROOT files",
         default="track_finding_efficiency.root",
     )
     parser.add_argument(
@@ -53,28 +56,51 @@ def main():
     )
     args = parser.parse_args()
 
-    # Open the input file.
-    input_file = ROOT.TFile.Open(args.input, "READ")
-    if not input_file:
-        print(f"Failed to open input file '{args.input}'")
-        return 1
-
     # Create a canvas to draw on.
     canvas = ROOT.TCanvas("canvas", "canvas", 1000, 1000)
     canvas.Divide(1, 2)
 
-    # Get the efficiency histograms from the input file.
-    eta_plot = input_file.Get("track_finding_eff_eta")
-    phi_plot = input_file.Get("track_finding_eff_phi")
-    if not eta_plot or not phi_plot:
-        print("Failed to retrieve efficiency histograms")
+    # Open the seeding efficiency file.
+    seeding_efficiency_file = ROOT.TFile.Open(args.input[0], "READ")
+    if not seeding_efficiency_file:
+        print(f"Failed to open input file '{args.input[0]}'")
+        return 1
+
+    # Get the seeding efficiency histograms.
+    seeding_efficiency_eta = seeding_efficiency_file.Get("seed_finding_eff_eta")
+    seeding_efficiency_phi = seeding_efficiency_file.Get("seed_finding_eff_phi")
+    if not seeding_efficiency_eta or not seeding_efficiency_phi:
+        print("Failed to retrieve efficiency histograms in %s" % args.input[0])
+        return 1
+
+    # Open the tracking efficiency file.
+    tracking_efficiency_file = ROOT.TFile.Open(args.input[1], "READ")
+    if not tracking_efficiency_file:
+        print(f"Failed to open input file '{args.input[1]}'")
+        return 1
+
+    # Get the tracking efficiency histograms.
+    tracking_efficiency_eta = tracking_efficiency_file.Get("track_finding_eff_eta")
+    tracking_efficiency_phi = tracking_efficiency_file.Get("track_finding_eff_phi")
+    if not tracking_efficiency_eta or not tracking_efficiency_phi:
+        print("Failed to retrieve efficiency histograms in %s" % args.input[1])
         return 1
 
     # Draw the histograms.
     canvas.cd(1)
-    plotEfficiency(eta_plot.CreateGraph())
+    seeding_legend = plotEfficiency(seeding_efficiency_eta.CreateGraph(), ROOT.kBlue)
+    tracking_legend = plotEfficiency(
+        tracking_efficiency_eta.CreateGraph(), ROOT.kRed, "P"
+    )
     canvas.cd(2)
-    plotEfficiency(phi_plot.CreateGraph())
+    plotEfficiency(seeding_efficiency_phi.CreateGraph(), ROOT.kBlue)
+    plotEfficiency(tracking_efficiency_phi.CreateGraph(), ROOT.kRed, "P")
+
+    # Create a legend.
+    legend = ROOT.TLegend(0.6, 0.2, 0.9, 0.4)
+    legend.AddEntry(seeding_legend, "Seed finding efficiency", "lpe")
+    legend.AddEntry(tracking_legend, "Track finding efficiency", "lpe")
+    legend.Draw()
 
     # Save the canvas to a file.
     canvas.SaveAs(args.output)
