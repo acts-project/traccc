@@ -90,7 +90,7 @@ inline void aggregate_cluster(
         }
     }
     if (totalWeight > static_cast<scalar>(0.)) {
-#pragma unroll
+        TRACCC_PRAGMA_UNROLL
         for (char i = 0; i < 2; ++i) {
             var[i] /= totalWeight;
         }

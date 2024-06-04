@@ -82,7 +82,7 @@ TRACCC_DEVICE void fast_sv_1(
          */
         barrier.blockBarrier();
 
-#pragma unroll
+        TRACCC_PRAGMA_UNROLL
         for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD;
              ++tst) {
             const details::index_t cid = tst * blckDim + tid;
@@ -101,7 +101,7 @@ TRACCC_DEVICE void fast_sv_1(
          */
         barrier.blockBarrier();
 
-#pragma unroll
+        TRACCC_PRAGMA_UNROLL
         for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD;
              ++tst) {
             const details::index_t cid = tst * blckDim + tid;
@@ -217,7 +217,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const details::index_t size = partition_end - partition_start;
     assert(size <= max_cells_per_partition);
 
-#pragma unroll
+    TRACCC_PRAGMA_UNROLL
     for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD; ++tst) {
         adjc[tst] = 0;
     }
@@ -232,7 +232,7 @@ TRACCC_DEVICE inline void ccl_kernel(
                             adjc[tst], adjv[tst]);
     }
 
-#pragma unroll
+    TRACCC_PRAGMA_UNROLL
     for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD; ++tst) {
         const details::index_t cid = tst * blckDim + threadId;
         /*

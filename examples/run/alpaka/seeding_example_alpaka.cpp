@@ -71,7 +71,7 @@ using namespace traccc;
 
 int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_finding& /*finding_opts*/,
-            const traccc::opts::track_propagation& propagation_opts,
+            const traccc::opts::track_propagation& /*propagation_opts*/,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts,
