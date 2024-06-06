@@ -76,10 +76,10 @@ traccc::cell_module get_module(const std::uint64_t geometry_id,
         // Set the value on the module description.
         const auto& binning_data = geo_it->segmentation.binningData();
         assert(binning_data.size() > 0);
-        result.pixel.min_center_x = binning_data[0].min;
+        result.pixel.min_center_x = binning_data[0].min + binning_data[0].step * static_cast<traccc::scalar>(0.5);
         result.pixel.pitch_x = binning_data[0].step;
         if (binning_data.size() > 1) {
-            result.pixel.min_center_y = binning_data[1].min;
+            result.pixel.min_center_y = binning_data[1].min + binning_data[1].step * static_cast<traccc::scalar>(0.5);
             result.pixel.pitch_y = binning_data[1].step;
         }
         result.pixel.dimension = geo_it->dimensions;
