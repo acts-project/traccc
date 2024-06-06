@@ -19,8 +19,8 @@ namespace traccc {
 /// No checking on out of bounds done
 struct pixel_data {
 
-    scalar min_center_x = 0.f;
-    scalar min_center_y = 0.f;
+    scalar min_corner_x = 0.f;
+    scalar min_corner_y = 0.f;
     scalar pitch_x = 1.f;
     scalar pitch_y = 1.f;
     char dimension = 2;
