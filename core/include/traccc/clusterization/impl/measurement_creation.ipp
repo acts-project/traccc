@@ -19,8 +19,8 @@ TRACCC_HOST_DEVICE
 inline vector2 position_from_cell(const cell& cell, const cell_module& mod) {
 
     // Retrieve the specific values based on module idx
-    return {mod.pixel.min_center_x + cell.channel0 * mod.pixel.pitch_x,
-            mod.pixel.min_center_y + cell.channel1 * mod.pixel.pitch_y};
+    return {mod.pixel.min_corner_x + (scalar{0.5} + cell.channel0) * mod.pixel.pitch_x,
+            mod.pixel.min_corner_y + (scalar{0.5} + cell.channel1) * mod.pixel.pitch_y};
 }
 
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
