@@ -6,10 +6,14 @@
  */
 
 // CUDA Library include(s).
+#include "../sanity/contiguous_on.cuh"
+#include "../sanity/ordered_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/utils/projections.hpp"
+#include "traccc/utils/relations.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
@@ -59,6 +63,11 @@ clusterization_algorithm::clusterization_algorithm(
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules) const {
+
+    assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
+                            m_stream, cells));
+    assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
+                         m_copy, m_stream, cells));
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);

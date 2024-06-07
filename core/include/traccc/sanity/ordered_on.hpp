@@ -1,0 +1,68 @@
+/**
+ * traccc library, part of the ACTS project (R&D line)
+ *
+ * (c) 2024 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+#pragma once
+
+// Project include(s).
+#include "traccc/definitions/concepts.hpp"
+
+// VecMem include(s).
+#include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
+
+// System include
+#if __cpp_concepts >= 201907L
+#include <concepts>
+#endif
+
+namespace traccc::host {
+/**
+ * @brief Sanity check that a given vector is ordered on a given relation.
+ *
+ * For a vector $v$ to be ordered on a relation $R$, it must be the case that
+ * for all indices $i$ and $j$, if $i < j$, then $R(i, j)$.
+ *
+ * @note This function runs in O(n) time.
+ *
+ * @note Although functions like `std::sort` requires the relation to be strict
+ * weak order, this function is more lax in its requirements. Rather, the
+ * relation should be a total preorder, i.e. a non-strict weak order.
+ *
+ * @note For any strict weak order $R$, `is_ordered_on(sort(R, v))` is true.
+ *
+ * @tparam R The type of relation $R$, a callable which returns a bool if the
+ * first argument can be immediately before the second type.
+ * @tparam T The type of the vector.
+ * @param relation A relation object of type `R`.
+ * @param mr A memory resource used for allocating intermediate memory.
+ * @param vector The vector which to check for ordering.
+ * @return true If the vector is ordered on `R`.
+ * @return false Otherwise.
+ */
+template <TRACCC_CONSTRAINT(std::semiregular) R, typename T>
+#if __cpp_concepts >= 201907L
+requires std::relation<R, T, T>
+#endif
+    bool is_ordered_on(R relation, vecmem::data::vector_view<T> vector) {
+    // Grab the number of elements in our vector.
+    uint32_t n = vector.size();
+
+    vecmem::device_vector<T> in(vector);
+
+    // Check for orderedness.
+    for (std::size_t i = 1; i < n; ++i) {
+        if (!relation(in.at(i - 1), in.at(i))) {
+            return false;
+        }
+    }
+
+    return true;
+}
+}  // namespace traccc::host

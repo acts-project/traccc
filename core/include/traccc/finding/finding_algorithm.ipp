@@ -7,6 +7,8 @@
 
 // Project include(s).
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/sanity/contiguous_on.hpp"
+#include "traccc/utils/projections.hpp"
 
 // detray include(s).
 #include "detray/geometry/barcode.hpp"
@@ -28,6 +30,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
+
+    // Check contiguity of the measurements
+    assert(host::is_contiguous_on(measurement_module_projection(),
+                                  vecmem::get_data(measurements)));
 
     // Get copy of barcode uniques
     std::vector<measurement> uniques;

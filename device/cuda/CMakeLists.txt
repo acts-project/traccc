@@ -28,6 +28,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/utils/opaque_stream.cpp"
   "src/utils/utils.hpp"
   "src/utils/utils.cpp"
+  "src/sanity/contiguous_on.cuh"
+  "src/sanity/ordered_on.cuh"
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"
