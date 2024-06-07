@@ -39,6 +39,8 @@ traccc_add_test(
     test_thrust.cu
     test_sync.cu
     test_array_wrapper.cu
+    test_sanity_contiguous_on.cu
+    test_sanity_ordered_on.cu
 
     LINK_LIBRARIES
     CUDA::cudart

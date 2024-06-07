@@ -10,12 +10,43 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/sanity/contiguous_on.cuh"
+#include "traccc/cuda/sanity/ordered_on.cuh"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
 
 // Vecmem include(s).
 #include <vecmem/utils/copy.hpp>
+
+namespace {
+struct [[maybe_unused]] channel0_major_cell_order{
+    TRACCC_HOST_DEVICE bool operator()(
+        const traccc::cell& a,
+        const traccc::cell& b){if (a.module_link == b.module_link){
+        if (a.channel1 < b.channel1){return true;
+}
+else if (a.channel1 == b.channel1) {
+    return a.channel0 < b.channel0;
+}
+else {
+    return false;
+}
+}
+else {
+    return true;
+}
+}
+}
+;
+
+struct [[maybe_unused]] cell_module_projection{
+    TRACCC_HOST_DEVICE auto operator()(const traccc::cell& m){
+        return m.module_link;
+}
+}
+;
+}  // namespace
 
 namespace traccc::cuda {
 
@@ -59,6 +90,11 @@ clusterization_algorithm::clusterization_algorithm(
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
     const cell_module_collection_types::const_view& modules) const {
+
+    assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
+                            m_stream, cells));
+    assert(is_ordered_on(channel0_major_cell_order(), m_mr.main, m_copy,
+                         m_stream, cells));
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
