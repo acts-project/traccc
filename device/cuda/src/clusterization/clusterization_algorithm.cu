@@ -138,6 +138,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get());
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
+#ifndef NDEBUG
+    TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+    assert(is_contiguous_on(measurement_module_projection(), m_mr.main, m_copy,
+                            m_stream, measurements));
+#endif
+
     // Return the reconstructed measurements.
     return measurements;
 }

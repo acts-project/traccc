@@ -160,6 +160,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         })
         .wait_and_throw();
 
+    assert(is_contiguous_on(measurement_module_projection(), m_mr.main, m_copy,
+                            m_queue, measurements));
+
     // Return the reconstructed measurements.
     return measurements;
 }
