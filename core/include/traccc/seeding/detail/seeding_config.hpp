@@ -114,7 +114,8 @@ struct seedfinder_config {
 
     TRACCC_HOST_DEVICE
     unsigned int get_max_neighbor_bins() const {
-        return std::pow(neighbor_scope[0] + neighbor_scope[1] + 1, 2);
+        return static_cast<unsigned int>(
+               std::pow(neighbor_scope[0] + neighbor_scope[1] + 1, 2));
     }
 
     // Configure unset parameters
