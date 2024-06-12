@@ -116,7 +116,6 @@ struct seedfinder_config {
     unsigned int get_max_neighbor_bins() const {
         unsigned int t = neighbor_scope[0] + neighbor_scope[1] + 1;
         return t * t;
-            std::pow(neighbor_scope[0] + neighbor_scope[1] + 1, 2));
     }
 
     // Configure unset parameters
