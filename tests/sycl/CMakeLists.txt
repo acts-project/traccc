@@ -15,6 +15,7 @@ traccc_add_test(
     test_kalman_fitter_telescope.sycl
     test_clusterization.sycl
     test_spacepoint_formation.sycl
+    test_barrier.sycl
 
     LINK_LIBRARIES
     GTest::gtest_main
