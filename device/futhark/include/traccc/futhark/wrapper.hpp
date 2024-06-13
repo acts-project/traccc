@@ -71,7 +71,7 @@ struct wrapper<T, std::tuple<IArgs...>, std::tuple<OArgs...>> {
 
     template <std::size_t... IIdxs, std::size_t... OIdxs>
     static output_t run_helper(struct futhark_context &ctx,
-                               std::vector<typename IArgs::cpp_t> &&... args,
+                               std::vector<typename IArgs::cpp_t> &&...args,
                                std::index_sequence<IIdxs...>,
                                std::index_sequence<OIdxs...>) {
         std::tuple<typename IArgs::futhark_t *...> futhark_inputs = {
@@ -145,7 +145,7 @@ struct wrapper<T, std::tuple<IArgs...>, std::tuple<OArgs...>> {
     }
 
     static std::tuple<std::vector<typename OArgs::cpp_t>...> run(
-        std::vector<typename IArgs::cpp_t> &&... args) {
+        std::vector<typename IArgs::cpp_t> &&...args) {
         return run_helper(
             get_context(),
             std::forward<std::vector<typename IArgs::cpp_t>>(args)...,
