@@ -18,7 +18,7 @@
 
 using namespace traccc;
 
-TEST(clusterization, cuda) {
+TEST(CUDAClustering, SingleModule) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -37,11 +37,11 @@ TEST(clusterization, cuda) {
     cells.push_back({2u, 2u, 1.f, 0, 0});
     cells.push_back({3u, 2u, 1.f, 0, 0});
 
-    cells.push_back({5u, 5u, 1.f, 0, 0});
     cells.push_back({6u, 4u, 1.f, 0, 0});
+    cells.push_back({5u, 5u, 1.f, 0, 0});
     cells.push_back({6u, 5u, 1.f, 0, 0});
-    cells.push_back({6u, 6u, 1.f, 0, 0});
     cells.push_back({7u, 5u, 1.f, 0, 0});
+    cells.push_back({6u, 6u, 1.f, 0, 0});
 
     // Create module collection
     traccc::cell_module_collection_types::host modules{&mng_mr};
@@ -62,9 +62,10 @@ TEST(clusterization, cuda) {
     test.insert(measurements[1]);
 
     std::set<measurement> ref;
-    ref.insert({{2.f, 2.f}, {0.75, 0.0833333}, detray::geometry::barcode{0u}});
     ref.insert(
-        {{6.f, 5.f}, {0.483333, 0.483333}, detray::geometry::barcode{0u}});
+        {{2.5f, 2.5f}, {0.75, 0.0833333}, detray::geometry::barcode{0u}});
+    ref.insert(
+        {{6.5f, 5.5f}, {0.483333, 0.483333}, detray::geometry::barcode{0u}});
 
     EXPECT_EQ(test, ref);
 }
