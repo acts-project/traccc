@@ -10,6 +10,9 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
+// SYCL includes
+#include <CL/sycl.hpp>
+
 namespace traccc::sycl {
 
 struct barrier {
@@ -19,9 +22,22 @@ struct barrier {
     void blockBarrier() { m_item.barrier(); }
 
     TRACCC_DEVICE
+    bool blockAnd(bool predicate) {
+        m_item.barrier();
+        return ::sycl::all_of_group(m_item.get_group(), predicate);
+    }
+
+    TRACCC_DEVICE
     bool blockOr(bool predicate) {
         m_item.barrier();
         return ::sycl::any_of_group(m_item.get_group(), predicate);
+    }
+
+    TRACCC_DEVICE
+    unsigned int blockCount(bool predicate) {
+        m_item.barrier();
+        return ::sycl::reduce_over_group(m_item.get_group(),
+                                         predicate ? 1u : 0u, ::sycl::plus<>());
     }
 
     private:
