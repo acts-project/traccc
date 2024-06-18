@@ -54,7 +54,8 @@ int main(int argc, char* argv[]) {
     /// Type declarations
     using host_detector_type = detray::detector<>;
     using uniform_gen_t =
-        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>>;
+        detray::detail::random_numbers<scalar,
+                                       std::uniform_real_distribution<scalar>>;
     using generator_type =
         detray::random_track_generator<traccc::free_track_parameters,
                                        uniform_gen_t>;
