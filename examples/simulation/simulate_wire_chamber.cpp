@@ -37,7 +37,8 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =
-        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>>;
+        detray::detail::random_numbers<scalar,
+                                       std::uniform_real_distribution<scalar>>;
 
     // Memory resource
     vecmem::host_memory_resource host_mr;
