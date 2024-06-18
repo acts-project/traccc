@@ -1,39 +1,105 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2023 CERN for the benefit of the ACTS project
+# (c) 2022-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
+# The list of build satages.
 stages:
   - build
   - test
 
+# Base job template.
+.base_template: &base_job
+  before_script:
+    - git clone $CLONE_URL src
+    - git -C src checkout $HEAD_SHA
+    - source ./src/.github/ci_setup.sh ${TRACCC_BUILD_TYPE}
+    - ./src/.github/ci_plugin_install.sh ${TRACCC_BUILD_TYPE}
 
-build_cuda:
+# Build job template.
+.build_template: &build_job
+  <<: *base_job
   tags: [docker]
   stage: build
-  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
   artifacts:
     paths:
       - build
   script:
-      - git clone $CLONE_URL src
-      - git -C src checkout $HEAD_SHA
-      - cmake --preset cuda -DCMAKE_BUILD_TYPE=Release -S src -B build -G Ninja
-      - cmake --build build --parallel 2
+    - cmake -G Ninja --preset ${TRACCC_BUILD_PRESET} -DCMAKE_BUILD_TYPE=Release
+      -DTRACCC_BUILD_EXAMPLES=FALSE ${TRACCC_CMAKE_ARGS}
+      -S src -B build
+    - cmake --build build --parallel 2
 
-test_cuda:
-  stage: test
+# Test job template for running on an NVIDIA GPU.
+.nvidia_test_template: &nvidia_test_job
+  <<: *base_job
   tags: [docker-gpu-nvidia]
-  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
-  needs:
-    - build_cuda
+  stage: test
   script:
-    - git clone $CLONE_URL src
-    - cd src
-    - git checkout $HEAD_SHA
-    - data/traccc_data_get_files.sh
-    - cd ..
-    - cd build
     - nvidia-smi
-    - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
+    - ./src/data/traccc_data_get_files.sh
+    - ctest --output-on-failure --test-dir build/ -R "${TRACCC_BUILD_TYPE}"
+
+# Test job template for running on an Intel device.
+.intel_test_template: &intel_test_job
+  <<: *base_job
+  tags: [docker-gpu-nvidia]
+  stage: test
+  script:
+    - ./src/data/traccc_data_get_files.sh
+    - ctest --output-on-failure --test-dir build/ -R "${TRACCC_BUILD_TYPE}"
+
+# CUDA build job.
+build:cuda:
+  <<: *build_job
+  image: ghcr.io/acts-project/ubuntu2004_cuda:47
+  variables:
+    TRACCC_BUILD_TYPE: CUDA
+    TRACCC_BUILD_PRESET: cuda
+
+# CUDA test job.
+test:cuda:
+  <<: *nvidia_test_job
+  image: ghcr.io/acts-project/ubuntu2004_cuda:47
+  variables:
+    TRACCC_BUILD_TYPE: CUDA
+  dependencies:
+    - build:cuda
+
+# SYCL build job (with an Intel backend).
+build:sycl_intel:
+  <<: *build_job
+  image: ghcr.io/acts-project/ubuntu2004_oneapi:47
+  variables:
+    TRACCC_BUILD_TYPE: SYCL
+    TRACCC_BUILD_PRESET: sycl
+
+# SYCL test job (with an Intel backend).
+test:sycl_intel:
+  <<: *intel_test_job
+  image: ghcr.io/acts-project/ubuntu2004_oneapi:47
+  variables:
+    TRACCC_BUILD_TYPE: SYCL
+    ONEAPI_DEVICE_SELECTOR: opencl:*
+  dependencies:
+    - build:sycl_intel
+
+# SYCL build job (with an NVIDIA backend).
+build:sycl_nvidia:
+  <<: *build_job
+  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:47
+  variables:
+    TRACCC_BUILD_TYPE: SYCL
+    TRACCC_BUILD_PRESET: sycl
+    TRACCC_CMAKE_ARGS: -DTRACCC_BUILD_CUDA=FALSE
+
+# SYCL test job (with an NVIDIA backend).
+test:sycl_nvidia:
+  <<: *nvidia_test_job
+  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:47
+  variables:
+    TRACCC_BUILD_TYPE: SYCL
+    ONEAPI_DEVICE_SELECTOR: cuda:*
+  dependencies:
+    - build:sycl_nvidia
