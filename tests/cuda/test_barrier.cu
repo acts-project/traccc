@@ -106,22 +106,22 @@ __global__ void testBarrierCount(int* out) {
 
     int v;
 
-    v = bar.blockOr(false);
+    v = bar.blockCount(false);
     if (threadIdx.x == 0) {
         out[0] = v;
     }
 
-    v = bar.blockOr(true);
+    v = bar.blockCount(true);
     if (threadIdx.x == 0) {
         out[1] = v;
     }
 
-    v = bar.blockOr(threadIdx.x % 2 == 0);
+    v = bar.blockCount(threadIdx.x % 2 == 0);
     if (threadIdx.x == 0) {
         out[2] = v;
     }
 
-    v = bar.blockOr(threadIdx.x < 32);
+    v = bar.blockCount(threadIdx.x < 32);
     if (threadIdx.x == 0) {
         out[3] = v;
     }
