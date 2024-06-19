@@ -30,7 +30,7 @@ auto handle_async_error = [](::sycl::exception_list elist) {
     }
 };
 
-TEST(clusterization, sycl) {
+TEST(SYCLClustering, SingleModule) {
 
     // Memory resource used by the EDM.
     vecmem::sycl::shared_memory_resource shared_mr;
@@ -76,9 +76,10 @@ TEST(clusterization, sycl) {
     test.insert(measurements[1]);
 
     std::set<measurement> ref;
-    ref.insert({{2.f, 2.f}, {0.75, 0.0833333}, detray::geometry::barcode{0u}});
     ref.insert(
-        {{6.f, 5.f}, {0.483333, 0.483333}, detray::geometry::barcode{0u}});
+        {{2.5f, 2.5f}, {0.75, 0.0833333}, detray::geometry::barcode{0u}});
+    ref.insert(
+        {{6.5f, 5.5f}, {0.483333, 0.483333}, detray::geometry::barcode{0u}});
 
     EXPECT_EQ(test, ref);
 }
