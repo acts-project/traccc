@@ -38,7 +38,7 @@ auto handle_async_error = [](::sycl::exception_list elist) {
     }
 };
 
-TEST(spacepoint_formation, sycl) {
+TEST(SYCLSpacepointFormation, sycl) {
 
     // Memory resource used by the EDM.
     vecmem::sycl::shared_memory_resource shared_mr;

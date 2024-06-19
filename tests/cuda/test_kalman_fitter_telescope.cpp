@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -217,25 +217,23 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation0, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "cuda_telescope_1_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
-        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        -1.f, 100, 100)));
-
-INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "cuda_telescope_10_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 100, 100)));
-
-INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "cuda_telescope_100_GeV_0_phi", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 100, 100)));
+    CUDAKalmanFitTelescopeValidation, KalmanFittingTelescopeTests,
+    ::testing::Values(
+        std::make_tuple("cuda_telescope_1_GeV_0_phi",
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 2u>{1.f, 1.f},
+                        std::array<scalar, 2u>{0.f, 0.f},
+                        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 100, 100),
+        std::make_tuple("cuda_telescope_10_GeV_0_phi",
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 2u>{10.f, 10.f},
+                        std::array<scalar, 2u>{0.f, 0.f},
+                        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 100, 100),
+        std::make_tuple("cuda_telescope_100_GeV_0_phi",
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 2u>{100.f, 100.f},
+                        std::array<scalar, 2u>{0.f, 0.f},
+                        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 100, 100)));
