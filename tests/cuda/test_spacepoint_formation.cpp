@@ -25,7 +25,7 @@
 
 using namespace traccc;
 
-TEST(spacepoint_formation, cuda) {
+TEST(CUDASpacepointFormation, cuda) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;

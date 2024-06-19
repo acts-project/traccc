@@ -243,20 +243,18 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
 // Testing two identical tracks
 INSTANTIATE_TEST_SUITE_P(
-    CudaCkfCombinatoricsTelescopeValidation0,
-    CudaCkfCombinatoricsTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 2, 1)));
-
-// Testing three identical tracks
-INSTANTIATE_TEST_SUITE_P(
-    CudaCkfCombinatoricsTelescopeValidation1,
-    CudaCkfCombinatoricsTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 3, 1)));
+    CUDACkfCombinatoricsTelescopeValidation, CudaCkfCombinatoricsTelescopeTests,
+    ::testing::Values(std::make_tuple("telescope_combinatorics_twin",
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 2u>{100.f, 100.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      std::array<scalar, 2u>{0.f, 0.f}, -1.f, 2,
+                                      1),
+                      std::make_tuple("telescope_combinatorics_trio",
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 2u>{100.f, 100.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      std::array<scalar, 2u>{0.f, 0.f}, -1.f, 3,
+                                      1)));

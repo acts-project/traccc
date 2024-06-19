@@ -62,7 +62,7 @@ TEST_P(ConnectedComponentAnalysisTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    FastSvAlgorithm, ConnectedComponentAnalysisTests,
+    CUDAFastSvAlgorithm, ConnectedComponentAnalysisTests,
     ::testing::Combine(
         ::testing::Values(f),
         ::testing::ValuesIn(ConnectedComponentAnalysisTests::get_test_files())),
