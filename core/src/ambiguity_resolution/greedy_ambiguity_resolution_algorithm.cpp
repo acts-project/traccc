@@ -245,11 +245,12 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
             double ratio = static_cast<float>(mcount_idzero) /
                            static_cast<float>(mcount_all);
             if (ratio > warning_threshold) {
-                std::size_t percent = static_cast<std::size_t>(ratio * 100);
-                LOG_WARN(std::to_string(percent) +
-                         "% of input measurements have an ID equal to 0 "
+                std::stringstream stream;
+                stream << std::fixed << std::setprecision(2) << (ratio * 100.)
+                    << "% of input measurements have an ID equal to 0 "
                          "(measurement.measurement_id == 0). This may be "
-                         "suspicious.");
+                         "suspicious.";
+                LOG_WARN(stream.str());
             }
         }
     }
