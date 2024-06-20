@@ -27,5 +27,13 @@ FetchContent_Declare( TBB ${TRACCC_TBB_SOURCE} )
 set( TBB_TEST FALSE CACHE BOOL "Turn off the TBB tests" )
 set( TBB_STRICT FALSE CACHE BOOL "Do not throw errors on compiler warnings" )
 
+# Treat the TBB headers as "system headers", to avoid getting warnings from
+# them.
+get_target_property( _incDirs TBB::tbb INTERFACE_INCLUDE_DIRECTORIES )
+target_include_directories( eigen
+   SYSTEM INTERFACE ${_incDirs} )
+unset( _incDirs )
+
+
 # Get it into the current directory.
 FetchContent_MakeAvailable( TBB )
