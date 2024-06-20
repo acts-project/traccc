@@ -16,6 +16,8 @@ traccc_add_test(
     test_clusterization.sycl
     test_spacepoint_formation.sycl
     test_barrier.sycl
+    test_mutex.sycl
+    test_unique_lock.sycl
 
     LINK_LIBRARIES
     GTest::gtest_main
