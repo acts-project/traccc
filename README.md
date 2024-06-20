@@ -235,7 +235,7 @@ cmake --build <build_directory> <options>
 ### CPU reconstruction chain
 
 ```sh
-<build_directory>/bin/traccc_seq_example --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/ --events=10
+<build_directory>/bin/traccc_seq_example --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/ --gen-events=10
 
 <build_directory>/bin/traccc_throughput_mt --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/  --cold-run-events=100 --processed-events=1000 --threads=1
 ```
@@ -245,7 +245,7 @@ cmake --build <build_directory> <options>
 - Users can generate CUDA examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
 
 ```sh
-<build_directory>/bin/traccc_seq_example_cuda --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/ --events=10 --run-cpu=1
+<build_directory>/bin/traccc_seq_example_cuda --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/ --gen-events=10 --run-cpu=1
 
 <build_directory>/bin/traccc_throughput_mt_cuda --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/  --cold-run-events=100 --processed-events=1000 --threads=1
 ```
@@ -255,7 +255,7 @@ cmake --build <build_directory> <options>
 - Users can generate SYCL examples by adding `-DTRACCC_BUILD_SYCL=ON` to cmake options
 
 ```sh
-<build_directory>/bin/traccc_seq_example_sycl --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/ --events=10 --run-cpu=1
+<build_directory>/bin/traccc_seq_example_sycl --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/ --gen-events=10 --run-cpu=1
 
 <build_directory>/bin/traccc_throughput_mt_sycl --detector-file=tml_detector/trackml-detector.csv --digitization-config-file=tml_detector/default-geometric-config-generic.json --input-directory=tml_pixels/  --cold-run-events=100 --processed-events=1000 --threads=1
 ```
@@ -266,13 +266,13 @@ Users can generate muon-like particle simulation data with the pre-built detray 
 
 ```sh
 # Generate telescope geometry data
-<build_directory>/bin/traccc_simulate_telescope --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:0 --events=10 --gen-nparticles=2000 --output-directory=detray_simulation/telescope_detector/n_particles_2000/ --gen-eta=1:3
+<build_directory>/bin/traccc_simulate_telescope --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:0 --gen-events=10 --gen-nparticles=2000 --output-directory=detray_simulation/telescope_detector/n_particles_2000/ --gen-eta=1:3
 
 # Generate toy geometry data
-<build_directory>/bin/traccc_simulate_toy_detector --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:360 --events=10 --gen-nparticles=2000 --output-directory=detray_simulation/toy_detector/n_particles_2000/ --gen-eta=-3:3 --constraint-step-size-mm=1 --search-window 3:3
+<build_directory>/bin/traccc_simulate_toy_detector --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:360 --gen-events=10 --gen-nparticles=2000 --output-directory=detray_simulation/toy_detector/n_particles_2000/ --gen-eta=-3:3 --constraint-step-size-mm=1 --search-window 3:3
 
 # Generate drift chamber data
-<build_directory>/bin/traccc_simulate_wire_chamber --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=2:2 --gen-phi-degree=0:360 --events=10 --gen-nparticles=100 --output-directory=detray_simulation/wire_chamber/n_particles_100/ --gen-eta=-1:1 --constraint-step-size-mm=1 --search-window 3:3
+<build_directory>/bin/traccc_simulate_wire_chamber --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=2:2 --gen-phi-degree=0:360 --gen-events=10 --gen-nparticles=100 --output-directory=detray_simulation/wire_chamber/n_particles_100/ --gen-eta=-1:1 --constraint-step-size-mm=1 --search-window 3:3
 ```
 
 The simulation will also generate the detector json files (geometry, material and surface_grid) in the current directory. It is user's responsibility to move them to an appropriate place (e.g. `<detector_directory>`) and match them to the input file arguments of reconstruction chains.
