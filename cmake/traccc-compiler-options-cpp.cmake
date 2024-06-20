@@ -23,6 +23,7 @@ if( ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" ) OR
    traccc_add_flag( CMAKE_CXX_FLAGS "-Wshadow" )
    traccc_add_flag( CMAKE_CXX_FLAGS "-Wunused-local-typedefs" )
    traccc_add_flag( CMAKE_CXX_FLAGS "-pedantic" )
+   traccc_add_fkag( CMAKE_CXX_FLAGS "-Wfloat-conversion" )
 
    # Fail on warnings, if asked for that behaviour.
    if( TRACCC_FAIL_ON_WARNINGS )
