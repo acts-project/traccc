@@ -262,9 +262,8 @@ measurement_particle_map generate_measurement_particle_map(
 }
 
 measurement_particle_map generate_measurement_particle_map(
-    std::size_t event,
-    const std::string& hits_dir, const std::string& particle_dir,
-    const detector_description::host& dd,
+    std::size_t event, const std::string& hits_dir,
+    const std::string& particle_dir, const detector_description::host& dd,
     vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
