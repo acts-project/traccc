@@ -19,19 +19,15 @@
 #include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
-#include "traccc/io/demonstrator_edm.hpp"
-#include "traccc/io/read.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/utils.hpp"
 
 // Performance measurement include(s).
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
-
-// Detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -85,56 +81,46 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     // Memory resource to use in the test.
     HOST_MR uncached_host_mr;
 
-    // Read in the geometry.
-    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
-        detector_opts.detector_file,
+    // Construct the detector description object.
+    traccc::detector_description::host det_descr{uncached_host_mr};
+    traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json
                                            : traccc::data_format::csv));
-    using detector_type = detray::detector<detray::default_metadata,
-                                           detray::host_container_types>;
-    detector_type detector{uncached_host_mr};
-    if (detector_opts.use_detray_detector) {
-        // Set up the detector reader configuration.
-        detray::io::detector_reader_config cfg;
-        cfg.add_file(traccc::io::data_directory() +
-                     detector_opts.detector_file);
-        if (detector_opts.material_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.material_file);
-        }
-        if (detector_opts.grid_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.grid_file);
-        }
 
-        // Read the detector.
-        auto det =
-            detray::io::read_detector<detector_type>(uncached_host_mr, cfg);
-        detector = std::move(det.first);
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host detector{uncached_host_mr};
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            detector, uncached_host_mr, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
     }
 
     // Read in all input events into memory.
-    demonstrator_input input(&uncached_host_mr);
-
+    vecmem::vector<cell_collection_types::host> input{&uncached_host_mr};
     {
         performance::timer t{"File reading", times};
-        // Create empty inputs using the correct memory resource
+        // Read the input cells into memory event-by-event.
+        input.reserve(input_opts.events);
         for (std::size_t i = 0; i < input_opts.events; ++i) {
-            input.push_back(demonstrator_input::value_type(&uncached_host_mr));
+            input.push_back(cell_collection_types::host{&uncached_host_mr});
+            io::read_cells(input.back(), i, input_opts.directory, &det_descr,
+                           input_opts.format);
         }
-        // Read event data into input vector
-        io::read(
-            input, input_opts.events, input_opts.directory,
-            detector_opts.detector_file, detector_opts.digitization_file,
-            input_opts.format,
-            (detector_opts.use_detray_detector ? traccc::data_format::json
-                                               : traccc::data_format::csv));
     }
 
     // Set up cached memory resources on top of the host memory resource
     // separately for each CPU thread.
     std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
-        cached_host_mrs{threading_opts.threads + 1};
+        cached_host_mrs;
+    if (use_host_caching) {
+        cached_host_mrs.reserve(threading_opts.threads + 1);
+        for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
+            cached_host_mrs.push_back(
+                std::make_unique<vecmem::binary_page_memory_resource>(
+                    uncached_host_mr));
+        }
+    }
 
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
@@ -153,9 +139,6 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     algs.reserve(threading_opts.threads + 1);
     for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
 
-        cached_host_mrs.at(i) =
-            std::make_unique<vecmem::binary_page_memory_resource>(
-                uncached_host_mr);
         vecmem::memory_resource& alg_host_mr =
             use_host_caching
                 ? static_cast<vecmem::memory_resource&>(
@@ -169,6 +152,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              seeding_opts.seedfilter,
              finding_cfg,
              fitting_cfg,
+             det_descr,
              (detector_opts.use_detray_detector ? &detector : nullptr)});
     }
 
@@ -196,7 +180,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 group.run([&, event]() {
                     rec_track_params.fetch_add(
                         algs.at(tbb::this_task_arena::current_thread_index())(
-                                input[event].cells, input[event].modules)
+                                input[event])
                             .size());
                 });
             });
@@ -224,7 +208,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 group.run([&, event]() {
                     rec_track_params.fetch_add(
                         algs.at(tbb::this_task_arena::current_thread_index())(
-                                input[event].cells, input[event].modules)
+                                input[event])
                             .size());
                 });
             });
@@ -256,9 +240,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     if (throughput_opts.log_file != "\0") {
         std::ofstream logFile;
         logFile.open(throughput_opts.log_file, std::fstream::app);
-        logFile << "\"" << input_opts.directory << "\""
-                << "," << threading_opts.threads << "," << input_opts.events
-                << "," << throughput_opts.cold_run_events << ","
+        logFile << "\"" << input_opts.directory << "\"" << ","
+                << threading_opts.threads << "," << input_opts.events << ","
+                << throughput_opts.cold_run_events << ","
                 << throughput_opts.processed_events << ","
                 << times.get_time("Warm-up processing").count() << ","
                 << times.get_time("Event processing").count() << std::endl;

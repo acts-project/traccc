@@ -9,8 +9,6 @@
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
-#include "traccc/io/read_digitization_config.hpp"
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/io/write.hpp"
 

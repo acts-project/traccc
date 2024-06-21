@@ -15,6 +15,8 @@
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_description.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -29,6 +31,9 @@
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
+// System include(s).
+#include <functional>
+
 namespace traccc {
 
 /// Algorithm performing the full chain of track reconstruction
@@ -36,16 +41,14 @@ namespace traccc {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm : public algorithm<track_state_container_types::host(
-                                 const cell_collection_types::host&,
-                                 const cell_module_collection_types::host&)> {
+                                 const cell_collection_types::host&)> {
 
     public:
     /// @name Type declaration(s)
     /// @{
 
     /// Detector type used during track finding and fitting
-    using detector_type = detray::detector<detray::default_metadata,
-                                           detray::host_container_types>;
+    using detector_type = traccc::default_detector::host;
 
     /// Stepper type used by the track finding and fitting algorithms
     using stepper_type =
@@ -79,7 +82,8 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          const seedfilter_config& filter_config,
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
-                         detector_type* detector);
+                         const traccc::detector_description::host& det_descr,
+                         detector_type* detector = nullptr);
 
     /// Reconstruct track parameters in the entire detector
     ///
@@ -87,8 +91,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const cell_collection_types::host& cells,
-        const cell_module_collection_types::host& modules) const override;
+        const cell_collection_types::host& cells) const override;
 
     private:
     /// Constant B field for the (seed) track parameter estimation
@@ -96,6 +99,9 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// Constant B field for the track finding and fitting
     detray::bfield::const_field_t m_field;
 
+    /// Detector description
+    std::reference_wrapper<const traccc::detector_description::host>
+        m_det_descr;
     /// Detector
     detector_type* m_detector;
 
