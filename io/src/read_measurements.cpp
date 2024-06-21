@@ -48,7 +48,7 @@ void read_measurements(measurement_collection_types::host& measurements,
     }
 }
 
-void read_measurements(measurement_reader_output& measurements,
+void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
                        const detector_description::host* dd,
                        data_format format) {

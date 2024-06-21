@@ -26,8 +26,8 @@ namespace traccc::io {
 /// our data.
 ///
 /// @param[out] measurements The measurement collection to fill
-/// @param[in]  event     The event ID to read in the cells for
-/// @param[in]  directory The directory holding the cell data files
+/// @param[in]  event     The event ID to read in the measurements for
+/// @param[in]  directory The directory holding the measurement data files
 /// @param[in]  dd        The detector description to point the measurements at
 /// @param[in]  format    The format of the measurement data files (to read)
 ///
@@ -45,7 +45,7 @@ void read_measurements(measurement_collection_types::host& measurements,
 /// @param[in]  dd       The detector description to point the measurements at
 /// @param[in]  format   The format of the measurement data files (to read)
 ///
-void read_measurements(measurement_reader_output& measurements,
+void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
                        const detector_description::host* dd = nullptr,
                        data_format format = data_format::csv);
