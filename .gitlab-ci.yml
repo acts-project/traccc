@@ -15,7 +15,6 @@ stages:
     - git clone $CLONE_URL src
     - git -C src checkout $HEAD_SHA
     - source ./src/.github/ci_setup.sh ${TRACCC_BUILD_TYPE}
-    - ./src/.github/ci_plugin_install.sh ${TRACCC_BUILD_TYPE}
 
 # Build job template.
 .build_template: &build_job
@@ -88,7 +87,7 @@ test:sycl_intel:
 # SYCL build job (with an NVIDIA backend).
 build:sycl_nvidia:
   <<: *build_job
-  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:47
+  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:48
   variables:
     TRACCC_BUILD_TYPE: SYCL
     TRACCC_BUILD_PRESET: sycl
@@ -97,7 +96,7 @@ build:sycl_nvidia:
 # SYCL test job (with an NVIDIA backend).
 test:sycl_nvidia:
   <<: *nvidia_test_job
-  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:47
+  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:48
   variables:
     TRACCC_BUILD_TYPE: SYCL
     ONEAPI_DEVICE_SELECTOR: cuda:*

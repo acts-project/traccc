@@ -26,24 +26,39 @@ jobs:
         platform:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v30
+            cxx_standard: "17"
             options:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v30
+            cxx_standard: "17"
+            options: -DTRACCC_USE_ROOT=FALSE
+          - name: CPU
+            container: ghcr.io/acts-project/ubuntu2404:48
+            cxx_standard: "20"
             options: -DTRACCC_USE_ROOT=FALSE
           - name: HIP
             container: ghcr.io/acts-project/ubuntu2004_rocm:47
+            cxx_standard: "17"
             options: -DTRACCC_BUILD_HIP=TRUE -DTRACCC_SETUP_ROCTHRUST=TRUE
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2004_cuda:47
+            cxx_standard: "17"
             options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_ENABLE_NVTX_PROFILING=TRUE
+          - name: CUDA
+            container: ghcr.io/acts-project/ubuntu2204_cuda:48
+            cxx_standard: "20"
+            options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_USE_ROOT=FALSE
           - name: SYCL
             container: ghcr.io/acts-project/ubuntu2004_oneapi:47
+            cxx_standard: "17"
             options: -DTRACCC_BUILD_SYCL=TRUE
           - name: KOKKOS
             container: ghcr.io/acts-project/ubuntu2004:v30
+            cxx_standard: "17"
             options: -DTRACCC_BUILD_KOKKOS=TRUE
           - name: ALPAKA
             container: ghcr.io/acts-project/ubuntu2204:v33
+            cxx_standard: "17"
             options: -DTRACCC_BUILD_ALPAKA=TRUE
         build:
           - Release
@@ -52,11 +67,13 @@ jobs:
           - platform:
               name: "SYCL"
               container: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:47
+              cxx_standard: "17"
               options: -DTRACCC_BUILD_SYCL=TRUE -DTRACCC_BUILD_CUDA=FALSE -DVECMEM_BUILD_CUDA_LIBRARY=FALSE
             build: Release
           - platform:
               name: "SYCL"
               container: ghcr.io/acts-project/ubuntu2004_rocm_oneapi:47
+              cxx_standard: "17"
               options: -DTRACCC_BUILD_SYCL=TRUE -DVECMEM_BUILD_HIP_LIBRARY=FALSE
             build: Release
     # Use BASH as the shell from the images.
@@ -70,7 +87,16 @@ jobs:
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} ${{ matrix.platform.options }} -DTRACCC_FAIL_ON_WARNINGS=TRUE -S ${GITHUB_WORKSPACE} -B build
+          cmake \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DCMAKE_CXX_STANDARD=${{ matrix.platform.cxx_standard }} \
+            -DCMAKE_CUDA_STANDARD=${{ matrix.platform.cxx_standard }} \
+            -DCMAKE_HIP_STANDARD=${{ matrix.platform.cxx_standard }} \
+            -DCMAKE_SYCL_STANDARD=${{ matrix.platform.cxx_standard }} \
+            ${{ matrix.platform.options }} \
+            -DTRACCC_FAIL_ON_WARNINGS=TRUE \
+            -S ${GITHUB_WORKSPACE} \
+            -B build
       - name: Build
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
