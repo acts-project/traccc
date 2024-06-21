@@ -23,7 +23,7 @@
 namespace {
 
 void fill_digi_info(traccc::detector_description::host& dd,
-                    const Acts::BinUtility& data) {
+                    const traccc::module_digitization_config& data) {
 
     // Set a hard-coded threshold for which cells should be considered for
     // clusterization on this module / surface.
@@ -31,11 +31,12 @@ void fill_digi_info(traccc::detector_description::host& dd,
 
     // Fill the new element with the digitization configuration for the
     // surface.
-    const auto& binning_data = data.binningData();
+    const auto& binning_data = data.segmentation.binningData();
     dd.reference_x().back() = binning_data.at(0).min;
     dd.reference_y().back() = binning_data.at(1).min;
     dd.pitch_x().back() = binning_data.at(0).step;
     dd.pitch_y().back() = binning_data.at(1).step;
+    dd.dimensions().back() = data.dimensions;
 }
 
 void read_csv_dd(traccc::detector_description::host& dd,
@@ -83,7 +84,7 @@ void read_csv_dd(traccc::detector_description::host& dd,
 
         // Fill the new element with the digitization configuration for the
         // surface.
-        fill_digi_info(dd, digi_it->segmentation);
+        fill_digi_info(dd, *digi_it);
     }
 }
 
@@ -139,7 +140,7 @@ void read_json_dd(traccc::detector_description::host& dd,
 
         // Fill the new element with the digitization configuration for the
         // surface.
-        fill_digi_info(dd, digi_it->segmentation);
+        fill_digi_info(dd, *digi_it);
     }
 }
 

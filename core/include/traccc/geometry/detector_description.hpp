@@ -197,6 +197,32 @@ class detector_description_interface : public BASE {
     TRACCC_HOST_DEVICE
     const auto& pitch_y() const { return BASE::template get<7>(); }
 
+    /// The dimensionality (1D/2D) of the detector module (non-const)
+    ///
+    /// @return A (non-const) vector of @c char objects
+    ///
+    TRACCC_HOST_DEVICE
+    auto& dimensions() { return BASE::template get<8>(); }
+    /// The dimensionality (1D/2D) of the detector module (const)
+    ///
+    /// @return A (const) vector of @c char objects
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& dimensions() const { return BASE::template get<8>(); }
+
+    /// The variance in the Y direction for 1D sensors (non-const)
+    ///
+    /// @return A (non-const) vector of @c traccc::scalar objects
+    ///
+    TRACCC_HOST_DEVICE
+    auto& variance_y() { return BASE::template get<9>(); }
+    /// The variance in the Y direction for 1D sensors (const)
+    ///
+    /// @return A (const) vector of @c traccc::scalar objects
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& variance_y() const { return BASE::template get<9>(); }
+
     /// @}
 
 };  // class detector_description_interface
@@ -208,6 +234,7 @@ using detector_description = vecmem::edm::container<
     vecmem::edm::type::vector<transform3>,
     vecmem::edm::type::vector<geometry_id>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>>;
+    vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
+    vecmem::edm::type::vector<char>, vecmem::edm::type::vector<scalar> >;
 
 }  // namespace traccc

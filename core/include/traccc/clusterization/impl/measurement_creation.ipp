@@ -115,17 +115,16 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     // plus pitch^2 / 12
     const scalar pitch_x = det_descr.pitch_x().at(module_link);
     const scalar pitch_y = det_descr.pitch_y().at(module_link);
-    m.variance =
-        var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
-                            pitch_y * pitch_y / static_cast<scalar>(12.)};
+    m.variance = var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
+                              pitch_y * pitch_y / static_cast<scalar>(12.)};
 
     // For the ambiguity resolution algorithm, give a unique measurement ID
     m.measurement_id = index;
 
     // Adjust the measurement object for 1D surfaces.
-    if (mod.pixel.dimension == 1) {
+    if (det_descr.dimensions().at(module_link) == 1) {
         m.meas_dim = 1;
-        m.local[1] = 0.f;
+        m.local[1] = scalar{0.5} * pitch_y;
     }
 }
 

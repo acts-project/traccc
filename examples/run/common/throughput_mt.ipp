@@ -240,9 +240,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     if (throughput_opts.log_file != "\0") {
         std::ofstream logFile;
         logFile.open(throughput_opts.log_file, std::fstream::app);
-        logFile << "\"" << input_opts.directory << "\"" << ","
-                << threading_opts.threads << "," << input_opts.events << ","
-                << throughput_opts.cold_run_events << ","
+        logFile << "\"" << input_opts.directory << "\""
+                << "," << threading_opts.threads << "," << input_opts.events
+                << "," << throughput_opts.cold_run_events << ","
                 << throughput_opts.processed_events << ","
                 << times.get_time("Warm-up processing").count() << ","
                 << times.get_time("Event processing").count() << std::endl;
