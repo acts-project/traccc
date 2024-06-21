@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/finding/finding_config.hpp"
+#include "traccc/options/details/config_provider.hpp"
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
@@ -20,12 +22,21 @@
 namespace traccc::opts {
 
 /// Configuration for track finding
-class track_finding : public interface {
+class track_finding : public interface,
+                      public config_provider<finding_config<float>>,
+                      public config_provider<finding_config<double>> {
 
     public:
+    /// Constructor
+    track_finding();
+
+    /// Configuration conversion operators
+    operator finding_config<float>() const override;
+    operator finding_config<double>() const override;
+
+    private:
     /// @name Options
     /// @{
-
     /// Number of track candidates per seed
     opts::value_array<unsigned int, 2> track_candidates_range{3, 100};
     /// Minimum step length that track should make to reach the next surface. It
@@ -40,13 +51,8 @@ class track_finding : public interface {
     unsigned int nmax_per_seed = 10;
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;
-
     /// @}
 
-    /// Constructor
-    track_finding();
-
-    private:
     /// Print the specific options of this class
     std::ostream& print_impl(std::ostream& out) const override;
 

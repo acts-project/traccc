@@ -122,28 +122,17 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     }
 
     // Algorithm configuration(s).
-    typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg;
-    finding_cfg.min_track_candidates_per_track =
-        finding_opts.track_candidates_range[0];
-    finding_cfg.max_track_candidates_per_track =
-        finding_opts.track_candidates_range[1];
-    finding_cfg.min_step_length_for_next_surface =
-        finding_opts.min_step_length_for_next_surface;
-    finding_cfg.max_step_counts_for_next_surface =
-        finding_opts.max_step_counts_for_next_surface;
-    finding_cfg.chi2_max = finding_opts.chi2_max;
-    finding_cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
-    finding_cfg.max_num_skipping_per_cand =
-        finding_opts.max_num_skipping_per_cand;
-    finding_cfg.propagation = propagation_opts.config;
+    detray::propagation::config propagation_config(propagation_opts);
+    typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
+        finding_opts);
+    finding_cfg.propagation = propagation_config;
 
     typename FULL_CHAIN_ALG::fitting_algorithm::config_type fitting_cfg;
-    fitting_cfg.propagation = propagation_opts.config;
+    fitting_cfg.propagation = propagation_config;
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, clusterization_opts.target_cells_per_partition,
-        seeding_opts.seedfinder,
+        alg_host_mr, clusterization_opts, seeding_opts.seedfinder,
         spacepoint_grid_config{seeding_opts.seedfinder},
         seeding_opts.seedfilter, finding_cfg, fitting_cfg,
         (detector_opts.use_detray_detector ? &detector : nullptr));

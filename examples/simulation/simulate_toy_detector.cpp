@@ -105,7 +105,7 @@ int simulate(const traccc::opts::generation& generation_opts,
                                  writer_type>(
         generation_opts.events, det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
-    sim.get_config().propagation = propagation_opts.config;
+    sim.get_config().propagation = propagation_opts;
 
     sim.run();
 
