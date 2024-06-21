@@ -25,7 +25,7 @@ void read_cells(cell_collection_types::host& cells, std::size_t event,
     switch (format) {
         case data_format::csv: {
             read_cells(
-                out,
+                cells,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.csv")))
@@ -35,7 +35,7 @@ void read_cells(cell_collection_types::host& cells, std::size_t event,
         }
         case data_format::binary: {
             details::read_binary_collection<cell_collection_types::host>(
-                out.cells,
+                cells,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.dat")))
