@@ -29,9 +29,9 @@ set( TBB_STRICT FALSE CACHE BOOL "Do not throw errors on compiler warnings" )
 
 # Treat the TBB headers as "system headers", to avoid getting warnings from
 # them.
-get_target_property( _incDirs tbb INTERFACE_INCLUDE_DIRECTORIES )
+get_target_property( _incDirs tbb INCLUDE_DIRECTORIES )
 target_include_directories( tbb
-   SYSTEM INTERFACE ${_incDirs} )
+   SYSTEM PUBLIC ${_incDirs} )
 unset( _incDirs )
 
 
