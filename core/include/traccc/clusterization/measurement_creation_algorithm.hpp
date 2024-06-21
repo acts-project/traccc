@@ -42,14 +42,10 @@ class measurement_creation_algorithm
     /// Callable operator for the connected component, based on one single
     /// module
     ///
-    /// @param clusters Container of cells. Each subvector of cells corresponds
-    /// to a cluster
-    /// @param modules Collection of detector modules the clusters link to.
+    /// @param clusters_view Clusters to turn into measurements
+    /// @param dd_view       The detector description
+    /// @return The reconstructed measurement collection
     ///
-    /// C++20 piping interface
-    ///
-    /// @return a measurement collection - usually same size or sometime
-    /// slightly smaller than the input
     output_type operator()(
         const cluster_container_types::const_view &clusters_view,
         const detector_description::const_view &dd_view) const override;
