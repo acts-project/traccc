@@ -46,7 +46,7 @@ class clusterization_algorithm
     /// Construct measurements for each detector module
     ///
     /// @param cells_view The cells for every detector module in the event
-    /// @param modules_view A collection of detector modules
+    /// @param dd_view The detector description
     /// @return The measurements reconstructed for every detector module
     ///
     output_type operator()(

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -141,7 +141,7 @@ TRACCC_DEVICE inline void ccl_core(
     vecmem::device_vector<details::index_t> gf,
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
     unsigned char* adjc, const cell_collection_types::const_device cells_device,
-    const cell_module_collection_types::const_device modules_device,
+    const detector_description::const_device& det_descr,
     measurement_collection_types::device measurements_device,
     barrier_t& barrier) {
     const details::index_t size = partition_end - partition_start;
@@ -199,8 +199,8 @@ TRACCC_DEVICE inline void ccl_core(
                 measurements_device.push_back({});
             // Set up the measurement under the appropriate index.
             aggregate_cluster(
-                cells_device, modules_device, f, partition_start, partition_end,
-                cid, measurements_device.at(meas_pos), cell_links, meas_pos);
+                cells_device, det_descr, f, partition_start, partition_end, cid,
+                measurements_device.at(meas_pos), cell_links, meas_pos);
         }
     }
 }
@@ -209,8 +209,8 @@ template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
-    const cell_collection_types::const_view cells_view,
-    const cell_module_collection_types::const_view modules_view,
+    const cell_collection_types::const_view& cells_view,
+    const detector_description::const_view& det_descr_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,
@@ -223,8 +223,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<unsigned int> cell_links) {
     // Construct device containers around the views.
     const cell_collection_types::const_device cells_device(cells_view);
-    const cell_module_collection_types::const_device modules_device(
-        modules_view);
+    const detector_description::const_device det_descr(det_descr_view);
     measurement_collection_types::device measurements_device(measurements_view);
     vecmem::device_vector<details::index_t> f_primary(f_view);
     vecmem::device_vector<details::index_t> gf_primary(gf_view);
@@ -345,7 +344,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     ccl_core(thread_id, partition_start, partition_end,
              use_scratch ? f_backup : f_primary,
              use_scratch ? gf_backup : gf_primary, cell_links, adjv, adjc,
-             cells_device, modules_device, measurements_device, barrier);
+             cells_device, det_descr, measurements_device, barrier);
 
     barrier.blockBarrier();
 }

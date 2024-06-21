@@ -23,10 +23,10 @@ class form_spacepoints;
 }  // namespace kernels
 
 spacepoint_formation_algorithm::spacepoint_formation_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue)
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper& queue)
     : m_mr(mr),
-      m_queue(queue),
       m_copy(copy),
+      m_queue(queue),
       m_max_work_group_size(
           details::get_queue(queue)
               .get_device()
@@ -34,12 +34,12 @@ spacepoint_formation_algorithm::spacepoint_formation_algorithm(
 
 spacepoint_formation_algorithm::output_type
 spacepoint_formation_algorithm::operator()(
-    const measurement_collection_types::const_view& measurements_view,
-    const cell_module_collection_types::const_view& modules_view) const {
+    const measurement_collection_types::const_view& measurements,
+    const detector_description::const_view& det_descr) const {
 
     // Get the number of measurements.
     const measurement_collection_types::const_view::size_type num_measurements =
-        m_copy.get().get_size(measurements_view);
+        m_copy.get().get_size(measurements);
 
     // Create the result buffer.
     spacepoint_collection_types::buffer spacepoints(num_measurements,
@@ -63,12 +63,11 @@ spacepoint_formation_algorithm::operator()(
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::form_spacepoints>(
-                spacepointsRange,
-                [measurements_view, modules_view, num_measurements,
-                 spacepoints_view](::sycl::nd_item<1> item) {
+                spacepointsRange, [measurements, det_descr, num_measurements,
+                                   spacepoints_view](::sycl::nd_item<1> item) {
                     device::form_spacepoints(
-                        item.get_global_linear_id(), measurements_view,
-                        modules_view, num_measurements, spacepoints_view);
+                        item.get_global_linear_id(), measurements, det_descr,
+                        num_measurements, spacepoints_view);
                 });
         })
         .wait_and_throw();
