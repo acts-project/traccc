@@ -264,29 +264,25 @@ measurement_particle_map generate_measurement_particle_map(
 measurement_particle_map generate_measurement_particle_map(
     std::size_t event,
     const std::string& hits_dir, const std::string& particle_dir,
-    const detector_description::host& detector_file,
+    const detector_description::host& dd,
     vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
 
     // Read the spacepoints from the relevant event file
-    traccc::io::spacepoint_reader_output readOut(&resource);
-    io::read_spacepoints(readOut, event, hits_dir, surface_transforms,
+    spacepoint_collection_types::host spacepoints{&resource};
+    io::read_spacepoints(spacepoints, event, hits_dir, &dd,
                          traccc::data_format::csv);
-    spacepoint_collection_types::host& spacepoints_per_event =
-        readOut.spacepoints;
-    cell_module_collection_types::host& modules = readOut.modules;
 
     geoId_link_map link_map;
-
-    for (unsigned int i = 0; i < modules.size(); ++i) {
-        link_map[modules[i].surface_link.value()] = i;
+    for (std::size_t i = 0; i < dd.size(); ++i) {
+        link_map[dd.surface_link()[i].value()] = i;
     }
 
     auto h_p_map =
         generate_hit_particle_map(event, hits_dir, particle_dir, link_map);
 
-    for (const auto& hit : spacepoints_per_event) {
+    for (const auto& hit : spacepoints) {
         const auto& meas = hit.meas;
 
         spacepoint new_hit;
