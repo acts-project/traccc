@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -129,8 +129,8 @@ template <device::concepts::barrier barrier_t>
 TRACCC_DEVICE inline void ccl_kernel(
     const details::index_t threadId, const details::index_t blckDim,
     const unsigned int blockId,
-    const cell_collection_types::const_view cells_view,
-    const cell_module_collection_types::const_view modules_view,
+    const cell_collection_types::const_view& cells_view,
+    const detector_description::const_device& det_descr_view,
     [[maybe_unused]] const details::index_t max_cells_per_partition,
     const details::index_t target_cells_per_partition,
     unsigned int& partition_start, unsigned int& partition_end,
@@ -141,8 +141,7 @@ TRACCC_DEVICE inline void ccl_kernel(
 
     // Construct device containers around the views.
     const cell_collection_types::const_device cells_device(cells_view);
-    const cell_module_collection_types::const_device modules_device(
-        modules_view);
+    const detector_description::const_device det_descr(det_descr_view);
     measurement_collection_types::device measurements_device(measurements_view);
     vecmem::device_vector<details::index_t> f(f_view);
     vecmem::device_vector<details::index_t> gf(gf_view);
@@ -265,10 +264,9 @@ TRACCC_DEVICE inline void ccl_kernel(
             const measurement_collection_types::device::size_type meas_pos =
                 measurements_device.push_back({});
             // Set up the measurement under the appropriate index.
-            aggregate_cluster(cells_device, modules_device, f_view,
-                              partition_start, partition_end, cid,
-                              measurements_device.at(meas_pos), cell_links,
-                              meas_pos);
+            aggregate_cluster(
+                cells_device, det_descr, f_view, partition_start, partition_end,
+                cid, measurements_device.at(meas_pos), cell_links, meas_pos);
         }
     }
 }

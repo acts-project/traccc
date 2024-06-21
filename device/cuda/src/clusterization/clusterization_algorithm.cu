@@ -28,7 +28,7 @@ namespace kernels {
 /// CUDA kernel for running @c traccc::device::ccl_kernel
 __global__ void ccl_kernel(
     const cell_collection_types::const_view cells_view,
-    const cell_module_collection_types::const_view modules_view,
+    const detector_description::const_view& det_descr_view,
     const device::details::index_t max_cells_per_partition,
     const device::details::index_t target_cells_per_partition,
     measurement_collection_types::view measurements_view,
@@ -44,7 +44,7 @@ __global__ void ccl_kernel(
     traccc::cuda::barrier barry_r;
 
     device::ccl_kernel(threadIdx.x, blockDim.x, blockIdx.x, cells_view,
-                       modules_view, max_cells_per_partition,
+                       det_descr_view, max_cells_per_partition,
                        target_cells_per_partition, partition_start,
                        partition_end, outi, f_view, gf_view, barry_r,
                        measurements_view, cell_links);
@@ -55,14 +55,14 @@ __global__ void ccl_kernel(
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
     const unsigned short target_cells_per_partition)
-    : m_mr(mr),
+    : m_target_cells_per_partition(target_cells_per_partition),
+      m_mr(mr),
       m_copy(copy),
-      m_stream(str),
-      m_target_cells_per_partition(target_cells_per_partition) {}
+      m_stream(str) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
-    const cell_module_collection_types::const_view& modules) const {
+    const detector_description::const_view& det_descr) const {
 
     assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
                             m_stream, cells));
@@ -101,7 +101,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                           2 * helper.max_cells_per_partition *
                               sizeof(device::details::index_t),
                           stream>>>(
-        cells, modules, helper.max_cells_per_partition,
+        cells, det_descr, helper.max_cells_per_partition,
         m_target_cells_per_partition, measurements, cell_links);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
