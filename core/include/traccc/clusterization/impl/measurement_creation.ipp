@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <cassert>
+
 namespace traccc::details {
 
 TRACCC_HOST_DEVICE
@@ -28,6 +30,8 @@ inline vector2 position_from_cell(const cell& cell, const cell_module& mod) {
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const cell_collection_types::const_device& cluster, const cell_module& mod,
     point2& mean, point2& var, scalar& totalWeight) {
+    point2 offset{0., 0.};
+    bool first_processed = false;
 
     // Loop over the cells of the cluster.
     for (const cell& cell : cluster) {
@@ -37,20 +41,30 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 
         // Only consider cells over a minimum threshold.
         if (weight > mod.threshold) {
+            totalWeight += weight;
+            scalar weight_factor = weight / totalWeight;
 
-            // Update all output properties with this cell.
-            totalWeight += cell.activation;
-            const point2 cell_position = position_from_cell(cell, mod);
-            const point2 prev = mean;
-            const point2 diff = cell_position - prev;
+            point2 cell_position = position_from_cell(cell, mod);
 
-            mean = prev + (weight / totalWeight) * diff;
-            for (std::size_t i = 0; i < 2; ++i) {
-                var[i] =
-                    var[i] + weight * (diff[i]) * (cell_position[i] - mean[i]);
+            if (!first_processed) {
+                offset = cell_position;
+                first_processed = true;
             }
+
+            cell_position = cell_position - offset;
+
+            const point2 diff_old = cell_position - mean;
+            mean = mean + diff_old * weight_factor;
+            const point2 diff_new = cell_position - mean;
+
+            var[0] = (1.f - weight_factor) * var[0] +
+                     weight_factor * (diff_old[0] * diff_new[0]);
+            var[1] = (1.f - weight_factor) * var[1] +
+                     weight_factor * (diff_old[1] * diff_new[1]);
         }
     }
+
+    mean = mean + offset;
 }
 
 TRACCC_HOST_DEVICE inline void fill_measurement(
@@ -70,38 +84,34 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     //     edition, chapter 4.2.2.
 
     // Calculate the cluster properties
-    scalar totalWeight = 0.;
-    point2 mean{0., 0.}, var{0., 0.};
+    scalar totalWeight = 0.f;
+    point2 mean{0.f, 0.f}, var{0.f, 0.f};
     calc_cluster_properties(cluster, mod, mean, var, totalWeight);
 
-    if (totalWeight > 0.) {
+    assert(totalWeight > 0.f);
 
-        // Access the measurement in question.
-        measurement& m = measurements[measurement_index];
+    // Access the measurement in question.
+    measurement& m = measurements[measurement_index];
 
-        m.module_link = mod_link;
-        m.surface_link = mod.surface_link;
-        // normalize the cell position
-        m.local = mean;
-        // normalize the variance
-        m.variance[0] = var[0] / totalWeight;
-        m.variance[1] = var[1] / totalWeight;
-        // plus pitch^2 / 12
-        const auto pitch = mod.pixel.get_pitch();
-        m.variance =
-            m.variance + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
-                                pitch[1] * pitch[1] / static_cast<scalar>(12.)};
-        // @todo add variance estimation
+    m.module_link = mod_link;
+    m.surface_link = mod.surface_link;
+    // normalize the cell position
+    m.local = mean;
 
-        // For the ambiguity resolution algorithm, give a unique measurement ID
-        m.measurement_id = measurement_index;
+    // plus pitch^2 / 12
+    const auto pitch = mod.pixel.get_pitch();
+    m.variance = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
+                              pitch[1] * pitch[1] / static_cast<scalar>(12.)};
+    // @todo add variance estimation
 
-        // Adjust the measurement object for 1D surfaces.
-        if (mod.pixel.dimension == 1) {
-            m.meas_dim = 1;
-            m.local[1] = 0.f;
-            m.variance[1] = mod.pixel.variance_y;
-        }
+    // For the ambiguity resolution algorithm, give a unique measurement ID
+    m.measurement_id = measurement_index;
+
+    // Adjust the measurement object for 1D surfaces.
+    if (mod.pixel.dimension == 1) {
+        m.meas_dim = 1;
+        m.local[1] = 0.f;
+        m.variance[1] = mod.pixel.variance_y;
     }
 }
 
