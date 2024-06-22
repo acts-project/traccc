@@ -97,8 +97,10 @@ class ConnectedComponentAnalysisTests
         traccc::cell_collection_types::host &cells = data.cells;
         traccc::cell_module_collection_types::host &modules = data.modules;
 
+        traccc::scalar pitch = 1.f;
+
         for (std::size_t i = 0; i < modules.size(); i++) {
-            modules.at(i).pixel = {-0.5f, -0.5f, 1.f, 1.f};
+            modules.at(i).pixel = {-0.5f, -0.5f, pitch, pitch};
         }
 
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
@@ -112,6 +114,8 @@ class ConnectedComponentAnalysisTests
 
         cca_truth_hit_reader truth_reader(file_truth);
 
+        traccc::scalar var_adjustment = (pitch * pitch) / 12.f;
+
         cca_truth_hit io_truth;
         while (truth_reader.read(io_truth)) {
             ASSERT_TRUE(result.find(io_truth.geometry_id) != result.end());
@@ -119,8 +123,7 @@ class ConnectedComponentAnalysisTests
             const vecmem::vector<traccc::measurement> &meas =
                 result.at(io_truth.geometry_id);
 
-            traccc::scalar tol = std::max(
-                0.1, 0.0001 * std::max(io_truth.channel0, io_truth.channel1));
+            const traccc::scalar tol = 0.0001f;
 
             auto match = std::find_if(
                 meas.begin(), meas.end(),
@@ -133,8 +136,10 @@ class ConnectedComponentAnalysisTests
 
             EXPECT_NEAR(match->local[0], io_truth.channel0, tol);
             EXPECT_NEAR(match->local[1], io_truth.channel1, tol);
-            EXPECT_NEAR(match->variance[0], io_truth.variance0, tol);
-            EXPECT_NEAR(match->variance[1], io_truth.variance1, tol);
+            EXPECT_NEAR(match->variance[0], io_truth.variance0 + var_adjustment,
+                        tol);
+            EXPECT_NEAR(match->variance[1], io_truth.variance1 + var_adjustment,
+                        tol);
 
             ++total_truth;
         }
