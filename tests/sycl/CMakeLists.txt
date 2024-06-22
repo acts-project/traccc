@@ -18,6 +18,7 @@ traccc_add_test(
     test_barrier.sycl
     test_mutex.sycl
     test_unique_lock.sycl
+    test_cca.sycl
 
     LINK_LIBRARIES
     GTest::gtest_main
