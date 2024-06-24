@@ -137,23 +137,13 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         cached_host_mrs{threading_opts.threads + 1};
 
     // Algorithm configuration(s).
-    typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg;
-    finding_cfg.min_track_candidates_per_track =
-        finding_opts.track_candidates_range[0];
-    finding_cfg.max_track_candidates_per_track =
-        finding_opts.track_candidates_range[1];
-    finding_cfg.min_step_length_for_next_surface =
-        finding_opts.min_step_length_for_next_surface;
-    finding_cfg.max_step_counts_for_next_surface =
-        finding_opts.max_step_counts_for_next_surface;
-    finding_cfg.chi2_max = finding_opts.chi2_max;
-    finding_cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
-    finding_cfg.max_num_skipping_per_cand =
-        finding_opts.max_num_skipping_per_cand;
-    finding_cfg.propagation = propagation_opts.config;
+    detray::propagation::config propagation_config(propagation_opts);
+    typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
+        finding_opts);
+    finding_cfg.propagation = propagation_config;
 
     typename FULL_CHAIN_ALG::fitting_algorithm::config_type fitting_cfg;
-    fitting_cfg.propagation = propagation_opts.config;
+    fitting_cfg.propagation = propagation_config;
 
     // Set up the full-chain algorithm(s). One for each thread.
     std::vector<FULL_CHAIN_ALG> algs;
@@ -170,7 +160,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
         algs.push_back(
             {alg_host_mr,
-             clusterization_opts.target_cells_per_partition,
+             clusterization_opts,
              seeding_opts.seedfinder,
              {seeding_opts.seedfinder},
              seeding_opts.seedfilter,
@@ -267,7 +257,6 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                 << "," << threading_opts.threads << "," << input_opts.events
                 << "," << throughput_opts.cold_run_events << ","
                 << throughput_opts.processed_events << ","
-                << clusterization_opts.target_cells_per_partition << ","
                 << times.get_time("Warm-up processing").count() << ","
                 << times.get_time("Event processing").count() << std::endl;
         logFile.close();

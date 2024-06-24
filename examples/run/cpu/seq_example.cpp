@@ -131,23 +131,13 @@ int seq_run(const traccc::opts::input_data& input_opts,
         detray::bfield::create_const_field(field_vec);
 
     // Algorithm configuration(s).
-    finding_algorithm::config_type finding_cfg;
-    finding_cfg.min_track_candidates_per_track =
-        finding_opts.track_candidates_range[0];
-    finding_cfg.max_track_candidates_per_track =
-        finding_opts.track_candidates_range[1];
-    finding_cfg.min_step_length_for_next_surface =
-        finding_opts.min_step_length_for_next_surface;
-    finding_cfg.max_step_counts_for_next_surface =
-        finding_opts.max_step_counts_for_next_surface;
-    finding_cfg.chi2_max = finding_opts.chi2_max;
-    finding_cfg.max_num_branches_per_seed = finding_opts.nmax_per_seed;
-    finding_cfg.max_num_skipping_per_cand =
-        finding_opts.max_num_skipping_per_cand;
-    finding_cfg.propagation = propagation_opts.config;
+    detray::propagation::config propagation_config(propagation_opts);
+
+    finding_algorithm::config_type finding_cfg(finding_opts);
+    finding_cfg.propagation = propagation_config;
 
     fitting_algorithm::config_type fitting_cfg;
-    fitting_cfg.propagation = propagation_opts.config;
+    fitting_cfg.propagation = propagation_config;
 
     // Algorithms
     traccc::host::clusterization_algorithm ca(host_mr);

@@ -22,6 +22,10 @@ clusterization::clusterization() : interface("Clusterization Options") {
         "The number of cells to merge in a partition");
 }
 
+clusterization::operator unsigned short() const {
+    return target_cells_per_partition;
+}
+
 std::ostream& clusterization::print_impl(std::ostream& out) const {
 
     out << "  Target cells per partition: " << target_cells_per_partition;

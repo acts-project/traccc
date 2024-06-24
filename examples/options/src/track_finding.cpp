@@ -50,6 +50,30 @@ track_finding::track_finding() : interface("Track Finding Options") {
         "Maximum allowed number of skipped steps per candidate");
 }
 
+track_finding::operator finding_config<float>() const {
+    finding_config<float> out;
+    out.min_track_candidates_per_track = track_candidates_range[0];
+    out.max_track_candidates_per_track = track_candidates_range[1];
+    out.min_step_length_for_next_surface = min_step_length_for_next_surface;
+    out.max_step_counts_for_next_surface = max_step_counts_for_next_surface;
+    out.chi2_max = chi2_max;
+    out.max_num_branches_per_seed = nmax_per_seed;
+    out.max_num_skipping_per_cand = max_num_skipping_per_cand;
+    return out;
+}
+
+track_finding::operator finding_config<double>() const {
+    finding_config<double> out;
+    out.min_track_candidates_per_track = track_candidates_range[0];
+    out.max_track_candidates_per_track = track_candidates_range[1];
+    out.min_step_length_for_next_surface = min_step_length_for_next_surface;
+    out.max_step_counts_for_next_surface = max_step_counts_for_next_surface;
+    out.chi2_max = chi2_max;
+    out.max_num_branches_per_seed = nmax_per_seed;
+    out.max_num_skipping_per_cand = max_num_skipping_per_cand;
+    return out;
+}
+
 std::ostream& track_finding::print_impl(std::ostream& out) const {
 
     out << "  Track candidates range   : " << track_candidates_range << "\n"

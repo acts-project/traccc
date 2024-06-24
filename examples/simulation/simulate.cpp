@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
         generation_opts.events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
 
-    sim.get_config().propagation = propagation_opts.config;
+    sim.get_config().propagation = propagation_opts;
 
     sim.run();
 

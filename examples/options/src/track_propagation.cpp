@@ -57,6 +57,10 @@ void track_propagation::read(const po::variables_map&) {
     config.navigation.search_window = m_search_window;
 }
 
+track_propagation::operator detray::propagation::config() const {
+    return config;
+}
+
 std::ostream& track_propagation::print_impl(std::ostream& out) const {
 
     out << config;
