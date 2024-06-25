@@ -79,21 +79,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     /// Type declarations
     using host_detector_type = detray::detector<>;
-    // using device_detector_type =
-    //     detray::detector<detray::default_metadata,
-    //                      detray::device_container_types>;
-
-    // using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
-    // using rk_stepper_type =
-    //     detray::rk_stepper<b_field_t::view_t,
-    //                        typename host_detector_type::algebra_type,
-    //                        detray::constrained_step<>>;
-    // using host_navigator_type = detray::navigator<const host_detector_type>;
-    // using host_fitter_type =
-    //     traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
-    // using device_navigator_type = detray::navigator<const
-    // device_detector_type>; using device_fitter_type =
-    //     traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     vecmem::cuda::copy copy;
@@ -117,10 +102,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
-    // traccc::finding_performance_writer find_performance_writer(
-    //     traccc::finding_performance_writer::config{});
-    // traccc::fitting_performance_writer fit_performance_writer(
-    //     traccc::fitting_performance_writer::config{});
 
     traccc::nseed_performance_writer nsd_performance_writer(
         "nseed_performance_",
@@ -137,19 +118,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_alpaka = 0;
-    // uint64_t n_found_tracks = 0;
-    // uint64_t n_found_tracks_alpaka = 0;
-    // uint64_t n_fitted_tracks = 0;
-    // uint64_t n_fitted_tracks_alpaka = 0;
 
     /*****************************
      * Build a geometry
      *****************************/
-
-    // B field value and its type
-    // @TODO: Set B field as argument
-    // const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
-    // auto field = detray::bfield::create_const_field(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
@@ -169,17 +141,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::geometry surface_transforms =
         traccc::io::alt_read_geometry(host_det);
 
-    // Detector view object
-    // auto det_view = detray::get_data(host_det);
-
-    // Copy objects
-    // traccc::device::container_d2h_copy_alg<
-    //     traccc::track_candidate_container_types>
-    //     track_candidate_d2h{mr, copy};
-
-    // traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-    //     track_state_d2h{mr, copy};
-
     // Seeding algorithms
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
@@ -193,29 +154,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                                 mr,
                                                 copy};
     traccc::alpaka::track_params_estimation tp_alpaka{mr, copy};
-
-    // Finding algorithm configuration
-    // typename traccc::cuda::finding_algorithm<
-    //     rk_stepper_type, device_navigator_type>::config_type cfg;
-    // cfg.min_track_candidates_per_track =
-    // finding_opts.track_candidates_range[0];
-    // cfg.max_track_candidates_per_track =
-    // finding_opts.track_candidates_range[1]; cfg.chi2_max =
-    // finding_opts.chi2_max; propagation_opts.setup(cfg.propagation);
-
-    // // Finding algorithm object
-    // traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-    //     host_finding(cfg);
-    // traccc::alpaka::finding_algorithm<rk_stepper_type, device_navigator_type>
-    //     device_finding(cfg, mr, async_copy, stream);
-
-    // // Fitting algorithm object
-    // typename traccc::fitting_algorithm<host_fitter_type>::config_type
-    // fit_cfg; fit_cfg.propagation = propagation_opts.config;
-
-    // traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
-    // traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
-    //     fit_cfg, mr, async_copy, stream);
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -236,14 +174,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                                                   *(mr.host));
         traccc::bound_track_parameters_collection_types::buffer
             params_alpaka_buffer(0, *mr.host);
-
-        // traccc::track_candidate_container_types::buffer
-        //     track_candidates_alpaka_buffer{{{}, *(mr.host)},
-        //                                  {{}, *(mr.host), mr.host}};
-
-        // traccc::track_state_container_types::buffer
-        // track_states_alpaka_buffer{
-        //     {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -267,7 +197,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
             auto& spacepoints_per_event = sp_reader_output.spacepoints;
             auto& modules_per_event = sp_reader_output.modules;
-            // auto& measurements_per_event = meas_reader_output.measurements;
 
             /*----------------------------
                 Seeding algorithm

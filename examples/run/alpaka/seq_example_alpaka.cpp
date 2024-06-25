@@ -75,7 +75,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Output stats
     uint64_t n_cells = 0;
     uint64_t n_modules = 0;
-    // uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_spacepoints_alpaka = 0;
@@ -110,8 +109,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                  seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::alpaka::clusterization_algorithm ca_alpaka(
-        mr, copy, clusterization_opts.target_cells_per_partition);
+    traccc::alpaka::clusterization_algorithm ca_alpaka(mr, copy,
+                                                       clusterization_opts);
     traccc::alpaka::measurement_sorting_algorithm ms_alpaka(copy);
     traccc::alpaka::spacepoint_formation_algorithm sf_alpaka(mr, copy);
     traccc::alpaka::seeding_algorithm sa_alpaka(
