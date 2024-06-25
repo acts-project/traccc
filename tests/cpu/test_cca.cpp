@@ -10,6 +10,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
+#include "traccc/geometry/detector_description.hpp"
 
 // Test include(s).
 #include "tests/cca_test.hpp"
@@ -28,14 +29,15 @@ vecmem::host_memory_resource resource;
 traccc::host::clusterization_algorithm ca(resource);
 
 cca_function_t f = [](const traccc::cell_collection_types::host& cells,
-                      const traccc::cell_module_collection_types::host&
-                          modules) {
+                      const traccc::detector_description::host& dd) {
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
-    auto measurements = ca(vecmem::get_data(cells), vecmem::get_data(modules));
+    const traccc::detector_description::const_data dd_data =
+        vecmem::get_data(dd);
+    auto measurements = ca(vecmem::get_data(cells), dd_data);
     for (std::size_t i = 0; i < measurements.size(); i++) {
-        result[modules.at(measurements.at(i).module_link).surface_link.value()]
-            .push_back(measurements.at(i));
+        result[dd.geometry_id().at(measurements.at(i).module_link)].push_back(
+            measurements.at(i));
     }
 
     return result;
