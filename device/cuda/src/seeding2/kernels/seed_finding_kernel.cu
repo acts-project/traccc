@@ -9,24 +9,25 @@
 
 #include <iostream>
 #include <traccc/cuda/seeding2/kernels/seed_finding_kernel.hpp>
-#include <traccc/cuda/seeding2/types/internal_sp.hpp>
 #include <traccc/cuda/seeding2/types/kd_tree.hpp>
 #include <traccc/cuda/seeding2/types/range3d.hpp>
-#include <traccc/cuda/utils/definitions.hpp>
-#include <traccc/cuda/utils/device_traits.hpp>
 #include <traccc/cuda/utils/sort.hpp>
 #include <traccc/cuda/utils/sync.hpp>
-#include <traccc/edm/alt_seed.hpp>
 #include <traccc/edm/internal_spacepoint.hpp>
+#include <traccc/edm/seed.hpp>
 #include <traccc/edm/spacepoint.hpp>
 #include <traccc/seeding/detail/lin_circle.hpp>
+#include <traccc/seeding/detail/spacepoint_type.hpp>
 #include <traccc/seeding/doublet_finding_helper.hpp>
 #include <traccc/seeding/triplet_finding_helper.hpp>
+
+#include "../../utils/cuda_error_handling.hpp"
 
 #define MAX_LOWER_SP_PER_MIDDLE 100u
 #define MAX_UPPER_SP_PER_MIDDLE 100u
 #define KD_TREE_TRAVERSAL_STACK_SIZE 128u
 #define WARPS_PER_BLOCK 8u
+#define WARP_SIZE 32u
 
 /**
  * @brief Maximum difference in φ between two spacepoints adjacent in the same
@@ -65,10 +66,10 @@ namespace traccc::cuda {
  */
 __device__ void retrieve_from_tree(
     const seedfinder_config finder_conf, const seedfilter_config filter_conf,
-    const internal_sp_t spacepoints, const kd_tree_t tree,
-    const internal_spacepoint<spacepoint> mi, const range3d range,
-    uint32_t mi_idx, bool upper, uint32_t* __restrict__ output_arr,
-    uint32_t* __restrict__ output_cnt) {
+    const spacepoint_collection_types::const_device& spacepoints,
+    const kd_tree_t tree, const internal_spacepoint<spacepoint> mi,
+    const range3d range, uint32_t mi_idx, bool upper,
+    uint32_t* __restrict__ output_arr, uint32_t* __restrict__ output_cnt) {
     __shared__ uint32_t stack[WARPS_PER_BLOCK][KD_TREE_TRAVERSAL_STACK_SIZE];
     __shared__ uint32_t leaves[WARPS_PER_BLOCK][WARP_SIZE];
 
@@ -137,16 +138,15 @@ __device__ void retrieve_from_tree(
                  * are more specific than those encoded in the search
                  * range.
                  */
-                float phi = spacepoints[point_id].phi,
-                      radius = spacepoints[point_id].radius,
-                      z = spacepoints[point_id].z;
+                float phi = spacepoints[point_id].phi(),
+                      radius = spacepoints[point_id].radius(),
+                      z = spacepoints[point_id].z();
 
                 if (range.contains(phi, radius, z) && point_id != mi_idx &&
                     doublet_finding_helper::isCompatible(
                         upper, mi,
-                        internal_spacepoint<spacepoint>(
-                            spacepoints[point_id].x, spacepoints[point_id].y, z,
-                            radius, phi, spacepoints[point_id].link),
+                        internal_spacepoint<spacepoint>(spacepoints[point_id],
+                                                        point_id, {0., 0.}),
                         finder_conf)) {
                     /*
                      * Reserve a spot in the output for this point, and
@@ -195,24 +195,21 @@ __device__ void retrieve_from_tree(
  */
 __device__ internal_seed make_seed(
     const seedfinder_config finder_conf, const seedfilter_config filter_conf,
-    const internal_sp_t spacepoints, const kd_tree_t tree, uint32_t lower,
-    uint32_t middle, internal_spacepoint<spacepoint> mi, uint32_t upper) {
-    const internal_spacepoint<spacepoint> lo(
-        spacepoints[lower].x, spacepoints[lower].y, spacepoints[lower].z,
-        spacepoints[lower].radius, spacepoints[lower].phi,
-        spacepoints[lower].link);
-    const internal_spacepoint<spacepoint> hi(
-        spacepoints[upper].x, spacepoints[upper].y, spacepoints[upper].z,
-        spacepoints[upper].radius, spacepoints[upper].phi,
-        spacepoints[upper].link);
+    const spacepoint_collection_types::const_device& spacepoints,
+    const kd_tree_t tree, uint32_t lower, uint32_t middle,
+    internal_spacepoint<spacepoint> mi, uint32_t upper) {
+    const internal_spacepoint<spacepoint> lo(spacepoints[lower], lower,
+                                             {0., 0.});
+    const internal_spacepoint<spacepoint> hi(spacepoints[upper], upper,
+                                             {0., 0.});
 
     /*
      * Find the lin-circles for the bottom and top pair.
      */
     lin_circle lm = doublet_finding_helper::transform_coordinates<
-        details::spacepoint_type::bottom>(mi, lo);
+        ::traccc::details::spacepoint_type::bottom>(mi, lo);
     lin_circle mh = doublet_finding_helper::transform_coordinates<
-        details::spacepoint_type::top>(mi, hi);
+        ::traccc::details::spacepoint_type::top>(mi, hi);
 
     scalar iSinTheta2 = 1 + lm.cotTheta() * lm.cotTheta();
     scalar scatteringInRegion2 = finder_conf.maxScatteringAngle2 * iSinTheta2;
@@ -352,13 +349,11 @@ __device__ range3d get_upper_range3d(const seedfinder_config finder_conf,
  * @param[inout] internal_seeds The array to write internal seeds to.
  * @param[in] increasing_z True iff we are looking for increasing-z seeds.
  */
-__device__ void run_helper(const seedfinder_config finder_conf,
-                           const seedfilter_config filter_conf,
-                           const internal_sp_t spacepoints,
-                           const kd_tree_t tree,
-                           const internal_spacepoint<spacepoint> sp,
-                           std::size_t sp_idx, internal_seed* internal_seeds,
-                           bool increasing_z) {
+__device__ void run_helper(
+    const seedfinder_config finder_conf, const seedfilter_config filter_conf,
+    const spacepoint_collection_types::const_device& spacepoints,
+    const kd_tree_t tree, const internal_spacepoint<spacepoint> sp,
+    std::size_t sp_idx, internal_seed* internal_seeds, bool increasing_z) {
     cooperative_groups::thread_block block =
         cooperative_groups::this_thread_block();
     cooperative_groups::thread_block_tile<WARP_SIZE> warp =
@@ -528,11 +523,13 @@ __device__ void run_helper(const seedfinder_config finder_conf,
  * one-block-per-middle-SP fashion.
  *
  */
-__global__ void __launch_bounds__(WARP_SIZE* WARPS_PER_BLOCK)
-    seed_finding_kernel(const seedfinder_config finder_conf,
-                        const seedfilter_config filter_conf,
-                        const internal_sp_t spacepoints, const kd_tree_t tree,
-                        alt_seed* output_seeds, uint32_t* output_seed_size) {
+__global__ void seed_finding_kernel(
+    const seedfinder_config finder_conf, const seedfilter_config filter_conf,
+    const spacepoint_collection_types::const_view& _spacepoints,
+    const kd_tree_t tree, seed_collection_types::view _seeds) {
+    const spacepoint_collection_types::const_device spacepoints(_spacepoints);
+    seed_collection_types::device seeds(_seeds);
+
     cooperative_groups::thread_block block =
         cooperative_groups::this_thread_block();
     cooperative_groups::thread_block_tile<WARP_SIZE> warp =
@@ -548,19 +545,17 @@ __global__ void __launch_bounds__(WARP_SIZE* WARPS_PER_BLOCK)
      * ignore some of the middle spacepoint candidates.
      */
     if (spacepoint_id >= spacepoints.size() ||
-        spacepoints[spacepoint_id].phi < finder_conf.phiMin ||
-        spacepoints[spacepoint_id].phi > finder_conf.phiMax ||
-        spacepoints[spacepoint_id].radius < finder_conf.rMin ||
-        spacepoints[spacepoint_id].radius > finder_conf.rMax ||
-        spacepoints[spacepoint_id].z < finder_conf.zMin ||
-        spacepoints[spacepoint_id].z > finder_conf.zMax) {
+        spacepoints[spacepoint_id].phi() < finder_conf.phiMin ||
+        spacepoints[spacepoint_id].phi() > finder_conf.phiMax ||
+        spacepoints[spacepoint_id].radius() < finder_conf.rMin ||
+        spacepoints[spacepoint_id].radius() > finder_conf.rMax ||
+        spacepoints[spacepoint_id].z() < finder_conf.zMin ||
+        spacepoints[spacepoint_id].z() > finder_conf.zMax) {
         return;
     }
 
-    const internal_spacepoint<spacepoint> sp(
-        spacepoints[spacepoint_id].x, spacepoints[spacepoint_id].y,
-        spacepoints[spacepoint_id].z, spacepoints[spacepoint_id].radius,
-        spacepoints[spacepoint_id].phi, spacepoints[spacepoint_id].link);
+    const internal_spacepoint<spacepoint> sp(spacepoints[spacepoint_id],
+                                             spacepoint_id, {0., 0.});
 
     /*
      * The internal seeds are stored in this shared array.
@@ -614,7 +609,7 @@ __global__ void __launch_bounds__(WARP_SIZE* WARPS_PER_BLOCK)
          * Next, reserve space atomically in the output array for our new
          * seeds.
          */
-        uint32_t idx = atomicAdd(output_seed_size, num_valid);
+        uint32_t idx = seeds.bulk_append_implicit_unsafe(num_valid);
 
         /*
          * Finally, actually write the output to global memory. Again, this is
@@ -624,15 +619,15 @@ __global__ void __launch_bounds__(WARP_SIZE* WARPS_PER_BLOCK)
          * than invalid ones (if we have any).
          */
         for (uint32_t i = 0; i < num_valid; ++i) {
-            alt_seed& s = output_seeds[idx + i];
+            seed& s = seeds[idx + i];
             uint32_t j = WARP_SIZE + finder_conf.maxSeedsPerSpM - (i + 1);
 
             /*
              * Write the data back to the output.
              */
-            s.spB_link = spacepoints[internal_seeds[j].spacepoints[0]].link;
-            s.spM_link = spacepoints[spacepoint_id].link;
-            s.spT_link = spacepoints[internal_seeds[j].spacepoints[1]].link;
+            s.spB_link = internal_seeds[j].spacepoints[0];
+            s.spM_link = spacepoint_id;
+            s.spT_link = internal_seeds[j].spacepoints[1];
 
             s.weight = internal_seeds[i].weight;
             s.z_vertex = 0.f;
@@ -654,23 +649,29 @@ __global__ void __launch_bounds__(WARP_SIZE* WARPS_PER_BLOCK)
  * @return A unique pointer to an array of internal seeds, and the size of that
  * array.
  */
-std::pair<vecmem::unique_alloc_ptr<alt_seed[]>, uint32_t> run_seeding(
+seed_collection_types::buffer run_seeding(
     seedfinder_config finder_conf, seedfilter_config filter_conf,
-    vecmem::memory_resource& mr, const internal_sp_t spacepoints,
+    vecmem::memory_resource& mr, vecmem::copy& copy,
+    const spacepoint_collection_types::const_view& spacepoints,
     const kd_tree_t tree) {
+    std::size_t n_sp = copy.get_size(spacepoints);
+
     /*
      * Allocate space for output of seeds on the device.
      */
-    vecmem::unique_alloc_ptr<alt_seed[]> seeds_device =
-        vecmem::make_unique_alloc<alt_seed[]>(
-            mr, finder_conf.maxSeedsPerSpM * spacepoints.size());
+    std::size_t output_size = finder_conf.maxSeedsPerSpM * n_sp;
+
+    seed_collection_types::buffer seed_buffer(
+        output_size, mr, vecmem::data::buffer_type::resizable);
+    copy.setup(seed_buffer)->wait();
 
     /*
      * Allocate space for seed count on the device.
      */
     vecmem::unique_alloc_ptr<uint32_t> seed_count_device =
         vecmem::make_unique_alloc<uint32_t>(mr);
-    CUDA_ERROR_CHECK(cudaMemset(seed_count_device.get(), 0, sizeof(uint32_t)));
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemset(seed_count_device.get(), 0, sizeof(uint32_t)));
 
     /*
      * Calculate the total amount of shared memory on top of that which is
@@ -680,27 +681,19 @@ std::pair<vecmem::unique_alloc_ptr<alt_seed[]>, uint32_t> run_seeding(
     std::size_t total_shared_memory =
         (WARPS_PER_BLOCK * (WARP_SIZE + finder_conf.maxSeedsPerSpM)) *
         sizeof(internal_seed);
-    std::size_t grid_size = (spacepoints.size() / WARPS_PER_BLOCK) +
-                            (spacepoints.size() % WARPS_PER_BLOCK == 0 ? 0 : 1);
+    std::size_t grid_size =
+        (n_sp / WARPS_PER_BLOCK) + (n_sp % WARPS_PER_BLOCK == 0 ? 0 : 1);
     std::size_t block_size = WARPS_PER_BLOCK * WARP_SIZE;
 
     /*
      * Call the kernel and all that jazz.
      */
     seed_finding_kernel<<<grid_size, block_size, total_shared_memory>>>(
-        finder_conf, filter_conf, spacepoints, tree, seeds_device.get(),
-        seed_count_device.get());
+        finder_conf, filter_conf, spacepoints, tree, seed_buffer);
 
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    /*
-     * Transfer the seed count back to the host and then hand it to the user.
-     */
-    uint32_t seed_count_host;
-    CUDA_ERROR_CHECK(cudaMemcpy(&seed_count_host, seed_count_device.get(),
-                                sizeof(uint32_t), cudaMemcpyDeviceToHost));
-
-    return {std::move(seeds_device), seed_count_host};
+    return seed_buffer;
 }
 }  // namespace traccc::cuda

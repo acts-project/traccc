@@ -43,7 +43,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding2/seed_finding2.cu"
   "src/seeding2/kernels/seed_finding_kernel.cu"
   "src/seeding2/kernels/kd_tree_kernel.cu"
-  "src/seeding2/kernels/write_output_kernel.cu"
   # Clusterization
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"

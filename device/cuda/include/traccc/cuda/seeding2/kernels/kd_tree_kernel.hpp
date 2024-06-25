@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <traccc/cuda/seeding2/types/internal_sp.hpp>
 #include <traccc/cuda/seeding2/types/kd_tree.hpp>
 #include <traccc/edm/internal_spacepoint.hpp>
 #include <traccc/edm/spacepoint.hpp>
+#include <vecmem/utils/copy.hpp>
 #include <vector>
 
 namespace traccc::cuda {
@@ -19,6 +19,7 @@ namespace traccc::cuda {
  *
  * @return A pair containing the k-d tree nodes as well as the number of nodes.
  */
-std::tuple<kd_tree_owning_t, uint32_t, internal_sp_owning_t> create_kd_tree(
-    vecmem::memory_resource&, internal_sp_owning_t&&, uint32_t);
+std::tuple<kd_tree_owning_t, uint32_t, vecmem::data::vector_buffer<std::size_t>>
+create_kd_tree(vecmem::memory_resource&, vecmem::copy& copy,
+               const spacepoint_collection_types::const_view&);
 }  // namespace traccc::cuda

@@ -14,8 +14,6 @@
 #include <traccc/cuda/seeding2/seed_finding.hpp>
 #include <traccc/cuda/seeding2/types/kd_tree.hpp>
 #include <traccc/cuda/seeding2/types/range3d.hpp>
-#include <traccc/cuda/utils/definitions.hpp>
-#include <traccc/cuda/utils/device_traits.hpp>
 #include <traccc/cuda/utils/sort.hpp>
 #include <traccc/edm/seed.hpp>
 #include <traccc/edm/spacepoint.hpp>
@@ -24,6 +22,8 @@
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 #include <vector>
+
+#include "../../utils/cuda_error_handling.hpp"
 
 namespace traccc::cuda {
 /**
@@ -62,23 +62,24 @@ constexpr uint32_t AUXILIARY_INDEX_MASK = (1u << 31);
  *
  * @return The ϕ value of the spacepoint with the given index.
  */
-__device__ float get_coordinate(const internal_sp_t spacepoints, uint32_t i,
-                                pivot_e dim) {
+__device__ float get_coordinate(
+    const spacepoint_collection_types::const_device& spacepoints, uint32_t i,
+    pivot_e dim) {
     bool is_real = !(i & AUXILIARY_INDEX_MASK);
 
     if (is_real) {
         if (dim == pivot_e::Phi) {
-            return spacepoints[i].phi;
+            return spacepoints[i].phi();
         } else if (dim == pivot_e::R) {
-            return spacepoints[i].radius;
+            return spacepoints[i].radius();
         } else {
-            return spacepoints[i].z;
+            return spacepoints[i].z();
         }
     } else {
         uint32_t real_i = i & ~AUXILIARY_INDEX_MASK;
 
         if (dim == pivot_e::Phi) {
-            float phi = spacepoints[real_i].phi;
+            float phi = spacepoints[real_i].phi();
 
             if (phi >= 0) {
                 return phi - 2.f * static_cast<float>(M_PI);
@@ -86,9 +87,9 @@ __device__ float get_coordinate(const internal_sp_t spacepoints, uint32_t i,
                 return phi + 2.f * static_cast<float>(M_PI);
             }
         } else if (dim == pivot_e::R) {
-            return spacepoints[real_i].radius;
+            return spacepoints[real_i].radius();
         } else {
-            return spacepoints[real_i].z;
+            return spacepoints[real_i].z();
         }
     }
 }
@@ -105,10 +106,11 @@ __device__ float get_coordinate(const internal_sp_t spacepoints, uint32_t i,
  * @param[in] sps The total number of spacepoints.
  * @param[out] extra_indices The output halo point count.
  */
-__global__ void initialize_index_vector(internal_sp_t spacepoints,
-                                        uint32_t* __restrict__ indices,
-                                        uint32_t sps,
-                                        uint32_t* __restrict__ extra_indices) {
+__global__ void initialize_index_vector(
+    const spacepoint_collection_types::const_view& _spacepoints,
+    uint32_t* __restrict__ indices, uint32_t sps,
+    uint32_t* __restrict__ extra_indices) {
+    const spacepoint_collection_types::const_device spacepoints(_spacepoints);
     cooperative_groups::grid_group grid = cooperative_groups::this_grid();
 
     if (grid.thread_rank() < sps) {
@@ -196,9 +198,9 @@ __device__ pivot_e next_pivot(pivot_e p) {
  * @return The approximate median value of the given indices in the given
  * pivot axis.
  */
-__device__ float get_approximate_median(internal_sp_t spacepoints,
-                                        const uint32_t* __restrict__ indices,
-                                        uint32_t num_indices, pivot_e pivot) {
+__device__ float get_approximate_median(
+    const spacepoint_collection_types::const_device& spacepoints,
+    const uint32_t* __restrict__ indices, uint32_t num_indices, pivot_e pivot) {
     cooperative_groups::thread_block block =
         cooperative_groups::this_thread_block();
 
@@ -255,10 +257,10 @@ __device__ float get_approximate_median(internal_sp_t spacepoints,
  * @param[in] num_indices The number of indices for this function call.
  * @param[in] pivot The requested pivot axis.
  */
-__device__ uint32_t sort_and_get_median(internal_sp_t spacepoints,
-                                        const uint32_t* __restrict__ indices,
-                                        uint32_t* __restrict__ index_buffer,
-                                        uint32_t num_indices, pivot_e pivot) {
+__device__ uint32_t sort_and_get_median(
+    const spacepoint_collection_types::const_device& spacepoints,
+    const uint32_t* __restrict__ indices, uint32_t* __restrict__ index_buffer,
+    uint32_t num_indices, pivot_e pivot) {
     cooperative_groups::thread_block block =
         cooperative_groups::this_thread_block();
 
@@ -299,10 +301,11 @@ __device__ uint32_t sort_and_get_median(internal_sp_t spacepoints,
  * @param[in] nid The node index.
  * @param[in] pivot The requested pivot axis.
  */
-__device__ bool create_internal_node(kd_tree_t tree, internal_sp_t spacepoints,
-                                     const uint32_t* __restrict__ indices,
-                                     uint32_t* __restrict__ index_buffer,
-                                     int nid, pivot_e pivot) {
+__device__ bool create_internal_node(
+    kd_tree_t tree,
+    const spacepoint_collection_types::const_device& spacepoints,
+    const uint32_t* __restrict__ indices, uint32_t* __restrict__ index_buffer,
+    int nid, pivot_e pivot) {
     cooperative_groups::thread_block block =
         cooperative_groups::this_thread_block();
 
@@ -468,16 +471,16 @@ __device__ bool create_internal_node(kd_tree_t tree, internal_sp_t spacepoints,
  * @param[inout] _index_buffer Temporary buffer space for indices.
  * @param[in] iteration The iteration count.
  */
-__global__ void __launch_bounds__(512)
-    construct_kd_tree_big_step(kd_tree_t tree, uint32_t num_nodes,
-                               internal_sp_t spacepoints,
-                               const uint32_t* __restrict__ _indices_old,
-                               uint32_t* __restrict__ _indices_new,
-                               uint32_t iteration,
-                               uint32_t* __restrict__ work_list_current,
-                               uint32_t* __restrict__ work_list_size_current,
-                               uint32_t* __restrict__ work_list_next,
-                               uint32_t* __restrict__ work_list_size_next) {
+__global__ void construct_kd_tree_big_step(
+    kd_tree_t tree, uint32_t num_nodes,
+    const spacepoint_collection_types::const_view& _spacepoints,
+    const uint32_t* __restrict__ _indices_old,
+    uint32_t* __restrict__ _indices_new, uint32_t iteration,
+    uint32_t* __restrict__ work_list_current,
+    uint32_t* __restrict__ work_list_size_current,
+    uint32_t* __restrict__ work_list_next,
+    uint32_t* __restrict__ work_list_size_next) {
+    const spacepoint_collection_types::const_device spacepoints(_spacepoints);
     cooperative_groups::thread_block block =
         cooperative_groups::this_thread_block();
 
@@ -556,16 +559,16 @@ __global__ void __launch_bounds__(512)
     }
 }
 
-__global__ void __launch_bounds__(96)
-    construct_kd_tree_small_step(kd_tree_t tree, uint32_t num_nodes,
-                                 internal_sp_t spacepoints,
-                                 const uint32_t* __restrict__ _indices_old,
-                                 uint32_t* __restrict__ _indices_new,
-                                 uint32_t iteration,
-                                 uint32_t* __restrict__ work_list_current,
-                                 uint32_t* __restrict__ work_list_size_current,
-                                 uint32_t* __restrict__ work_list_next,
-                                 uint32_t* __restrict__ work_list_size_next) {
+__global__ void construct_kd_tree_small_step(
+    kd_tree_t tree, uint32_t num_nodes,
+    const spacepoint_collection_types::const_view& _spacepoints,
+    const uint32_t* __restrict__ _indices_old,
+    uint32_t* __restrict__ _indices_new, uint32_t iteration,
+    uint32_t* __restrict__ work_list_current,
+    uint32_t* __restrict__ work_list_size_current,
+    uint32_t* __restrict__ work_list_next,
+    uint32_t* __restrict__ work_list_size_next) {
+    const spacepoint_collection_types::const_device spacepoints(_spacepoints);
     cooperative_groups::thread_block block =
         cooperative_groups::this_thread_block();
 
@@ -654,28 +657,11 @@ uint32_t round_to_power_2(uint32_t i) {
     return power;
 }
 
-__global__ void bake_spacepoints_kernel(uint32_t n, internal_sp_t oldsps,
-                                        internal_sp_t newsps,
-                                        uint32_t* __restrict__ indices) {
-    cooperative_groups::grid_group grid = cooperative_groups::this_grid();
+std::tuple<kd_tree_owning_t, uint32_t, vecmem::data::vector_buffer<std::size_t>>
+create_kd_tree(vecmem::memory_resource& mr, vecmem::copy& copy,
+               const spacepoint_collection_types::const_view& spacepoints) {
+    std::size_t n_sp = copy.get_size(spacepoints);
 
-    uint32_t i = grid.thread_rank();
-
-    if (i < n) {
-        uint32_t ni = indices[i] & ~AUXILIARY_INDEX_MASK;
-
-        newsps[i].x = oldsps[ni].x;
-        newsps[i].y = oldsps[ni].y;
-        newsps[i].z = oldsps[ni].z;
-        newsps[i].phi = oldsps[ni].phi;
-        newsps[i].radius = oldsps[ni].radius;
-        newsps[i].link = oldsps[ni].link;
-    }
-}
-
-std::tuple<kd_tree_owning_t, uint32_t, internal_sp_owning_t> create_kd_tree(
-    vecmem::memory_resource& mr, internal_sp_owning_t&& spacepoints,
-    uint32_t n_sp) {
     /*
      * Allocate space for the indices. Since each spacepoint can produce at
      * most two indices, we allocate enough space to support this theoretical
@@ -691,7 +677,8 @@ std::tuple<kd_tree_owning_t, uint32_t, internal_sp_owning_t> create_kd_tree(
     vecmem::unique_alloc_ptr<uint32_t> extra_indices =
         vecmem::make_unique_alloc<uint32_t>(mr);
 
-    CUDA_ERROR_CHECK(cudaMemset(extra_indices.get(), 0, sizeof(uint32_t)));
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemset(extra_indices.get(), 0, sizeof(uint32_t)));
 
     /*
      * Launch the index initialization kernel, which turns n spacepoints into
@@ -703,16 +690,17 @@ std::tuple<kd_tree_owning_t, uint32_t, internal_sp_owning_t> create_kd_tree(
                               threads_per_block1>>>(spacepoints, indices.get(),
                                                     n_sp, extra_indices.get());
 
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     /*
      * Retrieve the number of halo points from the device.
      */
     uint32_t extra_indices_h;
 
-    CUDA_ERROR_CHECK(cudaMemcpy(&extra_indices_h, extra_indices.get(),
-                                sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    TRACCC_CUDA_ERROR_CHECK(cudaMemcpy(&extra_indices_h, extra_indices.get(),
+                                       sizeof(uint32_t),
+                                       cudaMemcpyDeviceToHost));
 
     /*
      * The total number of indices is equal to the number of spacepoints plus
@@ -743,8 +731,10 @@ std::tuple<kd_tree_owning_t, uint32_t, internal_sp_owning_t> create_kd_tree(
     vecmem::unique_alloc_ptr<uint32_t> work_list_size_2 =
         vecmem::make_unique_alloc<uint32_t>(mr);
 
-    CUDA_ERROR_CHECK(cudaMemset(work_list_size_1.get(), 0, sizeof(uint32_t)));
-    CUDA_ERROR_CHECK(cudaMemset(work_list_size_2.get(), 0, sizeof(uint32_t)));
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemset(work_list_size_1.get(), 0, sizeof(uint32_t)));
+    TRACCC_CUDA_ERROR_CHECK(
+        cudaMemset(work_list_size_2.get(), 0, sizeof(uint32_t)));
 
     /*
      * Run the initialization kernel for the tree itself, which sets the
@@ -757,8 +747,8 @@ std::tuple<kd_tree_owning_t, uint32_t, internal_sp_owning_t> create_kd_tree(
                                                num_indices, work_list_1.get(),
                                                work_list_size_1.get());
 
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     /*
      * Allocate some temporary space for the index buffer, one half for "lower"
@@ -801,33 +791,25 @@ std::tuple<kd_tree_owning_t, uint32_t, internal_sp_owning_t> create_kd_tree(
                 work_list_size_2.get());
         }
 
-        CUDA_ERROR_CHECK(cudaGetLastError());
-        CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        TRACCC_CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
         iteration++;
 
-        CUDA_ERROR_CHECK(cudaMemcpy(&remaining, work_list_size_2.get(),
-                                    sizeof(uint32_t), cudaMemcpyDeviceToHost));
+        TRACCC_CUDA_ERROR_CHECK(cudaMemcpy(&remaining, work_list_size_2.get(),
+                                           sizeof(uint32_t),
+                                           cudaMemcpyDeviceToHost));
 
         std::swap(work_list_1, work_list_2);
         std::swap(work_list_size_1, work_list_size_2);
         std::swap(indices, index_buffer);
 
-        CUDA_ERROR_CHECK(
+        TRACCC_CUDA_ERROR_CHECK(
             cudaMemset(work_list_size_2.get(), 0, sizeof(uint32_t)));
     }
 
-    internal_sp_owning_t new_sps(mr, num_indices);
+    vecmem::data::vector_buffer<std::size_t> out;
 
-    bake_spacepoints_kernel<<<
-        num_indices / 1024u + (num_indices % 1024u == 0u ? 0u : 1u), 1024u>>>(
-        num_indices, internal_sp_t(spacepoints), internal_sp_t(new_sps),
-        indices.get());
-
-    CUDA_ERROR_CHECK(cudaGetLastError());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
-    return {kd_tree_owning_t{std::move(tree_owner)}, num_nodes,
-            std::move(new_sps)};
+    return {kd_tree_owning_t{std::move(tree_owner)}, num_nodes, std::move(out)};
 }
 }  // namespace traccc::cuda
