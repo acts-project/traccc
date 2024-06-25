@@ -6,9 +6,9 @@
  */
 
 // Local include(s).
+#include "../utils/barrier.hpp"
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
-#include "traccc/sycl/utils/barrier.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"

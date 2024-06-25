@@ -43,7 +43,8 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =
-        detray::random_numbers<scalar, std::uniform_real_distribution<scalar>>;
+        detray::detail::random_numbers<scalar,
+                                       std::uniform_real_distribution<scalar>>;
 
     // Memory resource
     vecmem::host_memory_resource host_mr;
@@ -132,7 +133,7 @@ int simulate(const traccc::opts::generation& generation_opts,
                                  writer_type>(
         generation_opts.events, det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
-    sim.get_config().propagation = propagation_opts.config;
+    sim.get_config().propagation = propagation_opts;
 
     sim.run();
 

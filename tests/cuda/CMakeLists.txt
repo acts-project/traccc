@@ -28,6 +28,7 @@ traccc_add_test(
 
     # Define the sources for the test.
     test_basic.cu
+    test_barrier.cu
     test_cca.cpp
     test_ckf_combinatorics_telescope.cpp
     test_ckf_toy_detector.cpp
@@ -39,6 +40,8 @@ traccc_add_test(
     test_thrust.cu
     test_sync.cu
     test_array_wrapper.cu
+    test_mutex.cu
+    test_unique_lock.cu
 
     LINK_LIBRARIES
     CUDA::cudart

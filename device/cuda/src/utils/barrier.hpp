@@ -17,7 +17,13 @@ struct barrier {
     void blockBarrier() { __syncthreads(); }
 
     TRACCC_DEVICE
+    bool blockAnd(bool predicate) { return __syncthreads_and(predicate); }
+
+    TRACCC_DEVICE
     bool blockOr(bool predicate) { return __syncthreads_or(predicate); }
+
+    TRACCC_DEVICE
+    int blockCount(bool predicate) { return __syncthreads_count(predicate); }
 };
 
 }  // namespace traccc::cuda

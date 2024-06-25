@@ -7,14 +7,14 @@
 
 #include <gtest/gtest.h>
 
+#include <CL/sycl.hpp>
 #include <functional>
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/memory/sycl/device_memory_resource.hpp>
+#include <vecmem/utils/sycl/async_copy.hpp>
 
 #include "tests/cca_test.hpp"
-#include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
 namespace {
 
@@ -24,11 +24,11 @@ cca_function_t f = [](const traccc::cell_collection_types::host& cells,
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
     vecmem::host_memory_resource host_mr;
-    traccc::cuda::stream stream;
-    vecmem::cuda::device_memory_resource device_mr;
-    vecmem::cuda::async_copy copy{stream.cudaStream()};
+    cl::sycl::queue queue;
+    vecmem::sycl::device_memory_resource device_mr;
+    vecmem::sycl::async_copy copy{&queue};
 
-    traccc::cuda::clusterization_algorithm cc({device_mr}, copy, stream, 1024);
+    traccc::sycl::clusterization_algorithm cc({device_mr}, copy, &queue, 1024);
 
     traccc::cell_collection_types::buffer cells_buffer{
         static_cast<traccc::cell_collection_types::buffer::size_type>(
@@ -62,7 +62,7 @@ TEST_P(ConnectedComponentAnalysisTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    CUDAFastSvAlgorithm, ConnectedComponentAnalysisTests,
+    SYCLFastSvAlgorithm, ConnectedComponentAnalysisTests,
     ::testing::Combine(
         ::testing::Values(f),
         ::testing::ValuesIn(ConnectedComponentAnalysisTests::get_test_files())),

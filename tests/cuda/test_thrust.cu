@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,7 +32,7 @@ vecmem::cuda::device_memory_resource device_resource;
 
 }  // namespace
 
-TEST(thrust, sort) {
+TEST(CUDAThrust, sort) {
 
     vecmem::vector<unsigned int> host_vector{{3, 2, 1, 8, 4}, &host_resource};
 
@@ -53,7 +53,7 @@ TEST(thrust, sort) {
     ASSERT_EQ(host_vector[4], 8);
 }
 
-TEST(thrust, scan) {
+TEST(CUDAThrust, scan) {
 
     vecmem::vector<unsigned int> host_vector{{3, 2, 1, 8, 4}, &host_resource};
 
@@ -75,7 +75,7 @@ TEST(thrust, scan) {
     ASSERT_EQ(host_vector[4], 18);
 }
 
-TEST(thrust, fill) {
+TEST(CUDAThrust, fill) {
 
     vecmem::vector<unsigned int> host_vector{{1, 1, 1, 1, 1, 1, 1},
                                              &host_resource};

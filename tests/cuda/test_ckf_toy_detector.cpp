@@ -238,21 +238,21 @@ TEST_P(CkfToyDetectorTests, Run) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    CkfToyDetectorValidation0, CkfToyDetectorTests,
-    ::testing::Values(std::make_tuple(
-        "toy_n_particles_1", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{1.f, 100.f}, std::array<scalar, 2u>{-4.f, 4.f},
-        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                               detray::constant<scalar>::pi},
-        -1.f, 1, 1)));
-
-INSTANTIATE_TEST_SUITE_P(
-    CkfToyDetectorValidation1, CkfToyDetectorTests,
-    ::testing::Values(std::make_tuple(
-        "toy_n_particles_10000", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{1.f, 100.f}, std::array<scalar, 2u>{-4.f, 4.f},
-        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                               detray::constant<scalar>::pi},
-        -1.f, 10000, 1)));
+    CUDACkfToyDetectorValidation, CkfToyDetectorTests,
+    ::testing::Values(
+        std::make_tuple("toy_n_particles_1",
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 2u>{1.f, 100.f},
+                        std::array<scalar, 2u>{-4.f, 4.f},
+                        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
+                                               detray::constant<scalar>::pi},
+                        -1.f, 1, 1),
+        std::make_tuple("toy_n_particles_10000",
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 2u>{1.f, 100.f},
+                        std::array<scalar, 2u>{-4.f, 4.f},
+                        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
+                                               detray::constant<scalar>::pi},
+                        -1.f, 10000, 1)));

@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/options/details/config_provider.hpp"
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
@@ -17,17 +18,10 @@
 namespace traccc::opts {
 
 /// Command line options used in the propagation tests
-class track_propagation : public interface {
+class track_propagation : public interface,
+                          public config_provider<detray::propagation::config> {
 
     public:
-    /// @name Options
-    /// @{
-
-    /// Propagation configuration object
-    detray::propagation::config config;
-
-    /// @}
-
     /// Constructor
     track_propagation();
 
@@ -37,7 +31,16 @@ class track_propagation : public interface {
     ///
     void read(const boost::program_options::variables_map& vm) override;
 
+    /// Configuration provider
+    operator detray::propagation::config() const override;
+
     private:
+    /// @name Options
+    /// @{
+    /// Propagation configuration object
+    detray::propagation::config config;
+    /// @}
+
     /// Print the specific options of this class
     std::ostream& print_impl(std::ostream& out) const override;
 
