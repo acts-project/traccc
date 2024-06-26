@@ -28,7 +28,7 @@ namespace kernels {
 /// CUDA kernel for running @c traccc::device::ccl_kernel
 __global__ void ccl_kernel(
     const cell_collection_types::const_view cells_view,
-    const detector_description::const_view& det_descr_view,
+    const detector_description::const_view det_descr_view,
     const device::details::index_t max_cells_per_partition,
     const device::details::index_t target_cells_per_partition,
     measurement_collection_types::view measurements_view,

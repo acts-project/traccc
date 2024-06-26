@@ -92,7 +92,7 @@ template <device::concepts::barrier barrier_t>
 TRACCC_DEVICE inline void ccl_kernel(
     details::index_t threadId, details::index_t blckDim, unsigned int blockId,
     const cell_collection_types::const_view& cells_view,
-    const detector_description::const_device& det_descr_view,
+    const detector_description::const_view& det_descr_view,
     const details::index_t max_cells_per_partition,
     const details::index_t target_cells_per_partition,
     unsigned int& partition_start, unsigned int& partition_end,
