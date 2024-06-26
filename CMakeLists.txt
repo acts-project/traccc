@@ -66,6 +66,9 @@ option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
 option( TRACCC_USE_ROOT "Use ROOT in the build (if needed)" TRUE )
 
+# Flag enforcing concept usage.
+option( TRACCC_ENFORCE_CONCEPTS "Throw an error if concepts are not available" FALSE )
+
 # Clean up.
 unset( TRACCC_BUILD_CUDA_DEFAULT )
 

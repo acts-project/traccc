@@ -9,6 +9,7 @@
 
 #include "traccc/clusterization/device/aggregate_cluster.hpp"
 #include "traccc/clusterization/device/reduce_problem_cell.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 
 namespace traccc::device {
 
@@ -32,13 +33,13 @@ namespace traccc::device {
 ///                     iteration.
 /// @param[in] barrier  A generic object for block-wide synchronisation
 ///
-template <typename barrier_t>
+template <TRACCC_CONSTRAINT(concepts::barrier) barrier_t,
+          TRACCC_CONSTRAINT(concepts::thread_id1) thread_id_t>
 TRACCC_DEVICE void fast_sv_1(
-    vecmem::device_vector<details::index_t>& f,
+    const thread_id_t& thread_id, vecmem::device_vector<details::index_t>& f,
     vecmem::device_vector<details::index_t>& gf,
     unsigned char adjc[details::MAX_CELLS_PER_THREAD],
     details::index_t adjv[details::MAX_CELLS_PER_THREAD][8],
-    const details::index_t tid, const details::index_t blckDim,
     barrier_t& barrier) {
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
@@ -63,7 +64,8 @@ TRACCC_DEVICE void fast_sv_1(
          */
         for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD;
              ++tst) {
-            const details::index_t cid = tst * blckDim + tid;
+            const details::index_t cid =
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
 
             __builtin_assume(adjc[tst] <= 8);
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
@@ -85,7 +87,8 @@ TRACCC_DEVICE void fast_sv_1(
 #pragma unroll
         for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD;
              ++tst) {
-            const details::index_t cid = tst * blckDim + tid;
+            const details::index_t cid =
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
             /*
              * The second stage is shortcutting, which is an optimisation that
              * allows us to look at any shortcuts in the cluster IDs that we
@@ -104,7 +107,8 @@ TRACCC_DEVICE void fast_sv_1(
 #pragma unroll
         for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD;
              ++tst) {
-            const details::index_t cid = tst * blckDim + tid;
+            const details::index_t cid =
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
             /*
              * Update the array for the next generation, keeping track of any
              * changes we make.
@@ -125,10 +129,10 @@ TRACCC_DEVICE void fast_sv_1(
     } while (barrier.blockOr(gf_changed));
 }
 
-template <typename barrier_t>
+template <TRACCC_CONSTRAINT(concepts::barrier) barrier_t,
+          TRACCC_CONSTRAINT(concepts::thread_id1) thread_id_t>
 TRACCC_DEVICE inline void ccl_kernel(
-    const details::index_t threadId, const details::index_t blckDim,
-    const unsigned int blockId,
+    const thread_id_t& thread_id,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     const details::index_t max_cells_per_partition,
@@ -158,8 +162,9 @@ TRACCC_DEVICE inline void ccl_kernel(
      * (to a later point in the array); start and end may be moved different
      * amounts.
      */
-    if (threadId == 0) {
-        unsigned int start = blockId * target_cells_per_partition;
+    if (thread_id.getLocalThreadIdX() == 0) {
+        unsigned int start =
+            thread_id.getBlockIdX() * target_cells_per_partition;
         assert(start < num_cells);
         unsigned int end =
             std::min(num_cells, start + target_cells_per_partition);
@@ -222,7 +227,9 @@ TRACCC_DEVICE inline void ccl_kernel(
         adjc[tst] = 0;
     }
 
-    for (details::index_t tst = 0, cid; (cid = tst * blckDim + threadId) < size;
+    for (details::index_t tst = 0, cid;
+         (cid = tst * thread_id.getBlockDimX() +
+                thread_id.getLocalThreadIdX()) < size;
          ++tst) {
         /*
          * Look for adjacent cells to the current one.
@@ -234,7 +241,8 @@ TRACCC_DEVICE inline void ccl_kernel(
 
 #pragma unroll
     for (details::index_t tst = 0; tst < details::MAX_CELLS_PER_THREAD; ++tst) {
-        const details::index_t cid = tst * blckDim + threadId;
+        const details::index_t cid =
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
         /*
          * At the start, the values of f and gf should be equal to the
          * ID of the cell.
@@ -253,11 +261,13 @@ TRACCC_DEVICE inline void ccl_kernel(
      * Run FastSV algorithm, which will update the father index to that of
      * the cell belonging to the same cluster with the lowest index.
      */
-    fast_sv_1(f, gf, adjc, adjv, threadId, blckDim, barrier);
+    fast_sv_1(thread_id, f, gf, adjc, adjv, barrier);
 
     barrier.blockBarrier();
 
-    for (details::index_t tst = 0, cid; (cid = tst * blckDim + threadId) < size;
+    for (details::index_t tst = 0, cid;
+         (cid = tst * thread_id.getBlockDimX() +
+                thread_id.getLocalThreadIdX()) < size;
          ++tst) {
         if (f.at(cid) == cid) {
             // Add a new measurement to the output buffer. Remembering its
