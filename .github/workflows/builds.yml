@@ -35,7 +35,7 @@ jobs:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:48
             cxx_standard: "20"
-            options: -DTRACCC_USE_ROOT=FALSE
+            options: -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE
           - name: HIP
             container: ghcr.io/acts-project/ubuntu2004_rocm:47
             cxx_standard: "17"
@@ -47,7 +47,7 @@ jobs:
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2204_cuda:48
             cxx_standard: "20"
-            options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_USE_ROOT=FALSE
+            options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
           - name: SYCL
             container: ghcr.io/acts-project/ubuntu2004_oneapi:47
             cxx_standard: "17"
