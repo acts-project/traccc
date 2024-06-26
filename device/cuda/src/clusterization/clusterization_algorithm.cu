@@ -10,6 +10,7 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/utils/thread_id.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
@@ -38,12 +39,12 @@ __global__ void ccl_kernel(
     vecmem::data::vector_view<device::details::index_t> gf_view{
         max_cells_per_partition, shared_v + max_cells_per_partition};
     traccc::cuda::barrier barry_r;
+    const cuda::thread_id1 thread_id;
 
-    device::ccl_kernel(threadIdx.x, blockDim.x, blockIdx.x, cells_view,
-                       modules_view, max_cells_per_partition,
-                       target_cells_per_partition, partition_start,
-                       partition_end, outi, f_view, gf_view, barry_r,
-                       measurements_view, cell_links);
+    device::ccl_kernel(thread_id, cells_view, modules_view,
+                       max_cells_per_partition, target_cells_per_partition,
+                       partition_start, partition_end, outi, f_view, gf_view,
+                       barry_r, measurements_view, cell_links);
 }
 
 }  // namespace kernels

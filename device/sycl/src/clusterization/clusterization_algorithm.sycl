@@ -9,6 +9,7 @@
 #include "../utils/barrier.hpp"
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/utils/thread_id.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
@@ -103,15 +104,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
                     // Barrier used in the algorithm.
                     traccc::sycl::barrier barry_r(item);
+                    const sycl::thread_id1 thread_id(item);
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(
-                        item.get_local_linear_id(), item.get_local_range(0),
-                        item.get_group_linear_id(), cells_view, modules_view,
-                        helper.max_cells_per_partition,
-                        target_cells_per_partition, partition_start,
-                        partition_end, outi, f_view, gf_view, barry_r,
-                        measurements_view, cell_links_view);
+                    device::ccl_kernel(thread_id, cells_view, modules_view,
+                                       helper.max_cells_per_partition,
+                                       target_cells_per_partition,
+                                       partition_start, partition_end, outi,
+                                       f_view, gf_view, barry_r,
+                                       measurements_view, cell_links_view);
                 });
         })
         .wait_and_throw();

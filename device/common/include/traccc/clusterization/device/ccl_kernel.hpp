@@ -8,8 +8,10 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/concepts.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/barrier.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -86,9 +88,10 @@ struct ccl_kernel_helper {
 /// @param[out] measurements_view collection of measurements
 /// @param[out] cell_links    collection of links to measurements each cell is
 /// put into
-template <TRACCC_CONSTRAINT(device::concepts::barrier) barrier_t>
+template <TRACCC_CONSTRAINT(concepts::barrier) barrier_t,
+          TRACCC_CONSTRAINT(concepts::thread_id1) thread_id_t>
 TRACCC_DEVICE inline void ccl_kernel(
-    details::index_t threadId, details::index_t blckDim, unsigned int blockId,
+    const thread_id_t& thread_id,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     const details::index_t max_cells_per_partition,
