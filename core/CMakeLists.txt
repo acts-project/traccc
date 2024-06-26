@@ -110,3 +110,11 @@ target_link_libraries( traccc_core
 # CUDA or HIP backend with SYCL.
 target_compile_definitions( traccc_core
   PUBLIC $<$<COMPILE_LANGUAGE:SYCL>:EIGEN_NO_CUDA EIGEN_NO_HIP> )
+
+if ( TRACCC_ENFORCE_CONCEPTS )
+  target_compile_definitions(
+    traccc_core
+    PUBLIC
+    TRACCC_ENFORCE_CONCEPTS
+  )
+endif ()
