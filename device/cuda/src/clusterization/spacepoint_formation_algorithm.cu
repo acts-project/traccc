@@ -18,7 +18,7 @@ namespace kernels {
 
 __global__ void form_spacepoints(
     measurement_collection_types::const_view measurements_view,
-    const detector_description::const_view& det_descr_view,
+    const detector_description::const_view det_descr_view,
     const unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view) {
 

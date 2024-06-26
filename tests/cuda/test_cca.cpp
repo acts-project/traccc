@@ -16,12 +16,13 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
+#include "traccc/geometry/detector_description.hpp"
 
 namespace {
 
 cca_function_t get_f_with(traccc::clustering_config cfg) {
     return [cfg](const traccc::cell_collection_types::host& cells,
-                 const traccc::cell_module_collection_types::host& modules) {
+                 const traccc::detector_description::host& dd) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
@@ -33,6 +34,15 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         traccc::cuda::clusterization_algorithm cc({device_mr}, copy, stream,
                                                   cfg);
 
+        traccc::detector_description::buffer dd_buffer{
+            static_cast<traccc::detector_description::buffer::size_type>(
+                dd.size()),
+            device_mr};
+        copy.setup(dd_buffer)->ignore();
+        copy(vecmem::get_data(dd), dd_buffer,
+             vecmem::copy::type::host_to_device)
+            ->ignore();
+
         traccc::cell_collection_types::buffer cells_buffer{
             static_cast<traccc::cell_collection_types::buffer::size_type>(
                 cells.size()),
@@ -40,21 +50,12 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         copy.setup(cells_buffer)->wait();
         copy(vecmem::get_data(cells), cells_buffer)->wait();
 
-        traccc::cell_module_collection_types::buffer modules_buffer{
-            static_cast<
-                traccc::cell_module_collection_types::buffer::size_type>(
-                modules.size()),
-            device_mr};
-        copy.setup(modules_buffer)->wait();
-        copy(vecmem::get_data(modules), modules_buffer)->wait();
-
-        auto measurements_buffer = cc(cells_buffer, modules_buffer);
+        auto measurements_buffer = cc(cells_buffer, dd_buffer);
         traccc::measurement_collection_types::host measurements{&host_mr};
         copy(measurements_buffer, measurements)->wait();
 
         for (std::size_t i = 0; i < measurements.size(); i++) {
-            result[modules.at(measurements.at(i).module_link)
-                       .surface_link.value()]
+            result[dd.geometry_id().at(measurements.at(i).module_link)]
                 .push_back(measurements.at(i));
         }
 

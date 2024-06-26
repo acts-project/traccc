@@ -10,6 +10,7 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
+#include "traccc/geometry/detector_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
@@ -45,21 +46,27 @@ TEST(CUDAClustering, SingleModule) {
     cells.push_back({7u, 5u, 1.f, 0, 0});
     cells.push_back({6u, 6u, 1.f, 0, 0});
 
-    // Create module collection
-    traccc::cell_module_collection_types::host modules{&mng_mr};
-    modules.push_back({});
+    // Create a dummy detector description.
+    traccc::detector_description::host dd{mng_mr};
+    dd.resize(1u);
+    dd.reference_x()[0] = 0.f;
+    dd.reference_y()[0] = 0.f;
+    dd.pitch_x()[0] = 1.f;
+    dd.pitch_y()[0] = 1.f;
+    dd.dimensions()[0] = 2;
+    dd.surface_link()[0] = detray::geometry::barcode{0u};
 
     // Run Clusterization
     traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream,
                                                    default_ccl_test_config());
 
     auto measurements_buffer =
-        ca_cuda(vecmem::get_data(cells), vecmem::get_data(modules));
+        ca_cuda(vecmem::get_data(cells), vecmem::get_data(dd));
 
     measurement_collection_types::device measurements(measurements_buffer);
 
     // Check the results
-    EXPECT_EQ(copy.get_size(measurements_buffer), 2u);
+    ASSERT_EQ(copy.get_size(measurements_buffer), 2u);
     std::set<measurement> test;
     test.insert(measurements[0]);
     test.insert(measurements[1]);
