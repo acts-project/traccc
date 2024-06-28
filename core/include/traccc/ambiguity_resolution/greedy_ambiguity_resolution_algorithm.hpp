@@ -121,6 +121,16 @@ class greedy_ambiguity_resolution_algorithm
         const typename track_state_container_types::host& track_states)
         const override;
 
+    /// Run the algorithm
+    ///
+    /// @param track_states the container of the fitted track parameters
+    /// @param selected_indexes output (if != nullptr) for the selected track
+    /// indexes
+    /// @return the container without ambiguous tracks
+    track_state_container_types::host operator()(
+        const typename track_state_container_types::host& track_states,
+        std::vector<std::size_t>* selected_indexes) const;
+
     private:
     /// Computes the initial state for the input data. This function accumulates
     /// information that will later be used to accelerate the ambiguity
