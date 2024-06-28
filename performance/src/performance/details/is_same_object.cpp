@@ -11,6 +11,9 @@
 #include "traccc/performance/details/is_same_angle.hpp"
 #include "traccc/performance/details/is_same_scalar.hpp"
 
+// System include(s).
+#include <cmath>
+
 namespace traccc::details {
 
 /// @name Implementation for @c traccc::details::is_same_object<measurement>
@@ -23,8 +26,8 @@ bool is_same_object<measurement>::operator()(const measurement& obj) const {
 
     return (is_same_scalar(obj.local[0], m_ref.get().local[0], m_unc) &&
             is_same_scalar(obj.local[1], m_ref.get().local[1], m_unc) &&
-            is_same_scalar(obj.variance[0], m_ref.get().variance[0], m_unc) &&
-            is_same_scalar(obj.variance[1], m_ref.get().variance[1], m_unc) &&
+            (std::abs(obj.variance[0] - m_ref.get().variance[0]) < m_unc) &&
+            (std::abs(obj.variance[1] - m_ref.get().variance[1]) < m_unc) &&
             obj.module_link == m_ref.get().module_link);
 }
 
