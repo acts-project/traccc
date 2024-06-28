@@ -42,6 +42,8 @@ struct spacepoint {
     scalar radius() const {
         return std::sqrt(global[0] * global[0] + global[1] * global[1]);
     }
+    TRACCC_HOST_DEVICE
+    scalar phi() const { return std::atan2(y(), x()); }
 };
 
 /// Comparison / ordering operator for spacepoints
