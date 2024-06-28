@@ -9,6 +9,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
+#include "traccc/event/track_property_writer.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
@@ -67,6 +68,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     vecmem::host_memory_resource host_mr;
 
     // Performance writer
+    traccc::track_property_writer evt_tree_writer(
+        traccc::track_property_writer::config{});
     traccc::finding_performance_writer find_performance_writer(
         traccc::finding_performance_writer::config{});
     traccc::fitting_performance_writer fit_performance_writer(
@@ -173,6 +176,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         const unsigned int n_fitted_tracks = track_states.size();
 
         if (performance_opts.run) {
+
+            evt_tree_writer.write(traccc::get_data(track_states), evt_map2);
+
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_map2);
 
@@ -188,6 +194,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     }
 
     if (performance_opts.run) {
+        evt_tree_writer.finalize();
         find_performance_writer.finalize();
         fit_performance_writer.finalize();
     }
