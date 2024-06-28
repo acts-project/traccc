@@ -26,20 +26,20 @@ class ccl_kernel;
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper& queue,
     const unsigned short target_cells_per_partition)
-    : m_mr(mr),
-      m_queue(queue),
+    : m_target_cells_per_partition(target_cells_per_partition),
+      m_mr(mr),
       m_copy(copy),
-      m_target_cells_per_partition(target_cells_per_partition) {}
+      m_queue(queue) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_collection_types::const_view& cells_view,
-    const cell_module_collection_types::const_view& modules_view) const {
+    const cell_collection_types::const_view& cells,
+    const detector_description::const_view& det_descr) const {
 
     // Get the number of cells
     const cell_collection_types::view::size_type num_cells =
-        m_copy.get().get_size(cells_view);
+        m_copy.get().get_size(cells);
 
     // Create the result object, overestimating the number of measurements.
     measurement_collection_types::buffer measurements{
@@ -87,7 +87,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
             // Launch the kernel.
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
-                [shared_uint, shared_idx, helper, cells_view, modules_view,
+                [shared_uint, shared_idx, helper, cells, det_descr,
                  measurements_view, cell_links_view,
                  target_cells_per_partition =
                      m_target_cells_per_partition](::sycl::nd_item<1> item) {
@@ -107,7 +107,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                     // Run the algorithm for this thread.
                     device::ccl_kernel(
                         item.get_local_linear_id(), item.get_local_range(0),
-                        item.get_group_linear_id(), cells_view, modules_view,
+                        item.get_group_linear_id(), cells, det_descr,
                         helper.max_cells_per_partition,
                         target_cells_per_partition, partition_start,
                         partition_end, outi, f_view, gf_view, barry_r,
