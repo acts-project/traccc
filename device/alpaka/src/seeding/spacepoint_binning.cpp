@@ -77,8 +77,8 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
     vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
                                                                    m_mr.main);
-    m_copy.setup(grid_capacities_buff);
-    m_copy.memset(grid_capacities_buff, 0);
+    m_copy.setup(grid_capacities_buff)->ignore();
+    m_copy.memset(grid_capacities_buff, 0)->ignore();
     vecmem::data::vector_view<unsigned int> grid_capacities_view =
         grid_capacities_buff;
 
@@ -98,7 +98,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
                                                                 : &(m_mr.main));
-    m_copy(grid_capacities_buff, grid_capacities_host);
+    m_copy(grid_capacities_buff, grid_capacities_host)->wait();
 
     // Create the grid buffer.
     sp_grid_buffer grid_buffer(
@@ -106,7 +106,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable);
-    m_copy.setup(grid_buffer._buffer);
+    m_copy.setup(grid_buffer._buffer)->wait();
     sp_grid_view grid_view = grid_buffer;
 
     ::alpaka::exec<Acc>(queue, workDiv, PopulateGridKernel{}, m_config,

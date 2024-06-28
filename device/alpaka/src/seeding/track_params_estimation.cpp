@@ -24,6 +24,7 @@ struct EstimateTrackParamsKernel {
         bound_track_parameters_collection_types::view params_view) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+
         device::estimate_track_params(globalThreadIdx, spacepoints_view,
                                       seed_view, bfield, stddev, params_view);
     }
@@ -35,9 +36,7 @@ track_params_estimation::track_params_estimation(
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const seed_collection_types::const_view& seeds_view,
-    const cell_module_collection_types::const_view& /*modules_view*/,
-    const vector3& bfield,
+    const seed_collection_types::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
 
     // Get the size of the seeds view
@@ -46,7 +45,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
                                                                   m_mr.main);
-    m_copy.setup(params_buffer);
+    m_copy.setup(params_buffer)->ignore();
 
     // Check if anything needs to be done.
     if (seeds_size == 0) {

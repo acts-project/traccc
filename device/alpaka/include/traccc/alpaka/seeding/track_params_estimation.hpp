@@ -15,17 +15,13 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
-#include <vecmem/utils/copy.hpp>
-
 namespace traccc::alpaka {
 
 /// track parameter estimation for alpaka
 struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const spacepoint_collection_types::const_view&,
-          const seed_collection_types::const_view&,
-          const cell_module_collection_types::const_view&, const vector3&,
+          const seed_collection_types::const_view&, const vector3&,
           const std::array<traccc::scalar, traccc::e_bound_size>&)> {
 
     public:
@@ -50,7 +46,6 @@ struct track_params_estimation
     output_type operator()(
         const spacepoint_collection_types::const_view& spacepoints_view,
         const seed_collection_types::const_view& seeds_view,
-        const cell_module_collection_types::const_view& modules_view,
         const vector3& bfield,
         const std::array<traccc::scalar, traccc::e_bound_size>& = {
             0.02 * detray::unit<traccc::scalar>::mm,
