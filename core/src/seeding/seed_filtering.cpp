@@ -60,10 +60,10 @@ void seed_filtering::operator()(
                       auto& spB2 = sp_collection.at(seed2.spB_link);
                       auto& spT2 = sp_collection.at(seed2.spT_link);
 
-                      seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
-                      seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
-                      seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
-                      seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
+                      seed1_sum += static_cast<scalar>(pow(spB1.y(), 2) + pow(spB1.z(), 2));
+                      seed1_sum += static_cast<scalar>(pow(spT1.y(), 2) + pow(spT1.z(), 2));
+                      seed2_sum += static_cast<scalar>(pow(spB2.y(), 2) + pow(spB2.z(), 2));
+                      seed2_sum += static_cast<scalar>(pow(spT2.y(), 2) + pow(spT2.z(), 2));
 
                       return seed1_sum > seed2_sum;
                   }
