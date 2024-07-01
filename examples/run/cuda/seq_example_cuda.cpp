@@ -95,6 +95,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
+        
+        printf("\n\nFor event %d:\n", event);
 
         // Instantiate host containers/collections
         traccc::io::cell_reader_output read_out_per_event(mr.host);
@@ -123,8 +125,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                        common_opts.input_data_format,
                                        &surface_transforms, &digi_cfg);
                 const auto endT = std::chrono::high_resolution_clock::now();
-                std::cout << "Time for file reading: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                            << std::endl;
+                std::cout << "Time for file reading: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
@@ -136,12 +137,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 Clusterization and Spacepoint Creation (cuda)
             -----------------------------*/
             // Create device copy of input collections
+
+            const auto memCopybeginT = std::chrono::high_resolution_clock::now();
             traccc::cell_collection_types::buffer cells_buffer(
                 cells_per_event.size(), mr.main);
             copy(vecmem::get_data(cells_per_event), cells_buffer);
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
             copy(vecmem::get_data(modules_per_event), modules_buffer);
+            const auto memCopyendT = std::chrono::high_resolution_clock::now();
+            std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(memCopyendT - memCopybeginT).count() << std::endl;
 
             {
                 {
@@ -154,8 +159,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                         ca_cuda(cells_buffer, modules_buffer).first;
                     stream.synchronize();
                     const auto endT = std::chrono::high_resolution_clock::now();
-                    std::cout << "Time for cuda clustering execution: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                              << std::endl;
+                    std::cout << "Time for cuda clustering execution: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
 
                 }
             }  // stop measuring clusterization cuda timer

@@ -101,12 +101,13 @@ auto main(int argc, char* argv[]) -> int
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    // printf("*******************************************************\n");
+    std::cout << "Input data file: " << common_opts.input_directory << std::endl 
+              << "Events: " << common_opts.events << std::endl; 
 
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
-    printf("For event %d: \n", event);
+    printf("\n\nFor event %d:\n", event);
 
     double timeTotal = 0;
     double IOTime = 0;
@@ -118,7 +119,7 @@ auto main(int argc, char* argv[]) -> int
     const auto endT = std::chrono::high_resolution_clock::now();
     timeTotal += std::chrono::duration<double>(endT - beginT).count();
     IOTime += std::chrono::duration<double>(endT - beginT).count();
-    // std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
+    std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
     
 
 // Fallback for the CI with disabled sequential backend
@@ -202,9 +203,9 @@ auto main(int argc, char* argv[]) -> int
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
         IOTime += std::chrono::duration<double>(endT - beginT).count();
-        // std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count() << "s, " 
-                //   << std::to_string(numElements) << std::endl;
-        std::cout << "Time for IO: " << IOTime << "s" << std::endl;
+        std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count() << " , " 
+                  << std::to_string(numElements) << std::endl;
+        std::cout << "Time for IO: " << IOTime << std::endl;
     }
 
     using BufAccU64 = alpaka::Buf<Acc, Data, Dim, Idx>;
@@ -225,7 +226,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        // std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
+        std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
     }
 
     ClusteringKernel clusteringKernel;
@@ -246,7 +247,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue); // wait in case we are using an asynchronous queue to time actual kernel runtime
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        // std::cout << "Time for clustering kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
+        std::cout << "Time for clustering kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
     }
 
     {
@@ -259,7 +260,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        // std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
+        std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
     }
 
     // results testing 
@@ -333,18 +334,20 @@ auto main(int argc, char* argv[]) -> int
         // printf("  Cells Read: %d\n", cellsRead);
         printf("  Total clusters found: %d\n", clustersTotal);
         // printf("  Total unique geoIDs found: %d\n", geoIDTotal);
+
+        // *** note that if cluster printing is included it will increase the time displayed for cpu processing time 
         const auto endT = std::chrono::high_resolution_clock::now();
         printTime += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "  Time for cluster printing and calc: " << std::chrono::duration<double>(endT - beginT).count() << 's' << std::endl;
+        std::cout << "  Time for cluster printing and calc on CPU: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
     }
-    printf("  Wall time: %fs \n  Wall time w/o print + calc time: %fs\n", timeTotal + printTime, timeTotal);
+    printf("  Wall time: %fs\n", timeTotal + printTime);
     // printf("*******************************************************\n");
 
     std::fill(std::begin(csvHits.data.geoID), std::end(csvHits.data.geoID), 0); // reset cluster c0 and c1 buffers
     std::fill(std::begin(csvHits.data.channel0), std::end(csvHits.data.channel0), 0);
     std::fill(std::begin(csvHits.data.channel1), std::end(csvHits.data.channel1), 0);
 
-    } // event for loop end
+    } // end of event loop
 
 
     return EXIT_SUCCESS;
