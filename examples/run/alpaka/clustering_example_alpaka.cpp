@@ -119,7 +119,7 @@ auto main(int argc, char* argv[]) -> int
     const auto endT = std::chrono::high_resolution_clock::now();
     timeTotal += std::chrono::duration<double>(endT - beginT).count();
     IOTime += std::chrono::duration<double>(endT - beginT).count();
-    std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count() << "s" << std::endl;
+    std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     
 
 // Fallback for the CI with disabled sequential backend
@@ -203,7 +203,7 @@ auto main(int argc, char* argv[]) -> int
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
         IOTime += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count() << " , " 
+        std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count()*1000 << " , " 
                   << std::to_string(numElements) << std::endl;
         std::cout << "Time for IO: " << IOTime << std::endl;
     }
@@ -226,7 +226,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
+        std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     }
 
     ClusteringKernel clusteringKernel;
@@ -247,7 +247,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue); // wait in case we are using an asynchronous queue to time actual kernel runtime
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for clustering kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
+        std::cout << "Time for clustering kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     }
 
     {
@@ -260,7 +260,7 @@ auto main(int argc, char* argv[]) -> int
         alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
         timeTotal += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
+        std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     }
 
     // results testing 
@@ -338,9 +338,9 @@ auto main(int argc, char* argv[]) -> int
         // *** note that if cluster printing is included it will increase the time displayed for cpu processing time 
         const auto endT = std::chrono::high_resolution_clock::now();
         printTime += std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "  Time for cluster printing and calc on CPU: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
+        std::cout << "  Time for cluster printing and calc on CPU: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     }
-    printf("  Wall time: %fs\n", timeTotal + printTime);
+    printf("  Wall time: %fs\n", (timeTotal + printTime)*1000);
     // printf("*******************************************************\n");
 
     std::fill(std::begin(csvHits.data.geoID), std::end(csvHits.data.geoID), 0); // reset cluster c0 and c1 buffers

@@ -98,6 +98,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         
         printf("\n\nFor event %d:\n", event);
 
+        const auto WallbeginT = std::chrono::high_resolution_clock::now();
+
         // Instantiate host containers/collections
         traccc::io::cell_reader_output read_out_per_event(mr.host);
         traccc::clusterization_algorithm::output_type measurements_per_event;
@@ -125,7 +127,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                        common_opts.input_data_format,
                                        &surface_transforms, &digi_cfg);
                 const auto endT = std::chrono::high_resolution_clock::now();
-                std::cout << "Time for file reading: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
+                std::cout << "Time for file reading: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
@@ -146,7 +148,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 modules_per_event.size(), mr.main);
             copy(vecmem::get_data(modules_per_event), modules_buffer);
             const auto memCopyendT = std::chrono::high_resolution_clock::now();
-            std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(memCopyendT - memCopybeginT).count() << std::endl;
+            std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(memCopyendT - memCopybeginT).count()*1000 << std::endl;
 
             {
                 {
@@ -159,11 +161,14 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                         ca_cuda(cells_buffer, modules_buffer).first;
                     stream.synchronize();
                     const auto endT = std::chrono::high_resolution_clock::now();
-                    std::cout << "Time for cuda clustering execution: " << std::chrono::duration<double>(endT - beginT).count() << std::endl;
+                    std::cout << "Time for cuda clustering execution: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
 
                 }
             }  // stop measuring clusterization cuda timer
-
+            
+            // end timing for IO, memcopy and clustering 
+            const auto WallendT = std::chrono::high_resolution_clock::now();
+            std::cout << "Wall time: " << std::chrono::duration<double>(WallendT - WallbeginT).count()*1000 << std::endl;
             if (run_cpu) {
 
                 /*-----------------------------
