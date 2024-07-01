@@ -340,7 +340,7 @@ auto main(int argc, char* argv[]) -> int
         printTime += std::chrono::duration<double>(endT - beginT).count();
         std::cout << "  Time for cluster printing and calc on CPU: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     }
-    printf("  Wall time: %fs\n", (timeTotal + printTime)*1000);
+    printf("  Wall time: %f\n", (timeTotal + printTime)*1000);
     // printf("*******************************************************\n");
 
     std::fill(std::begin(csvHits.data.geoID), std::end(csvHits.data.geoID), 0); // reset cluster c0 and c1 buffers
