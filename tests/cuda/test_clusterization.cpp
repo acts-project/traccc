@@ -6,6 +6,8 @@
  */
 
 // Project include(s).
+#include "tests/cca_test.hpp"
+#include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 
@@ -48,7 +50,8 @@ TEST(CUDAClustering, SingleModule) {
     modules.push_back({});
 
     // Run Clusterization
-    traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream, 1024);
+    traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream,
+                                                   default_ccl_test_config());
 
     auto measurements_buffer =
         ca_cuda(vecmem::get_data(cells), vecmem::get_data(modules));

@@ -11,7 +11,7 @@
 namespace traccc {
 
 full_chain_algorithm::full_chain_algorithm(
-    vecmem::memory_resource& mr, unsigned int,
+    vecmem::memory_resource& mr, const clustering_algorithm::config_type&,
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
