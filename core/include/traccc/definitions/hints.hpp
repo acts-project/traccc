@@ -9,15 +9,15 @@
 #pragma once
 
 #if not defined __has_builtin
-#define TRACCC_ASSUME(cond)
+#define TRACCC_ASSUME(...)
 #elif __has_builtin(__builtin_assume)
-#define TRACCC_ASSUME(cond) __builtin_assume(cond)
+#define TRACCC_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #else
-#define TRACCC_ASSUME(cond)
+#define TRACCC_ASSUME(...)
 #endif
 
 #if defined(__CUDACC__) || defined(__HIP__) || defined(__OPENMP) || \
-    defined(__SYCL__)
+    defined(__SYCL__) || defined(__clang__) || defined(__GNUC__)
 #define TRACCC_PRAGMA_UNROLL _Pragma("unroll")
 #else
 #define TRACCC_PRAGMA_UNROLL

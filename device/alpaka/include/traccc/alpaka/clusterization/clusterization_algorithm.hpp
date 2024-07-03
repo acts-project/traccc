@@ -57,7 +57,8 @@ class clusterization_algorithm
 
     private:
     /// The average number of cells in each partition
-    unsigned short m_target_cells_per_partition;
+    using config_type = unsigned short;
+    config_type m_target_cells_per_partition;
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use

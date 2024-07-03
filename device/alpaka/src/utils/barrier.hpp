@@ -29,6 +29,18 @@ struct barrier {
             *m_acc, predicate);
     }
 
+    ALPAKA_FN_ACC
+    bool blockAnd(bool predicate) {
+        return ::alpaka::syncBlockThreadsPredicate<::alpaka::BlockAnd>(
+            *m_acc, predicate);
+    }
+
+    ALPAKA_FN_ACC
+    bool blockCount(int threadCount) {
+        return ::alpaka::syncBlockThreadsPredicate<::alpaka::BlockCount>(
+            *m_acc, threadCount);
+    }
+
     private:
     const TAcc* m_acc;
 };
