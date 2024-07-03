@@ -205,7 +205,7 @@ auto main(int argc, char* argv[]) -> int
         IOTime += std::chrono::duration<double>(endT - beginT).count();
         std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count()*1000 << " , " 
                   << std::to_string(numElements) << std::endl;
-        std::cout << "Time for IO: " << IOTime << std::endl;
+        std::cout << "Time for IO: " << IOTime*1000 << std::endl;
     }
 
     using BufAccU64 = alpaka::Buf<Acc, Data, Dim, Idx>;
@@ -279,11 +279,11 @@ auto main(int argc, char* argv[]) -> int
     {
         const auto beginT = std::chrono::high_resolution_clock::now();
         for (uint y = 0; y < numElements; y++) {
-            // if (event == 8) {
             cellsRead += 1;
             if (geoIDBuf[y] != tempGeoID) {
                 clustersTotal += clustersInGeoID;
-                /* printing start
+                // uncomment printing start to print
+                // /* printing start
                 printf("number of clusters in geoID 0x%lu: %d, total clusters: %d\n", tempGeoID, clustersInGeoID, clustersTotal);
                 printf("Total clusters found: %d\n", clustersTotal);
                 printf("==========================================================\n");
@@ -306,7 +306,7 @@ auto main(int argc, char* argv[]) -> int
                 clustersInGeoID++;
                 
                 // uncomment printing start to see what clusters consist of  
-                /* printing start 
+                // /* printing start 
                 printf("cluster %d: ", clustersInGeoID);
                     for (uint16_t i = 0; i < numInCluster; i++){
                         printf("(%u, %u), ", currClusterC0[i], currClusterC1[i]);
@@ -318,21 +318,20 @@ auto main(int argc, char* argv[]) -> int
                 std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
                 
                 rootIndex = outputBuf[y];
+                outputBuf[y] = rootIndex;
                 numInCluster = 0;
             }
 
-            
-            // printf("out[%lu]: %u\n", y, outputBuf[y]);
+            printf("out[%lu]: %u\n", y, outputBuf[y]);
             // printf("to test c0_0: %d, c0_1: %d, c1_0: %d, c1_1: %d\n", c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]]);
-            // // printf("boolean test: c0: %d, c1: %d\n", -1 <= c0Buf[y] - c0Buf[outputBuf[y]] <= 1);
+            // printf("boolean test: c0: %d, c1: %d\n", -1 <= c0Buf[y] - c0Buf[outputBuf[y]] <= 1);
             // printf("correct?: %d\n", outputTest(c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]], geoIDBuf[y], geoIDBuf[outputBuf[y]]));
         
-        // } // temp geoID search
         } // cells loop end
         
 
         // printf("  Cells Read: %d\n", cellsRead);
-        printf("  Total clusters found: %d\n", clustersTotal);
+        // printf("  Total clusters found: %d\n", clustersTotal);
         // printf("  Total unique geoIDs found: %d\n", geoIDTotal);
 
         // *** note that if cluster printing is included it will increase the time displayed for cpu processing time 
