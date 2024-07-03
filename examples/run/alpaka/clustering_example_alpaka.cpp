@@ -66,8 +66,6 @@ struct ClusteringKernel
             if ((geoIDBuf[x] == geoIDBuf[i]) &&
                 (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1) &&
                 (-1 <= (c1Buf[x] - c1Buf[i]) && (c1Buf[x] - c1Buf[i]) <= 1)) {
-                    // printf("c0: %u, c1: %u FOUND c0: %u, c1: %u  i: %u, x: %u\n", c0Buf[i], c1Buf[i], c0Buf[x], c1Buf[x], i, x);
-                    // printf("diff in c0: %d, c1: %d, true check: %d\n", c0Buf[x] - c0Buf[i], c1Buf[x] - c1Buf[i], (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1));
                     outputBuf[i] = x;
             }
         }
