@@ -35,6 +35,7 @@ TEST(CUDAMutex, MassAdditionKernel) {
         vecmem::make_unique_alloc<uint32_t>(mr);
 
     TRACCC_CUDA_ERROR_CHECK(cudaMemset(lock.get(), 0, sizeof(uint32_t)));
+    TRACCC_CUDA_ERROR_CHECK(cudaMemset(out.get(), 0, sizeof(uint32_t)));
 
     uint32_t n_blocks = 262144;
     uint32_t n_threads = 32;

@@ -35,7 +35,7 @@ jobs:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:48
             cxx_standard: "20"
-            options: -DTRACCC_USE_ROOT=FALSE
+            options: -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE
           - name: HIP
             container: ghcr.io/acts-project/ubuntu2004_rocm:47
             cxx_standard: "17"
@@ -47,7 +47,7 @@ jobs:
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2204_cuda:48
             cxx_standard: "20"
-            options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_USE_ROOT=FALSE
+            options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
           - name: SYCL
             container: ghcr.io/acts-project/ubuntu2004_oneapi:47
             cxx_standard: "17"
@@ -82,8 +82,6 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v3
-      - name: Download data files
-        run: data/traccc_data_get_files.sh
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
@@ -101,6 +99,9 @@ jobs:
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           cmake --build build
+      - name: Download data files
+        if: "matrix.platform.name == 'CPU'"
+        run: data/traccc_data_get_files.sh
       - name: Test
         if: "matrix.platform.name == 'CPU'"
         run: |
