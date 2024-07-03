@@ -24,6 +24,7 @@ TEST(SYCLMutex, MassAdditionKernel) {
         vecmem::make_unique_alloc<uint32_t>(mr);
 
     queue.memset(lock.get(), 0, sizeof(uint32_t)).wait_and_throw();
+    queue.memset(out.get(), 0, sizeof(uint32_t)).wait_and_throw();
 
     uint32_t n_blocks = 262144;
     uint32_t n_threads = 32;
