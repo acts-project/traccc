@@ -28,38 +28,47 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2004:v30
             cxx_standard: "17"
             options:
+            run_tests: true
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2004:v30
             cxx_standard: "17"
             options: -DTRACCC_USE_ROOT=FALSE
+            run_tests: true
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:48
             cxx_standard: "20"
             options: -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE
+            run_tests: true
           - name: HIP
             container: ghcr.io/acts-project/ubuntu2004_rocm:47
             cxx_standard: "17"
             options: -DTRACCC_BUILD_HIP=TRUE -DTRACCC_SETUP_ROCTHRUST=TRUE
+            run_tests: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2004_cuda:47
             cxx_standard: "17"
             options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_ENABLE_NVTX_PROFILING=TRUE
+            run_tests: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2204_cuda:48
             cxx_standard: "20"
             options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
+            run_tests: false
           - name: SYCL
             container: ghcr.io/acts-project/ubuntu2004_oneapi:47
             cxx_standard: "17"
             options: -DTRACCC_BUILD_SYCL=TRUE
+            run_tests: true
           - name: KOKKOS
             container: ghcr.io/acts-project/ubuntu2004:v30
             cxx_standard: "17"
             options: -DTRACCC_BUILD_KOKKOS=TRUE
+            run_tests: false
           - name: ALPAKA
             container: ghcr.io/acts-project/ubuntu2204:v33
             cxx_standard: "17"
             options: -DTRACCC_BUILD_ALPAKA=TRUE
+            run_tests: false
         build:
           - Release
           - Debug
@@ -100,10 +109,10 @@ jobs:
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           cmake --build build
       - name: Download data files
-        if: "matrix.platform.name == 'CPU'"
+        if: "matrix.platform.run_tests"
         run: data/traccc_data_get_files.sh
       - name: Test
-        if: "matrix.platform.name == 'CPU'"
+        if: "matrix.platform.run_tests"
         run: |
           cd build
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
