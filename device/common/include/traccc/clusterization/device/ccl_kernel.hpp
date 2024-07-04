@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/hints.hpp"
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/barrier.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -86,7 +87,7 @@ struct ccl_kernel_helper {
 /// @param[out] measurements_view collection of measurements
 /// @param[out] cell_links    collection of links to measurements each cell is
 /// put into
-template <typename barrier_t>
+template <TRACCC_CONSTRAINT(device::concepts::barrier) barrier_t>
 TRACCC_DEVICE inline void ccl_kernel(
     details::index_t threadId, details::index_t blckDim, unsigned int blockId,
     const cell_collection_types::const_view cells_view,
