@@ -213,7 +213,7 @@ seed_finding::output_type seed_finding::operator()(
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
         m_copy.get_size(sp_grid_prefix_sum_buff), m_mr.main,
         vecmem::data::buffer_type::resizable};
-    m_copy.setup(doublet_counter_buffer);
+    m_copy.setup(doublet_counter_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
@@ -252,10 +252,10 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the doublet counter buffers.
     device::device_doublet_collection_types::buffer doublet_buffer_mb = {
         pBufHost_counter->m_nMidBot, m_mr.main};
-    m_copy.setup(doublet_buffer_mb);
+    m_copy.setup(doublet_buffer_mb)->ignore();
     device::device_doublet_collection_types::buffer doublet_buffer_mt = {
         pBufHost_counter->m_nMidTop, m_mr.main};
-    m_copy.setup(doublet_buffer_mt);
+    m_copy.setup(doublet_buffer_mt)->ignore();
 
     // Calculate the number of threads and thread blocks to run the doublet
     // finding kernel for.
@@ -276,12 +276,12 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the triplet counter buffers
     device::triplet_counter_spM_collection_types::buffer
         triplet_counter_spM_buffer = {doublet_counter_buffer_size, m_mr.main};
-    m_copy.setup(triplet_counter_spM_buffer);
-    m_copy.memset(triplet_counter_spM_buffer, 0);
+    m_copy.setup(triplet_counter_spM_buffer)->ignore();
+    m_copy.memset(triplet_counter_spM_buffer, 0)->ignore();
     device::triplet_counter_collection_types::buffer
         triplet_counter_midBot_buffer = {pBufHost_counter->m_nMidBot, m_mr.main,
                                          vecmem::data::buffer_type::resizable};
-    m_copy.setup(triplet_counter_midBot_buffer);
+    m_copy.setup(triplet_counter_midBot_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the triplet
     // counting kernel for.
@@ -321,7 +321,8 @@ seed_finding::output_type seed_finding::operator()(
     // Set up the triplet buffer.
     device::device_triplet_collection_types::buffer triplet_buffer = {
         pBufHost_counter->m_nTriplets, m_mr.main};
-    m_copy.setup(triplet_buffer);
+    m_copy.setup(triplet_buffer)->ignore();
+    m_copy.memset(triplet_buffer, 0)->ignore();
 
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
@@ -359,7 +360,7 @@ seed_finding::output_type seed_finding::operator()(
     seed_collection_types::buffer seed_buffer(
         pBufHost_counter->m_nTriplets, m_mr.main,
         vecmem::data::buffer_type::resizable);
-    m_copy.setup(seed_buffer);
+    m_copy.setup(seed_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the seed
     // selecting kernel for.
@@ -386,17 +387,11 @@ namespace alpaka::trait {
 template <typename TAcc>
 struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel,
                                   TAcc> {
-    template <typename TVec>
+    template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::UpdateTripletWeightsKernel const& /* kernel */,
         TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
-        traccc::seedfilter_config filter_config,
-        traccc::sp_grid_const_view /* sp_grid */,
-        traccc::device::triplet_counter_spM_collection_types::
-            const_view /* spM_tc */,
-        traccc::device::triplet_counter_collection_types::
-            const_view /* midBot_tc */,
-        traccc::device::device_triplet_collection_types::view /* triplet_view */
+        traccc::seedfilter_config filter_config, TArgs const&... /* args */
         ) -> std::size_t {
         return static_cast<std::size_t>(filter_config.compatSeedLimit *
                                         blockThreadExtent.prod()) *
@@ -406,20 +401,11 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel,
 
 template <typename TAcc>
 struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc> {
-    template <typename TVec>
+    template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
         traccc::alpaka::SelectSeedsKernel const& /* kernel */,
         TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
-        traccc::seedfilter_config filter_config,
-        traccc::spacepoint_collection_types::const_view /* spacepoints_view */,
-        traccc::sp_grid_const_view /* sp_grid */,
-        traccc::device::triplet_counter_spM_collection_types::
-            const_view /* spM_tc */,
-        traccc::device::triplet_counter_collection_types::
-            const_view /* midBot_tc */,
-        traccc::device::device_triplet_collection_types::
-            view /* triplet_view */,
-        traccc::seed_collection_types::view /* seed_view */
+        traccc::seedfilter_config filter_config, TArgs const&... /* args */
         ) -> std::size_t {
         return static_cast<std::size_t>(filter_config.max_triplets_per_spM *
                                         blockThreadExtent.prod()) *

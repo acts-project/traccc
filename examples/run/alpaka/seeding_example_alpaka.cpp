@@ -77,6 +77,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
+    /// Type declarations
     using host_detector_type = detray::detector<>;
 
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
@@ -157,7 +158,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
@@ -166,8 +167,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
+        traccc::track_candidate_container_types::host track_candidates;
+        traccc::track_state_container_types::host track_states;
 
-        // Instantiate alpaka containers/collections
         traccc::seed_collection_types::buffer seeds_alpaka_buffer(0,
                                                                   *(mr.host));
         traccc::bound_track_parameters_collection_types::buffer
@@ -195,7 +197,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
             auto& spacepoints_per_event = sp_reader_output.spacepoints;
             auto& modules_per_event = sp_reader_output.modules;
-            // auto& measurements_per_event = meas_reader_output.measurements;
 
             /*----------------------------
                 Seeding algorithm
@@ -239,11 +240,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params_alpaka_buffer =
                     tp_alpaka(spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                              modules_buffer,
                               {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
             }  // stop measuring track params alpaka timer
-            // CPU
 
+            // CPU
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
