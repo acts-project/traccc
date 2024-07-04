@@ -17,7 +17,7 @@
 #endif
 
 #if defined(__CUDACC__) || defined(__HIP__) || defined(__OPENMP) || \
-    defined(__SYCL__) || defined(__clang__) || defined(__GNUC__)
+    defined(__SYCL__) || defined(__clang__)
 #define TRACCC_PRAGMA_UNROLL _Pragma("unroll")
 #else
 #define TRACCC_PRAGMA_UNROLL
