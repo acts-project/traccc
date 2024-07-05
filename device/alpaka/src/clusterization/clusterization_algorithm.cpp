@@ -12,6 +12,7 @@
 #include "../utils/utils.hpp"
 
 // Project include(s)
+#include "traccc/alpaka/utils/thread_id.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel.hpp"
 
@@ -35,12 +36,7 @@ struct CCLKernel {
         measurement_collection_types::view measurements_view,
         vecmem::data::vector_view<unsigned int> cell_links) const {
 
-        auto const localThreadIdx =
-            ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
-        auto const localBlockIdx =
-            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(acc)[0u];
-        auto const blockExtent =
-            ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(acc)[0u];
+        traccc::alpaka::thread_id1 thread_id(acc);
 
         auto& partition_start =
             ::alpaka::declareSharedVar<std::size_t, __COUNTER__>(acc);
@@ -60,11 +56,11 @@ struct CCLKernel {
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
-        device::ccl_kernel(
-            cfg, localThreadIdx, blockExtent, localBlockIdx, cells_view,
-            modules_view, partition_start, partition_end, outi, f_view, gf_view,
-            f_backup_view, gf_backup_view, adjc_backup_view, adjv_backup_view,
-            backup_mutex, barry_r, measurements_view, cell_links);
+        device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
+                           partition_start, partition_end, outi, f_view,
+                           gf_view, f_backup_view, gf_backup_view,
+                           adjc_backup_view, adjv_backup_view, backup_mutex,
+                           barry_r, measurements_view, cell_links);
     }
 };
 

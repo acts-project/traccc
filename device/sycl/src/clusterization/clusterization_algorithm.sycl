@@ -12,6 +12,7 @@
 #include "../utils/get_queue.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/utils/thread_id.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
@@ -148,16 +149,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
                     // Barrier used in the algorithm.
                     traccc::sycl::barrier barry_r(item);
+                    const sycl::thread_id1 thread_id(item);
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(
-                        cfg, item.get_local_linear_id(),
-                        item.get_local_range(0), item.get_group_linear_id(),
-                        cells_view, modules_view, partition_start,
-                        partition_end, outi, f_view, gf_view, f_backup_view,
-                        gf_backup_view, adjc_backup_view, adjv_backup_view,
-                        backup_mutex, barry_r, measurements_view,
-                        cell_links_view);
+                    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
+                                       partition_start, partition_end, outi,
+                                       f_view, gf_view, f_backup_view,
+                                       gf_backup_view, adjc_backup_view,
+                                       adjv_backup_view, backup_mutex, barry_r,
+                                       measurements_view, cell_links_view);
                 });
         })
         .wait_and_throw();

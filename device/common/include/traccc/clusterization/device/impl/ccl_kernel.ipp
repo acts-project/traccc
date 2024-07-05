@@ -13,6 +13,8 @@
 #include "traccc/clusterization/device/aggregate_cluster.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/clusterization/device/reduce_problem_cell.hpp"
+#include "traccc/device/concepts/barrier.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/device/mutex.hpp"
 #include "traccc/device/unique_lock.hpp"
 #include "traccc/edm/cell.hpp"
@@ -40,13 +42,13 @@ namespace traccc::device {
 ///                     iteration.
 /// @param[in] barrier  A generic object for block-wide synchronisation
 ///
-template <device::concepts::barrier barrier_t>
-TRACCC_DEVICE void fast_sv_1(vecmem::device_vector<details::index_t>& f,
+template <device::concepts::barrier barrier_t,
+          device::concepts::thread_id1 thread_id_t>
+TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
+                             vecmem::device_vector<details::index_t>& f,
                              vecmem::device_vector<details::index_t>& gf,
                              unsigned char* adjc, details::index_t* adjv,
                              details::index_t thread_cell_count,
-                             const details::index_t tid,
-                             const details::index_t blckDim,
                              barrier_t& barrier) {
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
@@ -70,7 +72,8 @@ TRACCC_DEVICE void fast_sv_1(vecmem::device_vector<details::index_t>& f,
          * together.
          */
         for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-            const details::index_t cid = tst * blckDim + tid;
+            const details::index_t cid =
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
 
             TRACCC_ASSUME(adjc[tst] <= 8);
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
@@ -90,7 +93,8 @@ TRACCC_DEVICE void fast_sv_1(vecmem::device_vector<details::index_t>& f,
         barrier.blockBarrier();
 
         for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-            const details::index_t cid = tst * blckDim + tid;
+            const details::index_t cid =
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
             /*
              * The second stage is shortcutting, which is an optimisation that
              * allows us to look at any shortcuts in the cluster IDs that we
@@ -107,7 +111,8 @@ TRACCC_DEVICE void fast_sv_1(vecmem::device_vector<details::index_t>& f,
         barrier.blockBarrier();
 
         for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-            const details::index_t cid = tst * blckDim + tid;
+            const details::index_t cid =
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
             /*
              * Update the array for the next generation, keeping track of any
              * changes we make.
@@ -128,11 +133,11 @@ TRACCC_DEVICE void fast_sv_1(vecmem::device_vector<details::index_t>& f,
     } while (barrier.blockOr(gf_changed));
 }
 
-template <device::concepts::barrier barrier_t>
+template <device::concepts::barrier barrier_t,
+          device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_core(
-    const details::index_t threadId, const details::index_t blckDim,
-    std::size_t& partition_start, std::size_t& partition_end,
-    vecmem::device_vector<details::index_t> f,
+    const thread_id_t& thread_id, std::size_t& partition_start,
+    std::size_t& partition_end, vecmem::device_vector<details::index_t> f,
     vecmem::device_vector<details::index_t> gf,
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
     unsigned char* adjc, const cell_collection_types::const_device cells_device,
@@ -145,20 +150,23 @@ TRACCC_DEVICE inline void ccl_core(
     assert(size <= gf.size());
 
     details::index_t thread_cell_count =
-        (size - threadId + blckDim - 1) / blckDim;
+        (size - thread_id.getLocalThreadIdX() + thread_id.getBlockDimX() - 1) /
+        thread_id.getBlockDimX();
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
         /*
          * Look for adjacent cells to the current one.
          */
-        const details::index_t cid = tst * blckDim + threadId;
+        const details::index_t cid =
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
         adjc[tst] = 0;
         reduce_problem_cell(cells_device, cid, partition_start, partition_end,
                             adjc[tst], &adjv[8 * tst]);
     }
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-        const details::index_t cid = tst * blckDim + threadId;
+        const details::index_t cid =
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
         /*
          * At the start, the values of f and gf should be equal to the
          * ID of the cell.
@@ -177,12 +185,13 @@ TRACCC_DEVICE inline void ccl_core(
      * Run FastSV algorithm, which will update the father index to that of
      * the cell belonging to the same cluster with the lowest index.
      */
-    fast_sv_1(f, gf, adjc, adjv, thread_cell_count, threadId, blckDim, barrier);
+    fast_sv_1(thread_id, f, gf, adjc, adjv, thread_cell_count, barrier);
 
     barrier.blockBarrier();
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-        const details::index_t cid = tst * blckDim + threadId;
+        const details::index_t cid =
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
         if (f.at(cid) == cid) {
             // Add a new measurement to the output buffer. Remembering its
             // position inside of the container.
@@ -196,10 +205,10 @@ TRACCC_DEVICE inline void ccl_core(
     }
 }
 
-template <device::concepts::barrier barrier_t>
+template <device::concepts::barrier barrier_t,
+          device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_kernel(
-    const clustering_config cfg, const details::index_t threadId,
-    const details::index_t blckDim, const unsigned int blockId,
+    const clustering_config cfg, const thread_id_t& thread_id,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
@@ -237,8 +246,9 @@ TRACCC_DEVICE inline void ccl_kernel(
      * (to a later point in the array); start and end may be moved different
      * amounts.
      */
-    if (threadId == 0) {
-        std::size_t start = blockId * cfg.target_partition_size();
+    if (thread_id.getLocalThreadIdX() == 0) {
+        std::size_t start =
+            thread_id.getBlockIdX() * cfg.target_partition_size();
         assert(start < num_cells);
         std::size_t end =
             std::min(num_cells, start + cfg.target_partition_size());
@@ -313,16 +323,18 @@ TRACCC_DEVICE inline void ccl_kernel(
      * rare edge case.
      */
     if (size > cfg.max_partition_size()) {
-        if (threadId == 0) {
+        if (thread_id.getLocalThreadIdX() == 0) {
             lock.lock();
         }
 
         barrier.blockBarrier();
 
-        adjc = adjc_backup.data() + (threadId * cfg.max_cells_per_thread *
-                                     cfg.backup_size_multiplier);
-        adjv = adjv_backup.data() + (threadId * 8 * cfg.max_cells_per_thread *
-                                     cfg.backup_size_multiplier);
+        adjc = adjc_backup.data() +
+               (thread_id.getLocalThreadIdX() * cfg.max_cells_per_thread *
+                cfg.backup_size_multiplier);
+        adjv = adjv_backup.data() +
+               (thread_id.getLocalThreadIdX() * 8 * cfg.max_cells_per_thread *
+                cfg.backup_size_multiplier);
         use_scratch = true;
     } else {
         adjc = _adjc;
@@ -330,7 +342,7 @@ TRACCC_DEVICE inline void ccl_kernel(
         use_scratch = false;
     }
 
-    ccl_core(threadId, blckDim, partition_start, partition_end,
+    ccl_core(thread_id, partition_start, partition_end,
              use_scratch ? f_backup : f_primary,
              use_scratch ? gf_backup : gf_primary, cell_links, adjv, adjc,
              cells_device, modules_device, measurements_device, barrier);
