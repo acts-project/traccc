@@ -16,7 +16,7 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 
 // Detray core include(s).
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 #include "detray/propagator/base_actor.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
 #include "detray/tracks/free_track_parameters.hpp"

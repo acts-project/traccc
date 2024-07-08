@@ -99,7 +99,7 @@ TRACCC_DEVICE inline void find_tracks(
 
         const auto& meas = measurements.at(meas_idx);
         track_state<typename detector_t::algebra_type> trk_state(meas);
-        const detray::surface<detector_t> sf{det, bcd};
+        const detray::tracking_surface sf{det, bcd};
 
         // Run the Kalman update
         sf.template visit_mask<

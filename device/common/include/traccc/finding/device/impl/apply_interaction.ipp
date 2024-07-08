@@ -11,7 +11,7 @@
 #include "traccc/definitions/math.hpp"
 
 // Detray include(s).
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 
 namespace traccc::device {
 
@@ -38,7 +38,7 @@ TRACCC_DEVICE inline void apply_interaction(
     auto& bound_param = params.at(globalIndex);
 
     // Get intersection at surface
-    const detray::surface sf{det, bound_param.surface_link()};
+    const detray::tracking_surface sf{det, bound_param.surface_link()};
     const typename detector_t::geometry_context ctx{};
 
     // Apply interactor
