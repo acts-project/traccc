@@ -6,7 +6,7 @@
  */
 
 // Detray include(s).
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 
 namespace traccc::experimental {
 
@@ -29,7 +29,7 @@ spacepoint_collection_types::host spacepoint_formation<detector_t>::operator()(
         // Access the measurements of the current module.
         const measurement& ms = measurements.at(i);
 
-        const detray::surface<detector_t> sf{det, ms.surface_link};
+        const detray::tracking_surface sf{det, ms.surface_link};
 
         // This local to global transformation only works for 2D planar
         // measurement

@@ -20,7 +20,7 @@
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/line.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 #include "detray/simulation/event_generator/track_generators.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
 #include "detray/utils/statistics.hpp"
@@ -172,8 +172,8 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
             const point3 pos{hits[i].tx, hits[i].ty, hits[i].tz};
             const vector3 mom{hits[i].tpx, hits[i].tpy, hits[i].tpz};
             const auto truth_local =
-                detray::surface{detector,
-                                detray::geometry::barcode(hits[i].geometry_id)}
+                detray::tracking_surface{
+                    detector, detray::geometry::barcode(hits[i].geometry_id)}
                     .global_to_local(ctx, pos, vector::normalize(mom));
 
             local0_diff.push_back(truth_local[0] - measurements[i].local0);

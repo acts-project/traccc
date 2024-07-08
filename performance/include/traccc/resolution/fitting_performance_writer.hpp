@@ -75,7 +75,7 @@ class fitting_performance_writer {
         const auto global_pos = evt_map.meas_xp_map[meas].first;
         const auto global_mom = evt_map.meas_xp_map[meas].second;
 
-        const detray::surface<detector_t> sf{det, meas.surface_link};
+        const detray::tracking_surface sf{det, meas.surface_link};
         using cxt_t = typename detector_t::geometry_context;
         const cxt_t ctx{};
         const auto truth_local =

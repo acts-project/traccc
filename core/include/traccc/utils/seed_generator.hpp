@@ -12,7 +12,7 @@
 
 // detray include(s).
 #include "detray/geometry/barcode.hpp"
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 #include "detray/propagator/actor_chain.hpp"
 #include "detray/propagator/actors/aborters.hpp"
 #include "detray/propagator/actors/parameter_resetter.hpp"
@@ -52,7 +52,7 @@ struct seed_generator {
         const free_track_parameters& free_param) {
 
         // Get bound parameter
-        const detray::surface sf{m_detector, surface_link};
+        const detray::tracking_surface sf{m_detector, surface_link};
 
         const cxt_t ctx{};
         auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());

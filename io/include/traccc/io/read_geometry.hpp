@@ -15,7 +15,7 @@
 
 // Detray include(s).
 #include <detray/geometry/barcode.hpp>
-#include <detray/geometry/surface.hpp>
+#include <detray/geometry/tracking_surface.hpp>
 
 // System include(s).
 #include <cstdint>
@@ -45,7 +45,7 @@ geometry alt_read_geometry(const detector_t& det) {
     const cxt_t ctx0{};
 
     for (const auto& sf_desc : det.surfaces()) {
-        const detray::surface<detector_t> sf{det, sf_desc.barcode()};
+        const detray::tracking_surface sf{det, sf_desc.barcode()};
 
         maps.insert({sf.barcode().value(), sf.transform(ctx0)});
     }

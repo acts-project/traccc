@@ -10,7 +10,7 @@
 
 // detray include(s).
 #include "detray/geometry/barcode.hpp"
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 
 // System include
 #include <algorithm>
@@ -125,7 +125,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *************************/
 
             // Get intersection at surface
-            const detray::surface sf{det, in_param.surface_link()};
+            const detray::tracking_surface sf{det, in_param.surface_link()};
 
             const cxt_t ctx{};
 

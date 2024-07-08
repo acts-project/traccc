@@ -46,8 +46,7 @@ void write_track_candidates(
         for (const measurement& m : track.items) {
 
             // Find the detector surface that this measurement sits on.
-            const detray::surface<detray::detector<> > surface{detector,
-                                                               m.surface_link};
+            const detray::tracking_surface surface{detector, m.surface_link};
 
             // Calculate a position for this measurement in global 3D space.
             const auto global = surface.bound_to_global({}, m.local, {});
