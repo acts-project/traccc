@@ -10,6 +10,7 @@
 #include "../sanity/ordered_on.hpp"
 #include "../utils/barrier.hpp"
 #include "../utils/get_queue.hpp"
+#include "traccc/clusterization/device/ccl_debug_output.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/utils/thread_id.hpp"
@@ -113,9 +114,28 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     assert(m_config.max_cells_per_thread <=
            device::details::CELLS_PER_THREAD_STACK_LIMIT);
 
+    // If necessary, allocate an object for storing the debug information
+    vecmem::unique_alloc_ptr<device::details::ccl_debug_output> debug_output;
+    cl::sycl::event evt_copy_debug_output_h2d;
+
+    if (m_config.enable_debug_output) {
+        debug_output =
+            vecmem::make_unique_alloc<device::details::ccl_debug_output>(
+                m_mr.main);
+
+        device::details::ccl_debug_output empty_output =
+            device::details::ccl_debug_output::init();
+
+        evt_copy_debug_output_h2d = details::get_queue(m_queue).memcpy(
+            debug_output.get(), &empty_output,
+            sizeof(device::details::ccl_debug_output));
+    }
+
     // Run ccl kernel
-    details::get_queue(m_queue)
-        .submit([&](::sycl::handler& h) {
+    cl::sycl::event evt_run_kernel =
+        details::get_queue(m_queue).submit([&](::sycl::handler& h) {
+            h.depends_on(evt_copy_debug_output_h2d);
+
             // Allocate shared memory for the kernel.
             vecmem::sycl::local_accessor<std::size_t> shared_uint(3, h);
             vecmem::sycl::local_accessor<device::details::index_t> shared_idx(
@@ -130,8 +150,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                  gf_backup_view = vecmem::get_data(m_gf_backup),
                  adjc_backup_view = vecmem::get_data(m_adjc_backup),
                  adjv_backup_view = vecmem::get_data(m_adjv_backup),
-                 mutex_ptr = m_backup_mutex.get(),
-                 cfg = m_config](::sycl::nd_item<1> item) {
+                 mutex_ptr = m_backup_mutex.get(), cfg = m_config,
+                 debug_output = debug_output.get()](::sycl::nd_item<1> item) {
                     // Construct more readable variable names.
                     vecmem::data::vector_view<device::details::index_t> f_view{
                         static_cast<vector_size_t>(cfg.max_partition_size()),
@@ -152,15 +172,38 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                     const sycl::thread_id1 thread_id(item);
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
-                                       partition_start, partition_end, outi,
-                                       f_view, gf_view, f_backup_view,
-                                       gf_backup_view, adjc_backup_view,
-                                       adjv_backup_view, backup_mutex, barry_r,
-                                       measurements_view, cell_links_view);
+                    device::ccl_kernel(
+                        cfg, thread_id, cells_view, modules_view,
+                        partition_start, partition_end, outi, f_view, gf_view,
+                        f_backup_view, gf_backup_view, adjc_backup_view,
+                        adjv_backup_view, backup_mutex, barry_r,
+                        measurements_view, cell_links_view, debug_output);
                 });
-        })
-        .wait_and_throw();
+        });
+
+    cl::sycl::event evt_copy_debug_output_d2h;
+
+    if (debug_output) {
+        device::details::ccl_debug_output host_output;
+
+        evt_copy_debug_output_d2h = details::get_queue(m_queue).memcpy(
+            &host_output, debug_output.get(),
+            sizeof(device::details::ccl_debug_output), {evt_run_kernel});
+
+        evt_copy_debug_output_d2h.wait_and_throw();
+
+        if (host_output.num_oversized_partitions > 0) {
+            std::cout << "WARNING: @clusterization_algorithm: "
+                      << "Clustering encountered "
+                      << host_output.num_oversized_partitions
+                      << " oversized partitions; if this number is too large, "
+                         "it may cause performance problems."
+                      << std::endl;
+        }
+    }
+
+    cl::sycl::event::wait_and_throw(
+        {evt_run_kernel, evt_copy_debug_output_d2h});
 
     // Return the reconstructed measurements.
     return measurements;

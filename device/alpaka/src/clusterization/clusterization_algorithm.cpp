@@ -60,7 +60,7 @@ struct CCLKernel {
                            partition_start, partition_end, outi, f_view,
                            gf_view, f_backup_view, gf_backup_view,
                            adjc_backup_view, adjv_backup_view, backup_mutex,
-                           barry_r, measurements_view, cell_links);
+                           barry_r, measurements_view, cell_links, nullptr);
     }
 };
 
