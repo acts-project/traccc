@@ -37,6 +37,10 @@ class track_finding : public interface,
     private:
     /// @name Options
     /// @{
+    /// Max number of branches per seed
+    unsigned int max_num_branches_per_seed = 10;
+    /// Max number of branches per surface
+    unsigned int max_num_branches_per_surface = 10;
     /// Number of track candidates per seed
     opts::value_array<unsigned int, 2> track_candidates_range{3, 100};
     /// Minimum step length that track should make to reach the next surface. It
