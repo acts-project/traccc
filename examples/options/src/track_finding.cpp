@@ -18,6 +18,14 @@ namespace po = boost::program_options;
 
 track_finding::track_finding() : interface("Track Finding Options") {
 
+    m_desc.add_options()("max-num-branches-per-seed",
+                         po::value(&max_num_branches_per_seed)
+                             ->default_value(max_num_branches_per_seed),
+                         "Max number of branches per seed");
+    m_desc.add_options()("max-num-branches-per-surface",
+                         po::value(&max_num_branches_per_surface)
+                             ->default_value(max_num_branches_per_surface),
+                         "Max number of branches per surface");
     m_desc.add_options()("track-candidates-range",
                          po::value(&track_candidates_range)
                              ->value_name("MIN:MAX")
@@ -52,6 +60,8 @@ track_finding::track_finding() : interface("Track Finding Options") {
 
 track_finding::operator finding_config<float>() const {
     finding_config<float> out;
+    out.max_num_branches_per_seed = max_num_branches_per_seed;
+    out.max_num_branches_per_surface = max_num_branches_per_surface;
     out.min_track_candidates_per_track = track_candidates_range[0];
     out.max_track_candidates_per_track = track_candidates_range[1];
     out.min_step_length_for_next_surface = min_step_length_for_next_surface;
@@ -64,6 +74,8 @@ track_finding::operator finding_config<float>() const {
 
 track_finding::operator finding_config<double>() const {
     finding_config<double> out;
+    out.max_num_branches_per_seed = max_num_branches_per_seed;
+    out.max_num_branches_per_surface = max_num_branches_per_surface;
     out.min_track_candidates_per_track = track_candidates_range[0];
     out.max_track_candidates_per_track = track_candidates_range[1];
     out.min_step_length_for_next_surface = min_step_length_for_next_surface;
@@ -76,7 +88,11 @@ track_finding::operator finding_config<double>() const {
 
 std::ostream& track_finding::print_impl(std::ostream& out) const {
 
-    out << "  Track candidates range   : " << track_candidates_range << "\n"
+    out << "  Max number of branches per seed: " << max_num_branches_per_seed
+        << "\n"
+        << "  Max number of branches per surface: "
+        << max_num_branches_per_surface << "\n"
+        << "  Track candidates range   : " << track_candidates_range << "\n"
         << "  Minimum step length for the next surface: "
         << min_step_length_for_next_surface << " [mm] \n"
         << "  Maximum step counts for the next surface: "
