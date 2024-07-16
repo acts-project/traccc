@@ -34,15 +34,15 @@ cca_function_t f = [](const traccc::cell_collection_types::host& cells,
         static_cast<traccc::cell_collection_types::buffer::size_type>(
             cells.size()),
         device_mr};
-    copy.setup(cells_buffer);
-    copy(vecmem::get_data(cells), cells_buffer)->ignore();
+    copy.setup(cells_buffer)->wait();
+    copy(vecmem::get_data(cells), cells_buffer)->wait();
 
     traccc::cell_module_collection_types::buffer modules_buffer{
         static_cast<traccc::cell_module_collection_types::buffer::size_type>(
             modules.size()),
         device_mr};
-    copy.setup(modules_buffer);
-    copy(vecmem::get_data(modules), modules_buffer)->ignore();
+    copy.setup(modules_buffer)->wait();
+    copy(vecmem::get_data(modules), modules_buffer)->wait();
 
     auto measurements_buffer = cc(cells_buffer, modules_buffer);
     traccc::measurement_collection_types::host measurements{&host_mr};
