@@ -38,10 +38,21 @@ static constexpr std::size_t warpSize =
 #endif
 
 template <typename TAcc>
+constexpr bool accSupportsMultiThreadBlocks() {
+    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt> ||
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuHipRt> ||
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagCpuOmp2Threads> ||
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagCpuThreads>) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocks, Idx threadsOrElements) {
     const Idx blocksPerGrid = std::max(Idx{1}, blocks);
-    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt> ||
-                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuHipRt>) {
+    if constexpr (accSupportsMultiThreadBlocks<TAcc>()) {
         const Idx threadsPerBlock(threadsOrElements);
         const Idx elementsPerThread = Idx{1};
         return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
