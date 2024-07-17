@@ -99,6 +99,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Launch ccl kernel. Each thread will handle a single cell.
     const device::details::ccl_kernel_helper helper{
         m_target_cells_per_partition, num_cells};
+    static_assert(accSupportsMultiThreadBlocks<Acc>(),
+                  "Clustering algorithm must be compiled for an accelerator "
+                  "with support for multi-thread blocks.");
     auto workDiv =
         makeWorkDiv<Acc>(helper.num_partitions, helper.threads_per_partition);
 
