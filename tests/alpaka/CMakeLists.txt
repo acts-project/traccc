@@ -4,23 +4,30 @@
 #
 # Mozilla Public License Version 2.0
 
+set(TRACCC_ALPAKA_TEST_SOURCES
+  alpaka_basic.cpp
+  test_cca.cpp
+)
+
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   enable_language(CUDA)
-  set_source_files_properties(alpaka_basic.cpp PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${TRACCC_ALPAKA_TEST_SOURCES} PROPERTIES LANGUAGE CUDA)
   include( traccc-compiler-options-cuda )
   list(APPEND DEVICE_LIBRARIES vecmem::cuda)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
   enable_language(HIP)
-  set_source_files_properties(alpaka_basic.cpp PROPERTIES LANGUAGE HIP)
+  set_source_files_properties(${TRACCC_ALPAKA_TEST_SOURCES} PROPERTIES LANGUAGE HIP)
   list(APPEND DEVICE_LIBRARIES vecmem::hip)
 endif()
 
 traccc_add_test( alpaka
-   alpaka_basic.cpp
+   ${TRACCC_ALPAKA_TEST_SOURCES}
    LINK_LIBRARIES
    GTest::gtest_main
+   traccc_tests_common
    alpaka::alpaka
    vecmem::core
+   traccc::alpaka
    ${DEVICE_LIBRARIES}
 )
 
