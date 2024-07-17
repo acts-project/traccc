@@ -77,9 +77,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 
-    m_copy.setup(track_states_buffer.headers);
-    m_copy.setup(track_states_buffer.items);
-    m_copy.setup(navigation_buffer);
+    m_copy.setup(track_states_buffer.headers)->ignore();
+    m_copy.setup(track_states_buffer.items)->ignore();
+    m_copy.setup(navigation_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the track
     // fitting

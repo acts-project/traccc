@@ -44,7 +44,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Create the result object, overestimating the number of measurements.
     measurement_collection_types::buffer measurements{
         num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
-    m_copy.get().setup(measurements);
+    m_copy.get().setup(measurements)->wait();
     measurement_collection_types::view measurements_view(measurements);
 
     // If there are no cells, return right away.

@@ -28,13 +28,15 @@ container_h2d_copy_alg<CONTAINER_TYPES>::operator()(input_type input) const {
     // Create the output buffer with the correct sizes.
     output_type result{{static_cast<header_size_type>(sizes.size()), m_mr.main},
                        {sizes, m_mr.main, m_mr.host}};
-    m_deviceCopy.setup(result.headers);
-    m_deviceCopy.setup(result.items);
+    m_deviceCopy.setup(result.headers)->wait();
+    m_deviceCopy.setup(result.items)->wait();
 
     // Copy data straight into it.
     m_deviceCopy(input.headers, result.headers,
-                 vecmem::copy::type::host_to_device);
-    m_deviceCopy(input.items, result.items, vecmem::copy::type::host_to_device);
+                 vecmem::copy::type::host_to_device)
+        ->wait();
+    m_deviceCopy(input.items, result.items, vecmem::copy::type::host_to_device)
+        ->wait();
 
     // Return the created buffer.
     return result;
@@ -56,23 +58,25 @@ container_h2d_copy_alg<CONTAINER_TYPES>::operator()(
     // Create/set the host buffer.
     hostBuffer =
         typename CONTAINER_TYPES::buffer{{size, *host_mr}, {sizes, *host_mr}};
-    m_hostCopy.setup(hostBuffer.headers);
-    m_hostCopy.setup(hostBuffer.items);
+    m_hostCopy.setup(hostBuffer.headers)->wait();
+    m_hostCopy.setup(hostBuffer.items)->wait();
 
     // Copy the data into the host buffer.
-    m_hostCopy(input.headers, hostBuffer.headers);
-    m_hostCopy(input.items, hostBuffer.items);
+    m_hostCopy(input.headers, hostBuffer.headers)->wait();
+    m_hostCopy(input.items, hostBuffer.items)->wait();
 
     // Create the output buffer with the correct sizes.
     output_type result{{size, m_mr.main}, {sizes, m_mr.main, m_mr.host}};
-    m_deviceCopy.setup(result.headers);
-    m_deviceCopy.setup(result.items);
+    m_deviceCopy.setup(result.headers)->wait();
+    m_deviceCopy.setup(result.items)->wait();
 
     // Copy data from the host buffer into the device/result buffer.
     m_deviceCopy(hostBuffer.headers, result.headers,
-                 vecmem::copy::type::host_to_device);
+                 vecmem::copy::type::host_to_device)
+        ->wait();
     m_deviceCopy(hostBuffer.items, result.items,
-                 vecmem::copy::type::host_to_device);
+                 vecmem::copy::type::host_to_device)
+        ->wait();
 
     // Return the created buffer.
     return result;

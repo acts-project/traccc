@@ -174,9 +174,10 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
-        copy.setup(seeds_buffer);
+        copy.setup(seeds_buffer)->ignore();
         copy(vecmem::get_data(seeds), seeds_buffer,
-             vecmem::copy::type::host_to_device);
+             vecmem::copy::type::host_to_device)
+            ->ignore();
 
         // Read measurements
         traccc::io::measurement_reader_output readOut(&host_mr);
@@ -187,20 +188,21 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
         traccc::measurement_collection_types::buffer measurements_buffer(
             measurements_per_event.size(), mr.main);
-        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer)
+            ->ignore();
 
         // Instantiate output cuda containers/collections
         traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer{{{}, *(mr.host)},
                                          {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers);
-        copy.setup(track_candidates_cuda_buffer.items);
+        copy.setup(track_candidates_cuda_buffer.headers)->ignore();
+        copy.setup(track_candidates_cuda_buffer.items)->ignore();
 
         traccc::track_candidate_container_types::buffer
             track_candidates_limit_cuda_buffer{{{}, *(mr.host)},
                                                {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_limit_cuda_buffer.headers);
-        copy.setup(track_candidates_limit_cuda_buffer.items);
+        copy.setup(track_candidates_limit_cuda_buffer.headers)->ignore();
+        copy.setup(track_candidates_limit_cuda_buffer.items)->ignore();
 
         // Navigation buffer
         auto navigation_buffer = detray::create_candidates_buffer(

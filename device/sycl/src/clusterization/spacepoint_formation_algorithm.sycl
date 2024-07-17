@@ -44,7 +44,7 @@ spacepoint_formation_algorithm::operator()(
     // Create the result buffer.
     spacepoint_collection_types::buffer spacepoints(num_measurements,
                                                     m_mr.main);
-    m_copy.get().setup(spacepoints);
+    m_copy.get().setup(spacepoints)->wait();
 
     // If there are no measurements, we can conclude here.
     if (num_measurements == 0) {

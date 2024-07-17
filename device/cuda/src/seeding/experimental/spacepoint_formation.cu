@@ -54,7 +54,7 @@ spacepoint_formation<detector_t>::operator()(
 
     spacepoint_collection_types::buffer spacepoints_buffer(
         n_measurements, m_mr.main, vecmem::data::buffer_type::resizable);
-    m_copy.setup(spacepoints_buffer);
+    m_copy.setup(spacepoints_buffer)->ignore();
 
     unsigned int nThreads = warpSize * 2;
     unsigned int nBlocks = (n_measurements + nThreads - 1) / nThreads;
