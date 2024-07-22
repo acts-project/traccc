@@ -6,9 +6,13 @@
  */
 
 // Local include(s).
+#include "../sanity/contiguous_on.hpp"
+#include "../sanity/ordered_on.hpp"
 #include "../utils/barrier.hpp"
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/utils/projections.hpp"
+#include "traccc/utils/relations.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
@@ -36,6 +40,11 @@ clusterization_algorithm::clusterization_algorithm(
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells_view,
     const cell_module_collection_types::const_view& modules_view) const {
+
+    assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
+                            m_queue, cells_view));
+    assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
+                         m_copy, m_queue, cells_view));
 
     // Get the number of cells
     const cell_collection_types::view::size_type num_cells =

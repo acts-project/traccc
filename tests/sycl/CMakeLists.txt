@@ -19,6 +19,8 @@ traccc_add_test(
     test_mutex.sycl
     test_unique_lock.sycl
     test_cca.sycl
+    test_sanity_contiguous_on.sycl
+    test_sanity_ordered_on.sycl
 
     LINK_LIBRARIES
     GTest::gtest_main

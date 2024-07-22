@@ -6,10 +6,12 @@
  */
 
 // Project include(s).
+#include "../sanity/contiguous_on.cuh"
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/finding_global_counter.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/device/add_links_for_holes.hpp"
@@ -20,6 +22,7 @@
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/prune_tracks.hpp"
+#include "traccc/utils/projections.hpp"
 
 // detray include(s).
 #include "detray/core/detector.hpp"
@@ -43,10 +46,10 @@
 #include <thrust/unique.h>
 
 // System include(s).
+#include <cassert>
 #include <vector>
 
 namespace traccc::cuda {
-
 namespace kernels {
 
 /// CUDA kernel for running @c traccc::device::make_barcode_sequence
@@ -269,6 +272,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     measurement_collection_types::const_view::size_type n_measurements =
         m_copy.get_size(measurements);
+
+    assert(is_contiguous_on(measurement_module_projection(), m_mr.main, m_copy,
+                            m_stream, measurements));
 
     // Get copy of barcode uniques
     measurement_collection_types::buffer uniques_buffer{n_measurements,

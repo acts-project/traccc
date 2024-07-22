@@ -9,6 +9,10 @@
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 
 #include "traccc/clusterization/details/sparse_ccl.hpp"
+#include "traccc/sanity/contiguous_on.hpp"
+#include "traccc/sanity/ordered_on.hpp"
+#include "traccc/utils/projections.hpp"
+#include "traccc/utils/relations.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -21,6 +25,9 @@ sparse_ccl_algorithm::sparse_ccl_algorithm(vecmem::memory_resource& mr)
 
 sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
     const cell_collection_types::const_view& cells_view) const {
+
+    assert(is_contiguous_on(cell_module_projection(), cells_view));
+    assert(is_ordered_on(channel0_major_cell_order_relation(), cells_view));
 
     // Run SparseCCL to fill CCL indices.
     const cell_collection_types::const_device cells{cells_view};

@@ -39,7 +39,10 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/utils/get_queue.sycl"
   "src/utils/queue_wrapper.cpp"
   "src/utils/calculate1DimNdRange.sycl"
-  "src/utils/make_prefix_sum_buff.sycl" )
+  "src/utils/make_prefix_sum_buff.sycl"
+  "src/sanity/contiguous_on.hpp"
+  "src/sanity/ordered_on.hpp"
+)
 target_link_libraries( traccc_sycl
   PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
   PRIVATE traccc::device_common vecmem::sycl )
