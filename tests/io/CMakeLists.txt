@@ -12,3 +12,9 @@ traccc_add_test( io
    "test_event_map.cpp"
    LINK_LIBRARIES GTest::gtest_main traccc_tests_common
                   traccc::core traccc::io )
+
+target_compile_definitions(
+  traccc_test_io
+  PRIVATE
+  TRACCC_TEST_IO_MOCK_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/mock_data"
+)
