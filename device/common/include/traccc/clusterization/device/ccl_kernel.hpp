@@ -87,7 +87,7 @@ struct ccl_kernel_helper {
 /// @param[out] measurements_view collection of measurements
 /// @param[out] cell_links    collection of links to measurements each cell is
 /// put into
-template <TRACCC_CONSTRAINT(device::concepts::barrier) barrier_t>
+template <device::concepts::barrier barrier_t>
 TRACCC_DEVICE inline void ccl_kernel(
     details::index_t threadId, details::index_t blckDim, unsigned int blockId,
     const cell_collection_types::const_view cells_view,

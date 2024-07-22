@@ -8,14 +8,9 @@
 
 #pragma once
 
-#include "traccc/definitions/concepts.hpp"
-
-#if __cpp_concepts >= 201907L
 #include <concepts>
-#endif
 
 namespace traccc::device::concepts {
-#if __cpp_concepts >= 201907L
 /**
  * @brief Concept to ensure that a type is barrier-like, i.e. it can
  * synchronize threads in a compute block.
@@ -57,5 +52,4 @@ concept barrier = requires(T& b) {
         ->std::integral;
     };
 };
-#endif
 }  // namespace traccc::device::concepts

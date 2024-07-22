@@ -9,7 +9,6 @@
 #pragma once
 
 // Project include(s).
-#include <traccc/definitions/concepts.hpp>
 #include <traccc/sycl/utils/queue_wrapper.hpp>
 
 #include "../utils/get_queue.hpp"
@@ -25,9 +24,7 @@
 #include <CL/sycl.hpp>
 
 // System include
-#if __cpp_concepts >= 201907L
 #include <concepts>
-#endif
 
 namespace traccc::sycl {
 namespace kernels {
@@ -58,13 +55,10 @@ class IsOrderedOn {};
  * @return true If the vector is ordered on `R`.
  * @return false Otherwise.
  */
-template <TRACCC_CONSTRAINT(std::semiregular) R, typename T>
-#if __cpp_concepts >= 201907L
-requires std::relation<R, T, T>
-#endif
-    bool is_ordered_on(R relation, vecmem::memory_resource& mr,
-                       vecmem::copy& copy, queue_wrapper& queue_wrapper,
-                       vecmem::data::vector_view<T> vector) {
+template <std::semiregular R, typename T>
+requires std::relation<R, T, T> bool is_ordered_on(
+    R relation, vecmem::memory_resource& mr, vecmem::copy& copy,
+    queue_wrapper& queue_wrapper, vecmem::data::vector_view<T> vector) {
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;

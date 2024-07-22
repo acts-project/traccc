@@ -9,12 +9,16 @@ cmake_minimum_required( VERSION 3.9 )
 project( traccc VERSION 0.12.0 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
-set( CMAKE_CXX_STANDARD 17 CACHE STRING "The (host) C++ standard to use" )
+set( CMAKE_CXX_STANDARD 20 CACHE STRING "The (host) C++ standard to use" )
 set( CMAKE_CXX_EXTENSIONS FALSE CACHE BOOL "Disable (host) C++ extensions" )
-set( CMAKE_CUDA_STANDARD 17 CACHE STRING "The (CUDA) C++ standard to use" )
+set( CMAKE_CUDA_STANDARD 20 CACHE STRING "The (CUDA) C++ standard to use" )
 set( CMAKE_CUDA_EXTENSIONS FALSE CACHE BOOL "Disable (CUDA) C++ extensions" )
-set( CMAKE_SYCL_STANDARD 17 CACHE STRING "The (SYCL) C++ standard to use" )
-set( CMAKE_HIP_STANDARD 17 CACHE STRING "The (HIP) C++ standard to use" )
+set( CMAKE_SYCL_STANDARD 20 CACHE STRING "The (SYCL) C++ standard to use" )
+set( CMAKE_HIP_STANDARD 20 CACHE STRING "The (HIP) C++ standard to use" )
+
+if(${CMAKE_CXX_STANDARD} LESS 20)
+   message(SEND_ERROR "CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}, but traccc requires C++>=20")
+endif()
 
 # Flag controlling whether warnings should make the build fail.
 option( TRACCC_FAIL_ON_WARNINGS
@@ -67,11 +71,21 @@ option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
 option( TRACCC_USE_ROOT "Use ROOT in the build (if needed)" TRUE )
 
-# Flag enforcing concept usage.
-option( TRACCC_ENFORCE_CONCEPTS "Throw an error if concepts are not available" FALSE )
-
 # Clean up.
 unset( TRACCC_BUILD_CUDA_DEFAULT )
+
+# Check CUDA and SYCL C++ standards
+if(${TRACCC_BUILD_CUDA} AND ${CMAKE_CUDA_STANDARD} LESS 20)
+   message(SEND_ERROR "CMAKE_CUDA_STANDARD=${CMAKE_CUDA_STANDARD}, but traccc requires C++>=20")
+endif()
+
+if(${TRACCC_BUILD_SYCL} AND ${CMAKE_SYCL_STANDARD} LESS 20)
+   message(SEND_ERROR "CMAKE_SYCL_STANDARD=${CMAKE_SYCL_STANDARD}, but traccc requires C++>=20")
+endif()
+
+if(${TRACCC_BUILD_HIP} AND ${CMAKE_HIP_STANDARD} LESS 20)
+   message(SEND_ERROR "CMAKE_HIP_STANDARD=${CMAKE_HIP_STANDARD}, but traccc requires C++>=20")
+endif()
 
 # Set up VecMem.
 option( TRACCC_SETUP_VECMEM
