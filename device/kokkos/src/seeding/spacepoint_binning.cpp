@@ -46,6 +46,10 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     const unsigned int num_threads = 32 * 8;
     const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
+    // Hack to avoid warnings thrown by C++20
+    seedfinder_config config = m_config;
+    auto axes = m_axes;
+
     Kokkos::parallel_for(
         "count_grid_capacities", team_policy(num_blocks, Kokkos::AUTO),
         KOKKOS_LAMBDA(const member_type& team_member) {
@@ -55,7 +59,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
                     device::count_grid_capacities(
                         team_member.league_rank() * team_member.team_size() +
                             thr,
-                        m_config, m_axes.first, m_axes.second, spacepoints_view,
+                        config, axes.first, axes.second, spacepoints_view,
                         grid_capacities_view);
                 });
         });
@@ -84,7 +88,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
                     device::populate_grid(
                         team_member.league_rank() * team_member.team_size() +
                             thr,
-                        m_config, spacepoints_view, grid_view);
+                        config, spacepoints_view, grid_view);
                 });
         });
 
