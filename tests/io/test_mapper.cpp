@@ -19,9 +19,9 @@ std::size_t event = 0;
 std::string detector_file = "tml_detector/trackml-detector.csv";
 std::string digi_config_file =
     "tml_detector/default-geometric-config-generic.json";
-std::string hits_dir = "../tests/io/mock_data/";
-std::string cells_dir = "../tests/io/mock_data/";
-std::string particles_dir = "../tests/io/mock_data/";
+std::string hits_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
+std::string cells_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
+std::string particles_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
 
 /***
  * Mock data test
