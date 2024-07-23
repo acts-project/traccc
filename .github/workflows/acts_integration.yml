@@ -1,0 +1,63 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2024 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+name: Acts Integration Builds
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-acts_integration
+  cancel-in-progress: true
+
+jobs:
+  acts_build:
+    name: ${{ matrix.build }}
+    runs-on: ubuntu-latest
+
+    container: ghcr.io/acts-project/ubuntu2404:53
+
+    strategy:
+      matrix:
+        build:
+          - Release
+          - Debug
+
+    steps:
+      - name: Checkout traccc
+        uses: actions/checkout@v4
+        with:
+          path: traccc/
+      - name: Checkout Acts
+        run:
+          git clone --depth 1 --branch v36.0.0 https://github.com/acts-project/acts.git
+      - name: Configure Acts
+        run: |
+          cmake \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DCMAKE_CUDA_STANDARD=20 \
+            -DCMAKE_HIP_STANDARD=20 \
+            -DCMAKE_SYCL_STANDARD=20 \
+            -DACTS_BUILD_PLUGIN_ACTSVG=ON \
+            -DACTS_BUILD_PLUGIN_JSON=ON \
+            -DACTS_BUILD_PLUGIN_TRACCC=ON \
+            -DACTS_SETUP_TRACCC=ON \
+            -DACTS_SETUP_VECMEM=ON \
+            -DACTS_SETUP_DETRAY=ON \
+            -DACTS_SETUP_COVFIE=ON \
+            -DTRACCC_SETUP_THRUST=ON \
+            -DACTS_DETRAY_SOURCE="URL;https://github.com/acts-project/detray/archive/refs/tags/v0.69.1.tar.gz;URL_MD5;38a0f8e786ac6a61fabcd3a28d7bb2d6" \
+            -DACTS_SETUP_ALGEBRAPLUGINS=ON \
+            -DACTS_TRACCC_SOURCE="SOURCE_DIR;${GITHUB_WORKSPACE}/traccc" \
+            -S ${GITHUB_WORKSPACE}/acts \
+            -B build_acts
+      - name: Build
+        run: |
+          cmake --build build_acts -- -j $(nproc)
