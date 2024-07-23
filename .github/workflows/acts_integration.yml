@@ -1,0 +1,58 @@
+# TRACCC library, part of the ACTS project (R&D line)
+#
+# (c) 2024 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+name: Acts Integration Builds
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-acts_integration
+  cancel-in-progress: true
+
+jobs:
+  acts_build:
+    name: ${{ matrix.build }}-${{ matrix.tag }}
+    runs-on: ubuntu-latest
+
+    container: ghcr.io/acts-project/ubuntu2404:53
+
+    strategy:
+      matrix:
+        build:
+          - Release
+          - Debug
+        tag:
+          - main
+
+    steps:
+      - name: Checkout traccc
+        uses: actions/checkout@v4
+        with:
+          path: traccc/
+      - name: Checkout Acts
+        run:
+          git clone --depth 1 --branch ${{ matrix.tag }} https://github.com/acts-project/acts.git
+      - name: Configure Acts
+        run: |
+          cmake \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DCMAKE_CUDA_STANDARD=20 \
+            -DCMAKE_HIP_STANDARD=20 \
+            -DCMAKE_SYCL_STANDARD=20 \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DACTS_BUILD_PLUGIN_TRACCC=ON \
+            -DACTS_BUILD_EXAMPLES=ON \
+            -DACTS_BUILD_EXAMPLES_PYTHON_BINDINGS=ON \
+            -DACTS_TRACCC_SOURCE="SOURCE_DIR;${GITHUB_WORKSPACE}/traccc" \
+            -S ${GITHUB_WORKSPACE}/acts \
+            -B build_acts
+      - name: Build
+        run: |
+          cmake --build build_acts -- -j $(nproc)
