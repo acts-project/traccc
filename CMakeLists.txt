@@ -53,8 +53,6 @@ option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
-option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
-   FALSE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
@@ -152,20 +150,6 @@ if( TRACCC_SETUP_TBB )
       find_package( TBB REQUIRED )
    else()
       add_subdirectory( extern/tbb )
-   endif()
-endif()
-
-# Set up Kokkos.
-option( TRACCC_SETUP_KOKKOS
-   "Set up the Kokkos library" ${TRACCC_BUILD_KOKKOS} )
-option( TRACCC_USE_SYSTEM_KOKKOS
-   "Pick up an existing installation of Kokkos from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_SETUP_KOKKOS )
-   if( TRACCC_USE_SYSTEM_KOKKOS )
-      find_package( Kokkos REQUIRED )
-   else()
-      add_subdirectory( extern/kokkos )
    endif()
 endif()
 
@@ -288,9 +272,6 @@ add_subdirectory( core )
 add_subdirectory( device/common )
 if( TRACCC_BUILD_CUDA )
    add_subdirectory( device/cuda )
-endif()
-if( TRACCC_BUILD_KOKKOS )
-   add_subdirectory( device/kokkos )
 endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )

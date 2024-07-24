@@ -42,14 +42,6 @@
          }
       },
       {
-         "name" : "kokkos",
-         "displayName" : "Kokkos Code Development",
-         "inherits": ["cuda"],
-         "cacheVariables": {
-            "TRACCC_BUILD_KOKKOS" : "TRUE"
-         }
-      },
-      {
          "name" : "root",
          "displayName" : "ROOT Enabled Code Development",
          "inherits": ["base"],

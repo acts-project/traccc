@@ -4,17 +4,17 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category           | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos |
-| ------------------ | ---------------------- | --- | ---- | ---- | ------ | ------ |
-| **Clusterization** | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | 🟡     | ⚪     |
-|                    | Measurement creation   | ✅  | ✅   | ✅   | 🟡     | ⚪     |
-| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | 🟡     | ⚪     |
-|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     |
-|                    | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     |
-|                    | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     |
-| **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡   | 🟡     | ⚪     |
-| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪     | ⚪     |
-| **Ambiguity resolution**  | Greedy resolver   | ✅  | ⚪   |  ⚪  | ⚪     | ⚪     |
+| Category           | Algorithms             | CPU | CUDA | SYCL | Alpaka |
+| ------------------ | ---------------------- | --- | ---- | ---- | ------ |
+| **Clusterization** | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | 🟡     |
+|                    | Measurement creation   | ✅  | ✅   | ✅   | 🟡     |
+| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | 🟡     |
+|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     |
+|                    | Seed finding           | ✅  | ✅   | ✅   | ✅     |
+|                    | Track param estimation | ✅  | ✅   | ✅   | ✅     |
+| **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡   | 🟡     |
+| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪     |
+| **Ambiguity resolution**  | Greedy resolver   | ✅  | ⚪   |  ⚪  | ⚪     |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
