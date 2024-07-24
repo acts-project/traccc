@@ -4,27 +4,27 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category           | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos | Futhark |
-| ------------------ | ---------------------- | --- | ---- | ---- | ------ | ------ | ------- |
-| **Clusterization** | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | 🟡     | ⚪     | ✅      |
-|                    | Measurement creation   | ✅  | ✅   | ✅   | 🟡     | ⚪     | ✅      |
-| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | 🟡     | ⚪     | ⚪      |
-|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     | ⚪      |
-|                    | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-|                    | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-| **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡   | 🟡     | ⚪     | ⚪      |
-| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪     | ⚪     | ⚪      |
-| **Ambiguity resolution**  | Greedy resolver   | ✅  | ⚪   |  ⚪  | ⚪     | ⚪     | ⚪      |
+| Category           | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos |
+| ------------------ | ---------------------- | --- | ---- | ---- | ------ | ------ |
+| **Clusterization** | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | 🟡     | ⚪     |
+|                    | Measurement creation   | ✅  | ✅   | ✅   | 🟡     | ⚪     |
+| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | 🟡     | ⚪     |
+|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     |
+|                    | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     |
+|                    | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     |
+| **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡   | 🟡     | ⚪     |
+| **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪     | ⚪     |
+| **Ambiguity resolution**  | Greedy resolver   | ✅  | ⚪   |  ⚪  | ⚪     | ⚪     |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
 The relations between datatypes and algorithms is given in the (approximately
 commutative) diagram shown below. Black lines indicate CPU algorithms, green
 lines indicate CUDA algorithms, blue lines indicate SYCL algorithms, and brown
-lines indicate Futhark algorithms. Solid algorithms are ready for use, dashed
-algorithms are in development or future goals. Data types for different
-heterogeneous platforms are contracted for legibility, and identities are
-hidden.
+lines indicate Futhark algorithms (these are deprecated). Solid algorithms are
+ready for use, dashed algorithms are in development or future goals. Data types
+for different heterogeneous platforms are contracted for legibility, and
+identities are hidden.
 
 ```mermaid
 flowchart LR

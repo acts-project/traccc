@@ -53,8 +53,6 @@ option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
    ${TRACCC_BUILD_CUDA_DEFAULT} )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
-option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
-   FALSE )
 option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
@@ -325,10 +323,6 @@ if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()
    add_subdirectory( tests )
-endif()
-
-if(TRACCC_BUILD_FUTHARK)
-   add_subdirectory(device/futhark)
 endif()
 
 # Set up the packaging of the project.
