@@ -313,11 +313,10 @@ add_subdirectory( plugins )
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
    find_package( Boost REQUIRED COMPONENTS program_options filesystem)
-   if ( TRACCC_BUILD_IO )
-      add_subdirectory( examples )
-   else()
-      message(STATUS "traccc::io not built, traccc::examples are forcefully switched off.")
+   if ( NOT TRACCC_BUILD_IO )
+      message(FATAL_ERROR "traccc::io is disabled, but it is required to build the examples.")
    endif()
+   add_subdirectory( examples )
 endif()
 
 # Set up the test(s).
