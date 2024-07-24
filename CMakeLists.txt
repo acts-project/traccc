@@ -59,6 +59,7 @@ option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
+option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
@@ -299,21 +300,33 @@ endif()
 if( TRACCC_BUILD_ALPAKA )
    add_subdirectory( device/alpaka )
 endif()
-add_subdirectory( io )
-add_subdirectory( performance )
+if ( TRACCC_BUILD_IO )
+   add_subdirectory( io )
+   add_subdirectory( performance )
+   add_subdirectory( simulation )
+else()
+   message(STATUS "traccc::io not built, traccc::performance and traccc::simulation are forcefully switched off.")
+endif()
+
 add_subdirectory( plugins )
-add_subdirectory( simulation )
 
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
    find_package( Boost REQUIRED COMPONENTS program_options filesystem)
-
-   add_subdirectory( examples )
+   if ( TRACCC_BUILD_IO )
+      add_subdirectory( examples )
+   else()
+      message(STATUS "traccc::io not built, traccc::examples are forcefully switched off.")
+   endif()
 endif()
 
 # Set up the test(s).
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
-   add_subdirectory( tests )
+   if ( TRACCC_BUILD_IO )
+      add_subdirectory( tests )
+   else()
+      message(STATUS "traccc::io not built, traccc::tests are forcefully switched off.")
+   endif()
 endif()
 
 if(TRACCC_BUILD_FUTHARK)
