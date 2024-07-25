@@ -40,12 +40,24 @@ stages:
     - ./src/data/traccc_data_get_files.sh
     - ctest --output-on-failure --test-dir build/ -R "${TRACCC_BUILD_TYPE}"
 
+# Test job template for running on an NVIDIA GPU.
+.nvidia_sycl_test_template: &nvidia_sycl_test_job
+  <<: *base_job
+  tags: [docker-gpu-nvidia]
+  stage: test
+  script:
+    - nvidia-smi
+    - sycl-ls
+    - ./src/data/traccc_data_get_files.sh
+    - ctest --output-on-failure --test-dir build/ -R "${TRACCC_BUILD_TYPE}"
+
 # Test job template for running on an Intel device.
 .intel_test_template: &intel_test_job
   <<: *base_job
   tags: [docker-gpu-nvidia]
   stage: test
   script:
+    - sycl-ls
     - ./src/data/traccc_data_get_files.sh
     - ctest --output-on-failure --test-dir build/ -R "${TRACCC_BUILD_TYPE}"
 
@@ -95,7 +107,7 @@ build:sycl_nvidia:
 
 # SYCL test job (with an NVIDIA backend).
 test:sycl_nvidia:
-  <<: *nvidia_test_job
+  <<: *nvidia_sycl_test_job
   image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:48
   variables:
     TRACCC_BUILD_TYPE: SYCL
