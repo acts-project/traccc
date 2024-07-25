@@ -68,7 +68,7 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2204:v33
             cxx_standard: "17"
             options: -DTRACCC_BUILD_ALPAKA=TRUE
-            run_tests: false
+            run_tests: true
         build:
           - Release
           - Debug
