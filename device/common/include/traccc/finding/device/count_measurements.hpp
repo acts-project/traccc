@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
-// Thust include(s)
+// Thrust include(s)
 #include <thrust/binary_search.h>
 
 // System include(s)
