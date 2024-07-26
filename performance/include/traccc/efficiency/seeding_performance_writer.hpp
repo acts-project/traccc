@@ -44,10 +44,10 @@ class seeding_performance_writer {
 
         /// Plot tool configurations.
         std::map<std::string, plot_helpers::binning> var_binning = {
-            {"Eta", plot_helpers::binning("#eta", 40, -4, 4)},
-            {"Phi", plot_helpers::binning("#phi", 100, -3.15, 3.15)},
-            {"Pt", plot_helpers::binning("p_{T} [GeV/c]", 40, 0, 100)},
-            {"Num", plot_helpers::binning("N", 30, -0.5, 29.5)}};
+            {"Eta", plot_helpers::binning("#eta", 40, -4.f, 4.f)},
+            {"Phi", plot_helpers::binning("#phi", 100, -3.15f, 3.15f)},
+            {"Pt", plot_helpers::binning("p_{T} [GeV/c]", 40, 0.f, 100.f)},
+            {"Num", plot_helpers::binning("N", 30, -0.5f, 29.5f)}};
 
         /// Cut values
         scalar pT_cut = 1.f * traccc::unit<scalar>::GeV;

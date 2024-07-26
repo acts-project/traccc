@@ -189,7 +189,7 @@ void res_plot_tool::write(res_plot_cache& cache) const {
             auto res = data->Fit("gaus", "Q0S");
             gaus.GetParameters(&fit_par[0]);
             H->SetBinContent(i + 1, fit_par[2]);
-            sigmas.push_back(gaus.GetParError(2));
+            sigmas.push_back(static_cast<float>(gaus.GetParError(2)));
         }
 
         std::unique_ptr<TGraphErrors> G =

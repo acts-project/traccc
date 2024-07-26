@@ -104,7 +104,7 @@ class nseed_performance_writer {
                         std::optional<std::size_t>);
 
     void write_track_header();
-    void write_track_row(std::size_t, std::size_t, bool, int, scalar, scalar,
+    void write_track_row(std::size_t, std::size_t, bool, scalar, scalar, scalar,
                          scalar);
 
     std::string _prefix;

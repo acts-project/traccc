@@ -32,7 +32,7 @@ inline traccc::scalar wrap_to_pi(traccc::scalar phi) {
 inline traccc::scalar angle_mean(traccc::scalar lhs, traccc::scalar rhs) {
 
     const traccc::scalar diff = wrap_to_pi(lhs - rhs);
-    return wrap_to_pi(rhs + 0.5 * diff);
+    return wrap_to_pi(rhs + 0.5f * diff);
 }
 
 }  // namespace
