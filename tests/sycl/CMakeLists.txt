@@ -12,7 +12,8 @@ traccc_add_test(
     sycl
 
     # Define the sources for the test.
-    test_kalman_fitter_telescope.sycl
+    # TODO: Reactivate this once #655 is fixed.
+    # test_kalman_fitter_telescope.sycl
     test_clusterization.sycl
     test_spacepoint_formation.sycl
     test_barrier.sycl
