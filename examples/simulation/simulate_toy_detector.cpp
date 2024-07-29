@@ -60,7 +60,7 @@ int simulate(const traccc::opts::generation& generation_opts,
     detray::toy_det_config toy_cfg{};
     toy_cfg.n_brl_layers(4u).n_edc_layers(7u);
     // @TODO: Increase the material budget again
-    toy_cfg.module_mat_thickness(0.11 * detray::unit<scalar>::mm);
+    toy_cfg.module_mat_thickness(0.11f * detray::unit<scalar>::mm);
     const auto [det, name_map] = detray::build_toy_detector(host_mr, toy_cfg);
 
     /***************************

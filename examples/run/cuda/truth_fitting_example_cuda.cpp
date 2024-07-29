@@ -149,12 +149,12 @@ int main(int argc, char* argv[]) {
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.03 * detray::unit<scalar>::mm,
-        0.03 * detray::unit<scalar>::mm,
-        0.017,
-        0.017,
-        0.01 / detray::unit<scalar>::GeV,
-        1 * detray::unit<scalar>::ns};
+        0.03f * detray::unit<scalar>::mm,
+        0.03f * detray::unit<scalar>::mm,
+        0.017f,
+        0.017f,
+        0.01f / detray::unit<scalar>::GeV,
+        1.f * detray::unit<scalar>::ns};
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;

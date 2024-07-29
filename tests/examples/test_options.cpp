@@ -57,9 +57,9 @@ TEST(options, value_array_double) {
     std::istringstream I("1.1:2.2:3.3");
     I >> parsed_vars;
 
-    EXPECT_FLOAT_EQ(parsed_vars[0], 1.1);
-    EXPECT_FLOAT_EQ(parsed_vars[1], 2.2);
-    EXPECT_FLOAT_EQ(parsed_vars[2], 3.3);
+    EXPECT_DOUBLE_EQ(parsed_vars[0], 1.1);
+    EXPECT_DOUBLE_EQ(parsed_vars[1], 2.2);
+    EXPECT_DOUBLE_EQ(parsed_vars[2], 3.3);
 
     EXPECT_THROW(std::istringstream("1.1:2.2") >> parsed_vars,
                  std::invalid_argument);
