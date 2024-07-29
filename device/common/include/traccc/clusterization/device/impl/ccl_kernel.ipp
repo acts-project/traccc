@@ -32,7 +32,7 @@ namespace traccc::device {
 ///                     iteration.
 /// @param[in] barrier  A generic object for block-wide synchronisation
 ///
-template <TRACCC_CONSTRAINT(device::concepts::barrier) barrier_t>
+template <device::concepts::barrier barrier_t>
 TRACCC_DEVICE void fast_sv_1(
     vecmem::device_vector<details::index_t>& f,
     vecmem::device_vector<details::index_t>& gf,
@@ -125,7 +125,7 @@ TRACCC_DEVICE void fast_sv_1(
     } while (barrier.blockOr(gf_changed));
 }
 
-template <TRACCC_CONSTRAINT(device::concepts::barrier) barrier_t>
+template <device::concepts::barrier barrier_t>
 TRACCC_DEVICE inline void ccl_kernel(
     const details::index_t threadId, const details::index_t blckDim,
     const unsigned int blockId,

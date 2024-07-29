@@ -8,9 +8,6 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/definitions/concepts.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
@@ -18,9 +15,7 @@
 #include <vecmem/utils/copy.hpp>
 
 // System include
-#if __cpp_concepts >= 201907L
 #include <concepts>
-#endif
 
 namespace traccc::host {
 /**
@@ -46,11 +41,9 @@ namespace traccc::host {
  * @return true If the vector is ordered on `R`.
  * @return false Otherwise.
  */
-template <TRACCC_CONSTRAINT(std::semiregular) R, typename T>
-#if __cpp_concepts >= 201907L
-requires std::relation<R, T, T>
-#endif
-    bool is_ordered_on(R relation, vecmem::data::vector_view<T> vector) {
+template <std::semiregular R, typename T>
+requires std::relation<R, T, T> bool is_ordered_on(
+    R relation, vecmem::data::vector_view<T> vector) {
     // Grab the number of elements in our vector.
     uint32_t n = vector.size();
 

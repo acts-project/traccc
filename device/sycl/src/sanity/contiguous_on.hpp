@@ -9,7 +9,6 @@
 #pragma once
 
 // Project include(s).
-#include <traccc/definitions/concepts.hpp>
 #include <traccc/sycl/utils/queue_wrapper.hpp>
 
 #include "../utils/get_queue.hpp"
@@ -26,9 +25,7 @@
 #include <CL/sycl.hpp>
 
 // System include
-#if __cpp_concepts >= 201907L
 #include <concepts>
-#endif
 
 namespace traccc::sycl {
 namespace kernels {
@@ -57,14 +54,10 @@ class IsContiguousOnAllUnique {};
  * @return true If the vector is contiguous on `P`.
  * @return false Otherwise.
  */
-template <TRACCC_CONSTRAINT(std::semiregular) P,
-          TRACCC_CONSTRAINT(std::equality_comparable) T>
-#if __cpp_concepts >= 201907L
-requires std::regular_invocable<P, T>
-#endif
-    bool is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
-                          vecmem::copy& copy, queue_wrapper& queue_wrapper,
-                          vecmem::data::vector_view<T> vector) {
+template <std::semiregular P, std::equality_comparable T>
+requires std::regular_invocable<P, T> bool is_contiguous_on(
+    P&& projection, vecmem::memory_resource& mr, vecmem::copy& copy,
+    queue_wrapper& queue_wrapper, vecmem::data::vector_view<T> vector) {
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;

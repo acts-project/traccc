@@ -153,13 +153,13 @@ inline void select_seeds(
                 scalar seed1_sum = 0;
                 scalar seed2_sum = 0;
 
-                const internal_spacepoint<spacepoint>& ispB1 =
+                const internal_spacepoint<spacepoint> ispB1 =
                     internal_sp_device.bin(lhs.sp1.bin_idx)[lhs.sp1.sp_idx];
-                const internal_spacepoint<spacepoint>& ispT1 =
+                const internal_spacepoint<spacepoint> ispT1 =
                     internal_sp_device.bin(lhs.sp3.bin_idx)[lhs.sp3.sp_idx];
-                const internal_spacepoint<spacepoint>& ispB2 =
+                const internal_spacepoint<spacepoint> ispB2 =
                     internal_sp_device.bin(rhs.sp1.bin_idx)[rhs.sp1.sp_idx];
-                const internal_spacepoint<spacepoint>& ispT2 =
+                const internal_spacepoint<spacepoint> ispT2 =
                     internal_sp_device.bin(rhs.sp3.bin_idx)[rhs.sp3.sp_idx];
 
                 const spacepoint& spB1 = spacepoints_device.at(ispB1.m_link);
@@ -185,9 +185,9 @@ inline void select_seeds(
         const triplet& aTriplet = data[i];
         const sp_location& spB_loc = aTriplet.sp1;
         const sp_location& spT_loc = aTriplet.sp3;
-        const internal_spacepoint<spacepoint>& spB =
+        const internal_spacepoint<spacepoint> spB =
             internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
-        const internal_spacepoint<spacepoint>& spT =
+        const internal_spacepoint<spacepoint> spT =
             internal_sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
 
         // if the number of seeds reaches the threshold, break
