@@ -25,48 +25,33 @@ jobs:
       matrix:
         platform:
           - name: CPU
-            container: ghcr.io/acts-project/ubuntu2004:v30
-            cxx_standard: "17"
+            container: ghcr.io/acts-project/ubuntu2404:56
+            cxx_standard: "20"
             options:
             run_tests: true
-          - name: CPU
-            container: ghcr.io/acts-project/ubuntu2004:v30
-            cxx_standard: "17"
-            options: -DTRACCC_USE_ROOT=FALSE
-            run_tests: true
-          - name: CPU
-            container: ghcr.io/acts-project/ubuntu2404:48
-            cxx_standard: "20"
-            options: -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE
-            run_tests: true
           - name: HIP
-            container: ghcr.io/acts-project/ubuntu2004_rocm:47
-            cxx_standard: "17"
+            container: ghcr.io/acts-project/ubuntu2204_rocm_clang_cxx20:56
+            cxx_standard: "20"
             options: -DTRACCC_BUILD_HIP=TRUE -DTRACCC_SETUP_ROCTHRUST=TRUE
             run_tests: false
           - name: CUDA
-            container: ghcr.io/acts-project/ubuntu2004_cuda:47
-            cxx_standard: "17"
-            options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_ENABLE_NVTX_PROFILING=TRUE
-            run_tests: false
-          - name: CUDA
-            container: ghcr.io/acts-project/ubuntu2204_cuda:48
+            container: ghcr.io/acts-project/ubuntu2404_cuda:56
             cxx_standard: "20"
-            options: -DTRACCC_BUILD_CUDA=TRUE -DTRACCC_USE_ROOT=FALSE -DTRACCC_ENFORCE_CONCEPTS=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
+            options: -DTRACCC_BUILD_CUDA=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
             run_tests: false
           - name: SYCL
-            container: ghcr.io/acts-project/ubuntu2004_oneapi:47
-            cxx_standard: "17"
-            options: -DTRACCC_BUILD_SYCL=TRUE
+            container: ghcr.io/acts-project/ubuntu2404_oneapi:56
+            cxx_standard: "20"
+            options: -DTRACCC_BUILD_SYCL=TRUE -DCMAKE_SYCL_FLAGS="-fsycl -fsycl-targets=spir64"
             run_tests: true
           - name: KOKKOS
-            container: ghcr.io/acts-project/ubuntu2004:v30
-            cxx_standard: "17"
+            container: ghcr.io/acts-project/ubuntu2404:56
+            cxx_standard: "20"
             options: -DTRACCC_BUILD_KOKKOS=TRUE
             run_tests: false
           - name: ALPAKA
-            container: ghcr.io/acts-project/ubuntu2204:v33
-            cxx_standard: "17"
+            container: ghcr.io/acts-project/ubuntu2404:56
+            cxx_standard: "20"
             options: -DTRACCC_BUILD_ALPAKA=TRUE
             run_tests: false
         build:
@@ -75,14 +60,14 @@ jobs:
         include:
           - platform:
               name: "SYCL"
-              container: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:47
-              cxx_standard: "17"
+              container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:56
+              cxx_standard: "20"
               options: -DTRACCC_BUILD_SYCL=TRUE -DTRACCC_BUILD_CUDA=FALSE -DVECMEM_BUILD_CUDA_LIBRARY=FALSE
             build: Release
           - platform:
               name: "SYCL"
-              container: ghcr.io/acts-project/ubuntu2004_rocm_oneapi:47
-              cxx_standard: "17"
+              container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:56
+              cxx_standard: "20"
               options: -DTRACCC_BUILD_SYCL=TRUE -DVECMEM_BUILD_HIP_LIBRARY=FALSE
             build: Release
     # Use BASH as the shell from the images.

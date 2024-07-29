@@ -11,7 +11,6 @@
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/definitions/concepts.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -24,19 +23,13 @@
 #include <cuda_runtime.h>
 
 // System include
-#if __cpp_concepts >= 201907L
 #include <concepts>
-#endif
 
 namespace traccc::cuda {
 namespace kernels {
-template <TRACCC_CONSTRAINT(std::semiregular) R, typename T>
-#if __cpp_concepts >= 201907L
-requires std::relation<R, T, T>
-#endif
-    __global__ void is_ordered_on_kernel(R relation,
-                                         vecmem::data::vector_view<T> _in,
-                                         bool* out) {
+template <std::semiregular R, typename T>
+requires std::relation<R, T, T> __global__ void is_ordered_on_kernel(
+    R relation, vecmem::data::vector_view<T> _in, bool* out) {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     vecmem::device_vector<T> in(_in);
@@ -72,13 +65,10 @@ requires std::relation<R, T, T>
  * @return true If the vector is ordered on `R`.
  * @return false Otherwise.
  */
-template <TRACCC_CONSTRAINT(std::semiregular) R, typename T>
-#if __cpp_concepts >= 201907L
-requires std::relation<R, T, T>
-#endif
-    bool is_ordered_on(R relation, vecmem::memory_resource& mr,
-                       vecmem::copy& copy, stream& stream,
-                       vecmem::data::vector_view<T> vector) {
+template <std::semiregular R, typename T>
+requires std::relation<R, T, T> bool is_ordered_on(
+    R relation, vecmem::memory_resource& mr, vecmem::copy& copy, stream& stream,
+    vecmem::data::vector_view<T> vector) {
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;

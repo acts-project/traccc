@@ -25,7 +25,8 @@ stages:
     paths:
       - build
   script:
-    - cmake -G Ninja --preset ${TRACCC_BUILD_PRESET} -DCMAKE_BUILD_TYPE=Release
+    - SYCLFLAGS="${TRACCC_SYCL_FLAGS}" CXXFLAGS="${TRACCC_CXX_FLAGS}"
+      cmake -G Ninja --preset ${TRACCC_BUILD_PRESET} -DCMAKE_BUILD_TYPE=Release
       -DTRACCC_BUILD_EXAMPLES=FALSE ${TRACCC_CMAKE_ARGS}
       -S src -B build
     - cmake --build build --parallel 2
@@ -52,7 +53,7 @@ stages:
 # CUDA build job.
 build:cuda:
   <<: *build_job
-  image: ghcr.io/acts-project/ubuntu2004_cuda:47
+  image: ghcr.io/acts-project/ubuntu2204_cuda:56
   variables:
     TRACCC_BUILD_TYPE: CUDA
     TRACCC_BUILD_PRESET: cuda
@@ -60,7 +61,7 @@ build:cuda:
 # CUDA test job.
 test:cuda:
   <<: *nvidia_test_job
-  image: ghcr.io/acts-project/ubuntu2004_cuda:47
+  image: ghcr.io/acts-project/ubuntu2204_cuda:56
   variables:
     TRACCC_BUILD_TYPE: CUDA
   dependencies:
@@ -69,15 +70,17 @@ test:cuda:
 # SYCL build job (with an Intel backend).
 build:sycl_intel:
   <<: *build_job
-  image: ghcr.io/acts-project/ubuntu2004_oneapi:47
+  image: ghcr.io/acts-project/ubuntu2404_oneapi:56
   variables:
     TRACCC_BUILD_TYPE: SYCL
     TRACCC_BUILD_PRESET: sycl
+    TRACCC_SYCL_FLAGS: -fsycl -fsycl-targets=spir64
+    TRACCC_CMAKE_ARGS: -DTRACCC_BUILD_CUDA=FALSE
 
 # SYCL test job (with an Intel backend).
 test:sycl_intel:
   <<: *intel_test_job
-  image: ghcr.io/acts-project/ubuntu2004_oneapi:47
+  image: ghcr.io/acts-project/ubuntu2404_oneapi:56
   variables:
     TRACCC_BUILD_TYPE: SYCL
     ONEAPI_DEVICE_SELECTOR: opencl:*
@@ -87,16 +90,18 @@ test:sycl_intel:
 # SYCL build job (with an NVIDIA backend).
 build:sycl_nvidia:
   <<: *build_job
-  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:48
+  image: ghcr.io/acts-project/ubuntu2204_cuda_oneapi:56
   variables:
     TRACCC_BUILD_TYPE: SYCL
     TRACCC_BUILD_PRESET: sycl
+    TRACCC_SYCL_FLAGS: -fsycl -fsycl-targets=nvidia_gpu_sm_75 -Wno-unknown-cuda-version -Wno-deprecated-declarations
+    TRACCC_CXX_FLAGS: -Wno-deprecated-declarations
     TRACCC_CMAKE_ARGS: -DTRACCC_BUILD_CUDA=FALSE
 
 # SYCL test job (with an NVIDIA backend).
 test:sycl_nvidia:
   <<: *nvidia_test_job
-  image: ghcr.io/acts-project/ubuntu2004_cuda_oneapi:48
+  image: ghcr.io/acts-project/ubuntu2204_cuda_oneapi:56
   variables:
     TRACCC_BUILD_TYPE: SYCL
     ONEAPI_DEVICE_SELECTOR: cuda:*

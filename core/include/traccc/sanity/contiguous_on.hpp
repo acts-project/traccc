@@ -8,9 +8,6 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/definitions/concepts.hpp"
-
 // VecMem include(s).
 #include <memory>
 #include <vecmem/containers/data/vector_view.hpp>
@@ -19,9 +16,7 @@
 #include <vecmem/utils/copy.hpp>
 
 // System include
-#if __cpp_concepts >= 201907L
 #include <concepts>
-#endif
 #include <memory>
 #include <unordered_set>
 
@@ -44,12 +39,9 @@ namespace traccc::host {
  * @return true If the vector is contiguous on `P`.
  * @return false Otherwise.
  */
-template <TRACCC_CONSTRAINT(std::semiregular) P,
-          TRACCC_CONSTRAINT(std::equality_comparable) T>
-#if __cpp_concepts >= 201907L
-requires std::regular_invocable<P, T>
-#endif
-    bool is_contiguous_on(P&& projection, vecmem::data::vector_view<T> vector) {
+template <std::semiregular P, std::equality_comparable T>
+requires std::regular_invocable<P, T> bool is_contiguous_on(
+    P&& projection, vecmem::data::vector_view<T> vector) {
     // Grab the number of elements in our vector.
     uint32_t n = vector.size();
 
