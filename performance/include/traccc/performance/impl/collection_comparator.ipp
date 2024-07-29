@@ -71,7 +71,7 @@ void collection_comparator<TYPE>::operator()(
         agreements.push_back(
             static_cast<scalar>(matched) /
             static_cast<scalar>(std::max(lhs_coll.size(), rhs_coll.size())) *
-            100.);
+            100.f);
     }
     assert(agreements.size() == m_uncertainties.size());
 
