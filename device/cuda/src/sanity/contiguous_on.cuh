@@ -11,7 +11,6 @@
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/definitions/concepts.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -24,19 +23,14 @@
 #include <cuda_runtime.h>
 
 // System include
-#if __cpp_concepts >= 201907L
 #include <concepts>
-#endif
 
 namespace traccc::cuda {
 namespace kernels {
-template <TRACCC_CONSTRAINT(std::semiregular) P, typename T, typename S>
-#if __cpp_concepts >= 201907L
-requires std::regular_invocable<P, T>
-#endif
-    __global__ void compress_adjacent(P projection,
-                                      vecmem::data::vector_view<T> _in, S* out,
-                                      uint32_t* out_size) {
+template <std::semiregular P, typename T, typename S>
+requires std::regular_invocable<P, T> __global__ void compress_adjacent(
+    P projection, vecmem::data::vector_view<T> _in, S* out,
+    uint32_t* out_size) {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     vecmem::device_vector<T> in(_in);
@@ -53,7 +47,7 @@ requires std::regular_invocable<P, T>
     }
 }
 
-template <TRACCC_CONSTRAINT(std::equality_comparable) T>
+template <std::equality_comparable T>
 __global__ void all_unique(const T* in, const size_t n, bool* out) {
     int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
     int tid_y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -82,14 +76,10 @@ __global__ void all_unique(const T* in, const size_t n, bool* out) {
  * @return true If the vector is contiguous on `P`.
  * @return false Otherwise.
  */
-template <TRACCC_CONSTRAINT(std::semiregular) P,
-          TRACCC_CONSTRAINT(std::equality_comparable) T>
-#if __cpp_concepts >= 201907L
-requires std::regular_invocable<P, T>
-#endif
-    bool is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
-                          vecmem::copy& copy, stream& stream,
-                          vecmem::data::vector_view<T> vector) {
+template <std::semiregular P, std::equality_comparable T>
+requires std::regular_invocable<P, T> bool is_contiguous_on(
+    P&& projection, vecmem::memory_resource& mr, vecmem::copy& copy,
+    stream& stream, vecmem::data::vector_view<T> vector) {
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;
