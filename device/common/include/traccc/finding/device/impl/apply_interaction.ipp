@@ -44,10 +44,8 @@ TRACCC_DEVICE inline void apply_interaction(
     // Apply interactor
     typename interactor_type::state interactor_state;
     interactor_type{}.update(
-        bound_param, interactor_state,
-        static_cast<int>(detray::navigation::direction::e_forward), sf,
-        math::fabs(
-            sf.cos_angle(ctx, bound_param.dir(), bound_param.bound_local())));
+        ctx, bound_param, interactor_state,
+        static_cast<int>(detray::navigation::direction::e_forward), sf);
 }
 
 }  // namespace traccc::device
