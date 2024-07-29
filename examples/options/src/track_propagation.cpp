@@ -44,7 +44,7 @@ track_propagation::track_propagation()
         "Size of the grid surface search window");
     m_desc.add_options()(
         "rk-tolerance",
-        po::value(&(config.stepping.rk_error_tol))->default_value(1e-4),
+        po::value(&(config.stepping.rk_error_tol))->default_value(1e-4f),
         "The Runge-Kutta stepper tolerance");
 }
 
