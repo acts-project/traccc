@@ -18,7 +18,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.72.0.tar.gz;URL_MD5;23d24f6cf90ac4d7b1c55197f9858b2c"
+"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.72.1.tar.gz;URL_MD5;342ab0bfba45c5764c8eef3842897c16"
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
