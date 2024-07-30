@@ -251,10 +251,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
             // Create device copy of input collections
             traccc::cell_collection_types::buffer cells_buffer(
                 cells_per_event.size(), mr.main);
-            copy(vecmem::get_data(cells_per_event), cells_buffer);
+            copy(vecmem::get_data(cells_per_event), cells_buffer)->ignore();
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
-            copy(vecmem::get_data(modules_per_event), modules_buffer);
+            copy(vecmem::get_data(modules_per_event), modules_buffer)->ignore();
 
             {
                 traccc::performance::timer t("Clusterization (cuda)",

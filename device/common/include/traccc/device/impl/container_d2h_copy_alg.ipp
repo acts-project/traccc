@@ -41,8 +41,8 @@ container_d2h_copy_alg<CONTAINER_TYPES>::operator()(input_type input) const {
                    [](const auto& view) { return view.capacity(); });
     typename CONTAINER_TYPES::buffer hostBuffer{{size, *host_mr},
                                                 {capacities, *host_mr}};
-    m_hostCopy.setup(hostBuffer.headers);
-    m_hostCopy.setup(hostBuffer.items);
+    m_hostCopy.setup(hostBuffer.headers)->wait();
+    m_hostCopy.setup(hostBuffer.items)->wait();
 
     // Copy the device container into this temporary host buffer.
     vecmem::copy::event_type header_event = m_deviceCopy(
