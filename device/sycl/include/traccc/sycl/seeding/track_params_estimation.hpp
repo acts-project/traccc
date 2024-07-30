@@ -59,12 +59,12 @@ struct track_params_estimation
         const seed_collection_types::const_view& seeds_view,
         const vector3& bfield,
         const std::array<traccc::scalar, traccc::e_bound_size>& stddev = {
-            0.02 * detray::unit<traccc::scalar>::mm,
-            0.03 * detray::unit<traccc::scalar>::mm,
-            1. * detray::unit<traccc::scalar>::degree,
-            1. * detray::unit<traccc::scalar>::degree,
-            0.01 / detray::unit<traccc::scalar>::GeV,
-            1 * detray::unit<traccc::scalar>::ns}) const override;
+            0.02f * detray::unit<traccc::scalar>::mm,
+            0.03f * detray::unit<traccc::scalar>::mm,
+            1.f * detray::unit<traccc::scalar>::degree,
+            1.f * detray::unit<traccc::scalar>::degree,
+            0.01f / detray::unit<traccc::scalar>::GeV,
+            1.f * detray::unit<traccc::scalar>::ns}) const override;
 
     private:
     // Private member variables

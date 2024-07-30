@@ -33,7 +33,7 @@
 
 template <typename Acc>
 ALPAKA_FN_ACC float process(Acc const& acc, uint32_t idx) {
-    return alpaka::math::sin(acc, idx);
+    return static_cast<float>(alpaka::math::sin(acc, idx));
 }
 
 struct VectorOpKernel {
@@ -97,7 +97,7 @@ GTEST_TEST(AlpakaBasic, VectorOp) {
     alpaka::memcpy(queue, bufHost, bufAcc);
     // Calculate on the host and compare result
     for (uint32_t i = 0u; i < n; i++) {
-        EXPECT_FLOAT_EQ(bufHost[i], std::sin(i));
+        EXPECT_FLOAT_EQ(bufHost[i], static_cast<float>(std::sin(i)));
     }
 }
 
@@ -171,6 +171,6 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
 
     for (uint32_t i = 0u; i < n; i++) {
-        EXPECT_FLOAT_EQ(host_vector[i], std::sin(i));
+        EXPECT_FLOAT_EQ(host_vector[i], static_cast<float>(std::sin(i)));
     }
 }

@@ -21,7 +21,16 @@ set( TRACCC_COVFIE_SOURCE
    "URL;https://github.com/acts-project/covfie/archive/refs/tags/v0.8.1.tar.gz;URL_MD5;0b4dc9624533d1ed4ea7a763da47f07e"
    CACHE STRING "Source for covfie, when built as part of this project" )
 mark_as_advanced( TRACCC_COVFIE_SOURCE )
-FetchContent_Declare( covfie ${TRACCC_COVFIE_SOURCE} )
+
+# Mark the import as a system library on modern CMake versions
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.25.0)
+   set(TRACCC_COVFIE_SOURCE_FULL "${TRACCC_COVFIE_SOURCE};SYSTEM")
+else()
+   set(TRACCC_COVFIE_SOURCE_FULL "${TRACCC_COVFIE_SOURCE}")
+endif()
+mark_as_advanced( TRACCC_COVFIE_SOURCE_FULL )
+
+FetchContent_Declare( covfie ${TRACCC_COVFIE_SOURCE_FULL} )
 
 # Options used for covfie.
 set( COVFIE_BUILD_EXAMPLES OFF CACHE BOOL "Build covfie examples")

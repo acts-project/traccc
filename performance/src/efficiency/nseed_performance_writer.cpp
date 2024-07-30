@@ -70,7 +70,7 @@ void nseed_performance_writer::write_track_header() {
 
 void nseed_performance_writer::write_track_row(std::size_t evt_id,
                                                std::size_t part_id,
-                                               bool pass_cuts, int q,
+                                               bool pass_cuts, scalar q,
                                                scalar eta, scalar phi,
                                                scalar pt) {
     if (output_track_file.good()) {

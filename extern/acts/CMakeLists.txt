@@ -21,7 +21,16 @@ set( TRACCC_ACTS_SOURCE
    "URL;https://github.com/acts-project/acts/archive/refs/tags/v27.0.0.tar.gz;URL_MD5;7ad320590fe5ac70cc8ca7887261f91d"
    CACHE STRING "Source for Acts, when built as part of this project" )
 mark_as_advanced( TRACCC_ACTS_SOURCE )
-FetchContent_Declare( Acts ${TRACCC_ACTS_SOURCE} )
+
+# Mark the import as a system library on modern CMake versions
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.25.0)
+   set(TRACCC_ACTS_SOURCE_FULL "${TRACCC_ACTS_SOURCE};SYSTEM")
+else()
+   set(TRACCC_ACTS_SOURCE_FULL "${TRACCC_ACTS_SOURCE}")
+endif()
+mark_as_advanced( TRACCC_ACTS_SOURCE_FULL )
+
+FetchContent_Declare( Acts ${TRACCC_ACTS_SOURCE_FULL} )
 
 # Options used in the build of Acts.
 set( ACTS_SETUP_EIGEN3 FALSE CACHE BOOL

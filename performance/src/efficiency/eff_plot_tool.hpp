@@ -26,9 +26,9 @@ class eff_plot_tool {
     /// @brief The nested configuration struct
     struct config {
         std::map<std::string, plot_helpers::binning> var_binning = {
-            {"Eta", plot_helpers::binning("#eta", 40, -4, 4)},
-            {"Phi", plot_helpers::binning("#phi", 100, -3.15, 3.15)},
-            {"Pt", plot_helpers::binning("pT [GeV/c]", 40, 0, 100)}};
+            {"Eta", plot_helpers::binning("#eta", 40, -4.f, 4.f)},
+            {"Phi", plot_helpers::binning("#phi", 100, -3.15f, 3.15f)},
+            {"Pt", plot_helpers::binning("pT [GeV/c]", 40, 0.f, 100.f)}};
     };
 
     /// @brief Nested Cache struct

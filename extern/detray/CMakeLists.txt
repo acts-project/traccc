@@ -22,7 +22,16 @@ set( TRACCC_DETRAY_SOURCE
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
-FetchContent_Declare( Detray ${TRACCC_DETRAY_SOURCE} )
+
+# Mark the import as a system library on modern CMake versions
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.25.0)
+   set(TRACCC_DETRAY_SOURCE_FULL "${TRACCC_DETRAY_SOURCE};SYSTEM")
+else()
+   set(TRACCC_DETRAY_SOURCE_FULL "${TRACCC_DETRAY_SOURCE}")
+endif()
+mark_as_advanced( TRACCC_DETRAY_SOURCE_FULL )
+
+FetchContent_Declare( Detray ${TRACCC_DETRAY_SOURCE_FULL} )
 
 # Options used in the build of Detray.
 set( DETRAY_CUSTOM_SCALARTYPE "float" CACHE STRING

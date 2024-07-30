@@ -38,7 +38,7 @@ void from_json(const nlohmann::json& json, module_digitization_config& cfg) {
     if (json.find(geometric) != json.end()) {
         const auto& json_geom = json[geometric];
         if (json_geom.find(segmentation) != json_geom.end()) {
-            from_json(json_geom[segmentation], cfg.segmentation);
+            Acts::from_json(json_geom[segmentation], cfg.segmentation);
         }
         if (json_geom.find(variances) != json_geom.end()) {
             for (const auto& jdata : json_geom[variances]) {

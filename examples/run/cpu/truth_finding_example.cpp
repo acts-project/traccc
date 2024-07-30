@@ -104,12 +104,12 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Standard deviations for seed track parameters
     static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
-        {1e-4 * detray::unit<traccc::scalar>::mm,
-         1e-4 * detray::unit<traccc::scalar>::mm,
-         1e-3,
-         1e-3,
-         1e-4 / detray::unit<traccc::scalar>::GeV,
-         1e-4 * detray::unit<traccc::scalar>::ns};
+        {1e-4f * detray::unit<traccc::scalar>::mm,
+         1e-4f * detray::unit<traccc::scalar>::mm,
+         1e-3f,
+         1e-3f,
+         1e-4f / detray::unit<traccc::scalar>::GeV,
+         1e-4f * detray::unit<traccc::scalar>::ns};
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);

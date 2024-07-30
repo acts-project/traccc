@@ -48,26 +48,31 @@ void seed_filtering::operator()(
     }
 
     // sort seeds based on their weights
-    std::sort(seeds_per_spM.begin(), seeds_per_spM.end(),
-              [&](seed& seed1, seed& seed2) {
-                  if (seed1.weight != seed2.weight) {
-                      return seed1.weight > seed2.weight;
-                  } else {
-                      scalar seed1_sum = 0;
-                      scalar seed2_sum = 0;
-                      auto& spB1 = sp_collection.at(seed1.spB_link);
-                      auto& spT1 = sp_collection.at(seed1.spT_link);
-                      auto& spB2 = sp_collection.at(seed2.spB_link);
-                      auto& spT2 = sp_collection.at(seed2.spT_link);
+    std::sort(
+        seeds_per_spM.begin(), seeds_per_spM.end(),
+        [&](seed& seed1, seed& seed2) {
+            if (seed1.weight != seed2.weight) {
+                return seed1.weight > seed2.weight;
+            } else {
+                scalar seed1_sum = 0;
+                scalar seed2_sum = 0;
+                auto& spB1 = sp_collection.at(seed1.spB_link);
+                auto& spT1 = sp_collection.at(seed1.spT_link);
+                auto& spB2 = sp_collection.at(seed2.spB_link);
+                auto& spT2 = sp_collection.at(seed2.spT_link);
 
-                      seed1_sum += pow(spB1.y(), 2) + pow(spB1.z(), 2);
-                      seed1_sum += pow(spT1.y(), 2) + pow(spT1.z(), 2);
-                      seed2_sum += pow(spB2.y(), 2) + pow(spB2.z(), 2);
-                      seed2_sum += pow(spT2.y(), 2) + pow(spT2.z(), 2);
+                seed1_sum +=
+                    static_cast<scalar>(pow(spB1.y(), 2) + pow(spB1.z(), 2));
+                seed1_sum +=
+                    static_cast<scalar>(pow(spT1.y(), 2) + pow(spT1.z(), 2));
+                seed2_sum +=
+                    static_cast<scalar>(pow(spB2.y(), 2) + pow(spB2.z(), 2));
+                seed2_sum +=
+                    static_cast<scalar>(pow(spT2.y(), 2) + pow(spT2.z(), 2));
 
-                      return seed1_sum > seed2_sum;
-                  }
-              });
+                return seed1_sum > seed2_sum;
+            }
+        });
 
     seed_collection_types::host new_seeds;
     if (seeds_per_spM.size() > 1) {
