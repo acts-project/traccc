@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -16,6 +18,9 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
+
+// System includes
+#include <mutex>
 
 namespace traccc::alpaka {
 
@@ -33,6 +38,9 @@ class clusterization_algorithm
           const cell_module_collection_types::const_view&)> {
 
     public:
+    /// Configuration type
+    using config_type = clustering_config;
+
     /// Constructor for clusterization algorithm
     ///
     /// @param mr The memory resource(s) to use in the algorithm
@@ -42,8 +50,7 @@ class clusterization_algorithm
     /// partition
     ///
     clusterization_algorithm(const traccc::memory_resource& mr,
-                             vecmem::copy& copy,
-                             const unsigned short target_cells_per_partition);
+                             vecmem::copy& copy, const config_type& config);
 
     /// Callable operator for clusterization algorithm
     ///
@@ -57,12 +64,18 @@ class clusterization_algorithm
 
     private:
     /// The average number of cells in each partition
-    using config_type = unsigned short;
-    config_type m_target_cells_per_partition;
+    config_type m_config;
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use
     std::reference_wrapper<vecmem::copy> m_copy;
+    /// Memory reserved for edge cases
+    vecmem::data::vector_buffer<device::details::index_t> m_f_backup,
+        m_gf_backup;
+    vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
+    vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
+    vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
+    mutable std::once_flag m_setup_once;
 };
 
 }  // namespace traccc::alpaka

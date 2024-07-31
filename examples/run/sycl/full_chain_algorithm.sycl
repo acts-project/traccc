@@ -42,7 +42,7 @@ struct full_chain_algorithm_data {
 
 full_chain_algorithm::full_chain_algorithm(
     vecmem::memory_resource& host_mr,
-    const unsigned short target_cells_per_partition,
+    const clustering_config& clustering_config,
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
@@ -55,9 +55,8 @@ full_chain_algorithm::full_chain_algorithm(
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
       m_copy(&(m_data->m_queue)),
-      m_target_cells_per_partition(target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       &(m_data->m_queue), m_target_cells_per_partition),
+                       &(m_data->m_queue), clustering_config),
       m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
                              m_copy, &(m_data->m_queue)),
       m_seeding(finder_config, grid_config, filter_config,
@@ -66,6 +65,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
           &(m_data->m_queue)),
+      m_clustering_config(clustering_config),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config) {
@@ -85,9 +85,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_cached_device_mr(
           std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
       m_copy(&(m_data->m_queue)),
-      m_target_cells_per_partition(parent.m_target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
-                       &(m_data->m_queue), m_target_cells_per_partition),
+                       &(m_data->m_queue), parent.m_clustering_config),
       m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
                              m_copy, &(m_data->m_queue)),
       m_seeding(parent.m_finder_config, parent.m_grid_config,
@@ -97,6 +96,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
           &(m_data->m_queue)),
+      m_clustering_config(parent.m_clustering_config),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config) {}

@@ -19,6 +19,7 @@
 
 // System include(s).
 #include <functional>
+#include <variant>
 
 namespace traccc::host {
 
@@ -33,6 +34,8 @@ class clusterization_algorithm
           const cell_module_collection_types::const_view&)> {
 
     public:
+    using config_type = std::monostate;
+
     /// Clusterization algorithm constructor
     ///
     /// @param mr The memory resource to use for the result objects

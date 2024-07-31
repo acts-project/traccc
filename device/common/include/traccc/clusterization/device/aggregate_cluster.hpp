@@ -33,8 +33,8 @@ TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const cell_collection_types::const_device& cells,
     const cell_module_collection_types::const_device& modules,
-    const vecmem::data::vector_view<const unsigned short>& f_view,
-    unsigned int start, unsigned int end, unsigned short cid, measurement& out,
+    const vecmem::device_vector<details::index_t>& f_view, unsigned int start,
+    unsigned int end, unsigned short cid, measurement& out,
     vecmem::data::vector_view<unsigned int> cell_links, unsigned int link);
 
 }  // namespace traccc::device

@@ -65,6 +65,8 @@ class full_chain_algorithm
     /// Navigator type used by the track finding and fitting algorithms
     using navigator_type = detray::navigator<const detector_type>;
 
+    /// Clustering algorithm type
+    using clustering_algorithm = clusterization_algorithm;
     /// Track finding algorithm type
     using finding_algorithm =
         traccc::finding_algorithm<stepper_type, navigator_type>;
@@ -78,12 +80,10 @@ class full_chain_algorithm
     ///
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
-    /// @param target_cells_per_partition The average number of cells in each
-    /// partition.
     ///
     full_chain_algorithm(
         vecmem::memory_resource& host_mr,
-        const unsigned short target_cells_per_partition,
+        const clustering_config& clustering_config,
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config,
@@ -127,10 +127,6 @@ class full_chain_algorithm
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
-
-    /// The number of cells to put together in each partition.
-    /// Adapt to different GPUs' capabilities.
-    unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Spacepoint formation algorithm
@@ -141,6 +137,7 @@ class full_chain_algorithm
     track_params_estimation m_track_parameter_estimation;
 
     /// Configs
+    clustering_config m_clustering_config;
     seedfinder_config m_finder_config;
     spacepoint_grid_config m_grid_config;
     seedfilter_config m_filter_config;
