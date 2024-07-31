@@ -6,7 +6,9 @@
  */
 
 // Project include(s).
+#include "traccc/geometry/detector_description.hpp"
 #include "traccc/io/mapper.hpp"
+#include "traccc/io/read_detector_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -179,9 +181,12 @@ TEST(mappper, measurement_cell_map) {
 
     vecmem::host_memory_resource resource;
 
-    auto m_c_map_pair = traccc::generate_measurement_cell_map(
-        event, detector_file, digi_config_file, cells_dir, resource);
-    auto m_c_map = std::get<0>(m_c_map_pair);
+    traccc::detector_description::host dd{resource};
+    traccc::io::read_detector_description(dd, detector_file, digi_config_file,
+                                          traccc::data_format::csv);
+
+    auto m_c_map =
+        traccc::generate_measurement_cell_map(event, cells_dir, dd, resource);
 
     vecmem::vector<traccc::cell> cells0;
     cells0.push_back({1, 0, 0.0041470062f, 0, 0});
@@ -226,9 +231,12 @@ TEST(mappper, measurement_particle_map_with_clusterization) {
 
     vecmem::host_memory_resource mr;
 
+    traccc::detector_description::host dd{mr};
+    traccc::io::read_detector_description(dd, detector_file, digi_config_file,
+                                          traccc::data_format::csv);
+
     auto m_p_map = traccc::generate_measurement_particle_map(
-        event, detector_file, digi_config_file, cells_dir, hits_dir,
-        particles_dir, mr);
+        event, cells_dir, hits_dir, particles_dir, dd, mr);
 
     // There are two measurements (or clusters)
     EXPECT_EQ(m_p_map.size(), 2);
@@ -286,8 +294,12 @@ TEST(mappper, measurement_particle_map_without_clusterization) {
 
     vecmem::host_memory_resource mr;
 
+    traccc::detector_description::host dd{mr};
+    traccc::io::read_detector_description(dd, detector_file, digi_config_file,
+                                          traccc::data_format::csv);
+
     auto m_p_map = traccc::generate_measurement_particle_map(
-        event, detector_file, hits_dir, particles_dir, mr);
+        event, hits_dir, particles_dir, dd, mr);
 
     // Without clusterization, there are three measurements each of which is
     // from each particle

@@ -14,6 +14,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/detector_description.hpp"
 
 // Vecmem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -73,7 +74,7 @@ struct ccl_kernel_helper {
 /// @param[in] blckDim  current thread block size
 /// @param[in] blckId   current thread block index
 /// @param[in] cells_view    collection of cells
-/// @param[in] modules_view  collection of modules to which the cells are linked
+/// @param[in] det_descr_view The detector description
 /// @param[in] max_cells_per_partition maximum number of cells per thread block
 /// @param[in] target_cells_per_partition average number of cells per thread
 ///                                       block
@@ -90,8 +91,8 @@ struct ccl_kernel_helper {
 template <device::concepts::barrier barrier_t>
 TRACCC_DEVICE inline void ccl_kernel(
     details::index_t threadId, details::index_t blckDim, unsigned int blockId,
-    const cell_collection_types::const_view cells_view,
-    const cell_module_collection_types::const_view modules_view,
+    const cell_collection_types::const_view& cells_view,
+    const detector_description::const_view& det_descr_view,
     const details::index_t max_cells_per_partition,
     const details::index_t target_cells_per_partition,
     unsigned int& partition_start, unsigned int& partition_end,

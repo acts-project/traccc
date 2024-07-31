@@ -20,11 +20,11 @@ measurement_creation_algorithm::measurement_creation_algorithm(
 measurement_creation_algorithm::output_type
 measurement_creation_algorithm::operator()(
     const cluster_container_types::const_view &clusters_view,
-    const cell_module_collection_types::const_view &modules_view) const {
+    const detector_description::const_view &dd_view) const {
 
     // Create device containers for the input variables.
     const cluster_container_types::const_device clusters{clusters_view};
-    const cell_module_collection_types::const_device modules{modules_view};
+    const detector_description::const_device det_descr{dd_view};
 
     // Create the result object.
     output_type result(clusters.size(), &(m_mr.get()));
@@ -39,12 +39,8 @@ measurement_creation_algorithm::operator()(
         // A security check.
         assert(cluster.empty() == false);
 
-        // Get the cell module
-        const unsigned int mod_link = cluster.at(0).module_link;
-        const auto &mod = modules.at(mod_link);
-
         // Fill measurement from cluster
-        details::fill_measurement(measurements, i, cluster, mod, mod_link);
+        details::fill_measurement(measurements, i, cluster, det_descr);
     }
 
     return result;

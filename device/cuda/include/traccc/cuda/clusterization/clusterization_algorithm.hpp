@@ -13,6 +13,7 @@
 // Project include(s).
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/geometry/detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -35,7 +36,7 @@ namespace traccc::cuda {
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::buffer(
           const cell_collection_types::const_view&,
-          const cell_module_collection_types::const_view&)> {
+          const detector_description::const_view&)> {
 
     public:
     /// Constructor for clusterization algorithm
@@ -53,13 +54,13 @@ class clusterization_algorithm
 
     /// Callable operator for clusterization algorithm
     ///
-    /// @param cells        a collection of cells
-    /// @param modules      a collection of modules
-    /// @return a spacepoint collection (buffer) and a collection (buffer) of
-    /// links from cells to the spacepoints they belong to.
+    /// @param cells     All cells in an event
+    /// @param det_descr The detector description
+    /// @return a measurement collection (buffer)
+    ///
     output_type operator()(
         const cell_collection_types::const_view& cells,
-        const cell_module_collection_types::const_view& modules) const override;
+        const detector_description::const_view& det_descr) const override;
 
     private:
     /// The average number of cells in each partition

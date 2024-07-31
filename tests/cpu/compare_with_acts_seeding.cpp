@@ -6,7 +6,6 @@
  */
 
 // io
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 
 // algorithms
@@ -85,16 +84,9 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
     traccc::seed_finding sf(traccc_config, traccc::seedfilter_config());
 
-    // Read the surface transforms
-    auto [surface_transforms, _] = traccc::io::read_geometry(detector_file);
-
     // Read the hits from the relevant event file
-    traccc::io::spacepoint_reader_output reader_output(&host_mr);
-    traccc::io::read_spacepoints(reader_output, event, hits_dir,
-                                 surface_transforms, traccc::data_format::csv);
-
-    traccc::spacepoint_collection_types::host& spacepoints_per_event =
-        reader_output.spacepoints;
+    traccc::spacepoint_collection_types::host spacepoints_per_event{&host_mr};
+    traccc::io::read_spacepoints(spacepoints_per_event, event, hits_dir);
 
     /*--------------------------------
       TRACCC seeding
