@@ -44,7 +44,8 @@ class container_comparator {
         details::comparator_factory<ITEM_TYPE> item_comp_factory = {},
         std::string_view lhs_type = "host",
         std::string_view rhs_type = "device", std::ostream& out = std::cout,
-        const std::vector<scalar>& uncertainties = {0.0001, 0.001, 0.01, 0.05});
+        const std::vector<scalar>& uncertainties = {0.0001f, 0.001f, 0.01f,
+                                                    0.05f});
 
     /// Function comparing two collections, and printing the results
     void operator()(

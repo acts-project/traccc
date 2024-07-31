@@ -117,7 +117,7 @@ if( TRACCC_SETUP_EIGEN3 )
    endif()
 endif()
 
-# Set up Thrust.
+# Set up CCCL.
 option( TRACCC_SETUP_THRUST
    "Set up the Thrust target(s) explicitly" TRUE )
 option( TRACCC_USE_SYSTEM_THRUST
@@ -127,7 +127,7 @@ if( TRACCC_SETUP_THRUST )
    if( TRACCC_USE_SYSTEM_THRUST )
       find_package( Thrust REQUIRED )
    else()
-      add_subdirectory( extern/thrust )
+      add_subdirectory( extern/cccl )
    endif()
 endif()
 # Set up an IMPORTED library on top of the Thrust library/libraries. One that

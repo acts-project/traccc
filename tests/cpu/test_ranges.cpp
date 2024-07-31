@@ -20,7 +20,7 @@ using namespace traccc;
 // Test eta_to_theta_range function
 TEST(ranges, eta_to_theta) {
 
-    std::array<scalar, 2> eta_range{-2.44, 3.13};
+    std::array<scalar, 2> eta_range{-2.44f, 3.13f};
     const auto theta_range = eta_to_theta_range(eta_range);
 
     // Comparing with the values provided by

@@ -47,11 +47,11 @@ TEST(seeding, case1) {
     spacepoint_collection_types::host spacepoints;
 
     // Spacepoints from 16.62 GeV muon
-    spacepoints.push_back({{36.6706, 10.6472, 104.131}, {}});
-    spacepoints.push_back({{94.2191, 29.6699, 113.628}, {}});
-    spacepoints.push_back({{149.805, 47.9518, 122.979}, {}});
-    spacepoints.push_back({{218.514, 70.3049, 134.029}, {}});
-    spacepoints.push_back({{275.359, 88.668, 143.378}, {}});
+    spacepoints.push_back({{36.6706f, 10.6472f, 104.131f}, {}});
+    spacepoints.push_back({{94.2191f, 29.6699f, 113.628f}, {}});
+    spacepoints.push_back({{149.805f, 47.9518f, 122.979f}, {}});
+    spacepoints.push_back({{218.514f, 70.3049f, 134.029f}, {}});
+    spacepoints.push_back({{275.359f, 88.668f, 143.378f}, {}});
 
     // Run seeding
     auto seeds = sa(spacepoints);
@@ -89,11 +89,11 @@ TEST(seeding, case2) {
     spacepoint_collection_types::host spacepoints;
 
     // Spacepoints from 1.85 GeV muon
-    spacepoints.push_back({{36.301, 13.1197, 106.83}, {}});
-    spacepoints.push_back({{93.9366, 33.7101, 120.978}, {}});
-    spacepoints.push_back({{149.192, 52.0562, 134.678}, {}});
-    spacepoints.push_back({{218.398, 73.1025, 151.979}, {}});
-    spacepoints.push_back({{275.322, 89.0663, 166.229}, {}});
+    spacepoints.push_back({{36.301f, 13.1197f, 106.83f}, {}});
+    spacepoints.push_back({{93.9366f, 33.7101f, 120.978f}, {}});
+    spacepoints.push_back({{149.192f, 52.0562f, 134.678f}, {}});
+    spacepoints.push_back({{218.398f, 73.1025f, 151.979f}, {}});
+    spacepoints.push_back({{275.322f, 89.0663f, 166.229f}, {}});
 
     // Run seeding
     auto seeds = sa(spacepoints);

@@ -272,7 +272,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2);
 
     const Acts::Range1D<float> rMiddleSPRange(
-        std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
+        std::floor(static_cast<float>(rRangeSPExtent.min(Acts::binR)) / 2.f) *
+                2.f +
             acts_config.deltaRMiddleMinSPRange,
         up - acts_config.deltaRMiddleMaxSPRange);
 
