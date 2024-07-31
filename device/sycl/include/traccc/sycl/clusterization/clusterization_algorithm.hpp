@@ -8,6 +8,8 @@
 #pragma once
 
 // SYCL library include(s).
+#include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
@@ -30,6 +32,9 @@ class clusterization_algorithm
           const cell_module_collection_types::const_view&)> {
 
     public:
+    /// Configuration type
+    using config_type = clustering_config;
+
     /// Constructor for clusterization algorithm
     ///
     /// @param mr is a struct of memory resources (shared or host & device)
@@ -37,11 +42,10 @@ class clusterization_algorithm
     ///             and host memory blocks
     /// @param queue is a wrapper for the for the sycl queue for kernel
     /// invocation
-    /// @param target_cells_per_partition the average number of cells in each
-    /// partition
+    /// @param config the clustering configuration
     clusterization_algorithm(const traccc::memory_resource& mr,
                              vecmem::copy& copy, queue_wrapper queue,
-                             const unsigned short target_cells_per_partition);
+                             const config_type& config);
 
     /// @param cells        a collection of cells
     /// @param modules      a collection of modules
@@ -58,10 +62,13 @@ class clusterization_algorithm
     mutable queue_wrapper m_queue;
     /// The copy object to use
     std::reference_wrapper<vecmem::copy> m_copy;
-
     /// The average number of cells in each partition
-    unsigned short m_target_cells_per_partition;
-
+    const config_type m_config;
+    /// Memory reserved for edge cases
+    vecmem::data::vector_buffer<device::details::index_t> m_f_backup,
+        m_gf_backup;
+    vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
+    vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
+    vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
 };  // class clusterization_algorithm
-
 }  // namespace traccc::sycl

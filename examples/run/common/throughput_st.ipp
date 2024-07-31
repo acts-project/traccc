@@ -123,6 +123,10 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);
+
+    typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
+        clusterization_opts);
+
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -132,7 +136,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, clusterization_opts, seeding_opts.seedfinder,
+        alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
         spacepoint_grid_config{seeding_opts.seedfinder},
         seeding_opts.seedfilter, finding_cfg, fitting_cfg,
         (detector_opts.use_detray_detector ? &detector : nullptr));
