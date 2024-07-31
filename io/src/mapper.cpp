@@ -245,7 +245,7 @@ measurement_particle_map generate_measurement_particle_map(
     // generate geometry_id link map
     geoId_link_map link_map;
     for (unsigned int i = 0; i < dd.geometry_id().size(); ++i) {
-        link_map[dd.geometry_id()[i]] = i;
+        link_map[dd.surface_link()[i].value()] = i;
     }
 
     // generate cell particle map
