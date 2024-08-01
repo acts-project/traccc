@@ -7,6 +7,9 @@
 # Enable CUDA as a language.
 enable_language( CUDA )
 
+# CMake 3.26 is the first to support C++20 in CUDA.
+cmake_minimum_required( VERSION 3.26 )
+
 # Find the CUDA toolkit
 find_package( CUDAToolkit REQUIRED )
 
