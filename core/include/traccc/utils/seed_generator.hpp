@@ -70,10 +70,8 @@ struct seed_generator {
         typename interactor_type::state interactor_state;
         interactor_state.do_multiple_scattering = false;
         interactor_type{}.update(
-            bound_param, interactor_state,
-            static_cast<int>(detray::navigation::direction::e_backward), sf,
-            std::abs(sf.cos_angle(ctx, bound_param.dir(),
-                                  bound_param.bound_local())));
+            ctx, bound_param, interactor_state,
+            static_cast<int>(detray::navigation::direction::e_backward), sf);
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 

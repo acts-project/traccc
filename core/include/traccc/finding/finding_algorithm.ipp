@@ -138,10 +138,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             // Apply interactor
             typename interactor_type::state interactor_state;
             interactor_type{}.update(
-                in_param, interactor_state,
-                static_cast<int>(detray::navigation::direction::e_forward), sf,
-                std::abs(
-                    sf.cos_angle(ctx, in_param.dir(), in_param.bound_local())));
+                ctx, in_param, interactor_state,
+                static_cast<int>(detray::navigation::direction::e_forward), sf);
 
             // Get barcode and measurements range on surface
             const auto bcd = in_param.surface_link();

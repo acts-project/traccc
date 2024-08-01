@@ -16,6 +16,7 @@ set( TRACCC_BUILD_KOKKOS   @TRACCC_BUILD_KOKKOS@ )
 set( TRACCC_BUILD_ALPAKA   @TRACCC_BUILD_ALPAKA@ )
 set( TRACCC_BUILD_EXAMPLES @TRACCC_BUILD_EXAMPLES@ )
 set( TRACCC_USE_ROOT       @TRACCC_USE_ROOT@ )
+set( TRACCC_BUILD_IO       @TRACCC_BUILD_IO@ )
 
 # Set up some simple variables for using the package.
 set( traccc_VERSION "@PROJECT_VERSION@" )
@@ -40,7 +41,9 @@ endif()
 if( TRACCC_BUILD_FUTHARK )
    find_dependency( Futhark )
 endif()
-find_dependency( Acts )
+if ( TRACCC_BUILD_IO )
+   find_dependency( Acts )
+endif()
 find_dependency( vecmem )
 find_dependency( algebra-plugins )
 find_dependency( detray )
@@ -52,8 +55,10 @@ if( TRACCC_BUILD_EXAMPLES )
 endif()
 
 # Set up the traccc::Thrust target.
-set( TRACCC_THRUST_OPTIONS @TRACCC_THRUST_OPTIONS@ )
-thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+if ( NOT TARGET traccc::Thrust )
+   set( TRACCC_THRUST_OPTIONS @TRACCC_THRUST_OPTIONS@ )
+   thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+endif()
 
 # Include the file listing all the imported targets and options.
 include( "${traccc_CMAKE_DIR}/traccc-config-targets.cmake" )

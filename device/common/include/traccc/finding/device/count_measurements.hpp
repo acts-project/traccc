@@ -10,6 +10,12 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
+// Thrust include(s)
+#include <thrust/binary_search.h>
+
+// System include(s)
+#include <iterator>
+
 namespace traccc::device {
 
 /// Function evalulating the number of measurements to be iterated per thread

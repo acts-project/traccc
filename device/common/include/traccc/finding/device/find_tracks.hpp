@@ -13,6 +13,9 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
+// Thrust include(s)
+#include <thrust/binary_search.h>
+
 namespace traccc::device {
 
 /// Function for combinatorial finding.
