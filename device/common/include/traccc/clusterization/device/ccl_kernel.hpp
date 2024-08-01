@@ -13,6 +13,7 @@
 #include "traccc/definitions/hints.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/barrier.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -29,9 +30,7 @@ namespace traccc::device {
 /// Function which reads raw detector cells and turns them into measurements.
 ///
 /// @param[in] cfg clustering configuration
-/// @param[in] threadId current thread index
-/// @param[in] blckDim  current thread block size
-/// @param[in] blckId   current thread block index
+/// @param[in] thread_id a thread identifier object
 /// @param[in] cells_view    collection of cells
 /// @param[in] modules_view  collection of modules to which the cells are linked
 /// @param partition_start    partition start point for this thread block
@@ -54,10 +53,10 @@ namespace traccc::device {
 /// @param[out] measurements_view collection of measurements
 /// @param[out] cell_links    collection of links to measurements each cell is
 /// put into
-template <device::concepts::barrier barrier_t>
+template <device::concepts::barrier barrier_t,
+          device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_kernel(
-    const clustering_config cfg, details::index_t threadId,
-    details::index_t blckDim, unsigned int blockId,
+    const clustering_config cfg, const thread_id_t& thread_id,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,

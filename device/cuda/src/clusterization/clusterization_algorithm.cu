@@ -14,6 +14,7 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/utils/thread_id.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
@@ -55,12 +56,13 @@ __global__ void ccl_kernel(
         static_cast<vector_size_t>(cfg.max_partition_size()),
         shared_v + cfg.max_partition_size()};
     traccc::cuda::barrier barry_r;
+    const cuda::thread_id1 thread_id;
 
-    device::ccl_kernel(cfg, threadIdx.x, blockDim.x, blockIdx.x, cells_view,
-                       modules_view, partition_start, partition_end, outi,
-                       f_view, gf_view, f_backup_view, gf_backup_view,
-                       adjc_backup_view, adjv_backup_view, backup_mutex,
-                       barry_r, measurements_view, cell_links);
+    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
+                       partition_start, partition_end, outi, f_view, gf_view,
+                       f_backup_view, gf_backup_view, adjc_backup_view,
+                       adjv_backup_view, backup_mutex, barry_r,
+                       measurements_view, cell_links);
 }
 
 }  // namespace kernels
