@@ -103,8 +103,6 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
 
 full_chain_algorithm::~full_chain_algorithm() {
     // Need to ensure that objects would be deleted in the correct order.
-    m_cached_device_mr.reset();
-    m_device_mr.reset();
     delete m_data;
 }
 
