@@ -117,14 +117,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             // Allocate shared memory for the kernel.
-            vecmem::sycl::local_accessor<std::size_t> shared_uint(3, h);
+            vecmem::sycl::local_accessor<
+                device::details::ccl_kernel_static_smem_parcel>
+                shared(1, h);
             vecmem::sycl::local_accessor<device::details::index_t> shared_idx(
                 2 * m_config.max_partition_size(), h);
 
             // Launch the kernel.
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
-                [shared_uint, shared_idx, cells_view, modules_view,
+                [shared, shared_idx, cells_view, modules_view,
                  measurements_view, cell_links_view,
                  f_backup_view = vecmem::get_data(m_f_backup),
                  gf_backup_view = vecmem::get_data(m_gf_backup),
@@ -139,9 +141,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                     vecmem::data::vector_view<device::details::index_t> gf_view{
                         static_cast<vector_size_t>(cfg.max_partition_size()),
                         &shared_idx[cfg.max_partition_size()]};
-                    std::size_t& partition_start = shared_uint[0];
-                    std::size_t& partition_end = shared_uint[1];
-                    std::size_t& outi = shared_uint[2];
 
                     // Mutex for scratch space
                     vecmem::device_atomic_ref<unsigned int> backup_mutex(
@@ -152,12 +151,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                     const sycl::thread_id1 thread_id(item);
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
-                                       partition_start, partition_end, outi,
-                                       f_view, gf_view, f_backup_view,
-                                       gf_backup_view, adjc_backup_view,
-                                       adjv_backup_view, backup_mutex, barry_r,
-                                       measurements_view, cell_links_view);
+                    device::ccl_kernel(
+                        cfg, thread_id, cells_view, modules_view, shared[0],
+                        f_view, gf_view, f_backup_view, gf_backup_view,
+                        adjc_backup_view, adjv_backup_view, backup_mutex,
+                        barry_r, measurements_view, cell_links_view);
                 });
         })
         .wait_and_throw();

@@ -136,15 +136,15 @@ TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_core(
-    const thread_id_t& thread_id, std::size_t& partition_start,
-    std::size_t& partition_end, vecmem::device_vector<details::index_t> f,
+    const thread_id_t& thread_id, details::ccl_kernel_static_smem_parcel& smem,
+    vecmem::device_vector<details::index_t> f,
     vecmem::device_vector<details::index_t> gf,
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
     unsigned char* adjc, const cell_collection_types::const_device cells_device,
     const cell_module_collection_types::const_device modules_device,
     measurement_collection_types::device measurements_device,
     barrier_t& barrier) {
-    const details::index_t size = partition_end - partition_start;
+    const details::index_t size = smem.partition_end - smem.partition_start;
 
     assert(size <= f.size());
     assert(size <= gf.size());
@@ -160,8 +160,8 @@ TRACCC_DEVICE inline void ccl_core(
         const details::index_t cid =
             tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
         adjc[tst] = 0;
-        reduce_problem_cell(cells_device, cid, partition_start, partition_end,
-                            adjc[tst], &adjv[8 * tst]);
+        reduce_problem_cell(cells_device, cid, smem.partition_start,
+                            smem.partition_end, adjc[tst], &adjv[8 * tst]);
     }
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
@@ -198,9 +198,10 @@ TRACCC_DEVICE inline void ccl_core(
             const measurement_collection_types::device::size_type meas_pos =
                 measurements_device.push_back({});
             // Set up the measurement under the appropriate index.
-            aggregate_cluster(
-                cells_device, modules_device, f, partition_start, partition_end,
-                cid, measurements_device.at(meas_pos), cell_links, meas_pos);
+            aggregate_cluster(cells_device, modules_device, f,
+                              smem.partition_start, smem.partition_end, cid,
+                              measurements_device.at(meas_pos), cell_links,
+                              meas_pos);
         }
     }
 }
@@ -211,7 +212,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
-    std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
+    details::ccl_kernel_static_smem_parcel& smem,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,
     vecmem::data::vector_view<details::index_t> f_backup_view,
@@ -252,7 +253,7 @@ TRACCC_DEVICE inline void ccl_kernel(
         assert(start < num_cells);
         std::size_t end =
             std::min(num_cells, start + cfg.target_partition_size());
-        outi = 0;
+        smem.outi = 0;
 
         /*
          * Next, shift the starting point to a position further in the
@@ -280,9 +281,9 @@ TRACCC_DEVICE inline void ccl_kernel(
                    cells_device[end - 1].channel1 + 1) {
             ++end;
         }
-        partition_start = start;
-        partition_end = end;
-        assert(partition_start <= partition_end);
+        smem.partition_start = start;
+        smem.partition_end = end;
+        assert(smem.partition_start <= smem.partition_end);
     }
 
     barrier.blockBarrier();
@@ -303,7 +304,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     // into a return. As such, we cannot use returns in this kernel.
 
     // Get partition for this thread group
-    const details::index_t size = partition_end - partition_start;
+    const details::index_t size = smem.partition_end - smem.partition_start;
 
     // If the size is zero, we can just retire the whole block.
     if (size == 0) {
@@ -342,8 +343,7 @@ TRACCC_DEVICE inline void ccl_kernel(
         use_scratch = false;
     }
 
-    ccl_core(thread_id, partition_start, partition_end,
-             use_scratch ? f_backup : f_primary,
+    ccl_core(thread_id, smem, use_scratch ? f_backup : f_primary,
              use_scratch ? gf_backup : gf_primary, cell_links, adjv, adjc,
              cells_device, modules_device, measurements_device, barrier);
 
