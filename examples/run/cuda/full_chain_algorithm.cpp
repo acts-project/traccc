@@ -126,12 +126,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     }
 }
 
-full_chain_algorithm::~full_chain_algorithm() {
-
-    // We need to ensure that the caching memory resource would be deleted
-    // before the device memory resource that it is based on.
-    m_cached_device_mr.reset();
-}
+full_chain_algorithm::~full_chain_algorithm() = default;
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const cell_collection_types::host& cells,
