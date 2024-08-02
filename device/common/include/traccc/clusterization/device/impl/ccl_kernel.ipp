@@ -211,7 +211,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
-    std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
+    details::ccl_kernel_static_smem_parcel& smem,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,
     vecmem::data::vector_view<details::index_t> f_backup_view,
@@ -252,7 +252,7 @@ TRACCC_DEVICE inline void ccl_kernel(
         assert(start < num_cells);
         std::size_t end =
             std::min(num_cells, start + cfg.target_partition_size());
-        outi = 0;
+        smem.outi = 0;
 
         /*
          * Next, shift the starting point to a position further in the
@@ -280,9 +280,9 @@ TRACCC_DEVICE inline void ccl_kernel(
                    cells_device[end - 1].channel1 + 1) {
             ++end;
         }
-        partition_start = start;
-        partition_end = end;
-        assert(partition_start <= partition_end);
+        smem.partition_start = start;
+        smem.partition_end = end;
+        assert(smem.partition_start <= smem.partition_end);
     }
 
     barrier.blockBarrier();
@@ -303,7 +303,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     // into a return. As such, we cannot use returns in this kernel.
 
     // Get partition for this thread group
-    const details::index_t size = partition_end - partition_start;
+    const details::index_t size = smem.partition_end - smem.partition_start;
 
     // If the size is zero, we can just retire the whole block.
     if (size == 0) {
@@ -342,7 +342,7 @@ TRACCC_DEVICE inline void ccl_kernel(
         use_scratch = false;
     }
 
-    ccl_core(thread_id, partition_start, partition_end,
+    ccl_core(thread_id, smem.partition_start, smem.partition_end,
              use_scratch ? f_backup : f_primary,
              use_scratch ? gf_backup : gf_primary, cell_links, adjv, adjc,
              cells_device, modules_device, measurements_device, barrier);
