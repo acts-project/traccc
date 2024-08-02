@@ -44,6 +44,7 @@ traccc_add_test(
     test_unique_lock.cu
     test_sanity_contiguous_on.cu
     test_sanity_ordered_on.cu
+    test_sort.cu
 
     LINK_LIBRARIES
     CUDA::cudart
