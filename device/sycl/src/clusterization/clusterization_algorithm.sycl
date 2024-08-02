@@ -42,9 +42,9 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const detector_description::const_view& det_descr) const {
 
     assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
-                            m_queue, cells_view));
+                            m_queue, cells));
     assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
-                         m_copy, m_queue, cells_view));
+                         m_copy, m_queue, cells));
 
     // Get the number of cells
     const cell_collection_types::view::size_type num_cells =
