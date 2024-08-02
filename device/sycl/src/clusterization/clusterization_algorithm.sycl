@@ -57,7 +57,7 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_collection_types::const_view& cells,
+    const cell_collection_types::const_view& cells_view,
     const detector_description::const_view& det_descr) const {
 
     assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
@@ -67,7 +67,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Get the number of cells
     const cell_collection_types::view::size_type num_cells =
-        m_copy.get().get_size(cells);
+        m_copy.get().get_size(cells_view);
 
     // Create the result object, overestimating the number of measurements.
     measurement_collection_types::buffer measurements{
