@@ -13,19 +13,20 @@
 
 namespace traccc::device {
 template <typename T>
-mutex<T>::mutex(T& p) : m_atomic(p) {}
+TRACCC_HOST_DEVICE mutex<T>::mutex(T& p) : m_atomic(p) {}
 
 template <typename T>
-mutex<T>::mutex(const vecmem::device_atomic_ref<T>& r) : m_atomic(r) {}
+TRACCC_HOST_DEVICE mutex<T>::mutex(const vecmem::device_atomic_ref<T>& r)
+    : m_atomic(r) {}
 
 template <typename T>
-void mutex<T>::lock() {
+TRACCC_HOST_DEVICE void mutex<T>::lock() {
     while (!try_lock())
         ;
 }
 
 template <typename T>
-bool mutex<T>::try_lock() {
+TRACCC_HOST_DEVICE bool mutex<T>::try_lock() {
     assert(!m_is_locked);
 
     T false_v = static_cast<T>(false);
@@ -40,7 +41,7 @@ bool mutex<T>::try_lock() {
 }
 
 template <typename T>
-void mutex<T>::unlock() {
+TRACCC_HOST_DEVICE void mutex<T>::unlock() {
     assert(m_is_locked);
 
     m_atomic.store(static_cast<T>(false), vecmem::memory_order::release);
