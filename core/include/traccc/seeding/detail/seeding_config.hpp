@@ -125,7 +125,7 @@ struct seedfinder_config {
                    std::sqrt(radLengthPerSeed) *
                    (1.f + 0.038f * std::log(radLengthPerSeed));
 
-        float maxScatteringAngle = highland / minPt;
+        scalar maxScatteringAngle = highland / minPt;
         maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
 
         pTPerHelixRadius = bFieldInZ;
