@@ -13,18 +13,17 @@
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
-#endif
 
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 #include <vecmem/memory/hip/device_memory_resource.hpp>
 #include <vecmem/memory/hip/host_memory_resource.hpp>
 #include <vecmem/utils/hip/copy.hpp>
-#endif
 
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/memory/sycl/host_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
+
 #else
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
