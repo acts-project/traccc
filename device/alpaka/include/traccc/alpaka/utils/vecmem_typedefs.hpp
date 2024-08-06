@@ -54,7 +54,7 @@ typedef ::vecmem::sycl::host_memory_resource host_memory_resource;
 typedef ::vecmem::sycl::copy device_copy;
 #else  // host-only
 /// Device memory resource
-typedef ::vecmem::memory_resource device_memory_resource;
+typedef ::vecmem::host_memory_resource device_memory_resource;
 typedef ::vecmem::copy device_copy;
 #endif
 
