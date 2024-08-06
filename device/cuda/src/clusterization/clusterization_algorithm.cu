@@ -6,12 +6,16 @@
  */
 
 // CUDA Library include(s).
+#include <cuda_runtime_api.h>
+#include <driver_types.h>
+
 #include "../sanity/contiguous_on.cuh"
 #include "../sanity/ordered_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/clusterization/device/ccl_debug_output.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/utils/thread_id.hpp"
@@ -20,6 +24,9 @@
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
+
+// System include
+#include <iostream>
 
 // Vecmem include(s).
 #include <cstring>
@@ -40,7 +47,8 @@ __global__ void ccl_kernel(
     vecmem::data::vector_view<device::details::index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
     vecmem::data::vector_view<device::details::index_t> adjv_backup_view,
-    unsigned int* backup_mutex_ptr) {
+    unsigned int* backup_mutex_ptr,
+    device::details::ccl_debug_output* debug_output) {
 
     __shared__ std::size_t partition_start, partition_end;
     __shared__ std::size_t outi;
@@ -62,7 +70,7 @@ __global__ void ccl_kernel(
                        partition_start, partition_end, outi, f_view, gf_view,
                        f_backup_view, gf_backup_view, adjc_backup_view,
                        adjv_backup_view, backup_mutex, barry_r,
-                       measurements_view, cell_links);
+                       measurements_view, cell_links, debug_output);
 }
 
 }  // namespace kernels
@@ -132,13 +140,51 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     assert(m_config.max_cells_per_thread <=
            device::details::CELLS_PER_THREAD_STACK_LIMIT);
 
+    // If necessary, allocate an object for storing the debug information
+    vecmem::unique_alloc_ptr<device::details::ccl_debug_output> debug_output;
+
+    if (m_config.enable_debug_output) {
+        debug_output =
+            vecmem::make_unique_alloc<device::details::ccl_debug_output>(
+                m_mr.main);
+
+        device::details::ccl_debug_output empty_output =
+            device::details::ccl_debug_output::init();
+
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(debug_output.get(), &empty_output,
+                            sizeof(device::details::ccl_debug_output),
+                            cudaMemcpyHostToDevice, stream));
+    }
+
     kernels::ccl_kernel<<<num_blocks, m_config.threads_per_partition,
                           2 * m_config.max_partition_size() *
                               sizeof(device::details::index_t),
-                          stream>>>(
-        m_config, cells, modules, measurements, cell_links, m_f_backup,
-        m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get());
+                          stream>>>(m_config, cells, modules, measurements,
+                                    cell_links, m_f_backup, m_gf_backup,
+                                    m_adjc_backup, m_adjv_backup,
+                                    m_backup_mutex.get(), debug_output.get());
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+    if (debug_output) {
+        device::details::ccl_debug_output host_output;
+
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&host_output, debug_output.get(),
+                            sizeof(device::details::ccl_debug_output),
+                            cudaMemcpyDeviceToHost, stream));
+
+        TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+
+        if (host_output.num_oversized_partitions > 0) {
+            std::cout << "WARNING: @clusterization_algorithm: "
+                      << "Clustering encountered "
+                      << host_output.num_oversized_partitions
+                      << " oversized partitions; if this number is too large, "
+                         "it may cause performance problems."
+                      << std::endl;
+        }
+    }
 
     // Return the reconstructed measurements.
     return measurements;

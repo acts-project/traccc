@@ -37,6 +37,7 @@ class clusterization
     unsigned int max_cells_per_thread;
     unsigned int target_cells_per_thread;
     unsigned int backup_size_multiplier;
+    bool enable_debug_output;
     /// @}
 
     /// Print the specific options of this class

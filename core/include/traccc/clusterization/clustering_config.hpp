@@ -55,6 +55,13 @@ struct clustering_config {
     unsigned int backup_size_multiplier;
 
     /**
+     * @brief Flag to enforce debug output.
+     *
+     * @warning This will slown down the clustering algorithm.
+     */
+    bool enable_debug_output;
+
+    /**
      * @brief The maximum number of cells per partition.
      */
     TRACCC_HOST_DEVICE constexpr std::size_t max_partition_size() const {
