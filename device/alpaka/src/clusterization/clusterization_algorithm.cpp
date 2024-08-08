@@ -38,11 +38,8 @@ struct CCLKernel {
 
         traccc::alpaka::thread_id1 thread_id(acc);
 
-        auto& partition_start =
-            ::alpaka::declareSharedVar<std::size_t, __COUNTER__>(acc);
-        auto& partition_end =
-            ::alpaka::declareSharedVar<std::size_t, __COUNTER__>(acc);
-        auto& outi = ::alpaka::declareSharedVar<std::size_t, __COUNTER__>(acc);
+        auto& shared = ::alpaka::declareSharedVar<
+            device::details::ccl_kernel_static_smem_parcel, __COUNTER__>(acc);
 
         device::details::index_t* const shared_v =
             ::alpaka::getDynSharedMem<device::details::index_t>(acc);
@@ -56,9 +53,8 @@ struct CCLKernel {
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
-        device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
-                           partition_start, partition_end, outi, f_view,
-                           gf_view, f_backup_view, gf_backup_view,
+        device::ccl_kernel(cfg, thread_id, cells_view, modules_view, shared,
+                           f_view, gf_view, f_backup_view, gf_backup_view,
                            adjc_backup_view, adjv_backup_view, backup_mutex,
                            barry_r, measurements_view, cell_links);
     }
