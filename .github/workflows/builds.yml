@@ -59,6 +59,13 @@ jobs:
           - Debug
         include:
           - platform:
+              name: CUDA
+              container: ghcr.io/acts-project/ubuntu2404_cuda:56
+              cxx_standard: "20"
+              options: -DTRACCC_CUSTOM_SCALARTYPE=double -DDETRAY_CUSTOM_SCALARTYPE=double -DTRACCC_BUILD_CUDA=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
+              run_tests: false
+            build: Release
+          - platform:
               name: "SYCL"
               container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:56
               cxx_standard: "20"

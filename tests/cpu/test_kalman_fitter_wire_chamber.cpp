@@ -104,7 +104,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     // Set constrained step size to 1 mm
     sim.get_config().propagation.stepping.step_constraint = step_constraint;
     sim.get_config().propagation.navigation.min_mask_tolerance =
-        25.f * detray::unit<scalar>::um;
+        25.f * detray::unit<float>::um;
     sim.get_config().propagation.navigation.search_window = search_window;
 
     sim.run();
@@ -118,7 +118,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
-    fit_cfg.propagation.navigation.min_mask_tolerance = mask_tolerance;
+    fit_cfg.propagation.navigation.min_mask_tolerance =
+        static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 
