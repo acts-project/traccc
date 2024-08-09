@@ -42,8 +42,7 @@ __global__ void ccl_kernel(
     vecmem::data::vector_view<device::details::index_t> adjv_backup_view,
     unsigned int* backup_mutex_ptr) {
 
-    __shared__ std::size_t partition_start, partition_end;
-    __shared__ std::size_t outi;
+    __shared__ device::details::ccl_kernel_static_smem_parcel shared;
     extern __shared__ device::details::index_t shared_v[];
     vecmem::device_atomic_ref<unsigned int> backup_mutex(*backup_mutex_ptr);
 
@@ -58,9 +57,8 @@ __global__ void ccl_kernel(
     traccc::cuda::barrier barry_r;
     const cuda::thread_id1 thread_id;
 
-    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
-                       partition_start, partition_end, outi, f_view, gf_view,
-                       f_backup_view, gf_backup_view, adjc_backup_view,
+    device::ccl_kernel(cfg, thread_id, cells_view, modules_view, shared, f_view,
+                       gf_view, f_backup_view, gf_backup_view, adjc_backup_view,
                        adjv_backup_view, backup_mutex, barry_r,
                        measurements_view, cell_links);
 }
@@ -139,6 +137,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         m_config, cells, modules, measurements, cell_links, m_f_backup,
         m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get());
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+#ifndef NDEBUG
+    TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+    assert(is_contiguous_on(measurement_module_projection(), m_mr.main, m_copy,
+                            m_stream, measurements));
+#endif
 
     // Return the reconstructed measurements.
     return measurements;
