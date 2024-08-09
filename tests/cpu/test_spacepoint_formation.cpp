@@ -65,10 +65,10 @@ TEST(spacepoint_formation, cpu) {
 
     // Check the results
     EXPECT_EQ(spacepoints.size(), 2u);
-    EXPECT_FLOAT_EQ(spacepoints[0].global[0], 20.f);
-    EXPECT_FLOAT_EQ(spacepoints[0].global[1], 7.f);
-    EXPECT_FLOAT_EQ(spacepoints[0].global[2], 2.f);
-    EXPECT_FLOAT_EQ(spacepoints[1].global[0], 180.f);
-    EXPECT_FLOAT_EQ(spacepoints[1].global[1], 10.f);
-    EXPECT_FLOAT_EQ(spacepoints[1].global[2], 15.f);
+    EXPECT_FLOAT_EQ(static_cast<float>(spacepoints[0].global[0]), 20.f);
+    EXPECT_FLOAT_EQ(static_cast<float>(spacepoints[0].global[1]), 7.f);
+    EXPECT_FLOAT_EQ(static_cast<float>(spacepoints[0].global[2]), 2.f);
+    EXPECT_FLOAT_EQ(static_cast<float>(spacepoints[1].global[0]), 180.f);
+    EXPECT_FLOAT_EQ(static_cast<float>(spacepoints[1].global[1]), 10.f);
+    EXPECT_FLOAT_EQ(static_cast<float>(spacepoints[1].global[2]), 15.f);
 }

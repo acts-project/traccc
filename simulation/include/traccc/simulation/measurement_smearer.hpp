@@ -96,24 +96,26 @@ struct measurement_smearer {
             if constexpr (std::is_same_v<
                               typename mask_t::local_frame_type,
                               detray::line2D<traccc::default_algebra>>) {
-                iomeas.local0 =
+                iomeas.local0 = static_cast<float>(
                     std::max(std::abs(matrix_operator().element(meas, 0u, 0u)) +
                                  offset[0],
-                             static_cast<scalar_type>(0.f));
+                             scalar_type(0.f)));
             } else if constexpr (std::is_same_v<typename mask_t::shape,
                                                 detray::annulus2D>) {
-                iomeas.local1 =
-                    matrix_operator().element(meas, 0u, 0u) + offset[0];
+                iomeas.local1 = static_cast<float>(
+                    matrix_operator().element(meas, 0u, 0u) + offset[0]);
             } else {
-                iomeas.local0 =
-                    matrix_operator().element(meas, 0u, 0u) + offset[0];
+                iomeas.local0 = static_cast<float>(
+                    matrix_operator().element(meas, 0u, 0u) + offset[0]);
             }
         } else if (meas_dim == 2u) {
             const auto proj = subs.projector<2u>();
             matrix_type<2u, 1u> meas = proj * bound_params.vector();
 
-            iomeas.local0 = matrix_operator().element(meas, 0u, 0u) + offset[0];
-            iomeas.local1 = matrix_operator().element(meas, 1u, 0u) + offset[1];
+            iomeas.local0 = static_cast<float>(
+                matrix_operator().element(meas, 0u, 0u) + offset[0]);
+            iomeas.local1 = static_cast<float>(
+                matrix_operator().element(meas, 1u, 0u) + offset[1]);
         }
 
         return;
