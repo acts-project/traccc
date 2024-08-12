@@ -280,52 +280,31 @@ auto main(int argc, char* argv[]) -> int
             cellsRead += 1;
             if (geoIDBuf[y] != tempGeoID) {
                 clustersTotal += clustersInGeoID;
-                // uncomment printing start to print
-                // /* printing start
-                printf("number of clusters in geoID 0x%lu: %d, total clusters: %d\n", tempGeoID, clustersInGeoID, clustersTotal);
-                printf("Total clusters found: %d\n", clustersTotal);
-                printf("==========================================================\n");
-                // printing end */
                 tempGeoID = geoIDBuf[y];
                 clustersInGeoID = 0;
                 geoIDTotal += 1;
             } 
 
-            // if the next cell is: 
-            if (outputBuf[y] == y+1) { // in the same cluster
+            if (outputBuf[y] == y+1) { 
                 currClusterC0[numInCluster] = c0Buf[y];
                 currClusterC1[numInCluster] = c1Buf[y];
                 numInCluster++;
                 outputBuf[y] = rootIndex;
-            } else if (outputBuf[y] == y-1 || outputBuf[y] == y) { // a cluster by itself (cluster size of 1) or if its the end of a cluster
+            } else if (outputBuf[y] == y-1 || outputBuf[y] == y) { 
                 currClusterC0[numInCluster] = c0Buf[y];
                 currClusterC1[numInCluster] = c1Buf[y];
                 numInCluster++;
                 clustersInGeoID++;
-                
-                // uncomment printing start to see what clusters consist of  
-                // /* printing start 
-                printf("cluster %d: ", clustersInGeoID);
-                    for (uint16_t i = 0; i < numInCluster; i++){
-                        printf("(%u, %u), ", currClusterC0[i], currClusterC1[i]);
-                    }
-                printf("\ncluser size: %d\n", numInCluster);
-                // printing end */
 
-                std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0); // reset cluster c0 and c1 buffers
+                std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0); 
                 std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
                 
-                rootIndex = outputBuf[y];
+                // rootIndex = outputBuf[y];
                 outputBuf[y] = rootIndex;
                 numInCluster = 0;
             }
-
-            printf("out[%lu]: %u\n", y, outputBuf[y]);
-            // printf("to test c0_0: %d, c0_1: %d, c1_0: %d, c1_1: %d\n", c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]]);
-            // printf("boolean test: c0: %d, c1: %d\n", -1 <= c0Buf[y] - c0Buf[outputBuf[y]] <= 1);
-            // printf("correct?: %d\n", outputTest(c0Buf[y], c0Buf[outputBuf[y]], c1Buf[y], c1Buf[outputBuf[y]], geoIDBuf[y], geoIDBuf[outputBuf[y]]));
         
-        } // cells loop end
+        }
         
 
         // printf("  Cells Read: %d\n", cellsRead);
