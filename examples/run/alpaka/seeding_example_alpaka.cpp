@@ -43,7 +43,6 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-
 #include "traccc/alpaka/utils/vecmem_typedefs.hpp"
 
 // System include(s).

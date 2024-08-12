@@ -11,6 +11,7 @@
 #include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/alpaka/utils/vecmem_typedefs.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -30,8 +31,6 @@
 #include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-
-#include "traccc/alpaka/utils/vecmem_typedefs.hpp"
 
 // System include(s).
 #include <exception>
