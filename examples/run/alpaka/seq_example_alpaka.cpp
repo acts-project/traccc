@@ -31,21 +31,7 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
-// VecMem include(s).
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-#endif
-
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-#include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/memory/hip/host_memory_resource.hpp>
-#include <vecmem/utils/hip/copy.hpp>
-#endif
-
-#include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/copy.hpp>
+#include "traccc/alpaka/utils/vecmem_typedefs.hpp"
 
 // System include(s).
 #include <exception>
@@ -86,21 +72,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                        seeding_opts.seedfinder.bFieldInZ};
 
     // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    vecmem::cuda::copy copy;
-    vecmem::cuda::host_memory_resource cuda_host_mr;
-    vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &cuda_host_mr};
-#elif ALPAKA_ACC_GPU_HIP_ENABLED
-    vecmem::hip::copy copy;
-    vecmem::hip::host_memory_resource hip_host_mr;
-    vecmem::hip::device_memory_resource hip_device_mr;
-    traccc::memory_resource mr{hip_device_mr, &hip_host_mr};
-#else
-    vecmem::copy copy;
-    traccc::memory_resource mr{host_mr, &host_mr};
-#endif
+    traccc::alpaka::vecmem::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::device_copy copy;
+    traccc::alpaka::vecmem::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
 
     traccc::host::clusterization_algorithm ca(host_mr);
     traccc::host::spacepoint_formation_algorithm sf(host_mr);
