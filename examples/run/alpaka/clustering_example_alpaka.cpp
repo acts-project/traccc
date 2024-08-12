@@ -43,189 +43,16 @@
 
 namespace po = boost::program_options;
 
-/*
-int seq_run(const traccc::full_tracking_input_config& i_cfg,
-            const traccc::common_options& common_opts, bool run_cpu) {  
-
-    // Read the surface transforms
-    auto surface_transforms =
-        traccc::io::read_geometry(common_opts.detector_file);
-
-    // Read the digitization configuration file
-    auto digi_cfg =
-        traccc::io::read_digitization_config(i_cfg.digitization_config_file);
-
-    // output stats
-    uint64_t n_clusters = 0;
-    uint64_t n_clusterRatio = 0;
-    uint64_t n_clusterHits = 0;
-    uint64_t n_cells = 0;
-    uint64_t n_modules = 0;
-
-    vecmem::host_memory_resource host_mr;
-
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    vecmem::cuda::copy copy;
-    vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
-#else
-    vecmem::copy copy;
-    traccc::memory_resource mr{host_mr, &host_mr};
-#endif
-
-    traccc::clusterization_algorithm ca(host_mr);
-
-    traccc::performance::timing_info elapsedTimes;
-
-    for (unsigned int event = common_opts.skip;
-         event < common_opts.events + common_opts.skip; ++event) {
-        
-        traccc::io::cell_reader_output read_out_per_event(mr.host);
-        traccc::clusterization_algorithm::output_type measurements_per_event;
-
-        traccc::io::spacepoint_reader_output reader_output(mr.host);
-        traccc::clusterization_algorithm::output_type cells;
-        traccc::clusterization_algorithm::output_type modules;
-
-        traccc::spacepoint_collection_types::host& spacepoints_per_event =
-            reader_output.spacepoints;
-        
-        {  // Start measuring wall time
-            traccc::performance::timer wall_t("Wall time", elapsedTimes);
-
-            // -----------------
-            // hit file reading
-            // -----------------
-            {
-                traccc::performance::timer t("Hit reading  (cpu)",
-                                             elapsedTimes);
-                // Read the hits from the relevant event file
-                traccc::io::read_cells(read_out_per_event, event,
-                                       common_opts.input_directory,
-                                       common_opts.input_data_format,
-                                       &surface_transforms, &digi_cfg);
-            }  // stop measuring hit reading timer
-
-
-            const traccc::cell_collection_types::host& cells_per_event =
-                read_out_per_event.cells;
-            const traccc::cell_module_collection_types::host&
-                modules_per_event = read_out_per_event.modules;
-            traccc::cell_collection_types::buffer cells_buffer(
-                cells_per_event.size(), mr.main);
-
-            copy(vecmem::get_data(cells_per_event), cells_buffer);
-            traccc::cell_module_collection_types::buffer modules_buffer(
-                modules_per_event.size(), mr.main);
-            copy(vecmem::get_data(modules_per_event), modules_buffer);
-
-            {
-                traccc::performance::timer t("Clusterization  (gpu)", elapsedTimes);
-                measurements_per_event =
-                    ca(cells_per_event, modules_per_event);
-            }  // stop measuring clusterization cpu timer
-
-            // {
-            // // Copy the spacepoint data to the device.
-            // traccc::spacepoint_collection_types::buffer
-            //     spacepoints_alpaka_buffer(spacepoints_per_event.size(),
-            //                               *mr.host);
-            // copy(vecmem::get_data(spacepoints_per_event),
-            //      spacepoints_alpaka_buffer);
-            // }
-
-            // {  // clustering binning for alpaka
-            //     traccc::performance::timer t("clustering (alpaka)",
-            //                                  elapsedTimes);
-            //     m_spacepoint_binning(
-            //         vecmem::get_data(spacepoints_alpaka_buffer));
-            // }
-
-            
-            if (run_cpu) {
-
-                // -----------------------------
-                //     Clusterization (cpu)
-                // -----------------------------
-
-                {
-                    traccc::performance::timer t("Clusterization  (cpu)",
-                                                 elapsedTimes);
-                    measurements_per_event =
-                        ca(cells_per_event, modules_per_event);
-                }  // stop measuring clusterization cpu timer
-            }
-
-            // printf(measurements_per_event);
-            // printf("Measurements per event: \n %s \n"(traccc::cell_collection_types)(&measurements_per_event).c_str());
-            // // std::cout << measurements_per_event << std::endl; 
-
-        }
-
-
-    }
-
-    // if (common_opts.check_performance) {
-    //     sd_performance_writer.finalize();
-    // }
-    // std::cout << "==> Statistics ... " << std::endl;
-    // std::cout << "- read    " << n_clusters << " clusters from "
-    //           << n_modules << " modules" << std::endl;
-    // std::cout << "- created (cpu)  " << n_cells << " cells" << std::endl;
-    // std::cout << "- created (alpaka) " << n_clusterHits << " cluster hits"
-    //           << std::endl;
-    // std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
-
-    return 0;
-}
-*/
-
-// int main(int argc, char* argv[]) {
-
-
-//     // Set up the program options
-//     po::options_description desc("Allowed options");
-
-//     // Add options
-//     desc.add_options()("help,h", "Give some help with the program's options");
-//     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
-//     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
-//                     "run cpu clustering as well");
-//     traccc::common_options common_opts(desc);
-
-//     po::variables_map vm;
-//     po::store(po::parse_command_line(argc, argv, desc), vm);
-
-//     // Check errors
-//     traccc::handle_argument_errors(vm, desc);
-
-//     common_opts.read(vm);
-//     full_tracking_input_cfg.read(vm);
-//     auto run_cpu = vm["run_cpu"].as<bool>();
-
-//     traccc::hitCsvReader csvHits(common_opts.input_directory); //"/home/wthompson/Work/traccc/data/tml_full/ttbar_mu20/event000000000-cells.csv"
-
-//     for (int i = 0; i < 10; i++) {
-//        std::cout << csvHits.data.geoID[i] << "," << csvHits.data.channel0[i] << "," << csvHits.data.channel1[i]  << std::endl;
-//     }
-
-//     std::cout << "Running " << argv[0] << " "
-//               << full_tracking_input_cfg.detector_file << " "
-//               << common_opts.input_directory << " " << common_opts.events
-//               << std::endl;
-
-//     // return seq_run(full_tracking_input_cfg, common_opts, run_cpu);
-// }
-
-
 struct ClusteringKernel
 {
-    template<typename TAcc, typename TData>
-    ALPAKA_FN_ACC auto operator()(TAcc const& acc, 
-    TData const* const geoIDBuf,
-    TData const* const c0Buf,
-    TData const* const c1Buf
-    ) const -> void
+    template<typename TAcc, typename TData64, typename TData16, typename TIdx>
+    ALPAKA_FN_ACC auto operator()(
+    TAcc const& acc, 
+    TData64 const* const geoIDBuf,
+    TData16 const* const c0Buf,
+    TData16 const* const c1Buf,
+    TData64* const outputBuf,
+    TIdx const& numElements) const -> void
     {
         auto const globalThreadIdx = alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc);
         auto const globalThreadExtent = alpaka::getWorkDiv<alpaka::Grid, alpaka::Threads>(acc);
@@ -233,14 +60,21 @@ struct ClusteringKernel
         auto const linearizedGlobalThreadIdx = alpaka::mapIdx<1u>(globalThreadIdx, globalThreadExtent);
 
         unsigned int i = linearizedGlobalThreadIdx[0];
-        for(int j = 0; j < 10; ++j)
-        //{
-            printf("Thread ID %u, GeoID %u, Channel0 %u, Channel1 %u\n", linearizedGlobalThreadIdx[0], geoIDBuf[i], c0Buf[i], c1Buf[i]);
-        //}
-
-        // printf("Thread ID %d, %d\n", linearizedGlobalThreadIdx, geoIDBuf[0]);
+        
+        for (int x = i-1; x <= i+1; x+=2) {
+            if ((geoIDBuf[x] == geoIDBuf[i]) &&
+                (-1 <= (c0Buf[x] - c0Buf[i]) && (c0Buf[x] - c0Buf[i]) <= 1) &&
+                (-1 <= (c1Buf[x] - c1Buf[i]) && (c1Buf[x] - c1Buf[i]) <= 1)) {
+                    outputBuf[i] = x;
+            }
+        }
+        
     }
 };
+
+bool outputTest(uint16_t c0_0, uint16_t c0_1, uint16_t c1_0, uint16_t c1_1, uint64_t geoID_0, uint64_t geoID_1) {
+    return (-1 <= (c0_0 - c0_1) && (c0_0 - c0_1) <= 1 && -1 <= (c1_0 - c1_1) && (c1_0 - c1_1) <= 1 && geoID_0 == geoID_1);
+}
 
 auto main(int argc, char* argv[]) -> int
 {
@@ -264,11 +98,26 @@ auto main(int argc, char* argv[]) -> int
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
 
-    traccc::hitCsvReader csvHits(common_opts.input_directory);
+    std::cout << "Input data file: " << common_opts.input_directory << std::endl 
+              << "Events: " << common_opts.events << std::endl; 
 
-    for (int i = 0; i < 10; i++) {
-       std::cout << csvHits.data.geoID[i] << "," << csvHits.data.channel0[i] << "," << csvHits.data.channel1[i]  << std::endl;
-    }
+    for (unsigned int event = common_opts.skip;
+         event < common_opts.events + common_opts.skip; ++event) {
+
+    printf("\n\nFor event %d:\n", event);
+
+    double timeTotal = 0;
+    double IOTime = 0;
+    
+    const auto beginT = std::chrono::high_resolution_clock::now();
+    
+    traccc::hitCsvReader csvHits(common_opts.input_directory, event);
+
+    const auto endT = std::chrono::high_resolution_clock::now();
+    timeTotal += std::chrono::duration<double>(endT - beginT).count();
+    IOTime += std::chrono::duration<double>(endT - beginT).count();
+    std::cout << "Time reading CSV file: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
+    
 
 // Fallback for the CI with disabled sequential backend
 #if defined(ALPAKA_CI) && !defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED)
@@ -281,7 +130,9 @@ auto main(int argc, char* argv[]) -> int
     using Acc = alpaka::ExampleDefaultAcc<Dim, Idx>;
     using Host = alpaka::AccCpuSerial<Dim, Idx>;
     // std::cout << "Using alpaka accelerator: " << alpaka::getAccName<Acc>() << "\n"
-    //         << "Using host: " << alpaka::getAccName<Host>() << std::endl;
+
+    //           << "Using host: " << alpaka::getAccName<Host>() << std::endl;
+
 
     using AccQueueProperty = alpaka::Blocking;
     using DevQueue = alpaka::Queue<Acc, AccQueueProperty>;
@@ -298,11 +149,14 @@ auto main(int argc, char* argv[]) -> int
     DevQueue devQueue(devAcc);
     HostQueue hostQueue(devHost);
 
+    uint const csvRows = sizeof(csvHits.data.geoID) / sizeof(u_int64_t);
+
     // Define the work division for kernels to be run on devAcc and devHost
     using Vec = alpaka::Vec<Dim, Idx>;
-    Vec const elementsPerThread(Vec::all(static_cast<Idx>(10)));
-    Vec const threadsPerGrid(Vec::all(static_cast<Idx>(100)));
+    Vec const elementsPerThread(Vec::all(static_cast<Idx>(1)));
+    Vec const threadsPerGrid(Vec::all(static_cast<Idx>(csvRows)));
     using WorkDiv = alpaka::WorkDivMembers<Dim, Idx>;
+
     WorkDiv const devWorkDiv = alpaka::getValidWorkDiv<Acc>(
         devAcc,
         threadsPerGrid,
@@ -311,114 +165,167 @@ auto main(int argc, char* argv[]) -> int
         alpaka::GridBlockExtentSubDivRestrictions::Unrestricted
     );
 
-    WorkDiv const hostWorkDiv = alpaka::getValidWorkDiv<Host>(
-        devHost,
-        threadsPerGrid,
-        elementsPerThread,
-        false,
-        alpaka::GridBlockExtentSubDivRestrictions::Unrestricted
-    );
 
-    using Data = std::uint32_t;
+    using Data = std::uint64_t;
     using DataChannel = std::uint16_t;
-    constexpr Idx nElementsPerDim = 100; 
+    constexpr Idx nElementsPerDim = csvRows; 
 
     const Vec extents(Vec::all(static_cast<Idx>(nElementsPerDim)));
-    
-    // std::array<Data, nElementsPerDim * nElementsPerDim * nElementsPerDim> plainBuffer;
-    // auto hostViewPlainPtr = alpaka::createView(devHost, plainBuffer.data(), extents);
 
-    // Allocate 3 host memory buffers
-    using BufHost = alpaka::Buf<Host, Data, Dim, Idx>;
-    BufHost geoIDBuf(alpaka::allocBuf<Data, Idx>(devHost, extents));
-    BufHost c0Buf(alpaka::allocBuf<Data, Idx>(devHost, extents));
-    BufHost c1Buf(alpaka::allocBuf<Data, Idx>(devHost, extents));
+    // Allocate host memory buffers
+    using BufHostU64 = alpaka::Buf<Host, Data, Dim, Idx>;
+    using BufHostU16 = alpaka::Buf<Host, DataChannel, Dim, Idx>;
+
+    BufHostU64 outputBuf(alpaka::allocBuf<Data, Idx>(devHost, extents));
+    BufHostU64 geoIDBuf(alpaka::allocBuf<Data, Idx>(devHost, extents));
+    BufHostU16 c0Buf(alpaka::allocBuf<DataChannel, Idx>(devHost, extents));
+    BufHostU16 c1Buf(alpaka::allocBuf<DataChannel, Idx>(devHost, extents));
 
     // Initialize the host input vectors
+    Data* const pOutputBuf(alpaka::getPtrNative(outputBuf));
     Data* const pGeoIDBuf(alpaka::getPtrNative(geoIDBuf));
-    Data* const pC0Buf(alpaka::getPtrNative(c0Buf));
-    Data* const pC1Buf(alpaka::getPtrNative(c1Buf));
+    DataChannel* const pC0Buf(alpaka::getPtrNative(c0Buf));
+    DataChannel* const pC1Buf(alpaka::getPtrNative(c1Buf));
 
     // Assign data 
-    Idx const numElements(100);
+    Idx const numElements(nElementsPerDim);
+    // uint64_t tempGeoID = csvHits.data.geoID[0];
+    {   
+        const auto beginT = std::chrono::high_resolution_clock::now();
+        for(Idx i(0); i < numElements; ++i)
+        {   
+            pOutputBuf[i] = i;
+            pGeoIDBuf[i] = csvHits.data.geoID[i];
+            pC0Buf[i] = csvHits.data.channel0[i];
+            pC1Buf[i] = csvHits.data.channel1[i];
+        }
 
-    for(Idx i(0); i < numElements; ++i)
-    {
-        pGeoIDBuf[i] = 100+i; // csvHits.data.geoID[i];
-        pC0Buf[i] = 75+i; // csvHits.data.channel0[i];
-        pC1Buf[i] = 25+i; // csvHits.data.channel1[i];
+        const auto endT = std::chrono::high_resolution_clock::now();
+        timeTotal += std::chrono::duration<double>(endT - beginT).count();
+        IOTime += std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "Time for assigning data to buffers, len: " << std::chrono::duration<double>(endT - beginT).count()*1000 << " , " 
+                  << std::to_string(numElements) << std::endl;
+        std::cout << "Time for IO: " << IOTime*1000 << std::endl;
     }
 
-    using BufAcc = alpaka::Buf<Acc, Data, Dim, Idx>;
-    BufAcc devGeoIDBuf(alpaka::allocBuf<Data, Idx>(devAcc, extents));
-    BufAcc devC0Buf(alpaka::allocBuf<Data, Idx>(devAcc, extents));
-    BufAcc devC1Buf(alpaka::allocBuf<Data, Idx>(devAcc, extents));
+    using BufAccU64 = alpaka::Buf<Acc, Data, Dim, Idx>;
+    using BufAccU16 = alpaka::Buf<Acc, DataChannel, Dim, Idx>;
 
+    BufAccU64 devOutputBuf(alpaka::allocBuf<Data, Idx>(devAcc, extents));
+    BufAccU64 devGeoIDBuf(alpaka::allocBuf<Data, Idx>(devAcc, extents));
+    BufAccU16 devC0Buf(alpaka::allocBuf<DataChannel, Idx>(devAcc, extents));
+    BufAccU16 devC1Buf(alpaka::allocBuf<DataChannel, Idx>(devAcc, extents));
+     
+    {
+        const auto beginT = std::chrono::high_resolution_clock::now();
+        alpaka::memcpy(devQueue, devOutputBuf, outputBuf);
+        alpaka::memcpy(devQueue, devGeoIDBuf, geoIDBuf);
+        alpaka::memcpy(devQueue, devC0Buf, c0Buf);
+        alpaka::memcpy(devQueue, devC1Buf, c1Buf);
 
-    alpaka::memcpy(devQueue, devGeoIDBuf, geoIDBuf);
-    alpaka::memcpy(devQueue, devC0Buf, c0Buf);
-    alpaka::memcpy(devQueue, devC1Buf, c1Buf);
-
-    alpaka::wait(devQueue);
-
-    // for(Idx i(0); i < numElements; ++i)
-    // {
-    //     devGeoIDBuf[i] = 50; // csvHits.data.geoID[i];
-    //     devC0Buf[i] = csvHits.data.channel0[i];
-    //     devC1Buf[i] = csvHits.data.channel1[i];
-    // }
-    // Depending on the accelerator, the allocation function may introduce
-    // padding between rows/planes of multidimensional memory allocations.
-    // Therefore the pitch (distance between consecutive rows/planes) may be
-    // greater than the space required for the data.
-    // Idx const deviceBuffer1Pitch(alpaka::getPitchBytes<2u>(deviceBuffer1) / sizeof(Data));
-    // Idx const deviceBuffer2Pitch(alpaka::getPitchBytes<2u>(deviceBuffer2) / sizeof(Data));
-    // Idx const hostBuffer1Pitch(alpaka::getPitchBytes<2u>(hostBuffer) / sizeof(Data));
-    // Idx const hostViewPlainPtrPitch(alpaka::getPitchBytes<2u>(hostViewPlainPtr) / sizeof(Data));
-
-    // Test device Buffer
-    //
-    // This kernel tests if the copy operations
-    // were successful. In the case something
-    // went wrong an assert will fail.
-    // Data const* const pDeviceBuffer1 = alpaka::getPtrNative(devGeoIDBuf);
-    // Data const* const pDeviceBuffer2 = alpaka::getPtrNative(deviceBuffer2);
-
-    // Data* const pHostViewPlainPtr = alpaka::getPtrNative(hostViewPlainPtr);
+        alpaka::wait(devQueue);
+        const auto endT = std::chrono::high_resolution_clock::now();
+        timeTotal += std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
+    }
 
     ClusteringKernel clusteringKernel;
 
+    auto const devClusteringKernel = alpaka::createTaskKernel<Acc>(
+        devWorkDiv,
+        clusteringKernel,
+        alpaka::getPtrNative(devGeoIDBuf),
+        alpaka::getPtrNative(devC0Buf),
+        alpaka::getPtrNative(devC1Buf),
+        alpaka::getPtrNative(devOutputBuf),
+        numElements
+    );
+
     {
         const auto beginT = std::chrono::high_resolution_clock::now();
-        alpaka::exec<Host>(
-            hostQueue,
-            hostWorkDiv,
-            clusteringKernel,
-            alpaka::getPtrNative(geoIDBuf),
-            alpaka::getPtrNative(c0Buf),
-            alpaka::getPtrNative(c1Buf)
-        ); 
-        alpaka::wait(hostQueue); // wait in case we are using an asynchronous queue to time actual kernel runtime
+        alpaka::enqueue(devQueue, devClusteringKernel);
+        alpaka::wait(devQueue); // wait in case we are using an asynchronous queue to time actual kernel runtime
         const auto endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for kernel execution on CPU: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
+        timeTotal += std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "Time for clustering kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     }
 
     {
         const auto beginT = std::chrono::high_resolution_clock::now();
-        alpaka::exec<Acc>(
-            devQueue,
-            devWorkDiv,
-            clusteringKernel,
-            alpaka::getPtrNative(devGeoIDBuf),
-            alpaka::getPtrNative(devC0Buf),
-            alpaka::getPtrNative(devC1Buf)
-        );
-        alpaka::wait(devQueue); // wait in case we are using an asynchronous queue to time actual kernel runtime
+        alpaka::memcpy(devQueue, outputBuf, devOutputBuf);
+        alpaka::memcpy(devQueue, geoIDBuf,  devGeoIDBuf);
+        alpaka::memcpy(devQueue, c0Buf, devC0Buf);
+        alpaka::memcpy(devQueue, c1Buf, devC1Buf);
+
+        alpaka::wait(devQueue);
         const auto endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for kernel execution on GPU: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
+        timeTotal += std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "Time for dev to host mem copy: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
     }
+
+    // results testing 
+    int numInCluster = 0;
+    int clustersInGeoID = 0;
+    int clustersTotal = 0;
+    int geoIDTotal = 0;
+    int cellsRead = 0;
+    uint16_t currClusterC0[300]; // max cluster size
+    uint16_t currClusterC1[300];
+    int rootIndex = 0;
+    uint64_t tempGeoID = geoIDBuf[0];
+    double printTime = 0;
+
+    // cluster calc and printing
+    {
+        const auto beginT = std::chrono::high_resolution_clock::now();
+        for (uint y = 0; y < numElements; y++) {
+            cellsRead += 1;
+            if (geoIDBuf[y] != tempGeoID) {
+                clustersTotal += clustersInGeoID;
+                tempGeoID = geoIDBuf[y];
+                clustersInGeoID = 0;
+                geoIDTotal += 1;
+            } 
+
+            if (outputBuf[y] == y+1) { 
+                currClusterC0[numInCluster] = c0Buf[y];
+                currClusterC1[numInCluster] = c1Buf[y];
+                numInCluster++;
+                outputBuf[y] = rootIndex;
+            } else if (outputBuf[y] == y-1 || outputBuf[y] == y) { 
+                currClusterC0[numInCluster] = c0Buf[y];
+                currClusterC1[numInCluster] = c1Buf[y];
+                numInCluster++;
+                clustersInGeoID++;
+
+                std::fill(std::begin(currClusterC0), std::end(currClusterC0), 0); 
+                std::fill(std::begin(currClusterC1), std::end(currClusterC1), 0);
+                
+                // rootIndex = outputBuf[y];
+                outputBuf[y] = rootIndex;
+                numInCluster = 0;
+            }
+        
+        }
+        
+
+        // printf("  Cells Read: %d\n", cellsRead);
+        // printf("  Total clusters found: %d\n", clustersTotal);
+        // printf("  Total unique geoIDs found: %d\n", geoIDTotal);
+
+        // *** note that if cluster printing is included it will increase the time displayed for cpu processing time 
+        const auto endT = std::chrono::high_resolution_clock::now();
+        printTime += std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "  Time for cluster printing and calc on CPU: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
+    }
+    printf("  Wall time: %f\n", (timeTotal + printTime)*1000);
+    // printf("*******************************************************\n");
+
+    std::fill(std::begin(csvHits.data.geoID), std::end(csvHits.data.geoID), 0); // reset cluster c0 and c1 buffers
+    std::fill(std::begin(csvHits.data.channel0), std::end(csvHits.data.channel0), 0);
+    std::fill(std::begin(csvHits.data.channel1), std::end(csvHits.data.channel1), 0);
+
+    } // end of event loop
 
     return EXIT_SUCCESS;
 #endif

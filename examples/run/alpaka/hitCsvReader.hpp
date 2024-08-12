@@ -14,25 +14,33 @@ namespace traccc
     class hitCsvReader
     {
     public:
-        hitCsvReader(std::string fileName);
+
+        hitCsvReader(std::string inputDir, uint event);
 
         struct cells {
-            u_long geoID[55000];
-            u_short channel0[55000];
-            u_short channel1[55000];
+            u_int64_t geoID[600000];
+            u_int16_t channel0[600000];
+            u_int16_t channel1[600000];
+
+            // std::vector<u_int64_t> geoID;
+            // std::vector<u_int16_t> channel0;
+            // std::vector<u_int16_t> channel1;
         };
 
         cells data;
     };
 
-    hitCsvReader::hitCsvReader(std::string fileName)
+
+    hitCsvReader::hitCsvReader(std::string inputDir, uint event)
     {   
         using std::cout;
         using std::endl;
 
-        std::ifstream in(fileName);
+
+        std::ifstream in(inputDir + "event00000000" + std::to_string(event) + "-cells.csv");
         char buffer[1024];
-        u_int numLines = 0;
+        u_int lineNum = 0;
+
         
         in.getline(buffer, 1024);
 
@@ -48,12 +56,16 @@ namespace traccc
 
             in>>a>>dl>>dummy>>dl>>c0>>dl>>c1>>dl>>d>>dl>>dummy2;
 
-            // std::cout<<a<<","<<c0<<","<<c1<<std::endl;
-            data.geoID[numLines] = a;
-            data.channel0[numLines] = c0;
-            data.channel1[numLines] = c1;
+
+            data.geoID[lineNum] = a;
+            data.channel0[lineNum] = c0;
+            data.channel1[lineNum] = c1;
+
+            // data.geoID.push_back(a);
+            // data.channel0.push_back(c0);
+            // data.channel1.push_back(c1);
         
-            ++numLines;
+            ++lineNum;
         }
         in.close();
 

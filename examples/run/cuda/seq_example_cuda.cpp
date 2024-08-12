@@ -96,6 +96,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
+        
+        printf("\n\nFor event %d:\n", event);
+
+        const auto WallbeginT = std::chrono::high_resolution_clock::now();
 
         // Instantiate host containers/collections
         traccc::io::cell_reader_output read_out_per_event(mr.host);
@@ -117,11 +121,14 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             {
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
+                const auto beginT = std::chrono::high_resolution_clock::now();
                 // Read the cells from the relevant event file into host memory.
                 traccc::io::read_cells(read_out_per_event, event,
                                        common_opts.input_directory,
                                        common_opts.input_data_format,
                                        &surface_transforms, &digi_cfg);
+                const auto endT = std::chrono::high_resolution_clock::now();
+                std::cout << "Time for file reading: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
             }  // stop measuring file reading timer
 
             const traccc::cell_collection_types::host& cells_per_event =
@@ -133,22 +140,36 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 Clusterization and Spacepoint Creation (cuda)
             -----------------------------*/
             // Create device copy of input collections
+
+            const auto memCopybeginT = std::chrono::high_resolution_clock::now();
             traccc::cell_collection_types::buffer cells_buffer(
                 cells_per_event.size(), mr.main);
             copy(vecmem::get_data(cells_per_event), cells_buffer);
             traccc::cell_module_collection_types::buffer modules_buffer(
                 modules_per_event.size(), mr.main);
             copy(vecmem::get_data(modules_per_event), modules_buffer);
+            const auto memCopyendT = std::chrono::high_resolution_clock::now();
+            std::cout << "Time for host to dev mem copy: " << std::chrono::duration<double>(memCopyendT - memCopybeginT).count()*1000 << std::endl;
 
             {
-                traccc::performance::timer t("Clusterization (cuda)",
-                                             elapsedTimes);
-                // Reconstruct it into spacepoints on the device.
-                spacepoints_cuda_buffer =
-                    ca_cuda(cells_buffer, modules_buffer).first;
-                stream.synchronize();
-            }  // stop measuring clusterization cuda timer
+                {
+                    traccc::performance::timer t("Clusterization (cuda)",
+                                                elapsedTimes);
+                    const auto beginT = std::chrono::high_resolution_clock::now();
+                    
+                    // Reconstruct it into spacepoints on the device.
+                    spacepoints_cuda_buffer =
+                        ca_cuda(cells_buffer, modules_buffer).first;
+                    stream.synchronize();
+                    const auto endT = std::chrono::high_resolution_clock::now();
+                    std::cout << "Time for cuda clustering execution: " << std::chrono::duration<double>(endT - beginT).count()*1000 << std::endl;
 
+                }
+            }  // stop measuring clusterization cuda timer
+            
+            // end timing for IO, memcopy and clustering 
+            const auto WallendT = std::chrono::high_resolution_clock::now();
+            std::cout << "Wall time: " << std::chrono::duration<double>(WallendT - WallbeginT).count()*1000 << std::endl;
             if (run_cpu) {
 
                 /*-----------------------------
@@ -264,6 +285,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_seeds += seeds.size();
         n_spacepoints_cuda += spacepoints_per_event_cuda.size();
         n_seeds_cuda += seeds_cuda.size();
+
+        std::cout << "- created (cuda) " << spacepoints_per_event_cuda.size()
+                << " spacepoints     " << std::endl;
 
         if (common_opts.check_performance) {
 
