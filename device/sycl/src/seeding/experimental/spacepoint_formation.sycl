@@ -32,7 +32,7 @@ spacepoint_formation<detector_t>::spacepoint_formation(
 template <typename detector_t>
 spacepoint_collection_types::buffer
 spacepoint_formation<detector_t>::operator()(
-    const typename detector_t::detector_view_type& det_view,
+    const typename detector_t::view_type& det_view,
     const measurement_collection_types::const_view& measurements_view) const {
 
     const std::size_t n_measurements = m_copy.get_size(measurements_view);
@@ -64,7 +64,7 @@ spacepoint_formation<detector_t>::operator()(
 
 using telescope_detector_type =
     detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                     covfie::field_view, detray::device_container_types>;
+                     detray::device_container_types>;
 template class spacepoint_formation<telescope_detector_type>;
 
 }  // namespace traccc::sycl::experimental

@@ -29,6 +29,7 @@ struct particle_gen_options {
     Reals<scalar_t, 2> mom_range{1., 1.};
     Reals<scalar_t, 2> phi_range{0., 0.};
     Reals<scalar_t, 2> theta_range{0., 0.};
+    scalar_t charge{-1.f};
 
     particle_gen_options(po::options_description& desc) {
         desc.add_options()("gen-nparticles",
@@ -59,6 +60,10 @@ struct particle_gen_options {
                                ->value_name("MIN:MAX")
                                ->default_value({0.f, 0.f}),
                            "Range of eta");
+        desc.add_options()(
+            "charge",
+            po::value<scalar_t>()->value_name("charge")->default_value(-1.f),
+            "Charge of particles");
     }
     void read(const po::variables_map& vm) {
         gen_nparticles = vm["gen-nparticles"].as<unsigned int>();
@@ -71,6 +76,7 @@ struct particle_gen_options {
         theta_range = eta_to_theta_range(eta_range);
         phi_range = {phi_range_degree[0] * detray::unit<scalar_t>::degree,
                      phi_range_degree[1] * detray::unit<scalar_t>::degree};
+        charge = vm["charge"].as<scalar_t>();
     }
 };
 

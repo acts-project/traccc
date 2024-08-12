@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,16 +23,18 @@
 // System include(s).
 #include <algorithm>
 
-namespace traccc::cuda {
-
 namespace {
+
 /// These indices in clusterization will only range from 0 to
 /// max_cells_per_partition, so we only need a short.
 using index_t = unsigned short;
 
 static constexpr int TARGET_CELLS_PER_THREAD = 8;
 static constexpr int MAX_CELLS_PER_THREAD = 12;
+
 }  // namespace
+
+namespace traccc::cuda {
 
 namespace kernels {
 

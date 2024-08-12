@@ -128,4 +128,23 @@ bool is_same_object<track_candidate_collection_types::host>::operator()(
 
 /// @}
 
+/// @name Implementation for
+///       @c traccc::details::is_same_object<fitter_info>
+/// @{
+
+is_same_object<fitter_info<transform3>>::is_same_object(
+    const fitter_info<transform3>& ref, scalar unc)
+    : m_ref(ref), m_unc(unc) {}
+
+bool is_same_object<fitter_info<transform3>>::operator()(
+    const fitter_info<transform3>& obj) const {
+
+    return (is_same_object<bound_track_parameters>(m_ref.get().fit_params,
+                                                   m_unc)(obj.fit_params) &&
+            is_same_angle(obj.ndf, m_ref.get().ndf, m_unc) &&
+            is_same_angle(obj.chi2, m_ref.get().chi2, m_unc));
+}
+
+/// @}
+
 }  // namespace traccc::details

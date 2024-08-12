@@ -14,6 +14,7 @@
 #ifdef TRACCC_HAVE_ROOT
 #include <TEfficiency.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TProfile.h>
 #endif  // TRACCC_HAVE_ROOT
 
@@ -34,6 +35,18 @@ namespace traccc::plot_helpers {
 std::unique_ptr<TH1> book_histo(std::string_view hist_name,
                                 std::string_view hist_title,
                                 const binning& var_binning);
+
+/// @brief book a 1D histogram
+/// @param hist_name the name of histogram
+/// @param hist_title the title of histogram
+/// @param var_x_binning the binning info of x variable
+/// @param var_y_binning the binning info of y variable
+/// @return histogram pointer
+///
+std::unique_ptr<TH2> book_histo(std::string_view hist_name,
+                                std::string_view hist_title,
+                                const binning& var_x_binning,
+                                const binning& var_y_binning);
 
 /// @brief book a 1D efficiency plot
 /// @param effName the name of plot

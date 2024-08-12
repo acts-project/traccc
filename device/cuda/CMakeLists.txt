@@ -43,12 +43,12 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/cca/component_connection.cu"
   # Clusterization
   "include/traccc/cuda/clusterization/experimental/clusterization_algorithm.hpp"
-  "src/clusterization/experimental/clusterization_algorithm.cu"
+  "src/clusterization/experimental/clusterization_algorithm_exp.cu"
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"
   # Finding
   "include/traccc/cuda/finding/finding_algorithm.hpp"
-  "src/finding/finding_algorithm.cu"  
+  "src/finding/finding_algorithm.cu"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")

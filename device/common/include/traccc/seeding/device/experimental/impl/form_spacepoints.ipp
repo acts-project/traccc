@@ -14,8 +14,7 @@ namespace traccc::device::experimental {
 ///
 template <typename detector_t>
 TRACCC_HOST_DEVICE inline void form_spacepoints(
-    const std::size_t globalIndex,
-    typename detector_t::detector_view_type det_data,
+    const std::size_t globalIndex, typename detector_t::view_type det_data,
     measurement_collection_types::const_view measurements_view,
     spacepoint_collection_types::view spacepoints_view) {
 
@@ -40,7 +39,7 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
 
     // This local to global transformation only works for 2D planar measurement
     // (e.g. barrel pixel and endcap pixel detector)
-    const auto global = sf.local_to_global({}, ms.local, {});
+    const auto global = sf.bound_to_global({}, ms.local, {});
 
     spacepoints.push_back({global, ms});
 }

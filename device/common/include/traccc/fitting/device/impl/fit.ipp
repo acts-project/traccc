@@ -12,6 +12,7 @@ namespace traccc::device {
 template <typename fitter_t, typename detector_view_t>
 TRACCC_HOST_DEVICE inline void fit(
     std::size_t globalIndex, detector_view_t det_data,
+    const typename fitter_t::bfield_type field_data,
     const typename fitter_t::config_type cfg,
     vecmem::data::jagged_vector_view<typename fitter_t::intersection_type>
         nav_candidates_buffer,
@@ -28,7 +29,7 @@ TRACCC_HOST_DEVICE inline void fit(
 
     track_state_container_types::device track_states(track_states_view);
 
-    fitter_t fitter(det, cfg);
+    fitter_t fitter(det, field_data, cfg);
 
     if (globalIndex >= track_states.size()) {
         return;

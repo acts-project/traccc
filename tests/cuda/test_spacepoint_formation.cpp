@@ -57,7 +57,7 @@ TEST(spacepoint_formation, cuda) {
     auto [det, name_map] = create_telescope_detector(mng_mr, tel_cfg);
     using device_detector_type =
         detray::detector<detray::telescope_metadata<detray::rectangle2D<>>,
-                         covfie::field_view, detray::device_container_types>;
+                         detray::device_container_types>;
 
     // Surface lookup
     auto surfaces = det.surface_lookup();
@@ -72,8 +72,8 @@ TEST(spacepoint_formation, cuda) {
     measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
 
     // Run spacepoint formation
-    cuda::experimental::spacepoint_formation<device_detector_type> sp_formation(
-        mr, copy, stream);
+    traccc::cuda::experimental::spacepoint_formation<device_detector_type>
+        sp_formation(mr, copy, stream);
     auto spacepoints_buffer =
         sp_formation(detray::get_data(det), vecmem::get_data(measurements));
 

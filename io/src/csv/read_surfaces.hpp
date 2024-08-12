@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "surface.hpp"
+#include "traccc/io/csv/surface.hpp"
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"

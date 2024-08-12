@@ -14,6 +14,7 @@ namespace traccc
     class hitCsvReader
     {
     public:
+
         hitCsvReader(std::string inputDir, uint event);
 
         struct cells {
@@ -29,14 +30,17 @@ namespace traccc
         cells data;
     };
 
+
     hitCsvReader::hitCsvReader(std::string inputDir, uint event)
     {   
         using std::cout;
         using std::endl;
 
+
         std::ifstream in(inputDir + "event00000000" + std::to_string(event) + "-cells.csv");
         char buffer[1024];
         u_int lineNum = 0;
+
         
         in.getline(buffer, 1024);
 
@@ -51,6 +55,7 @@ namespace traccc
             char dl;
 
             in>>a>>dl>>dummy>>dl>>c0>>dl>>c1>>dl>>d>>dl>>dummy2;
+
 
             data.geoID[lineNum] = a;
             data.channel0[lineNum] = c0;

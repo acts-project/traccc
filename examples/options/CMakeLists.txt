@@ -8,6 +8,7 @@
 traccc_add_library( traccc_options options TYPE SHARED
   # header files
   "include/traccc/options/common_options.hpp"
+  "include/traccc/options/detector_input_options.hpp"
   "include/traccc/options/handle_argument_errors.hpp"
   "include/traccc/options/mt_options.hpp"
   "include/traccc/options/options.hpp"
@@ -19,6 +20,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "include/traccc/options/throughput_options.hpp"
   # source files
   "src/options/common_options.cpp"
+  "src/options/detector_input_options.cpp"
   "src/options/handle_argument_errors.cpp"
   "src/options/mt_options.cpp"
   "src/options/seeding_input_options.cpp"

@@ -8,11 +8,11 @@ Demonstrator tracking chain for accelerators.
 | ------------------ | ---------------------- | --- | ---- | ---- | ------- |
 | **Clusterization** | CCL                    | ✅  | ✅   | ✅   | ✅      |
 |                    | Measurement creation   | ✅  | ✅   | ✅   | ✅      |
-|                    | Spacepoint formation   | ✅  | ✅   | ✅   | ⚪      |
-| **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
+| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | ⚪      |
+|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
 |                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
 |                    | Track param estimation | ✅  | ✅   | ✅   | ⚪      |
-|                    | Combinatorial KF       | 🟡  | 🟡   | ⚪   | ⚪      |
+| **Track finding**  | Combinatorial KF       | ✅  | ✅   | 🟡    | ⚪      |
 | **Track fitting**  | KF                     | ✅  | ✅   | ✅   | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
@@ -249,6 +249,22 @@ cmake --build <build_directory> <options>
 <build_directory>/bin/traccc_throughput_mt_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
 ```
 
+```sh
+# Toy geometry examples
+<build_directory>/bin/traccc_simulate_toy_detector --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:360 --events=10 --gen-nparticles=2000 --output_directory=detray_simulation/toy_detector/n_particles_2000/ --gen-eta=-3:3 --constraint-step-size-mm=1
+
+<build_directory>/bin/traccc_seeding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1000 --run_cpu=1
+
+<build_directory>/bin/traccc_truth_finding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1 --run_cpu=1
+```
+
+```sh
+# Wire chamber examples
+<build_directory>/bin/traccc_simulate_wire_chamber --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=2:2 --gen-phi-degree=0:360 --events=10 --gen-nparticles=1000 --output_directory=detray_simulation/wire_chamber/n_particles_1000/ --gen-eta=-1:1 --constraint-step-size-mm=1
+
+<build_directory>/bin/traccc_truth_finding_example_cuda --input_directory=detray_simulation/wire_chamber/n_particles_1000/ --check_performance=true --detector_file=<detector_directory>/wire_chamber_geometry.json --material_file=<detector_directory>/wire_chamber_homogeneous_material.json --grid_file=<detector_directory>/wire_chamber_surface_grids.json  --event=10 --track_candidates_range=6:30 --constraint-step-size-mm=1
+```
+
 ### SYCL reconstruction chain
 
 - Users can generate SYCL examples by adding `-DTRACCC_BUILD_SYCL=ON` to cmake options
@@ -257,6 +273,70 @@ cmake --build <build_directory> <options>
 <build_directory>/bin/traccc_seq_example_sycl --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 --run_cpu=1
 
 <build_directory>/bin/traccc_throughput_mt_sycl --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/  --cold_run_events=100 --processed_events=1000 --threads=1
+```
+
+### Running a partial chain with simplified simulation data
+
+Users can generate muon-like particle simulation data with the pre-built detray geometries:
+
+```sh
+# Generate telescope geometry data
+<build_directory>/bin/traccc_simulate_telescope --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:0 --events=10 --gen-nparticles=2000 --output_directory=detray_simulation/telescope_detector/n_particles_2000/ --gen-eta=1:3 
+
+# Generate toy geometry data
+<build_directory>/bin/traccc_simulate_toy_detector --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=100:100 --gen-phi-degree=0:360 --events=10 --gen-nparticles=2000 --output_directory=detray_simulation/toy_detector/n_particles_2000/ --gen-eta=-3:3 --constraint-step-size-mm=1
+
+# Generate drift chamber data
+<build_directory>/bin/traccc_simulate_wire_chamber --gen-vertex-xyz-mm=0:0:0 --gen-vertex-xyz-std-mm=0:0:0 --gen-mom-gev=2:2 --gen-phi-degree=0:360 --events=10 --gen-nparticles=100 --output_directory=detray_simulation/wire_chamber/n_particles_100/ --gen-eta=-1:1 --constraint-step-size-mm=1
+```
+
+The simulation will also generate the detector json files (geometry, material and surface_grid) in the current directory. It is user's responsibility to move them to an appropriate place (e.g. `<detector_directory>`) and match them to the input file arguments of reconstruction chains.
+
+If users have a geometry json file already, it is also possible to run simulation with `traccc_simulate` application 
+
+```sh
+# Given that users have a geometry json file
+<build_directory>/bin/traccc_simulate  --output_directory=<output_directory>  --detector_file=<geometry_file> --material_file=<material_file> --grid_file=<grid_file>  --event=10 --constraint-step-size-mm=1
+```
+
+There are three types of partial reconstruction chain users can operate: `seeding_example`, `truth_finding_example`, and `truth_fitting_example` where their algorithm coverages are shown in the table below. Each of them starts from truth measurements, truth seeds, and truth tracks, respectively.
+
+| Category                | Clusterization | Seeding | Track finding | Track fitting |
+| ----------------------- | -------------- | ------- | ------------- | ------------- |
+| `seeding_example`       |                | ✅      | ✅            | ✅            |
+| `truth_finding_example` |                |         | ✅            | ✅            |
+| `truth_fitting_example` |                |         |               | ✅            |
+
+The dirft chamber will not produce meaningful results with `seeding_example` as the current seeding algorithm is only designed for 2D measurement objects. Truth finding works OK in general but the combinatoric explosion can occur for a few unlucky events, leading to poor pull value distributions. The followings are example commands: 
+
+```sh
+# Run cuda seeding example for toy geometry
+<build_directory>/bin/traccc_seeding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1000 --run_cpu=1
+```
+
+```sh
+# Run cuda truth finding example for toy geometry
+<build_directory>/bin/traccc_truth_finding_example_cuda --input_directory=detray_simulation/toy_detector/n_particles_2000/ --check_performance=true --detector_file=<detector_directory>/toy_detector_geometry.json --material_file=<detector_directory>/toy_detector_homogeneous_material.json --grid_file=<detector_directory>/toy_detector_surface_grids.json --event=1 --track_candidates_range=3:30 --constraint-step-size-mm=1000 --run_cpu=1
+```
+
+```sh
+# Run cuda truth finding example for drift chamber
+<build_directory>/bin/traccc_truth_finding_example_cuda --input_directory=detray_simulation/wire_chamber/n_particles_100/ --check_performance=true --detector_file=<detector_directory>/wire_chamber_geometry.json --material_file=<detector_directory>/wire_chamber_homogeneous_material.json --grid_file=<detector_directory>/wire_chamber_surface_grids.json  --event=10 --track_candidates_range=6:30 --constraint-step-size-mm=1 --run_cpu=1
+```
+
+```sh
+# Run cpu truth fitting example for drift chamber
+<build_directory>/bin/traccc_truth_fitting_example --input_directory=detray_simulation/wire_chamber/n_particles_2000_100GeV/ --check_performance=true --detector_file=<detector_directory>/wire_chamber_geometry.json --material_file=<detector_directory>/wire_chamber_homogeneous_material.json --grid_file=<detector_directory>/wire_chamber_surface_grids.json --event=10 --constraint-step-size-mm=1
+```
+
+Users can open the performance root files (with `--check_performance=true`) and draw the histograms.
+
+```sh
+$ root -l performance_track_finding.root 
+root [0] 
+Attaching file performance_track_finding.root as _file0...
+(TFile *) 0x3871910
+root [1] finding_trackeff_vs_eta->Draw()
 ```
 
 ## Troubleshooting

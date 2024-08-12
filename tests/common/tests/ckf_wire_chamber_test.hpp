@@ -8,14 +8,11 @@
 #pragma once
 
 // Project include(s).
-#include "kalman_fitting_test.hpp"
+#include "kalman_fitting_telescope_test.hpp"
 
 namespace traccc {
 
 /// Combinatorial Kalman Finding Test with Sparse tracks
-class CkfSparseTrackTests : public KalmanFittingTests {};
-
-/// Combinatorial Kalman Finding Test with Dense tracks
-class CkfDenseTrackTests : public KalmanFittingTests {};
+class CkfSparseTrackWireChamberTests : public KalmanFittingWireChamberTests {};
 
 }  // namespace traccc

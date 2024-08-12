@@ -60,7 +60,6 @@ struct ClusteringKernel
         auto const linearizedGlobalThreadIdx = alpaka::mapIdx<1u>(globalThreadIdx, globalThreadExtent);
 
         unsigned int i = linearizedGlobalThreadIdx[0];
-
         
         for (int x = i-1; x <= i+1; x+=2) {
             if ((geoIDBuf[x] == geoIDBuf[i]) &&
@@ -131,7 +130,9 @@ auto main(int argc, char* argv[]) -> int
     using Acc = alpaka::ExampleDefaultAcc<Dim, Idx>;
     using Host = alpaka::AccCpuSerial<Dim, Idx>;
     // std::cout << "Using alpaka accelerator: " << alpaka::getAccName<Acc>() << "\n"
+
     //           << "Using host: " << alpaka::getAccName<Host>() << std::endl;
+
 
     using AccQueueProperty = alpaka::Blocking;
     using DevQueue = alpaka::Queue<Acc, AccQueueProperty>;
@@ -163,6 +164,7 @@ auto main(int argc, char* argv[]) -> int
         false,
         alpaka::GridBlockExtentSubDivRestrictions::Unrestricted
     );
+
 
     using Data = std::uint64_t;
     using DataChannel = std::uint16_t;
@@ -324,7 +326,6 @@ auto main(int argc, char* argv[]) -> int
     std::fill(std::begin(csvHits.data.channel1), std::end(csvHits.data.channel1), 0);
 
     } // end of event loop
-
 
     return EXIT_SUCCESS;
 #endif

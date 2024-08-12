@@ -21,6 +21,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/common_options.hpp"
+#include "traccc/options/detector_input_options.hpp"
 #include "traccc/options/finding_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/options/propagation_options.hpp"
@@ -32,7 +33,8 @@
 
 // detray include(s).
 #include "detray/core/detector.hpp"
-#include "detray/detectors/toy_metadata.hpp"
+#include "detray/core/detector_metadata.hpp"
+#include "detray/detectors/bfield.hpp"
 #include "detray/io/common/detector_reader.hpp"
 #include "detray/propagator/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -55,17 +57,17 @@ namespace po = boost::program_options;
 
 int seq_run(const traccc::finding_input_config& i_cfg,
             const traccc::propagation_options<scalar>& propagation_opts,
-            const traccc::common_options& common_opts, bool run_cpu) {
+            const traccc::common_options& common_opts,
+            const traccc::detector_input_options& det_opts, bool run_cpu) {
 
     /// Type declarations
-    using host_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field,
-                         detray::host_container_types>;
+    using host_detector_type = detray::detector<detray::default_metadata,
+                                                detray::host_container_types>;
     using device_detector_type =
-        detray::detector<detray::toy_metadata<>, covfie::field_view,
+        detray::detector<detray::default_metadata,
                          detray::device_container_types>;
 
-    using b_field_t = typename host_detector_type::bfield_type;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::transform3,
                            detray::constrained_step<>>;
@@ -102,14 +104,18 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    auto field = detray::bfield::create_const_field(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg
-        .add_file(traccc::io::data_directory() + common_opts.detector_file)
-        .add_file(traccc::io::data_directory() + common_opts.material_file)
-        .bfield_vec(B[0], B[1], B[2]);
-
+    reader_cfg.add_file(traccc::io::data_directory() + det_opts.detector_file);
+    if (!det_opts.material_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() +
+                            det_opts.material_file);
+    }
+    if (!det_opts.grid_file.empty()) {
+        reader_cfg.add_file(traccc::io::data_directory() + det_opts.grid_file);
+    }
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
@@ -122,15 +128,18 @@ int seq_run(const traccc::finding_input_config& i_cfg,
      * Do the reconstruction
      *****************************/
 
-    // Copy objects
-    vecmem::cuda::copy copy;
+    // Stream object
+    traccc::cuda::stream stream;
+
+    // Copy object
+    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
-        track_candidate_d2h{mr, copy};
+        track_candidate_d2h{mr, async_copy};
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
+        track_state_d2h{mr, async_copy};
 
     // Standard deviations for seed track parameters
     static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
@@ -155,24 +164,20 @@ int seq_run(const traccc::finding_input_config& i_cfg,
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
         host_finding(cfg);
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr);
+        device_finding(cfg, mr, async_copy, stream);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.step_constraint = propagation_opts.step_constraint;
 
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr);
+    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+        fit_cfg, mr, async_copy, stream);
 
     traccc::performance::timing_info elapsedTimes;
 
     // Seed generator
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
-
-    // copy
-    traccc::cuda::stream stream;
-    vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     // Iterate over events
     for (unsigned int event = common_opts.skip;
@@ -195,9 +200,9 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
-        copy.setup(seeds_buffer);
-        copy(vecmem::get_data(seeds), seeds_buffer,
-             vecmem::copy::type::host_to_device);
+        async_copy.setup(seeds_buffer);
+        async_copy(vecmem::get_data(seeds), seeds_buffer,
+                   vecmem::copy::type::host_to_device);
 
         // Read measurements
         traccc::io::measurement_reader_output meas_reader_output(mr.host);
@@ -215,8 +220,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
         traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer{{{}, *(mr.host)},
                                          {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers);
-        copy.setup(track_candidates_cuda_buffer.items);
+        async_copy.setup(track_candidates_cuda_buffer.headers);
+        async_copy.setup(track_candidates_cuda_buffer.items);
 
         // Navigation buffer
         auto navigation_buffer = detray::create_candidates_buffer(
@@ -230,7 +235,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
 
             // Run finding
             track_candidates_cuda_buffer =
-                device_finding(det_view, navigation_buffer,
+                device_finding(det_view, field, navigation_buffer,
                                measurements_cuda_buffer, seeds_buffer);
         }
 
@@ -245,8 +250,9 @@ int seq_run(const traccc::finding_input_config& i_cfg,
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
 
             // Run fitting
-            track_states_cuda_buffer = device_fitting(
-                det_view, navigation_buffer, track_candidates_cuda_buffer);
+            track_states_cuda_buffer =
+                device_fitting(det_view, field, navigation_buffer,
+                               track_candidates_cuda_buffer);
         }
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);
@@ -263,8 +269,8 @@ int seq_run(const traccc::finding_input_config& i_cfg,
                                              elapsedTimes);
 
                 // Run finding
-                track_candidates =
-                    host_finding(host_det, measurements_per_event, seeds);
+                track_candidates = host_finding(host_det, field,
+                                                measurements_per_event, seeds);
             }
 
             {
@@ -272,7 +278,7 @@ int seq_run(const traccc::finding_input_config& i_cfg,
                                              elapsedTimes);
 
                 // Run fitting
-                track_states = host_fitting(host_det, track_candidates);
+                track_states = host_fitting(host_det, field, track_candidates);
             }
         }
 
@@ -297,16 +303,23 @@ int seq_run(const traccc::finding_input_config& i_cfg,
                       << float(n_matches) / track_candidates.size()
                       << std::endl;
 
-            /// Statistics
-            n_found_tracks += track_candidates.size();
-            n_fitted_tracks += track_states.size();
-            n_found_tracks_cuda += track_candidates_cuda.size();
-            n_fitted_tracks_cuda += track_states_cuda.size();
+            // Compare the track parameters made on the host and on the device.
+            traccc::collection_comparator<traccc::fitter_info<transform3>>
+                compare_fitter_infos{"fitted tracks"};
+            compare_fitter_infos(
+                vecmem::get_data(track_states.get_headers()),
+                vecmem::get_data(track_states_cuda.get_headers()));
         }
 
+        /// Statistics
+        n_found_tracks += track_candidates.size();
+        n_fitted_tracks += track_states.size();
+        n_found_tracks_cuda += track_candidates_cuda.size();
+        n_fitted_tracks_cuda += track_states_cuda.size();
+
         if (common_opts.check_performance) {
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_map2);
+            find_performance_writer.write(
+                traccc::get_data(track_candidates_cuda), evt_map2);
 
             for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
                 const auto& trk_states_per_track =
@@ -348,6 +361,7 @@ int main(int argc, char* argv[]) {
     // Add options
     desc.add_options()("help,h", "Give some help with the program's options");
     traccc::common_options common_opts(desc);
+    traccc::detector_input_options det_opts(desc);
     traccc::finding_input_config finding_input_cfg(desc);
     traccc::propagation_options<scalar> propagation_opts(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
@@ -361,6 +375,8 @@ int main(int argc, char* argv[]) {
 
     // Read options
     common_opts.read(vm);
+    det_opts.read(vm);
+
     finding_input_cfg.read(vm);
     propagation_opts.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
@@ -368,5 +384,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Running " << argv[0] << " " << common_opts.input_directory
               << " " << common_opts.events << std::endl;
 
-    return seq_run(finding_input_cfg, propagation_opts, common_opts, run_cpu);
+    return seq_run(finding_input_cfg, propagation_opts, common_opts, det_opts,
+                   run_cpu);
 }
