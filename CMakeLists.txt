@@ -44,17 +44,8 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-functions )
 
-# Check if CUDA is available.
-include( CheckLanguage )
-check_language( CUDA )
-set( TRACCC_BUILD_CUDA_DEFAULT FALSE )
-if( CMAKE_CUDA_COMPILER )
-   set( TRACCC_BUILD_CUDA_DEFAULT TRUE )
-endif()
-
 # Flags controlling which parts of traccc to build.
-option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc"
-   ${TRACCC_BUILD_CUDA_DEFAULT} )
+option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc" FALSE )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
@@ -71,9 +62,6 @@ option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 # Flags controlling what traccc should use.
 option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
 option( TRACCC_USE_ROOT "Use ROOT in the build (if needed)" TRUE )
-
-# Clean up.
-unset( TRACCC_BUILD_CUDA_DEFAULT )
 
 # Check CUDA and SYCL C++ standards
 if(${TRACCC_BUILD_CUDA} AND ${CMAKE_CUDA_STANDARD} LESS 20)
