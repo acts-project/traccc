@@ -30,6 +30,10 @@
 
 // System include(s).
 #include <functional>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
 
 using cca_function_t = std::function<
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
