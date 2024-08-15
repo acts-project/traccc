@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <cstdint>
+#include <cstddef>
 
 #include "traccc/definitions/qualifiers.hpp"
 
