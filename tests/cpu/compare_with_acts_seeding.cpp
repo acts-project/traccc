@@ -142,7 +142,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.rMin = traccc_config.rMin;
     acts_config.rMax = traccc_config.rMax;
     acts_config.rMinMiddle = 0.f;
-    acts_config.rMaxMiddle = std::numeric_limits<traccc::scalar>::max();
+    acts_config.rMaxMiddle = std::numeric_limits<float>::max();
     acts_config.deltaRMin = traccc_config.deltaRMin;
     acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
     acts_config.deltaRMinBottomSP = traccc_config.deltaRMin;
