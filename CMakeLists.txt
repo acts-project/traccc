@@ -65,6 +65,7 @@ option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
+option( TRACCC_BUILD_BENCHMARKS "Build the benchmarks of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
 # Flags controlling what traccc should use.
@@ -291,6 +292,20 @@ if( TRACCC_SETUP_GOOGLETEST )
    endif()
 endif()
 
+# Set up Google Benchmark
+option( TRACCC_SETUP_BENCHMARKS
+   "Set up the Google Benchmark target(s) explicitly" TRUE )
+option( TRACCC_USE_SYSTEM_BENCHMARKS
+   "Pick up an existing installation of Google Benchmark from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_BENCHMARKS )
+   if( TRACCC_USE_SYSTEM_BENCHMARKS )
+      find_package( benchmark REQUIRED )
+   else()
+      add_subdirectory( extern/benchmark )
+   endif()
+endif()
+
 option( TRACCC_ENABLE_NVTX_PROFILING
         "Use instrument functions to enable fine grained profiling" FALSE )
 
@@ -339,6 +354,16 @@ if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()
    add_subdirectory( tests )
+endif()
+
+# Set up the benchmark(s).
+if( TRACCC_BUILD_BENCHMARKS )
+   # Find Boost.
+   find_package( Boost REQUIRED COMPONENTS filesystem)
+   if ( NOT TRACCC_BUILD_IO )
+      message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
+   endif()
+   add_subdirectory( benchmarks )
 endif()
 
 if(TRACCC_BUILD_FUTHARK)
