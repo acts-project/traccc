@@ -188,19 +188,22 @@ TEST(mappper, measurement_cell_map) {
     auto m_c_map =
         traccc::generate_measurement_cell_map(event, cells_dir, dd, resource);
 
+    // The module that the cells of event 0 belong to, happens to be this one.
+    constexpr traccc::cell::link_type module_link = 873;
+
     vecmem::vector<traccc::cell> cells0;
-    cells0.push_back({1, 0, 0.0041470062f, 0, 0});
-    cells0.push_back({0, 1, 0.00306466641f, 0, 0});
-    cells0.push_back({1, 1, 0.00868905429f, 0, 0});
-    cells0.push_back({1, 1, 0.00886478275f, 0, 0});
-    cells0.push_back({1, 2, 0.00580428448f, 0, 0});
-    cells0.push_back({2, 1, 0.0016894876f, 0, 0});
-    cells0.push_back({2, 2, 0.00199076766f, 0, 0});
+    cells0.push_back({1, 0, 0.0041470062f, 0, module_link});
+    cells0.push_back({0, 1, 0.00306466641f, 0, module_link});
+    cells0.push_back({1, 1, 0.00868905429f, 0, module_link});
+    cells0.push_back({1, 1, 0.00886478275f, 0, module_link});
+    cells0.push_back({1, 2, 0.00580428448f, 0, module_link});
+    cells0.push_back({2, 1, 0.0016894876f, 0, module_link});
+    cells0.push_back({2, 2, 0.00199076766f, 0, module_link});
 
     vecmem::vector<traccc::cell> cells1;
-    cells1.push_back({5, 5, 0.00632160669f, 0, 0});
-    cells1.push_back({5, 6, 0.00911649223f, 0, 0});
-    cells1.push_back({5, 7, 0.00518329488f, 0, 0});
+    cells1.push_back({5, 5, 0.00632160669f, 0, module_link});
+    cells1.push_back({5, 6, 0.00911649223f, 0, module_link});
+    cells1.push_back({5, 7, 0.00518329488f, 0, module_link});
 
     EXPECT_EQ(m_c_map.size(), 2);
 

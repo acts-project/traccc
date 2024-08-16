@@ -51,13 +51,11 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
         // Construct the global 3D position of the spacepoint.
         const point3 pos{iohit.tx, iohit.ty, iohit.tz};
 
-        // Find the measurement associated with this spacepoint.
+        // Construct the local 3D(2D) position of the measurement.
         measurement meas;
-        for (const measurement& meas1 : measurements) {
-            if (meas1.surface_link ==
-                detray::geometry::barcode{iohit.geometry_id}) {
-                meas = meas1;
-                break;
+        for (auto const [meas_id, hit_id] : measurement_hit_ids) {
+            if (hit_id == spacepoints.size()) {
+                meas = measurements[meas_id];
             }
         }
 
