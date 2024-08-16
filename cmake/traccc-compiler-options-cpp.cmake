@@ -23,6 +23,7 @@ if( ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" ) OR
    traccc_add_flag( CMAKE_CXX_FLAGS "-Wshadow" )
    traccc_add_flag( CMAKE_CXX_FLAGS "-Wunused-local-typedefs" )
    traccc_add_flag( CMAKE_CXX_FLAGS "-pedantic" )
+   traccc_add_flag( CMAKE_CXX_FLAGS "-Wold-style-cast" )
    if(PROJECT_IS_TOP_LEVEL)
      traccc_add_flag( CMAKE_CXX_FLAGS "-Wfloat-conversion" )
    endif()
