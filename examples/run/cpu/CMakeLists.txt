@@ -23,8 +23,8 @@ traccc_add_executable( truth_fitting_example "truth_fitting_example.cpp"
 traccc_add_executable( ccl_example "ccl_example.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io)
 
-traccc_add_executable( tbb_task_example "tbb_task_example.cpp")
-traccc_target_link_libraries_system(traccc_tbb_task_example PRIVATE TBB::tbb)
+traccc_add_executable( tbb_task_example "tbb_task_example.cpp"
+   LINK_LIBRARIES TBB::tbb )
 
 #
 # Set up the "throughput applications".
@@ -41,7 +41,6 @@ traccc_add_executable( throughput_st "throughput_st.cpp"
                   traccc::options traccc_examples_cpu )
 
 traccc_add_executable( throughput_mt "throughput_mt.cpp"
-   LINK_LIBRARIES vecmem::core detray::utils detray::io
+   LINK_LIBRARIES TBB::tbb vecmem::core detray::utils detray::io
                   traccc::core traccc::io traccc::performance
                   traccc::options traccc_examples_cpu )
-traccc_target_link_libraries_system(traccc_throughput_mt PRIVATE TBB::tbb)
