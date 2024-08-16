@@ -92,4 +92,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
             auto track_states = host_fitting(det, field, track_candidates);
         }
     }
+
+    state.counters["event_throughput_Hz"] = benchmark::Counter(
+        static_cast<double>(n_events), benchmark::Counter::kIsRate);
 }
