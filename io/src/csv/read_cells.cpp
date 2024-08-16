@@ -58,7 +58,7 @@ traccc::cell_module get_module(const std::uint64_t geometry_id,
         }
 
         // Set the value on the module description.
-        result.placement = (*geom)[result.surface_link.value()];
+        result.placement = geom->at(result.surface_link.value());
     }
 
     // Find/set the digitization configuration of the detector module.

@@ -59,7 +59,7 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
             m[iohit.geometry_id] = link;
             cell_module mod;
             mod.surface_link = detray::geometry::barcode{iohit.geometry_id};
-            mod.placement = geom[iohit.geometry_id];
+            mod.placement = geom.at(iohit.geometry_id);
             result_modules.push_back(mod);
         }
 
