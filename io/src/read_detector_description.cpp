@@ -120,7 +120,7 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
 
         // Construct a Detray surface object.
         const detray::tracking_surface<traccc::default_detector::host> surface{
-            detector, surface_desc.barcode()};
+            detector, surface_desc};
 
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.
