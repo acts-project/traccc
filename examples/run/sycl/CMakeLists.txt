@@ -45,7 +45,8 @@ traccc_add_executable( throughput_st_sycl "throughput_st.cpp"
                   traccc::options traccc_examples_sycl )
 
 traccc_add_executable( throughput_mt_sycl "throughput_mt.cpp"
-   LINK_LIBRARIES TBB::tbb vecmem::core vecmem::sycl detray::utils detray::io
+   LINK_LIBRARIES vecmem::core vecmem::sycl detray::utils detray::io
                   traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::sycl
                   traccc::options traccc_examples_sycl )
+traccc_target_link_libraries_system(traccc_throughput_mt_sycl PRIVATE TBB::tbb)
