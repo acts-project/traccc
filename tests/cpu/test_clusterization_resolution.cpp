@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_spacepoints.hpp"
@@ -35,10 +35,11 @@ TEST_P(SurfaceBinningTests, Run) {
     vecmem::host_memory_resource host_mr;
 
     // Read the detector description.
-    traccc::detector_description::host dd{host_mr};
+    traccc::silicon_detector_description::host dd{host_mr};
     traccc::io::read_detector_description(dd, detector_file, digi_config_file,
                                           traccc::csv);
-    const traccc::detector_description::data dd_data = vecmem::get_data(dd);
+    const traccc::silicon_detector_description::data dd_data =
+        vecmem::get_data(dd);
 
     // Algorithms
     traccc::host::clusterization_algorithm ca(host_mr);

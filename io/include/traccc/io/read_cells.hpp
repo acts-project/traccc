@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/edm/cell.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -34,7 +34,7 @@ namespace traccc::io {
 ///
 void read_cells(cell_collection_types::host& cells, std::size_t event,
                 std::string_view directory,
-                const detector_description::host* dd = nullptr,
+                const silicon_detector_description::host* dd = nullptr,
                 data_format format = data_format::csv, bool deduplicate = true);
 
 /// Read cell data into memory
@@ -48,7 +48,7 @@ void read_cells(cell_collection_types::host& cells, std::size_t event,
 /// @param[in]  deduplicate Whether to deduplicate the cells
 ///
 void read_cells(cell_collection_types::host& cells, std::string_view filename,
-                const detector_description::host* dd = nullptr,
+                const silicon_detector_description::host* dd = nullptr,
                 data_format format = data_format::csv, bool deduplicate = true);
 
 }  // namespace traccc::io

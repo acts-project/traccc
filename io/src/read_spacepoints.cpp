@@ -19,7 +19,7 @@ namespace traccc::io {
 
 void read_spacepoints(spacepoint_collection_types::host& spacepoints,
                       std::size_t event, std::string_view directory,
-                      const detector_description::host* dd,
+                      const silicon_detector_description::host* dd,
                       data_format format) {
 
     switch (format) {
@@ -59,7 +59,7 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const detector_description::host* dd,
+                      const silicon_detector_description::host* dd,
                       data_format format) {
 
     switch (format) {

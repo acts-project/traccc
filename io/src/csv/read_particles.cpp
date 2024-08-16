@@ -44,7 +44,7 @@ void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
-                    const detector_description::host* dd) {
+                    const silicon_detector_description::host* dd) {
 
     // Memory resource used by the temporary collections.
     vecmem::host_memory_resource mr;

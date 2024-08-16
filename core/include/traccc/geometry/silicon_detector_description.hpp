@@ -19,13 +19,13 @@
 
 namespace traccc {
 
-/// Interface for the @c traccc::detector_description class.
+/// Interface for the @c traccc::silicon_detector_description class.
 ///
 /// It provides the API that users would interact with, while using the
-/// columns/arrays defined in @c traccc::detector_description.
+/// columns/arrays defined in @c traccc::silicon_detector_description.
 ///
 template <typename BASE>
-class detector_description_interface : public BASE {
+class silicon_detector_description_interface : public BASE {
 
     public:
     /// Inherit the base class's constructor(s)
@@ -225,11 +225,11 @@ class detector_description_interface : public BASE {
 
     /// @}
 
-};  // class detector_description_interface
+};  // class silicon_detector_description_interface
 
-/// SoA container describing the detector
-using detector_description = vecmem::edm::container<
-    detector_description_interface,
+/// SoA container describing a silicon detector
+using silicon_detector_description = vecmem::edm::container<
+    silicon_detector_description_interface,
     vecmem::edm::type::vector<detray::geometry::barcode>,
     vecmem::edm::type::vector<transform3>,
     vecmem::edm::type::vector<geometry_id>, vecmem::edm::type::vector<scalar>,

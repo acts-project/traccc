@@ -13,7 +13,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/read_cells.hpp"
 
 // Test include(s).
@@ -40,7 +40,7 @@
 using cca_function_t = std::function<
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
         const traccc::cell_collection_types::host &,
-        const traccc::detector_description::host &)>;
+        const traccc::silicon_detector_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
     traccc::clustering_config rv;
@@ -145,7 +145,7 @@ class ConnectedComponentAnalysisTests
         // detector modules for all the input files that the test uses.
         static constexpr std::size_t NMODULES = 2500;
         static constexpr traccc::scalar pitch = 1.f;
-        traccc::detector_description::host dd{mr};
+        traccc::silicon_detector_description::host dd{mr};
         dd.resize(NMODULES);
         for (std::size_t i = 0; i < NMODULES; ++i) {
             dd.geometry_id()[i] = i;

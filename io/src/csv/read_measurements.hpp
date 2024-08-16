@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <string_view>
@@ -25,7 +25,7 @@ namespace traccc::io::csv {
 ///
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       const detector_description::host* dd = nullptr,
+                       const silicon_detector_description::host* dd = nullptr,
                        const bool do_sort = true);
 
 }  // namespace traccc::io::csv

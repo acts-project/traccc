@@ -10,7 +10,7 @@
 // Library include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -29,7 +29,7 @@ namespace traccc::host {
 class spacepoint_formation_algorithm
     : public algorithm<spacepoint_collection_types::host(
           const measurement_collection_types::const_view&,
-          const detector_description::const_view&)> {
+          const silicon_detector_description::const_view&)> {
 
     public:
     /// Constructor for spacepoint_formation
@@ -47,7 +47,7 @@ class spacepoint_formation_algorithm
     ///
     output_type operator()(
         const measurement_collection_types::const_view& measurements_view,
-        const detector_description::const_view& dd_view) const override;
+        const silicon_detector_description::const_view& dd_view) const override;
 
     private:
     /// The memory resource used by the algorithm

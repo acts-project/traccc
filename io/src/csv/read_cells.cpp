@@ -116,7 +116,8 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
 namespace traccc::io::csv {
 
 void read_cells(cell_collection_types::host& cells, std::string_view filename,
-                const detector_description::host* dd, bool deduplicate) {
+                const silicon_detector_description::host* dd,
+                bool deduplicate) {
 
     // Get the cells and modules into an intermediate format.
     auto cellsMap = (deduplicate ? read_deduplicated_cells(filename)

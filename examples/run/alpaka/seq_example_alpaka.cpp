@@ -91,16 +91,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
 #endif
 
     // Construct the detector description object.
-    traccc::detector_description::host host_det_descr{host_mr};
+    traccc::silicon_detector_description::host host_det_descr{host_mr};
     traccc::io::read_detector_description(
         host_det_descr, detector_opts.detector_file,
         detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json
                                            : traccc::data_format::csv));
-    traccc::detector_description::data host_det_descr_data{
+    traccc::silicon_detector_description::data host_det_descr_data{
         vecmem::get_data(host_det_descr)};
-    traccc::detector_description::buffer device_det_descr{
-        static_cast<traccc::detector_description::buffer::size_type>(
+    traccc::silicon_detector_description::buffer device_det_descr{
+        static_cast<traccc::silicon_detector_description::buffer::size_type>(
             host_det_descr.size()),
         mr.main};
     copy(host_det_descr_data, device_det_descr);

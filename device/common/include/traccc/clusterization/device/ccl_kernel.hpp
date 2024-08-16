@@ -17,7 +17,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // Vecmem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -59,7 +59,7 @@ template <device::concepts::barrier barrier_t,
 TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const cell_collection_types::const_view& cells_view,
-    const detector_description::const_view& det_descr_view,
+    const silicon_detector_description::const_view& det_descr_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,

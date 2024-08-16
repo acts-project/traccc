@@ -19,7 +19,7 @@ TRACCC_HOST_DEVICE
 inline void form_spacepoints(
     std::size_t globalIndex,
     const measurement_collection_types::const_view& measurements_view,
-    const detector_description::const_view& det_descr_view,
+    const silicon_detector_description::const_view& det_descr_view,
     unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view) {
 
@@ -32,7 +32,7 @@ inline void form_spacepoints(
     const measurement_collection_types::const_device measurements(
         measurements_view);
     assert(measurements.size() == measurement_count);
-    const detector_description::const_device det_descr(det_descr_view);
+    const silicon_detector_description::const_device det_descr(det_descr_view);
     spacepoint_collection_types::device spacepoints(spacepoints_view);
     assert(spacepoints.size() == measurement_count);
 

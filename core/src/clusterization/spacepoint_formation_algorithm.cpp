@@ -19,12 +19,12 @@ spacepoint_formation_algorithm::spacepoint_formation_algorithm(
 spacepoint_formation_algorithm::output_type
 spacepoint_formation_algorithm::operator()(
     const measurement_collection_types::const_view& measurements_view,
-    const detector_description::const_view& dd_view) const {
+    const silicon_detector_description::const_view& dd_view) const {
 
     // Create device containers for the inputs.
     const measurement_collection_types::const_device measurements{
         measurements_view};
-    const detector_description::const_device det_descr{dd_view};
+    const silicon_detector_description::const_device det_descr{dd_view};
 
     // Create the result container.
     output_type result(measurements.size(), &(m_mr.get()));

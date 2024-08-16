@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/mapper.hpp"
 #include "traccc/io/read_detector_description.hpp"
 
@@ -181,7 +181,7 @@ TEST(mappper, measurement_cell_map) {
 
     vecmem::host_memory_resource resource;
 
-    traccc::detector_description::host dd{resource};
+    traccc::silicon_detector_description::host dd{resource};
     traccc::io::read_detector_description(dd, detector_file, digi_config_file,
                                           traccc::data_format::csv);
 
@@ -234,7 +234,7 @@ TEST(mappper, measurement_particle_map_with_clusterization) {
 
     vecmem::host_memory_resource mr;
 
-    traccc::detector_description::host dd{mr};
+    traccc::silicon_detector_description::host dd{mr};
     traccc::io::read_detector_description(dd, detector_file, digi_config_file,
                                           traccc::data_format::csv);
 
@@ -297,7 +297,7 @@ TEST(mappper, measurement_particle_map_without_clusterization) {
 
     vecmem::host_memory_resource mr;
 
-    traccc::detector_description::host dd{mr};
+    traccc::silicon_detector_description::host dd{mr};
     traccc::io::read_detector_description(dd, detector_file, digi_config_file,
                                           traccc::data_format::csv);
 

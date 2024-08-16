@@ -30,7 +30,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
     vecmem::host_memory_resource host_mr;
 
     // Construct the detector description object.
-    traccc::detector_description::host det_descr{host_mr};
+    traccc::silicon_detector_description::host det_descr{host_mr};
     traccc::io::read_detector_description(
         det_descr, detector_opts.detector_file, detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json

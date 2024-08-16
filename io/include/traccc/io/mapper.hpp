@@ -12,7 +12,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -56,16 +56,19 @@ cell_particle_map generate_cell_particle_map(
 
 measurement_cell_map generate_measurement_cell_map(
     std::size_t event, const std::string& cells_dir,
-    const detector_description::host& dd, vecmem::memory_resource& resource);
+    const silicon_detector_description::host& dd,
+    vecmem::memory_resource& resource);
 
 measurement_particle_map generate_measurement_particle_map(
     std::size_t event, const std::string& cells_dir,
     const std::string& hits_dir, const std::string& particle_dir,
-    const detector_description::host& dd, vecmem::memory_resource& resource);
+    const silicon_detector_description::host& dd,
+    vecmem::memory_resource& resource);
 
 measurement_particle_map generate_measurement_particle_map(
     std::size_t event, const std::string& hits_dir,
-    const std::string& particle_dir, const detector_description::host& dd,
+    const std::string& particle_dir,
+    const silicon_detector_description::host& dd,
     vecmem::memory_resource& resource);
 
 }  // namespace traccc

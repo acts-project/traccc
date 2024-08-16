@@ -25,7 +25,7 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const detector_description::host* dd) {
+                      const silicon_detector_description::host* dd) {
 
     // Read all measurements.
     measurement_collection_types::host measurements;

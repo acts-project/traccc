@@ -33,7 +33,7 @@ namespace kernels {
 __global__ void ccl_kernel(
     const clustering_config cfg,
     const cell_collection_types::const_view cells_view,
-    const detector_description::const_view det_descr_view,
+    const silicon_detector_description::const_view det_descr_view,
     measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links,
     vecmem::data::vector_view<device::details::index_t> f_backup_view,
@@ -90,7 +90,7 @@ clusterization_algorithm::clusterization_algorithm(
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
-    const detector_description::const_view& det_descr) const {
+    const silicon_detector_description::const_view& det_descr) const {
 
     assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
                             m_stream, cells));

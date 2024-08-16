@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -33,7 +33,7 @@ namespace traccc::io {
 ///
 void read_measurements(measurement_collection_types::host& measurements,
                        std::size_t event, std::string_view directory,
-                       const detector_description::host* dd = nullptr,
+                       const silicon_detector_description::host* dd = nullptr,
                        data_format format = data_format::csv);
 
 /// Read measurement data into memory
@@ -47,7 +47,7 @@ void read_measurements(measurement_collection_types::host& measurements,
 ///
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       const detector_description::host* dd = nullptr,
+                       const silicon_detector_description::host* dd = nullptr,
                        data_format format = data_format::csv);
 
 }  // namespace traccc::io

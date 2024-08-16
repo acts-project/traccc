@@ -10,7 +10,7 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
@@ -47,7 +47,7 @@ TEST(CUDAClustering, SingleModule) {
     cells.push_back({6u, 6u, 1.f, 0, 0});
 
     // Create a dummy detector description.
-    traccc::detector_description::host dd{mng_mr};
+    traccc::silicon_detector_description::host dd{mng_mr};
     dd.resize(1u);
     dd.reference_x()[0] = 0.f;
     dd.reference_y()[0] = 0.f;

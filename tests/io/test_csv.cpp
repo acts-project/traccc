@@ -96,7 +96,7 @@ TEST_F(io, csv_read_tml_single_muon) {
     vecmem::host_memory_resource resource;
 
     // Read the detector description.
-    traccc::detector_description::host dd{resource};
+    traccc::silicon_detector_description::host dd{resource};
     traccc::io::read_detector_description(
         dd, "tml_detector/trackml-detector.csv",
         "tml_detector/default-geometric-config-generic.json",

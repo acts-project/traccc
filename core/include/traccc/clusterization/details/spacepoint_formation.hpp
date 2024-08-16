@@ -11,7 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace traccc::details {
 
@@ -23,7 +23,7 @@ namespace traccc::details {
 ///
 TRACCC_HOST_DEVICE inline void fill_spacepoint(
     spacepoint& sp, const measurement& meas,
-    const detector_description::const_device& dd);
+    const silicon_detector_description::const_device& dd);
 
 }  // namespace traccc::details
 

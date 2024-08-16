@@ -13,7 +13,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -33,7 +33,7 @@ namespace traccc::cuda {
 class spacepoint_formation_algorithm
     : public algorithm<spacepoint_collection_types::buffer(
           const measurement_collection_types::const_view&,
-          const detector_description::const_view&)> {
+          const silicon_detector_description::const_view&)> {
 
     public:
     /// Constructor for spacepoint_formation
@@ -53,7 +53,8 @@ class spacepoint_formation_algorithm
     ///
     output_type operator()(
         const measurement_collection_types::const_view& measurements,
-        const detector_description::const_view& det_descr) const override;
+        const silicon_detector_description::const_view& det_descr)
+        const override;
 
     private:
     /// The memory resource(s) to use

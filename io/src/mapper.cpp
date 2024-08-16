@@ -201,7 +201,8 @@ cell_particle_map generate_cell_particle_map(std::size_t event,
 
 measurement_cell_map generate_measurement_cell_map(
     std::size_t event, const std::string& cells_dir,
-    const detector_description::host& dd, vecmem::memory_resource& resource) {
+    const silicon_detector_description::host& dd,
+    vecmem::memory_resource& resource) {
 
     measurement_cell_map result;
 
@@ -210,7 +211,7 @@ measurement_cell_map generate_measurement_cell_map(
     host::measurement_creation_algorithm mc(resource);
 
     // Construct a detector description data object.
-    detector_description::const_data dd_data{vecmem::get_data(dd)};
+    silicon_detector_description::const_data dd_data{vecmem::get_data(dd)};
 
     // Read the cells from the relevant event file
     cell_collection_types::host cells(&resource);
@@ -234,7 +235,8 @@ measurement_cell_map generate_measurement_cell_map(
 measurement_particle_map generate_measurement_particle_map(
     std::size_t event, const std::string& cells_dir,
     const std::string& hits_dir, const std::string& particle_dir,
-    const detector_description::host& dd, vecmem::memory_resource& resource) {
+    const silicon_detector_description::host& dd,
+    vecmem::memory_resource& resource) {
 
     measurement_particle_map result;
 
@@ -263,7 +265,8 @@ measurement_particle_map generate_measurement_particle_map(
 
 measurement_particle_map generate_measurement_particle_map(
     std::size_t event, const std::string& hits_dir,
-    const std::string& particle_dir, const detector_description::host& dd,
+    const std::string& particle_dir,
+    const silicon_detector_description::host& dd,
     vecmem::memory_resource& resource) {
 
     measurement_particle_map result;

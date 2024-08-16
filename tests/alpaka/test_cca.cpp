@@ -12,7 +12,7 @@
 
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -28,7 +28,7 @@ namespace {
 
 cca_function_t get_f_with(traccc::clustering_config cfg) {
     return [cfg](const traccc::cell_collection_types::host& cells,
-                 const traccc::detector_description::host& dd) {
+                 const traccc::silicon_detector_description::host& dd) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
@@ -47,8 +47,9 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
-        traccc::detector_description::buffer dd_buffer{
-            static_cast<traccc::detector_description::buffer::size_type>(
+        traccc::silicon_detector_description::buffer dd_buffer{
+            static_cast<
+                traccc::silicon_detector_description::buffer::size_type>(
                 dd.size()),
             device_mr};
         copy.setup(dd_buffer)->ignore();

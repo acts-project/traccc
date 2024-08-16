@@ -22,7 +22,7 @@
 
 namespace {
 
-void fill_digi_info(traccc::detector_description::host& dd,
+void fill_digi_info(traccc::silicon_detector_description::host& dd,
                     const traccc::module_digitization_config& data) {
 
     // Set a hard-coded threshold for which cells should be considered for
@@ -39,7 +39,7 @@ void fill_digi_info(traccc::detector_description::host& dd,
     dd.dimensions().back() = data.dimensions;
 }
 
-void read_csv_dd(traccc::detector_description::host& dd,
+void read_csv_dd(traccc::silicon_detector_description::host& dd,
                  std::string_view geometry_file,
                  const traccc::digitization_config& digi) {
 
@@ -88,7 +88,7 @@ void read_csv_dd(traccc::detector_description::host& dd,
     }
 }
 
-void read_json_dd(traccc::detector_description::host& dd,
+void read_json_dd(traccc::silicon_detector_description::host& dd,
                   std::string_view geometry_file,
                   const traccc::digitization_config& digi) {
 
@@ -148,7 +148,7 @@ void read_json_dd(traccc::detector_description::host& dd,
 
 namespace traccc::io {
 
-void read_detector_description(detector_description::host& dd,
+void read_detector_description(silicon_detector_description::host& dd,
                                std::string_view geometry_file,
                                std::string_view digitization_file,
                                const data_format geometry_format,

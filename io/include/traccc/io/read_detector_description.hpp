@@ -11,7 +11,7 @@
 #include "traccc/io/data_format.hpp"
 
 // Project include(s).
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // Detray include(s).
 #include <detray/geometry/barcode.hpp>
@@ -23,7 +23,7 @@
 
 namespace traccc::io {
 
-/// Populate a @c traccc::detector_description object from configuration files.
+/// Populate a @c traccc::silicon_detector_description object from text files.
 ///
 /// @param dd The detector description object to set up.
 /// @param geometry_file The path to the geometry description file.
@@ -33,7 +33,7 @@ namespace traccc::io {
 ///                            file.
 ///
 void read_detector_description(
-    detector_description::host& dd, std::string_view geometry_file,
+    silicon_detector_description::host& dd, std::string_view geometry_file,
     std::string_view digitization_file,
     data_format geometry_format = data_format::json,
     data_format digitization_format = data_format::json);

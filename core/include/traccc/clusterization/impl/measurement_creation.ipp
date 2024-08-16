@@ -12,14 +12,15 @@
 namespace traccc::details {
 
 TRACCC_HOST_DEVICE
-inline scalar signal_cell_modelling(scalar signal_in,
-                                    const detector_description::const_device&) {
+inline scalar signal_cell_modelling(
+    scalar signal_in, const silicon_detector_description::const_device&) {
     return signal_in;
 }
 
 TRACCC_HOST_DEVICE
 inline vector2 position_from_cell(
-    const cell& cell, const detector_description::const_device& det_descr) {
+    const cell& cell,
+    const silicon_detector_description::const_device& det_descr) {
 
     // Retrieve the specific values based on module idx
     const cell::link_type module_link = cell.module_link;
@@ -33,7 +34,7 @@ inline vector2 position_from_cell(
 
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const cell_collection_types::const_device& cluster,
-    const detector_description::const_device& det_descr, point2& mean,
+    const silicon_detector_description::const_device& det_descr, point2& mean,
     point2& var, scalar& totalWeight) {
 
     point2 offset{0., 0.};
@@ -79,7 +80,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement_collection_types::device& measurements,
     const measurement_collection_types::device::size_type index,
     const cell_collection_types::const_device& cluster,
-    const detector_description::const_device& det_descr) {
+    const silicon_detector_description::const_device& det_descr) {
 
     // To calculate the mean and variance with high numerical stability
     // we use a weighted variant of Welford's algorithm. This is a

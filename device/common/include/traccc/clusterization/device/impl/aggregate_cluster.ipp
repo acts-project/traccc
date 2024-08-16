@@ -15,7 +15,7 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const cell_collection_types::const_device& cells,
-    const detector_description::const_device& det_descr,
+    const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, const unsigned int start,
     const unsigned int end, const unsigned short cid, measurement& out,
     vecmem::data::vector_view<unsigned int> cell_links,

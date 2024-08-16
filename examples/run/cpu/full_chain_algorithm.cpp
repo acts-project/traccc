@@ -17,7 +17,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
-    const traccc::detector_description::host& det_descr,
+    const silicon_detector_description::host& det_descr,
     detector_type* detector)
     : m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(detray::bfield::create_const_field(m_field_vec)),
@@ -39,7 +39,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const cell_collection_types::host& cells) const {
 
     // Create a data object for the detector description.
-    const detector_description::const_data det_descr_data =
+    const silicon_detector_description::const_data det_descr_data =
         vecmem::get_data(m_det_descr.get());
 
     // Run the clusterization.

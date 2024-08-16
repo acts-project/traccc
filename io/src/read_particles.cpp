@@ -50,7 +50,8 @@ void read_particles(particle_collection_types::host& particles,
 
 void read_particles(particle_container_types::host& particles,
                     std::size_t event, std::string_view directory,
-                    data_format format, const detector_description::host* dd,
+                    data_format format,
+                    const silicon_detector_description::host* dd,
                     std::string_view filename_postfix) {
 
     switch (format) {
@@ -85,7 +86,7 @@ void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file, data_format format,
-                    const detector_description::host* dd) {
+                    const silicon_detector_description::host* dd) {
 
     switch (format) {
         case data_format::csv:

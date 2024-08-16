@@ -8,7 +8,7 @@
 // Project include(s).
 #include "tests/cca_test.hpp"
 #include "traccc/definitions/common.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
 // VecMem include(s).
@@ -61,7 +61,7 @@ TEST(SYCLClustering, SingleModule) {
     cells.push_back({6u, 6u, 1.f, 0, 0});
 
     // Create a dummy detector description.
-    traccc::detector_description::host dd{shared_mr};
+    traccc::silicon_detector_description::host dd{shared_mr};
     dd.resize(1u);
     dd.reference_x()[0] = 0.f;
     dd.reference_y()[0] = 0.f;

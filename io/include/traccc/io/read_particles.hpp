@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/edm/particle.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -63,7 +63,7 @@ void read_particles(particle_collection_types::host &particles,
 void read_particles(particle_container_types::host &particles,
                     std::size_t event, std::string_view directory,
                     data_format format = data_format::csv,
-                    const detector_description::host *dd = nullptr,
+                    const silicon_detector_description::host *dd = nullptr,
                     std::string_view filename_postfix = "-particles_initial");
 
 /// Read full truth particle data into memory
@@ -83,6 +83,6 @@ void read_particles(particle_container_types::host &particles,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
                     data_format format = data_format::csv,
-                    const detector_description::host *dd = nullptr);
+                    const silicon_detector_description::host *dd = nullptr);
 
 }  // namespace traccc::io

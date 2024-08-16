@@ -46,12 +46,12 @@ int par_run(const traccc::opts::input_data& input_opts,
     vecmem::host_memory_resource resource;
 
     // Construct the detector description object.
-    traccc::detector_description::host det_descr{resource};
+    traccc::silicon_detector_description::host det_descr{resource};
     traccc::io::read_detector_description(
         det_descr, detector_opts.detector_file, detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json
                                            : traccc::data_format::csv));
-    traccc::detector_description::data det_descr_data{
+    traccc::silicon_detector_description::data det_descr_data{
         vecmem::get_data(det_descr)};
 
     // Algorithms

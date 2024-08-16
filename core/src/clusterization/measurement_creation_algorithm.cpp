@@ -20,11 +20,11 @@ measurement_creation_algorithm::measurement_creation_algorithm(
 measurement_creation_algorithm::output_type
 measurement_creation_algorithm::operator()(
     const cluster_container_types::const_view &clusters_view,
-    const detector_description::const_view &dd_view) const {
+    const silicon_detector_description::const_view &dd_view) const {
 
     // Create device containers for the input variables.
     const cluster_container_types::const_device clusters{clusters_view};
-    const detector_description::const_device det_descr{dd_view};
+    const silicon_detector_description::const_device det_descr{dd_view};
 
     // Create the result object.
     output_type result(clusters.size(), &(m_mr.get()));

@@ -49,7 +49,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type&,
     const fitting_algorithm::config_type&,
-    const traccc::detector_description::host& det_descr, detector_type*)
+    const silicon_detector_description::host& det_descr, detector_type*)
     : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
       m_host_mr(host_mr),
       m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(
@@ -58,9 +58,10 @@ full_chain_algorithm::full_chain_algorithm(
           std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
       m_copy(&(m_data->m_queue)),
       m_det_descr(det_descr),
-      m_device_det_descr(static_cast<detector_description::buffer::size_type>(
-                             m_det_descr.get().size()),
-                         *m_device_mr),
+      m_device_det_descr(
+          static_cast<silicon_detector_description::buffer::size_type>(
+              m_det_descr.get().size()),
+          *m_device_mr),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_data->m_queue_wrapper, clustering_config),
       m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
@@ -95,9 +96,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
           std::make_unique<vecmem::binary_page_memory_resource>(*m_device_mr)),
       m_copy(&(m_data->m_queue)),
       m_det_descr(parent.m_det_descr),
-      m_device_det_descr(static_cast<detector_description::buffer::size_type>(
-                             m_det_descr.get().size()),
-                         *m_device_mr),
+      m_device_det_descr(
+          static_cast<silicon_detector_description::buffer::size_type>(
+              m_det_descr.get().size()),
+          *m_device_mr),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_data->m_queue_wrapper, parent.m_clustering_config),
       m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},

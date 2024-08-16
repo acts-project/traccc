@@ -11,7 +11,7 @@
 #include "traccc/io/mapper.hpp"
 
 // Project include(s).
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -27,7 +27,7 @@ struct event_map {
 
     event_map(std::size_t event, const std::string& cell_dir,
               const std::string& hit_dir, const std::string particle_dir,
-              const detector_description::host& dd,
+              const silicon_detector_description::host& dd,
               vecmem::memory_resource& resource) {
 
         ptc_map = generate_particle_map(event, particle_dir);
@@ -37,7 +37,7 @@ struct event_map {
 
     event_map(std::size_t event, const std::string& hit_dir,
               const std::string particle_dir,
-              const detector_description::host& dd,
+              const silicon_detector_description::host& dd,
               vecmem::memory_resource& resource) {
 
         ptc_map = generate_particle_map(event, particle_dir);

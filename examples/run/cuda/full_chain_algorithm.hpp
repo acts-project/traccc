@@ -21,7 +21,7 @@
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // Detray include(s).
@@ -91,7 +91,7 @@ class full_chain_algorithm
                          const seedfilter_config& filter_config,
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
-                         const traccc::detector_description::host& det_descr,
+                         const silicon_detector_description::host& det_descr,
                          host_detector_type* detector);
 
     /// Copy constructor
@@ -133,10 +133,10 @@ class full_chain_algorithm
     detray::bfield::const_field_t m_field;
 
     /// Detector description
-    std::reference_wrapper<const traccc::detector_description::host>
+    std::reference_wrapper<const silicon_detector_description::host>
         m_det_descr;
     /// Detector description buffer
-    detector_description::buffer m_device_det_descr;
+    silicon_detector_description::buffer m_device_det_descr;
     /// Host detector
     host_detector_type* m_detector;
     /// Buffer holding the detector's payload on the device

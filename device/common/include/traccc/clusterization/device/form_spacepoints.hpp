@@ -11,7 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -30,7 +30,7 @@ TRACCC_HOST_DEVICE
 inline void form_spacepoints(
     std::size_t globalIndex,
     const measurement_collection_types::const_view& measurements_view,
-    const detector_description::const_view& det_descr_view,
+    const silicon_detector_description::const_view& det_descr_view,
     unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view);
 

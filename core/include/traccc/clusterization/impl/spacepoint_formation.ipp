@@ -14,7 +14,7 @@ namespace traccc::details {
 
 TRACCC_HOST_DEVICE inline void fill_spacepoint(
     spacepoint& sp, const measurement& meas,
-    const detector_description::const_device& dd) {
+    const silicon_detector_description::const_device& dd) {
 
     // Transform measurement position to 3D
     const point3 local_3d = {meas.local[0], meas.local[1], 0.f};

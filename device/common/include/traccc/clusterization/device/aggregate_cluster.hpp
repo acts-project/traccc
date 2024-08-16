@@ -12,7 +12,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -34,7 +34,7 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
     const cell_collection_types::const_device& cells,
-    const detector_description::const_device& det_descr,
+    const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, unsigned int start,
     unsigned int end, unsigned short cid, measurement& out,
     vecmem::data::vector_view<unsigned int> cell_links, unsigned int link);

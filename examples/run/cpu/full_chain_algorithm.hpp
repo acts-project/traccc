@@ -16,7 +16,7 @@
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -82,7 +82,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          const seedfilter_config& filter_config,
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
-                         const traccc::detector_description::host& det_descr,
+                         const silicon_detector_description::host& det_descr,
                          detector_type* detector = nullptr);
 
     /// Reconstruct track parameters in the entire detector
@@ -100,7 +100,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     detray::bfield::const_field_t m_field;
 
     /// Detector description
-    std::reference_wrapper<const traccc::detector_description::host>
+    std::reference_wrapper<const silicon_detector_description::host>
         m_det_descr;
     /// Detector
     detector_type* m_detector;

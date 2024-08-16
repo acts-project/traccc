@@ -141,7 +141,7 @@ TRACCC_DEVICE inline void ccl_core(
     vecmem::device_vector<details::index_t> gf,
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
     unsigned char* adjc, const cell_collection_types::const_device cells_device,
-    const detector_description::const_device& det_descr,
+    const silicon_detector_description::const_device& det_descr,
     measurement_collection_types::device measurements_device,
     barrier_t& barrier) {
     const details::index_t size = partition_end - partition_start;
@@ -210,7 +210,7 @@ template <device::concepts::barrier barrier_t,
 TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const cell_collection_types::const_view& cells_view,
-    const detector_description::const_view& det_descr_view,
+    const silicon_detector_description::const_view& det_descr_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,
@@ -223,7 +223,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<unsigned int> cell_links) {
     // Construct device containers around the views.
     const cell_collection_types::const_device cells_device(cells_view);
-    const detector_description::const_device det_descr(det_descr_view);
+    const silicon_detector_description::const_device det_descr(det_descr_view);
     measurement_collection_types::device measurements_device(measurements_view);
     vecmem::device_vector<details::index_t> f_primary(f_view);
     vecmem::device_vector<details::index_t> gf_primary(gf_view);

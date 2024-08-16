@@ -12,7 +12,7 @@
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -32,7 +32,7 @@ namespace traccc::host {
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::host(
           const cell_collection_types::const_view&,
-          const detector_description::const_view&)> {
+          const silicon_detector_description::const_view&)> {
 
     public:
     using config_type = std::monostate;
@@ -51,7 +51,7 @@ class clusterization_algorithm
     ///
     output_type operator()(
         const cell_collection_types::const_view& cells_view,
-        const detector_description::const_view& dd_view) const override;
+        const silicon_detector_description::const_view& dd_view) const override;
 
     private:
     /// @name Sub-algorithms used by this algorithm

@@ -21,7 +21,7 @@ struct FormSpacepointsKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
         measurement_collection_types::const_view measurements_view,
-        const detector_description::const_view det_descr_view,
+        const silicon_detector_description::const_view det_descr_view,
         const unsigned int measurement_count,
         spacepoint_collection_types::view spacepoints_view) const {
 
@@ -41,7 +41,7 @@ spacepoint_formation_algorithm::spacepoint_formation_algorithm(
 spacepoint_formation_algorithm::output_type
 spacepoint_formation_algorithm::operator()(
     const measurement_collection_types::const_view& measurements_view,
-    const detector_description::const_view& det_descr) const {
+    const silicon_detector_description::const_view& det_descr) const {
 
     // Setup alpaka
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);

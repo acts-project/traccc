@@ -19,8 +19,8 @@ namespace traccc::io {
 
 void read_cells(cell_collection_types::host& cells, std::size_t event,
                 std::string_view directory,
-                const detector_description::host* dd, data_format format,
-                bool deduplicate) {
+                const silicon_detector_description::host* dd,
+                data_format format, bool deduplicate) {
 
     switch (format) {
         case data_format::csv: {
@@ -48,8 +48,8 @@ void read_cells(cell_collection_types::host& cells, std::size_t event,
 }
 
 void read_cells(cell_collection_types::host& cells, std::string_view filename,
-                const detector_description::host* dd, data_format format,
-                bool deduplicate) {
+                const silicon_detector_description::host* dd,
+                data_format format, bool deduplicate) {
 
     switch (format) {
         case data_format::csv:

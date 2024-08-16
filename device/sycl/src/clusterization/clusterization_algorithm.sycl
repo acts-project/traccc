@@ -58,7 +58,7 @@ clusterization_algorithm::clusterization_algorithm(
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells_view,
-    const detector_description::const_view& det_descr) const {
+    const silicon_detector_description::const_view& det_descr) const {
 
     assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
                             m_queue, cells_view));

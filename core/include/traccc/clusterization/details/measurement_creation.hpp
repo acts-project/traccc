@@ -12,19 +12,20 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace traccc::details {
 
 /// Function used for retrieving the cell signal based on the module id
 TRACCC_HOST_DEVICE
-inline scalar signal_cell_modelling(scalar signal_in,
-                                    const detector_description::const_device&);
+inline scalar signal_cell_modelling(
+    scalar signal_in, const silicon_detector_description::const_device&);
 
 /// Function for pixel segmentation
 TRACCC_HOST_DEVICE
 inline vector2 position_from_cell(
-    const cell& cell, const detector_description::const_device& det_descr);
+    const cell& cell,
+    const silicon_detector_description::const_device& det_descr);
 
 /// Function used for calculating the properties of the cluster during
 /// measurement creation
@@ -38,7 +39,7 @@ inline vector2 position_from_cell(
 ///
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const cell_collection_types::const_device& cluster,
-    const detector_description::const_device& det_descr, point2& mean,
+    const silicon_detector_description::const_device& det_descr, point2& mean,
     point2& var, scalar& totalWeight);
 
 /// Function used for calculating the properties of the cluster during
@@ -54,7 +55,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement_collection_types::device& measurements,
     measurement_collection_types::device::size_type index,
     const cell_collection_types::const_device& cluster,
-    const detector_description::const_device& det_descr);
+    const silicon_detector_description::const_device& det_descr);
 
 }  // namespace traccc::details
 

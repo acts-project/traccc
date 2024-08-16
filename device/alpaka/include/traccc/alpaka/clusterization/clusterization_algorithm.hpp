@@ -13,7 +13,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -36,7 +36,7 @@ namespace traccc::alpaka {
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::buffer(
           const cell_collection_types::const_view&,
-          const detector_description::const_view&)> {
+          const silicon_detector_description::const_view&)> {
 
     public:
     /// Configuration type
@@ -58,9 +58,9 @@ class clusterization_algorithm
     /// @param det_descr The detector description
     /// @return a measurement collection (buffer)
     ///
-    output_type operator()(
-        const cell_collection_types::const_view& cells,
-        const detector_description::const_view& det_descr) const override;
+    output_type operator()(const cell_collection_types::const_view& cells,
+                           const silicon_detector_description::const_view&
+                               det_descr) const override;
 
     private:
     /// The average number of cells in each partition

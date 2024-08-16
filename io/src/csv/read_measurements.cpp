@@ -17,7 +17,7 @@ namespace traccc::io::csv {
 
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       const detector_description::host* dd,
+                       const silicon_detector_description::host* dd,
                        const bool do_sort) {
 
     // Construct the measurement reader object.

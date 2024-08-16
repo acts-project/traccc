@@ -18,7 +18,7 @@ namespace kernels {
 
 __global__ void form_spacepoints(
     measurement_collection_types::const_view measurements_view,
-    const detector_description::const_view det_descr_view,
+    const silicon_detector_description::const_view det_descr_view,
     const unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view) {
 
@@ -36,7 +36,7 @@ spacepoint_formation_algorithm::spacepoint_formation_algorithm(
 spacepoint_formation_algorithm::output_type
 spacepoint_formation_algorithm::operator()(
     const measurement_collection_types::const_view& measurements,
-    const detector_description::const_view& det_descr) const {
+    const silicon_detector_description::const_view& det_descr) const {
 
     // Get the number of measurements.
     const measurement_collection_types::const_view::size_type num_measurements =

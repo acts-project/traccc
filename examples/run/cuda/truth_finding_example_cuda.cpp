@@ -107,7 +107,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     auto field = detray::bfield::create_const_field(B);
 
     // Construct the detector description object.
-    traccc::detector_description::host det_descr{mng_mr};
+    traccc::silicon_detector_description::host det_descr{mng_mr};
     traccc::io::read_detector_description(
         det_descr, detector_opts.detector_file, detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json

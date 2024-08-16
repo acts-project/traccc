@@ -19,7 +19,7 @@ namespace traccc::io {
 
 void read_measurements(measurement_collection_types::host& measurements,
                        std::size_t event, std::string_view directory,
-                       const detector_description::host* dd,
+                       const silicon_detector_description::host* dd,
                        data_format format) {
 
     switch (format) {
@@ -50,7 +50,7 @@ void read_measurements(measurement_collection_types::host& measurements,
 
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       const detector_description::host* dd,
+                       const silicon_detector_description::host* dd,
                        data_format format) {
 
     static constexpr bool sort_measurements = true;

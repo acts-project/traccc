@@ -10,7 +10,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // Test include(s).
 #include "tests/cca_test.hpp"
@@ -29,10 +29,10 @@ vecmem::host_memory_resource resource;
 traccc::host::clusterization_algorithm ca(resource);
 
 cca_function_t f = [](const traccc::cell_collection_types::host& cells,
-                      const traccc::detector_description::host& dd) {
+                      const traccc::silicon_detector_description::host& dd) {
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
-    const traccc::detector_description::const_data dd_data =
+    const traccc::silicon_detector_description::const_data dd_data =
         vecmem::get_data(dd);
     auto measurements = ca(vecmem::get_data(cells), dd_data);
     for (std::size_t i = 0; i < measurements.size(); i++) {

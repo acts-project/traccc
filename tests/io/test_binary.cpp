@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/geometry/detector_description.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -35,7 +35,7 @@ TEST(io_binary, cell) {
     vecmem::host_memory_resource host_mr;
 
     // Read the detector description.
-    traccc::detector_description::host dd{host_mr};
+    traccc::silicon_detector_description::host dd{host_mr};
     traccc::io::read_detector_description(
         dd, "tml_detector/trackml-detector.csv",
         "tml_detector/default-geometric-config-generic.json",
@@ -83,7 +83,7 @@ TEST(io_binary, spacepoint) {
     vecmem::host_memory_resource host_mr;
 
     // Read the detector description.
-    traccc::detector_description::host dd{host_mr};
+    traccc::silicon_detector_description::host dd{host_mr};
     traccc::io::read_detector_description(
         dd, "tml_detector/trackml-detector.csv",
         "tml_detector/default-geometric-config-generic.json",
@@ -130,7 +130,7 @@ TEST(io_binary, measurement) {
     vecmem::host_memory_resource host_mr;
 
     // Read the detector description.
-    traccc::detector_description::host dd{host_mr};
+    traccc::silicon_detector_description::host dd{host_mr};
     traccc::io::read_detector_description(
         dd, "tml_detector/trackml-detector.csv",
         "tml_detector/default-geometric-config-generic.json",
