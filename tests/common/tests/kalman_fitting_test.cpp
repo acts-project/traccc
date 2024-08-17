@@ -99,7 +99,8 @@ void KalmanFittingTests::ndf_tests(
 
     // Check if the number of degree of freedoms is equal to (the sum of
     // measurement dimensions - 5)
-    ASSERT_FLOAT_EQ(fit_res.ndf, dim_sum - 5.f);
+    ASSERT_FLOAT_EQ(static_cast<float>(fit_res.ndf),
+                    static_cast<float>(dim_sum) - 5.f);
 
     // The number of track states is supposed to be eqaul to the number
     // of measurements unless KF failes in the middle of propagation

@@ -116,7 +116,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
 
     // Lift step size constraints
     sim.get_config().propagation.stepping.step_constraint =
-        std::numeric_limits<scalar>::max();
+        std::numeric_limits<float>::max();
     sim.get_config().propagation.navigation.search_window = {3u, 3u};
 
     // Do the simulation
@@ -269,7 +269,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
     // Lift step size constraints
     sim.get_config().propagation.stepping.step_constraint =
-        std::numeric_limits<scalar>::max();
+        std::numeric_limits<float>::max();
 
     // Run simulation
     sim.run();

@@ -74,14 +74,14 @@ struct smearing_writer : detray::actor {
             const auto mom = track.mom();
 
             particle.particle_id = particle_id;
-            particle.vx = pos[0];
-            particle.vy = pos[1];
-            particle.vz = pos[2];
-            particle.vt = track.time();
-            particle.px = mom[0];
-            particle.py = mom[1];
-            particle.pz = mom[2];
-            particle.q = track.charge();
+            particle.vx = static_cast<float>(pos[0]);
+            particle.vy = static_cast<float>(pos[1]);
+            particle.vz = static_cast<float>(pos[2]);
+            particle.vt = static_cast<float>(track.time());
+            particle.px = static_cast<float>(mom[0]);
+            particle.py = static_cast<float>(mom[1]);
+            particle.pz = static_cast<float>(mom[2]);
+            particle.q = static_cast<float>(track.charge());
 
             m_particle_writer.append(particle);
         }
@@ -122,13 +122,13 @@ struct smearing_writer : detray::actor {
 
             hit.particle_id = writer_state.particle_id;
             hit.geometry_id = sf.barcode().value();
-            hit.tx = pos[0];
-            hit.ty = pos[1];
-            hit.tz = pos[2];
-            hit.tt = track.time();
-            hit.tpx = mom[0];
-            hit.tpy = mom[1];
-            hit.tpz = mom[2];
+            hit.tx = static_cast<float>(pos[0]);
+            hit.ty = static_cast<float>(pos[1]);
+            hit.tz = static_cast<float>(pos[2]);
+            hit.tt = static_cast<float>(track.time());
+            hit.tpx = static_cast<float>(mom[0]);
+            hit.tpy = static_cast<float>(mom[1]);
+            hit.tpz = static_cast<float>(mom[2]);
 
             writer_state.m_hit_writer.append(hit);
 
@@ -140,11 +140,11 @@ struct smearing_writer : detray::actor {
             meas.geometry_id = hit.geometry_id;
             auto stddev_0 = writer_state.m_meas_smearer.stddev[0];
             auto stddev_1 = writer_state.m_meas_smearer.stddev[1];
-            meas.var_local0 = stddev_0 * stddev_0;
-            meas.var_local1 = stddev_1 * stddev_1;
-            meas.phi = bound_params.phi();
-            meas.theta = bound_params.theta();
-            meas.time = bound_params.time();
+            meas.var_local0 = static_cast<float>(stddev_0 * stddev_0);
+            meas.var_local1 = static_cast<float>(stddev_1 * stddev_1);
+            meas.phi = static_cast<float>(bound_params.phi());
+            meas.theta = static_cast<float>(bound_params.theta());
+            meas.time = static_cast<float>(bound_params.time());
 
             // Set local_key and smeared_local
             sf.template visit_mask<measurement_kernel>(
