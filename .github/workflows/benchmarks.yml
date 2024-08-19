@@ -1,0 +1,17 @@
+name: Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  detray_benchmark_job:
+    runs-on: ubuntu-latest
+    steps:
+      - run: >
+          curl -X POST --fail
+          -F token=${{ secrets.TRACCC_BENCHMARK_TRIGGER_TOKEN }}
+          -F ref=master
+          --form variables[MERGE_TIME]="$(date '+%Y-%m-%d_%H:%M:%S')"
+          --form variables[SOURCE_SHA]="${{ github.sha }}"
+          https://gitlab.cern.ch/api/v4/projects/190887/trigger/pipeline 
