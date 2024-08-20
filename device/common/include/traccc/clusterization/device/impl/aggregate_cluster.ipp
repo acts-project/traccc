@@ -142,7 +142,6 @@ inline void aggregate_cluster(
     if (this_module.pixel.dimension == 1) {
         out.meas_dim = 1;
         out.local[1] = 0.f;
-        out.variance[1] = this_module.pixel.variance_y;
     } else {
         out.meas_dim = 2;
     }

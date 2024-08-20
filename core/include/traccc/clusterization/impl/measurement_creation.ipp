@@ -111,7 +111,6 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     if (mod.pixel.dimension == 1) {
         m.meas_dim = 1;
         m.local[1] = 0.f;
-        m.variance[1] = mod.pixel.variance_y;
     }
 }
 

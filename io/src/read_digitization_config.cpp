@@ -32,30 +32,21 @@ void from_json(const nlohmann::json& json, module_digitization_config& cfg) {
     // Names/keywords used in the JSON file.
     static const char* geometric = "geometric";
     static const char* segmentation = "segmentation";
-    static const char* variances = "variances";
+    static const char* binningdata = "binningdata";
+    static const char* bins = "bins";
 
     // Read the binning information, if possible.
     if (json.find(geometric) != json.end()) {
         const auto& json_geom = json[geometric];
         if (json_geom.find(segmentation) != json_geom.end()) {
             Acts::from_json(json_geom[segmentation], cfg.segmentation);
-        }
-        if (json_geom.find(variances) != json_geom.end()) {
-            for (const auto& jdata : json_geom[variances]) {
-                const int index = jdata["index"];
-                if (index != 1) {
-                    continue;
+            // If we only have 1 bins along any axis, then this is a 1D module.
+            const auto& json_segm = json_geom[segmentation];
+            for (const auto& bindata : json_segm[binningdata]) {
+                if (bindata[bins].get<int>() == 1) {
+                    cfg.dimensions = 1;
+                    break;
                 }
-                for (const auto& rms : jdata["rms"]) {
-                    // A large RMS value associated to the second index happens
-                    // to mean that this is a strip detector...
-                    const float frms = rms.get<float>();
-                    if (frms > 1.0f) {
-                        cfg.dimensions = 1;
-                        cfg.variance_y = std::max(frms, cfg.variance_y);
-                    }
-                }
-                break;
             }
         }
     }

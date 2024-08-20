@@ -17,7 +17,6 @@ namespace traccc {
 struct module_digitization_config {
     Acts::BinUtility segmentation;
     char dimensions = 2;
-    float variance_y = 0.f;
 };
 
 /// Type describing the digitization configuration for the whole detector
