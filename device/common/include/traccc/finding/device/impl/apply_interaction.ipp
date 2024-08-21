@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/math.hpp"
+#include "traccc/utils/particle.hpp"
 
 // Detray include(s).
 #include "detray/geometry/tracking_surface.hpp"
@@ -17,8 +18,8 @@ namespace traccc::device {
 
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
-    std::size_t globalIndex, typename detector_t::view_type det_data,
-    const int n_params,
+    std::size_t globalIndex, const finding_config& cfg,
+    typename detector_t::view_type det_data, const int n_params,
     bound_track_parameters_collection_types::view params_view) {
 
     // Type definitions
@@ -44,7 +45,9 @@ TRACCC_DEVICE inline void apply_interaction(
     // Apply interactor
     typename interactor_type::state interactor_state;
     interactor_type{}.update(
-        ctx, bound_param, interactor_state,
+        ctx,
+        detail::correct_particle_hypothesis(cfg.ptc_hypothesis, bound_param),
+        bound_param, interactor_state,
         static_cast<int>(detray::navigation::direction::e_forward), sf);
 }
 

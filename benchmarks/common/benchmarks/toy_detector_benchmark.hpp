@@ -124,8 +124,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         auto sim = traccc::simulator<detector_type, b_field_t, generator_type,
                                      writer_type>(
-            n_events, det, field, std::move(generator),
-            std::move(smearer_writer_cfg), full_path);
+            detray::muon<traccc::scalar>(), n_events, det, field,
+            std::move(generator), std::move(smearer_writer_cfg), full_path);
 
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =

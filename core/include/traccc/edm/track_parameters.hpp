@@ -24,7 +24,6 @@ using free_track_parameters =
 using bound_track_parameters =
     detray::bound_track_parameters<traccc::default_algebra>;
 using free_vector = free_track_parameters::vector_type;
-using free_covariance = free_track_parameters::covariance_type;
 using bound_vector = bound_track_parameters::vector_type;
 using bound_covariance = bound_track_parameters::covariance_type;
 

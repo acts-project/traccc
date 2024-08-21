@@ -7,7 +7,11 @@
 
 #pragma once
 
+// traccc include(s).
+#include "traccc/definitions/primitives.hpp"
+
 // detray include(s).
+#include "detray/definitions/pdg_particle.hpp"
 #include "detray/definitions/units.hpp"
 #include "detray/propagator/propagation_config.hpp"
 
@@ -40,6 +44,10 @@ struct finding_config {
 
     /// Propagation configuration
     detray::propagation::config propagation{};
+
+    /// Particle hypothesis
+    detray::pdg_particle<traccc::scalar> ptc_hypothesis =
+        detray::muon<traccc::scalar>();
 
     /****************************
      *  GPU-specfic parameters

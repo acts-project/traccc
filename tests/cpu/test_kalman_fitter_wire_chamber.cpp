@@ -39,8 +39,10 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
+    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
+    const bool random_charge = std::get<9>(GetParam());
 
     // Performance writer
     traccc::fitting_performance_writer::config fit_writer_cfg;
@@ -80,7 +82,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     gen_cfg.phi_range(std::get<5>(GetParam()));
     gen_cfg.eta_range(std::get<4>(GetParam()));
     gen_cfg.mom_range(std::get<3>(GetParam()));
-    gen_cfg.charge(std::get<6>(GetParam()));
+    gen_cfg.randomize_charge(random_charge);
     gen_cfg.seed(42);
     generator_type generator(gen_cfg);
 
@@ -98,7 +100,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        n_events, host_det, field, std::move(generator),
+        ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
 
     // Set constrained step size to 1 mm
@@ -121,6 +123,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     fit_cfg.propagation.navigation.min_mask_tolerance =
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
+    fit_cfg.ptc_hypothesis = ptc;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 
     // Iterate over events
@@ -186,7 +189,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-detray::constant<scalar>::pi,
                                detray::constant<scalar>::pi},
-        -1.f, 100, 100)));
+        detray::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
 INSTANTIATE_TEST_SUITE_P(
@@ -197,7 +200,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{-detray::constant<scalar>::pi,
                                detray::constant<scalar>::pi},
-        -1.f, 100, 100)));
+        detray::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
 INSTANTIATE_TEST_SUITE_P(
@@ -209,7 +212,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-0.4f, 0.4f},
         std::array<scalar, 2u>{-detray::constant<scalar>::pi,
                                detray::constant<scalar>::pi},
-        -1.f, 100, 100)));
+        detray::muon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation3, KalmanFittingWireChamberTests,
@@ -219,4 +222,14 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-detray::constant<scalar>::pi,
                                detray::constant<scalar>::pi},
-        1.f, 100, 100)));
+        detray::antimuon<scalar>(), 100, 100, false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    KalmanFitWireChamberValidation4, KalmanFittingWireChamberTests,
+    ::testing::Values(std::make_tuple(
+        "wire_2_GeV_random_charge", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{2.f, 2.f},
+        std::array<scalar, 2u>{-1.f, 1.f},
+        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
+                               detray::constant<scalar>::pi},
+        detray::antimuon<scalar>(), 100, 100, true)));

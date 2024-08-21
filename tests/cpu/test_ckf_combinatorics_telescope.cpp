@@ -45,9 +45,9 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
     const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const scalar charge = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
+    const bool random_charge = std::get<9>(GetParam());
 
     /*****************************
      * Build a telescope geometry
@@ -82,7 +82,7 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     gen_cfg.phi_range(phi_range[0], phi_range[1]);
     gen_cfg.theta_range(theta_range[0], theta_range[1]);
     gen_cfg.mom_range(mom_range[0], mom_range[1]);
-    gen_cfg.charge(charge);
+    gen_cfg.randomize_charge(random_charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -99,8 +99,8 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), full_path);
+        std::get<6>(GetParam()), n_events, host_det, field,
+        std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /*****************************
@@ -170,17 +170,21 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 // Testing two identical tracks
 INSTANTIATE_TEST_SUITE_P(
     CpuCkfCombinatoricsTelescopeValidation0, CpuCkfCombinatoricsTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 2, 1)));
+    ::testing::Values(std::make_tuple("telescope_combinatorics_twin",
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 2u>{100.f, 100.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      detray::muon<scalar>(), 2, 1, false)));
 
 // Testing three identical tracks
 INSTANTIATE_TEST_SUITE_P(
     CpuCkfCombinatoricsTelescopeValidation1, CpuCkfCombinatoricsTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 3, 1)));
+    ::testing::Values(std::make_tuple("telescope_combinatorics_trio",
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 2u>{100.f, 100.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      detray::muon<scalar>(), 3, 1, false)));

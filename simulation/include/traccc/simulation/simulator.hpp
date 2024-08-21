@@ -9,8 +9,10 @@
 
 // Project include(s).
 #include "traccc/simulation/smearing_writer.hpp"
+#include "traccc/utils/particle.hpp"
 
 // Detray include(s).
+#include "detray/definitions/pdg_particle.hpp"
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/actor_chain.hpp"
 #include "detray/propagator/actors/aborters.hpp"
@@ -34,6 +36,10 @@ struct simulator {
 
     struct config {
         detray::propagation::config propagation;
+
+        /// Particle hypothesis
+        detray::pdg_particle<traccc::scalar> ptc_type =
+            detray::muon<traccc::scalar>();
     };
 
     using algebra_type = typename detector_t::algebra_type;
@@ -52,8 +58,9 @@ struct simulator {
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 
-    simulator(std::size_t events, const detector_t& det,
-              const bfield_type& field, track_generator_t&& track_gen,
+    simulator(const detray::pdg_particle<scalar>& ptc_type, std::size_t events,
+              const detector_t& det, const bfield_type& field,
+              track_generator_t&& track_gen,
               typename writer_t::config&& writer_cfg,
               const std::string directory = "")
         : m_events(events),
@@ -62,7 +69,11 @@ struct simulator {
           m_field(field),
           m_track_generator(
               std::make_unique<track_generator_t>(std::move(track_gen))),
-          m_writer_cfg(writer_cfg) {}
+          m_writer_cfg(writer_cfg) {
+
+        m_cfg.ptc_type = ptc_type;
+        m_track_generator->config().charge(ptc_type.charge());
+    }
 
     config& get_config() { return m_cfg; }
 
@@ -82,10 +93,14 @@ struct simulator {
 
             for (auto track : *m_track_generator.get()) {
 
-                writer_state.write_particle(track);
+                writer_state.write_particle(
+                    track,
+                    detail::correct_particle_hypothesis(m_cfg.ptc_type, track));
 
                 typename propagator_type::state propagation(track, m_field,
                                                             m_detector);
+                propagation.set_particle(
+                    detail::correct_particle_hypothesis(m_cfg.ptc_type, track));
 
                 propagator_type p(m_cfg.propagation);
 
