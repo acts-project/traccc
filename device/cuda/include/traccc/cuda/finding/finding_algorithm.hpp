@@ -73,7 +73,7 @@ class finding_algorithm
 
     public:
     /// Configuration type
-    using config_type = finding_config<scalar_type>;
+    using config_type = finding_config;
 
     /// Constructor for the finding algorithm
     ///
@@ -85,7 +85,7 @@ class finding_algorithm
                       vecmem::copy& copy, stream& str);
 
     /// Get config object (const access)
-    const finding_config<scalar_type>& get_config() const { return m_cfg; }
+    const finding_config& get_config() const { return m_cfg; }
 
     /// Run the algorithm
     ///

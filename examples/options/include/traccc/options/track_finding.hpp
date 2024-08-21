@@ -22,17 +22,14 @@
 namespace traccc::opts {
 
 /// Configuration for track finding
-class track_finding : public interface,
-                      public config_provider<finding_config<float>>,
-                      public config_provider<finding_config<double>> {
+class track_finding : public interface, public config_provider<finding_config> {
 
     public:
     /// Constructor
     track_finding();
 
     /// Configuration conversion operators
-    operator finding_config<float>() const override;
-    operator finding_config<double>() const override;
+    operator finding_config() const override;
 
     private:
     /// @name Options

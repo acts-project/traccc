@@ -14,7 +14,6 @@
 namespace traccc {
 
 /// Configuration struct for track finding
-template <typename scalar_t>
 struct finding_config {
     /// Maxmimum number of branches per seed
     unsigned int max_num_branches_per_seed = 10;
@@ -32,13 +31,12 @@ struct finding_config {
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
-    scalar_t min_step_length_for_next_surface =
-        0.5f * detray::unit<scalar_t>::mm;
+    float min_step_length_for_next_surface = 0.5f * detray::unit<float>::mm;
     /// Maximum step counts that track can make to reach the next surface
     unsigned int max_step_counts_for_next_surface = 100;
 
     /// Maximum Chi-square that is allowed for branching
-    scalar_t chi2_max = 30.f;
+    float chi2_max = 30.f;
 
     /// Propagation configuration
     detray::propagation::config propagation{};

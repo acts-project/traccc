@@ -52,7 +52,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     traccc::seedfinder_config seeding_cfg;
     traccc::seedfilter_config filter_cfg;
     traccc::spacepoint_grid_config grid_cfg{seeding_cfg};
-    traccc::finding_config<float> finding_cfg;
+    traccc::finding_config finding_cfg;
     traccc::fitting_config fitting_cfg;
 
     static constexpr std::array<float, 2> phi_range{

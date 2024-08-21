@@ -83,7 +83,6 @@ traccc::cell_module get_module(const std::uint64_t geometry_id,
             result.pixel.pitch_y = binning_data[1].step;
         }
         result.pixel.dimension = geo_it->dimensions;
-        result.pixel.variance_y = geo_it->variance_y;
     }
 
     return result;
