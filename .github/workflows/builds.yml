@@ -49,11 +49,6 @@ jobs:
             cxx_standard: "20"
             options: -DTRACCC_BUILD_KOKKOS=TRUE
             run_tests: false
-          - name: ALPAKA
-            container: ghcr.io/acts-project/ubuntu2404:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_ALPAKA=TRUE
-            run_tests: false
         build:
           - Release
           - Debug
@@ -77,6 +72,20 @@ jobs:
               cxx_standard: "20"
               options: -DTRACCC_BUILD_SYCL=TRUE -DVECMEM_BUILD_HIP_LIBRARY=FALSE
             build: Release
+          - platform:
+              name: ALPAKA
+              container: ghcr.io/acts-project/ubuntu2404:56
+              cxx_standard: "20"
+              options: -DTRACCC_BUILD_ALPAKA=TRUE
+              run_tests: true
+            build: Release
+          - platform:
+              name: ALPAKA
+              container: ghcr.io/acts-project/ubuntu2404:56
+              cxx_standard: "20"
+              options: -DTRACCC_BUILD_ALPAKA=TRUE
+              run_tests: false
+            build: Debug
     # Use BASH as the shell from the images.
     defaults:
       run:
