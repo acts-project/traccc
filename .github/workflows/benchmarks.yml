@@ -5,7 +5,8 @@ on:
     branches:
       - main
 jobs:
-  detray_benchmark_job:
+  traccc_benchmark_job:
+    if: github.repository == 'acts-project/traccc'
     runs-on: ubuntu-latest
     steps:
       - run: >
