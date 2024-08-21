@@ -65,12 +65,14 @@ __global__ void make_barcode_sequence(
 /// CUDA kernel for running @c traccc::device::apply_interaction
 template <typename detector_t>
 __global__ void apply_interaction(
-    typename detector_t::view_type det_data, const int n_params,
+    typename detector_t::view_type det_data, const finding_config cfg,
+    const int n_params,
     bound_track_parameters_collection_types::view params_view) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::apply_interaction<detector_t>(gid, det_data, n_params, params_view);
+    device::apply_interaction<detector_t>(gid, cfg, det_data, n_params,
+                                          params_view);
 }
 
 /// CUDA kernel for running @c traccc::device::count_measurements
@@ -351,7 +353,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::apply_interaction<detector_type>
-            <<<nBlocks, nThreads, 0, stream>>>(det_view, n_in_params,
+            <<<nBlocks, nThreads, 0, stream>>>(det_view, m_cfg, n_in_params,
                                                in_params_buffer);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

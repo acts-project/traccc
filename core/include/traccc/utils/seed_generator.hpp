@@ -49,7 +49,8 @@ struct seed_generator {
     /// @param stddevs standard deviations for track parameter smearing
     bound_track_parameters operator()(
         const detray::geometry::barcode surface_link,
-        const free_track_parameters& free_param) {
+        const free_track_parameters& free_param,
+        const detray::pdg_particle<scalar>& ptc_type) {
 
         // Get bound parameter
         const detray::tracking_surface sf{m_detector, surface_link};
@@ -66,11 +67,13 @@ struct seed_generator {
         using interactor_type =
             detray::pointwise_material_interactor<algebra_type>;
 
+        assert(ptc_type.charge() * bound_param.qop() > 0.f);
+
         // Apply interactor
         typename interactor_type::state interactor_state;
         interactor_state.do_multiple_scattering = false;
         interactor_type{}.update(
-            ctx, bound_param, interactor_state,
+            ctx, ptc_type, bound_param, interactor_state,
             static_cast<int>(detray::navigation::direction::e_backward), sf);
 
         for (std::size_t i = 0; i < e_bound_size; i++) {

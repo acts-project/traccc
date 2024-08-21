@@ -17,6 +17,7 @@
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
+#include "traccc/utils/particle.hpp"
 
 // detray include(s).
 #include "detray/propagator/actor_chain.hpp"
@@ -171,6 +172,8 @@ class kalman_fitter {
         // Create propagator state
         typename propagator_type::state propagation(
             seed_params, m_field, m_detector, std::move(nav_candidates));
+        propagation.set_particle(detail::correct_particle_hypothesis(
+            m_cfg.ptc_hypothesis, seed_params));
 
         // @TODO: Should be removed once detray is fixed to set the
         // volume in the constructor

@@ -43,9 +43,10 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
     const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const scalar charge = std::get<6>(GetParam());
+    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
+    const bool random_charge = std::get<9>(GetParam());
 
     // Performance writer
     traccc::fitting_performance_writer::config fit_writer_cfg;
@@ -84,7 +85,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     gen_cfg.phi_range(phi_range[0], phi_range[1]);
     gen_cfg.theta_range(theta_range[0], theta_range[1]);
     gen_cfg.mom_range(mom_range[0], mom_range[1]);
-    gen_cfg.charge(charge);
+    gen_cfg.randomize_charge(random_charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -101,7 +102,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        n_events, host_det, field, std::move(generator),
+        ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
     sim.run();
 
@@ -114,6 +115,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    fit_cfg.ptc_hypothesis = ptc;
     fitting_algorithm<host_fitter_type> fitting(fit_cfg);
 
     // Iterate over events
@@ -177,7 +179,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        -1.f, 100, 100)));
+        detray::muon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
@@ -185,7 +187,8 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_10_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 100, 100)));
+        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
+        false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
@@ -193,14 +196,23 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_100_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 100, 100)));
+        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
+        false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation3, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple("telescope_1_GeV_0_phi_anti_muon",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 2u>{1.f, 1.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f}, 1.f,
-                                      100, 100)));
+    ::testing::Values(std::make_tuple(
+        "telescope_1_GeV_0_phi_anti_muon",
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
+        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
+        detray::antimuon<scalar>(), 100, 100, false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    KalmanFitTelescopeValidation4, KalmanFittingTelescopeTests,
+    ::testing::Values(std::make_tuple(
+        "telescope_1_GeV_0_random_charge",
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
+        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
+        detray::antimuon<scalar>(), 100, 100, true)));

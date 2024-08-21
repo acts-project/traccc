@@ -14,6 +14,7 @@
 // detray include(s).
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
+#include "detray/definitions/pdg_particle.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -39,14 +40,16 @@ namespace traccc {
 /// (4) momentum range
 /// (5) eta range
 /// (6) phi range
-/// (7) charge
+/// (7) particle type
 /// (8) number of tracks per event
 /// (9) number of events
+/// (10) random charge
 class KalmanFittingTests
     : public ::testing::TestWithParam<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
           std::array<scalar, 2u>, std::array<scalar, 2u>,
-          std::array<scalar, 2u>, scalar, unsigned int, unsigned int>> {
+          std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
+          unsigned int, bool>> {
 
     public:
     /// Type declarations

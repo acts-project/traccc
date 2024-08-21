@@ -12,6 +12,7 @@
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/utils/particle.hpp"
 
 namespace traccc {
 
@@ -34,7 +35,9 @@ struct event_map2 {
             const free_track_parameters free_param(xp.first, 0.f, xp.second,
                                                    ptc.charge);
 
-            auto seed_params = sg(measurements[0].surface_link, free_param);
+            auto seed_params =
+                sg(measurements[0].surface_link, free_param,
+                   detail::particle_from_pdg_number<scalar>(ptc.particle_type));
 
             // Candidate objects
             vecmem::vector<track_candidate> candidates;

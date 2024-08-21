@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
+#include "traccc/utils/particle.hpp"
 #include "traccc/utils/projections.hpp"
 
 // detray include(s).
@@ -138,7 +139,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             // Apply interactor
             typename interactor_type::state interactor_state;
             interactor_type{}.update(
-                ctx, in_param, interactor_state,
+                ctx,
+                detail::correct_particle_hypothesis(m_cfg.ptc_hypothesis,
+                                                    in_param),
+                in_param, interactor_state,
                 static_cast<int>(detray::navigation::direction::e_forward), sf);
 
             // Get barcode and measurements range on surface
@@ -247,6 +251,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             const auto& param = updated_params[link_id];
             // Create propagator state
             typename propagator_type::state propagation(param, field, det);
+            propagation.set_particle(detail::correct_particle_hypothesis(
+                m_cfg.ptc_hypothesis, param));
+
             propagation._stepping
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     m_cfg.propagation.stepping.step_constraint);

@@ -45,8 +45,10 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
+    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
+    const bool random_charge = std::get<9>(GetParam());
 
     /*****************************
      * Build a toy detector
@@ -88,7 +90,7 @@ TEST_P(CkfToyDetectorTests, Run) {
     gen_cfg.phi_range(std::get<5>(GetParam()));
     gen_cfg.eta_range(std::get<4>(GetParam()));
     gen_cfg.mom_range(std::get<3>(GetParam()));
-    gen_cfg.charge(std::get<6>(GetParam()));
+    gen_cfg.randomize_charge(random_charge);
     gen_cfg.seed(42);
     generator_type generator(gen_cfg);
 
@@ -106,7 +108,7 @@ TEST_P(CkfToyDetectorTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        n_events, host_det, field, std::move(generator),
+        ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
     sim.get_config().propagation.stepping.step_constraint = step_constraint;
     sim.get_config().propagation.navigation.search_window = search_window;
@@ -138,8 +140,9 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Finding algorithm configuration
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg;
+    cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
-    cfg.navigation_buffer_size_scaler = 1000;
+    cfg.navigation_buffer_size_scaler = 100;
 
     cfg.propagation.navigation.search_window = search_window;
 
@@ -247,7 +250,7 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-detray::constant<scalar>::pi,
                                                detray::constant<scalar>::pi},
-                        -1.f, 1, 1),
+                        detray::muon<scalar>(), 1, 1, false),
         std::make_tuple("toy_n_particles_10000",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -255,4 +258,12 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-detray::constant<scalar>::pi,
                                                detray::constant<scalar>::pi},
-                        -1.f, 10000, 1)));
+                        detray::muon<scalar>(), 10000, 1, false),
+        std::make_tuple("toy_n_particles_10000_random_charge",
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                        std::array<scalar, 2u>{1.f, 100.f},
+                        std::array<scalar, 2u>{-4.f, 4.f},
+                        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
+                                               detray::constant<scalar>::pi},
+                        detray::muon<scalar>(), 10000, 1, true)));

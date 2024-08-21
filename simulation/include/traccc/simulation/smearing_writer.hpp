@@ -16,6 +16,7 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 
 // Detray core include(s).
+#include "detray/definitions/pdg_particle.hpp"
 #include "detray/geometry/tracking_surface.hpp"
 #include "detray/propagator/base_actor.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
@@ -68,12 +69,14 @@ struct smearing_writer : detray::actor {
         void set_seed(const uint_fast64_t sd) { m_meas_smearer.set_seed(sd); }
 
         void write_particle(
-            const detray::free_track_parameters<algebra_type>& track) {
+            const detray::free_track_parameters<algebra_type>& track,
+            const detray::pdg_particle<scalar_type>& ptc_type) {
             io::csv::particle particle;
             const auto pos = track.pos();
-            const auto mom = track.mom();
+            const auto mom = track.mom(ptc_type.charge());
 
             particle.particle_id = particle_id;
+            particle.particle_type = ptc_type.pdg_num();
             particle.vx = static_cast<float>(pos[0]);
             particle.vy = static_cast<float>(pos[1]);
             particle.vz = static_cast<float>(pos[2]);
@@ -81,7 +84,7 @@ struct smearing_writer : detray::actor {
             particle.px = static_cast<float>(mom[0]);
             particle.py = static_cast<float>(mom[1]);
             particle.pz = static_cast<float>(mom[2]);
-            particle.q = static_cast<float>(track.charge());
+            particle.q = static_cast<float>(ptc_type.charge());
 
             m_particle_writer.append(particle);
         }
@@ -116,7 +119,7 @@ struct smearing_writer : detray::actor {
 
             const auto track = stepping();
             const auto pos = track.pos();
-            const auto mom = track.mom();
+            const auto mom = track.mom(stepping._ptc.charge());
 
             const auto sf = navigation.get_surface();
 

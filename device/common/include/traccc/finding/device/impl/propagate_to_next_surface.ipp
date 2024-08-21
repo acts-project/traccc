@@ -86,6 +86,8 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     // Create propagator state
     typename propagator_t::state propagation(
         in_par, field_data, det, std::move(nav_candidates.at(globalIndex)));
+    propagation.set_particle(
+        detail::correct_particle_hypothesis(cfg.ptc_hypothesis, in_par));
     propagation._stepping
         .template set_constraint<detray::step::constraint::e_accuracy>(
             cfg.propagation.stepping.step_constraint);

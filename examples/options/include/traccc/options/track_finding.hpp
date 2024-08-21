@@ -52,6 +52,8 @@ class track_finding : public interface, public config_provider<finding_config> {
     unsigned int nmax_per_seed = 10;
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;
+    /// PDG number for particle hypothesis (Default: muon)
+    int pdg_number = 13;
     /// @}
 
     /// Print the specific options of this class
