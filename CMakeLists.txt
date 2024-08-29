@@ -351,15 +351,10 @@ if ( TRACCC_BUILD_EXAMPLES )
 endif()
 
 # Set up the test(s).
-<<<<<<< HEAD
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()
-=======
-#if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
-if(TRACCC_BUILD_TESTING )
->>>>>>> raja-test
    add_subdirectory( tests )
 endif()
 
