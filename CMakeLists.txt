@@ -51,14 +51,14 @@ option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
-   FALSE )
+	TRUE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_BENCHMARKS "Build the benchmarks of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
-
+option( TRACCC_BUILD_RAJA "Build the Raja sources included in traccc" TRUE )
 # Flags controlling what traccc should use.
 option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
 option( TRACCC_USE_ROOT "Use ROOT in the build (if needed)" TRUE )
@@ -144,6 +144,20 @@ if( TRACCC_SETUP_ROCTHRUST )
    # Dress up the rocthrust target a little.
    target_compile_definitions( rocthrust INTERFACE
       THRUST_IGNORE_CUB_VERSION_CHECK )
+endif()
+
+# Set up Raja
+option( TRACCC_SETUP_RAJA
+        "Set up the Raja library" ${TRACCC_BUILD_RAJA})
+option( TRACCC_USE_SYSTEM_RAJA
+        "Pick up an existing installation of Raja from the build environment"
+        ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_RAJA )
+    if( TRACCC_USE_SYSTEM_RAJA )
+       find_package( raja REQUIRED PATHS /home/xola/raja/install)
+    else()
+      add_subdirectory( extern/raja )
+   endif()
 endif()
 
 # Set up TBB.
@@ -337,10 +351,15 @@ if ( TRACCC_BUILD_EXAMPLES )
 endif()
 
 # Set up the test(s).
+<<<<<<< HEAD
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()
+=======
+#if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
+if(TRACCC_BUILD_TESTING )
+>>>>>>> raja-test
    add_subdirectory( tests )
 endif()
 
