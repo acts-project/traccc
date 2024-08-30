@@ -48,12 +48,6 @@ struct finding_config {
     /// Particle hypothesis
     detray::pdg_particle<traccc::scalar> ptc_hypothesis =
         detray::muon<traccc::scalar>();
-
-    /****************************
-     *  GPU-specfic parameters
-     ****************************/
-    /// The number of measurements to be iterated per thread
-    unsigned int n_measurements_per_thread = 8;
 };
 
 }  // namespace traccc

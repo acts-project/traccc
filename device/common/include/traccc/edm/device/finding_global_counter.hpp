@@ -11,9 +11,6 @@ namespace traccc::device {
 
 struct finding_global_counter {
 
-    // Sum of the number of measurements for every parameter
-    unsigned int n_measurements_sum;
-
     // Number of found measurements for the current step
     unsigned int n_candidates;
 
