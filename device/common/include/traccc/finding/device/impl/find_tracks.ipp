@@ -66,8 +66,10 @@ TRACCC_DEVICE inline void find_tracks(
     vecmem::device_vector<const unsigned int> ref_meas_idx(ref_meas_idx_view);
 
     // Last step ID
-    const int previous_step =
-        (step == 0) ? std::numeric_limits<int>::max() : step - 1;
+    const candidate_link::link_index_type::first_type previous_step =
+        (step == 0) ? std::numeric_limits<
+                          candidate_link::link_index_type::first_type>::max()
+                    : step - 1;
 
     const unsigned int n_measurements_sum = n_measurements_prefix_sum.back();
     const unsigned int stride = globalIndex * cfg.n_measurements_per_thread;
