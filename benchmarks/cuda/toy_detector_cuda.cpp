@@ -195,5 +195,5 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     }
 
     state.counters["event_throughput_Hz"] = benchmark::Counter(
-        static_cast<double>(n_events), benchmark::Counter::kIsRate);    
+        static_cast<double>(n_events), benchmark::Counter::kIsRate);
 }
