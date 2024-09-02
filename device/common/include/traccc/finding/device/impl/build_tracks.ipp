@@ -54,7 +54,6 @@ TRACCC_DEVICE inline void build_tracks(
     // Count the number of skipped steps
     unsigned int n_skipped{0u};
     while (true) {
-
         if (L.meas_idx > n_meas) {
             n_skipped++;
         }
@@ -83,11 +82,10 @@ TRACCC_DEVICE inline void build_tracks(
          it++) {
         i++;
 
-        while (L.meas_idx > n_meas) {
-            if (L.previous.first < 0) {
-                break;
-            }
-
+        while (L.meas_idx > n_meas &&
+               L.previous.first !=
+                   std::numeric_limits<
+                       candidate_link::link_index_type::first_type>::max()) {
             const auto link_pos =
                 param_to_link[L.previous.first][L.previous.second];
 

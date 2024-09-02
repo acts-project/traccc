@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <utility>
+
 namespace traccc::device {
 
 TRACCC_DEVICE inline void add_links_for_holes(
@@ -45,8 +47,10 @@ TRACCC_DEVICE inline void add_links_for_holes(
     vecmem::device_vector<candidate_link> links(links_view);
 
     // Last step ID
-    const unsigned int previous_step =
-        (step == 0) ? std::numeric_limits<unsigned int>::max() : step - 1;
+    const candidate_link::link_index_type::first_type previous_step =
+        (step == 0) ? std::numeric_limits<
+                          candidate_link::link_index_type::first_type>::max()
+                    : step - 1;
 
     if (n_candidates[globalIndex] == 0u) {
 
@@ -72,10 +76,12 @@ TRACCC_DEVICE inline void add_links_for_holes(
                        : prev_links[prev_param_to_link[globalIndex]].n_skipped);
 
         // Add a dummy link
-        links.at(l_pos) = {{previous_step, globalIndex},
-                           std::numeric_limits<unsigned int>::max(),
-                           orig_param_id,
-                           skip_counter + 1};
+        links.at(l_pos) = {
+            {previous_step, globalIndex},
+            std::numeric_limits<std::decay_t<decltype(
+                std::declval<candidate_link>().meas_idx)>>::max(),
+            orig_param_id,
+            skip_counter + 1};
 
         out_params.at(l_pos) = in_params.at(globalIndex);
     }
