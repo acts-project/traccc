@@ -9,6 +9,9 @@ include( traccc-compiler-options-cpp )
 
 # Set up the build of the traccc::performance library.
 traccc_add_library( traccc_performance performance TYPE SHARED
+   # Event plot code
+   "src/event/track_property_writer.cpp"
+   "include/traccc/event/track_property_writer.hpp"
    # Efficiency calculation code.
    "src/efficiency/duplication_plot_tool.hpp"
    "src/efficiency/eff_plot_tool.hpp"
@@ -68,9 +71,9 @@ target_link_libraries( traccc_performance
 
 # Use ROOT in traccc::performance, if requested.
 if( TRACCC_USE_ROOT )
-   find_package( ROOT COMPONENTS Core RIO Hist REQUIRED )
+   find_package( ROOT COMPONENTS Core RIO Hist Tree REQUIRED )
    target_link_libraries( traccc_performance
-      PRIVATE ROOT::Core ROOT::RIO ROOT::Hist )
+      PRIVATE ROOT::Core ROOT::RIO ROOT::Hist ROOT::Tree )
    target_compile_definitions( traccc_performance
       PRIVATE TRACCC_HAVE_ROOT )
 endif()
