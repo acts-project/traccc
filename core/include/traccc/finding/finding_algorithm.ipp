@@ -131,7 +131,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              * Material interaction
              *************************/
 
-            // Get intersection at surface
+            // Get surface corresponding to bound params
             const detray::tracking_surface sf{det, in_param.surface_link()};
 
             const cxt_t ctx{};
@@ -180,14 +180,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     break;
                 }
 
-                bound_track_parameters bound_param(in_param.surface_link(),
-                                                   in_param.vector(),
-                                                   in_param.covariance());
                 const auto& meas = measurements[item_id];
 
                 track_state<algebra_type> trk_state(meas);
 
-                // Run the Kalman update
+                // Run the Kalman update on a copy of the track parameters
+                bound_track_parameters bound_param(in_param);
                 sf.template visit_mask<gain_matrix_updater<algebra_type>>(
                     trk_state, bound_param);
 
@@ -218,10 +216,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                        orig_param_id,
                                        skip_counter + 1});
 
-                bound_track_parameters bound_param(in_param.surface_link(),
-                                                   in_param.vector(),
-                                                   in_param.covariance());
-                updated_params.push_back(bound_param);
+                updated_params.push_back(in_param);
                 n_branches++;
             }
         }
@@ -272,7 +267,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
             // Propagate to the next surface
             propagator.propagate_sync(propagation,
-                                      std::tie(s0, s1, s2, s3, s4));
+                                      detray::tie(s0, s1, s2, s3, s4));
 
             // If a surface found, add the parameter for the next
             // step

@@ -142,7 +142,6 @@ TEST_P(CkfToyDetectorTests, Run) {
         rk_stepper_type, device_navigator_type>::config_type cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
-    cfg.navigation_buffer_size_scaler = 100;
 
     cfg.propagation.navigation.search_window = search_window;
 
@@ -196,21 +195,13 @@ TEST_P(CkfToyDetectorTests, Run) {
         copy.setup(track_candidates_cuda_buffer.headers);
         copy.setup(track_candidates_cuda_buffer.items);
 
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding.get_config().navigation_buffer_size_scaler *
-                seeds.size(),
-            mr.main, mr.host);
-
         // Run host finding
         auto track_candidates =
             host_finding(host_det, field, measurements_per_event, seeds);
 
         // Run device finding
         track_candidates_cuda_buffer =
-            device_finding(det_view, field, navigation_buffer,
-                           measurements_buffer, seeds_buffer);
+            device_finding(det_view, field, measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);

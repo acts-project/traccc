@@ -56,7 +56,7 @@ struct seed_generator {
         const detray::tracking_surface sf{m_detector, surface_link};
 
         const cxt_t ctx{};
-        auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());
+        auto bound_vec = sf.free_to_bound_vector(ctx, free_param);
 
         auto bound_cov =
             matrix_operator().template zero<e_bound_size, e_bound_size>();
@@ -78,10 +78,8 @@ struct seed_generator {
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 
-            matrix_operator().element(bound_param.vector(), i, 0) =
-                std::normal_distribution<scalar>(
-                    matrix_operator().element(bound_param.vector(), i, 0),
-                    m_stddevs[i])(generator);
+            bound_param[i] = std::normal_distribution<scalar>(
+                bound_param[i], m_stddevs[i])(generator);
 
             matrix_operator().element(bound_param.covariance(), i, i) =
                 m_stddevs[i] * m_stddevs[i];

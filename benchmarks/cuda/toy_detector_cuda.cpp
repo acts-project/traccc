@@ -150,23 +150,14 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
                 tp_cuda(spacepoints_cuda_buffer, seeds_cuda_buffer, B);
             stream.synchronize();
 
-            // Navigation buffer
-            auto navigation_buffer = detray::create_candidates_buffer(
-                det,
-                device_finding.get_config().navigation_buffer_size_scaler *
-                    copy.get_size(seeds_cuda_buffer),
-                mr.main, mr.host);
-
             // Run CKF track finding
-            track_candidates_cuda_buffer =
-                device_finding(det_view, field, navigation_buffer,
-                               measurements_cuda_buffer, params_cuda_buffer);
+            track_candidates_cuda_buffer = device_finding(
+                det_view, field, measurements_cuda_buffer, params_cuda_buffer);
             stream.synchronize();
 
             // Run track fitting
             track_states_cuda_buffer =
-                device_fitting(det_view, field, navigation_buffer,
-                               track_candidates_cuda_buffer);
+                device_fitting(det_view, field, track_candidates_cuda_buffer);
             stream.synchronize();
 
             // Create a temporary buffer that will receive the device memory.

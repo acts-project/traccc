@@ -166,18 +166,14 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
         // n_trakcs = 100
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det, track_candidates.size(), mr.main, mr.host);
-
         // track candidates buffer
         const traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer =
                 track_candidate_h2d(traccc::get_data(track_candidates));
 
         // Run fitting
-        track_states_cuda_buffer = device_fitting(
-            det_view, field, navigation_buffer, track_candidates_cuda_buffer);
+        track_states_cuda_buffer =
+            device_fitting(det_view, field, track_candidates_cuda_buffer);
 
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);

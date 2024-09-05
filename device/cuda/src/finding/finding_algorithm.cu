@@ -143,8 +143,6 @@ __global__ void propagate_to_next_surface(
     const config_t cfg,
     typename propagator_t::detector_type::view_type det_data,
     bfield_t field_data,
-    vecmem::data::jagged_vector_view<typename propagator_t::intersection_type>
-        nav_candidates_buffer,
     bound_track_parameters_collection_types::const_view in_params_view,
     vecmem::data::vector_view<const candidate_link> links_view,
     const unsigned int step, const unsigned int& n_candidates,
@@ -158,9 +156,9 @@ __global__ void propagate_to_next_surface(
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
     device::propagate_to_next_surface<propagator_t, bfield_t, config_t>(
-        gid, cfg, det_data, field_data, nav_candidates_buffer, in_params_view,
-        links_view, step, n_candidates, out_params_view, param_to_link_view,
-        tips_view, n_tracks_per_seed_view, n_out_params);
+        gid, cfg, det_data, field_data, in_params_view, links_view, step,
+        n_candidates, out_params_view, param_to_link_view, tips_view,
+        n_tracks_per_seed_view, n_out_params);
 }
 
 /// CUDA kernel for running @c traccc::device::build_tracks
@@ -213,8 +211,6 @@ track_candidate_container_types::buffer
 finding_algorithm<stepper_t, navigator_t>::operator()(
     const typename detector_type::view_type& det_view,
     const bfield_type& field_view,
-    const vecmem::data::jagged_vector_view<
-        typename navigator_t::intersection_type>& navigation_buffer,
     const typename measurement_collection_types::view& measurements,
     const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
 
@@ -223,7 +219,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     // Copy setup
     m_copy.setup(seeds_buffer);
-    m_copy.setup(navigation_buffer);
 
     const unsigned int n_seeds = m_copy.get_size(seeds_buffer);
 
@@ -486,10 +481,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             kernels::propagate_to_next_surface<propagator_type, bfield_type,
                                                config_type>
                 <<<nBlocks, nThreads, 0, stream>>>(
-                    m_cfg, det_view, field_view, navigation_buffer,
-                    updated_params_buffer, link_map[step], step,
-                    (*global_counter_device).n_candidates, out_params_buffer,
-                    param_to_link_map[step], tips_map[step],
+                    m_cfg, det_view, field_view, updated_params_buffer,
+                    link_map[step], step, (*global_counter_device).n_candidates,
+                    out_params_buffer, param_to_link_map[step], tips_map[step],
                     n_tracks_per_seed_buffer,
                     (*global_counter_device).n_out_params);
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
