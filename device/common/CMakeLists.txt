@@ -33,6 +33,8 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/clusterization/device/impl/reduce_problem_cell.ipp"
    "include/traccc/clusterization/device/aggregate_cluster.hpp"
    "include/traccc/clusterization/device/impl/aggregate_cluster.ipp"
+   "include/traccc/clusterization/device/ccl_kernel_definitions.hpp"
+   "include/traccc/clusterization/device/ccl_kernel.hpp"
    # Spacepoint binning function(s).
    "include/traccc/seeding/device/count_grid_capacities.hpp"
    "include/traccc/seeding/device/impl/count_grid_capacities.ipp"
