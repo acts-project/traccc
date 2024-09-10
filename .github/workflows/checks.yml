@@ -14,8 +14,3 @@ jobs:
       - uses: actions/checkout@v3
       - name: Check
         run: .github/check_format.sh .
-      - uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: changed
-          path: changed
