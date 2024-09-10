@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/clusterization/device/ccl_debug_output.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/definitions/hints.hpp"
 #include "traccc/definitions/qualifiers.hpp"
@@ -53,6 +54,7 @@ namespace traccc::device {
 /// @param[out] measurements_view collection of measurements
 /// @param[out] cell_links    collection of links to measurements each cell is
 /// put into
+/// @param[out] debug_output debug output location
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_kernel(
@@ -68,7 +70,8 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<details::index_t> adjv_backup_view,
     vecmem::device_atomic_ref<uint32_t> backup_mutex, barrier_t& barrier,
     measurement_collection_types::view measurements_view,
-    vecmem::data::vector_view<unsigned int> cell_links);
+    vecmem::data::vector_view<unsigned int> cell_links,
+    details::ccl_debug_output* debug_output);
 
 }  // namespace traccc::device
 

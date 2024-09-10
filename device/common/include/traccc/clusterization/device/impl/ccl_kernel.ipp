@@ -11,6 +11,7 @@
 
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/aggregate_cluster.hpp"
+#include "traccc/clusterization/device/ccl_debug_output.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/clusterization/device/reduce_problem_cell.hpp"
 #include "traccc/device/concepts/barrier.hpp"
@@ -220,7 +221,8 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<details::index_t> adjv_backup_view,
     vecmem::device_atomic_ref<uint32_t> backup_mutex, barrier_t& barrier,
     measurement_collection_types::view measurements_view,
-    vecmem::data::vector_view<unsigned int> cell_links) {
+    vecmem::data::vector_view<unsigned int> cell_links,
+    details::ccl_debug_output* debug_output) {
     // Construct device containers around the views.
     const cell_collection_types::const_device cells_device(cells_view);
     const cell_module_collection_types::const_device modules_device(
@@ -325,6 +327,13 @@ TRACCC_DEVICE inline void ccl_kernel(
     if (size > cfg.max_partition_size()) {
         if (thread_id.getLocalThreadIdX() == 0) {
             lock.lock();
+
+            if (debug_output) {
+                vecmem::device_atomic_ref<uint32_t>
+                    num_oversized_partitions_atm(
+                        debug_output->num_oversized_partitions);
+                num_oversized_partitions_atm.fetch_add(1);
+            }
         }
 
         barrier.blockBarrier();

@@ -47,6 +47,7 @@ inline traccc::clustering_config default_ccl_test_config() {
     rv.max_cells_per_thread = 16;
     rv.target_cells_per_thread = 8;
     rv.backup_size_multiplier = 256;
+    rv.enable_debug_output = false;
 
     return rv;
 }
@@ -58,6 +59,7 @@ inline traccc::clustering_config tiny_ccl_test_config() {
     rv.max_cells_per_thread = 1;
     rv.target_cells_per_thread = 1;
     rv.backup_size_multiplier = 16384;
+    rv.enable_debug_output = false;
 
     return rv;
 }

@@ -13,6 +13,14 @@
 // System include(s).
 #include <iostream>
 
+namespace {
+#ifndef NDEBUG
+constexpr bool enable_cca_debug_default = true;
+#else
+constexpr bool enable_cca_debug_default = false;
+#endif
+}  // namespace
+
 namespace traccc::opts {
 
 clusterization::clusterization() : interface("Clusterization Options") {
@@ -33,6 +41,10 @@ clusterization::clusterization() : interface("Clusterization Options") {
                          boost::program_options::value(&backup_size_multiplier)
                              ->default_value(256),
                          "The size multiplier of the backup scratch space");
+    m_desc.add_options()("cca-debug",
+                         boost::program_options::value(&enable_debug_output)
+                             ->default_value(enable_cca_debug_default),
+                         "The size multiplier of the backup scratch space");
 }
 
 clusterization::operator clustering_config() const {
@@ -42,6 +54,7 @@ clusterization::operator clustering_config() const {
     rv.max_cells_per_thread = max_cells_per_thread;
     rv.target_cells_per_thread = target_cells_per_thread;
     rv.backup_size_multiplier = backup_size_multiplier;
+    rv.enable_debug_output = enable_debug_output;
 
     return rv;
 }
@@ -54,7 +67,8 @@ std::ostream& clusterization::print_impl(std::ostream& out) const {
     out << "  Threads per partition:      " << threads_per_partition << "\n";
     out << "  Target cells per thread:    " << target_cells_per_thread << "\n";
     out << "  Max cells per thread:       " << max_cells_per_thread << "\n";
-    out << "  Scratch space size mult.:   " << backup_size_multiplier;
+    out << "  Scratch space size mult.:   " << backup_size_multiplier << "\n";
+    out << "  Debug output printing:      " << enable_debug_output << "\n";
     return out;
 }
 
