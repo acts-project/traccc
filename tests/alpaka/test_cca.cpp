@@ -12,16 +12,7 @@
 
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-#include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/memory/hip/host_memory_resource.hpp>
-#include <vecmem/utils/hip/copy.hpp>
-#endif
+#include "traccc/alpaka/utils/vecmem_typedefs.hpp"
 
 namespace {
 
@@ -33,16 +24,8 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
 
         vecmem::host_memory_resource host_mr;
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-        vecmem::cuda::copy copy;
-        vecmem::cuda::device_memory_resource device_mr;
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-        vecmem::hip::copy copy;
-        vecmem::hip::device_memory_resource device_mr;
-#else
-        vecmem::copy copy;
-        vecmem::host_memory_resource device_mr;
-#endif
+        traccc::alpaka::vecmem::device_copy copy;
+        traccc::alpaka::vecmem::device_memory_resource device_mr;
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
