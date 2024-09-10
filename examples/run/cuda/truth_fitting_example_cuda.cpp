@@ -185,10 +185,6 @@ int main(int argc, char* argv[]) {
             truth_track_candidates_cuda_buffer =
                 track_candidate_h2d(traccc::get_data(truth_track_candidates));
 
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det, truth_track_candidates.size(), mr.main, mr.host);
-
         // Instantiate cuda containers/collections
         traccc::track_state_container_types::buffer track_states_cuda_buffer{
             {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
@@ -197,9 +193,8 @@ int main(int argc, char* argv[]) {
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
 
             // Run fitting
-            track_states_cuda_buffer =
-                device_fitting(det_view, field, navigation_buffer,
-                               truth_track_candidates_cuda_buffer);
+            track_states_cuda_buffer = device_fitting(
+                det_view, field, truth_track_candidates_cuda_buffer);
         }
 
         traccc::track_state_container_types::host track_states_cuda =

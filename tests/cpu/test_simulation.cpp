@@ -43,10 +43,8 @@ TEST(traccc_simulation, simulation) {
     const detray::mask<detray::rectangle2D> re{
         0u, 10.f * detray::unit<scalar>::mm, 10.f * detray::unit<scalar>::mm};
 
-    detray::bound_track_parameters<traccc::default_algebra> bound_params;
-    auto& bound_vec = bound_params.vector();
-    getter::element(bound_vec, traccc::e_bound_loc0, 0u) = 1.f;
-    getter::element(bound_vec, traccc::e_bound_loc1, 0u) = 2.f;
+    detray::bound_track_parameters<traccc::default_algebra> bound_params{};
+    bound_params.set_bound_local({1.f, 2.f});
 
     measurement_smearer<traccc::default_algebra> smearer(0.f, 0.f);
 

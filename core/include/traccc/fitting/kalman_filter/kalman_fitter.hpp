@@ -48,10 +48,7 @@ class kalman_fitter {
 
     // vector type
     template <typename T>
-    using vector_type = typename navigator_t::template vector_type<T>;
-
-    // navigator candidate type
-    using intersection_type = typename navigator_t::intersection_type;
+    using vector_type = typename detector_type::template vector_type<T>;
 
     /// Configuration type
     using config_type = fitting_config;
@@ -67,7 +64,7 @@ class kalman_fitter {
     using resetter = detray::parameter_resetter<algebra_type>;
 
     using actor_chain_type =
-        detray::actor_chain<std::tuple, aborter, transporter, interactor,
+        detray::actor_chain<detray::dtuple, aborter, transporter, interactor,
                             fit_actor, resetter, kalman_step_aborter>;
 
     // Propagator type
@@ -102,9 +99,9 @@ class kalman_fitter {
         /// @return the actor chain state
         TRACCC_HOST_DEVICE
         typename actor_chain_type::state operator()() {
-            return std::tie(m_aborter_state, m_transporter_state,
-                            m_interactor_state, m_fit_actor_state,
-                            m_resetter_state, m_step_aborter_state);
+            return detray::tie(m_aborter_state, m_transporter_state,
+                               m_interactor_state, m_fit_actor_state,
+                               m_resetter_state, m_step_aborter_state);
         }
 
         /// Individual actor states
@@ -126,9 +123,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE void fit(
-        const seed_parameters_t& seed_params, state& fitter_state,
-        vector_type<intersection_type>&& nav_candidates = {}) {
+    TRACCC_HOST_DEVICE void fit(const seed_parameters_t& seed_params,
+                                state& fitter_state) {
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -137,7 +133,7 @@ class kalman_fitter {
             fitter_state.m_fit_actor_state.reset();
 
             if (i == 0) {
-                filter(seed_params, fitter_state, std::move(nav_candidates));
+                filter(seed_params, fitter_state);
             }
             // From the second iteration, seed parameter is the smoothed track
             // parameter at the first surface
@@ -145,8 +141,7 @@ class kalman_fitter {
                 const auto& new_seed_params =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
 
-                filter(new_seed_params, fitter_state,
-                       std::move(nav_candidates));
+                filter(new_seed_params, fitter_state);
             }
         }
     }
@@ -158,9 +153,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE void filter(
-        const seed_parameters_t& seed_params, state& fitter_state,
-        vector_type<intersection_type>&& nav_candidates = {}) {
+    TRACCC_HOST_DEVICE void filter(const seed_parameters_t& seed_params,
+                                   state& fitter_state) {
 
         // Create propagator
         propagator_type propagator(m_cfg.propagation);
@@ -170,8 +164,8 @@ class kalman_fitter {
             m_cfg.propagation.stepping.path_limit);
 
         // Create propagator state
-        typename propagator_type::state propagation(
-            seed_params, m_field, m_detector, std::move(nav_candidates));
+        typename propagator_type::state propagation(seed_params, m_field,
+                                                    m_detector);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, seed_params));
 
@@ -212,7 +206,7 @@ class kalman_fitter {
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
         auto& last = track_states.back();
-        last.smoothed().set_vector(last.filtered().vector());
+        last.smoothed().set_parameter_vector(last.filtered());
         last.smoothed().set_covariance(last.filtered().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
 

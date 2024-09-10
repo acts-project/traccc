@@ -345,18 +345,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
             // Perform track finding and fitting only when using a Detray
             // geometry.
             if (detector_opts.use_detray_detector) {
-                // CUDA
-                auto navigation_buffer = detray::create_candidates_buffer(
-                    host_detector,
-                    finding_cfg.navigation_buffer_size_scaler *
-                        copy.get_size(seeds_cuda_buffer),
-                    mr.main, mr.host);
                 {
                     traccc::performance::timer timer{"Track finding (cuda)",
                                                      elapsedTimes};
                     track_candidates_buffer = finding_alg_cuda(
-                        device_detector_view, field, navigation_buffer,
-                        measurements_cuda_buffer, params_cuda_buffer);
+                        device_detector_view, field, measurements_cuda_buffer,
+                        params_cuda_buffer);
                 }
                 // CPU
                 if (accelerator_opts.compare_with_cpu) {
@@ -370,8 +364,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track fitting (cuda)",
                                                      elapsedTimes};
                     track_states_buffer = fitting_alg_cuda(
-                        device_detector_view, field, navigation_buffer,
-                        track_candidates_buffer);
+                        device_detector_view, field, track_candidates_buffer);
                 }
                 // CPU
                 if (accelerator_opts.compare_with_cpu) {

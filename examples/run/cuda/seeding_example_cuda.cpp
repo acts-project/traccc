@@ -312,13 +312,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                             {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
             }  // stop measuring track params cpu timer
 
-            // Navigation buffer
-            auto navigation_buffer = detray::create_candidates_buffer(
-                host_det,
-                device_finding.get_config().navigation_buffer_size_scaler *
-                    copy.get_size(seeds_cuda_buffer),
-                mr.main, mr.host);
-
             /*------------------------
                Track Finding with CKF
               ------------------------*/
@@ -326,9 +319,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Track finding with CKF (cuda)",
                                              elapsedTimes);
-                track_candidates_cuda_buffer = device_finding(
-                    det_view, field, navigation_buffer,
-                    measurements_cuda_buffer, params_cuda_buffer);
+                track_candidates_cuda_buffer =
+                    device_finding(det_view, field, measurements_cuda_buffer,
+                                   params_cuda_buffer);
             }
 
             if (accelerator_opts.compare_with_cpu) {
@@ -346,9 +339,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Track fitting with KF (cuda)",
                                              elapsedTimes);
 
-                track_states_cuda_buffer =
-                    device_fitting(det_view, field, navigation_buffer,
-                                   track_candidates_cuda_buffer);
+                track_states_cuda_buffer = device_fitting(
+                    det_view, field, track_candidates_cuda_buffer);
             }
 
             if (accelerator_opts.compare_with_cpu) {

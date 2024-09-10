@@ -54,11 +54,6 @@ struct finding_config {
      ****************************/
     /// The number of measurements to be iterated per thread
     unsigned int n_measurements_per_thread = 8;
-
-    /// Max number of candidates per seed used for navigation buffer creation
-    /// @NOTE: This is supposed to be larger than (at least equal to)
-    /// max_num_branches_per_seed
-    unsigned int navigation_buffer_size_scaler = 20;
 };
 
 }  // namespace traccc

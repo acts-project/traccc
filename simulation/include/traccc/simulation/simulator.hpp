@@ -88,8 +88,8 @@ struct simulator {
             m_scatterer.set_seed(event_id);
             writer_state.set_seed(event_id);
 
-            auto actor_states =
-                std::tie(m_transporter, m_scatterer, m_resetter, writer_state);
+            auto actor_states = detray::tie(m_transporter, m_scatterer,
+                                            m_resetter, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 

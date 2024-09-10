@@ -28,15 +28,13 @@ template <typename fitter_t, typename detector_view_t>
 __global__ void fit(
     detector_view_t det_data, const typename fitter_t::bfield_type field_data,
     const typename fitter_t::config_type cfg,
-    vecmem::data::jagged_vector_view<typename fitter_t::intersection_type>
-        nav_candidates_buffer,
     track_candidate_container_types::const_view track_candidates_view,
     track_state_container_types::view track_states_view) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::fit<fitter_t>(gid, det_data, field_data, cfg, nav_candidates_buffer,
-                          track_candidates_view, track_states_view);
+    device::fit<fitter_t>(gid, det_data, field_data, cfg, track_candidates_view,
+                          track_states_view);
 }
 
 }  // namespace kernels
@@ -55,8 +53,6 @@ template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const vecmem::data::jagged_vector_view<
-        typename fitter_t::intersection_type>& navigation_buffer,
     const typename track_candidate_container_types::const_view&
         track_candidates_view) const {
 
@@ -79,7 +75,6 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     m_copy.setup(track_states_buffer.headers);
     m_copy.setup(track_states_buffer.items);
-    m_copy.setup(navigation_buffer);
 
     // Calculate the number of threads and thread blocks to run the track
     // fitting
@@ -89,8 +84,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
         // Run the track fitting
         kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
-            det_view, field_view, m_cfg, navigation_buffer,
-            track_candidates_view, track_states_buffer);
+            det_view, field_view, m_cfg, track_candidates_view,
+            track_states_buffer);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 

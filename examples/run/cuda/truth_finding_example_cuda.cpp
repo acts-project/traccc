@@ -224,20 +224,12 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         async_copy.setup(track_candidates_cuda_buffer.headers);
         async_copy.setup(track_candidates_cuda_buffer.items);
 
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding.get_config().navigation_buffer_size_scaler *
-                seeds.size(),
-            mr.main, mr.host);
-
         {
             traccc::performance::timer t("Track finding  (cuda)", elapsedTimes);
 
             // Run finding
-            track_candidates_cuda_buffer =
-                device_finding(det_view, field, navigation_buffer,
-                               measurements_cuda_buffer, seeds_buffer);
+            track_candidates_cuda_buffer = device_finding(
+                det_view, field, measurements_cuda_buffer, seeds_buffer);
         }
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
@@ -252,8 +244,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
             // Run fitting
             track_states_cuda_buffer =
-                device_fitting(det_view, field, navigation_buffer,
-                               track_candidates_cuda_buffer);
+                device_fitting(det_view, field, track_candidates_cuda_buffer);
         }
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);

@@ -142,14 +142,11 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         rk_stepper_type, device_navigator_type>::config_type cfg_no_limit;
     cfg_no_limit.ptc_hypothesis = ptc;
     cfg_no_limit.max_num_branches_per_seed = 100000;
-    cfg_no_limit.navigation_buffer_size_scaler =
-        cfg_no_limit.max_num_branches_per_seed;
 
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
     cfg_limit.max_num_branches_per_seed = 500;
-    cfg_limit.navigation_buffer_size_scaler = 5000;
 
     // Finding algorithm object
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
@@ -205,28 +202,13 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         copy.setup(track_candidates_limit_cuda_buffer.headers);
         copy.setup(track_candidates_limit_cuda_buffer.items);
 
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding.get_config().navigation_buffer_size_scaler *
-                seeds.size(),
-            mr.main, mr.host);
-
-        auto navigation_limit_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding_limit.get_config().navigation_buffer_size_scaler *
-                seeds.size(),
-            mr.main, mr.host);
-
         // Run device finding
         track_candidates_cuda_buffer =
-            device_finding(det_view, field, navigation_buffer,
-                           measurements_buffer, seeds_buffer);
+            device_finding(det_view, field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
-        track_candidates_limit_cuda_buffer =
-            device_finding_limit(det_view, field, navigation_limit_buffer,
-                                 measurements_buffer, seeds_buffer);
+        track_candidates_limit_cuda_buffer = device_finding_limit(
+            det_view, field, measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);

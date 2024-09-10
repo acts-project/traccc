@@ -155,22 +155,13 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     // If we have a Detray detector, run the track finding and fitting.
     if (m_detector != nullptr) {
 
-        // Create the buffer needed by track finding and fitting.
-        auto navigation_buffer = detray::create_candidates_buffer(
-            *m_detector,
-            m_finding_config.navigation_buffer_size_scaler *
-                m_copy.get_size(track_params),
-            *m_cached_device_mr, &m_host_mr);
-
         // Run the track finding (asynchronously).
-        const finding_algorithm::output_type track_candidates =
-            m_finding(m_device_detector_view, m_field, navigation_buffer,
-                      measurements, track_params);
+        const finding_algorithm::output_type track_candidates = m_finding(
+            m_device_detector_view, m_field, measurements, track_params);
 
         // Run the track fitting (asynchronously).
         const fitting_algorithm::output_type track_states =
-            m_fitting(m_device_detector_view, m_field, navigation_buffer,
-                      track_candidates);
+            m_fitting(m_device_detector_view, m_field, track_candidates);
 
         // Copy a limited amount of result data back to the host.
         output_type result{&m_host_mr};

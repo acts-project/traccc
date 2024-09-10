@@ -113,8 +113,7 @@ void res_plot_tool::fill(res_plot_cache& cache,
         scalar pull = 0.f;
 
         if (idx < e_bound_size) {
-            residual = getter::element(fit_param.vector(), idx, 0) -
-                       getter::element(truth_param.vector(), idx, 0);
+            residual = fit_param[idx] - truth_param[idx];
             pull = residual /
                    std::sqrt(getter::element(fit_param.covariance(), idx, idx));
         } else if (par_name == "qopT") {

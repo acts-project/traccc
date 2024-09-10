@@ -14,8 +14,6 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     std::size_t globalIndex, const config_t cfg,
     typename propagator_t::detector_type::view_type det_data,
     bfield_t field_data,
-    vecmem::data::jagged_vector_view<typename propagator_t::intersection_type>
-        nav_candidates_buffer,
     bound_track_parameters_collection_types::const_view in_params_view,
     vecmem::data::vector_view<const candidate_link> links_view,
     const unsigned int step, const unsigned int& n_in_params,
@@ -40,18 +38,13 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     // Seed id
     unsigned int orig_param_id = links.at(globalIndex).seed_idx;
 
-    // Navigation candidate buffer
-    vecmem::jagged_device_vector<typename propagator_t::intersection_type>
-        nav_candidates(nav_candidates_buffer);
-
     // Count the number of tracks per seed
     vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
         n_tracks_per_seed.at(orig_param_id));
 
     const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
 
-    if (s_pos >= cfg.max_num_branches_per_seed ||
-        globalIndex >= nav_candidates.size()) {
+    if (s_pos >= cfg.max_num_branches_per_seed) {
         return;
     }
 
@@ -84,8 +77,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     propagator_t propagator(cfg.propagation);
 
     // Create propagator state
-    typename propagator_t::state propagation(
-        in_par, field_data, det, std::move(nav_candidates.at(globalIndex)));
+    typename propagator_t::state propagation(in_par, field_data, det);
     propagation.set_particle(
         detail::correct_particle_hypothesis(cfg.ptc_hypothesis, in_par));
     propagation._stepping
@@ -114,7 +106,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     propagation._navigation.set_volume(in_par.surface_link().volume());
 
     // Propagate to the next surface
-    propagator.propagate_sync(propagation, std::tie(s0, s1, s2, s3, s4));
+    propagator.propagate_sync(propagation, detray::tie(s0, s1, s2, s3, s4));
 
     // If a surface found, add the parameter for the next step
     if (s4.success) {
