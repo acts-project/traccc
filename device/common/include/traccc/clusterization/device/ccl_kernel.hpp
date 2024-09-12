@@ -26,6 +26,13 @@
 #include <cstddef>
 
 namespace traccc::device {
+namespace details {
+struct ccl_kernel_static_smem_parcel {
+    std::size_t partition_start;
+    std::size_t partition_end;
+    uint32_t outi;
+};
+}  // namespace details
 
 /// Function which reads raw detector cells and turns them into measurements.
 ///
@@ -59,7 +66,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const cell_collection_types::const_view cells_view,
     const cell_module_collection_types::const_view modules_view,
-    std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
+    details::ccl_kernel_static_smem_parcel& smem,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,
     vecmem::data::vector_view<details::index_t> f_backup_view,
