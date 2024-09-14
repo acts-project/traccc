@@ -41,7 +41,7 @@ class silicon_detector_description_interface : public BASE {
     /// @return A (non-const) vector of @c detray::geometry::barcode objects
     ///
     TRACCC_HOST_DEVICE
-    auto& surface_link() { return BASE::template get<0>(); }
+    auto& geometry_id() { return BASE::template get<0>(); }
     /// The identifier of the detector module's surface (const)
     ///
     /// Can be used to look up the module in a @c detray::detector object.
@@ -49,7 +49,7 @@ class silicon_detector_description_interface : public BASE {
     /// @return A (const) vector of @c detray::geometry::barcode objects
     ///
     TRACCC_HOST_DEVICE
-    const auto& surface_link() const { return BASE::template get<0>(); }
+    const auto& geometry_id() const { return BASE::template get<0>(); }
 
     /// The placement of the detector module "in the world frame" (non-const)
     ///
@@ -75,7 +75,7 @@ class silicon_detector_description_interface : public BASE {
     /// @name Detector module information
     /// @{
 
-    /// Geometry identifier for the detector module (non-const)
+    /// Acts geometry identifier for the detector module (non-const)
     ///
     /// It is the "Acts geometry ID" for the module, as used in the simulation
     /// files that we use.
@@ -83,8 +83,8 @@ class silicon_detector_description_interface : public BASE {
     /// @return A (non-const) vector of @c traccc::geometry_id values
     ///
     TRACCC_HOST_DEVICE
-    auto& geometry_id() { return BASE::template get<2>(); }
-    /// Geometry identifier for the detector module (const)
+    auto& acts_geometry_id() { return BASE::template get<2>(); }
+    /// Acts geometry identifier for the detector module (const)
     ///
     /// It is the "Acts geometry ID" for the module, as used in the simulation
     /// files that we use.
@@ -92,7 +92,7 @@ class silicon_detector_description_interface : public BASE {
     /// @return A (const) vector of @c traccc::geometry_id values
     ///
     TRACCC_HOST_DEVICE
-    const auto& geometry_id() const { return BASE::template get<2>(); }
+    const auto& acts_geometry_id() const { return BASE::template get<2>(); }
 
     /// Signal threshold for detection elements (non-const)
     ///
@@ -210,19 +210,6 @@ class silicon_detector_description_interface : public BASE {
     TRACCC_HOST_DEVICE
     const auto& dimensions() const { return BASE::template get<8>(); }
 
-    /// The variance in the Y direction for 1D sensors (non-const)
-    ///
-    /// @return A (non-const) vector of @c traccc::scalar objects
-    ///
-    TRACCC_HOST_DEVICE
-    auto& variance_y() { return BASE::template get<9>(); }
-    /// The variance in the Y direction for 1D sensors (const)
-    ///
-    /// @return A (const) vector of @c traccc::scalar objects
-    ///
-    TRACCC_HOST_DEVICE
-    const auto& variance_y() const { return BASE::template get<9>(); }
-
     /// @}
 
 };  // class silicon_detector_description_interface
@@ -235,6 +222,6 @@ using silicon_detector_description = vecmem::edm::container<
     vecmem::edm::type::vector<geometry_id>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<char>, vecmem::edm::type::vector<scalar> >;
+    vecmem::edm::type::vector<char> >;
 
 }  // namespace traccc

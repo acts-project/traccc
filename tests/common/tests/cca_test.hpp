@@ -148,7 +148,7 @@ class ConnectedComponentAnalysisTests
         traccc::silicon_detector_description::host dd{mr};
         dd.resize(NMODULES);
         for (std::size_t i = 0; i < NMODULES; ++i) {
-            dd.geometry_id()[i] = i;
+            dd.acts_geometry_id()[i] = i;
             dd.reference_x()[i] = -0.5f;
             dd.reference_y()[i] = -0.5f;
             dd.pitch_x()[i] = pitch;

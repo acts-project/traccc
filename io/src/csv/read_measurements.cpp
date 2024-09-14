@@ -27,8 +27,8 @@ void read_measurements(measurement_collection_types::host& measurements,
     // module indices.
     std::map<geometry_id, unsigned int> m;
     if (dd != nullptr) {
-        for (unsigned int i = 0; i < dd->geometry_id().size(); ++i) {
-            m[dd->geometry_id()[i]] = i;
+        for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
+            m[dd->acts_geometry_id()[i]] = i;
         }
     }
 

@@ -54,7 +54,7 @@ TEST(CUDAClustering, SingleModule) {
     dd.pitch_x()[0] = 1.f;
     dd.pitch_y()[0] = 1.f;
     dd.dimensions()[0] = 2;
-    dd.surface_link()[0] = detray::geometry::barcode{0u};
+    dd.geometry_id()[0] = detray::geometry::barcode{0u};
 
     // Run Clusterization
     traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream,

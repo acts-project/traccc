@@ -36,8 +36,8 @@ cca_function_t f = [](const traccc::cell_collection_types::host& cells,
         vecmem::get_data(dd);
     auto measurements = ca(vecmem::get_data(cells), dd_data);
     for (std::size_t i = 0; i < measurements.size(); i++) {
-        result[dd.geometry_id().at(measurements.at(i).module_link)].push_back(
-            measurements.at(i));
+        result[dd.acts_geometry_id().at(measurements.at(i).module_link)]
+            .push_back(measurements.at(i));
     }
 
     return result;

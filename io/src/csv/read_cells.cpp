@@ -127,8 +127,8 @@ void read_cells(cell_collection_types::host& cells, std::string_view filename,
     // to indices inside the detector description.
     std::map<geometry_id, unsigned int> geomIdMap;
     if (dd) {
-        for (unsigned int i = 0; i < dd->geometry_id().size(); ++i) {
-            geomIdMap[dd->geometry_id()[i]] = i;
+        for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
+            geomIdMap[dd->acts_geometry_id()[i]] = i;
         }
     }
 

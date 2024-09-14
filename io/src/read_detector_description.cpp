@@ -68,9 +68,9 @@ void read_csv_dd(traccc::silicon_detector_description::host& dd,
 
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.
-        dd.surface_link().back() = detray::geometry::barcode{geom_id};
+        dd.geometry_id().back() = detray::geometry::barcode{geom_id};
         dd.placement().back() = transform;
-        dd.geometry_id().back() = geom_id;
+        dd.acts_geometry_id().back() = geom_id;
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =
@@ -124,9 +124,9 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
 
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.
-        dd.surface_link().back() = surface_desc.barcode();
+        dd.geometry_id().back() = surface_desc.barcode();
         dd.placement().back() = surface.transform(ctx);
-        dd.geometry_id().back() = geom_id;
+        dd.acts_geometry_id().back() = geom_id;
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =

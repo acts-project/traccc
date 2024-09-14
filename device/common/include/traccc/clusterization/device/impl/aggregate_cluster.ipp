@@ -134,7 +134,7 @@ inline void aggregate_cluster(
      */
     out.local = mean + offset;
     out.variance = var;
-    out.surface_link = det_descr.surface_link().at(module_link);
+    out.surface_link = det_descr.geometry_id().at(module_link);
     out.module_link = module_link;
     // Set a unique identifier for the measurement.
     out.measurement_id = link;

@@ -109,7 +109,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     const cell::link_type module_link = cluster.at(0).module_link;
 
     m.module_link = module_link;
-    m.surface_link = det_descr.surface_link().at(module_link);
+    m.surface_link = det_descr.geometry_id().at(module_link);
     // normalize the cell position
     m.local = mean;
 

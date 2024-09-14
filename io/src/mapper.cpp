@@ -246,8 +246,8 @@ measurement_particle_map generate_measurement_particle_map(
 
     // generate geometry_id link map
     geoId_link_map link_map;
-    for (unsigned int i = 0; i < dd.geometry_id().size(); ++i) {
-        link_map[dd.surface_link()[i].value()] = i;
+    for (unsigned int i = 0; i < dd.acts_geometry_id().size(); ++i) {
+        link_map[dd.geometry_id()[i].value()] = i;
     }
 
     // generate cell particle map
@@ -278,7 +278,7 @@ measurement_particle_map generate_measurement_particle_map(
 
     geoId_link_map link_map;
     for (std::size_t i = 0; i < dd.size(); ++i) {
-        link_map[dd.surface_link()[i].value()] = i;
+        link_map[dd.geometry_id()[i].value()] = i;
     }
 
     auto h_p_map =
