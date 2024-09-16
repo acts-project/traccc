@@ -122,11 +122,8 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     // For the ambiguity resolution algorithm, give a unique measurement ID
     m.measurement_id = index;
 
-    // Adjust the measurement object for 1D surfaces.
-    if (det_descr.dimensions().at(module_link) == 1) {
-        m.meas_dim = 1;
-        m.local[1] = scalar{0.5} * pitch_y;
-    }
+    // Set the measurement dimensionality.
+    m.meas_dim = det_descr.dimensions().at(module_link);
 }
 
 }  // namespace traccc::details

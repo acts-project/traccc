@@ -138,13 +138,8 @@ inline void aggregate_cluster(
     out.module_link = module_link;
     // Set a unique identifier for the measurement.
     out.measurement_id = link;
-    // Adjust the output object for 1D surfaces.
-    if (det_descr.dimensions().at(module_link) == 1) {
-        out.meas_dim = 1;
-        out.local[1] = scalar{0.5} * pitch_y;
-    } else {
-        out.meas_dim = 2;
-    }
+    // Set the dimensionality of the measurement.
+    out.meas_dim = det_descr.dimensions().at(module_link);
 }
 
 }  // namespace traccc::device
