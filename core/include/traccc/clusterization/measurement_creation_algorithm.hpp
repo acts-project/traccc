@@ -8,9 +8,9 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -30,7 +30,7 @@ namespace traccc::host {
 class measurement_creation_algorithm
     : public algorithm<measurement_collection_types::host(
           const cluster_container_types::const_view &,
-          const cell_module_collection_types::const_view &)> {
+          const silicon_detector_description::const_view &)> {
 
     public:
     /// Measurement_creation algorithm constructor
@@ -42,18 +42,13 @@ class measurement_creation_algorithm
     /// Callable operator for the connected component, based on one single
     /// module
     ///
-    /// @param clusters Container of cells. Each subvector of cells corresponds
-    /// to a cluster
-    /// @param modules Collection of detector modules the clusters link to.
+    /// @param clusters_view Clusters to turn into measurements
+    /// @param dd_view       The detector description
+    /// @return The reconstructed measurement collection
     ///
-    /// C++20 piping interface
-    ///
-    /// @return a measurement collection - usually same size or sometime
-    /// slightly smaller than the input
     output_type operator()(
         const cluster_container_types::const_view &clusters_view,
-        const cell_module_collection_types::const_view &modules_view)
-        const override;
+        const silicon_detector_description::const_view &dd_view) const override;
 
     private:
     /// The memory resource used by the algorithm

@@ -7,8 +7,8 @@
 
 // io
 #include "traccc/io/read_cells.hpp"
-#include "traccc/io/read_digitization_config.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/io/write.hpp"
 
@@ -71,41 +71,25 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
 
-    // Read in the geometry.
-    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
-        detector_opts.detector_file,
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host det_descr{host_mr};
+    traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json
                                            : traccc::data_format::csv));
+    traccc::silicon_detector_description::data det_descr_data{
+        vecmem::get_data(det_descr)};
 
-    using detector_type = detray::detector<detray::default_metadata,
-                                           detray::host_container_types>;
-    detector_type detector{host_mr};
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host detector{host_mr};
     if (detector_opts.use_detray_detector) {
-        // Set up the detector reader configuration.
-        detray::io::detector_reader_config cfg;
-        cfg.add_file(traccc::io::data_directory() +
-                     detector_opts.detector_file);
-        if (detector_opts.material_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.material_file);
-        }
-        if (detector_opts.grid_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.grid_file);
-        }
-
-        // Read the detector.
-        auto det = detray::io::read_detector<detector_type>(host_mr, cfg);
-        detector = std::move(det.first);
+        traccc::io::read_detector(
+            detector, host_mr, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
     }
-
-    // Read the digitization configuration file
-    auto digi_cfg =
-        traccc::io::read_digitization_config(detector_opts.digitization_file);
 
     // Output stats
     uint64_t n_cells = 0;
-    uint64_t n_modules = 0;
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
@@ -116,9 +100,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Type definitions
     using stepper_type =
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           detector_type::algebra_type,
+                           traccc::default_detector::host::algebra_type,
                            detray::constrained_step<>>;
-    using navigator_type = detray::navigator<const detector_type>;
+    using navigator_type =
+        detray::navigator<const traccc::default_detector::host>;
     using finding_algorithm =
         traccc::finding_algorithm<stepper_type, navigator_type>;
     using fitting_algorithm = traccc::fitting_algorithm<
@@ -183,19 +168,15 @@ int seq_run(const traccc::opts::input_data& input_opts,
         {  // Start measuring wall time.
             traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
 
-            traccc::io::cell_reader_output readOut(&host_mr);
+            traccc::cell_collection_types::host cells_per_event{&host_mr};
 
             {
                 traccc::performance::timer timer{"Read cells", elapsedTimes};
                 // Read the cells from the relevant event file
-                traccc::io::read_cells(readOut, event, input_opts.directory,
-                                       input_opts.format, &surface_transforms,
-                                       &digi_cfg, barcode_map.get());
+                traccc::io::read_cells(cells_per_event, event,
+                                       input_opts.directory, &det_descr,
+                                       input_opts.format);
             }
-            traccc::cell_collection_types::host& cells_per_event =
-                readOut.cells;
-            traccc::cell_module_collection_types::host& modules_per_event =
-                readOut.modules;
 
             /*-------------------
                 Clusterization
@@ -205,8 +186,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 traccc::performance::timer timer{"Clusterization",
                                                  elapsedTimes};
                 measurements_per_event =
-                    ca(vecmem::get_data(cells_per_event),
-                       vecmem::get_data(modules_per_event));
+                    ca(vecmem::get_data(cells_per_event), det_descr_data);
             }
 
             /*------------------------
@@ -216,15 +196,13 @@ int seq_run(const traccc::opts::input_data& input_opts,
             {
                 traccc::performance::timer timer{"Spacepoint formation",
                                                  elapsedTimes};
-                spacepoints_per_event =
-                    sf(vecmem::get_data(measurements_per_event),
-                       vecmem::get_data(modules_per_event));
+                spacepoints_per_event = sf(
+                    vecmem::get_data(measurements_per_event), det_descr_data);
             }
             if (output_opts.directory != "") {
                 traccc::io::write(event, output_opts.directory,
                                   output_opts.format,
-                                  vecmem::get_data(spacepoints_per_event),
-                                  vecmem::get_data(modules_per_event));
+                                  vecmem::get_data(spacepoints_per_event));
             }
 
             /*-----------------------
@@ -284,7 +262,6 @@ int seq_run(const traccc::opts::input_data& input_opts,
               Statistics
               ----------------------------*/
 
-            n_modules += modules_per_event.size();
             n_cells += cells_per_event.size();
             n_measurements += measurements_per_event.size();
             n_spacepoints += spacepoints_per_event.size();
@@ -337,8 +314,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read     " << n_cells << " cells from " << n_modules
-              << " modules" << std::endl;
+    std::cout << "- read     " << n_cells << " cells" << std::endl;
     std::cout << "- created  " << n_measurements << " measurements. "
               << std::endl;
     std::cout << "- created  " << n_spacepoints << " space points. "

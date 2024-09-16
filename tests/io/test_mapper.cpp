@@ -6,7 +6,9 @@
  */
 
 // Project include(s).
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/mapper.hpp"
+#include "traccc/io/read_detector_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -179,23 +181,29 @@ TEST(mappper, measurement_cell_map) {
 
     vecmem::host_memory_resource resource;
 
-    auto m_c_map_pair = traccc::generate_measurement_cell_map(
-        event, detector_file, digi_config_file, cells_dir, resource);
-    auto m_c_map = std::get<0>(m_c_map_pair);
+    traccc::silicon_detector_description::host dd{resource};
+    traccc::io::read_detector_description(dd, detector_file, digi_config_file,
+                                          traccc::data_format::csv);
+
+    auto m_c_map =
+        traccc::generate_measurement_cell_map(event, cells_dir, dd, resource);
+
+    // The module that the cells of event 0 belong to, happens to be this one.
+    constexpr traccc::cell::link_type module_link = 873;
 
     vecmem::vector<traccc::cell> cells0;
-    cells0.push_back({1, 0, 0.0041470062f, 0, 0});
-    cells0.push_back({0, 1, 0.00306466641f, 0, 0});
-    cells0.push_back({1, 1, 0.00868905429f, 0, 0});
-    cells0.push_back({1, 1, 0.00886478275f, 0, 0});
-    cells0.push_back({1, 2, 0.00580428448f, 0, 0});
-    cells0.push_back({2, 1, 0.0016894876f, 0, 0});
-    cells0.push_back({2, 2, 0.00199076766f, 0, 0});
+    cells0.push_back({1, 0, 0.0041470062f, 0, module_link});
+    cells0.push_back({0, 1, 0.00306466641f, 0, module_link});
+    cells0.push_back({1, 1, 0.00868905429f, 0, module_link});
+    cells0.push_back({1, 1, 0.00886478275f, 0, module_link});
+    cells0.push_back({1, 2, 0.00580428448f, 0, module_link});
+    cells0.push_back({2, 1, 0.0016894876f, 0, module_link});
+    cells0.push_back({2, 2, 0.00199076766f, 0, module_link});
 
     vecmem::vector<traccc::cell> cells1;
-    cells1.push_back({5, 5, 0.00632160669f, 0, 0});
-    cells1.push_back({5, 6, 0.00911649223f, 0, 0});
-    cells1.push_back({5, 7, 0.00518329488f, 0, 0});
+    cells1.push_back({5, 5, 0.00632160669f, 0, module_link});
+    cells1.push_back({5, 6, 0.00911649223f, 0, module_link});
+    cells1.push_back({5, 7, 0.00518329488f, 0, module_link});
 
     EXPECT_EQ(m_c_map.size(), 2);
 
@@ -226,9 +234,12 @@ TEST(mappper, measurement_particle_map_with_clusterization) {
 
     vecmem::host_memory_resource mr;
 
+    traccc::silicon_detector_description::host dd{mr};
+    traccc::io::read_detector_description(dd, detector_file, digi_config_file,
+                                          traccc::data_format::csv);
+
     auto m_p_map = traccc::generate_measurement_particle_map(
-        event, detector_file, digi_config_file, cells_dir, hits_dir,
-        particles_dir, mr);
+        event, cells_dir, hits_dir, particles_dir, dd, mr);
 
     // There are two measurements (or clusters)
     EXPECT_EQ(m_p_map.size(), 2);
@@ -286,8 +297,12 @@ TEST(mappper, measurement_particle_map_without_clusterization) {
 
     vecmem::host_memory_resource mr;
 
+    traccc::silicon_detector_description::host dd{mr};
+    traccc::io::read_detector_description(dd, detector_file, digi_config_file,
+                                          traccc::data_format::csv);
+
     auto m_p_map = traccc::generate_measurement_particle_map(
-        event, detector_file, hits_dir, particles_dir, mr);
+        event, hits_dir, particles_dir, dd, mr);
 
     // Without clusterization, there are three measurements each of which is
     // from each particle

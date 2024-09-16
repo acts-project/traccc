@@ -33,7 +33,7 @@ namespace kernels {
 __global__ void ccl_kernel(
     const clustering_config cfg,
     const cell_collection_types::const_view cells_view,
-    const cell_module_collection_types::const_view modules_view,
+    const silicon_detector_description::const_view det_descr_view,
     measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links,
     vecmem::data::vector_view<device::details::index_t> f_backup_view,
@@ -58,7 +58,7 @@ __global__ void ccl_kernel(
     traccc::cuda::barrier barry_r;
     const cuda::thread_id1 thread_id;
 
-    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
+    device::ccl_kernel(cfg, thread_id, cells_view, det_descr_view,
                        partition_start, partition_end, outi, f_view, gf_view,
                        f_backup_view, gf_backup_view, adjc_backup_view,
                        adjv_backup_view, backup_mutex, barry_r,
@@ -90,7 +90,7 @@ clusterization_algorithm::clusterization_algorithm(
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
-    const cell_module_collection_types::const_view& modules) const {
+    const silicon_detector_description::const_view& det_descr) const {
 
     assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
                             m_stream, cells));
@@ -136,7 +136,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                           2 * m_config.max_partition_size() *
                               sizeof(device::details::index_t),
                           stream>>>(
-        m_config, cells, modules, measurements, cell_links, m_f_backup,
+        m_config, cells, det_descr, measurements, cell_links, m_f_backup,
         m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get());
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

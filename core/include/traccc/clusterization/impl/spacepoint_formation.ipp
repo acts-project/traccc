@@ -12,13 +12,13 @@
 
 namespace traccc::details {
 
-TRACCC_HOST_DEVICE inline void fill_spacepoint(spacepoint& sp,
-                                               const measurement& meas,
-                                               const cell_module& mod) {
+TRACCC_HOST_DEVICE inline void fill_spacepoint(
+    spacepoint& sp, const measurement& meas,
+    const silicon_detector_description::const_device& dd) {
 
     // Transform measurement position to 3D
     const point3 local_3d = {meas.local[0], meas.local[1], 0.f};
-    sp.global = mod.placement.point_to_global(local_3d);
+    sp.global = dd.placement().at(meas.module_link).point_to_global(local_3d);
     sp.meas = meas;
 }
 

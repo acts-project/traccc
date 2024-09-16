@@ -10,55 +10,39 @@
 
 #include "traccc/io/csv/make_measurement_reader.hpp"
 
-// Detray include(s).
-#include "detray/geometry/barcode.hpp"
-
 // System include(s).
 #include <algorithm>
 
 namespace traccc::io::csv {
 
-void read_measurements(
-    measurement_reader_output& out, std::string_view filename,
-    const bool do_sort,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+void read_measurements(measurement_collection_types::host& measurements,
+                       std::string_view filename,
+                       const silicon_detector_description::host* dd,
+                       const bool do_sort) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
 
-    // Create the result collection.
-    measurement_collection_types::host& result_measurements = out.measurements;
-    cell_module_collection_types::host& result_modules = out.modules;
-
-    std::map<detray::geometry::barcode, unsigned int> m;
+    // Create a lookup map associating geometry IDs to detector description
+    // module indices.
+    std::map<geometry_id, unsigned int> m;
+    if (dd != nullptr) {
+        for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
+            m[dd->acts_geometry_id()[i]] = i;
+        }
+    }
 
     // Read the measurements from the input file.
     csv::measurement iomeas;
     while (reader.read(iomeas)) {
 
-        // Establish the "correct" geometry ID.
-        detray::geometry::barcode barcode{iomeas.geometry_id};
-        if (barcode_map != nullptr) {
-            auto it = barcode_map->find(iomeas.geometry_id);
-            if (it != barcode_map->end()) {
-                barcode = (*it).second;
-            } else {
-                throw std::runtime_error("Barcode not found for geometry ID " +
-                                         std::to_string(iomeas.geometry_id));
+        // Find the module index for the measurement.
+        unsigned int link = 0u;
+        if (dd != nullptr) {
+            auto it = m.find(iomeas.geometry_id);
+            if (it != m.end()) {
+                link = it->second;
             }
-        }
-
-        unsigned int link;
-        auto it = m.find(barcode);
-
-        if (it != m.end()) {
-            link = (*it).second;
-        } else {
-            link = result_modules.size();
-            m[barcode] = link;
-            cell_module mod;
-            mod.surface_link = barcode;
-            result_modules.push_back(mod);
         }
 
         // Construct the measurement object.
@@ -90,16 +74,16 @@ void read_measurements(
         }
 
         meas.subs.set_indices(indices);
-        meas.surface_link = barcode;
+        meas.surface_link = detray::geometry::barcode{iomeas.geometry_id};
         meas.module_link = link;
         // Keeps measurement_id for ambiguity resolution
         meas.measurement_id = iomeas.measurement_id;
 
-        result_measurements.push_back(meas);
+        measurements.push_back(meas);
     }
 
     if (do_sort) {
-        std::sort(result_measurements.begin(), result_measurements.end(),
+        std::sort(measurements.begin(), measurements.end(),
                   measurement_sort_comp());
     }
 }

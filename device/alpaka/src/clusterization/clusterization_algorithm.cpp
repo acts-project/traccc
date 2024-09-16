@@ -27,7 +27,7 @@ struct CCLKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const clustering_config cfg,
         const cell_collection_types::const_view cells_view,
-        const cell_module_collection_types::const_view modules_view,
+        const silicon_detector_description::const_view det_descr_view,
         vecmem::data::vector_view<device::details::index_t> f_backup_view,
         vecmem::data::vector_view<device::details::index_t> gf_backup_view,
         vecmem::data::vector_view<unsigned char> adjc_backup_view,
@@ -56,7 +56,7 @@ struct CCLKernel {
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
-        device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
+        device::ccl_kernel(cfg, thread_id, cells_view, det_descr_view,
                            partition_start, partition_end, outi, f_view,
                            gf_view, f_backup_view, gf_backup_view,
                            adjc_backup_view, adjv_backup_view, backup_mutex,
@@ -85,7 +85,7 @@ clusterization_algorithm::clusterization_algorithm(
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells,
-    const cell_module_collection_types::const_view& modules) const {
+    const silicon_detector_description::const_view& det_descr) const {
 
     // Setup alpaka
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
@@ -130,7 +130,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     auto workDiv = makeWorkDiv<Acc>(num_blocks, m_config.threads_per_partition);
 
     ::alpaka::exec<Acc>(
-        queue, workDiv, CCLKernel{}, m_config, cells, modules,
+        queue, workDiv, CCLKernel{}, m_config, cells, det_descr,
         vecmem::get_data(m_f_backup), vecmem::get_data(m_gf_backup),
         vecmem::get_data(m_adjc_backup), vecmem::get_data(m_adjv_backup),
         m_backup_mutex.get(), vecmem::get_data(measurements),

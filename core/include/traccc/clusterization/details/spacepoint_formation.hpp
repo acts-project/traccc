@@ -9,21 +9,21 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace traccc::details {
 
 /// Function helping with filling/setting up a spacepoint object
 ///
-/// @param sp The spacepoint to fill / set up
-/// @param measurement The measurement to create the spacepoint out of
-/// @param mod The module that the measurement belongs to
+/// @param[out] sp          The spacepoint to fill / set up
+/// @param[in]  measurement The measurement to create the spacepoint out of
+/// @param[in]  dd          The detector description
 ///
-TRACCC_HOST_DEVICE inline void fill_spacepoint(spacepoint& sp,
-                                               const measurement& meas,
-                                               const cell_module& mod);
+TRACCC_HOST_DEVICE inline void fill_spacepoint(
+    spacepoint& sp, const measurement& meas,
+    const silicon_detector_description::const_device& dd);
 
 }  // namespace traccc::details
 
