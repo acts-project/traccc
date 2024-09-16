@@ -11,7 +11,7 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/pixel_data.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -38,15 +38,15 @@ TEST(algorithms, seq_single_module) {
                                                   {11, 13, 8, 0, 0},
                                                   {4, 14, 9, 0, 0}},
                                                  &resource};
-    traccc::cell_module mod;
-    traccc::cell_module_collection_types::host modules(&resource);
-    modules.push_back(mod);
+    traccc::silicon_detector_description::host dd{resource};
+    dd.resize(1);
 
     auto clusters = cc(vecmem::get_data(cells));
     EXPECT_EQ(clusters.size(), 4u);
 
     auto clusters_data = traccc::get_data(clusters);
-    auto measurements = mc(clusters_data, vecmem::get_data(modules));
+    auto dd_data = vecmem::get_data(dd);
+    auto measurements = mc(clusters_data, dd_data);
 
     EXPECT_EQ(measurements.size(), 4u);
 }

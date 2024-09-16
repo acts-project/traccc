@@ -12,7 +12,8 @@
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
@@ -37,6 +38,7 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // System include(s).
+#include <cassert>
 #include <cstdlib>
 #include <exception>
 #include <iomanip>
@@ -51,15 +53,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::performance& performance_opts) {
 
     /// Type declarations
-    using host_detector_type = detray::detector<detray::default_metadata,
-                                                detray::host_container_types>;
-
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<>>;
 
-    using host_navigator_type = detray::navigator<const host_detector_type>;
+    using host_navigator_type =
+        detray::navigator<const traccc::default_detector::host>;
     using host_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
 
@@ -81,22 +81,19 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
     auto field = detray::bfield::create_const_field(B);
 
-    // Read the detector
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(traccc::io::data_directory() +
-                        detector_opts.detector_file);
-    if (!detector_opts.material_file.empty()) {
-        reader_cfg.add_file(traccc::io::data_directory() +
-                            detector_opts.material_file);
-    }
-    if (!detector_opts.grid_file.empty()) {
-        reader_cfg.add_file(traccc::io::data_directory() +
-                            detector_opts.grid_file);
-    }
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host det_descr{host_mr};
+    traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
 
-    const auto surface_transforms = traccc::io::alt_read_geometry(host_det);
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host detector{host_mr};
+    assert(detector_opts.use_detray_detector == true);
+    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
 
     /*****************************
      * Do the reconstruction
@@ -130,7 +127,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     // Seed generator
-    traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
+    traccc::seed_generator<traccc::default_detector::host> sg(detector,
+                                                              stddevs);
 
     // Iterate over events
     for (unsigned int event = input_opts.skip;
@@ -151,21 +149,21 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         }
 
         // Read measurements
-        traccc::io::measurement_reader_output meas_read_out(&host_mr);
-        traccc::io::read_measurements(meas_read_out, event,
-                                      input_opts.directory, input_opts.format);
-        traccc::measurement_collection_types::host& measurements_per_event =
-            meas_read_out.measurements;
+        traccc::measurement_collection_types::host measurements_per_event{
+            &host_mr};
+        traccc::io::read_measurements(measurements_per_event, event,
+                                      input_opts.directory, &det_descr,
+                                      input_opts.format);
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, field, measurements_per_event, seeds);
+            host_finding(detector, field, measurements_per_event, seeds);
 
         std::cout << "Number of found tracks: " << track_candidates.size()
                   << std::endl;
 
         // Run fitting
-        auto track_states = host_fitting(host_det, field, track_candidates);
+        auto track_states = host_fitting(detector, field, track_candidates);
 
         std::cout << "Number of fitted tracks: " << track_states.size()
                   << std::endl;
@@ -182,7 +180,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                 const auto& fit_res = track_states[i].header;
 
                 fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             host_det, evt_map2);
+                                             detector, evt_map2);
             }
         }
     }

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -53,22 +54,21 @@ cell_particle_map generate_cell_particle_map(
     const std::string& hits_dir, const std::string& particle_dir,
     const geoId_link_map& link_map = geoId_link_map());
 
-std::tuple<measurement_cell_map, cell_module_collection_types::host>
-generate_measurement_cell_map(std::size_t event,
-                              const std::string& detector_file,
-                              const std::string& digi_config_file,
-                              const std::string& cells_dir,
-                              vecmem::memory_resource& resource);
-
-measurement_particle_map generate_measurement_particle_map(
-    std::size_t event, const std::string& detector_file,
-    const std::string& digi_config_file, const std::string& cells_dir,
-    const std::string& hits_dir, const std::string& particle_dir,
+measurement_cell_map generate_measurement_cell_map(
+    std::size_t event, const std::string& cells_dir,
+    const silicon_detector_description::host& dd,
     vecmem::memory_resource& resource);
 
 measurement_particle_map generate_measurement_particle_map(
-    std::size_t event, const std::string& detector_file,
+    std::size_t event, const std::string& cells_dir,
     const std::string& hits_dir, const std::string& particle_dir,
+    const silicon_detector_description::host& dd,
+    vecmem::memory_resource& resource);
+
+measurement_particle_map generate_measurement_particle_map(
+    std::size_t event, const std::string& hits_dir,
+    const std::string& particle_dir,
+    const silicon_detector_description::host& dd,
     vecmem::memory_resource& resource);
 
 }  // namespace traccc

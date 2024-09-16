@@ -17,7 +17,8 @@
 #include "traccc/efficiency/track_filter.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/utils.hpp"
@@ -77,9 +78,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
-    /// Type declarations
-    using host_detector_type = detray::detector<>;
-
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     vecmem::cuda::copy copy;
     vecmem::cuda::host_memory_resource host_mr;
@@ -114,7 +112,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     }
 
     // Output stats
-    uint64_t n_modules = 0;
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_alpaka = 0;
@@ -123,23 +120,20 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
      * Build a geometry
      *****************************/
 
-    // Read the detector
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(traccc::io::data_directory() +
-                        detector_opts.detector_file);
-    if (!detector_opts.material_file.empty()) {
-        reader_cfg.add_file(traccc::io::data_directory() +
-                            detector_opts.material_file);
-    }
-    if (!detector_opts.grid_file.empty()) {
-        reader_cfg.add_file(traccc::io::data_directory() +
-                            detector_opts.grid_file);
-    }
-    auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host host_det_descr{host_mr};
+    traccc::io::read_detector_description(
+        host_det_descr, detector_opts.detector_file,
+        detector_opts.digitization_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
 
-    traccc::geometry surface_transforms =
-        traccc::io::alt_read_geometry(host_det);
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host host_det{mng_mr};
+    assert(detector_opts.use_detray_detector == true);
+    traccc::io::read_detector(host_det, mng_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
 
     // Seeding algorithms
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
@@ -162,8 +156,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::io::spacepoint_reader_output sp_reader_output(mr.host);
-        traccc::io::measurement_reader_output meas_reader_output(mr.host);
+        traccc::spacepoint_collection_types::host spacepoints_per_event{
+            &host_mr};
+        traccc::measurement_collection_types::host measurements_per_event{
+            &host_mr};
 
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
@@ -186,17 +182,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
-                    sp_reader_output, event, input_opts.directory,
-                    surface_transforms, input_opts.format);
+                    spacepoints_per_event, event, input_opts.directory,
+                    &host_det_descr, input_opts.format);
 
                 // Read measurements
-                traccc::io::read_measurements(meas_reader_output, event,
-                                              input_opts.directory,
-                                              input_opts.format);
+                traccc::io::read_measurements(
+                    measurements_per_event, event, input_opts.directory,
+                    &host_det_descr, input_opts.format);
             }  // stop measuring hit reading timer
-
-            auto& spacepoints_per_event = sp_reader_output.spacepoints;
-            auto& modules_per_event = sp_reader_output.modules;
 
             /*----------------------------
                 Seeding algorithm
@@ -211,9 +204,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                           mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_alpaka_buffer);
-            traccc::cell_module_collection_types::buffer modules_buffer(
-                modules_per_event.size(), mr.main);
-            copy(vecmem::get_data(modules_per_event), modules_buffer);
 
             {
                 traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
@@ -270,8 +260,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             // Compare the seeds made on the host and on the device
             traccc::collection_comparator<traccc::seed> compare_seeds{
                 "seeds", traccc::details::comparator_factory<traccc::seed>{
-                             vecmem::get_data(sp_reader_output.spacepoints),
-                             vecmem::get_data(sp_reader_output.spacepoints)}};
+                             vecmem::get_data(spacepoints_per_event),
+                             vecmem::get_data(spacepoints_per_event)}};
             compare_seeds(vecmem::get_data(seeds),
                           vecmem::get_data(seeds_alpaka));
 
@@ -286,8 +276,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
              Statistics
           ---------------*/
 
-        n_spacepoints += sp_reader_output.spacepoints.size();
-        n_modules += sp_reader_output.modules.size();
+        n_spacepoints += spacepoints_per_event.size();
         n_seeds_alpaka += seeds_alpaka.size();
         n_seeds += seeds.size();
 
@@ -300,9 +289,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                        input_opts.directory,
                                        input_opts.directory);
 
-            sd_performance_writer.write(
-                vecmem::get_data(seeds_alpaka),
-                vecmem::get_data(sp_reader_output.spacepoints), evt_map);
+            sd_performance_writer.write(vecmem::get_data(seeds_alpaka),
+                                        vecmem::get_data(spacepoints_per_event),
+                                        evt_map);
         }
     }
 
@@ -314,8 +303,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_spacepoints << " spacepoints from "
-              << n_modules << " modules" << std::endl;
+    std::cout << "- read    " << n_spacepoints << " spacepoints" << std::endl;
     std::cout << "- created  (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (alpaka)  " << n_seeds_alpaka << " seeds"
               << std::endl;

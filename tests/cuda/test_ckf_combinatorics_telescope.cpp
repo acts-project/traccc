@@ -179,11 +179,9 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
              vecmem::copy::type::host_to_device);
 
         // Read measurements
-        traccc::io::measurement_reader_output readOut(&host_mr);
-        traccc::io::read_measurements(readOut, i_evt, path,
-                                      traccc::data_format::csv);
-        traccc::measurement_collection_types::host& measurements_per_event =
-            readOut.measurements;
+        traccc::measurement_collection_types::host measurements_per_event{
+            &host_mr};
+        traccc::io::read_measurements(measurements_per_event, i_evt, path);
 
         traccc::measurement_collection_types::buffer measurements_buffer(
             measurements_per_event.size(), mr.main);

@@ -35,6 +35,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
+    const silicon_detector_description::host& det_descr,
     host_detector_type* detector)
     : m_host_mr(host_mr),
       m_stream(),
@@ -44,6 +45,11 @@ full_chain_algorithm::full_chain_algorithm(
       m_copy(m_stream.cudaStream()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(detray::bfield::create_const_field(m_field_vec)),
+      m_det_descr(det_descr),
+      m_device_det_descr(
+          static_cast<silicon_detector_description::buffer::size_type>(
+              m_det_descr.get().size()),
+          m_device_mr),
       m_detector(detector),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_stream, clustering_config),
@@ -77,7 +83,8 @@ full_chain_algorithm::full_chain_algorithm(
               << ", bus: " << props.pciBusID
               << ", device: " << props.pciDeviceID << "]" << std::endl;
 
-    // Copy the detector to the device.
+    // Copy the detector (description) to the device.
+    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
     if (m_detector != nullptr) {
         m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
                                                m_device_mr, m_copy);
@@ -94,6 +101,11 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_copy(m_stream.cudaStream()),
       m_field_vec(parent.m_field_vec),
       m_field(parent.m_field),
+      m_det_descr(parent.m_det_descr),
+      m_device_det_descr(
+          static_cast<silicon_detector_description::buffer::size_type>(
+              m_det_descr.get().size()),
+          m_device_mr),
       m_detector(parent.m_detector),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_stream, parent.m_clustering_config),
@@ -118,7 +130,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config) {
 
-    // Copy the detector to the device.
+    // Copy the detector (description) to the device.
+    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
     if (m_detector != nullptr) {
         m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
                                                m_device_mr, m_copy);
@@ -129,25 +142,21 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
 full_chain_algorithm::~full_chain_algorithm() = default;
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
-    const cell_collection_types::host& cells,
-    const cell_module_collection_types::host& modules) const {
+    const cell_collection_types::host& cells) const {
 
     // Create device copy of input collections
     cell_collection_types::buffer cells_buffer(cells.size(),
                                                *m_cached_device_mr);
     m_copy(vecmem::get_data(cells), cells_buffer)->ignore();
-    cell_module_collection_types::buffer modules_buffer(modules.size(),
-                                                        *m_cached_device_mr);
-    m_copy(vecmem::get_data(modules), modules_buffer)->ignore();
 
     // Run the clusterization (asynchronously).
     const clusterization_algorithm::output_type measurements =
-        m_clusterization(cells_buffer, modules_buffer);
+        m_clusterization(cells_buffer, m_device_det_descr);
     m_measurement_sorting(measurements);
 
     // Run the seed-finding (asynchronously).
     const spacepoint_formation_algorithm::output_type spacepoints =
-        m_spacepoint_formation(measurements, modules_buffer);
+        m_spacepoint_formation(measurements, m_device_det_descr);
     const track_params_estimation::output_type track_params =
         m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
                                      m_field_vec);

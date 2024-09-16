@@ -8,6 +8,7 @@
 // Project include(s).
 #include "tests/cca_test.hpp"
 #include "traccc/definitions/common.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
 // VecMem include(s).
@@ -39,6 +40,7 @@ TEST(SYCLClustering, SingleModule) {
 
     // Creating SYCL queue object
     ::sycl::queue q(handle_async_error);
+    traccc::sycl::queue_wrapper queue{&q};
     std::cout << "Running Seeding on device: "
               << q.get_device().get_info<::sycl::info::device::name>() << "\n";
 
@@ -58,16 +60,22 @@ TEST(SYCLClustering, SingleModule) {
     cells.push_back({7u, 5u, 1.f, 0, 0});
     cells.push_back({6u, 6u, 1.f, 0, 0});
 
-    // Create module collection
-    traccc::cell_module_collection_types::host modules{&shared_mr};
-    modules.push_back({});
+    // Create a dummy detector description.
+    traccc::silicon_detector_description::host dd{shared_mr};
+    dd.resize(1u);
+    dd.reference_x()[0] = 0.f;
+    dd.reference_y()[0] = 0.f;
+    dd.pitch_x()[0] = 1.f;
+    dd.pitch_y()[0] = 1.f;
+    dd.dimensions()[0] = 2;
+    dd.geometry_id()[0] = detray::geometry::barcode{0u};
 
     // Run Clusterization
-    traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, &q,
+    traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, queue,
                                                    default_ccl_test_config());
 
     auto measurements_buffer =
-        ca_sycl(vecmem::get_data(cells), vecmem::get_data(modules));
+        ca_sycl(vecmem::get_data(cells), vecmem::get_data(dd));
 
     measurement_collection_types::device measurements(measurements_buffer);
 

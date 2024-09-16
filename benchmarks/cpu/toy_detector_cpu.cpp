@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// Traccc core include(s).
+#include "traccc/geometry/detector.hpp"
+
 // Traccc algorithm include(s).
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
@@ -13,6 +16,7 @@
 
 // Traccc IO include(s).
 #include "traccc/io/event_map2.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
@@ -41,23 +45,17 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
         detray::rk_stepper<b_field_t::view_t,
                            typename detector_type::algebra_type,
                            detray::constrained_step<>>;
-    using host_detector_type = detray::detector<detray::default_metadata>;
+    using host_detector_type = traccc::default_detector::host;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using host_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
 
-    // VecMem memory resource(s)
-    vecmem::host_memory_resource host_mr;
-
     // Read back detector file
-    const std::string path = sim_dir;
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(path + "toy_detector_geometry.json")
-        .add_file(path + "toy_detector_homogeneous_material.json")
-        .add_file(path + "toy_detector_surface_grids.json");
-
-    auto [det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+    host_detector_type det{host_mr};
+    traccc::io::read_detector(
+        det, host_mr, sim_dir + "toy_detector_geometry.json",
+        sim_dir + "toy_detector_homogeneous_material.json",
+        sim_dir + "toy_detector_surface_grids.json");
 
     // B field
     auto field = detray::bfield::create_const_field(B);

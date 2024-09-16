@@ -18,13 +18,13 @@ namespace kernels {
 
 __global__ void form_spacepoints(
     measurement_collection_types::const_view measurements_view,
-    cell_module_collection_types::const_view modules_view,
+    const silicon_detector_description::const_view det_descr_view,
     const unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view) {
 
     device::form_spacepoints(threadIdx.x + blockIdx.x * blockDim.x,
-                             measurements_view, modules_view, measurement_count,
-                             spacepoints_view);
+                             measurements_view, det_descr_view,
+                             measurement_count, spacepoints_view);
 }
 
 }  // namespace kernels
@@ -35,12 +35,12 @@ spacepoint_formation_algorithm::spacepoint_formation_algorithm(
 
 spacepoint_formation_algorithm::output_type
 spacepoint_formation_algorithm::operator()(
-    const measurement_collection_types::const_view& measurements_view,
-    const cell_module_collection_types::const_view& modules_view) const {
+    const measurement_collection_types::const_view& measurements,
+    const silicon_detector_description::const_view& det_descr) const {
 
     // Get the number of measurements.
     const measurement_collection_types::const_view::size_type num_measurements =
-        m_copy.get().get_size(measurements_view);
+        m_copy.get().get_size(measurements);
 
     // Create the result buffer.
     spacepoint_collection_types::buffer spacepoints(num_measurements,
@@ -61,7 +61,7 @@ spacepoint_formation_algorithm::operator()(
 
     // Launch the spacepoint formation kernel.
     kernels::form_spacepoints<<<nBlocks, blockSize, 0, stream>>>(
-        measurements_view, modules_view, num_measurements, spacepoints);
+        measurements, det_descr, num_measurements, spacepoints);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Return the reconstructed spacepoints.

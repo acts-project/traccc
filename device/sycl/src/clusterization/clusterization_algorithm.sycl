@@ -32,7 +32,7 @@ class ccl_kernel;
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper& queue,
     const config_type& config)
     : m_mr(mr),
       m_queue(queue),
@@ -58,7 +58,7 @@ clusterization_algorithm::clusterization_algorithm(
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_collection_types::const_view& cells_view,
-    const cell_module_collection_types::const_view& modules_view) const {
+    const silicon_detector_description::const_view& det_descr) const {
 
     assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
                             m_queue, cells_view));
@@ -124,7 +124,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
             // Launch the kernel.
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
-                [shared_uint, shared_idx, cells_view, modules_view,
+                [shared_uint, shared_idx, cells_view, det_descr,
                  measurements_view, cell_links_view,
                  f_backup_view = vecmem::get_data(m_f_backup),
                  gf_backup_view = vecmem::get_data(m_gf_backup),
@@ -152,7 +152,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                     const sycl::thread_id1 thread_id(item);
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
+                    device::ccl_kernel(cfg, thread_id, cells_view, det_descr,
                                        partition_start, partition_end, outi,
                                        f_view, gf_view, f_backup_view,
                                        gf_backup_view, adjc_backup_view,

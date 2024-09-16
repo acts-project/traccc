@@ -12,6 +12,8 @@
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
@@ -46,16 +48,14 @@ struct full_chain_algorithm_data;
 ///
 class full_chain_algorithm
     : public algorithm<bound_track_parameters_collection_types::host(
-          const cell_collection_types::host&,
-          const cell_module_collection_types::host&)> {
+          const cell_collection_types::host&)> {
 
     public:
     /// @name (For now dummy...) Type declaration(s)
     /// @{
 
     /// Detector type used during track finding and fitting
-    using detector_type = detray::detector<detray::default_metadata,
-                                           detray::host_container_types>;
+    using detector_type = traccc::default_detector::host;
 
     /// Stepper type used by the track finding and fitting algorithms
     using stepper_type =
@@ -81,15 +81,15 @@ class full_chain_algorithm
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
     ///
-    full_chain_algorithm(
-        vecmem::memory_resource& host_mr,
-        const clustering_config& clustering_config,
-        const seedfinder_config& finder_config,
-        const spacepoint_grid_config& grid_config,
-        const seedfilter_config& filter_config,
-        const finding_algorithm::config_type& finding_config = {},
-        const fitting_algorithm::config_type& fitting_config = {},
-        detector_type* detector = nullptr);
+    full_chain_algorithm(vecmem::memory_resource& host_mr,
+                         const clustering_config& clustering_config,
+                         const seedfinder_config& finder_config,
+                         const spacepoint_grid_config& grid_config,
+                         const seedfilter_config& filter_config,
+                         const finding_algorithm::config_type& finding_config,
+                         const fitting_algorithm::config_type& fitting_config,
+                         const silicon_detector_description::host& det_descr,
+                         detector_type* detector = nullptr);
 
     /// Copy constructor
     ///
@@ -110,8 +110,7 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const cell_collection_types::host& cells,
-        const cell_module_collection_types::host& modules) const override;
+        const cell_collection_types::host& cells) const override;
 
     private:
     /// Private data object
@@ -124,6 +123,12 @@ class full_chain_algorithm
     std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
     /// Memory copy object
     mutable vecmem::sycl::async_copy m_copy;
+
+    /// Detector description
+    std::reference_wrapper<const silicon_detector_description::host>
+        m_det_descr;
+    /// Detector description buffer
+    silicon_detector_description::buffer m_device_det_descr;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
