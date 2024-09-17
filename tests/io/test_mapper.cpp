@@ -189,7 +189,7 @@ TEST(mappper, measurement_cell_map) {
         traccc::generate_measurement_cell_map(event, cells_dir, dd, resource);
 
     // The module that the cells of event 0 belong to, happens to be this one.
-    constexpr traccc::cell::link_type module_link = 873;
+    constexpr traccc::cell::link_type module_link = 12465;
 
     vecmem::vector<traccc::cell> cells0;
     cells0.push_back({1, 0, 0.0041470062f, 0, module_link});

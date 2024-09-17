@@ -71,15 +71,15 @@ class ConnectedComponentAnalysisTests
     public:
     struct cca_truth_hit {
         uint64_t geometry_id = 0;
-        uint64_t hit_id = 0;
+        uint64_t measurement_id = 0;
         uint64_t num_cells = 0;
         traccc::scalar channel0 = 0;
         traccc::scalar channel1 = 0;
         traccc::scalar variance0 = 0.;
         traccc::scalar variance1 = 0.;
 
-        DFE_NAMEDTUPLE(cca_truth_hit, geometry_id, hit_id, num_cells, channel0,
-                       channel1, variance0, variance1);
+        DFE_NAMEDTUPLE(cca_truth_hit, geometry_id, measurement_id, num_cells,
+                       channel0, channel1, variance0, variance1);
     };
 
     using cca_truth_hit_reader = dfe::NamedTupleCsvReader<cca_truth_hit>;
