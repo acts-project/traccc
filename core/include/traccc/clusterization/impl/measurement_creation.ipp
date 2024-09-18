@@ -19,41 +19,48 @@ inline scalar signal_cell_modelling(
 
 TRACCC_HOST_DEVICE
 inline vector2 position_from_cell(
-    const cell& cell,
+    const unsigned int cell_idx,
+    const edm::silicon_cell_collection::const_device& cells,
     const silicon_detector_description::const_device& det_descr) {
 
     // Retrieve the specific values based on module idx
-    const cell::link_type module_link = cell.module_link;
-    return {
-        det_descr.reference_x().at(module_link) +
-            (scalar{0.5} + cell.channel0) * det_descr.pitch_x().at(module_link),
-        det_descr.reference_y().at(module_link) +
-            (scalar{0.5} + cell.channel1) *
-                det_descr.pitch_y().at(module_link)};
+    const unsigned int module_idx = cells.module_index().at(cell_idx);
+    return {det_descr.reference_x().at(module_idx) +
+                (scalar{0.5} + cells.channel0().at(cell_idx)) *
+                    det_descr.pitch_x().at(module_idx),
+            det_descr.reference_y().at(module_idx) +
+                (scalar{0.5} + cells.channel1().at(cell_idx)) *
+                    det_descr.pitch_y().at(module_idx)};
 }
 
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
-    const cell_collection_types::const_device& cluster,
+    const unsigned int cluster_idx,
+    const edm::silicon_cell_collection::const_device& cells,
+    const edm::silicon_cluster_collection::const_device& clusters,
     const silicon_detector_description::const_device& det_descr, point2& mean,
     point2& var, scalar& totalWeight) {
 
     point2 offset{0., 0.};
     bool first_processed = false;
 
-    // Loop over the cells of the cluster.
-    for (const cell& cell : cluster) {
+    // Loop over the cell indices of the cluster.
+    for (const unsigned int cell_idx :
+         clusters.cell_indices().at(cluster_idx)) {
 
         // Translate the cell readout value into a weight.
-        const scalar weight = signal_cell_modelling(cell.activation, det_descr);
+        const scalar weight =
+            signal_cell_modelling(cells.activation().at(cell_idx), det_descr);
 
         // Only consider cells over a minimum threshold.
-        if (weight > det_descr.threshold().at(cell.module_link)) {
+        if (weight >
+            det_descr.threshold().at(cells.module_index().at(cell_idx))) {
 
             // Update all output properties with this cell.
             totalWeight += weight;
             scalar weight_factor = weight / totalWeight;
 
-            point2 cell_position = position_from_cell(cell, det_descr);
+            point2 cell_position =
+                position_from_cell(cell_idx, cells, det_descr);
 
             if (!first_processed) {
                 offset = cell_position;
@@ -79,7 +86,8 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement_collection_types::device& measurements,
     const measurement_collection_types::device::size_type index,
-    const cell_collection_types::const_device& cluster,
+    const edm::silicon_cell_collection::const_device& cells,
+    const edm::silicon_cluster_collection::const_device& clusters,
     const silicon_detector_description::const_device& det_descr) {
 
     // To calculate the mean and variance with high numerical stability
@@ -92,13 +100,24 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     // [2] The Art of Computer Programming, Donald E. Knuth, second
     //     edition, chapter 4.2.2.
 
-    // A security check.
-    assert(cluster.empty() == false);
+    // Security checks.
+    assert(clusters.cell_indices()[index].empty() == false);
+    assert([&]() {
+        const unsigned int module_idx =
+            cells.module_index().at(clusters.cell_indices()[index].front());
+        for (const unsigned int cell_idx : clusters.cell_indices()[index]) {
+            if (cells.module_index().at(cell_idx) != module_idx) {
+                return false;
+            }
+        }
+        return true;
+    }() == true);
 
     // Calculate the cluster properties
     scalar totalWeight = 0.f;
     point2 mean{0.f, 0.f}, var{0.f, 0.f};
-    calc_cluster_properties(cluster, det_descr, mean, var, totalWeight);
+    calc_cluster_properties(index, cells, clusters, det_descr, mean, var,
+                            totalWeight);
 
     assert(totalWeight > 0.f);
 
@@ -106,16 +125,17 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement& m = measurements[index];
 
     // The index of the module the cluster is on.
-    const cell::link_type module_link = cluster.at(0).module_link;
+    const unsigned int module_idx =
+        cells.module_index().at(clusters.cell_indices().at(index).front());
 
-    m.module_link = module_link;
-    m.surface_link = det_descr.geometry_id().at(module_link);
+    m.module_link = module_idx;
+    m.surface_link = det_descr.geometry_id().at(module_idx);
     // normalize the cell position
     m.local = mean;
 
     // plus pitch^2 / 12
-    const scalar pitch_x = det_descr.pitch_x().at(module_link);
-    const scalar pitch_y = det_descr.pitch_y().at(module_link);
+    const scalar pitch_x = det_descr.pitch_x().at(module_idx);
+    const scalar pitch_y = det_descr.pitch_y().at(module_idx);
     m.variance = var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
                               pitch_y * pitch_y / static_cast<scalar>(12.)};
 
@@ -123,7 +143,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     m.measurement_id = index;
 
     // Set the measurement dimensionality.
-    m.meas_dim = det_descr.dimensions().at(module_link);
+    m.meas_dim = det_descr.dimensions().at(module_idx);
 }
 
 }  // namespace traccc::details

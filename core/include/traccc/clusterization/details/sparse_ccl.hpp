@@ -9,7 +9,7 @@
 
 // Library include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -42,25 +42,29 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(
 
 /// Helper method to find adjacent cells
 ///
-/// @param a the first cell
-/// @param b the second cell
+/// @param cells All silicon cells in the event
+/// @param i     The index of the first cell
+/// @param j     The index of the second cell
 ///
 /// @return boolan to indicate 8-cell connectivity
 ///
-TRACCC_HOST_DEVICE inline bool is_adjacent(const traccc::cell& a,
-                                           const traccc::cell& b);
+TRACCC_HOST_DEVICE inline bool is_adjacent(
+    const edm::silicon_cell_collection::const_device& cells, unsigned int i,
+    unsigned int j);
 
 /// Helper method to find define distance,
 /// does not need abs, as channels are sorted in
 /// column major
 ///
-/// @param a the first cell
-/// @param b the second cell
+/// @param cells All silicon cells in the event
+/// @param i     The index of the first cell
+/// @param j     The index of the second cell
 ///
 /// @return boolan to indicate !8-cell connectivity
 ///
-TRACCC_HOST_DEVICE inline bool is_far_enough(const traccc::cell& a,
-                                             const traccc::cell& b);
+TRACCC_HOST_DEVICE inline bool is_far_enough(
+    const edm::silicon_cell_collection::const_device& cells, unsigned int i,
+    unsigned int j);
 
 /// Sparce CCL algorithm
 ///
@@ -70,7 +74,7 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(const traccc::cell& a,
 /// @return number of clusters
 ///
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
-    const cell_collection_types::const_device& cells,
+    const edm::silicon_cell_collection::const_device& cells,
     vecmem::device_vector<unsigned int>& labels);
 
 }  // namespace traccc::details

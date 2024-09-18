@@ -10,8 +10,8 @@
 // Library include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -31,7 +31,7 @@ namespace traccc::host {
 ///
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::host(
-          const cell_collection_types::const_view&,
+          const edm::silicon_cell_collection::const_view&,
           const silicon_detector_description::const_view&)> {
 
     public:
@@ -50,7 +50,7 @@ class clusterization_algorithm
     /// @return The measurements reconstructed for every detector module
     ///
     output_type operator()(
-        const cell_collection_types::const_view& cells_view,
+        const edm::silicon_cell_collection::const_view& cells_view,
         const silicon_detector_description::const_view& dd_view) const override;
 
     private:
