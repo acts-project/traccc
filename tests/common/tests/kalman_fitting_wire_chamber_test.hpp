@@ -12,8 +12,8 @@
 
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_wire_chamber.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
+#include "detray/test/utils/detectors/create_wire_chamber.hpp"
 
 // System include(s)
 #include <array>

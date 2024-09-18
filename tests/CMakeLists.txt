@@ -23,7 +23,7 @@ target_include_directories( traccc_tests_common
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_tests_common
     PUBLIC dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
-           detray::core detray::utils detray::io covfie::core traccc::core traccc::io )
+           detray::core detray::detectors detray::io detray::test_utils  covfie::core traccc::core traccc::io )
 
 # Use ROOT in traccc_tests_common, if requested.
 if( TRACCC_USE_ROOT )
