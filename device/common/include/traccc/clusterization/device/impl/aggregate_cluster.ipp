@@ -14,7 +14,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
-    const cell_collection_types::const_device& cells,
+    const edm::silicon_cell_collection::const_device& cells,
     const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, const unsigned int start,
     const unsigned int end, const unsigned short cid, measurement& out,
@@ -54,10 +54,10 @@ inline void aggregate_cluster(
     scalar totalWeight = 0.;
     point2 mean{0., 0.}, var{0., 0.}, offset{0., 0.};
 
-    const auto module_link = cells[cid + start].module_link;
+    const unsigned int module_idx = cells.module_index().at(cid + start);
     const unsigned short partition_size = end - start;
-    const scalar pitch_x = det_descr.pitch_x().at(module_link);
-    const scalar pitch_y = det_descr.pitch_y().at(module_link);
+    const scalar pitch_x = det_descr.pitch_x().at(module_idx);
+    const scalar pitch_y = det_descr.pitch_y().at(module_idx);
 
     bool first_processed = false;
 
@@ -70,11 +70,9 @@ inline void aggregate_cluster(
          * Terminate the process earlier if we have reached a cell sufficiently
          * in a different module.
          */
-        if (cells[pos].module_link != module_link) {
+        if (cells.module_index().at(pos) != module_idx) {
             break;
         }
-
-        const cell this_cell = cells[pos];
 
         /*
          * If the value of this cell is equal to our, that means it
@@ -83,19 +81,19 @@ inline void aggregate_cluster(
          */
         if (f.at(j) == cid) {
 
-            if (this_cell.channel1 > maxChannel1) {
-                maxChannel1 = this_cell.channel1;
+            if (cells.channel1().at(pos) > maxChannel1) {
+                maxChannel1 = cells.channel1().at(pos);
             }
 
             const scalar weight = traccc::details::signal_cell_modelling(
-                this_cell.activation, det_descr);
+                cells.activation().at(pos), det_descr);
 
-            if (weight > det_descr.threshold().at(module_link)) {
+            if (weight > det_descr.threshold().at(module_idx)) {
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
                 point2 cell_position =
-                    traccc::details::position_from_cell(this_cell, det_descr);
+                    traccc::details::position_from_cell(pos, cells, det_descr);
 
                 if (!first_processed) {
                     offset = cell_position;
@@ -121,7 +119,7 @@ inline void aggregate_cluster(
          * Terminate the process earlier if we have reached a cell sufficiently
          * far away from the cluster in the dominant axis.
          */
-        if (this_cell.channel1 > maxChannel1 + 1) {
+        if (cells.channel1().at(pos) > maxChannel1 + 1) {
             break;
         }
     }
@@ -134,12 +132,12 @@ inline void aggregate_cluster(
      */
     out.local = mean + offset;
     out.variance = var;
-    out.surface_link = det_descr.geometry_id().at(module_link);
-    out.module_link = module_link;
+    out.surface_link = det_descr.geometry_id().at(module_idx);
+    out.module_link = module_idx;
     // Set a unique identifier for the measurement.
     out.measurement_id = link;
     // Set the dimensionality of the measurement.
-    out.meas_dim = det_descr.dimensions().at(module_link);
+    out.meas_dim = det_descr.dimensions().at(module_idx);
 }
 
 }  // namespace traccc::device

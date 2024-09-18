@@ -17,18 +17,15 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
-    const cell_collection_types::const_device& cells, const unsigned short cid,
-    const unsigned int start, const unsigned int end, unsigned char& adjc,
-    unsigned short* adjv) {
+    const edm::silicon_cell_collection::const_device& cells,
+    const unsigned short cid, const unsigned int start, const unsigned int end,
+    unsigned char& adjc, unsigned short* adjv) {
 
     // Some sanity check(s).
     assert(start <= end);
 
     // Index of the "reference cell".
     const unsigned int pos = cid + start;
-
-    // Load the "reference cell" into a local variable.
-    const cell reference_cell = cells.at(pos);
 
     /*
      * First, we traverse the cells backwards, starting from the current
@@ -42,7 +39,7 @@ inline void reduce_problem_cell(
          * impossible for that cell to ever be adjacent to this one.
          * This is a small optimisation.
          */
-        if (traccc::details::is_far_enough(reference_cell, cells.at(j))) {
+        if (traccc::details::is_far_enough(cells, pos, j)) {
             break;
         }
 
@@ -50,7 +47,7 @@ inline void reduce_problem_cell(
          * If the cell examined is adjacent to the current cell, save it
          * in the current cell's adjacency set.
          */
-        if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
+        if (traccc::details::is_adjacent(cells, pos, j)) {
             assert(adjc < 8);
             adjv[adjc++] = j - start;
         }
@@ -65,11 +62,11 @@ inline void reduce_problem_cell(
          * Note that this check now looks in the opposite direction! An
          * important difference.
          */
-        if (traccc::details::is_far_enough(cells.at(j), reference_cell)) {
+        if (traccc::details::is_far_enough(cells, j, pos)) {
             break;
         }
 
-        if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
+        if (traccc::details::is_adjacent(cells, pos, j)) {
             assert(adjc < 8);
             adjv[adjc++] = j - start;
         }

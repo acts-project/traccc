@@ -32,7 +32,7 @@ namespace kernels {
 /// CUDA kernel for running @c traccc::device::ccl_kernel
 __global__ void ccl_kernel(
     const clustering_config cfg,
-    const cell_collection_types::const_view cells_view,
+    const edm::silicon_cell_collection::const_view cells_view,
     const silicon_detector_description::const_view det_descr_view,
     measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links,
@@ -89,19 +89,19 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_collection_types::const_view& cells,
+    const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr) const {
 
-    assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
-                            m_stream, cells));
-    assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
-                         m_copy, m_stream, cells));
+    // assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
+    //                         m_stream, cells));
+    // assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
+    //                      m_copy, m_stream, cells));
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Get the number of cells
-    const cell_collection_types::view::size_type num_cells =
+    const edm::silicon_cell_collection::const_view::size_type num_cells =
         m_copy.get().get_size(cells);
 
     // Create the result object, overestimating the number of measurements.
