@@ -112,3 +112,7 @@ target_link_libraries( traccc_core
 # CUDA or HIP backend with SYCL.
 target_compile_definitions( traccc_core
   PUBLIC $<$<COMPILE_LANGUAGE:SYCL>:EIGEN_NO_CUDA EIGEN_NO_HIP> )
+
+# Set the algebra-plugins plugin to use.
+message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGINS})
+target_compile_definitions(traccc_core PUBLIC ALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
