@@ -16,14 +16,50 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
-std::size_t event = 0;
+// System include(s).
+#include <cmath>
 
-std::string detector_file = "tml_detector/trackml-detector.csv";
-std::string digi_config_file =
+static const std::size_t event = 0;
+
+static const std::string detector_file = "tml_detector/trackml-detector.csv";
+static const std::string digi_config_file =
     "tml_detector/default-geometric-config-generic.json";
-std::string hits_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
-std::string cells_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
-std::string particles_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
+static const std::string hits_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
+static const std::string cells_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
+static const std::string particles_dir = TRACCC_TEST_IO_MOCK_DATA_DIR;
+
+/// Helper lambda for comparing two cell collections
+///
+/// The cell order in the two containers doesn't necessarily have to match.
+/// So the code checks that:
+///  - every cell from the first container is found in the second container;
+///  - every cell from the second container is associated to exactly one cell
+///    from the first container.
+///
+static auto compare_cells =
+    [](const traccc::edm::silicon_cell_collection::host& c1,
+       const traccc::edm::silicon_cell_collection::host& c2) {
+        EXPECT_EQ(c1.size(), c2.size());
+
+        std::vector<int> c2_find_count(c2.size(), 0);
+        for (std::size_t i = 0; i < c1.size(); ++i) {
+            bool found = false;
+            for (std::size_t j = 0; j < c2.size(); ++j) {
+                if (c1.channel0().at(i) == c2.channel0().at(j) &&
+                    c1.channel1().at(i) == c2.channel1().at(j) &&
+                    (std::abs(c1.activation().at(i) - c2.activation().at(j)) <
+                     0.0001f) &&
+                    (std::abs(c1.time().at(i) - c2.time().at(j)) < 0.0001f) &&
+                    c1.module_index().at(i) == c2.module_index().at(j)) {
+                    found = true;
+                    c2_find_count[j]++;
+                    break;
+                }
+            }
+            EXPECT_TRUE(found);
+        }
+        EXPECT_EQ(c2_find_count, std::vector<int>(c2.size(), 1));
+    };
 
 /***
  * Mock data test
@@ -105,7 +141,10 @@ TEST(mappper, hit_map) {
 
 // Test generate_hit_cell_map function
 TEST(mappper, hit_cell_map) {
-    auto h_c_map = traccc::generate_hit_cell_map(event, cells_dir, hits_dir);
+
+    vecmem::host_memory_resource resource;
+    auto h_c_map =
+        traccc::generate_hit_cell_map(event, cells_dir, hits_dir, resource);
 
     EXPECT_EQ(h_c_map.size(), 3);
 
@@ -118,66 +157,94 @@ TEST(mappper, hit_cell_map) {
     traccc::spacepoint sp2;
     sp2.global = traccc::point3{90.4015808f, 0.7420941f, -1502.5};
 
-    std::vector<traccc::cell> cells0;
-    cells0.push_back({1, 0, 0.0041470062f, 0, 0});
-    cells0.push_back({0, 1, 0.00306466641f, 0, 0});
-    cells0.push_back({1, 1, 0.00868905429f, 0, 0});
+    traccc::edm::silicon_cell_collection::host cells0{resource};
+    cells0.resize(3);
+    cells0.channel0() = {1u, 0u, 1u};
+    cells0.channel1() = {0u, 1u, 1u};
+    cells0.activation() = {0.0041470062f, 0.00306466641f, 0.00868905429f};
+    cells0.time() = {0.f, 0.f, 0.f};
+    cells0.module_index() = {0u, 0u, 0u};
 
-    std::vector<traccc::cell> cells1;
-    cells1.push_back({1, 1, 0.00886478275f, 0, 0});
-    cells1.push_back({1, 2, 0.00580428448f, 0, 0});
-    cells1.push_back({2, 1, 0.0016894876f, 0, 0});
-    cells1.push_back({2, 2, 0.00199076766f, 0, 0});
+    traccc::edm::silicon_cell_collection::host cells1{resource};
+    cells1.resize(4);
+    cells1.channel0() = {1u, 1u, 2u, 2u};
+    cells1.channel1() = {1u, 2u, 1u, 2u};
+    cells1.activation() = {0.00886478275f, 0.00580428448f, 0.0016894876f,
+                           0.00199076766f};
+    cells1.time() = {0.f, 0.f, 0.f, 0.f};
+    cells1.module_index() = {0u, 0u, 0u, 0u};
 
-    std::vector<traccc::cell> cells2;
-    cells2.push_back({5, 5, 0.00632160669f, 0, 0});
-    cells2.push_back({5, 6, 0.00911649223f, 0, 0});
-    cells2.push_back({5, 7, 0.00518329488f, 0, 0});
+    traccc::edm::silicon_cell_collection::host cells2{resource};
+    cells2.resize(3);
+    cells2.channel0() = {5u, 5u, 5u};
+    cells2.channel1() = {5u, 6u, 7u};
+    cells2.activation() = {0.00632160669f, 0.00911649223f, 0.00518329488f};
+    cells2.time() = {0.f, 0.f, 0.f};
+    cells2.module_index() = {0u, 0u, 0u};
 
-    EXPECT_EQ(h_c_map[sp0], cells0);
-    EXPECT_EQ(h_c_map[sp1], cells1);
-    EXPECT_EQ(h_c_map[sp2], cells2);
+    auto sp0cells = h_c_map.find(sp0);
+    ASSERT_NE(sp0cells, h_c_map.end());
+    compare_cells(sp0cells->second, cells0);
+
+    auto sp1cells = h_c_map.find(sp1);
+    ASSERT_NE(sp1cells, h_c_map.end());
+    compare_cells(sp1cells->second, cells1);
+
+    auto sp2cells = h_c_map.find(sp2);
+    ASSERT_NE(sp2cells, h_c_map.end());
+    compare_cells(sp2cells->second, cells2);
 }
 
 // Test generate_cell_particle_map function
 TEST(mappper, cell_particle_map) {
 
-    auto c_p_map = traccc::generate_cell_particle_map(event, cells_dir,
-                                                      hits_dir, particles_dir);
+    vecmem::host_memory_resource resource;
+    auto p_c_map = traccc::generate_particle_cell_map(
+        event, cells_dir, hits_dir, particles_dir, resource);
 
-    traccc::cell cell0{1, 0, 0.0041470062f, 0, 0};
-    traccc::cell cell1{0, 1, 0.00306466641f, 0, 0};
-    traccc::cell cell2{1, 1, 0.00868905429f, 0, 0};
-    traccc::cell cell3{1, 1, 0.00886478275f, 0, 0};
-    traccc::cell cell4{1, 2, 0.00580428448f, 0, 0};
-    traccc::cell cell5{2, 1, 0.0016894876f, 0, 0};
-    traccc::cell cell6{2, 2, 0.00199076766f, 0, 0};
-    traccc::cell cell7{5, 5, 0.00632160669f, 0, 0};
-    traccc::cell cell8{5, 6, 0.00911649223f, 0, 0};
-    traccc::cell cell9{5, 7, 0.00518329488f, 0, 0};
+    traccc::particle p1{4503599644147712, 0, 0, {}, 0.f, {}, 0.f, 0.f};
+    traccc::edm::silicon_cell_collection::host cells1{resource};
+    cells1.resize(3);
+    cells1.channel0() = {1u, 0u, 1u};
+    cells1.channel1() = {0u, 1u, 1u};
+    cells1.activation() = {0.0041470062f, 0.00306466641f, 0.00868905429f};
+    cells1.time() = {0.f, 0.f, 0.f};
+    cells1.module_index() = {0u, 0u, 0u};
 
-    EXPECT_EQ(c_p_map[cell0].particle_id, 4503599644147712);
-    EXPECT_EQ(c_p_map[cell1].particle_id, 4503599644147712);
-    EXPECT_EQ(c_p_map[cell2].particle_id, 4503599644147712);
-    EXPECT_EQ(c_p_map[cell3].particle_id, 4503599660924928);
-    EXPECT_EQ(c_p_map[cell4].particle_id, 4503599660924928);
-    EXPECT_EQ(c_p_map[cell5].particle_id, 4503599660924928);
-    EXPECT_EQ(c_p_map[cell6].particle_id, 4503599660924928);
-    EXPECT_EQ(c_p_map[cell7].particle_id, 4503599744811008);
-    EXPECT_EQ(c_p_map[cell8].particle_id, 4503599744811008);
-    EXPECT_EQ(c_p_map[cell9].particle_id, 4503599744811008);
+    auto p1cells = p_c_map.find(p1);
+    ASSERT_NE(p1cells, p_c_map.end());
+    compare_cells(p1cells->second, cells1);
+
+    traccc::particle p2{4503599660924928, 0, 0, {}, 0.f, {}, 0.f, 0.f};
+    traccc::edm::silicon_cell_collection::host cells2{resource};
+    cells2.resize(4);
+    cells2.channel0() = {1u, 1u, 2u, 2u};
+    cells2.channel1() = {1u, 2u, 1u, 2u};
+    cells2.activation() = {0.00886478275f, 0.00580428448f, 0.0016894876f,
+                           0.00199076766f};
+    cells2.time() = {0.f, 0.f, 0.f, 0.f};
+    cells2.module_index() = {0u, 0u, 0u, 0u};
+
+    auto p2cells = p_c_map.find(p2);
+    ASSERT_NE(p2cells, p_c_map.end());
+    compare_cells(p2cells->second, cells2);
+
+    traccc::particle p3{4503599744811008, 0, 0, {}, 0.f, {}, 0.f, 0.f};
+    traccc::edm::silicon_cell_collection::host cells3{resource};
+    cells3.resize(3);
+    cells3.channel0() = {5u, 5u, 5u};
+    cells3.channel1() = {5u, 6u, 7u};
+    cells3.activation() = {0.00632160669f, 0.00911649223f, 0.00518329488f};
+    cells3.time() = {0.f, 0.f, 0.f};
+    cells3.module_index() = {0u, 0u, 0u};
+
+    auto p3cells = p_c_map.find(p3);
+    ASSERT_NE(p3cells, p_c_map.end());
+    compare_cells(p3cells->second, cells3);
 }
 
 // Test generate_measurement_cell_map function
 TEST(mappper, measurement_cell_map) {
-
-    auto compare_cells = [](vecmem::vector<traccc::cell>& cells1,
-                            vecmem::vector<traccc::cell>& cells2) {
-        std::sort(cells1.begin(), cells1.end());
-        std::sort(cells2.begin(), cells2.end());
-
-        EXPECT_EQ(cells1, cells2);
-    };
 
     vecmem::host_memory_resource resource;
 
@@ -191,19 +258,24 @@ TEST(mappper, measurement_cell_map) {
     // The module that the cells of event 0 belong to, happens to be this one.
     constexpr traccc::cell::link_type module_link = 12465;
 
-    vecmem::vector<traccc::cell> cells0;
-    cells0.push_back({1, 0, 0.0041470062f, 0, module_link});
-    cells0.push_back({0, 1, 0.00306466641f, 0, module_link});
-    cells0.push_back({1, 1, 0.00868905429f, 0, module_link});
-    cells0.push_back({1, 1, 0.00886478275f, 0, module_link});
-    cells0.push_back({1, 2, 0.00580428448f, 0, module_link});
-    cells0.push_back({2, 1, 0.0016894876f, 0, module_link});
-    cells0.push_back({2, 2, 0.00199076766f, 0, module_link});
+    traccc::edm::silicon_cell_collection::host cells0{resource};
+    cells0.resize(7);
+    cells0.channel0() = {1u, 0u, 1u, 1u, 1u, 2u, 2u};
+    cells0.channel1() = {0u, 1u, 1u, 1u, 2u, 1u, 2u};
+    cells0.activation() = {0.0041470062f,  0.00306466641f, 0.00868905429f,
+                           0.00886478275f, 0.00580428448f, 0.0016894876f,
+                           0.00199076766f};
+    cells0.time() = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+    cells0.module_index() = {module_link, module_link, module_link, module_link,
+                             module_link, module_link, module_link};
 
-    vecmem::vector<traccc::cell> cells1;
-    cells1.push_back({5, 5, 0.00632160669f, 0, module_link});
-    cells1.push_back({5, 6, 0.00911649223f, 0, module_link});
-    cells1.push_back({5, 7, 0.00518329488f, 0, module_link});
+    traccc::edm::silicon_cell_collection::host cells1{resource};
+    cells1.resize(3);
+    cells1.channel0() = {5u, 5u, 5u};
+    cells1.channel1() = {5u, 6u, 7u};
+    cells1.activation() = {0.00632160669f, 0.00911649223f, 0.00518329488f};
+    cells1.time() = {0.f, 0.f, 0.f};
+    cells1.module_index() = {module_link, module_link, module_link};
 
     EXPECT_EQ(m_c_map.size(), 2);
 
@@ -225,8 +297,8 @@ TEST(mappper, measurement_cell_map) {
         }
     }
 
-    EXPECT_EQ(has_first_cluster, true);
-    EXPECT_EQ(has_second_cluster, true);
+    EXPECT_TRUE(has_first_cluster);
+    EXPECT_TRUE(has_second_cluster);
 }
 
 // Test the first generate_measurement_particle_map function

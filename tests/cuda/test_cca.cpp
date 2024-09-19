@@ -21,7 +21,7 @@
 namespace {
 
 cca_function_t get_f_with(traccc::clustering_config cfg) {
-    return [cfg](const traccc::cell_collection_types::host& cells,
+    return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
                  const traccc::silicon_detector_description::host& dd) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
@@ -44,8 +44,9 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
              vecmem::copy::type::host_to_device)
             ->ignore();
 
-        traccc::cell_collection_types::buffer cells_buffer{
-            static_cast<traccc::cell_collection_types::buffer::size_type>(
+        traccc::edm::silicon_cell_collection::buffer cells_buffer{
+            static_cast<
+                traccc::edm::silicon_cell_collection::buffer::size_type>(
                 cells.size()),
             device_mr};
         copy.setup(cells_buffer)->wait();

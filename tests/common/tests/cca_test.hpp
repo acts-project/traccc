@@ -10,9 +10,8 @@
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/read_cells.hpp"
 
@@ -39,7 +38,7 @@
 
 using cca_function_t = std::function<
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
-        const traccc::cell_collection_types::host &,
+        const traccc::edm::silicon_cell_collection::host &,
         const traccc::silicon_detector_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
@@ -155,7 +154,7 @@ class ConnectedComponentAnalysisTests
             dd.pitch_y()[i] = pitch;
         }
 
-        traccc::cell_collection_types::host cells;
+        traccc::edm::silicon_cell_collection::host cells{mr};
         traccc::io::read_cells(cells, file_hits, &dd);
 
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>

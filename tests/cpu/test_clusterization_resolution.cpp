@@ -55,7 +55,7 @@ TEST_P(SurfaceBinningTests, Run) {
         sf(host_mr);
 
     // Read the cells from the relevant event file
-    traccc::cell_collection_types::host cells_truth{&host_mr};
+    traccc::edm::silicon_cell_collection::host cells_truth{host_mr};
     traccc::io::read_cells(cells_truth, event, data_dir, &dd);
 
     // Get Reconstructed Spacepoints

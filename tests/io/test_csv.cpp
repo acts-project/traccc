@@ -30,20 +30,20 @@ TEST_F(io, csv_read_single_module) {
 
     vecmem::host_memory_resource resource;
 
-    traccc::cell_collection_types::host cells{&resource};
+    traccc::edm::silicon_cell_collection::host cells{resource};
     traccc::io::read_cells(cells, get_datafile("single_module/cells.csv"));
 
     ASSERT_EQ(cells.size(), 6u);
 
-    EXPECT_EQ(cells.at(0).channel0, 123u);
-    EXPECT_EQ(cells.at(0).channel1, 32u);
-    EXPECT_FLOAT_EQ(static_cast<float>(cells.at(0).activation), 0.002f);
-    EXPECT_EQ(cells.at(0).module_link, 0u);
+    EXPECT_EQ(cells.channel0().at(0), 123u);
+    EXPECT_EQ(cells.channel1().at(0), 32u);
+    EXPECT_FLOAT_EQ(static_cast<float>(cells.activation().at(0)), 0.002f);
+    EXPECT_EQ(cells.module_index().at(0), 0u);
 
-    EXPECT_EQ(cells.at(5).channel0, 174u);
-    EXPECT_EQ(cells.at(5).channel1, 880u);
-    EXPECT_FLOAT_EQ(static_cast<float>(cells.at(5).activation), 0.23f);
-    EXPECT_EQ(cells.at(5).module_link, 0u);
+    EXPECT_EQ(cells.channel0().at(5), 174u);
+    EXPECT_EQ(cells.channel1().at(5), 880u);
+    EXPECT_FLOAT_EQ(static_cast<float>(cells.activation().at(5)), 0.23f);
+    EXPECT_EQ(cells.module_index().at(5), 0u);
 }
 
 // This defines the local frame test suite
@@ -51,22 +51,22 @@ TEST_F(io, csv_read_two_modules) {
 
     vecmem::host_memory_resource resource;
 
-    traccc::cell_collection_types::host cells{&resource};
+    traccc::edm::silicon_cell_collection::host cells{resource};
     traccc::io::read_cells(cells, get_datafile("two_modules/cells.csv"));
 
     ASSERT_EQ(cells.size(), 14u);
 
     // Check cells in first module
-    EXPECT_EQ(cells.at(0).channel0, 123u);
-    EXPECT_EQ(cells.at(0).channel1, 32u);
-    EXPECT_EQ(cells.at(5).channel0, 174u);
-    EXPECT_EQ(cells.at(5).channel1, 880u);
+    EXPECT_EQ(cells.channel0().at(0), 123u);
+    EXPECT_EQ(cells.channel1().at(0), 32u);
+    EXPECT_EQ(cells.channel0().at(5), 174u);
+    EXPECT_EQ(cells.channel1().at(5), 880u);
 
     // Check cells in second module
-    EXPECT_EQ(cells.at(6).channel0, 0u);
-    EXPECT_EQ(cells.at(6).channel1, 4u);
-    EXPECT_EQ(cells.at(13).channel0, 5u);
-    EXPECT_EQ(cells.at(13).channel1, 98u);
+    EXPECT_EQ(cells.channel0().at(6), 0u);
+    EXPECT_EQ(cells.channel1().at(6), 4u);
+    EXPECT_EQ(cells.channel0().at(13), 5u);
+    EXPECT_EQ(cells.channel1().at(13), 98u);
 }
 
 // This reads in the tml pixel barrel first event
@@ -83,7 +83,7 @@ TEST_F(io, csv_read_tml_pixelbarrel) {
 
     vecmem::host_memory_resource resource;
 
-    traccc::cell_collection_types::host cells{&resource};
+    traccc::edm::silicon_cell_collection::host cells{resource};
     traccc::io::read_cells(
         cells, get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
         nullptr, traccc::data_format::csv, false);
