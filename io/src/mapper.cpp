@@ -24,6 +24,7 @@
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 
 // System include(s).
+#include <cassert>
 #include <filesystem>
 
 namespace traccc {
@@ -146,6 +147,7 @@ hit_map generate_hit_map(std::size_t event, const std::string& hits_dir) {
 hit_cell_map generate_hit_cell_map(std::size_t event,
                                    const std::string& cells_dir,
                                    const std::string& hits_dir,
+                                   vecmem::memory_resource& resource,
                                    const geoId_link_map& link_map) {
 
     hit_cell_map result;
@@ -168,31 +170,48 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
         if (it != link_map.end()) {
             link = (*it).second;
         }
-        result[hmap[iocell.measurement_id]].push_back(
-            cell{iocell.channel0, iocell.channel1, iocell.value,
-                 iocell.timestamp, link});
+        auto pair = result.insert({hmap[iocell.measurement_id], {resource}});
+        edm::silicon_cell_collection::host& cells = pair.first->second;
+        const std::size_t cellIndex = cells.size();
+        cells.resize(cellIndex + 1);
+        cells.channel0().at(cellIndex) = iocell.channel0;
+        cells.channel1().at(cellIndex) = iocell.channel1;
+        cells.activation().at(cellIndex) = iocell.value;
+        cells.time().at(cellIndex) = iocell.timestamp;
+        cells.module_index().at(cellIndex) = link;
     }
     return result;
 }
 
-cell_particle_map generate_cell_particle_map(std::size_t event,
+particle_cell_map generate_particle_cell_map(std::size_t event,
                                              const std::string& cells_dir,
                                              const std::string& hits_dir,
                                              const std::string& particle_dir,
+                                             vecmem::memory_resource& resource,
                                              const geoId_link_map& link_map) {
 
-    cell_particle_map result;
+    particle_cell_map result;
 
     auto h_p_map =
         generate_hit_particle_map(event, hits_dir, particle_dir, link_map);
 
-    auto h_c_map = generate_hit_cell_map(event, cells_dir, hits_dir, link_map);
+    auto h_c_map =
+        generate_hit_cell_map(event, cells_dir, hits_dir, resource, link_map);
 
     for (auto const& [hit, ptc] : h_p_map) {
-        auto& cells = h_c_map[hit];
+        auto pair1 = h_c_map.insert({hit, {resource}});
+        edm::silicon_cell_collection::host& cells1 = pair1.first->second;
+        auto pair2 = result.insert({ptc, {resource}});
+        edm::silicon_cell_collection::host& cells2 = pair2.first->second;
 
-        for (auto& c : cells) {
-            result[c] = ptc;
+        for (std::size_t i = 0; i < cells1.size(); ++i) {
+            const std::size_t cellIndex = cells2.size();
+            cells2.resize(cellIndex + 1);
+            cells2.channel0().at(cellIndex) = cells1.channel0().at(i);
+            cells2.channel1().at(cellIndex) = cells1.channel1().at(i);
+            cells2.activation().at(cellIndex) = cells1.activation().at(i);
+            cells2.time().at(cellIndex) = cells1.time().at(i);
+            cells2.module_index().at(cellIndex) = cells1.module_index().at(i);
         }
     }
 
@@ -214,19 +233,38 @@ measurement_cell_map generate_measurement_cell_map(
     silicon_detector_description::const_data dd_data{vecmem::get_data(dd)};
 
     // Read the cells from the relevant event file
-    cell_collection_types::host cells(&resource);
+    edm::silicon_cell_collection::host cells(resource);
     io::read_cells(cells, event, cells_dir, &dd, traccc::data_format::csv,
                    false);
 
-    auto clusters_per_event = cc(vecmem::get_data(cells));
-    auto clusters_data = traccc::get_data(clusters_per_event);
-    auto measurements_per_event = mc(clusters_data, dd_data);
+    auto cells_data = vecmem::get_data(cells);
+    auto clusters = cc(cells_data);
+    auto clusters_data = vecmem::get_data(clusters);
+    auto measurements = mc(cells_data, clusters_data, dd_data);
 
-    assert(measurements_per_event.size() == clusters_per_event.size());
-    for (unsigned int i = 0; i < measurements_per_event.size(); ++i) {
-        const auto& clus = clusters_per_event.get_items()[i];
+    assert(measurements.size() == clusters.size());
+    for (std::size_t i = 0; i < measurements.size(); ++i) {
 
-        result[measurements_per_event[i]] = clus;
+        edm::silicon_cell_collection::host cells_for_measurement{resource};
+        cells_for_measurement.reserve(clusters.cell_indices().at(i).size());
+        for (unsigned int cell_idx : clusters.cell_indices().at(i)) {
+            const std::size_t measCellIndex = cells_for_measurement.size();
+            cells_for_measurement.resize(measCellIndex + 1);
+            cells_for_measurement.channel0().at(measCellIndex) =
+                cells.channel0().at(cell_idx);
+            cells_for_measurement.channel1().at(measCellIndex) =
+                cells.channel1().at(cell_idx);
+            cells_for_measurement.activation().at(measCellIndex) =
+                cells.activation().at(cell_idx);
+            cells_for_measurement.time().at(measCellIndex) =
+                cells.time().at(cell_idx);
+            cells_for_measurement.module_index().at(measCellIndex) =
+                cells.module_index().at(cell_idx);
+        }
+
+        auto pair = result.insert({measurements.at(i), cells_for_measurement});
+        (void)pair;
+        assert(pair.second);
     }
 
     return result;
@@ -251,12 +289,34 @@ measurement_particle_map generate_measurement_particle_map(
     }
 
     // generate cell particle map
-    auto c_p_map = generate_cell_particle_map(event, cells_dir, hits_dir,
-                                              particle_dir, link_map);
+    auto p_c_map = generate_particle_cell_map(event, cells_dir, hits_dir,
+                                              particle_dir, resource, link_map);
 
-    for (auto const& [meas, cells] : m_c_map) {
-        for (const auto& c : cells) {
-            result[meas][c_p_map[c]]++;
+    // Loop over the map associating cells with measurements.
+    for (auto const& [meas, mCells] : m_c_map) {
+        // Loop over the map associating particles with cells.
+        for (auto const& [ptc, pCells] : p_c_map) {
+            // Check how many cells are shared between the two.
+            for (std::size_t mCellIndex = 0; mCellIndex < mCells.size();
+                 ++mCellIndex) {
+                for (std::size_t pCellIndex = 0; pCellIndex < pCells.size();
+                     ++pCellIndex) {
+                    if ((mCells.channel0().at(mCellIndex) ==
+                         pCells.channel0().at(pCellIndex)) &&
+                        (mCells.channel1().at(mCellIndex) ==
+                         pCells.channel1().at(pCellIndex)) &&
+                        (std::abs(mCells.activation().at(mCellIndex) -
+                                  pCells.activation().at(pCellIndex)) <
+                         1e-6f) &&
+                        (std::abs(mCells.time().at(mCellIndex) -
+                                  pCells.time().at(pCellIndex)) < 1e-6f) &&
+                        (mCells.module_index().at(mCellIndex) ==
+                         pCells.module_index().at(pCellIndex))) {
+
+                        result[meas][ptc]++;
+                    }
+                }
+            }
         }
     }
 

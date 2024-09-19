@@ -22,16 +22,16 @@ namespace traccc::io {
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           traccc::cell_collection_types::const_view cells) {
+           traccc::edm::silicon_cell_collection::const_view cells) {
 
     switch (format) {
         case data_format::binary:
-            details::write_binary_collection(
+            details::write_binary_soa(
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.dat")))
                                       .native()),
-                traccc::cell_collection_types::const_device{cells});
+                traccc::edm::silicon_cell_collection::const_device{cells});
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

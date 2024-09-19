@@ -25,10 +25,9 @@ namespace {
 /// Comparator used for sorting cells. This sorting is one of the assumptions
 /// made in the clusterization algorithm
 struct cell_order {
-    bool operator()(const traccc::cell& lhs, const traccc::cell& rhs) const {
-        if (lhs.module_link != rhs.module_link) {
-            return lhs.module_link < rhs.module_link;
-        } else if (lhs.channel1 != rhs.channel1) {
+    bool operator()(const traccc::io::csv::cell& lhs,
+                    const traccc::io::csv::cell& rhs) const {
+        if (lhs.channel1 != rhs.channel1) {
             return (lhs.channel1 < rhs.channel1);
         } else {
             return (lhs.channel0 < rhs.channel0);
@@ -36,11 +35,12 @@ struct cell_order {
     }
 };  // struct cell_order
 
-std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
-    std::string_view filename) {
+std::map<std::uint64_t, std::vector<traccc::io::csv::cell> >
+read_deduplicated_cells(std::string_view filename) {
 
     // Temporary storage for all the cells and modules.
-    std::map<std::uint64_t, std::map<traccc::cell, float, ::cell_order> >
+    std::map<std::uint64_t,
+             std::map<traccc::io::csv::cell, float, ::cell_order> >
         cellMap;
 
     // Construct the cell reader object.
@@ -51,15 +51,11 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
     unsigned int nduplicates = 0;
     while (reader.read(iocell)) {
 
-        // Construct a cell object.
-        const traccc::cell cell{iocell.channel0, iocell.channel1, iocell.value,
-                                iocell.timestamp, 0};
-
         // Add the cell to the module. At this point the module link of the
         // cells is not set up correctly yet.
-        auto ret = cellMap[iocell.geometry_id].insert({cell, iocell.value});
+        auto ret = cellMap[iocell.geometry_id].insert({iocell, iocell.value});
         if (ret.second == false) {
-            cellMap[iocell.geometry_id].at(cell) += iocell.value;
+            cellMap[iocell.geometry_id].at(iocell) += iocell.value;
             ++nduplicates;
         }
     }
@@ -69,11 +65,11 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
     }
 
     // Create and fill the result container. With summed activation values.
-    std::map<std::uint64_t, std::vector<traccc::cell> > result;
+    std::map<std::uint64_t, std::vector<traccc::io::csv::cell> > result;
     for (const auto& [geometry_id, cells] : cellMap) {
         for (const auto& [cell, value] : cells) {
-            traccc::cell summed_cell{cell};
-            summed_cell.activation = value;
+            traccc::io::csv::cell summed_cell{cell};
+            summed_cell.value = value;
             result[geometry_id].push_back(summed_cell);
         }
     }
@@ -82,11 +78,11 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
     return result;
 }
 
-std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
+std::map<std::uint64_t, std::vector<traccc::io::csv::cell> > read_all_cells(
     std::string_view filename) {
 
     // The result container.
-    std::map<std::uint64_t, std::vector<traccc::cell> > result;
+    std::map<std::uint64_t, std::vector<traccc::io::csv::cell> > result;
 
     // Construct the cell reader object.
     auto reader = traccc::io::csv::make_cell_reader(filename);
@@ -97,9 +93,7 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
 
         // Add the cell to the module. At this point the module link of the
         // cells is not set up correctly yet.
-        result[iocell.geometry_id].push_back({iocell.channel0, iocell.channel1,
-                                              iocell.value, iocell.timestamp,
-                                              0});
+        result[iocell.geometry_id].push_back(iocell);
     }
 
     // Sort the cells. Deduplication or not, they do need to be sorted.
@@ -115,9 +109,13 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
 
 namespace traccc::io::csv {
 
-void read_cells(cell_collection_types::host& cells, std::string_view filename,
+void read_cells(edm::silicon_cell_collection::host& cells,
+                std::string_view filename,
                 const silicon_detector_description::host* dd,
                 bool deduplicate) {
+
+    // Clear the output container.
+    cells.resize(0u);
 
     // Get the cells and modules into an intermediate format.
     auto cellsMap = (deduplicate ? read_deduplicated_cells(filename)
@@ -150,8 +148,13 @@ void read_cells(cell_collection_types::host& cells, std::string_view filename,
 
         // Add the cells to the output.
         for (auto& cell : cellz) {
-            cells.push_back(cell);
-            cells.back().module_link = ddIndex;
+            const std::size_t cellIndex = cells.size();
+            cells.resize(cellIndex + 1);
+            cells.channel0().at(cellIndex) = cell.channel0;
+            cells.channel1().at(cellIndex) = cell.channel1;
+            cells.activation().at(cellIndex) = cell.value;
+            cells.time().at(cellIndex) = cell.timestamp;
+            cells.module_index().at(cellIndex) = ddIndex;
         }
     }
 }
