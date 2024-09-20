@@ -22,7 +22,7 @@
 // detray include(s).
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/propagator/propagator.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>

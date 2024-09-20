@@ -12,7 +12,7 @@ traccc_add_executable(benchmark_cpu
     "toy_detector_cpu.cpp"
     LINK_LIBRARIES benchmark::benchmark benchmark::benchmark_main 
     traccc::core traccc_benchmarks_common 
-    detray::core detray::utils vecmem::core)
+    detray::core detray::detectors vecmem::core)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(traccc_benchmark_cpu PRIVATE OpenMP::OpenMP_CXX)

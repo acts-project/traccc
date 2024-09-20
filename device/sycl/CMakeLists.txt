@@ -44,5 +44,5 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/sanity/ordered_on.hpp"
 )
 target_link_libraries( traccc_sycl
-  PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
+  PUBLIC traccc::core detray::core vecmem::core covfie::core
   PRIVATE traccc::device_common vecmem::sycl )

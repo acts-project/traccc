@@ -15,15 +15,15 @@
 
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/build_telescope_detector.hpp"
-#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/line.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/geometry/tracking_surface.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/detectors/build_telescope_detector.hpp"
+#include "detray/test/utils/detectors/build_toy_detector.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/statistics.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
-#include "detray/utils/statistics.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>

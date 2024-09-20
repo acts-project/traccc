@@ -18,7 +18,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.74.2.tar.gz;URL_MD5;5ce179984fcf73368ca792f789a84ed5"
+"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.75.2.tar.gz;URL_MD5;47b359f9817785f8a235830c921070d6"
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
@@ -37,14 +37,27 @@ FetchContent_Declare( Detray ${TRACCC_DETRAY_SOURCE_FULL} )
 set( DETRAY_CUSTOM_SCALARTYPE "float" CACHE STRING
    "Scalar type to use in the Detray code" )
 
-set( DETRAY_BUILD_TESTING FALSE CACHE BOOL
+set( DETRAY_BUILD_UNITTESTS FALSE CACHE BOOL
    "Turn off the build of the Detray unit tests" )
+set( DETRAY_BUILD_INTEGRATIONTESTS FALSE CACHE BOOL
+   "Turn off the build of the Detray integration tests" )
+set( DETRAY_BUILD_BENCHMARKS FALSE CACHE BOOL
+   "Turn off the build of the Detray benchmarks" )
 set( DETRAY_BUILD_TUTORIALS FALSE CACHE BOOL
    "Turn off the build of the Detray tutorials" )
 set( DETRAY_EIGEN_PLUGIN TRUE CACHE BOOL
    "Turn on the build of the Detray Eigen code" )
 set( DETRAY_VC_PLUGIN TRUE CACHE BOOL
    "Turn on the build of the Detray Vc code" )
+
+# Needed for 'performance', 'simulation', 'examples', 'tests' and 'benchmarks'
+if( TRACCC_BUILD_IO OR TRACCC_BUILD_EXAMPLES OR (BUILD_TESTING AND TRACCC_BUILD_TESTING) OR TRACCC_BUILD_BENCHMARKS )
+   set( DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL
+      "Turn on the build of the Detray tests utilities if needed" )
+else()
+   set( DETRAY_BUILD_TEST_UTILS FALSE CACHE BOOL
+      "Turn off the build of the Detray tests utilities" )
+endif()
 
 set( DETRAY_SETUP_VECMEM FALSE CACHE BOOL
    "Do not set up VecMem as part of Detray" )

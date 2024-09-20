@@ -91,7 +91,7 @@ endif()
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
-  PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
+  PUBLIC traccc::core detray::core vecmem::core covfie::core
   PRIVATE CUDA::cudart traccc::Thrust traccc::device_common vecmem::cuda )
 
 # For CUDA 11 turn on separable compilation. This is necessary for using

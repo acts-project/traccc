@@ -64,7 +64,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/throughput.hpp"
    "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
-   PUBLIC traccc::core traccc::io covfie::core )
+   PUBLIC traccc::core traccc::io covfie::core detray::test_utils )
 
 # Use ROOT in traccc::performance, if requested.
 if( TRACCC_USE_ROOT )

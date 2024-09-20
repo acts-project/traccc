@@ -11,11 +11,11 @@
 #include "kalman_fitting_test.hpp"
 
 // Detray include(s).
-#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
 #include "detray/navigation/detail/ray.hpp"
+#include "detray/test/utils/detectors/build_telescope_detector.hpp"
 
 namespace traccc {
 

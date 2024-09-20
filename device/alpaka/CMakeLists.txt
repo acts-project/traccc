@@ -8,7 +8,7 @@
 include( traccc-alpaka-functions )
 include( traccc-compiler-options-cpp )
 
-set(PUBLIC_LIBRARIES traccc::core traccc::device_common detray::core detray::utils vecmem::core covfie::core)
+set(PUBLIC_LIBRARIES traccc::core traccc::device_common vecmem::core covfie::core)
 set(PRIVATE_LIBRARIES alpaka::alpaka traccc::Thrust)
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)
