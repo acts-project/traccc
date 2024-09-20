@@ -30,28 +30,8 @@ sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
     const edm::silicon_cell_collection::const_device cells{cells_view};
 
     // Run some sanity checks on it.
-    assert(is_contiguous_on(
-        [](const auto& idx) { return idx; },
-        vecmem::data::vector_view{cells.module_index().size(),
-                                  cells.module_index().data()}));
-    assert([&cells]() {
-        for (std::size_t cell_idx = 1; cell_idx < cells.size(); ++cell_idx) {
-            if (cells.module_index().at(cell_idx - 1) ==
-                cells.module_index().at(cell_idx)) {
-                if (cells.channel1().at(cell_idx - 1) <=
-                    cells.channel1().at(cell_idx)) {
-                    return true;
-                } else if (cells.channel1().at(cell_idx - 1) ==
-                           cells.channel1().at(cell_idx)) {
-                    return cells.channel0().at(cell_idx - 1) <=
-                           cells.channel0().at(cell_idx);
-                } else {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }() == true);
+    assert(is_contiguous_on(cell_module_projection(), cells));
+    assert(is_ordered_on(channel0_major_cell_order_relation(), cells));
 
     // Run SparseCCL to fill CCL indices.
     vecmem::vector<unsigned int> cluster_indices{cells.size(), &(m_mr.get())};

@@ -33,8 +33,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
      *****************************************************************/
 
     // Check contiguity of the measurements
-    assert(host::is_contiguous_on(measurement_module_projection(),
-                                  vecmem::get_data(measurements)));
+    assert(
+        host::is_contiguous_on(measurement_module_projection(), measurements));
 
     // Get copy of barcode uniques
     std::vector<measurement> uniques;

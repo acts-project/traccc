@@ -41,17 +41,16 @@ namespace traccc::host {
  * @return true If the vector is ordered on `R`.
  * @return false Otherwise.
  */
-template <std::semiregular R, typename T>
-requires std::relation<R, T, T> bool is_ordered_on(
-    R relation, vecmem::data::vector_view<T> vector) {
-    // Grab the number of elements in our vector.
-    uint32_t n = vector.size();
+template <std::semiregular R, typename CONTAINER>
+requires std::regular_invocable<R, CONTAINER, std::size_t, std::size_t> bool
+is_ordered_on(R&& relation, const CONTAINER& in) {
 
-    vecmem::device_vector<T> in(vector);
+    // Grab the number of elements in our vector.
+    std::size_t n = in.size();
 
     // Check for orderedness.
     for (std::size_t i = 1; i < n; ++i) {
-        if (!relation(in.at(i - 1), in.at(i))) {
+        if (!relation(in, i - 1, i)) {
             return false;
         }
     }
