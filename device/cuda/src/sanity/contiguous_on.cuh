@@ -10,11 +10,10 @@
 
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/utils.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 
 // VecMem include(s).
-#include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
@@ -27,23 +26,23 @@
 
 namespace traccc::cuda {
 namespace kernels {
-template <std::semiregular P, typename T, typename S>
-requires std::regular_invocable<P, T> __global__ void compress_adjacent(
-    P projection, vecmem::data::vector_view<T> _in, S* out,
-    uint32_t* out_size) {
+template <typename CONTAINER, std::semiregular P, typename VIEW, typename S>
+requires std::regular_invocable<P, CONTAINER, std::size_t> __global__ void
+compress_adjacent(P projection, VIEW _in, S* out, uint32_t* out_size) {
+
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    vecmem::device_vector<T> in(_in);
+    CONTAINER in(_in);
 
     if (tid > 0 && tid < in.size()) {
-        std::invoke_result_t<P, T> v1 = projection(in.at(tid - 1));
-        std::invoke_result_t<P, T> v2 = projection(in.at(tid));
+        S v1 = projection(in, tid - 1);
+        S v2 = projection(in, tid);
 
         if (v1 != v2) {
             out[atomicAdd(out_size, 1u)] = v2;
         }
     } else if (tid == 0) {
-        out[atomicAdd(out_size, 1u)] = projection(in.at(tid));
+        out[atomicAdd(out_size, 1u)] = projection(in, tid);
     }
 }
 
@@ -59,40 +58,47 @@ __global__ void all_unique(const T* in, const size_t n, bool* out) {
 }  // namespace kernels
 
 /**
- * @brief Sanity check that a given vector is contiguous on a given projection.
+ * @brief Sanity check that a given container is contiguous on a given
+ *        projection.
  *
- * For a vector $v$ to be contiguous on a projection $\pi$, it must be the case
- * that for all indices $i$ and $j$, if $v_i = v_j$, then all indices $k$
+ * For a container $v$ to be contiguous on a projection $\pi$, it must be the
+ * case that for all indices $i$ and $j$, if $v_i = v_j$, then all indices $k$
  * between $i$ and $j$, $v_i = v_j = v_k$.
  *
  * @note This function runs in O(n^2) time.
  *
+ * @tparam CONTAINER The type of the (device) container.
  * @tparam P The type of projection $\pi$, a callable which returns some
  * comparable type.
- * @tparam T The type of the vector.
+ * @tparam VIEW The type of the view for the container.
  * @param projection A projection object of type `P`.
  * @param mr A memory resource used for allocating intermediate memory.
- * @param vector The vector which to check for contiguity.
- * @return true If the vector is contiguous on `P`.
+ * @param view The container which to check for contiguity.
+ * @return true If the container is contiguous on `P`.
  * @return false Otherwise.
  */
-template <std::semiregular P, std::equality_comparable T>
-requires std::regular_invocable<P, T> bool is_contiguous_on(
-    P&& projection, vecmem::memory_resource& mr, vecmem::copy& copy,
-    stream& stream, vecmem::data::vector_view<T> vector) {
+template <typename CONTAINER, std::semiregular P, typename VIEW>
+requires std::regular_invocable<P, CONTAINER, std::size_t> bool
+is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
+                 vecmem::copy& copy, stream& stream, const VIEW& view) {
+
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;
     constexpr int block_size_2d = 32;
 
-    cudaStream_t cuda_stream =
-        reinterpret_cast<cudaStream_t>(stream.cudaStream());
+    cudaStream_t cuda_stream = details::get_stream(stream);
 
-    // Grab the number of elements in our vector.
-    uint32_t n = copy.get_size(vector);
+    // Grab the number of elements in our container.
+    std::size_t n = copy.get_size(view);
+
+    // Exit early for empty containers.
+    if (n == 0) {
+        return true;
+    }
 
     // Get the output type of the projection.
-    using projection_t = std::invoke_result_t<P, T>;
+    using projection_t = std::invoke_result_t<P, CONTAINER, std::size_t>;
 
     // Allocate memory for intermediate values and outputs, then set them up.
     vecmem::unique_alloc_ptr<projection_t[]> iout =
@@ -113,9 +119,9 @@ requires std::regular_invocable<P, T> bool is_contiguous_on(
 
     // Launch the first kernel, which will squash consecutive equal elements
     // into one element.
-    kernels::compress_adjacent<P, T, projection_t>
+    kernels::compress_adjacent<CONTAINER>
         <<<(n + block_size - 1) / block_size, block_size, 0, cuda_stream>>>(
-            projection, vector, iout.get(), iout_size.get());
+            projection, view, iout.get(), iout_size.get());
 
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -126,6 +132,7 @@ requires std::regular_invocable<P, T> bool is_contiguous_on(
     TRACCC_CUDA_ERROR_CHECK(
         cudaMemcpyAsync(&host_iout_size, iout_size.get(), sizeof(uint32_t),
                         cudaMemcpyDeviceToHost, cuda_stream));
+    stream.synchronize();
 
     // Launch the second kernel, which will check if the values are unique.
     uint32_t grid_size_rd =

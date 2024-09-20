@@ -92,11 +92,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr) const {
 
-    // assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
-    //                         m_stream, cells));
-    // assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
-    //                      m_copy, m_stream, cells));
-
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
@@ -113,6 +108,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     if (num_cells == 0) {
         return measurements;
     }
+
+    assert(is_contiguous_on<edm::silicon_cell_collection::const_device>(
+        cell_module_projection(), m_mr.main, m_copy, m_stream, cells));
+    assert(is_ordered_on<edm::silicon_cell_collection::const_device>(
+        channel0_major_cell_order_relation(), m_mr.main, m_copy, m_stream,
+        cells));
 
     // Create buffer for linking cells to their measurements.
     //

@@ -254,8 +254,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     measurement_collection_types::const_view::size_type n_measurements =
         m_copy.get_size(measurements);
 
-    assert(is_contiguous_on(measurement_module_projection(), m_mr.main, m_copy,
-                            m_stream, measurements));
+    assert(is_contiguous_on<measurement_collection_types::const_device>(
+        measurement_module_projection(), m_mr.main, m_copy, m_stream,
+        measurements));
 
     // Get copy of barcode uniques
     measurement_collection_types::buffer uniques_buffer{n_measurements,

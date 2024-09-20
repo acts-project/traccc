@@ -7,29 +7,29 @@
  */
 
 // vecmem includes
+#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
 // traccc includes
-#include <traccc/definitions/qualifiers.hpp>
-
 #include "../../device/cuda/src/sanity/contiguous_on.cuh"
+#include "traccc/definitions/qualifiers.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>
 
-struct int_identity_projection {
-    TRACCC_HOST_DEVICE
-    int operator()(const int& v) const { return v; }
+struct identity_projection {
+    template <typename VEC>
+    TRACCC_HOST_DEVICE int operator()(const VEC& v, std::size_t i) const {
+        return v.at(i);
+    }
 };
 
 class CUDASanityContiguousOn : public testing::Test {
     protected:
-    CUDASanityContiguousOn() : copy(stream.cudaStream()) {}
-
     vecmem::cuda::device_memory_resource mr;
     traccc::cuda::stream stream;
-    vecmem::cuda::async_copy copy;
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
 };
 
 TEST_F(CUDASanityContiguousOn, TrueOrdered) {
@@ -43,9 +43,11 @@ TEST_F(CUDASanityContiguousOn, TrueOrdered) {
 
     auto device_data = copy.to(vecmem::get_data(host_vector), mr,
                                vecmem::copy::type::host_to_device);
+    auto device_view = vecmem::get_data(device_data);
 
-    ASSERT_TRUE(traccc::cuda::is_contiguous_on(int_identity_projection(), mr,
-                                               copy, stream, device_data));
+    ASSERT_TRUE(
+        traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
+            identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, TrueRandom) {
@@ -59,9 +61,11 @@ TEST_F(CUDASanityContiguousOn, TrueRandom) {
 
     auto device_data = copy.to(vecmem::get_data(host_vector), mr,
                                vecmem::copy::type::host_to_device);
+    auto device_view = vecmem::get_data(device_data);
 
-    ASSERT_TRUE(traccc::cuda::is_contiguous_on(int_identity_projection(), mr,
-                                               copy, stream, device_data));
+    ASSERT_TRUE(
+        traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
+            identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseOrdered) {
@@ -79,9 +83,11 @@ TEST_F(CUDASanityContiguousOn, FalseOrdered) {
 
     auto device_data = copy.to(vecmem::get_data(host_vector), mr,
                                vecmem::copy::type::host_to_device);
+    auto device_view = vecmem::get_data(device_data);
 
-    ASSERT_FALSE(traccc::cuda::is_contiguous_on(int_identity_projection(), mr,
-                                                copy, stream, device_data));
+    ASSERT_FALSE(
+        traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
+            identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalFirst) {
@@ -97,9 +103,11 @@ TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalFirst) {
 
     auto device_data = copy.to(vecmem::get_data(host_vector), mr,
                                vecmem::copy::type::host_to_device);
+    auto device_view = vecmem::get_data(device_data);
 
-    ASSERT_FALSE(traccc::cuda::is_contiguous_on(int_identity_projection(), mr,
-                                                copy, stream, device_data));
+    ASSERT_FALSE(
+        traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
+            identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, TrueOrderedPathologicalFirst) {
@@ -115,9 +123,11 @@ TEST_F(CUDASanityContiguousOn, TrueOrderedPathologicalFirst) {
 
     auto device_data = copy.to(vecmem::get_data(host_vector), mr,
                                vecmem::copy::type::host_to_device);
+    auto device_view = vecmem::get_data(device_data);
 
-    ASSERT_TRUE(traccc::cuda::is_contiguous_on(int_identity_projection(), mr,
-                                               copy, stream, device_data));
+    ASSERT_TRUE(
+        traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
+            identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalLast) {
@@ -133,9 +143,11 @@ TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalLast) {
 
     auto device_data = copy.to(vecmem::get_data(host_vector), mr,
                                vecmem::copy::type::host_to_device);
+    auto device_view = vecmem::get_data(device_data);
 
-    ASSERT_FALSE(traccc::cuda::is_contiguous_on(int_identity_projection(), mr,
-                                                copy, stream, device_data));
+    ASSERT_FALSE(
+        traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
+            identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseRandom) {
@@ -149,7 +161,9 @@ TEST_F(CUDASanityContiguousOn, FalseRandom) {
 
     auto device_data = copy.to(vecmem::get_data(host_vector), mr,
                                vecmem::copy::type::host_to_device);
+    auto device_view = vecmem::get_data(device_data);
 
-    ASSERT_FALSE(traccc::cuda::is_contiguous_on(int_identity_projection(), mr,
-                                                copy, stream, device_data));
+    ASSERT_FALSE(
+        traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
+            identity_projection(), mr, copy, stream, device_view));
 }
