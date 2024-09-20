@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
@@ -48,7 +48,7 @@ struct full_chain_algorithm_data;
 ///
 class full_chain_algorithm
     : public algorithm<bound_track_parameters_collection_types::host(
-          const cell_collection_types::host&)> {
+          const edm::silicon_cell_collection::host&)> {
 
     public:
     /// @name (For now dummy...) Type declaration(s)
@@ -115,7 +115,7 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const cell_collection_types::host& cells) const override;
+        const edm::silicon_cell_collection::host& cells) const override;
 
     private:
     /// Private data object

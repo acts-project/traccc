@@ -7,9 +7,8 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/pixel_data.hpp"
@@ -84,7 +83,7 @@ int par_run(const traccc::opts::input_data& input_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::cell_collection_types::host cells_per_event{&resource};
+        traccc::edm::silicon_cell_collection::host cells_per_event{resource};
         traccc::io::read_cells(cells_per_event, event, input_opts.directory,
                                &det_descr, input_opts.format);
 

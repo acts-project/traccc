@@ -173,7 +173,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         {
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
 
-            traccc::cell_collection_types::host cells_per_event{&host_mr};
+            traccc::edm::silicon_cell_collection::host cells_per_event{host_mr};
 
             {
                 traccc::performance::timer t("File reading  (cpu)",
@@ -187,7 +187,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             n_cells += cells_per_event.size();
 
             // Create device copy of input collections
-            traccc::cell_collection_types::buffer cells_buffer(
+            traccc::edm::silicon_cell_collection::buffer cells_buffer(
                 cells_per_event.size(), mr.main);
             copy(vecmem::get_data(cells_per_event), cells_buffer);
 

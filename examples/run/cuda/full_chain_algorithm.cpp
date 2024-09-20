@@ -142,11 +142,11 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
 full_chain_algorithm::~full_chain_algorithm() = default;
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
-    const cell_collection_types::host& cells) const {
+    const edm::silicon_cell_collection::host& cells) const {
 
     // Create device copy of input collections
-    cell_collection_types::buffer cells_buffer(cells.size(),
-                                               *m_cached_device_mr);
+    edm::silicon_cell_collection::buffer cells_buffer(cells.size(),
+                                                      *m_cached_device_mr);
     m_copy(vecmem::get_data(cells), cells_buffer)->ignore();
 
     // Run the clusterization (asynchronously).
