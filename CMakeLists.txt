@@ -299,8 +299,6 @@ option( TRACCC_ENABLE_NVTX_PROFILING
 
 # option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
 set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the build")
-message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGINS})
-add_definitions(-DALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
 
 # Build the traccc code.
 add_subdirectory( core )
