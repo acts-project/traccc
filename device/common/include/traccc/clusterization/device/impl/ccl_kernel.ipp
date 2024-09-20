@@ -17,7 +17,7 @@
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/device/mutex.hpp"
 #include "traccc/device/unique_lock.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "vecmem/memory/device_atomic_ref.hpp"
 
 namespace traccc::device {

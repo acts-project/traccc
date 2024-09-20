@@ -99,7 +99,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     });
 
     // Number of cells
-    const cell_collection_types::view::size_type num_cells =
+    const edm::silicon_cell_collection::view::size_type num_cells =
         m_copy.get().get_size(cells);
 
     // Create the result object, overestimating the number of measurements.

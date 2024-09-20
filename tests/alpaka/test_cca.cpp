@@ -58,7 +58,8 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             ->ignore();
 
         traccc::edm::silicon_cell_collection::buffer cells_buffer{
-            static_cast<traccc::cell_collection_types::buffer::size_type>(
+            static_cast<
+                traccc::edm::silicon_cell_collection::buffer::size_type>(
                 cells.size()),
             device_mr};
         copy.setup(cells_buffer)->wait();

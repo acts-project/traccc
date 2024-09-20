@@ -256,7 +256,7 @@ TEST(mappper, measurement_cell_map) {
         traccc::generate_measurement_cell_map(event, cells_dir, dd, resource);
 
     // The module that the cells of event 0 belong to, happens to be this one.
-    constexpr traccc::cell::link_type module_link = 12465;
+    constexpr unsigned int module_link = 12465;
 
     traccc::edm::silicon_cell_collection::host cells0{resource};
     cells0.resize(7);
