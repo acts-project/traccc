@@ -26,7 +26,7 @@ struct CCLKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const clustering_config cfg,
-        const cell_collection_types::const_view cells_view,
+        const edm::silicon_cell_collection::const_view cells_view,
         const silicon_detector_description::const_view det_descr_view,
         vecmem::data::vector_view<device::details::index_t> f_backup_view,
         vecmem::data::vector_view<device::details::index_t> gf_backup_view,
@@ -84,7 +84,7 @@ clusterization_algorithm::clusterization_algorithm(
       m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_collection_types::const_view& cells,
+    const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr) const {
 
     // Setup alpaka
