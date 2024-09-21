@@ -259,7 +259,7 @@ TRACCC_DEVICE inline void ccl_kernel(
          * on any cells that have been claimed by the previous block (if
          * any).
          */
-        while (start != 0 &&
+        while (start != 0 && start < num_cells &&
                cells_device.at(start - 1).module_link ==
                    cells_device.at(start).module_link &&
                cells_device.at(start).channel1 <=
