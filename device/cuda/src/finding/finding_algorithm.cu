@@ -7,17 +7,17 @@
 
 // Project include(s).
 #include "../sanity/contiguous_on.cuh"
+#include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/utils/thread_id.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/finding_global_counter.hpp"
 #include "traccc/finding/candidate_link.hpp"
-#include "traccc/finding/device/add_links_for_holes.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
-#include "traccc/finding/device/count_measurements.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
@@ -75,66 +75,37 @@ __global__ void apply_interaction(
                                           params_view);
 }
 
-/// CUDA kernel for running @c traccc::device::count_measurements
-__global__ void count_measurements(
-    bound_track_parameters_collection_types::const_view params_view,
-    vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
-    vecmem::data::vector_view<const unsigned int> upper_bounds_view,
-    const unsigned int n_in_params,
-    vecmem::data::vector_view<unsigned int> n_measurements_view,
-    vecmem::data::vector_view<unsigned int> ref_meas_idx_view,
-    unsigned int& n_measurements_sum) {
-
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
-
-    device::count_measurements(
-        gid, params_view, barcodes_view, upper_bounds_view, n_in_params,
-        n_measurements_view, ref_meas_idx_view, n_measurements_sum);
-}
-
 /// CUDA kernel for running @c traccc::device::find_tracks
 template <typename detector_t, typename config_t>
 __global__ void find_tracks(
     const config_t cfg, typename detector_t::view_type det_data,
     measurement_collection_types::const_view measurements_view,
     bound_track_parameters_collection_types::const_view in_params_view,
-    vecmem::data::vector_view<const unsigned int>
-        n_measurements_prefix_sum_view,
-    vecmem::data::vector_view<const unsigned int> ref_meas_idx_view,
+    const unsigned int n_in_params,
+    vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
+    vecmem::data::vector_view<const unsigned int> upper_bounds_view,
     vecmem::data::vector_view<const candidate_link> prev_links_view,
     vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
     const unsigned int step, const unsigned int n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
-    vecmem::data::vector_view<unsigned int> n_candidates_view,
     vecmem::data::vector_view<candidate_link> links_view,
     unsigned int& n_candidates) {
+    __shared__ unsigned int shared_candidates_size;
+    extern __shared__ unsigned int s[];
+    unsigned int* shared_num_candidates = s;
+    std::pair<unsigned int, unsigned int>* shared_candidates =
+        reinterpret_cast<std::pair<unsigned int, unsigned int>*>(
+            &shared_num_candidates[blockDim.x]);
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+    cuda::barrier barrier;
+    cuda::thread_id1 thread_id;
 
-    device::find_tracks<detector_t, config_t>(
-        gid, cfg, det_data, measurements_view, in_params_view,
-        n_measurements_prefix_sum_view, ref_meas_idx_view, prev_links_view,
+    device::find_tracks<cuda::thread_id1, cuda::barrier, detector_t, config_t>(
+        thread_id, barrier, cfg, det_data, measurements_view, in_params_view,
+        n_in_params, barcodes_view, upper_bounds_view, prev_links_view,
         prev_param_to_link_view, step, n_max_candidates, out_params_view,
-        n_candidates_view, links_view, n_candidates);
-}
-
-/// CUDA kernel for running @c traccc::device::add_links_for_holes
-__global__ void add_links_for_holes(
-    vecmem::data::vector_view<const unsigned int> n_candidates_view,
-    bound_track_parameters_collection_types::const_view in_params_view,
-    vecmem::data::vector_view<const candidate_link> prev_links_view,
-    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
-    const unsigned int step, const unsigned int n_max_candidates,
-    bound_track_parameters_collection_types::view out_params_view,
-    vecmem::data::vector_view<candidate_link> links_view,
-    unsigned int& n_total_candidates) {
-
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
-
-    device::add_links_for_holes(gid, n_candidates_view, in_params_view,
-                                prev_links_view, prev_param_to_link_view, step,
-                                n_max_candidates, out_params_view, links_view,
-                                n_total_candidates);
+        links_view, n_candidates, shared_num_candidates, shared_candidates,
+        shared_candidates_size);
 }
 
 /// CUDA kernel for running @c traccc::device::propagate_to_next_surface
@@ -353,62 +324,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         /*****************************************************************
-         * Kernel3: Count the number of measurements per parameter
-         ****************************************************************/
-
-        vecmem::data::vector_buffer<unsigned int> n_measurements_buffer(
-            n_in_params, m_mr.main);
-        vecmem::device_vector<unsigned int> n_measurements_device(
-            n_measurements_buffer);
-        thrust::fill(thrust::cuda::par.on(stream),
-                     n_measurements_device.begin(), n_measurements_device.end(),
-                     0u);
-
-        // Create a buffer for the first measurement index of parameter
-        vecmem::data::vector_buffer<unsigned int> ref_meas_idx_buffer(
-            n_in_params, m_mr.main);
-
-        nThreads = m_warp_size * 2;
-        nBlocks = (n_in_params + nThreads - 1) / nThreads;
-        kernels::count_measurements<<<nBlocks, nThreads, 0, stream>>>(
-            in_params_buffer, barcodes_buffer, upper_bounds_buffer, n_in_params,
-            n_measurements_buffer, ref_meas_idx_buffer,
-            (*global_counter_device).n_measurements_sum);
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-
-        // Global counter object: Device -> Host
-        TRACCC_CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(&global_counter_host, global_counter_device.get(),
-                            sizeof(device::finding_global_counter),
-                            cudaMemcpyDeviceToHost, stream));
-
-        m_stream.synchronize();
-
-        // Create the buffer for the prefix sum of the number of measurements
-        // per parameter
-        vecmem::data::vector_buffer<unsigned int>
-            n_measurements_prefix_sum_buffer(n_in_params, m_mr.main);
-        vecmem::device_vector<unsigned int> n_measurements_prefix_sum(
-            n_measurements_prefix_sum_buffer);
-        thrust::inclusive_scan(
-            thrust::cuda::par.on(stream), n_measurements_device.begin(),
-            n_measurements_device.end(), n_measurements_prefix_sum.begin());
-
-        /*****************************************************************
-         * Kernel4: Find valid tracks
+         * Kernel3: Find valid tracks
          *****************************************************************/
 
         // Buffer for kalman-updated parameters spawned by the measurement
         // candidates
         const unsigned int n_max_candidates =
             n_in_params * m_cfg.max_num_branches_per_surface;
-
-        vecmem::data::vector_buffer<unsigned int> n_candidates_buffer{
-            n_in_params, m_mr.main};
-        vecmem::device_vector<unsigned int> n_candidates_device(
-            n_candidates_buffer);
-        thrust::fill(thrust::cuda::par.on(stream), n_candidates_device.begin(),
-                     n_candidates_device.end(), 0u);
 
         bound_track_parameters_collection_types::buffer updated_params_buffer(
             n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
@@ -417,34 +339,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         link_map[step] = {n_in_params * m_cfg.max_num_branches_per_surface,
                           m_mr.main};
         m_copy.setup(link_map[step]);
-        nBlocks = (global_counter_host.n_measurements_sum +
-                   nThreads * m_cfg.n_measurements_per_thread - 1) /
-                  (nThreads * m_cfg.n_measurements_per_thread);
-
-        if (nBlocks > 0) {
-            kernels::find_tracks<detector_type, config_type>
-                <<<nBlocks, nThreads, 0, stream>>>(
-                    m_cfg, det_view, measurements, in_params_buffer,
-                    n_measurements_prefix_sum_buffer, ref_meas_idx_buffer,
-                    link_map[prev_step], param_to_link_map[prev_step], step,
-                    n_max_candidates, updated_params_buffer,
-                    n_candidates_buffer, link_map[step],
-                    (*global_counter_device).n_candidates);
-            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-        }
-
-        /*****************************************************************
-         * Kernel5: Add a dummy links in case of no branches
-         *****************************************************************/
-
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
 
         if (nBlocks > 0) {
-            kernels::add_links_for_holes<<<nBlocks, nThreads, 0, stream>>>(
-                n_candidates_buffer, in_params_buffer, link_map[prev_step],
-                param_to_link_map[prev_step], step, n_max_candidates,
-                updated_params_buffer, link_map[step],
-                (*global_counter_device).n_candidates);
+            kernels::find_tracks<detector_type, config_type>
+                <<<nBlocks, nThreads,
+                   nThreads * sizeof(unsigned int) +
+                       2 * nThreads *
+                           sizeof(std::pair<unsigned int, unsigned int>),
+                   stream>>>(m_cfg, det_view, measurements, in_params_buffer,
+                             n_in_params, barcodes_buffer, upper_bounds_buffer,
+                             link_map[prev_step], param_to_link_map[prev_step],
+                             step, n_max_candidates, updated_params_buffer,
+                             link_map[step],
+                             (*global_counter_device).n_candidates);
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
@@ -457,7 +365,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         m_stream.synchronize();
 
         /*****************************************************************
-         * Kernel6: Propagate to the next surface
+         * Kernel4: Propagate to the next surface
          *****************************************************************/
 
         // Buffer for out parameters for the next step
@@ -569,7 +477,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     }
 
     /*****************************************************************
-     * Kernel7: Build tracks
+     * Kernel5: Build tracks
      *****************************************************************/
 
     // Create track candidate buffer
