@@ -260,10 +260,10 @@ TRACCC_DEVICE inline void ccl_kernel(
          * any).
          */
         while (start != 0 &&
-               cells_device[start - 1].module_link ==
-                   cells_device[start].module_link &&
-               cells_device[start].channel1 <=
-                   cells_device[start - 1].channel1 + 1) {
+               cells_device.at(start - 1).module_link ==
+                   cells_device.at(start).module_link &&
+               cells_device.at(start).channel1 <=
+                   cells_device.at(start - 1).channel1 + 1) {
             ++start;
         }
 
@@ -273,10 +273,10 @@ TRACCC_DEVICE inline void ccl_kernel(
          * cell that is not a possible boundary!
          */
         while (end < num_cells &&
-               cells_device[end - 1].module_link ==
-                   cells_device[end].module_link &&
-               cells_device[end].channel1 <=
-                   cells_device[end - 1].channel1 + 1) {
+               cells_device.at(end - 1).module_link ==
+                   cells_device.at(end).module_link &&
+               cells_device.at(end).channel1 <=
+                   cells_device.at(end - 1).channel1 + 1) {
             ++end;
         }
         partition_start = start;
