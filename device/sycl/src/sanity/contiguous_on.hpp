@@ -9,13 +9,10 @@
 #pragma once
 
 // Project include(s).
-#include <traccc/sycl/utils/queue_wrapper.hpp>
-
 #include "../utils/get_queue.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // VecMem include(s).
-#include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
@@ -29,7 +26,7 @@
 
 namespace traccc::sycl {
 namespace kernels {
-template <typename P, typename T, typename S>
+template <typename CONTAINER, typename P, typename VIEW, typename S>
 class IsContiguousOnCompressAdjacent {};
 
 template <typename T>
@@ -37,27 +34,31 @@ class IsContiguousOnAllUnique {};
 }  // namespace kernels
 
 /**
- * @brief Sanity check that a given vector is contiguous on a given projection.
+ * @brief Sanity check that a given container is contiguous on a given
+ *        projection.
  *
- * For a vector $v$ to be contiguous on a projection $\pi$, it must be the case
- * that for all indices $i$ and $j$, if $v_i = v_j$, then all indices $k$
+ * For a container $v$ to be contiguous on a projection $\pi$, it must be the
+ * case that for all indices $i$ and $j$, if $v_i = v_j$, then all indices $k$
  * between $i$ and $j$, $v_i = v_j = v_k$.
  *
  * @note This function runs in O(n^2) time.
  *
+ * @tparam CONTAINER The type of the (device) container.
  * @tparam P The type of projection $\pi$, a callable which returns some
  * comparable type.
- * @tparam T The type of the vector.
+ * @tparam VIEW The type of the view for the container.
  * @param projection A projection object of type `P`.
  * @param mr A memory resource used for allocating intermediate memory.
- * @param vector The vector which to check for contiguity.
- * @return true If the vector is contiguous on `P`.
+ * @param view The container which to check for contiguity.
+ * @return true If the container is contiguous on `P`.
  * @return false Otherwise.
  */
-template <std::semiregular P, std::equality_comparable T>
-requires std::regular_invocable<P, T> bool is_contiguous_on(
-    P&& projection, vecmem::memory_resource& mr, vecmem::copy& copy,
-    queue_wrapper& queue_wrapper, vecmem::data::vector_view<T> vector) {
+template <typename CONTAINER, std::semiregular P, typename VIEW>
+requires std::regular_invocable<P, CONTAINER, std::size_t> bool
+is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
+                 vecmem::copy& copy, queue_wrapper& queue_wrapper,
+                 const VIEW& view) {
+
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;
@@ -65,10 +66,15 @@ requires std::regular_invocable<P, T> bool is_contiguous_on(
     cl::sycl::queue& queue = details::get_queue(queue_wrapper);
 
     // Grab the number of elements in our vector.
-    uint32_t n = copy.get_size(vector);
+    std::size_t n = copy.get_size(view);
+
+    // Exit early for empty containers.
+    if (n == 0) {
+        return true;
+    }
 
     // Get the output type of the projection.
-    using projection_t = std::invoke_result_t<P, T>;
+    using projection_t = std::invoke_result_t<P, CONTAINER, std::size_t>;
 
     // Allocate memory for intermediate values and outputs, then set them up.
     vecmem::unique_alloc_ptr<projection_t[]> iout =
@@ -93,25 +99,25 @@ requires std::regular_invocable<P, T> bool is_contiguous_on(
     // into one element.
     cl::sycl::event kernel1_evt = queue.submit([&](cl::sycl::handler& h) {
         h.depends_on(kernel1_memcpy1_evt);
-        h.parallel_for<
-            kernels::IsContiguousOnCompressAdjacent<P, T, projection_t>>(
+        h.parallel_for<kernels::IsContiguousOnCompressAdjacent<
+            CONTAINER, P, VIEW, projection_t>>(
             compress_adjacent_range,
-            [vector, projection, out = iout.get(),
+            [=, out = iout.get(),
              out_size = iout_size.get()](cl::sycl::nd_item<1> item) {
                 std::size_t tid = item.get_global_linear_id();
 
-                vecmem::device_vector<T> in(vector);
+                CONTAINER in(view);
                 vecmem::device_atomic_ref<uint32_t> out_siz_atm(*out_size);
 
                 if (tid > 0 && tid < in.size()) {
-                    std::invoke_result_t<P, T> v1 = projection(in.at(tid - 1));
-                    std::invoke_result_t<P, T> v2 = projection(in.at(tid));
+                    projection_t v1 = projection(in, tid - 1);
+                    projection_t v2 = projection(in, tid);
 
                     if (v1 != v2) {
                         out[out_siz_atm.fetch_add(1)] = v2;
                     }
                 } else if (tid == 0) {
-                    out[out_siz_atm.fetch_add(1)] = projection(in.at(tid));
+                    out[out_siz_atm.fetch_add(1)] = projection(in, tid);
                 }
             });
     });
@@ -134,7 +140,7 @@ requires std::regular_invocable<P, T> bool is_contiguous_on(
     // Launch the second kernel, which will check if the values are unique.
     cl::sycl::event kernel2_evt = queue.submit([&](cl::sycl::handler& h) {
         h.depends_on(kernel2_memcpy1_evt);
-        h.parallel_for<kernels::IsContiguousOnAllUnique<T>>(
+        h.parallel_for<kernels::IsContiguousOnAllUnique<projection_t>>(
             all_unique_range, [n = host_iout_size, in = iout.get(),
                                out = out.get()](cl::sycl::nd_item<2> item) {
                 std::size_t tid_x = item.get_global_id(0);

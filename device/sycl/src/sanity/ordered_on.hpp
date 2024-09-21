@@ -9,13 +9,10 @@
 #pragma once
 
 // Project include(s).
-#include <traccc/sycl/utils/queue_wrapper.hpp>
-
 #include "../utils/get_queue.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // VecMem include(s).
-#include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
@@ -28,14 +25,14 @@
 
 namespace traccc::sycl {
 namespace kernels {
-template <typename R, typename T>
+template <typename CONTAINER, typename R, typename VIEW>
 class IsOrderedOn {};
 }  // namespace kernels
 
 /**
- * @brief Sanity check that a given vector is ordered on a given relation.
+ * @brief Sanity check that a given container is ordered on a given relation.
  *
- * For a vector $v$ to be ordered on a relation $R$, it must be the case that
+ * For a container $v$ to be ordered on a relation $R$, it must be the case that
  * for all indices $i$ and $j$, if $i < j$, then $R(i, j)$.
  *
  * @note This function runs in O(n) time.
@@ -46,27 +43,34 @@ class IsOrderedOn {};
  *
  * @note For any strict weak order $R$, `is_ordered_on(sort(R, v))` is true.
  *
+ * @tparam CONTAINER The type of the (device) container.
  * @tparam R The type of relation $R$, a callable which returns a bool if the
  * first argument can be immediately before the second type.
- * @tparam T The type of the vector.
+ * @tparam VIEW The type of the view for the container.
  * @param relation A relation object of type `R`.
  * @param mr A memory resource used for allocating intermediate memory.
- * @param vector The vector which to check for ordering.
- * @return true If the vector is ordered on `R`.
+ * @param view The container which to check for ordering.
+ * @return true If the container is ordered on `R`.
  * @return false Otherwise.
  */
-template <std::semiregular R, typename T>
-requires std::relation<R, T, T> bool is_ordered_on(
-    R relation, vecmem::memory_resource& mr, vecmem::copy& copy,
-    queue_wrapper& queue_wrapper, vecmem::data::vector_view<T> vector) {
+template <typename CONTAINER, std::semiregular R, typename VIEW>
+requires std::regular_invocable<R, CONTAINER, std::size_t, std::size_t> bool
+is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
+              queue_wrapper& queue_wrapper, const VIEW& view) {
+
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;
 
     cl::sycl::queue& queue = details::get_queue(queue_wrapper);
 
-    // Grab the number of elements in our vector.
-    uint32_t n = copy.get_size(vector);
+    // Grab the number of elements in our container.
+    uint32_t n = copy.get_size(view);
+
+    // Exit early for empty containers.
+    if (n == 0) {
+        return true;
+    }
 
     // Initialize the output boolean.
     vecmem::unique_alloc_ptr<bool> out = vecmem::make_unique_alloc<bool>(mr);
@@ -81,14 +85,14 @@ requires std::relation<R, T, T> bool is_ordered_on(
 
     cl::sycl::event kernel1 = queue.submit([&](cl::sycl::handler& h) {
         h.depends_on(kernel1_memcpy1);
-        h.parallel_for<kernels::IsOrderedOn<R, T>>(
+        h.parallel_for<kernels::IsOrderedOn<CONTAINER, R, VIEW>>(
             kernel_range, [=, out = out.get()](cl::sycl::nd_item<1> item) {
                 std::size_t tid = item.get_global_linear_id();
 
-                vecmem::device_vector<T> in(vector);
+                CONTAINER in(view);
 
                 if (tid > 0 && tid < in.size()) {
-                    if (!relation(in.at(tid - 1), in.at(tid))) {
+                    if (!relation(in, tid - 1, tid)) {
                         *out = false;
                     }
                 }

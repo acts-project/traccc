@@ -60,11 +60,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells_view,
     const silicon_detector_description::const_view& det_descr) const {
 
-    // assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
-    //                         m_queue, cells_view));
-    // assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
-    //                      m_copy, m_queue, cells_view));
-
     // Get the number of cells
     const edm::silicon_cell_collection::view::size_type num_cells =
         m_copy.get().get_size(cells_view);
@@ -79,6 +74,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     if (num_cells == 0) {
         return measurements;
     }
+
+    assert(is_contiguous_on<edm::silicon_cell_collection::const_device>(
+        cell_module_projection(), m_mr.main, m_copy, m_queue, cells_view));
+    assert(is_ordered_on<edm::silicon_cell_collection::const_device>(
+        channel0_major_cell_order_relation(), m_mr.main, m_copy, m_queue,
+        cells_view));
 
     std::size_t num_blocks =
         (num_cells + m_config.target_partition_size() - 1) /
