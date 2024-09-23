@@ -47,5 +47,13 @@ set( ALGEBRA_PLUGINS_SETUP_GOOGLETEST FALSE CACHE BOOL
 set( ALGEBRA_PLUGINS_SETUP_BENCHMARK FALSE CACHE BOOL
    "Do not set up GoogleTest in Algebra Plugins" )
 
+# Disable a pesky warning coming from the Vc build.
+include( CheckCXXCompilerFlag )
+check_cxx_compiler_flag( "-Wno-deprecated-enum-enum-conversion"
+   TRACCC_HAS_NO_DEPRECATED_ENUM_ENUM_CONVERSION )
+if( TRACCC_HAS_NO_DEPRECATED_ENUM_ENUM_CONVERSION )
+   traccc_add_flag( CMAKE_CXX_FLAGS "-Wno-deprecated-enum-enum-conversion" )
+endif()
+
 # Get it into the current directory.
 FetchContent_MakeAvailable( AlgebraPlugins )
