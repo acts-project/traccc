@@ -141,6 +141,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
+        // std::cout << i_evt << std::endl;
+
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
         traccc::track_candidate_container_types::host truth_track_candidates =
@@ -165,12 +167,12 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
             host_det, field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(seeds));
 
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        EXPECT_EQ(track_candidates.size(), n_truth_tracks);
 
         // Run fitting
         auto track_states = host_fitting(host_det, field, track_candidates);
 
-        ASSERT_EQ(track_states.size(), n_truth_tracks);
+        EXPECT_EQ(track_states.size(), n_truth_tracks);
 
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
 

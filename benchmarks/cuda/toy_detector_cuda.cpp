@@ -44,8 +44,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     // Type declarations
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t,
-                           typename detector_type::algebra_type,
-                           detray::constrained_step<>>;
+                           typename detector_type::algebra_type>;
     using host_detector_type = traccc::default_detector::host;
     using device_detector_type = traccc::default_detector::device;
     using device_navigator_type = detray::navigator<const device_detector_type>;

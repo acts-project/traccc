@@ -111,9 +111,10 @@ track_candidate_container_types::host find_tracks(
     const measurement_collection_types::const_device::size_type n_meas =
         measurements.size();
 
-    // Get index ranges in the measurement container per detector surface
-    std::vector<unsigned int> meas_ranges;
-    meas_ranges.reserve(det.surfaces().size());
+    // Get the number of measurements of each module
+    std::vector<unsigned int> sizes(n_modules);
+    std::adjacent_difference(upper_bounds.begin(), upper_bounds.end(),
+                             sizes.begin());
 
     // Create barcode sequence
     std::vector<detray::geometry::barcode> barcodes(n_modules);
@@ -183,7 +184,7 @@ track_candidate_container_types::host find_tracks(
              * Material interaction
              *************************/
 
-            // Get surface corresponding to bound track params
+            // Get surface corresponding to bound params
             const detray::tracking_surface sf{det, in_param.surface_link()};
 
             const typename navigator_t::detector_type::geometry_context ctx{};
@@ -225,7 +226,6 @@ track_candidate_container_types::host find_tracks(
             /*****************************************************************
              * Find tracks (CKF)
              *****************************************************************/
-            unsigned int n_branches = 0;
 
             // Iterate over the measurements
             for (unsigned int item_id = range.first; item_id < range.second;
