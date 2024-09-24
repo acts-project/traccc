@@ -35,4 +35,9 @@ void read_detector(default_detector::host& detector,
                    const std::string_view& material_file = "",
                    const std::string_view& grid_file = "");
 
+void read_detector(toy_detector::host& detector, vecmem::memory_resource& mr,
+                   const std::string_view& geometry_file,
+                   const std::string_view& material_file = "",
+                   const std::string_view& grid_file = "");
+
 }  // namespace traccc::io
