@@ -53,7 +53,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     traccc::seedfinder_config seeding_cfg;
     traccc::seedfilter_config filter_cfg;
     traccc::spacepoint_grid_config grid_cfg{seeding_cfg};
-    traccc::finding_config finding_cfg = get_trk_finding_config();
+    traccc::finding_config finding_cfg;
     traccc::fitting_config fitting_cfg;
 
     static constexpr std::array<float, 2> phi_range{
@@ -80,6 +80,10 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         std::cout << "Please be patient. It may take some time to generate "
                      "the simulation data."
                   << std::endl;
+
+        // Apply correct propagation config
+        apply_propagation_config(finding_cfg.propagation);
+        apply_propagation_config(fitting_cfg.propagation);
 
         // Use deterministic random number generator for testing
         using uniform_gen_t = detray::detail::random_numbers<
@@ -126,11 +130,11 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
             detray::muon<traccc::scalar>(), n_events, det, field,
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
+        // Same propagation configuration for sim and reco
+        apply_propagation_config(sim.get_config().propagation);
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
             1.f * detray::unit<float>::mm;
-        // Otherwise same propagation configuration for sim and reco
-        sim.get_config().propagation = finding_cfg.propagation;
 
         sim.run();
 
@@ -156,16 +160,13 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         return toy_cfg;
     }
 
-    traccc::finding_config get_trk_finding_config() const {
-
-        traccc::finding_config finding_cfg{};
-
+    void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
-        finding_cfg.propagation.navigation.search_window = {3, 3};
-        finding_cfg.propagation.navigation.overstep_tolerance =
-            -300.f * detray::unit<traccc::scalar>::um;
-
-        return finding_cfg;
+        cfg.navigation.search_window = {3, 3};
+        cfg.navigation.overstep_tolerance = -300.f * detray::unit<float>::um;
+        cfg.navigation.min_mask_tolerance = 1e-5f * detray::unit<float>::mm;
+        cfg.navigation.max_mask_tolerance = 3.f * detray::unit<float>::mm;
+        cfg.navigation.mask_tolerance_scalor = 0.05f;
     }
 
     void SetUp(::benchmark::State& /*state*/) {
