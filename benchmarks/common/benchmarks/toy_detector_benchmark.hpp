@@ -53,13 +53,12 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     traccc::seedfinder_config seeding_cfg;
     traccc::seedfilter_config filter_cfg;
     traccc::spacepoint_grid_config grid_cfg{seeding_cfg};
-    traccc::finding_config finding_cfg;
+    traccc::finding_config finding_cfg = get_trk_finding_config();
     traccc::fitting_config fitting_cfg;
 
     static constexpr std::array<float, 2> phi_range{
         -traccc::constant<float>::pi, traccc::constant<float>::pi};
-    static constexpr std::array<float, 2> theta_range{
-        0.f, traccc::constant<float>::pi};
+    static constexpr std::array<float, 2> eta_range{-3, 3};
     static constexpr std::array<float, 2> mom_range{
         10.f * traccc::unit<float>::GeV, 100.f * traccc::unit<float>::GeV};
 
@@ -101,7 +100,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         generator_type::configuration gen_cfg{};
         gen_cfg.n_tracks(n_tracks);
         gen_cfg.phi_range(phi_range);
-        gen_cfg.theta_range(theta_range);
+        gen_cfg.eta_range(eta_range);
         gen_cfg.mom_range(mom_range);
         generator_type generator(gen_cfg);
 
@@ -130,6 +129,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
             1.f * detray::unit<float>::mm;
+        // Otherwise same propagation configuration for sim and reco
+        sim.get_config().propagation = finding_cfg.propagation;
 
         sim.run();
 
@@ -153,6 +154,18 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         toy_cfg.module_mat_thickness(0.11f * detray::unit<traccc::scalar>::mm);
 
         return toy_cfg;
+    }
+
+    traccc::finding_config get_trk_finding_config() const {
+
+        traccc::finding_config finding_cfg{};
+
+        // Configure the propagation for the toy detector
+        finding_cfg.propagation.navigation.search_window = {3, 3};
+        finding_cfg.propagation.navigation.overstep_tolerance =
+            -300.f * detray::unit<traccc::scalar>::um;
+
+        return finding_cfg;
     }
 
     void SetUp(::benchmark::State& /*state*/) {
