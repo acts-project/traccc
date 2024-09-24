@@ -26,6 +26,7 @@ namespace traccc::device {
 /// @param[in] cfg                Track finding config object
 /// @param[in] det_data           Detector view object
 /// @param[in] in_params_view     Input parameters
+/// @param[in] param_ids_view     Sorted param ids
 /// @param[in] links_view         Link container for the current step
 /// @param[in] step               Step index
 /// @param[in] n_in_params        The number of input parameters
@@ -41,6 +42,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     typename propagator_t::detector_type::view_type det_data,
     bfield_t field_data,
     bound_track_parameters_collection_types::const_view in_params_view,
+    const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     vecmem::data::vector_view<const candidate_link> links_view,
     const unsigned int step, const unsigned int& n_in_params,
     bound_track_parameters_collection_types::view out_params_view,

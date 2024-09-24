@@ -15,6 +15,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     typename propagator_t::detector_type::view_type det_data,
     bfield_t field_data,
     bound_track_parameters_collection_types::const_view in_params_view,
+    const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     vecmem::data::vector_view<const candidate_link> links_view,
     const unsigned int step, const unsigned int& n_in_params,
     bound_track_parameters_collection_types::view out_params_view,
@@ -28,6 +29,11 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         return;
     }
 
+    // Theta id
+    vecmem::device_vector<const unsigned int> param_ids(param_ids_view);
+
+    const unsigned int param_id = param_ids.at(globalIndex);
+
     // Number of tracks per seed
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         n_tracks_per_seed_view);
@@ -36,7 +42,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     vecmem::device_vector<const candidate_link> links(links_view);
 
     // Seed id
-    unsigned int orig_param_id = links.at(globalIndex).seed_idx;
+    unsigned int orig_param_id = links.at(param_id).seed_idx;
 
     // Count the number of tracks per seed
     vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
@@ -52,8 +58,8 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     vecmem::device_vector<typename candidate_link::link_index_type> tips(
         tips_view);
 
-    if (links[globalIndex].n_skipped > cfg.max_num_skipping_per_cand) {
-        tips.push_back({step, globalIndex});
+    if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
+        tips.push_back({step, param_id});
         return;
     }
 
@@ -71,7 +77,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     vecmem::device_vector<unsigned int> param_to_link(param_to_link_view);
 
     // Input bound track parameter
-    const bound_track_parameters in_par = in_params.at(globalIndex);
+    const bound_track_parameters in_par = in_params.at(param_id);
 
     // Create propagator
     propagator_t propagator(cfg.propagation);
@@ -115,17 +121,17 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
         out_params[out_param_id] = propagation._stepping._bound_params;
 
-        param_to_link[out_param_id] = static_cast<unsigned int>(globalIndex);
+        param_to_link[out_param_id] = param_id;
     }
     // Unless the track found a surface, it is considered a tip
     else if (!s4.success && step >= cfg.min_track_candidates_per_track - 1) {
-        tips.push_back({step, globalIndex});
+        tips.push_back({step, param_id});
     }
 
     // If no more CKF step is expected, current candidate is
     // kept as a tip
     if (s4.success && step == cfg.max_track_candidates_per_track - 1) {
-        tips.push_back({step, globalIndex});
+        tips.push_back({step, param_id});
     }
 }
 

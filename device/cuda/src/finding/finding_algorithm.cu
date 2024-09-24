@@ -15,9 +15,11 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/finding_global_counter.hpp"
+#include "traccc/edm/device/sort_key.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/fill_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
@@ -108,6 +110,16 @@ __global__ void find_tracks(
         shared_candidates_size);
 }
 
+/// CUDA kernel for running @c traccc::device::fill_sort_keys
+__global__ void fill_sort_keys(
+    bound_track_parameters_collection_types::const_view params_view,
+    vecmem::data::vector_view<device::sort_key> keys_view,
+    vecmem::data::vector_view<unsigned int> ids_view) {
+
+    device::fill_sort_keys(threadIdx.x + blockIdx.x * blockDim.x, params_view,
+                           keys_view, ids_view);
+}
+
 /// CUDA kernel for running @c traccc::device::propagate_to_next_surface
 template <typename propagator_t, typename bfield_t, typename config_t>
 __global__ void propagate_to_next_surface(
@@ -115,6 +127,7 @@ __global__ void propagate_to_next_surface(
     typename propagator_t::detector_type::view_type det_data,
     bfield_t field_data,
     bound_track_parameters_collection_types::const_view in_params_view,
+    vecmem::data::vector_view<const unsigned int> param_ids_view,
     vecmem::data::vector_view<const candidate_link> links_view,
     const unsigned int step, const unsigned int& n_candidates,
     bound_track_parameters_collection_types::view out_params_view,
@@ -127,9 +140,9 @@ __global__ void propagate_to_next_surface(
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
     device::propagate_to_next_surface<propagator_t, bfield_t, config_t>(
-        gid, cfg, det_data, field_data, in_params_view, links_view, step,
-        n_candidates, out_params_view, param_to_link_view, tips_view,
-        n_tracks_per_seed_view, n_out_params);
+        gid, cfg, det_data, field_data, in_params_view, param_ids_view,
+        links_view, step, n_candidates, out_params_view, param_to_link_view,
+        tips_view, n_tracks_per_seed_view, n_out_params);
 }
 
 /// CUDA kernel for running @c traccc::device::build_tracks
@@ -365,7 +378,34 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         m_stream.synchronize();
 
         /*****************************************************************
-         * Kernel4: Propagate to the next surface
+         * Kernel4: Get key and value for parameter sorting
+         *****************************************************************/
+
+        vecmem::data::vector_buffer<device::sort_key> keys_buffer(
+            global_counter_host.n_candidates, m_mr.main);
+        vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
+            global_counter_host.n_candidates, m_mr.main);
+
+        nThreads = m_warp_size * 2;
+
+        if (global_counter_host.n_candidates > 0) {
+            nBlocks =
+                (global_counter_host.n_candidates + nThreads - 1) / nThreads;
+            kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
+                updated_params_buffer, keys_buffer, param_ids_buffer);
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            // Sort the key and values
+            vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
+            vecmem::device_vector<unsigned int> param_ids_device(
+                param_ids_buffer);
+            thrust::sort_by_key(thrust::cuda::par.on(stream),
+                                keys_device.begin(), keys_device.end(),
+                                param_ids_device.begin());
+        }
+
+        /*****************************************************************
+         * Kernel5: Propagate to the next surface
          *****************************************************************/
 
         // Buffer for out parameters for the next step
@@ -390,8 +430,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                                config_type>
                 <<<nBlocks, nThreads, 0, stream>>>(
                     m_cfg, det_view, field_view, updated_params_buffer,
-                    link_map[step], step, (*global_counter_device).n_candidates,
-                    out_params_buffer, param_to_link_map[step], tips_map[step],
+                    param_ids_buffer, link_map[step], step,
+                    (*global_counter_device).n_candidates, out_params_buffer,
+                    param_to_link_map[step], tips_map[step],
                     n_tracks_per_seed_buffer,
                     (*global_counter_device).n_out_params);
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
@@ -477,7 +518,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     }
 
     /*****************************************************************
-     * Kernel5: Build tracks
+     * Kernel6: Build tracks
      *****************************************************************/
 
     // Create track candidate buffer
