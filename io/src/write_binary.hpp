@@ -147,9 +147,11 @@ void write_binary_soa_variable(const vecmem::jagged_device_vector<TYPE>& var,
 }
 
 /// Implementation detail for @c traccc::io::details::write_binary_soa
-template <std::size_t INDEX, typename... VARTYPES>
+template <std::size_t INDEX, typename... VARTYPES,
+          template <typename> class INTERFACE>
 void write_binary_soa_impl(
-    const vecmem::edm::device<vecmem::edm::schema<VARTYPES...>>& container,
+    const vecmem::edm::device<vecmem::edm::schema<VARTYPES...>, INTERFACE>&
+        container,
     std::ostream& out_file) {
 
     // Write the current variable.
@@ -166,10 +168,11 @@ void write_binary_soa_impl(
 /// @param filename The full input filename
 /// @param mr Is the memory resource to create the result container with
 ///
-template <typename... VARTYPES>
+template <typename... VARTYPES, template <typename> class INTERFACE>
 void write_binary_soa(
     std::string_view filename,
-    const vecmem::edm::device<vecmem::edm::schema<VARTYPES...>>& container) {
+    const vecmem::edm::device<vecmem::edm::schema<VARTYPES...>, INTERFACE>&
+        container) {
 
     // Open the output file.
     std::ofstream out_file(filename.data(), std::ios::binary);

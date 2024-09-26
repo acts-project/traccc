@@ -41,27 +41,23 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(
     return e;
 }
 
-TRACCC_HOST_DEVICE inline bool is_adjacent(
-    const edm::silicon_cell_collection::const_device& cells, unsigned int i,
-    unsigned int j) {
+template <typename T1, typename T2>
+TRACCC_HOST_DEVICE inline bool is_adjacent(const edm::silicon_cell<T1>& a,
+                                           const edm::silicon_cell<T2>& b) {
 
-    return ((cells.channel0()[i] - cells.channel0()[j]) *
-                (cells.channel0()[i] - cells.channel0()[j]) <=
-            1) &&
-           ((cells.channel1()[i] - cells.channel1()[j]) *
-                (cells.channel1()[i] - cells.channel1()[j]) <=
-            1) &&
-           (cells.module_index()[i] == cells.module_index()[j]);
+    return (a.channel0() - b.channel0()) * (a.channel0() - b.channel0()) <= 1 &&
+           (a.channel1() - b.channel1()) * (a.channel1() - b.channel1()) <= 1 &&
+           a.module_index() == b.module_index();
 }
 
-TRACCC_HOST_DEVICE inline bool is_far_enough(
-    const edm::silicon_cell_collection::const_device& cells, unsigned int i,
-    unsigned int j) {
+template <typename T1, typename T2>
+TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
+                                             const edm::silicon_cell<T2>& b) {
 
-    assert((cells.channel1()[i] >= cells.channel1()[j]) ||
-           (cells.module_index()[i] != cells.module_index()[j]));
-    return (cells.channel1()[i] > (cells.channel1()[j] + 1)) ||
-           (cells.module_index()[i] != cells.module_index()[j]);
+    assert((a.channel1() >= b.channel1()) ||
+           (a.module_index() != b.module_index()));
+    return (a.channel1() > (b.channel1() + 1)) ||
+           (a.module_index() != b.module_index());
 }
 
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
@@ -79,9 +75,9 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
         labels[i] = i;
         unsigned int ai = i;
         for (unsigned int j = start_j; j < i; ++j) {
-            if (is_adjacent(cells, i, j)) {
+            if (is_adjacent(cells[i], cells[j])) {
                 ai = make_union(labels, ai, find_root(labels, j));
-            } else if (is_far_enough(cells, i, j)) {
+            } else if (is_far_enough(cells[i], cells[j])) {
                 ++start_j;
             }
         }

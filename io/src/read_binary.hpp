@@ -158,9 +158,10 @@ void read_binary_soa_variable(
 }
 
 /// Implementation detail for @c traccc::io::details::read_binary_soa
-template <std::size_t INDEX, typename... VARTYPES>
+template <std::size_t INDEX, typename... VARTYPES,
+          template <typename> class INTERFACE>
 void read_binary_soa_impl(
-    vecmem::edm::host<vecmem::edm::schema<VARTYPES...>>& result,
+    vecmem::edm::host<vecmem::edm::schema<VARTYPES...>, INTERFACE>& result,
     std::istream& in_file) {
 
     // Read the current variable.
@@ -177,9 +178,9 @@ void read_binary_soa_impl(
 /// @param filename The full input filename
 /// @param mr Is the memory resource to create the result container with
 ///
-template <typename... VARTYPES>
+template <typename... VARTYPES, template <typename> class INTERFACE>
 void read_binary_soa(
-    vecmem::edm::host<vecmem::edm::schema<VARTYPES...>>& result,
+    vecmem::edm::host<vecmem::edm::schema<VARTYPES...>, INTERFACE>& result,
     std::string_view filename) {
 
     // Open the input file.

@@ -42,29 +42,27 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(
 
 /// Helper method to find adjacent cells
 ///
-/// @param cells All silicon cells in the event
-/// @param i     The index of the first cell
-/// @param j     The index of the second cell
+/// @param a the first cell
+/// @param b the second cell
 ///
 /// @return boolan to indicate 8-cell connectivity
 ///
-TRACCC_HOST_DEVICE inline bool is_adjacent(
-    const edm::silicon_cell_collection::const_device& cells, unsigned int i,
-    unsigned int j);
+template <typename T1, typename T2>
+TRACCC_HOST_DEVICE inline bool is_adjacent(const edm::silicon_cell<T1>& a,
+                                           const edm::silicon_cell<T2>& b);
 
 /// Helper method to find define distance,
 /// does not need abs, as channels are sorted in
 /// column major
 ///
-/// @param cells All silicon cells in the event
-/// @param i     The index of the first cell
-/// @param j     The index of the second cell
+/// @param a the first cell
+/// @param b the second cell
 ///
 /// @return boolan to indicate !8-cell connectivity
 ///
-TRACCC_HOST_DEVICE inline bool is_far_enough(
-    const edm::silicon_cell_collection::const_device& cells, unsigned int i,
-    unsigned int j);
+template <typename T1, typename T2>
+TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
+                                             const edm::silicon_cell<T2>& b);
 
 /// Sparce CCL algorithm
 ///

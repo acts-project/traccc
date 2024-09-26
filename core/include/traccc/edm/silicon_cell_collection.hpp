@@ -19,10 +19,11 @@ namespace traccc::edm {
 /// Interface for the @c traccc::edm::silicon_cell_collection class.
 ///
 /// It provides the API that users would interact with, while using the
-/// columns/arrays defined in @c traccc::edm::silicon_cell_collection.
+/// columns/arrays of the SoA containers, or the variables of the AoS proxies
+/// created on top of the SoA containers.
 ///
 template <typename BASE>
-class silicon_cell_collection_interface : public BASE {
+class silicon_cell : public BASE {
 
     public:
     /// Inherit the base class's constructor(s)
@@ -103,10 +104,11 @@ class silicon_cell_collection_interface : public BASE {
 };  // class silicon_cell_collection_interface
 
 /// SoA container describing silicon detector hits
-using silicon_cell_collection = vecmem::edm::container<
-    silicon_cell_collection_interface, vecmem::edm::type::vector<channel_id>,
-    vecmem::edm::type::vector<channel_id>, vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<unsigned int> >;
+using silicon_cell_collection =
+    vecmem::edm::container<silicon_cell, vecmem::edm::type::vector<channel_id>,
+                           vecmem::edm::type::vector<channel_id>,
+                           vecmem::edm::type::vector<scalar>,
+                           vecmem::edm::type::vector<scalar>,
+                           vecmem::edm::type::vector<unsigned int> >;
 
 }  // namespace traccc::edm

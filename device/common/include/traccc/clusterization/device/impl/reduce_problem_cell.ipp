@@ -27,6 +27,9 @@ inline void reduce_problem_cell(
     // Index of the "reference cell".
     const unsigned int pos = cid + start;
 
+    // Load the "reference cell" into a local variable.
+    const auto reference_cell = cells.at(pos);
+
     /*
      * First, we traverse the cells backwards, starting from the current
      * cell and working back to the first, collecting adjacent cells
@@ -39,7 +42,7 @@ inline void reduce_problem_cell(
          * impossible for that cell to ever be adjacent to this one.
          * This is a small optimisation.
          */
-        if (traccc::details::is_far_enough(cells, pos, j)) {
+        if (traccc::details::is_far_enough(reference_cell, cells.at(j))) {
             break;
         }
 
@@ -47,7 +50,7 @@ inline void reduce_problem_cell(
          * If the cell examined is adjacent to the current cell, save it
          * in the current cell's adjacency set.
          */
-        if (traccc::details::is_adjacent(cells, pos, j)) {
+        if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
             assert(adjc < 8);
             adjv[adjc++] = j - start;
         }
@@ -62,11 +65,11 @@ inline void reduce_problem_cell(
          * Note that this check now looks in the opposite direction! An
          * important difference.
          */
-        if (traccc::details::is_far_enough(cells, j, pos)) {
+        if (traccc::details::is_far_enough(cells.at(j), reference_cell)) {
             break;
         }
 
-        if (traccc::details::is_adjacent(cells, pos, j)) {
+        if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
             assert(adjc < 8);
             adjv[adjc++] = j - start;
         }
