@@ -160,6 +160,20 @@ if( TRACCC_SETUP_TBB )
    endif()
 endif()
 
+# Set up DPL if SYCL is built.
+option( TRACCC_SETUP_DPL
+   "Set up the DPL target(s) explicitly" ${TRACCC_BUILD_SYCL} )
+option( TRACCC_USE_SYSTEM_DPL
+   "Pick up an existing installation of DPL from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_DPL )
+   if( TRACCC_USE_SYSTEM_DPL )
+      find_package( DPL REQUIRED )
+   else()
+      add_subdirectory( extern/dpl )
+   endif()
+endif()
+
 # Set up Kokkos.
 option( TRACCC_SETUP_KOKKOS
    "Set up the Kokkos library" ${TRACCC_BUILD_KOKKOS} )
