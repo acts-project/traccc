@@ -127,12 +127,16 @@ void res_plot_tool::fill(res_plot_cache& cache,
         (void)pull;
 
 #ifdef TRACCC_HAVE_ROOT
-        const auto eta_idx =
-            std::min(cache.resolutions_eta[par_name]->FindBin(eta) - 1,
-                     cache.resolutions_eta[par_name]->GetNbinsX() - 1);
-        const auto pT_idx =
-            std::min(cache.resolutions_pT[par_name]->FindBin(pT) - 1,
-                     cache.resolutions_pT[par_name]->GetNbinsX() - 1);
+        const auto eta_idx = cache.resolutions_eta[par_name]->FindBin(eta) - 1;
+        const auto pT_idx = cache.resolutions_pT[par_name]->FindBin(pT) - 1;
+
+        // Check if the bin indices are within the range
+        const auto eta_nbins = cache.resolutions_eta[par_name]->GetNbinsX();
+        const auto pT_nbins = cache.resolutions_pT[par_name]->GetNbinsX();
+        if (eta_idx < 0 || eta_idx > eta_nbins - 1 || pT_idx < 0 ||
+            pT_idx > pT_nbins - 1) {
+            return;
+        }
 
         cache.residuals.at(par_name)->Fill(residual);
         if (idx < e_bound_size) {
