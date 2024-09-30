@@ -14,6 +14,8 @@
 #include "traccc/cuda/utils/stream.hpp"
 
 // VecMem include(s).
+#include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
@@ -23,35 +25,48 @@
 
 // System include
 #include <concepts>
+#include <utility>
 
 namespace traccc::cuda {
+
 namespace kernels {
-template <typename CONTAINER, std::semiregular P, typename VIEW, typename S>
-requires std::regular_invocable<P, CONTAINER, std::size_t> __global__ void
-compress_adjacent(P projection, VIEW _in, S* out, uint32_t* out_size) {
+
+/// Kernel used in implementing @c traccc::cuda::is_contiguous_on
+template <typename CONTAINER, std::semiregular P, typename VIEW,
+          std::equality_comparable S>
+requires std::regular_invocable<P, decltype(std::declval<CONTAINER>().at(0))>
+    __global__ void is_contiguous_on_compress_adjacent(
+        P projection, VIEW _in, vecmem::data::vector_view<S> out_view) {
 
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    CONTAINER in(_in);
+    const CONTAINER in(_in);
+    vecmem::device_vector<S> out(out_view);
 
     if (tid > 0 && tid < in.size()) {
-        S v1 = projection(in, tid - 1);
-        S v2 = projection(in, tid);
+        S v1 = projection(in.at(tid - 1));
+        S v2 = projection(in.at(tid));
 
         if (v1 != v2) {
-            out[atomicAdd(out_size, 1u)] = v2;
+            out.push_back(v2);
         }
     } else if (tid == 0) {
-        out[atomicAdd(out_size, 1u)] = projection(in, tid);
+        out.push_back(projection(in.at(tid)));
     }
 }
 
+/// Kernel used in implementing @c traccc::cuda::is_contiguous_on
 template <std::equality_comparable T>
-__global__ void all_unique(const T* in, const size_t n, bool* out) {
+__global__ void is_contiguous_on_all_unique(
+    vecmem::data::vector_view<T> in_view, bool* out) {
+
     int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
     int tid_y = threadIdx.y + blockIdx.y * blockDim.y;
 
-    if (tid_x < n && tid_y < n && tid_x != tid_y && in[tid_x] == in[tid_y]) {
+    const vecmem::device_vector<T> in(in_view);
+
+    if (tid_x < in.size() && tid_y < in.size() && tid_x != tid_y &&
+        in.at(tid_x) == in.at(tid_y)) {
         *out = false;
     }
 }
@@ -78,7 +93,8 @@ __global__ void all_unique(const T* in, const size_t n, bool* out) {
  * @return false Otherwise.
  */
 template <typename CONTAINER, std::semiregular P, typename VIEW>
-requires std::regular_invocable<P, CONTAINER, std::size_t> bool
+requires std::regular_invocable<P,
+                                decltype(std::declval<CONTAINER>().at(0))> bool
 is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
                  vecmem::copy& copy, stream& stream, const VIEW& view) {
 
@@ -90,7 +106,7 @@ is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
     cudaStream_t cuda_stream = details::get_stream(stream);
 
     // Grab the number of elements in our container.
-    std::size_t n = copy.get_size(view);
+    const typename VIEW::size_type n = copy.get_size(view);
 
     // Exit early for empty containers.
     if (n == 0) {
@@ -98,50 +114,38 @@ is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
     }
 
     // Get the output type of the projection.
-    using projection_t = std::invoke_result_t<P, CONTAINER, std::size_t>;
+    using projection_t =
+        std::invoke_result_t<P, decltype(std::declval<CONTAINER>().at(0))>;
 
     // Allocate memory for intermediate values and outputs, then set them up.
-    vecmem::unique_alloc_ptr<projection_t[]> iout =
-        vecmem::make_unique_alloc<projection_t[]>(mr, n);
-    vecmem::unique_alloc_ptr<uint32_t> iout_size =
-        vecmem::make_unique_alloc<uint32_t>(mr);
+    vecmem::data::vector_buffer<projection_t> iout(
+        n, mr, vecmem::data::buffer_type::resizable);
+    copy.setup(iout)->ignore();
     vecmem::unique_alloc_ptr<bool> out = vecmem::make_unique_alloc<bool>(mr);
 
-    uint32_t initial_iout_size = 0;
     bool initial_out = true;
 
-    TRACCC_CUDA_ERROR_CHECK(
-        cudaMemcpyAsync(iout_size.get(), &initial_iout_size, sizeof(uint32_t),
-                        cudaMemcpyHostToDevice, cuda_stream));
     TRACCC_CUDA_ERROR_CHECK(
         cudaMemcpyAsync(out.get(), &initial_out, sizeof(bool),
                         cudaMemcpyHostToDevice, cuda_stream));
 
     // Launch the first kernel, which will squash consecutive equal elements
     // into one element.
-    kernels::compress_adjacent<CONTAINER>
+    kernels::is_contiguous_on_compress_adjacent<CONTAINER>
         <<<(n + block_size - 1) / block_size, block_size, 0, cuda_stream>>>(
-            projection, view, iout.get(), iout_size.get());
+            projection, view, iout);
 
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    // Copy the total number of squashed elements, e.g. the size of the
-    // resulting vector.
-    uint32_t host_iout_size;
-
-    TRACCC_CUDA_ERROR_CHECK(
-        cudaMemcpyAsync(&host_iout_size, iout_size.get(), sizeof(uint32_t),
-                        cudaMemcpyDeviceToHost, cuda_stream));
-    stream.synchronize();
-
     // Launch the second kernel, which will check if the values are unique.
     uint32_t grid_size_rd =
-        (host_iout_size + block_size_2d - 1) / block_size_2d;
+        (copy.get_size(iout) + block_size_2d - 1) / block_size_2d;
     dim3 all_unique_grid_size(grid_size_rd, grid_size_rd);
     dim3 all_unique_block_size(block_size_2d, block_size_2d);
 
-    kernels::all_unique<<<all_unique_grid_size, all_unique_block_size, 0,
-                          cuda_stream>>>(iout.get(), host_iout_size, out.get());
+    kernels::is_contiguous_on_all_unique<<<
+        all_unique_grid_size, all_unique_block_size, 0, cuda_stream>>>(
+        iout, out.get());
 
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

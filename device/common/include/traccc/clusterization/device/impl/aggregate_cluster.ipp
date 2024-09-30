@@ -92,8 +92,8 @@ inline void aggregate_cluster(
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
-                point2 cell_position =
-                    traccc::details::position_from_cell(pos, cells, det_descr);
+                point2 cell_position = traccc::details::position_from_cell(
+                    cells.at(pos), det_descr);
 
                 if (!first_processed) {
                     offset = cell_position;

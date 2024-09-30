@@ -18,11 +18,9 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
-struct identity_projection {
-    template <typename VEC>
-    TRACCC_HOST_DEVICE int operator()(const VEC& v, std::size_t i) const {
-        return v.at(i);
-    }
+struct int_identity_projection {
+    TRACCC_HOST_DEVICE
+    int operator()(const int& v) const { return v; }
 };
 
 class CUDASanityContiguousOn : public testing::Test {
@@ -47,7 +45,7 @@ TEST_F(CUDASanityContiguousOn, TrueOrdered) {
 
     ASSERT_TRUE(
         traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
-            identity_projection(), mr, copy, stream, device_view));
+            int_identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, TrueRandom) {
@@ -65,7 +63,7 @@ TEST_F(CUDASanityContiguousOn, TrueRandom) {
 
     ASSERT_TRUE(
         traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
-            identity_projection(), mr, copy, stream, device_view));
+            int_identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseOrdered) {
@@ -87,7 +85,7 @@ TEST_F(CUDASanityContiguousOn, FalseOrdered) {
 
     ASSERT_FALSE(
         traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
-            identity_projection(), mr, copy, stream, device_view));
+            int_identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalFirst) {
@@ -107,7 +105,7 @@ TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalFirst) {
 
     ASSERT_FALSE(
         traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
-            identity_projection(), mr, copy, stream, device_view));
+            int_identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, TrueOrderedPathologicalFirst) {
@@ -127,7 +125,7 @@ TEST_F(CUDASanityContiguousOn, TrueOrderedPathologicalFirst) {
 
     ASSERT_TRUE(
         traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
-            identity_projection(), mr, copy, stream, device_view));
+            int_identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalLast) {
@@ -147,7 +145,7 @@ TEST_F(CUDASanityContiguousOn, FalseOrderedPathologicalLast) {
 
     ASSERT_FALSE(
         traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
-            identity_projection(), mr, copy, stream, device_view));
+            int_identity_projection(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityContiguousOn, FalseRandom) {
@@ -165,5 +163,5 @@ TEST_F(CUDASanityContiguousOn, FalseRandom) {
 
     ASSERT_FALSE(
         traccc::cuda::is_contiguous_on<vecmem::device_vector<const int>>(
-            identity_projection(), mr, copy, stream, device_view));
+            int_identity_projection(), mr, copy, stream, device_view));
 }

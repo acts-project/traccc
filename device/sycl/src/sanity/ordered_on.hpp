@@ -24,9 +24,43 @@
 #include <concepts>
 
 namespace traccc::sycl {
+
 namespace kernels {
+
+/// Kernel used in implementing @c traccc::sycl::is_ordered_on.
+///
+/// It has to be implemented as a functor, as oneAPI 2024.2.1 gets confused when
+/// trying to set up this type of code as a lambda.
+///
 template <typename CONTAINER, typename R, typename VIEW>
-class IsOrderedOn {};
+struct is_ordered_on {
+
+    /// Constructor
+    is_ordered_on(R relation, VIEW view, bool* out)
+        : m_relation(relation), m_view(view), m_out(out) {}
+
+    /// Execution operator for the kernel
+    void operator()(cl::sycl::nd_item<1> item) const {
+
+        std::size_t tid = item.get_global_linear_id();
+
+        const CONTAINER in(m_view);
+
+        if (tid > 0 && tid < in.size()) {
+            if (!m_relation(in.at(tid - 1), in.at(tid))) {
+                *m_out = false;
+            }
+        }
+    }
+
+    /// The relation object to use
+    R m_relation;
+    /// View to the input container
+    VIEW m_view;
+    /// Output boolean
+    bool* m_out;
+};
+
 }  // namespace kernels
 
 /**
@@ -54,7 +88,8 @@ class IsOrderedOn {};
  * @return false Otherwise.
  */
 template <typename CONTAINER, std::semiregular R, typename VIEW>
-requires std::regular_invocable<R, CONTAINER, std::size_t, std::size_t> bool
+requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
+                                decltype(std::declval<CONTAINER>().at(0))> bool
 is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
               queue_wrapper& queue_wrapper, const VIEW& view) {
 
@@ -65,7 +100,7 @@ is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
     cl::sycl::queue& queue = details::get_queue(queue_wrapper);
 
     // Grab the number of elements in our container.
-    uint32_t n = copy.get_size(view);
+    const typename VIEW::size_type n = copy.get_size(view);
 
     // Exit early for empty containers.
     if (n == 0) {
@@ -85,18 +120,9 @@ is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
 
     cl::sycl::event kernel1 = queue.submit([&](cl::sycl::handler& h) {
         h.depends_on(kernel1_memcpy1);
-        h.parallel_for<kernels::IsOrderedOn<CONTAINER, R, VIEW>>(
-            kernel_range, [=, out = out.get()](cl::sycl::nd_item<1> item) {
-                std::size_t tid = item.get_global_linear_id();
-
-                CONTAINER in(view);
-
-                if (tid > 0 && tid < in.size()) {
-                    if (!relation(in, tid - 1, tid)) {
-                        *out = false;
-                    }
-                }
-            });
+        h.parallel_for<kernels::is_ordered_on<CONTAINER, R, VIEW>>(
+            kernel_range, kernels::is_ordered_on<CONTAINER, R, VIEW>(
+                              relation, view, out.get()));
     });
 
     // Copy the output to host, then return it.

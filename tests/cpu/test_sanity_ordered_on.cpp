@@ -18,19 +18,13 @@
 #include <gtest/gtest.h>
 
 struct int_lt_relation {
-    template <typename VEC>
-    TRACCC_HOST_DEVICE bool operator()(const VEC& v, std::size_t i,
-                                       std::size_t j) const {
-        return v.at(i) < v.at(j);
-    }
+    TRACCC_HOST_DEVICE
+    bool operator()(const int& a, const int& b) const { return a < b; }
 };
 
 struct int_leq_relation {
-    template <typename VEC>
-    TRACCC_HOST_DEVICE bool operator()(const VEC& v, std::size_t i,
-                                       std::size_t j) const {
-        return v.at(i) <= v.at(j);
-    }
+    TRACCC_HOST_DEVICE
+    bool operator()(const int& a, const int& b) const { return a <= b; }
 };
 
 class CPUSanityOrderedOn : public testing::Test {

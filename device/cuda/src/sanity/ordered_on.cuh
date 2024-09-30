@@ -23,18 +23,20 @@
 
 // System include
 #include <concepts>
+#include <utility>
 
 namespace traccc::cuda {
 namespace kernels {
 template <typename CONTAINER, std::semiregular R, typename VIEW>
-requires std::regular_invocable<R, CONTAINER, std::size_t, std::size_t>
+requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
+                                decltype(std::declval<CONTAINER>().at(0))>
     __global__ void is_ordered_on_kernel(R relation, VIEW _in, bool* out) {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    CONTAINER in(_in);
+    const CONTAINER in(_in);
 
     if (tid > 0 && tid < in.size()) {
-        if (!relation(in, tid - 1, tid)) {
+        if (!relation(in.at(tid - 1), in.at(tid))) {
             *out = false;
         }
     }
@@ -66,7 +68,8 @@ requires std::regular_invocable<R, CONTAINER, std::size_t, std::size_t>
  * @return false Otherwise.
  */
 template <typename CONTAINER, std::semiregular R, typename VIEW>
-requires std::regular_invocable<R, CONTAINER, std::size_t, std::size_t> bool
+requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
+                                decltype(std::declval<CONTAINER>().at(0))> bool
 is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
               stream& stream, const VIEW& view) {
 
@@ -77,7 +80,7 @@ is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
     cudaStream_t cuda_stream = details::get_stream(stream);
 
     // Grab the number of elements in our container.
-    uint32_t n = copy.get_size(view);
+    const typename VIEW::size_type n = copy.get_size(view);
 
     // Exit early for empty containers.
     if (n == 0) {

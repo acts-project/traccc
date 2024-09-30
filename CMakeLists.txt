@@ -84,7 +84,7 @@ option( TRACCC_USE_SYSTEM_VECMEM
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_SETUP_VECMEM )
    if( TRACCC_USE_SYSTEM_VECMEM )
-      find_package( vecmem 1.8.0 REQUIRED )
+      find_package( vecmem 1.9.0 REQUIRED )
    else()
       add_subdirectory( extern/vecmem )
       # Make the "VecMem language code" available for the whole project.

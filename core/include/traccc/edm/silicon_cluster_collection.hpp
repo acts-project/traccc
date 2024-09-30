@@ -21,7 +21,7 @@ namespace traccc::edm {
 /// column(s)/array(s) defined in @c traccc::edm::silicon_cluster_collection.
 ///
 template <typename BASE>
-class silicon_cluster_collection_interface : public BASE {
+class silicon_cluster : public BASE {
 
     public:
     /// Inherit the base class's constructor(s)
@@ -47,7 +47,7 @@ class silicon_cluster_collection_interface : public BASE {
 
 /// SoA container describing reconstructed silicon clusters
 using silicon_cluster_collection =
-    vecmem::edm::container<silicon_cluster_collection_interface,
+    vecmem::edm::container<silicon_cluster,
                            vecmem::edm::type::jagged_vector<unsigned int> >;
 
 }  // namespace traccc::edm

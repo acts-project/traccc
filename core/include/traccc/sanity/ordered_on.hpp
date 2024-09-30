@@ -16,6 +16,7 @@
 
 // System include
 #include <concepts>
+#include <utility>
 
 namespace traccc::host {
 /**
@@ -42,15 +43,16 @@ namespace traccc::host {
  * @return false Otherwise.
  */
 template <std::semiregular R, typename CONTAINER>
-requires std::regular_invocable<R, CONTAINER, std::size_t, std::size_t> bool
+requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
+                                decltype(std::declval<CONTAINER>().at(0))> bool
 is_ordered_on(R&& relation, const CONTAINER& in) {
 
     // Grab the number of elements in our vector.
-    std::size_t n = in.size();
+    typename CONTAINER::size_type n = in.size();
 
     // Check for orderedness.
-    for (std::size_t i = 1; i < n; ++i) {
-        if (!relation(in, i - 1, i)) {
+    for (typename CONTAINER::size_type i = 1; i < n; ++i) {
+        if (!relation(in.at(i - 1), in.at(i))) {
             return false;
         }
     }

@@ -22,11 +22,15 @@ TRACCC_HOST_DEVICE
 inline scalar signal_cell_modelling(
     scalar signal_in, const silicon_detector_description::const_device&);
 
-/// Function for pixel segmentation
-TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(
-    unsigned int cell_idx,
-    const edm::silicon_cell_collection::const_device& cells,
+/// Get the local position of a cell on a module
+///
+/// @param cell      The cell to get the position of
+/// @param det_descr The (silicon) detector description
+/// @return The local position of the cell
+///
+template <typename T>
+TRACCC_HOST_DEVICE inline vector2 position_from_cell(
+    const edm::silicon_cell<T>& cell,
     const silicon_detector_description::const_device& det_descr);
 
 /// Function used for calculating the properties of the cluster during

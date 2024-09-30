@@ -19,20 +19,14 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
-struct lt_relation {
-    template <typename VEC>
-    TRACCC_HOST_DEVICE bool operator()(const VEC& v, std::size_t i,
-                                       std::size_t j) const {
-        return v.at(i) < v.at(j);
-    }
+struct int_lt_relation {
+    TRACCC_HOST_DEVICE
+    bool operator()(const int& a, const int& b) const { return a < b; }
 };
 
-struct leq_relation {
-    template <typename VEC>
-    TRACCC_HOST_DEVICE bool operator()(const VEC& v, std::size_t i,
-                                       std::size_t j) const {
-        return v.at(i) <= v.at(j);
-    }
+struct int_leq_relation {
+    TRACCC_HOST_DEVICE
+    bool operator()(const int& a, const int& b) const { return a <= b; }
 };
 
 class CUDASanityOrderedOn : public testing::Test {
@@ -54,7 +48,7 @@ TEST_F(CUDASanityOrderedOn, TrueConsecutiveNoRepeatsLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_TRUE(traccc::cuda::is_ordered_on<vecmem::device_vector<const int>>(
-        leq_relation(), mr, copy, stream, device_view));
+        int_leq_relation(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityOrderedOn, TrueConsecutiveNoRepeatsLt) {
@@ -69,7 +63,7 @@ TEST_F(CUDASanityOrderedOn, TrueConsecutiveNoRepeatsLt) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_TRUE(traccc::cuda::is_ordered_on<vecmem::device_vector<const int>>(
-        lt_relation(), mr, copy, stream, device_view));
+        int_lt_relation(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityOrderedOn, TrueConsecutiveRepeatsLeq) {
@@ -86,7 +80,7 @@ TEST_F(CUDASanityOrderedOn, TrueConsecutiveRepeatsLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_TRUE(traccc::cuda::is_ordered_on<vecmem::device_vector<const int>>(
-        leq_relation(), mr, copy, stream, device_view));
+        int_leq_relation(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityOrderedOn, FalseConsecutiveRepeatLt) {
@@ -103,7 +97,7 @@ TEST_F(CUDASanityOrderedOn, FalseConsecutiveRepeatLt) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_FALSE(traccc::cuda::is_ordered_on<vecmem::device_vector<const int>>(
-        lt_relation(), mr, copy, stream, device_view));
+        int_lt_relation(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityOrderedOn, TrueConsecutivePathologicalFirstLeq) {
@@ -122,7 +116,7 @@ TEST_F(CUDASanityOrderedOn, TrueConsecutivePathologicalFirstLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_FALSE(traccc::cuda::is_ordered_on<vecmem::device_vector<const int>>(
-        leq_relation(), mr, copy, stream, device_view));
+        int_leq_relation(), mr, copy, stream, device_view));
 }
 
 TEST_F(CUDASanityOrderedOn, TrueConsecutivePathologicalLastLeq) {
@@ -141,5 +135,5 @@ TEST_F(CUDASanityOrderedOn, TrueConsecutivePathologicalLastLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_FALSE(traccc::cuda::is_ordered_on<vecmem::device_vector<const int>>(
-        leq_relation(), mr, copy, stream, device_view));
+        int_leq_relation(), mr, copy, stream, device_view));
 }

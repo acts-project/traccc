@@ -18,10 +18,8 @@
 #include <gtest/gtest.h>
 
 struct int_identity_projection {
-    template <typename VEC>
-    TRACCC_HOST_DEVICE int operator()(const VEC& v, std::size_t i) const {
-        return v.at(i);
-    }
+    TRACCC_HOST_DEVICE
+    int operator()(const int& v) const { return v; }
 };
 
 class CPUSanityContiguousOn : public testing::Test {

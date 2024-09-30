@@ -12,6 +12,7 @@
 #include <concepts>
 #include <memory>
 #include <unordered_set>
+#include <utility>
 
 namespace traccc::host {
 
@@ -35,14 +36,16 @@ namespace traccc::host {
  * @return false Otherwise.
  */
 template <std::semiregular P, typename CONTAINER>
-requires std::regular_invocable<P, CONTAINER, std::size_t> bool
+requires std::regular_invocable<P,
+                                decltype(std::declval<CONTAINER>().at(0))> bool
 is_contiguous_on(P&& projection, const CONTAINER& in) {
 
     // Grab the number of elements in our container.
-    std::size_t n = in.size();
+    typename CONTAINER::size_type n = in.size();
 
     // Get the output type of the projection.
-    using projection_t = std::invoke_result_t<P, CONTAINER, std::size_t>;
+    using projection_t =
+        std::invoke_result_t<P, decltype(std::declval<CONTAINER>().at(0))>;
 
     // Allocate memory for intermediate values and outputs, then set them up.
     std::unique_ptr<projection_t[]> iout = std::make_unique<projection_t[]>(n);
@@ -51,9 +54,9 @@ is_contiguous_on(P&& projection, const CONTAINER& in) {
     // Compress adjacent elements
     for (std::size_t i = 0; i < n; ++i) {
         if (i == 0) {
-            iout[iout_size++] = projection(in, i);
+            iout[iout_size++] = projection(in.at(i));
         } else {
-            projection_t v = projection(in, i);
+            projection_t v = projection(in.at(i));
 
             if (v != iout[iout_size - 1]) {
                 iout[iout_size++] = v;
