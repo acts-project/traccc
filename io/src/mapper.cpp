@@ -164,6 +164,16 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
 
     io::csv::cell iocell;
 
+    // Helper lambda for setting up SoA cells.
+    auto assign = [](auto dest, const io::csv::cell& src,
+                     unsigned int module_idx) {
+        dest.channel0() = src.channel0;
+        dest.channel1() = src.channel1;
+        dest.activation() = src.value;
+        dest.time() = src.timestamp;
+        dest.module_index() = module_idx;
+    };
+
     while (creader.read(iocell)) {
         unsigned int link = 0;
         auto it = link_map.find(iocell.geometry_id);
@@ -174,11 +184,7 @@ hit_cell_map generate_hit_cell_map(std::size_t event,
         edm::silicon_cell_collection::host& cells = pair.first->second;
         const std::size_t cellIndex = cells.size();
         cells.resize(cellIndex + 1);
-        cells.channel0().at(cellIndex) = iocell.channel0;
-        cells.channel1().at(cellIndex) = iocell.channel1;
-        cells.activation().at(cellIndex) = iocell.value;
-        cells.time().at(cellIndex) = iocell.timestamp;
-        cells.module_index().at(cellIndex) = link;
+        assign(cells.at(cellIndex), iocell, link);
     }
     return result;
 }
@@ -207,11 +213,7 @@ particle_cell_map generate_particle_cell_map(std::size_t event,
         for (std::size_t i = 0; i < cells1.size(); ++i) {
             const std::size_t cellIndex = cells2.size();
             cells2.resize(cellIndex + 1);
-            cells2.channel0().at(cellIndex) = cells1.channel0().at(i);
-            cells2.channel1().at(cellIndex) = cells1.channel1().at(i);
-            cells2.activation().at(cellIndex) = cells1.activation().at(i);
-            cells2.time().at(cellIndex) = cells1.time().at(i);
-            cells2.module_index().at(cellIndex) = cells1.module_index().at(i);
+            cells2.at(cellIndex) = cells1.at(i);
         }
     }
 
@@ -250,16 +252,7 @@ measurement_cell_map generate_measurement_cell_map(
         for (unsigned int cell_idx : clusters.cell_indices().at(i)) {
             const std::size_t measCellIndex = cells_for_measurement.size();
             cells_for_measurement.resize(measCellIndex + 1);
-            cells_for_measurement.channel0().at(measCellIndex) =
-                cells.channel0().at(cell_idx);
-            cells_for_measurement.channel1().at(measCellIndex) =
-                cells.channel1().at(cell_idx);
-            cells_for_measurement.activation().at(measCellIndex) =
-                cells.activation().at(cell_idx);
-            cells_for_measurement.time().at(measCellIndex) =
-                cells.time().at(cell_idx);
-            cells_for_measurement.module_index().at(measCellIndex) =
-                cells.module_index().at(cell_idx);
+            cells_for_measurement.at(measCellIndex) = cells.at(cell_idx);
         }
 
         auto pair = result.insert({measurements.at(i), cells_for_measurement});
@@ -301,17 +294,7 @@ measurement_particle_map generate_measurement_particle_map(
                  ++mCellIndex) {
                 for (std::size_t pCellIndex = 0; pCellIndex < pCells.size();
                      ++pCellIndex) {
-                    if ((mCells.channel0().at(mCellIndex) ==
-                         pCells.channel0().at(pCellIndex)) &&
-                        (mCells.channel1().at(mCellIndex) ==
-                         pCells.channel1().at(pCellIndex)) &&
-                        (std::abs(mCells.activation().at(mCellIndex) -
-                                  pCells.activation().at(pCellIndex)) <
-                         1e-6f) &&
-                        (std::abs(mCells.time().at(mCellIndex) -
-                                  pCells.time().at(pCellIndex)) < 1e-6f) &&
-                        (mCells.module_index().at(mCellIndex) ==
-                         pCells.module_index().at(pCellIndex))) {
+                    if (mCells.at(mCellIndex) == pCells.at(pCellIndex)) {
 
                         result[meas][ptc]++;
                     }

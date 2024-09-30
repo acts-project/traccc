@@ -141,7 +141,7 @@ TRACCC_DEVICE inline void ccl_core(
     vecmem::device_vector<details::index_t> gf,
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
     unsigned char* adjc,
-    const edm::silicon_cell_collection::const_device cells_device,
+    const edm::silicon_cell_collection::const_device& cells_device,
     const silicon_detector_description::const_device& det_descr,
     measurement_collection_types::device measurements_device,
     barrier_t& barrier) {

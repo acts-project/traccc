@@ -45,12 +45,7 @@ static auto compare_cells =
         for (std::size_t i = 0; i < c1.size(); ++i) {
             bool found = false;
             for (std::size_t j = 0; j < c2.size(); ++j) {
-                if (c1.channel0().at(i) == c2.channel0().at(j) &&
-                    c1.channel1().at(i) == c2.channel1().at(j) &&
-                    (std::abs(c1.activation().at(i) - c2.activation().at(j)) <
-                     0.0001f) &&
-                    (std::abs(c1.time().at(i) - c2.time().at(j)) < 0.0001f) &&
-                    c1.module_index().at(i) == c2.module_index().at(j)) {
+                if (c1.at(i) == c2.at(j)) {
                     found = true;
                     c2_find_count[j]++;
                     break;
