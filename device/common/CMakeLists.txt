@@ -77,6 +77,8 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    # Track fitting funtions(s).
    "include/traccc/fitting/device/fit.hpp"
    "include/traccc/fitting/device/impl/fit.ipp"
+   "include/traccc/fitting/device/fill_sort_keys.hpp"
+   "include/traccc/fitting/device/impl/fill_sort_keys.ipp"
    )
 target_link_libraries( traccc_device_common
    PUBLIC traccc::Thrust traccc::core vecmem::core )

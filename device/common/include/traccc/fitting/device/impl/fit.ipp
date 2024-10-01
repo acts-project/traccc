@@ -16,12 +16,15 @@ TRACCC_HOST_DEVICE inline void fit(
     const typename fitter_t::bfield_type field_data,
     const typename fitter_t::config_type cfg,
     track_candidate_container_types::const_view track_candidates_view,
+    const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     track_state_container_types::view track_states_view) {
 
     typename fitter_t::detector_type det(det_data);
 
     track_candidate_container_types::const_device track_candidates(
         track_candidates_view);
+
+    vecmem::device_vector<const unsigned int> param_ids(param_ids_view);
 
     track_state_container_types::device track_states(track_states_view);
 
@@ -31,15 +34,17 @@ TRACCC_HOST_DEVICE inline void fit(
         return;
     }
 
+    const unsigned int param_id = param_ids.at(globalIndex);
+
     // Track candidates per track
     const auto& track_candidates_per_track =
-        track_candidates[globalIndex].items;
+        track_candidates.at(param_id).items;
 
     // Seed parameter
-    const auto& seed_param = track_candidates[globalIndex].header;
+    const auto& seed_param = track_candidates.at(param_id).header;
 
     // Track states per track
-    auto track_states_per_track = track_states[globalIndex].items;
+    auto track_states_per_track = track_states.at(param_id).items;
 
     for (auto& cand : track_candidates_per_track) {
         track_states_per_track.emplace_back(cand);
@@ -51,7 +56,7 @@ TRACCC_HOST_DEVICE inline void fit(
     fitter.fit(seed_param, fitter_state);
 
     // Get the final fitting information
-    track_states[globalIndex].header = fitter_state.m_fit_res;
+    track_states.at(param_id).header = fitter_state.m_fit_res;
 }
 
 }  // namespace traccc::device

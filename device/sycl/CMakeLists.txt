@@ -42,4 +42,4 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
 )
 target_link_libraries( traccc_sycl
   PUBLIC traccc::core detray::core vecmem::core covfie::core
-  PRIVATE traccc::device_common vecmem::sycl )
+  PRIVATE traccc::device_common vecmem::sycl oneDPL )
