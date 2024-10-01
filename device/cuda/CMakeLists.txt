@@ -42,15 +42,13 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/seeding_algorithm.cpp"
   "include/traccc/cuda/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cu"
-  "include/traccc/cuda/seeding/experimental/spacepoint_formation.hpp"
-  "src/seeding/experimental/spacepoint_formation.cu"
+  "include/traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
+  "src/seeding/spacepoint_formation_algorithm.cu"
   # Clusterization
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"
   "include/traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
   "src/clusterization/measurement_sorting_algorithm.cu"
-  "include/traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
-  "src/clusterization/spacepoint_formation_algorithm.cu"
   # Finding
   "include/traccc/cuda/finding/finding_algorithm.hpp"
   "src/finding/finding_algorithm.cu"

@@ -49,7 +49,8 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type&,
     const fitting_algorithm::config_type&,
-    const silicon_detector_description::host& det_descr, detector_type*)
+    const silicon_detector_description::host& det_descr,
+    host_detector_type* detector)
     : m_data(new details::full_chain_algorithm_data{{::handle_async_error}}),
       m_host_mr(host_mr),
       m_device_mr(std::make_unique<vecmem::sycl::device_memory_resource>(
@@ -62,6 +63,7 @@ full_chain_algorithm::full_chain_algorithm(
           static_cast<silicon_detector_description::buffer::size_type>(
               m_det_descr.get().size()),
           *m_device_mr),
+      m_detector(detector),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_data->m_queue_wrapper, clustering_config),
       m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
@@ -83,8 +85,18 @@ full_chain_algorithm::full_chain_algorithm(
         << m_data->m_queue.get_device().get_info<::sycl::info::device::name>()
         << std::endl;
 
+    // Creating SYCL queue object
+    ::sycl::queue q(handle_async_error);
+    traccc::sycl::queue_wrapper queue{&q};
+
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
+    if (m_detector != nullptr) {
+        m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
+                                               *m_device_mr, m_copy);
+        q.wait_and_throw();
+        m_device_detector_view = detray::get_data(m_device_detector);
+    }
 }
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
@@ -136,19 +148,35 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     // Execute the algorithms.
     const clusterization_algorithm::output_type measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
-    const spacepoint_formation_algorithm::output_type spacepoints =
-        m_spacepoint_formation(measurements, m_device_det_descr);
-    const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
-                                     {0.f, 0.f, m_finder_config.bFieldInZ});
 
-    // Get the final data back to the host.
-    bound_track_parameters_collection_types::host result(&m_host_mr);
-    (m_copy)(track_params, result);
-    m_data->m_queue.wait_and_throw();
+    // If we have a Detray detector, run the seeding, track finding and fitting.
+    if (m_detector != nullptr) {
 
-    // Return the host container.
-    return result;
+        const spacepoint_formation_algorithm::output_type spacepoints =
+            m_spacepoint_formation(m_device_detector_view, measurements);
+        const track_params_estimation::output_type track_params =
+            m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
+                                         {0.f, 0.f, m_finder_config.bFieldInZ});
+
+        // Get the final data back to the host.
+        bound_track_parameters_collection_types::host result(&m_host_mr);
+        (m_copy)(track_params, result);
+        m_data->m_queue.wait_and_throw();
+
+        // Return the host container.
+        return result;
+    }
+    // If not, copy the measurements back to the host, and return a dummy
+    // object.
+    else {
+
+        // Copy the measurements back to the host.
+        measurement_collection_types::host measurements_host(&m_host_mr);
+        m_copy(measurements, measurements_host)->wait();
+
+        // Return an empty object.
+        return {};
+    }
 }
 
 }  // namespace traccc::sycl

@@ -10,17 +10,18 @@
 
 // io
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/utils.hpp"
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
+#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
-#include "traccc/sycl/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
+#include "traccc/sycl/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 
 // performance
@@ -103,6 +104,20 @@ int seq_run(const traccc::opts::detector& detector_opts,
         device_mr};
     copy(host_det_descr_data, device_det_descr);
 
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host host_detector{host_mr};
+    traccc::default_detector::buffer device_detector;
+    traccc::default_detector::view device_detector_view;
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            host_detector, host_mr, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
+        device_detector = detray::get_buffer(detray::get_data(host_detector),
+                                             device_mr, copy);
+        q.wait_and_throw();
+        device_detector_view = detray::get_data(device_detector);
+    }
+
     // Output stats
     uint64_t n_cells = 0;
     // uint64_t n_clusters = 0;
@@ -112,13 +127,21 @@ int seq_run(const traccc::opts::detector& detector_opts,
     uint64_t n_seeds = 0;
     uint64_t n_seeds_sycl = 0;
 
+    // Type definitions
+    using host_spacepoint_formation_algorithm =
+        traccc::host::spacepoint_formation_algorithm<
+            traccc::default_detector::host>;
+    using device_spacepoint_formation_algorithm =
+        traccc::sycl::spacepoint_formation_algorithm<
+            traccc::default_detector::device>;
+
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
 
     // Algorithms.
     traccc::host::clusterization_algorithm ca(host_mr);
-    traccc::host::spacepoint_formation_algorithm sf(host_mr);
+    host_spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
@@ -126,7 +149,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, queue,
                                                    clusterization_opts);
-    traccc::sycl::spacepoint_formation_algorithm sf_sycl(mr, copy, queue);
+    device_spacepoint_formation_algorithm sf_sycl(mr, copy, queue);
     traccc::sycl::seeding_algorithm sa_sycl(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, mr, copy, &q);
@@ -145,8 +168,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         // Instantiate host containers/collections
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event;
-        traccc::host::spacepoint_formation_algorithm::output_type
-            spacepoints_per_event;
+        traccc::host::spacepoint_formation_algorithm<
+            traccc::default_detector::host>::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -175,15 +198,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             n_cells += cells_per_event.size();
 
-            /*---------------------------------------------------
-                Clusterization & Spacepoint formation (SYCL)
-            ---------------------------------------------------*/
-
             // Create device copy of input collections
             traccc::cell_collection_types::buffer cells_buffer(
                 cells_per_event.size(), mr.main);
             copy(vecmem::get_data(cells_per_event), cells_buffer);
 
+            // SYCL
             {
                 traccc::performance::timer t("Clusterization (sycl)",
                                              elapsedTimes);
@@ -193,80 +213,68 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 
-            {
-                traccc::performance::timer t("Spacepoint formation (sycl)",
-                                             elapsedTimes);
-                // Reconstruct it into spacepoints on the device.
-                spacepoints_sycl_buffer =
-                    sf_sycl(measurements_sycl_buffer, device_det_descr);
-                q.wait_and_throw();
-            }  // stop measuring clusterization sycl timer
-
+            // CPU
             if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Clusterization  (cpu)",
+                                             elapsedTimes);
+                measurements_per_event =
+                    ca(vecmem::get_data(cells_per_event), host_det_descr_data);
+            }
 
-                /*-----------------------------
-                    Clusterization (cpu)
-                -----------------------------*/
+            // Perform seeding, track finding and fitting only when using a
+            // Detray geometry.
+            if (detector_opts.use_detray_detector) {
 
+                // SYCL
                 {
-                    traccc::performance::timer t("Clusterization  (cpu)",
+                    traccc::performance::timer t("Spacepoint formation (sycl)",
                                                  elapsedTimes);
-                    measurements_per_event = ca(
-                        vecmem::get_data(cells_per_event), host_det_descr_data);
-                }
+                    // Reconstruct it into spacepoints on the device.
+                    spacepoints_sycl_buffer =
+                        sf_sycl(device_detector_view, measurements_sycl_buffer);
+                    q.wait_and_throw();
+                }  // stop measuring clusterization sycl timer
 
-                /*---------------------------------
-                    Spacepoint formation (cpu)
-                ---------------------------------*/
-
-                {
+                // CPU
+                if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer t("Spacepoint formation  (cpu)",
                                                  elapsedTimes);
                     spacepoints_per_event =
-                        sf(vecmem::get_data(measurements_per_event),
-                           host_det_descr_data);
+                        sf(host_detector,
+                           vecmem::get_data(measurements_per_event));
                 }
+
+                // SYCL
+                {
+                    traccc::performance::timer t("Seeding (sycl)",
+                                                 elapsedTimes);
+                    seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                    q.wait_and_throw();
+                }  // stop measuring seeding sycl timer
+
+                // CPU
+                if (accelerator_opts.compare_with_cpu) {
+                    traccc::performance::timer t("Seeding  (cpu)",
+                                                 elapsedTimes);
+                    seeds = sa(spacepoints_per_event);
+                }  // stop measuring seeding cpu timer
+
+                // SYCL
+                {
+                    traccc::performance::timer t("Track params (sycl)",
+                                                 elapsedTimes);
+                    params_sycl_buffer = tp_sycl(spacepoints_sycl_buffer,
+                                                 seeds_sycl_buffer, field_vec);
+                    q.wait_and_throw();
+                }  // stop measuring track params timer
+
+                // CPU
+                if (accelerator_opts.compare_with_cpu) {
+                    traccc::performance::timer t("Track params  (cpu)",
+                                                 elapsedTimes);
+                    params = tp(spacepoints_per_event, seeds, field_vec);
+                }  // stop measuring track params cpu timer
             }
-
-            /*----------------------------
-                Seeding algorithm
-            ----------------------------*/
-
-            // SYCL
-            {
-                traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
-                seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
-                q.wait_and_throw();
-            }  // stop measuring seeding sycl timer
-
-            // CPU
-
-            if (accelerator_opts.compare_with_cpu) {
-                traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
-                seeds = sa(spacepoints_per_event);
-            }  // stop measuring seeding cpu timer
-
-            /*----------------------------
-            Track params estimation
-            ----------------------------*/
-
-            // SYCL
-            {
-                traccc::performance::timer t("Track params (sycl)",
-                                             elapsedTimes);
-                params_sycl_buffer = tp_sycl(spacepoints_sycl_buffer,
-                                             seeds_sycl_buffer, field_vec);
-                q.wait_and_throw();
-            }  // stop measuring track params timer
-
-            // CPU
-
-            if (accelerator_opts.compare_with_cpu) {
-                traccc::performance::timer t("Track params  (cpu)",
-                                             elapsedTimes);
-                params = tp(spacepoints_per_event, seeds, field_vec);
-            }  // stop measuring track params cpu timer
-
         }  // stop measuring wall time
 
         /*----------------------------------

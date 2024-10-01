@@ -1,27 +1,26 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Library include(s).
-#include "traccc/cuda/utils/stream.hpp"
+// Project include(s).
+#include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
 
-namespace traccc::cuda::experimental {
+namespace traccc::alpaka {
 
 /// Algorithm forming space points out of measurements
 ///
@@ -29,7 +28,7 @@ namespace traccc::cuda::experimental {
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
 template <typename detector_t>
-class spacepoint_formation
+class spacepoint_formation_algorithm
     : public algorithm<spacepoint_collection_types::buffer(
           const typename detector_t::view_type&,
           const measurement_collection_types::const_view&)> {
@@ -37,30 +36,29 @@ class spacepoint_formation
     public:
     /// Constructor for spacepoint_formation
     ///
-    /// @param mr   the memory resource
-    /// @param copy vecmem copy object
-    /// @param str  cuda stream
+    /// @param mr is the memory resource
     ///
-    spacepoint_formation(const traccc::memory_resource& mr, vecmem::copy& copy,
-                         stream& str);
+    spacepoint_formation_algorithm(const traccc::memory_resource& mr,
+                                   vecmem::copy& copy);
 
-    /// Callable operator for spacepoint formation
+    /// Callable operator for the space point formation, based on one single
+    /// module
     ///
-    /// @param det_view     a detector view object
-    /// @param measurements  a collection of measurements
-    /// @return a spacepoint collection (buffer)
+    /// @param det_view     A view type object of tracking geometry
+    /// @param measurements All reconstructed measurements in an event
+    /// @return A spacepoint container, with one spacepoint for every
+    ///         measurement
+    ///
     spacepoint_collection_types::buffer operator()(
         const typename detector_t::view_type& det_view,
         const measurement_collection_types::const_view& measurements_view)
         const override;
 
     private:
-    /// Memory resource used by the algorithm
+    /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use
-    vecmem::copy& m_copy;
-    /// The CUDA stream to use
-    stream& m_stream;
-};
+    std::reference_wrapper<vecmem::copy> m_copy;
+};  // class spacepoint_formation_algorithm
 
-}  // namespace traccc::cuda::experimental
+}  // namespace traccc::alpaka

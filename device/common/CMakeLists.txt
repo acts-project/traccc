@@ -28,8 +28,6 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/edm/device/device_triplet.hpp"
    "include/traccc/edm/device/sort_key.hpp"
    # Clusterization function(s).
-   "include/traccc/clusterization/device/form_spacepoints.hpp"
-   "include/traccc/clusterization/device/impl/form_spacepoints.ipp"
    "include/traccc/clusterization/device/reduce_problem_cell.hpp"
    "include/traccc/clusterization/device/impl/reduce_problem_cell.ipp"
    "include/traccc/clusterization/device/aggregate_cluster.hpp"
@@ -42,8 +40,8 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/seeding/device/populate_grid.hpp"
    "include/traccc/seeding/device/impl/populate_grid.ipp"
    # Seed finding function(s).
-   "include/traccc/seeding/device/experimental/form_spacepoints.hpp"
-   "include/traccc/seeding/device/experimental/impl/form_spacepoints.ipp"
+   "include/traccc/seeding/device/form_spacepoints.hpp"
+   "include/traccc/seeding/device/impl/form_spacepoints.ipp"
    "include/traccc/seeding/device/count_doublets.hpp"
    "include/traccc/seeding/device/impl/count_doublets.ipp"
    "include/traccc/seeding/device/find_doublets.hpp"

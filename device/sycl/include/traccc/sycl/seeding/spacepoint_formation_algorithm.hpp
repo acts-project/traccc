@@ -21,7 +21,7 @@
 // System include(s).
 #include <functional>
 
-namespace traccc::sycl::experimental {
+namespace traccc::sycl {
 
 /// Algorithm forming space points out of measurements
 ///
@@ -29,7 +29,7 @@ namespace traccc::sycl::experimental {
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
 template <typename detector_t>
-class spacepoint_formation
+class spacepoint_formation_algorithm
     : public algorithm<spacepoint_collection_types::buffer(
           const typename detector_t::view_type&,
           const measurement_collection_types::const_view&)> {
@@ -41,8 +41,8 @@ class spacepoint_formation
     /// @param copy  vecmem copy object
     /// @param queue is a wrapper for the sycl queue for kernel
     ///
-    spacepoint_formation(const traccc::memory_resource& mr, vecmem::copy& copy,
-                         queue_wrapper queue);
+    spacepoint_formation_algorithm(const traccc::memory_resource& mr,
+                                   vecmem::copy& copy, queue_wrapper queue);
 
     /// Callable operator for spacepoint formation
     ///
@@ -58,9 +58,9 @@ class spacepoint_formation
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// The copy object to use
-    vecmem::copy& m_copy;
+    std::reference_wrapper<vecmem::copy> m_copy;
     /// SYCL queue object
     mutable queue_wrapper m_queue;
 };
 
-}  // namespace traccc::sycl::experimental
+}  // namespace traccc::sycl

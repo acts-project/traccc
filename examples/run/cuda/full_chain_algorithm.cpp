@@ -154,15 +154,15 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         m_clusterization(cells_buffer, m_device_det_descr);
     m_measurement_sorting(measurements);
 
-    // Run the seed-finding (asynchronously).
-    const spacepoint_formation_algorithm::output_type spacepoints =
-        m_spacepoint_formation(measurements, m_device_det_descr);
-    const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
-                                     m_field_vec);
-
-    // If we have a Detray detector, run the track finding and fitting.
+    // If we have a Detray detector, run the seeding, track finding and fitting.
     if (m_detector != nullptr) {
+
+        // Run the seed-finding (asynchronously).
+        const spacepoint_formation_algorithm::output_type spacepoints =
+            m_spacepoint_formation(m_device_detector_view, measurements);
+        const track_params_estimation::output_type track_params =
+            m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
+                                         m_field_vec);
 
         // Run the track finding (asynchronously).
         const finding_algorithm::output_type track_candidates = m_finding(
@@ -178,14 +178,13 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         return result;
 
     }
-    // If not, copy the track parameters back to the host, and return a dummy
+    // If not, copy the measurements back to the host, and return a dummy
     // object.
     else {
 
-        // Copy the track parameters back to the host.
-        bound_track_parameters_collection_types::host track_params_host(
-            &m_host_mr);
-        m_copy(track_params, track_params_host)->wait();
+        // Copy the measurements back to the host.
+        measurement_collection_types::host measurements_host(&m_host_mr);
+        m_copy(measurements, measurements_host)->wait();
 
         // Return an empty object.
         return {};

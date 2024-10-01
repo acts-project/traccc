@@ -6,9 +6,9 @@
  */
 
 // Library include(s).
-#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
+#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
 
-#include "traccc/clusterization/details/spacepoint_formation.hpp"
+#include "traccc/seeding/details/spacepoint_formation.hpp"
 
 namespace traccc::host {
 

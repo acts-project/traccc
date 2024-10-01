@@ -15,10 +15,10 @@
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
+#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
@@ -98,6 +98,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
     uint64_t n_ambiguity_free_tracks = 0;
 
     // Type definitions
+    using spacepoint_formation_algorithm =
+        traccc::host::spacepoint_formation_algorithm<
+            traccc::default_detector::host>;
     using stepper_type =
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
                            traccc::default_detector::host::algebra_type,
@@ -126,7 +129,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
     // Algorithms
     traccc::host::clusterization_algorithm ca(host_mr);
-    traccc::host::spacepoint_formation_algorithm sf(host_mr);
+    spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
@@ -156,8 +159,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event{&host_mr};
-        traccc::host::spacepoint_formation_algorithm::output_type
-            spacepoints_per_event{&host_mr};
+        traccc::host::spacepoint_formation_algorithm<
+            const traccc::default_detector>::output_type spacepoints_per_event{
+            &host_mr};
         traccc::seeding_algorithm::output_type seeds{&host_mr};
         traccc::track_params_estimation::output_type params{&host_mr};
         finding_algorithm::output_type track_candidates{&host_mr};
@@ -189,49 +193,51 @@ int seq_run(const traccc::opts::input_data& input_opts,
                     ca(vecmem::get_data(cells_per_event), det_descr_data);
             }
 
-            /*------------------------
-                Spacepoint formation
-              ------------------------*/
-
-            {
-                traccc::performance::timer timer{"Spacepoint formation",
-                                                 elapsedTimes};
-                spacepoints_per_event = sf(
-                    vecmem::get_data(measurements_per_event), det_descr_data);
-            }
-            if (output_opts.directory != "") {
-                traccc::io::write(event, output_opts.directory,
-                                  output_opts.format,
-                                  vecmem::get_data(spacepoints_per_event));
-            }
-
-            /*-----------------------
-              Seeding algorithm
-              -----------------------*/
-
-            {
-                traccc::performance::timer timer{"Seeding", elapsedTimes};
-                seeds = sa(spacepoints_per_event);
-            }
-            if (output_opts.directory != "") {
-                traccc::io::write(event, output_opts.directory,
-                                  output_opts.format, vecmem::get_data(seeds),
-                                  vecmem::get_data(spacepoints_per_event));
-            }
-
-            /*----------------------------
-              Track params estimation
-              ----------------------------*/
-
-            {
-                traccc::performance::timer timer{"Track params estimation",
-                                                 elapsedTimes};
-                params = tp(spacepoints_per_event, seeds, field_vec);
-            }
-
-            // Perform track finding and fitting only when using a Detray
-            // geometry.
+            // Perform seeding, track finding and fitting only when using a
+            // Detray geometry.
             if (detector_opts.use_detray_detector) {
+
+                /*------------------------
+                    Spacepoint formation
+                  ------------------------*/
+
+                {
+                    traccc::performance::timer timer{"Spacepoint formation",
+                                                     elapsedTimes};
+                    spacepoints_per_event =
+                        sf(detector, vecmem::get_data(measurements_per_event));
+                }
+                if (output_opts.directory != "") {
+                    traccc::io::write(event, output_opts.directory,
+                                      output_opts.format,
+                                      vecmem::get_data(spacepoints_per_event));
+                }
+
+                /*-----------------------
+                  Seeding algorithm
+                  -----------------------*/
+
+                {
+                    traccc::performance::timer timer{"Seeding", elapsedTimes};
+                    seeds = sa(spacepoints_per_event);
+                }
+                if (output_opts.directory != "") {
+                    traccc::io::write(event, output_opts.directory,
+                                      output_opts.format,
+                                      vecmem::get_data(seeds),
+                                      vecmem::get_data(spacepoints_per_event));
+                }
+
+                /*----------------------------
+                  Track params estimation
+                  ----------------------------*/
+
+                {
+                    traccc::performance::timer timer{"Track params estimation",
+                                                     elapsedTimes};
+                    params = tp(spacepoints_per_event, seeds, field_vec);
+                }
+
                 {
                     traccc::performance::timer timer{"Track finding",
                                                      elapsedTimes};

@@ -7,18 +7,20 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -54,9 +56,22 @@ int par_run(const traccc::opts::input_data& input_opts,
     traccc::silicon_detector_description::data det_descr_data{
         vecmem::get_data(det_descr)};
 
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host detector{resource};
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            detector, resource, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
+    }
+
+    // Type definitions
+    using spacepoint_formation_algorithm =
+        traccc::host::spacepoint_formation_algorithm<
+            traccc::default_detector::host>;
+
     // Algorithms
     traccc::host::clusterization_algorithm ca(resource);
-    traccc::host::spacepoint_formation_algorithm sf(resource);
+    spacepoint_formation_algorithm sf(resource);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -85,7 +100,7 @@ int par_run(const traccc::opts::input_data& input_opts,
           ------------------------*/
 
         auto spacepoints_per_event =
-            sf(vecmem::get_data(measurements_per_event), det_descr_data);
+            sf(detector, vecmem::get_data(measurements_per_event));
 
         /*----------------------------
           Statistics

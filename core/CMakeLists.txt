@@ -54,10 +54,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/measurement_creation_algorithm.cpp"
   "include/traccc/clusterization/measurement_sorting_algorithm.hpp"
   "src/clusterization/measurement_sorting_algorithm.cpp"
-  "include/traccc/clusterization/details/spacepoint_formation.hpp"
-  "include/traccc/clusterization/impl/spacepoint_formation.ipp"
-  "include/traccc/clusterization/spacepoint_formation_algorithm.hpp"
-  "src/clusterization/spacepoint_formation_algorithm.cpp"
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
   # Finding algorithmic code
@@ -82,8 +78,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/seeding/detail/singlet.hpp"
   "include/traccc/seeding/detail/seeding_config.hpp"
   "include/traccc/seeding/detail/spacepoint_grid.hpp"
-  "include/traccc/seeding/experimental/spacepoint_formation.hpp"
-  "include/traccc/seeding/experimental/spacepoint_formation.ipp"
   "include/traccc/seeding/seed_selecting_helper.hpp"
   "include/traccc/seeding/seed_filtering.hpp"
   "src/seeding/seed_filtering.cpp"
@@ -101,6 +95,10 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/seeding/seed_finding.cpp"
   "include/traccc/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cpp"
+  "include/traccc/seeding/spacepoint_formation_algorithm.hpp"
+  "include/traccc/seeding/impl/spacepoint_formation_algorithm.ipp"
+  "include/traccc/seeding/detail/spacepoint_formation.hpp"
+  "include/traccc/seeding/impl/spacepoint_formation.ipp"
   # Ambiguity resolution
   "include/traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp" )
