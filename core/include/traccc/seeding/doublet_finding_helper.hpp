@@ -34,6 +34,11 @@ struct doublet_finding_helper {
         const internal_spacepoint<spacepoint>& sp2,
         const seedfinder_config& config);
 
+    static inline TRACCC_HOST_DEVICE bool isCompatible(
+        bool top, const internal_spacepoint<spacepoint>& sp1,
+        const internal_spacepoint<spacepoint>& sp2,
+        const seedfinder_config& config);
+
     /// Do the conformal transformation on doublet's coordinate
     ///
     /// @param sp1 is middle spacepoint
@@ -47,6 +52,17 @@ struct doublet_finding_helper {
     transform_coordinates(const internal_spacepoint<spacepoint>& sp1,
                           const internal_spacepoint<spacepoint>& sp2);
 };
+
+bool doublet_finding_helper::isCompatible(
+    bool top, const internal_spacepoint<spacepoint>& sp1,
+    const internal_spacepoint<spacepoint>& sp2,
+    const seedfinder_config& config) {
+    if (top) {
+        return isCompatible<details::spacepoint_type::top>(sp1, sp2, config);
+    } else {
+        return isCompatible<details::spacepoint_type::bottom>(sp1, sp2, config);
+    }
+}
 
 template <details::spacepoint_type otherSpType>
 bool TRACCC_HOST_DEVICE
