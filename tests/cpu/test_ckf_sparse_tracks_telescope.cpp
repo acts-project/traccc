@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -117,14 +117,12 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<rk_stepper_type,
-                                       host_navigator_type>::config_type cfg;
+    typename traccc::finding_config cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.chi2_max = 30.f;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg);
+    traccc::host::default_detector_const_field_ckf_algorithm host_finding(cfg);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
@@ -154,8 +152,9 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         traccc::io::read_measurements(measurements_per_event, i_evt, path);
 
         // Run finding
-        auto track_candidates =
-            host_finding(host_det, field, measurements_per_event, seeds);
+        auto track_candidates = host_finding(
+            host_det, field, vecmem::get_data(measurements_per_event),
+            vecmem::get_data(seeds));
 
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 

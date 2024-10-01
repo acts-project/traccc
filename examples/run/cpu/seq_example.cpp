@@ -15,7 +15,7 @@
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/spacepoint_formation_algorithm.hpp"
@@ -108,7 +108,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     using navigator_type =
         detray::navigator<const traccc::default_detector::host>;
     using finding_algorithm =
-        traccc::finding_algorithm<stepper_type, navigator_type>;
+        traccc::host::default_detector_const_field_ckf_algorithm;
     using fitting_algorithm = traccc::fitting_algorithm<
         traccc::kalman_fitter<stepper_type, navigator_type>>;
 
@@ -246,8 +246,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 {
                     traccc::performance::timer timer{"Track finding",
                                                      elapsedTimes};
-                    track_candidates = finding_alg(
-                        detector, field, measurements_per_event, params);
+                    track_candidates =
+                        finding_alg(detector, field,
+                                    vecmem::get_data(measurements_per_event),
+                                    vecmem::get_data(params));
                 }
                 if (output_opts.directory != "") {
                     traccc::io::write(

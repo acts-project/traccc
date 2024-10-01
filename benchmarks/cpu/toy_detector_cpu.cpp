@@ -9,7 +9,7 @@
 #include "traccc/geometry/detector.hpp"
 
 // Traccc algorithm include(s).
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -62,8 +62,8 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     // Algorithms
     traccc::seeding_algorithm sa(seeding_cfg, grid_cfg, filter_cfg, host_mr);
     traccc::track_params_estimation tp(host_mr);
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(finding_cfg);
+    traccc::host::default_detector_const_field_ckf_algorithm host_finding(
+        finding_cfg);
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fitting_cfg);
 
     for (auto _ : state) {
@@ -82,8 +82,9 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
             auto params = tp(spacepoints_per_event, seeds, B);
 
             // Track finding with CKF
-            auto track_candidates =
-                host_finding(det, field, measurements_per_event, params);
+            auto track_candidates = host_finding(
+                det, field, vecmem::get_data(measurements_per_event),
+                vecmem::get_data(params));
 
             // Track fitting with KF
             auto track_states = host_fitting(det, field, track_candidates);

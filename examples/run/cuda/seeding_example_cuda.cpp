@@ -17,7 +17,7 @@
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_filter.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -174,8 +174,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.propagation = propagation_config;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg);
+    traccc::host::default_detector_const_field_ckf_algorithm host_finding(cfg);
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
         device_finding(cfg, mr, async_copy, stream);
 
@@ -308,8 +307,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track finding with CKF (cpu)",
                                              elapsedTimes);
-                track_candidates = host_finding(host_det, field,
-                                                measurements_per_event, params);
+                track_candidates = host_finding(
+                    host_det, field, vecmem::get_data(measurements_per_event),
+                    vecmem::get_data(params));
             }
 
             /*------------------------

@@ -11,7 +11,7 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -65,7 +65,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
             traccc::default_detector::host>;
     /// Track finding algorithm type
     using finding_algorithm =
-        traccc::finding_algorithm<stepper_type, navigator_type>;
+        traccc::host::default_detector_const_field_ckf_algorithm;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::fitting_algorithm<
         traccc::kalman_fitter<stepper_type, navigator_type>>;

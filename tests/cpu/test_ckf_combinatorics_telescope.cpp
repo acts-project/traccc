@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -111,22 +111,20 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg_no_limit;
+    traccc::finding_config cfg_no_limit;
     cfg_no_limit.max_num_branches_per_seed =
         std::numeric_limits<unsigned int>::max();
     cfg_no_limit.chi2_max = 30.f;
 
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg_limit;
+    traccc::finding_config cfg_limit;
     cfg_limit.max_num_branches_per_seed = 500;
     cfg_limit.chi2_max = 30.f;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg_no_limit);
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding_limit(cfg_limit);
+    traccc::host::default_detector_const_field_ckf_algorithm host_finding(
+        cfg_no_limit);
+    traccc::host::default_detector_const_field_ckf_algorithm host_finding_limit(
+        cfg_limit);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -144,18 +142,22 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
             seeds.push_back(truth_track_candidates.at(i_trk).header);
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
+        const traccc::bound_track_parameters_collection_types::const_view
+            seeds_view = vecmem::get_data(seeds);
 
         // Read measurements
         traccc::measurement_collection_types::host measurements_per_event{
             &host_mr};
         traccc::io::read_measurements(measurements_per_event, i_evt, path);
+        const traccc::measurement_collection_types::const_view
+            measurements_view = vecmem::get_data(measurements_per_event);
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, field, measurements_per_event, seeds);
+            host_finding(host_det, field, measurements_view, seeds_view);
 
         auto track_candidates_limit =
-            host_finding_limit(host_det, field, measurements_per_event, seeds);
+            host_finding_limit(host_det, field, measurements_view, seeds_view);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
         ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());
