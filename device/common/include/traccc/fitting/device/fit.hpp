@@ -31,6 +31,7 @@ TRACCC_HOST_DEVICE inline void fit(
     const typename fitter_t::bfield_type field_data,
     const typename fitter_t::config_type cfg,
     track_candidate_container_types::const_view track_candidates_view,
+    const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     track_state_container_types::view track_states_view);
 
 }  // namespace traccc::device
