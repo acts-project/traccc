@@ -21,20 +21,19 @@ namespace traccc::device {
 /// Function for creating 3D spacepoints out of 2D measurements
 ///
 /// @param[in] globalIndex          The index for the current thread
+/// @param[in] det_view             A view type object of detector
 /// @param[in] measurements_view    Collection of measurements
-/// @param[in] det_descr_view       The detector description
 /// @param[in] measurement_count    Number of measurements
 /// @param[out] spacepoints_view    Collection of spacepoints
 ///
-TRACCC_HOST_DEVICE
-inline void form_spacepoints(
-    std::size_t globalIndex,
+template <typename detector_t>
+TRACCC_HOST_DEVICE inline void form_spacepoints(
+    std::size_t globalIndex, typename detector_t::view_type det_view,
     const measurement_collection_types::const_view& measurements_view,
-    const silicon_detector_description::const_view& det_descr_view,
     unsigned int measurement_count,
     spacepoint_collection_types::view spacepoints_view);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "traccc/clusterization/device/impl/form_spacepoints.ipp"
+#include "traccc/seeding/device/impl/form_spacepoints.ipp"

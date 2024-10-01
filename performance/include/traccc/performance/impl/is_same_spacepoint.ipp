@@ -21,7 +21,8 @@ class is_same_object<spacepoint> {
     is_same_object(const spacepoint& ref, scalar unc = float_epsilon);
 
     /// Specialised implementation for @c traccc::spacepoint
-    bool operator()(const spacepoint& obj) const;
+    bool operator()(const spacepoint& obj,
+                    const bool include_meas = true) const;
 
     private:
     /// The reference object

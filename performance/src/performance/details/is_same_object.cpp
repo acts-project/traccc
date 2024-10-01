@@ -67,12 +67,19 @@ bool is_same_object<seed>::operator()(const seed& obj) const {
 is_same_object<spacepoint>::is_same_object(const spacepoint& ref, scalar unc)
     : m_ref(ref), m_unc(unc) {}
 
-bool is_same_object<spacepoint>::operator()(const spacepoint& obj) const {
+bool is_same_object<spacepoint>::operator()(const spacepoint& obj,
+                                            const bool include_meas) const {
 
-    return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
-            is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
-            is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
-            is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
+    if (include_meas) {
+        return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
+                is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
+                is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
+                is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
+    } else {
+        return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
+                is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
+                is_same_scalar(obj.z(), m_ref.get().z(), m_unc));
+    }
 }
 
 /// @}

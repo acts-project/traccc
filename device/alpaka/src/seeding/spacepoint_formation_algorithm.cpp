@@ -6,42 +6,45 @@
  */
 
 // Local include(s).
-#include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
+#include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 
 #include "../utils/barrier.hpp"
 #include "../utils/utils.hpp"
 
-// Project include(s)
-#include "traccc/clusterization/device/form_spacepoints.hpp"
+// Project include(s).
+#include "traccc/geometry/detector.hpp"
+#include "traccc/seeding/device/form_spacepoints.hpp"
 
 namespace traccc::alpaka {
 
+template <typename detector_t>
 struct FormSpacepointsKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
+        TAcc const& acc, typename detector_t::view_type det_view,
         measurement_collection_types::const_view measurements_view,
-        const silicon_detector_description::const_view det_descr_view,
         const unsigned int measurement_count,
         spacepoint_collection_types::view spacepoints_view) const {
 
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        device::form_spacepoints(globalThreadIdx, measurements_view,
-                                 det_descr_view, measurement_count,
-                                 spacepoints_view);
+        device::form_spacepoints<detector_t>(
+            globalThreadIdx, det_view, measurements_view, measurement_count,
+            spacepoints_view);
     }
 };
 
-spacepoint_formation_algorithm::spacepoint_formation_algorithm(
+template <typename detector_t>
+spacepoint_formation_algorithm<detector_t>::spacepoint_formation_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy)
     : m_mr(mr), m_copy(copy) {}
 
-spacepoint_formation_algorithm::output_type
-spacepoint_formation_algorithm::operator()(
-    const measurement_collection_types::const_view& measurements_view,
-    const silicon_detector_description::const_view& det_descr) const {
+template <typename detector_t>
+spacepoint_collection_types::buffer
+spacepoint_formation_algorithm<detector_t>::operator()(
+    const typename detector_t::view_type& det_view,
+    const measurement_collection_types::const_view& measurements_view) const {
 
     // Setup alpaka
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
@@ -52,8 +55,8 @@ spacepoint_formation_algorithm::operator()(
         m_copy.get().get_size(measurements_view);
 
     // Create the result buffer.
-    spacepoint_collection_types::buffer spacepoints(num_measurements,
-                                                    m_mr.main);
+    spacepoint_collection_types::buffer spacepoints(
+        num_measurements, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(spacepoints)->ignore();
 
     // If there are no measurements, we can conclude here.
@@ -67,13 +70,15 @@ spacepoint_formation_algorithm::operator()(
     auto workDiv = makeWorkDiv<Acc>(blockSize, nBlocks);
 
     // Launch the spacepoint formation kernel.
-    ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel{},
-                        measurements_view, det_descr, num_measurements,
+    ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel<detector_t>{},
+                        det_view, measurements_view, num_measurements,
                         vecmem::get_data(spacepoints));
     ::alpaka::wait(queue);
 
     // Return the reconstructed spacepoints.
     return spacepoints;
 }
+// Explicit template instantiation
+template class spacepoint_formation_algorithm<default_detector::device>;
 
 }  // namespace traccc::alpaka

@@ -10,7 +10,6 @@
 // Library include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -26,10 +25,10 @@ namespace traccc::host {
 /// This algorithm performs the local-to-global transformation of the 2D
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
+template <typename detector_t>
 class spacepoint_formation_algorithm
     : public algorithm<spacepoint_collection_types::host(
-          const measurement_collection_types::const_view&,
-          const silicon_detector_description::const_view&)> {
+          const detector_t&, const measurement_collection_types::const_view&)> {
 
     public:
     /// Constructor for spacepoint_formation
@@ -41,18 +40,19 @@ class spacepoint_formation_algorithm
     /// Callable operator for the space point formation, based on one single
     /// module
     ///
-    /// @param measurements_view A collection of measurements
-    /// @param dd_view           The detector description
-    /// @return The reconstructed spacepoint collection
+    /// @param det Detector object
+    /// @param measurements A collection of measurements
+    /// @return A spacepoint container, with one spacepoint for every
+    ///         measurement
     ///
-    output_type operator()(
-        const measurement_collection_types::const_view& measurements_view,
-        const silicon_detector_description::const_view& dd_view) const override;
+    spacepoint_collection_types::host operator()(
+        const detector_t& det,
+        const measurement_collection_types::const_view&) const override;
 
     private:
-    /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
-};  // class spacepoint_formation_algorithm
+};
 
 }  // namespace traccc::host
+
+#include "traccc/seeding/impl/spacepoint_formation_algorithm.ipp"

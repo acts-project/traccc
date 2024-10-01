@@ -11,10 +11,10 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
-#include "traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
+#include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/cell.hpp"
@@ -67,7 +67,10 @@ class full_chain_algorithm
                            detray::constrained_step<>>;
     /// Navigator type used by the track finding and fitting algorithms
     using navigator_type = detray::navigator<const device_detector_type>;
-
+    /// Spacepoint formation algorithm type
+    using spacepoint_formation_algorithm =
+        traccc::cuda::spacepoint_formation_algorithm<
+            traccc::default_detector::device>;
     /// Clustering algorithm type
     using clustering_algorithm = traccc::cuda::clusterization_algorithm;
     /// Track finding algorithm type

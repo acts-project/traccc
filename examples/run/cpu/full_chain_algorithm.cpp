@@ -46,15 +46,16 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const host::clusterization_algorithm::output_type measurements =
         m_clusterization(vecmem::get_data(cells), det_descr_data);
 
-    // Run the seed-finding.
-    const host::spacepoint_formation_algorithm::output_type spacepoints =
-        m_spacepoint_formation(vecmem::get_data(measurements), det_descr_data);
-    const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
-                                     m_field_vec);
-
-    // If we have a Detray detector, run the track finding and fitting.
+    // If we have a Detray detector, run the seeding track finding and fitting.
     if (m_detector != nullptr) {
+
+        // Run the seed-finding.
+        const host::spacepoint_formation_algorithm<
+            const detector_type>::output_type spacepoints =
+            m_spacepoint_formation(*m_detector, vecmem::get_data(measurements));
+        const track_params_estimation::output_type track_params =
+            m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
+                                         m_field_vec);
 
         // Return the final container, after track finding and fitting.
         return m_fitting(

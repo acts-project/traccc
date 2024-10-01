@@ -8,13 +8,13 @@
 // Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
-#include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
+#include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/accelerator.hpp"
@@ -28,6 +28,7 @@
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
+#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
@@ -105,8 +106,29 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr.main};
     copy(host_det_descr_data, device_det_descr);
 
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host host_detector{host_mr};
+    traccc::default_detector::buffer device_detector;
+    traccc::default_detector::view device_detector_view;
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            host_detector, host_mr, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
+        device_detector =
+            detray::get_buffer(detray::get_data(host_detector), mr.main, copy);
+        device_detector_view = detray::get_data(device_detector);
+    }
+
+    // Type definitions
+    using host_spacepoint_formation_algorithm =
+        traccc::host::spacepoint_formation_algorithm<
+            traccc::default_detector::host>;
+    using device_spacepoint_formation_algorithm =
+        traccc::alpaka::spacepoint_formation_algorithm<
+            traccc::default_detector::device>;
+
     traccc::host::clusterization_algorithm ca(host_mr);
-    traccc::host::spacepoint_formation_algorithm sf(host_mr);
+    host_spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
@@ -115,7 +137,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::alpaka::clusterization_algorithm ca_alpaka(mr, copy,
                                                        clusterization_opts);
     traccc::alpaka::measurement_sorting_algorithm ms_alpaka(copy);
-    traccc::alpaka::spacepoint_formation_algorithm sf_alpaka(mr, copy);
+    device_spacepoint_formation_algorithm sf_alpaka(mr, copy);
     traccc::alpaka::seeding_algorithm sa_alpaka(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, mr, copy);
@@ -134,8 +156,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         // Instantiate host containers/collections
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event;
-        traccc::host::spacepoint_formation_algorithm::output_type
-            spacepoints_per_event;
+        traccc::host::spacepoint_formation_algorithm<
+            traccc::default_detector::host>::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -164,14 +186,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             n_cells += cells_per_event.size();
 
-            /*-----------------------------
-                Clusterization and Spacepoint Creation (alpaka)
-            -----------------------------*/
             // Create device copy of input collections
             traccc::cell_collection_types::buffer cells_buffer(
                 cells_per_event.size(), mr.main);
             copy(vecmem::get_data(cells_per_event), cells_buffer);
 
+            // Alpaka
             {
                 traccc::performance::timer t("Clusterization (alpaka)",
                                              elapsedTimes);
@@ -181,78 +201,63 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 ms_alpaka(measurements_alpaka_buffer);
             }  // stop measuring clusterization alpaka timer
 
-            {
-                traccc::performance::timer t("Spacepoint formation (alpaka)",
-                                             elapsedTimes);
-                spacepoints_alpaka_buffer =
-                    sf_alpaka(measurements_alpaka_buffer, device_det_descr);
-            }  // stop measuring spacepoint formation cuda timer
-
+            // CPU
             if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Clusterization  (cpu)",
+                                             elapsedTimes);
+                measurements_per_event =
+                    ca(vecmem::get_data(cells_per_event), host_det_descr_data);
+            }  // stop measuring clusterization cpu timer
 
-                /*-----------------------------
-                    Clusterization (cpu)
-                -----------------------------*/
+            if (detector_opts.use_detray_detector) {
 
+                // Alpaka
                 {
-                    traccc::performance::timer t("Clusterization  (cpu)",
-                                                 elapsedTimes);
-                    measurements_per_event = ca(
-                        vecmem::get_data(cells_per_event), host_det_descr_data);
-                }  // stop measuring clusterization cpu timer
+                    traccc::performance::timer t(
+                        "Spacepoint formation (alpaka)", elapsedTimes);
+                    spacepoints_alpaka_buffer = sf_alpaka(
+                        device_detector_view, measurements_alpaka_buffer);
+                }  // stop measuring spacepoint formation cuda timer
 
-                /*---------------------------------
-                    Spacepoint formation (cpu)
-                ---------------------------------*/
-
-                {
+                // CPU
+                if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer t("Spacepoint formation  (cpu)",
                                                  elapsedTimes);
                     spacepoints_per_event =
-                        sf(vecmem::get_data(measurements_per_event),
-                           host_det_descr_data);
+                        sf(host_detector,
+                           vecmem::get_data(measurements_per_event));
                 }  // stop measuring spacepoint formation cpu timer
+
+                // Alpaka
+                {
+                    traccc::performance::timer t("Seeding (alpaka)",
+                                                 elapsedTimes);
+                    seeds_alpaka_buffer = sa_alpaka(spacepoints_alpaka_buffer);
+                }  // stop measuring seeding alpaka timer
+
+                // CPU
+                if (accelerator_opts.compare_with_cpu) {
+                    traccc::performance::timer t("Seeding  (cpu)",
+                                                 elapsedTimes);
+                    seeds = sa(spacepoints_per_event);
+                }  // stop measuring seeding cpu timer
+
+                // Alpaka
+                {
+                    traccc::performance::timer t("Track params (alpaka)",
+                                                 elapsedTimes);
+                    params_alpaka_buffer =
+                        tp_alpaka(spacepoints_alpaka_buffer,
+                                  seeds_alpaka_buffer, field_vec);
+                }  // stop measuring track params timer
+
+                // CPU
+                if (accelerator_opts.compare_with_cpu) {
+                    traccc::performance::timer t("Track params  (cpu)",
+                                                 elapsedTimes);
+                    params = tp(spacepoints_per_event, seeds, field_vec);
+                }  // stop measuring track params cpu timer
             }
-
-            /*----------------------------
-                Seeding algorithm
-            ----------------------------*/
-
-            // Alpaka
-
-            {
-                traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
-                seeds_alpaka_buffer = sa_alpaka(spacepoints_alpaka_buffer);
-            }  // stop measuring seeding alpaka timer
-
-            // CPU
-
-            if (accelerator_opts.compare_with_cpu) {
-                traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
-                seeds = sa(spacepoints_per_event);
-            }  // stop measuring seeding cpu timer
-
-            /*----------------------------
-            Track params estimation
-            ----------------------------*/
-
-            // Alpaka
-
-            {
-                traccc::performance::timer t("Track params (alpaka)",
-                                             elapsedTimes);
-                params_alpaka_buffer = tp_alpaka(
-                    spacepoints_alpaka_buffer, seeds_alpaka_buffer, field_vec);
-            }  // stop measuring track params timer
-
-            // CPU
-
-            if (accelerator_opts.compare_with_cpu) {
-                traccc::performance::timer t("Track params  (cpu)",
-                                             elapsedTimes);
-                params = tp(spacepoints_per_event, seeds, field_vec);
-            }  // stop measuring track params cpu timer
-
         }  // Stop measuring wall time
 
         /*----------------------------------
