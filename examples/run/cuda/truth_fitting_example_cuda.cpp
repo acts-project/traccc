@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
         0.03f * detray::unit<scalar>::mm,
         0.017f,
         0.017f,
-        0.01f / detray::unit<scalar>::GeV,
+        0.001f / detray::unit<scalar>::GeV,
         1.f * detray::unit<scalar>::ns};
 
     // Fitting algorithm object
