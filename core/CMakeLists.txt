@@ -30,6 +30,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/track_candidate.hpp"
   "include/traccc/edm/track_state.hpp"
   "include/traccc/edm/silicon_cell_collection.hpp"
+  "include/traccc/edm/impl/silicon_cell_collection.ipp"
   "include/traccc/edm/silicon_cluster_collection.hpp"
   # Geometry description.
   "include/traccc/geometry/detector.hpp"

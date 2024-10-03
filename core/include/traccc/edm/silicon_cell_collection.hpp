@@ -8,7 +8,6 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
@@ -16,6 +15,7 @@
 #include <vecmem/edm/container.hpp>
 
 // System include(s).
+#include <compare>
 #include <type_traits>
 
 namespace traccc::edm {
@@ -124,14 +124,7 @@ class silicon_cell : public BASE {
     /// @param[in] other The object to assign from
     /// @return A reference to this object
     ///
-    TRACCC_HOST_DEVICE silicon_cell& operator=(const silicon_cell& other) {
-        channel0() = other.channel0();
-        channel1() = other.channel1();
-        activation() = other.activation();
-        time() = other.time();
-        module_index() = other.module_index();
-        return *this;
-    }
+    TRACCC_HOST_DEVICE silicon_cell& operator=(const silicon_cell& other);
 
     /// Assignment operator
     ///
@@ -140,16 +133,9 @@ class silicon_cell : public BASE {
     ///
     template <typename T,
               std::enable_if_t<!std::is_same_v<BASE, T>, bool> = false>
-    TRACCC_HOST_DEVICE silicon_cell& operator=(const silicon_cell<T>& other) {
-        channel0() = other.channel0();
-        channel1() = other.channel1();
-        activation() = other.activation();
-        time() = other.time();
-        module_index() = other.module_index();
-        return *this;
-    }
+    TRACCC_HOST_DEVICE silicon_cell& operator=(const silicon_cell<T>& other);
 
-    /// Comparison operator
+    /// Equality operator
     ///
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
@@ -158,35 +144,20 @@ class silicon_cell : public BASE {
     /// @return @c true if the objects are equal, @c false otherwise
     ///
     template <typename T>
-    TRACCC_HOST_DEVICE bool operator==(const silicon_cell<T>& other) const {
-        return (channel0() == other.channel0()) &&
-               (channel1() == other.channel1()) &&
-               (math::fabs(activation() - other.activation()) < 1e-6f) &&
-               (math::fabs(time() - other.time()) < 1e-6f) &&
-               (module_index() == other.module_index());
-    }
+    TRACCC_HOST_DEVICE bool operator==(const silicon_cell<T>& other) const;
 
-    /// Ordering operator
+    /// Comparison operator
     ///
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
     /// @param[in] other The object to compare with
-    /// @return @c true if this object is less than the other, @c false
-    ///         otherwise
+    /// @return A weak ordering object, describing the relation between the
+    ///         two objects
     ///
     template <typename T>
-    TRACCC_HOST_DEVICE bool operator<(const silicon_cell<T>& other) const {
-        if (module_index() != other.module_index()) {
-            return (module_index() < other.module_index());
-        } else {
-            if (channel1() != other.channel1()) {
-                return (channel1() < other.channel1());
-            } else {
-                return (channel0() < other.channel0());
-            }
-        }
-    }
+    TRACCC_HOST_DEVICE std::weak_ordering operator<=>(
+        const silicon_cell<T>& other) const;
 
     /// @}
 
@@ -201,3 +172,6 @@ using silicon_cell_collection =
                            vecmem::edm::type::vector<unsigned int> >;
 
 }  // namespace traccc::edm
+
+// Include the implementation.
+#include "traccc/edm/impl/silicon_cell_collection.ipp"
