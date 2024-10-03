@@ -34,7 +34,8 @@ struct interaction_register : detray::actor {
             s.interactor_state.do_energy_loss = false;
             s.interactor_state.do_multiple_scattering = false;
             s.interactor_state.do_covariance_transport = false;
-        } else if (!navigation.is_on_sensitive() && navigation.is_on_module()) {
+        } else if (!navigation.is_on_sensitive() &&
+                   navigation.encountered_sf_material()) {
             s.interactor_state.do_energy_loss = true;
             s.interactor_state.do_multiple_scattering = true;
             s.interactor_state.do_covariance_transport = true;
