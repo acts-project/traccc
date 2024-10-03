@@ -128,14 +128,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
     auto field = detray::bfield::create_const_field(B);
 
-    // Construct the detector description object.
-    traccc::silicon_detector_description::host host_det_descr{host_mr};
-    traccc::io::read_detector_description(
-        host_det_descr, detector_opts.detector_file,
-        detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
-
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};
     assert(detector_opts.use_detray_detector == true);
@@ -233,14 +225,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                traccc::io::read_spacepoints(
-                    spacepoints_per_event, event, input_opts.directory,
-                    &host_det_descr, input_opts.format);
+                traccc::io::read_spacepoints(spacepoints_per_event, event,
+                                             input_opts.directory, nullptr,
+                                             input_opts.format);
 
                 // Read measurements
-                traccc::io::read_measurements(
-                    measurements_per_event, event, input_opts.directory,
-                    &host_det_descr, input_opts.format);
+                traccc::io::read_measurements(measurements_per_event, event,
+                                              input_opts.directory, nullptr,
+                                              input_opts.format);
             }  // stop measuring hit reading timer
 
             /*----------------------------
