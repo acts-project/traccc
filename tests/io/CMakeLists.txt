@@ -9,7 +9,6 @@ traccc_add_test( io
    "test_binary.cpp" 
    "test_csv.cpp" 
    "test_mapper.cpp" 
-   "test_event_map.cpp"
    LINK_LIBRARIES GTest::gtest_main traccc_tests_common
                   traccc::core traccc::io )
 

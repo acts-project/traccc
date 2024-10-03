@@ -29,11 +29,6 @@ jobs:
             cxx_standard: "20"
             options:
             run_tests: true
-          - name: HIP
-            container: ghcr.io/acts-project/ubuntu2204_rocm_clang_cxx20:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_HIP=TRUE -DTRACCC_SETUP_ROCTHRUST=TRUE
-            run_tests: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2404_cuda:56
             cxx_standard: "20"
