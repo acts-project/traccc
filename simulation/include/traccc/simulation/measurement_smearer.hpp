@@ -58,7 +58,7 @@ struct measurement_smearer {
         io::csv::measurement& iomeas) {
 
         // Line detector
-        if constexpr (std::is_same_v<typename mask_t::local_frame_type,
+        if constexpr (std::is_same_v<typename mask_t::local_frame,
                                      detray::line2D<traccc::default_algebra>>) {
             iomeas.local_key = 2;
         }
@@ -94,7 +94,7 @@ struct measurement_smearer {
             matrix_type<1u, 1u> meas = proj * bound_params.vector();
 
             if constexpr (std::is_same_v<
-                              typename mask_t::local_frame_type,
+                              typename mask_t::local_frame,
                               detray::line2D<traccc::default_algebra>>) {
                 iomeas.local0 = static_cast<float>(
                     std::max(std::abs(matrix_operator().element(meas, 0u, 0u)) +
