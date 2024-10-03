@@ -55,9 +55,8 @@ inline void aggregate_cluster(
     point2 mean{0., 0.}, var{0., 0.}, offset{0., 0.};
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
+    const auto module_descr = det_descr.at(module_idx);
     const unsigned short partition_size = end - start;
-    const scalar pitch_x = det_descr.pitch_x().at(module_idx);
-    const scalar pitch_y = det_descr.pitch_y().at(module_idx);
 
     bool first_processed = false;
 
@@ -66,11 +65,13 @@ inline void aggregate_cluster(
     for (unsigned short j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
+        const auto cell = cells.at(pos);
+
         /*
          * Terminate the process earlier if we have reached a cell sufficiently
          * in a different module.
          */
-        if (cells.module_index().at(pos) != module_idx) {
+        if (cell.module_index() != module_idx) {
             break;
         }
 
@@ -81,19 +82,19 @@ inline void aggregate_cluster(
          */
         if (f.at(j) == cid) {
 
-            if (cells.channel1().at(pos) > maxChannel1) {
-                maxChannel1 = cells.channel1().at(pos);
+            if (cell.channel1() > maxChannel1) {
+                maxChannel1 = cell.channel1();
             }
 
             const scalar weight = traccc::details::signal_cell_modelling(
-                cells.activation().at(pos), det_descr);
+                cell.activation(), det_descr);
 
-            if (weight > det_descr.threshold().at(module_idx)) {
+            if (weight > module_descr.threshold()) {
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
-                point2 cell_position = traccc::details::position_from_cell(
-                    cells.at(pos), det_descr);
+                point2 cell_position =
+                    traccc::details::position_from_cell(cell, det_descr);
 
                 if (!first_processed) {
                     offset = cell_position;
@@ -119,25 +120,27 @@ inline void aggregate_cluster(
          * Terminate the process earlier if we have reached a cell sufficiently
          * far away from the cluster in the dominant axis.
          */
-        if (cells.channel1().at(pos) > maxChannel1 + 1) {
+        if (cell.channel1() > maxChannel1 + 1) {
             break;
         }
     }
 
-    var = var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
-                       pitch_y * pitch_y / static_cast<scalar>(12.)};
+    var = var + point2{module_descr.pitch_x() * module_descr.pitch_x() /
+                           static_cast<scalar>(12.),
+                       module_descr.pitch_y() * module_descr.pitch_y() /
+                           static_cast<scalar>(12.)};
 
     /*
      * Fill output vector with calculated cluster properties
      */
     out.local = mean + offset;
     out.variance = var;
-    out.surface_link = det_descr.geometry_id().at(module_idx);
+    out.surface_link = module_descr.geometry_id();
     out.module_link = module_idx;
     // Set a unique identifier for the measurement.
     out.measurement_id = link;
     // Set the dimensionality of the measurement.
-    out.meas_dim = det_descr.dimensions().at(module_idx);
+    out.meas_dim = module_descr.dimensions();
 }
 
 }  // namespace traccc::device
