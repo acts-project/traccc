@@ -26,7 +26,6 @@
 
 // options
 #include "traccc/options/accelerator.hpp"
-#include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
@@ -53,7 +52,6 @@
 
 int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::input_data& input_opts,
-            const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
@@ -81,14 +79,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     /*****************************
      * Build a geometry
      *****************************/
-
-    // Construct the detector description object.
-    traccc::silicon_detector_description::host host_det_descr{host_mr};
-    traccc::io::read_detector_description(
-        host_det_descr, detector_opts.detector_file,
-        detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
 
     // Seeding algorithm
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
@@ -134,9 +124,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                traccc::io::read_spacepoints(
-                    spacepoints_per_event, event, input_opts.directory,
-                    &host_det_descr, input_opts.format);
+                traccc::io::read_spacepoints(spacepoints_per_event, event,
+                                             input_opts.directory, nullptr,
+                                             input_opts.format);
 
             }  // stop measuring hit reading timer
 
@@ -258,19 +248,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 int main(int argc, char* argv[]) {
 
     // Program options.
-    traccc::opts::detector detector_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_seeding seeding_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using SYCL (without clusterization)",
-        {detector_opts, input_opts, seeding_opts, performance_opts,
-         accelerator_opts},
+        {input_opts, seeding_opts, performance_opts, accelerator_opts},
         argc,
         argv};
 
     // Run the application.
-    return seq_run(seeding_opts, input_opts, detector_opts, performance_opts,
+    return seq_run(seeding_opts, input_opts, performance_opts,
                    accelerator_opts);
 }

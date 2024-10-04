@@ -109,13 +109,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
     auto field = detray::bfield::create_const_field(B);
 
-    // Construct the detector description object.
-    traccc::silicon_detector_description::host det_descr{host_mr};
-    traccc::io::read_detector_description(
-        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
-
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
     assert(detector_opts.use_detray_detector == true);
@@ -157,7 +150,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::spacepoint_collection_types::host spacepoints_per_event{
             &host_mr};
         traccc::io::read_spacepoints(spacepoints_per_event, event,
-                                     input_opts.directory, &det_descr,
+                                     input_opts.directory, nullptr,
                                      input_opts.format);
         n_spacepoints += spacepoints_per_event.size();
 
@@ -183,7 +176,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::measurement_collection_types::host measurements_per_event{
             &host_mr};
         traccc::io::read_measurements(measurements_per_event, event,
-                                      input_opts.directory, &det_descr,
+                                      input_opts.directory, nullptr,
                                       input_opts.format);
         n_measurements += measurements_per_event.size();
 
