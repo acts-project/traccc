@@ -13,6 +13,7 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/particle.hpp"
@@ -69,7 +70,7 @@ track_candidate_container_types::host find_tracks(
     using interactor_type = detray::pointwise_material_interactor<algebra_type>;
 
     using actor_type = detray::actor_chain<
-        std::tuple, detray::pathlimit_aborter, transporter_type,
+        detray::tuple, detray::pathlimit_aborter, transporter_type,
         interaction_register<interactor_type>, interactor_type, ckf_aborter>;
 
     using propagator_type =
@@ -83,8 +84,7 @@ track_candidate_container_types::host find_tracks(
     measurement_collection_types::const_device measurements{measurements_view};
 
     // Check contiguity of the measurements
-    assert(
-        is_contiguous_on(measurement_module_projection(), measurements));
+    assert(is_contiguous_on(measurement_module_projection(), measurements));
 
     // Get copy of barcode uniques
     std::vector<measurement> uniques;

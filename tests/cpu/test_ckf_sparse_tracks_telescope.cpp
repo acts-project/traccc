@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -121,7 +121,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     cfg.ptc_hypothesis = ptc;
 
     // Finding algorithm object
-    traccc::host::default_detector_const_field_ckf_algorithm host_finding(cfg);
+    traccc::host::ckf_algorithm host_finding(cfg);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
