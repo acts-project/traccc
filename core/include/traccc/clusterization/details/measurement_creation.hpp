@@ -36,19 +36,18 @@ TRACCC_HOST_DEVICE inline vector2 position_from_cell(
 /// Function used for calculating the properties of the cluster during
 /// measurement creation
 ///
-/// @param[in] cluster_idx  Index of the silicon cluster to process
+/// @param[in] cluster      The silicon cluster to calculate the properties of
 /// @param[in] cells        All silicon cells in the event
-/// @param[in] clusters     All reconstructed silicon clusters in the event
 /// @param[in] det_descr    The detector description
 /// @param[out] mean        The mean position of the cluster/measurement
 /// @param[out] var         The variation on the mean position of the
 ///                         cluster/measurement
 /// @param[out] totalWeight The total weight of the cluster/measurement
 ///
+template <typename T>
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
-    unsigned int cluster_idx,
+    const edm::silicon_cluster<T>& cluster,
     const edm::silicon_cell_collection::const_device& cells,
-    const edm::silicon_cluster_collection::const_device& clusters,
     const silicon_detector_description::const_device& det_descr, point2& mean,
     point2& var, scalar& totalWeight);
 
@@ -58,15 +57,16 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 /// @param[out] measurements Measurement collection where the measurement is to
 ///                          be filled
 /// @param[in] index     Index of the measurement object to fill
+/// @param[in] cluster   The silicon cluster to turn into a measurement
 /// @param[in] cells     All silicon cells in the event
-/// @param[in] clusters  All reconstructed silicon clusters in the event
 /// @param[in] det_descr Detector description
 ///
+template <typename T>
 TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement_collection_types::device& measurements,
     measurement_collection_types::device::size_type index,
+    const edm::silicon_cluster<T>& cluster,
     const edm::silicon_cell_collection::const_device& cells,
-    const edm::silicon_cluster_collection::const_device& clusters,
     const silicon_detector_description::const_device& det_descr);
 
 }  // namespace traccc::details

@@ -11,6 +11,9 @@
 #include "traccc/clusterization/details/measurement_creation.hpp"
 #include "traccc/definitions/primitives.hpp"
 
+// System include(s).
+#include <cassert>
+
 namespace traccc::host {
 
 measurement_creation_algorithm::measurement_creation_algorithm(
@@ -35,8 +38,14 @@ measurement_creation_algorithm::operator()(
     // Process the clusters one-by-one.
     for (std::size_t i = 0; i < clusters.size(); ++i) {
 
+        // Get the cluster.
+        const auto cluster = clusters[i];
+
+        // A security check.
+        assert(cluster.cell_indices().empty() == false);
+
         // Fill measurement from cluster
-        details::fill_measurement(measurements, i, cells, clusters, det_descr);
+        details::fill_measurement(measurements, i, cluster, cells, det_descr);
     }
 
     return result;
