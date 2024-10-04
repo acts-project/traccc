@@ -49,7 +49,7 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
         0.01f * detray::unit<scalar>::mm,
         0.001f,
         0.001f,
-        0.01f / detray::unit<scalar>::GeV,
+        0.001f / detray::unit<scalar>::GeV,
         0.01f * detray::unit<scalar>::ns};
 
     protected:
