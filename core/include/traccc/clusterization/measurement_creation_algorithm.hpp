@@ -8,8 +8,9 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -29,7 +30,8 @@ namespace traccc::host {
 ///
 class measurement_creation_algorithm
     : public algorithm<measurement_collection_types::host(
-          const cluster_container_types::const_view &,
+          const edm::silicon_cell_collection::const_view &,
+          const edm::silicon_cluster_collection::const_view &,
           const silicon_detector_description::const_view &)> {
 
     public:
@@ -42,12 +44,14 @@ class measurement_creation_algorithm
     /// Callable operator for the connected component, based on one single
     /// module
     ///
+    /// @param cells_view    Cells that were clusterized
     /// @param clusters_view Clusters to turn into measurements
     /// @param dd_view       The detector description
     /// @return The reconstructed measurement collection
     ///
     output_type operator()(
-        const cluster_container_types::const_view &clusters_view,
+        const edm::silicon_cell_collection::const_view &cells_view,
+        const edm::silicon_cluster_collection::const_view &clusters_view,
         const silicon_detector_description::const_view &dd_view) const override;
 
     private:

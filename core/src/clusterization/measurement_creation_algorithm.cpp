@@ -11,6 +11,9 @@
 #include "traccc/clusterization/details/measurement_creation.hpp"
 #include "traccc/definitions/primitives.hpp"
 
+// System include(s).
+#include <cassert>
+
 namespace traccc::host {
 
 measurement_creation_algorithm::measurement_creation_algorithm(
@@ -19,11 +22,13 @@ measurement_creation_algorithm::measurement_creation_algorithm(
 
 measurement_creation_algorithm::output_type
 measurement_creation_algorithm::operator()(
-    const cluster_container_types::const_view &clusters_view,
+    const edm::silicon_cell_collection::const_view &cells_view,
+    const edm::silicon_cluster_collection::const_view &clusters_view,
     const silicon_detector_description::const_view &dd_view) const {
 
     // Create device containers for the input variables.
-    const cluster_container_types::const_device clusters{clusters_view};
+    const edm::silicon_cell_collection::const_device cells{cells_view};
+    const edm::silicon_cluster_collection::const_device clusters{clusters_view};
     const silicon_detector_description::const_device det_descr{dd_view};
 
     // Create the result object.
@@ -32,15 +37,15 @@ measurement_creation_algorithm::operator()(
 
     // Process the clusters one-by-one.
     for (std::size_t i = 0; i < clusters.size(); ++i) {
+
         // Get the cluster.
-        cluster_container_types::device::item_vector::const_reference cluster =
-            clusters.get_items()[i];
+        const auto cluster = clusters[i];
 
         // A security check.
-        assert(cluster.empty() == false);
+        assert(cluster.cell_indices().empty() == false);
 
         // Fill measurement from cluster
-        details::fill_measurement(measurements, i, cluster, det_descr);
+        details::fill_measurement(measurements, i, cluster, cells, det_descr);
     }
 
     return result;

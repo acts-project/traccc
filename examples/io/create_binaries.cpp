@@ -41,7 +41,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::cell_collection_types::host cells{&host_mr};
+        traccc::edm::silicon_cell_collection::host cells{host_mr};
         traccc::io::read_cells(cells, event, input_opts.directory, &det_descr,
                                input_opts.format);
 

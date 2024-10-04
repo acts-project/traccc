@@ -172,7 +172,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
         {  // Start measuring wall time.
             traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
 
-            traccc::cell_collection_types::host cells_per_event{&host_mr};
+            traccc::edm::silicon_cell_collection::host cells_per_event{host_mr};
 
             {
                 traccc::performance::timer timer{"Read cells", elapsedTimes};

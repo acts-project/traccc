@@ -8,14 +8,16 @@
 
 #pragma once
 
+// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 
 namespace traccc {
+
 struct [[maybe_unused]] cell_module_projection{
-    TRACCC_HOST_DEVICE [[maybe_unused]] auto operator()(const traccc::cell& m)
-        const {return m.module_link;
+    template <typename T> TRACCC_HOST_DEVICE auto operator()(
+        const edm::silicon_cell<T>& c) const {return c.module_index();
 }
 }
 ;

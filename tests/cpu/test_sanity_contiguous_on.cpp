@@ -7,7 +7,8 @@
  */
 
 // vecmem includes
-#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/vector.hpp>
 
 // traccc includes
 #include <traccc/definitions/qualifiers.hpp>
@@ -35,10 +36,13 @@ TEST_F(CPUSanityContiguousOn, TrueOrdered) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
-
     ASSERT_TRUE(
-        traccc::host::is_contiguous_on(int_identity_projection(), device_data));
+        traccc::host::is_contiguous_on(int_identity_projection(), host_vector));
+
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_TRUE(traccc::host::is_contiguous_on(int_identity_projection(),
+                                               device_vector));
 }
 
 TEST_F(CPUSanityContiguousOn, TrueRandom) {
@@ -50,10 +54,13 @@ TEST_F(CPUSanityContiguousOn, TrueRandom) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
-
     ASSERT_TRUE(
-        traccc::host::is_contiguous_on(int_identity_projection(), device_data));
+        traccc::host::is_contiguous_on(int_identity_projection(), host_vector));
+
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_TRUE(traccc::host::is_contiguous_on(int_identity_projection(),
+                                               device_vector));
 }
 
 TEST_F(CPUSanityContiguousOn, FalseOrdered) {
@@ -69,10 +76,13 @@ TEST_F(CPUSanityContiguousOn, FalseOrdered) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
-
     ASSERT_FALSE(
-        traccc::host::is_contiguous_on(int_identity_projection(), device_data));
+        traccc::host::is_contiguous_on(int_identity_projection(), host_vector));
+
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_FALSE(traccc::host::is_contiguous_on(int_identity_projection(),
+                                                device_vector));
 }
 
 TEST_F(CPUSanityContiguousOn, FalseOrderedPathologicalFirst) {
@@ -86,10 +96,13 @@ TEST_F(CPUSanityContiguousOn, FalseOrderedPathologicalFirst) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
-
     ASSERT_FALSE(
-        traccc::host::is_contiguous_on(int_identity_projection(), device_data));
+        traccc::host::is_contiguous_on(int_identity_projection(), host_vector));
+
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_FALSE(traccc::host::is_contiguous_on(int_identity_projection(),
+                                                device_vector));
 }
 
 TEST_F(CPUSanityContiguousOn, TrueOrderedPathologicalFirst) {
@@ -103,10 +116,13 @@ TEST_F(CPUSanityContiguousOn, TrueOrderedPathologicalFirst) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
-
     ASSERT_TRUE(
-        traccc::host::is_contiguous_on(int_identity_projection(), device_data));
+        traccc::host::is_contiguous_on(int_identity_projection(), host_vector));
+
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_TRUE(traccc::host::is_contiguous_on(int_identity_projection(),
+                                               device_vector));
 }
 
 TEST_F(CPUSanityContiguousOn, FalseOrderedPathologicalLast) {
@@ -120,10 +136,13 @@ TEST_F(CPUSanityContiguousOn, FalseOrderedPathologicalLast) {
 
     host_vector.push_back(2);
 
-    auto device_data = vecmem::get_data(host_vector);
-
     ASSERT_FALSE(
-        traccc::host::is_contiguous_on(int_identity_projection(), device_data));
+        traccc::host::is_contiguous_on(int_identity_projection(), host_vector));
+
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_FALSE(traccc::host::is_contiguous_on(int_identity_projection(),
+                                                device_vector));
 }
 
 TEST_F(CPUSanityContiguousOn, FalseRandom) {
@@ -135,8 +154,11 @@ TEST_F(CPUSanityContiguousOn, FalseRandom) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
-
     ASSERT_FALSE(
-        traccc::host::is_contiguous_on(int_identity_projection(), device_data));
+        traccc::host::is_contiguous_on(int_identity_projection(), host_vector));
+
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_FALSE(traccc::host::is_contiguous_on(int_identity_projection(),
+                                                device_vector));
 }

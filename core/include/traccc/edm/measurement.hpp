@@ -8,11 +8,11 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/common.hpp"
 #include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/utils/subspace.hpp"
 
@@ -44,7 +44,7 @@ struct measurement {
     std::size_t measurement_id = 0;
 
     /// Link to Module vector index
-    using link_type = cell_module_collection_types::view::size_type;
+    using link_type = unsigned int;
     link_type module_link = 0;
 
     /// Cluster link
@@ -98,7 +98,5 @@ struct measurement_equal_comp {
 
 /// Declare all measurement collection types
 using measurement_collection_types = collection_types<measurement>;
-/// Declare all measurement container types
-using measurement_container_types = container_types<cell_module, measurement>;
 
 }  // namespace traccc

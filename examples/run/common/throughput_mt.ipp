@@ -97,13 +97,13 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     }
 
     // Read in all input events into memory.
-    vecmem::vector<cell_collection_types::host> input{&uncached_host_mr};
+    vecmem::vector<edm::silicon_cell_collection::host> input{&uncached_host_mr};
     {
         performance::timer t{"File reading", times};
         // Read the input cells into memory event-by-event.
         input.reserve(input_opts.events);
         for (std::size_t i = 0; i < input_opts.events; ++i) {
-            input.push_back(cell_collection_types::host{&uncached_host_mr});
+            input.push_back({uncached_host_mr});
             io::read_cells(input.back(), i, input_opts.directory, &det_descr,
                            input_opts.format);
         }

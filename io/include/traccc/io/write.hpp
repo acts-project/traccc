@@ -8,8 +8,8 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/seed.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/io/data_format.hpp"
@@ -32,7 +32,7 @@ namespace traccc::io {
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           traccc::cell_collection_types::const_view cells);
+           traccc::edm::silicon_cell_collection::const_view cells);
 
 /// Function for hit file writing
 ///

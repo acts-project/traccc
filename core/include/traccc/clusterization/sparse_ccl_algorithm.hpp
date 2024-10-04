@@ -8,8 +8,8 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -25,8 +25,9 @@ namespace traccc::host {
 /// The implementation is based on the paper:
 /// https://doi.org/10.1109/DASIP48288.2019.9049184
 ///
-class sparse_ccl_algorithm : public algorithm<cluster_container_types::host(
-                                 const cell_collection_types::const_view&)> {
+class sparse_ccl_algorithm
+    : public algorithm<edm::silicon_cluster_collection::host(
+          const edm::silicon_cell_collection::const_view&)> {
 
     public:
     /// Constructor for component_connection
@@ -44,8 +45,8 @@ class sparse_ccl_algorithm : public algorithm<cluster_container_types::host(
     ///
     /// @return a cluster container
     ///
-    output_type operator()(
-        const cell_collection_types::const_view& cells_view) const override;
+    output_type operator()(const edm::silicon_cell_collection::const_view&
+                               cells_view) const override;
 
     /// @}
 

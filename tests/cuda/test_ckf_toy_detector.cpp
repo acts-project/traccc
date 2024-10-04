@@ -124,9 +124,6 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
-        measurement_h2d{mr, copy};
-
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
         track_candidate_d2h{mr, copy};
