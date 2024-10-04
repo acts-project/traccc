@@ -17,7 +17,7 @@
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_filter.hpp"
-#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -174,7 +174,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.propagation = propagation_config;
 
     // Finding algorithm object
-    traccc::host::default_detector_const_field_ckf_algorithm host_finding(cfg);
+    traccc::host::ckf_algorithm host_finding(cfg);
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
         device_finding(cfg, mr, async_copy, stream);
 

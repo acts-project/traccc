@@ -6,26 +6,19 @@
  */
 
 // Local include(s).
-#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
-
 #include "find_tracks.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 
 // Detray include(s).
 #include <detray/core/detector.hpp>
 #include <detray/detectors/bfield.hpp>
-#include <detray/io/frontend/detector_reader.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
 namespace traccc::host {
 
-default_detector_const_field_ckf_algorithm::
-    default_detector_const_field_ckf_algorithm(const config_type& config)
-    : m_config{config} {}
-
-default_detector_const_field_ckf_algorithm::output_type
-default_detector_const_field_ckf_algorithm::operator()(
+ckf_algorithm::output_type ckf_algorithm::operator()(
     const default_detector::host& det,
     const detray::bfield::const_field_t::view_t& field,
     const measurement_collection_types::const_view& measurements,

@@ -63,8 +63,10 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/finding/actors/ckf_aborter.hpp"
   "include/traccc/finding/actors/interaction_register.hpp"
   "src/finding/find_tracks.hpp"
-  "include/traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
-  "src/finding/default_detector_const_field_ckf_algorithm.cpp"
+  "include/traccc/finding/ckf_algorithm.hpp"
+  "src/finding/ckf_algorithm.cpp"
+  "src/finding/ckf_algorithm_defdet_cfield.cpp"
+  "src/finding/ckf_algorithm_teldet_cfield.cpp"
   # Fitting algorithmic code
   "include/traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"

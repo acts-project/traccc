@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/finding/default_detector_const_field_ckf_algorithm.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -121,10 +121,8 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     cfg_limit.chi2_max = 30.f;
 
     // Finding algorithm object
-    traccc::host::default_detector_const_field_ckf_algorithm host_finding(
-        cfg_no_limit);
-    traccc::host::default_detector_const_field_ckf_algorithm host_finding_limit(
-        cfg_limit);
+    traccc::host::ckf_algorithm host_finding(cfg_no_limit);
+    traccc::host::ckf_algorithm host_finding_limit(cfg_limit);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
