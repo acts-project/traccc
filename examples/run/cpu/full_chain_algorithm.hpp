@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
@@ -41,7 +41,7 @@ namespace traccc {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm : public algorithm<track_state_container_types::host(
-                                 const cell_collection_types::host&)> {
+                                 const edm::silicon_cell_collection::host&)> {
 
     public:
     /// @name Type declaration(s)
@@ -95,7 +95,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const cell_collection_types::host& cells) const override;
+        const edm::silicon_cell_collection::host& cells) const override;
 
     private:
     /// Constant B field for the (seed) track parameter estimation

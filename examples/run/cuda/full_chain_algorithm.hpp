@@ -17,7 +17,7 @@
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -49,7 +49,7 @@ namespace traccc::cuda {
 ///
 class full_chain_algorithm
     : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
-          const cell_collection_types::host&)> {
+          const edm::silicon_cell_collection::host&)> {
 
     public:
     /// @name Type declaration(s)
@@ -116,7 +116,7 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const cell_collection_types::host& cells) const override;
+        const edm::silicon_cell_collection::host& cells) const override;
 
     private:
     /// Host memory resource

@@ -36,15 +36,16 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config) {}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
-    const cell_collection_types::host& cells) const {
+    const edm::silicon_cell_collection::host& cells) const {
 
     // Create a data object for the detector description.
     const silicon_detector_description::const_data det_descr_data =
         vecmem::get_data(m_det_descr.get());
 
     // Run the clusterization.
+    auto cells_data = vecmem::get_data(cells);
     const host::clusterization_algorithm::output_type measurements =
-        m_clusterization(vecmem::get_data(cells), det_descr_data);
+        m_clusterization(cells_data, det_descr_data);
 
     // If we have a Detray detector, run the seeding track finding and fitting.
     if (m_detector != nullptr) {

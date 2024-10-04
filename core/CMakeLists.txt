@@ -20,7 +20,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/details/container_element.hpp"
   "include/traccc/edm/details/device_container.hpp"
   "include/traccc/edm/details/host_container.hpp"
-  "include/traccc/edm/cluster.hpp"
   "include/traccc/edm/spacepoint.hpp"
   "include/traccc/edm/measurement.hpp"
   "include/traccc/edm/particle.hpp"
@@ -30,7 +29,9 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/seed.hpp"
   "include/traccc/edm/track_candidate.hpp"
   "include/traccc/edm/track_state.hpp"
-  "include/traccc/edm/cell.hpp"
+  "include/traccc/edm/silicon_cell_collection.hpp"
+  "include/traccc/edm/impl/silicon_cell_collection.ipp"
+  "include/traccc/edm/silicon_cluster_collection.hpp"
   # Geometry description.
   "include/traccc/geometry/detector.hpp"
   "include/traccc/geometry/module_map.hpp"

@@ -42,7 +42,7 @@ TEST(io_binary, cell) {
         traccc::data_format::csv);
 
     // Read csv file
-    traccc::cell_collection_types::host cells_csv(&host_mr);
+    traccc::edm::silicon_cell_collection::host cells_csv(host_mr);
     traccc::io::read_cells(cells_csv, event, cells_directory, &dd,
                            traccc::data_format::csv);
 
@@ -51,7 +51,7 @@ TEST(io_binary, cell) {
                       vecmem::get_data(cells_csv));
 
     // Read binary file
-    traccc::cell_collection_types::host cells_binary(&host_mr);
+    traccc::edm::silicon_cell_collection::host cells_binary(host_mr);
     traccc::io::read_cells(cells_binary, event, cells_directory, &dd,
                            traccc::data_format::binary);
 
@@ -68,7 +68,13 @@ TEST(io_binary, cell) {
     EXPECT_EQ(cells_csv.size(), cells_binary.size());
 
     for (std::size_t i = 0; i < cells_csv.size(); i++) {
-        ASSERT_EQ(cells_csv[i], cells_binary[i]);
+        EXPECT_EQ(cells_csv.channel0().at(i), cells_binary.channel0().at(i));
+        EXPECT_EQ(cells_csv.channel1().at(i), cells_binary.channel1().at(i));
+        EXPECT_EQ(cells_csv.activation().at(i),
+                  cells_binary.activation().at(i));
+        EXPECT_EQ(cells_csv.time().at(i), cells_binary.time().at(i));
+        EXPECT_EQ(cells_csv.module_index().at(i),
+                  cells_binary.module_index().at(i));
     }
 }
 

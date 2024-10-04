@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
@@ -23,7 +23,8 @@ namespace traccc::io::csv {
 /// @param[in]  dd          The detector description to point the cells at
 /// @param[in]  deduplicate Whether to deduplicate the cells
 ///
-void read_cells(cell_collection_types::host& cells, std::string_view filename,
+void read_cells(edm::silicon_cell_collection::host& cells,
+                std::string_view filename,
                 const silicon_detector_description::host* dd = nullptr,
                 bool deduplicate = true);
 

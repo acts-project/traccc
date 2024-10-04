@@ -17,7 +17,7 @@
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/device/mutex.hpp"
 #include "traccc/device/unique_lock.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "vecmem/memory/device_atomic_ref.hpp"
 
 namespace traccc::device {
@@ -140,7 +140,8 @@ TRACCC_DEVICE inline void ccl_core(
     std::size_t& partition_end, vecmem::device_vector<details::index_t> f,
     vecmem::device_vector<details::index_t> gf,
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
-    unsigned char* adjc, const cell_collection_types::const_device cells_device,
+    unsigned char* adjc,
+    const edm::silicon_cell_collection::const_device& cells_device,
     const silicon_detector_description::const_device& det_descr,
     measurement_collection_types::device measurements_device,
     barrier_t& barrier) {
@@ -209,7 +210,7 @@ template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
-    const cell_collection_types::const_view& cells_view,
+    const edm::silicon_cell_collection::const_view& cells_view,
     const silicon_detector_description::const_view& det_descr_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
     vecmem::data::vector_view<details::index_t> f_view,
@@ -221,8 +222,9 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::device_atomic_ref<uint32_t> backup_mutex, barrier_t& barrier,
     measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links) {
+
     // Construct device containers around the views.
-    const cell_collection_types::const_device cells_device(cells_view);
+    const edm::silicon_cell_collection::const_device cells_device(cells_view);
     const silicon_detector_description::const_device det_descr(det_descr_view);
     measurement_collection_types::device measurements_device(measurements_view);
     vecmem::device_vector<details::index_t> f_primary(f_view);
@@ -260,10 +262,10 @@ TRACCC_DEVICE inline void ccl_kernel(
          * any).
          */
         while (start != 0 && start < num_cells &&
-               cells_device.at(start - 1).module_link ==
-                   cells_device.at(start).module_link &&
-               cells_device.at(start).channel1 <=
-                   cells_device.at(start - 1).channel1 + 1) {
+               cells_device.module_index().at(start - 1) ==
+                   cells_device.module_index().at(start) &&
+               cells_device.channel1().at(start) <=
+                   cells_device.channel1().at(start - 1) + 1) {
             ++start;
         }
 
@@ -273,10 +275,10 @@ TRACCC_DEVICE inline void ccl_kernel(
          * cell that is not a possible boundary!
          */
         while (end < num_cells &&
-               cells_device.at(end - 1).module_link ==
-                   cells_device.at(end).module_link &&
-               cells_device.at(end).channel1 <=
-                   cells_device.at(end - 1).channel1 + 1) {
+               cells_device.module_index().at(end - 1) ==
+                   cells_device.module_index().at(end) &&
+               cells_device.channel1().at(end) <=
+                   cells_device.channel1().at(end - 1) + 1) {
             ++end;
         }
         partition_start = start;
