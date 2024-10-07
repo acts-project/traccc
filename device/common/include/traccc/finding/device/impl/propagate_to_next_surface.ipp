@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "vecmem/containers/device_vector.hpp"
 namespace traccc::device {
 
 template <typename propagator_t, typename bfield_t, typename config_t>
@@ -14,16 +15,14 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     std::size_t globalIndex, const config_t cfg,
     typename propagator_t::detector_type::view_type det_data,
     bfield_t field_data,
-    bound_track_parameters_collection_types::const_view in_params_view,
+    bound_track_parameters_collection_types::view params_view,
+    vecmem::data::vector_view<unsigned int> params_liveness_view,
     const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     vecmem::data::vector_view<const candidate_link> links_view,
     const unsigned int step, const unsigned int n_in_params,
-    bound_track_parameters_collection_types::view out_params_view,
-    vecmem::data::vector_view<unsigned int> param_to_link_view,
     vecmem::data::vector_view<typename candidate_link::link_index_type>
         tips_view,
-    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view,
-    unsigned int* n_out_params) {
+    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view) {
 
     if (globalIndex >= n_in_params) {
         return;
@@ -49,8 +48,10 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         n_tracks_per_seed.at(orig_param_id));
 
     const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
+    vecmem::device_vector<unsigned int> params_liveness(params_liveness_view);
 
     if (s_pos >= cfg.max_num_branches_per_seed) {
+        params_liveness[param_id] = 0u;
         return;
     }
 
@@ -59,6 +60,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         tips_view);
 
     if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
+        params_liveness[param_id] = 0u;
         tips.push_back({step, param_id});
         return;
     }
@@ -66,18 +68,15 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     // Detector
     typename propagator_t::detector_type det(det_data);
 
-    // Input parameters
-    bound_track_parameters_collection_types::const_device in_params(
-        in_params_view);
+    // Parameters
+    bound_track_parameters_collection_types::device params(params_view);
 
-    // Out parameters
-    bound_track_parameters_collection_types::device out_params(out_params_view);
-
-    // Param to Link ID
-    vecmem::device_vector<unsigned int> param_to_link(param_to_link_view);
+    if (params_liveness.at(param_id) == 0u) {
+        return;
+    }
 
     // Input bound track parameter
-    const bound_track_parameters in_par = in_params.at(param_id);
+    const bound_track_parameters in_par = params.at(param_id);
 
     // Create propagator
     propagator_t propagator(cfg.propagation);
@@ -116,22 +115,20 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     // If a surface found, add the parameter for the next step
     if (s4.success) {
-        vecmem::device_atomic_ref<unsigned int> num_out_params(*n_out_params);
-        const unsigned int out_param_id = num_out_params.fetch_add(1);
+        params[param_id] = propagation._stepping._bound_params;
 
-        out_params[out_param_id] = propagation._stepping._bound_params;
+        if (step == cfg.max_track_candidates_per_track - 1) {
+            tips.push_back({step, param_id});
+            params_liveness[param_id] = 0u;
+        } else {
+            params_liveness[param_id] = 1u;
+        }
+    } else {
+        params_liveness[param_id] = 0u;
 
-        param_to_link[out_param_id] = param_id;
-    }
-    // Unless the track found a surface, it is considered a tip
-    else if (!s4.success && step >= cfg.min_track_candidates_per_track - 1) {
-        tips.push_back({step, param_id});
-    }
-
-    // If no more CKF step is expected, current candidate is
-    // kept as a tip
-    if (s4.success && step == cfg.max_track_candidates_per_track - 1) {
-        tips.push_back({step, param_id});
+        if (step >= cfg.min_track_candidates_per_track - 1) {
+            tips.push_back({step, param_id});
+        }
     }
 }
 
