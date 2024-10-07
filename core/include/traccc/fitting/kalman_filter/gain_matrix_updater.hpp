@@ -121,12 +121,6 @@ struct gain_matrix_updater {
         const matrix_type<1, 1> chi2 = matrix_operator().transpose(residual) *
                                        matrix_operator().inverse(R) * residual;
 
-        // Make sure that the sign of qop does not change (This rarely happens
-        // when qop is set with a poor seed resolution)
-        assert(bound_params[e_bound_qoverp] *
-                   getter::element(filtered_vec, e_bound_qoverp, 0u) >
-               0.f);
-
         // Set the stepper parameter
         bound_params.set_vector(filtered_vec);
         bound_params.set_covariance(filtered_cov);

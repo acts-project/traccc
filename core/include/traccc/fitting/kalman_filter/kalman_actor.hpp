@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/utils/particle.hpp"
 
 // detray include(s).
 #include "detray/propagator/base_actor.hpp"
@@ -105,8 +106,15 @@ struct kalman_actor : detray::actor {
 
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
+
             sf.template visit_mask<gain_matrix_updater<algebra_t>>(
                 trk_state, propagation._stepping._bound_params);
+
+            // Change the charge of hypothesized particles when the sign of qop
+            // is changed (This rarely happens when qop is set with a poor seed
+            // resolution)
+            detail::correct_particle_hypothesis(stepping._ptc,
+                                                trk_state.filtered());
 
             // Update iterator
             actor_state.next();
