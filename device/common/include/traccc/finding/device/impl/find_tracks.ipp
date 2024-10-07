@@ -12,6 +12,7 @@
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "vecmem/containers/device_vector.hpp"
 
 // System include(s).
 #include <limits>
@@ -25,13 +26,14 @@ TRACCC_DEVICE inline void find_tracks(
     typename detector_t::view_type det_data,
     measurement_collection_types::const_view measurements_view,
     bound_track_parameters_collection_types::const_view in_params_view,
+    vecmem::data::vector_view<const unsigned int> in_params_liveness_view,
     const unsigned int n_in_params,
     vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view,
     vecmem::data::vector_view<const unsigned int> upper_bounds_view,
     vecmem::data::vector_view<const candidate_link> prev_links_view,
-    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
     const unsigned int step, const unsigned int& n_max_candidates,
     bound_track_parameters_collection_types::view out_params_view,
+    vecmem::data::vector_view<unsigned int> out_params_liveness_view,
     vecmem::data::vector_view<candidate_link> links_view,
     unsigned int& n_total_candidates, unsigned int* shared_num_candidates,
     std::pair<unsigned int, unsigned int>* shared_candidates,
@@ -57,10 +59,12 @@ TRACCC_DEVICE inline void find_tracks(
     measurement_collection_types::const_device measurements(measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
         in_params_view);
+    vecmem::device_vector<const unsigned int> in_params_liveness(
+        in_params_liveness_view);
     vecmem::device_vector<const candidate_link> prev_links(prev_links_view);
-    vecmem::device_vector<const unsigned int> prev_param_to_link(
-        prev_param_to_link_view);
     bound_track_parameters_collection_types::device out_params(out_params_view);
+    vecmem::device_vector<unsigned int> out_params_liveness(
+        out_params_liveness_view);
     vecmem::device_vector<candidate_link> links(links_view);
     vecmem::device_atomic_ref<unsigned int> num_total_candidates(
         n_total_candidates);
@@ -87,10 +91,10 @@ TRACCC_DEVICE inline void find_tracks(
      *
      * This entire step is executed on a one-thread-one-parameter model.
      */
-    unsigned int init_meas;
+    unsigned int init_meas = 0;
     unsigned int num_meas = 0;
 
-    if (in_param_id < n_in_params) {
+    if (in_param_id < n_in_params && in_params_liveness.at(in_param_id) > 0u) {
         /*
          * Get the barcode of this thread's parameters, then find the first
          * measurement that matches it.
@@ -177,6 +181,7 @@ TRACCC_DEVICE inline void find_tracks(
             const unsigned int owner_global_thread_id =
                 owner_local_thread_id +
                 thread_id.getBlockDimX() * thread_id.getBlockIdX();
+            assert(in_params_liveness.at(owner_global_thread_id) != 0u);
             bound_track_parameters in_par =
                 in_params.at(owner_global_thread_id);
             const unsigned int meas_idx =
@@ -208,8 +213,8 @@ TRACCC_DEVICE inline void find_tracks(
                             owner_global_thread_id,
                             0};
                     } else {
-                        const candidate_link& prev_link = prev_links
-                            [prev_param_to_link[owner_global_thread_id]];
+                        const candidate_link& prev_link =
+                            prev_links[owner_global_thread_id];
 
                         links.at(l_pos) = {
                             {previous_step, owner_global_thread_id},
@@ -225,6 +230,7 @@ TRACCC_DEVICE inline void find_tracks(
                         .fetch_add(1u);
 
                     out_params.at(l_pos) = trk_state.filtered();
+                    out_params_liveness.at(l_pos) = 1u;
                 }
             }
         }
@@ -253,7 +259,7 @@ TRACCC_DEVICE inline void find_tracks(
      * Part three of the kernel inserts holes for parameters which did not
      * match any measurements.
      */
-    if (in_param_id < n_in_params &&
+    if (in_param_id < n_in_params && in_params_liveness.at(in_param_id) > 0u &&
         shared_num_candidates[thread_id.getLocalThreadIdX()] == 0u) {
         // Add measurement candidates to link
         const unsigned int l_pos = num_total_candidates.fetch_add(1);
@@ -267,8 +273,7 @@ TRACCC_DEVICE inline void find_tracks(
                                    in_param_id,
                                    1};
             } else {
-                const candidate_link& prev_link =
-                    prev_links[prev_param_to_link[in_param_id]];
+                const candidate_link& prev_link = prev_links[in_param_id];
 
                 links.at(l_pos) = {{previous_step, in_param_id},
                                    std::numeric_limits<unsigned int>::max(),
@@ -277,6 +282,7 @@ TRACCC_DEVICE inline void find_tracks(
             }
 
             out_params.at(l_pos) = in_params.at(in_param_id);
+            out_params_liveness.at(l_pos) = 1u;
         }
     }
 }
