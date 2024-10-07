@@ -20,7 +20,6 @@ traccc_add_library( traccc_device_common device_common TYPE SHARED
    "include/traccc/device/container_d2h_copy_alg.hpp"
    "include/traccc/device/impl/container_d2h_copy_alg.ipp"
    # EDM class(es).
-   "include/traccc/edm/device/finding_global_counter.hpp"
    "include/traccc/edm/device/seeding_global_counter.hpp"
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
