@@ -50,9 +50,9 @@ void read_particles(particle_collection_types::host& particles,
 
 void read_particles(particle_container_types::host& particles,
                     std::size_t event, std::string_view directory,
-                    data_format format,
-                    const silicon_detector_description::host* dd,
-                    std::string_view filename_postfix) {
+                    bool use_acts_geom_source,
+                    const traccc::default_detector::host* detector,
+                    data_format format, std::string_view filename_postfix) {
 
     switch (format) {
         case data_format::csv:
@@ -75,7 +75,7 @@ void read_particles(particle_container_types::host& particles,
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurement-simhit-map.csv")))
                                       .native()),
-                format, dd);
+                use_acts_geom_source, detector, format);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
@@ -85,13 +85,15 @@ void read_particles(particle_container_types::host& particles,
 void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
-                    std::string_view hit_map_file, data_format format,
-                    const silicon_detector_description::host* dd) {
+                    std::string_view hit_map_file, bool use_acts_geom_source,
+                    const traccc::default_detector::host* detector,
+                    data_format format) {
 
     switch (format) {
         case data_format::csv:
             csv::read_particles(particles, particles_file, hits_file,
-                                measurements_file, hit_map_file, dd);
+                                measurements_file, hit_map_file,
+                                use_acts_geom_source, detector);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

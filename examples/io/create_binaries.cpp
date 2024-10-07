@@ -52,7 +52,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
         // Read the hits from the relevant event file
         traccc::spacepoint_collection_types::host spacepoints{&host_mr};
         traccc::io::read_spacepoints(spacepoints, event, input_opts.directory,
-                                     &det_descr, input_opts.format);
+                                     false, nullptr, input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,
@@ -62,7 +62,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
         // Read the measurements from the relevant event file
         traccc::measurement_collection_types::host measurements{&host_mr};
         traccc::io::read_measurements(measurements, event, input_opts.directory,
-                                      &det_descr, input_opts.format);
+                                      false, nullptr, input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,

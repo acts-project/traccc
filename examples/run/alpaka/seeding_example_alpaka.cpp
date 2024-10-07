@@ -174,13 +174,15 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(spacepoints_per_event, event,
-                                             input_opts.directory, nullptr,
-                                             input_opts.format);
+                                             input_opts.directory,
+                                             input_opts.use_acts_geom_source,
+                                             &host_det, input_opts.format);
 
                 // Read measurements
                 traccc::io::read_measurements(measurements_per_event, event,
-                                              input_opts.directory, nullptr,
-                                              input_opts.format);
+                                              input_opts.directory,
+                                              input_opts.use_acts_geom_source,
+                                              &host_det, input_opts.format);
             }  // stop measuring hit reading timer
 
             /*----------------------------
@@ -277,13 +279,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------*/
 
         if (performance_opts.run) {
-            traccc::event_map2 evt_map(event, input_opts.directory,
-                                       input_opts.directory,
-                                       input_opts.directory);
 
-            sd_performance_writer.write(vecmem::get_data(seeds_alpaka),
+            traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                        input_opts.use_acts_geom_source,
+                                        &host_det, input_opts.format, false);
+
+            sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
-                                        evt_map);
+                                        evt_data);
         }
     }
 

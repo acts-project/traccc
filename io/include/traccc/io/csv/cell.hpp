@@ -30,4 +30,9 @@ struct cell {
                    timestamp, value);
 };
 
+/// Equality operator for csv cell
+inline bool operator<(const cell& lhs, const cell& rhs) {
+    return lhs.geometry_id < rhs.geometry_id;
+}
+
 }  // namespace traccc::io::csv

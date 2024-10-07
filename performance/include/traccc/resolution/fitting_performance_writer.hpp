@@ -15,8 +15,7 @@
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/io/event_map2.hpp"
-#include "traccc/io/mapper.hpp"
+#include "traccc/io/event_data.hpp"
 
 // System include(s).
 #include <memory>
@@ -57,9 +56,9 @@ class fitting_performance_writer {
     template <typename detector_t>
     void write(const track_state_collection_types::host& track_states_per_track,
                const fitting_result<traccc::default_algebra>& fit_res,
-               const detector_t& det, event_map2& evt_map) {
+               const detector_t& det, event_data& evt_data) {
 
-        auto& m_p_map = evt_map.meas_ptc_map;
+        auto& m_p_map = evt_data.m_meas_to_ptc_map;
 
         // Get the track state at the first surface
         const auto& trk_state = track_states_per_track[0];
@@ -72,8 +71,8 @@ class fitting_performance_writer {
         const particle ptc = contributing_particles.begin()->first;
 
         // Find the truth global position and momentum
-        const auto global_pos = evt_map.meas_xp_map[meas].first;
-        const auto global_mom = evt_map.meas_xp_map[meas].second;
+        const auto global_pos = evt_data.m_meas_to_param_map[meas].first;
+        const auto global_mom = evt_data.m_meas_to_param_map[meas].second;
 
         const detray::tracking_surface sf{det, meas.surface_link};
         using cxt_t = typename detector_t::geometry_context;

@@ -284,15 +284,15 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map2 evt_map(event, input_opts.directory,
-                                       input_opts.directory,
-                                       input_opts.directory);
+            traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                        input_opts.use_acts_geom_source,
+                                        &detector, input_opts.format, true);
 
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
-                                        evt_map);
+                                        evt_data);
             find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_map);
+                                          evt_data);
 
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
@@ -300,12 +300,12 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 const auto& fit_res = track_states[i].header;
 
                 fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_map);
+                                             detector, evt_data);
             }
 
             if (resolution_opts.run) {
                 ar_performance_writer.write(
-                    traccc::get_data(resolved_track_states), evt_map);
+                    traccc::get_data(resolved_track_states), evt_data);
             }
         }
     }
