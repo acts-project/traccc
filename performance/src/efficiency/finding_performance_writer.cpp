@@ -183,7 +183,6 @@ void finding_performance_writer::write_common(
         }
 
         if (particle_hit_counts.size() > 1) {
-
             // Consider it being matched if hit counts is larger than the half
             // of the number of measurements
             if (particle_hit_counts.at(0).hit_counts >=
