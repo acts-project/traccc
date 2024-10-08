@@ -15,6 +15,14 @@
 
 namespace traccc::details {
 
+TRACCC_HOST_DEVICE inline bool is_valid_measurement(const measurement& meas) {
+    // We use 2D (pixel) measurements only for spacepoint creation
+    if (meas.meas_dim == 2u) {
+        return true;
+    }
+    return false;
+}
+
 template <typename detector_t>
 TRACCC_HOST_DEVICE inline spacepoint create_spacepoint(
     const detector_t& det, const measurement& meas) {

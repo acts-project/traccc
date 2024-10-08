@@ -14,6 +14,11 @@
 
 namespace traccc::details {
 
+/// Function helping with checking a measurement obejct for spacepoint creation
+///
+/// @param[in]  measurement The input measurement
+TRACCC_HOST_DEVICE inline bool is_valid_measurement(const measurement& meas);
+
 /// Function helping with filling/setting up a spacepoint object
 ///
 /// @param[in]  det         The tracking geometry
