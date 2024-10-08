@@ -17,13 +17,13 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     bound_track_parameters_collection_types::const_view in_params_view,
     const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     vecmem::data::vector_view<const candidate_link> links_view,
-    const unsigned int step, const unsigned int& n_in_params,
+    const unsigned int step, const unsigned int n_in_params,
     bound_track_parameters_collection_types::view out_params_view,
     vecmem::data::vector_view<unsigned int> param_to_link_view,
     vecmem::data::vector_view<typename candidate_link::link_index_type>
         tips_view,
     vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view,
-    unsigned int& n_out_params) {
+    unsigned int* n_out_params) {
 
     if (globalIndex >= n_in_params) {
         return;
@@ -116,7 +116,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     // If a surface found, add the parameter for the next step
     if (s4.success) {
-        vecmem::device_atomic_ref<unsigned int> num_out_params(n_out_params);
+        vecmem::device_atomic_ref<unsigned int> num_out_params(*n_out_params);
         const unsigned int out_param_id = num_out_params.fetch_add(1);
 
         out_params[out_param_id] = propagation._stepping._bound_params;
