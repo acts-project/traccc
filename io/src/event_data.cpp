@@ -163,7 +163,6 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
     // When including silicon cells
     if (include_silicon_cells) {
 
-        std::map<io::csv::cell, particle> cell_to_particle_map;
         std::map<measurement, std::vector<io::csv::cell>> meas_to_cluster_map;
 
         for (const auto& iocell : m_cells) {
@@ -179,13 +178,13 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
             meas_to_cluster_map[meas].push_back(iocell);
 
             const auto& ptc = m_particle_map[iohit.particle_id];
-            cell_to_particle_map[iocell] = ptc;
+            m_cell_to_particle_map[iocell] = ptc;
         }
 
         // Fill the meas_to_particle_map
         for (auto const& [ms, cluster] : meas_to_cluster_map) {
             for (const auto& cell : cluster) {
-                const auto& ptc = cell_to_particle_map[cell];
+                const auto& ptc = m_cell_to_particle_map[cell];
                 m_meas_to_ptc_map[ms][ptc]++;
             }
         }
@@ -222,6 +221,49 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         if (!include_silicon_cells) {
             // Fill measurement to particle map
             m_meas_to_ptc_map[meas][ptc]++;
+        }
+    }
+}
+
+void event_data::fill_cca_result(
+    const edm::silicon_cell_collection::host& cells,
+    const edm::silicon_cluster_collection::host& cca_clusters,
+    const measurement_collection_types::host& cca_measurements,
+    const silicon_detector_description::host& dd) {
+
+    const std::size_t n_cca_clusters = cca_measurements.size();
+
+    std::map<measurement, std::vector<io::csv::cell>> found_meas_to_cluster_map;
+
+    for (std::size_t i = 0; i < n_cca_clusters; i++) {
+        const auto& meas = cca_measurements.at(i);
+        const auto cluster = cca_clusters[i];
+
+        std::vector<io::csv::cell> iocells;
+        for (const unsigned int cell_idx : cluster.cell_indices()) {
+
+            const auto cell = cells.at(cell_idx);
+            io::csv::cell iocell{dd.acts_geometry_id().at(cell.module_index()),
+                                 0u,
+                                 cell.channel0(),
+                                 cell.channel1(),
+                                 cell.time(),
+                                 cell.activation()};
+
+            iocells.push_back(iocell);
+        }
+        found_meas_to_cluster_map[meas] = iocells;
+    }
+
+    for (auto const& [ms, cluster] : found_meas_to_cluster_map) {
+        for (const auto& cell1 : cluster) {
+            for (auto const& [cell2, ptc] : m_cell_to_particle_map) {
+                if (cell1.geometry_id == cell2.geometry_id &&
+                    cell1.channel0 == cell2.channel0 &&
+                    cell1.channel1 == cell2.channel1) {
+                    m_found_meas_to_ptc_map[ms][ptc]++;
+                }
+            }
         }
     }
 }

@@ -132,4 +132,78 @@ TEST(event_data, mock_data) {
             }
         }
     }
+
+    /// Test with CCA
+
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host det_descr{resource};
+    traccc::io::read_detector_description(det_descr, det_file, digi_file,
+                                          traccc::data_format::json);
+    traccc::silicon_detector_description::data det_descr_data{
+        vecmem::get_data(det_descr)};
+
+    // Algorithms
+    traccc::host::sparse_ccl_algorithm sa(resource);
+    traccc::host::measurement_creation_algorithm ma(resource);
+
+    // Read cells
+    traccc::edm::silicon_cell_collection::host cells{resource};
+    traccc::io::read_cells(cells, 0u, path, &det_descr,
+                           traccc::data_format::csv);
+    const auto cells_view = vecmem::get_data(cells);
+
+    auto clusters = sa(cells_view);
+    auto measurements =
+        ma(cells_view, vecmem::get_data(clusters), det_descr_data);
+
+    evt_data.fill_cca_result(cells, clusters, measurements, det_descr);
+
+    EXPECT_EQ(evt_data.m_found_meas_to_ptc_map.size(), 2u);
+
+    bool has_first_cluster = false;
+    bool has_second_cluster = false;
+
+    bool has_first_particle = false;
+    bool has_second_particle = false;
+    bool has_third_particle = false;
+
+    for (auto const& [meas, ptcs] : evt_data.m_found_meas_to_ptc_map) {
+
+        // first measurement (or cluster) is contributed by 1st and 2nd
+        // particles
+        if (ptcs.size() == 2) {
+            for (auto const& [ptc, count] : ptcs) {
+                if (ptc.particle_id == 4503599644147712) {
+                    // number of cells from 1st particle
+                    EXPECT_EQ(count, 3);
+                    has_first_particle = true;
+                } else if (ptc.particle_id == 4503599660924928) {
+                    // number of cells from 2nd particle
+                    EXPECT_EQ(count, 4);
+                    has_second_particle = true;
+                }
+            }
+
+            has_first_cluster = true;
+        }
+
+        // second measurement (or cluster) is contributed by 3rd particle
+        else if (ptcs.size() == 1) {
+            for (auto const& [ptc, count] : ptcs) {
+                if (ptc.particle_id == 4503599744811008) {
+                    // number of cells from 3rd particle
+                    EXPECT_EQ(count, 3);
+                    has_third_particle = true;
+                }
+            }
+
+            has_second_cluster = true;
+        }
+    }
+
+    EXPECT_EQ(has_first_cluster, true);
+    EXPECT_EQ(has_second_cluster, true);
+    EXPECT_EQ(has_first_particle, true);
+    EXPECT_EQ(has_second_particle, true);
+    EXPECT_EQ(has_third_particle, true);
 }

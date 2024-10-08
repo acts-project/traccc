@@ -52,6 +52,12 @@ struct event_data {
                data_format format = data_format::csv,
                bool include_silicon_cells = false);
 
+    void fill_cca_result(
+        const edm::silicon_cell_collection::host& cells,
+        const edm::silicon_cluster_collection::host& cca_clusters,
+        const measurement_collection_types::host& cca_measurements,
+        const silicon_detector_description::host& dd);
+
     track_candidate_container_types::host generate_truth_candidates(
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource);
 
@@ -66,6 +72,8 @@ struct event_data {
     std::map<particle, std::vector<measurement>> m_ptc_to_meas_map;
     // Measurement to its track parameter map
     std::map<measurement, std::pair<point3, point3>> m_meas_to_param_map;
+    // Cell to particle map
+    std::map<io::csv::cell, particle> m_cell_to_particle_map;
 
     // Input arguments
     const std::string m_event_dir;
