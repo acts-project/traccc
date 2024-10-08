@@ -85,7 +85,8 @@ void seeding_performance_writer::write(
 
         // Count only charged particles which satisfiy pT_cut
         if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
-            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max) {
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 
@@ -130,7 +131,8 @@ void seeding_performance_writer::write(
 
         // Count only charged particles which satisfiy pT_cut
         if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
-            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max) {
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 
