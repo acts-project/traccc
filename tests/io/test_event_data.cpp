@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
+#include "traccc/io/data_format.hpp"
 #include "traccc/io/event_data.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -31,8 +32,6 @@ TEST(event_data, acts_odd) {
     const std::string path = "odd/geant4_1muon_100GeV";
     const std::string det_file =
         "geometries/odd/odd-detray_geometry_detray.json";
-    const std::string digi_file =
-        "geometries/odd/odd-digi-geometric-config.json";
 
     // Read detector file
     detray::io::detector_reader_config reader_cfg{};
@@ -41,15 +40,22 @@ TEST(event_data, acts_odd) {
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(resource, reader_cfg);
 
-    // Construct the detector description object.
-    traccc::silicon_detector_description::host det_descr{resource};
-    traccc::io::read_detector_description(det_descr, det_file, digi_file,
-                                          traccc::data_format::json);
-    traccc::event_data evt_data(path, 0u, resource);
-
-    EXPECT_EQ(evt_data.m_meas_to_ptc_map.size(), 58);
-
-    // TODO: Add more tests
+    {
+        // without cell
+        traccc::event_data evt_data(path, 0u, resource, true, &host_det,
+                                    traccc::data_format::csv, false);
+        EXPECT_EQ(evt_data.m_particle_map.size(), 4515u);
+        EXPECT_EQ(evt_data.m_meas_to_ptc_map.size(), 58u);
+        EXPECT_EQ(evt_data.m_meas_to_param_map.size(), 58u);
+    }
+    {
+        // with cell
+        traccc::event_data evt_data(path, 0u, resource, true, &host_det,
+                                    traccc::data_format::csv, true);
+        EXPECT_EQ(evt_data.m_particle_map.size(), 4515u);
+        EXPECT_EQ(evt_data.m_meas_to_ptc_map.size(), 58u);
+        EXPECT_EQ(evt_data.m_meas_to_param_map.size(), 58u);
+    }
 }
 
 TEST(event_data, mock_data) {
@@ -99,10 +105,7 @@ TEST(event_data, mock_data) {
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(resource, reader_cfg);
-    // Construct the detector description object.
-    traccc::silicon_detector_description::host det_descr{resource};
-    traccc::io::read_detector_description(det_descr, det_file, digi_file,
-                                          traccc::data_format::json);
+
     traccc::event_data evt_data(path, 0u, resource, true, &host_det,
                                 traccc::data_format::csv, true);
 
