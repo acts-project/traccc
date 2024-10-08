@@ -61,6 +61,8 @@ struct event_data {
     track_candidate_container_types::host generate_truth_candidates(
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource);
 
+    // Measurement map
+    std::map<uint64_t, measurement> m_measurement_map;
     // Particle map
     std::map<particle_id, particle> m_particle_map;
     // Measurement to the contributing particle map
@@ -72,6 +74,8 @@ struct event_data {
     std::map<particle, std::vector<measurement>> m_ptc_to_meas_map;
     // Measurement to its track parameter map
     std::map<measurement, std::pair<point3, point3>> m_meas_to_param_map;
+    // CCA measurement to its track parameter map
+    std::map<measurement, std::pair<point3, point3>> m_found_meas_to_param_map;
     // Cell to particle map
     std::map<io::csv::cell, particle> m_cell_to_particle_map;
 

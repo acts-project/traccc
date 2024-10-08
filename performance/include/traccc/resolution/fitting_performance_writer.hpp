@@ -58,7 +58,16 @@ class fitting_performance_writer {
                const fitting_result<traccc::default_algebra>& fit_res,
                const detector_t& det, event_data& evt_data) {
 
-        auto& m_p_map = evt_data.m_meas_to_ptc_map;
+        std::map<measurement, std::map<particle, std::size_t>> meas_to_ptc_map;
+        std::map<measurement, std::pair<point3, point3>> meas_to_param_map;
+
+        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
+            meas_to_ptc_map = evt_data.m_found_meas_to_ptc_map;
+            meas_to_param_map = evt_data.m_found_meas_to_param_map;
+        } else {
+            meas_to_ptc_map = evt_data.m_meas_to_ptc_map;
+            meas_to_param_map = evt_data.m_meas_to_param_map;
+        }
 
         // Get the track state at the first surface
         const auto& trk_state = track_states_per_track[0];
@@ -66,13 +75,13 @@ class fitting_performance_writer {
 
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
-        std::map<particle, uint64_t> contributing_particles = m_p_map[meas];
+        std::map<particle, uint64_t> contributing_particles = meas_to_ptc_map[meas];
 
         const particle ptc = contributing_particles.begin()->first;
 
         // Find the truth global position and momentum
-        const auto global_pos = evt_data.m_meas_to_param_map[meas].first;
-        const auto global_mom = evt_data.m_meas_to_param_map[meas].second;
+        const auto global_pos = meas_to_param_map[meas].first;
+        const auto global_mom = meas_to_param_map[meas].second;
 
         const detray::tracking_surface sf{det, meas.surface_link};
         using cxt_t = typename detector_t::geometry_context;

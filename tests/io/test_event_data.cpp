@@ -143,8 +143,8 @@ TEST(event_data, mock_data) {
         vecmem::get_data(det_descr)};
 
     // Algorithms
-    traccc::host::sparse_ccl_algorithm sa(resource);
-    traccc::host::measurement_creation_algorithm ma(resource);
+    traccc::host::sparse_ccl_algorithm cc(resource);
+    traccc::host::measurement_creation_algorithm mc(resource);
 
     // Read cells
     traccc::edm::silicon_cell_collection::host cells{resource};
@@ -152,13 +152,14 @@ TEST(event_data, mock_data) {
                            traccc::data_format::csv);
     const auto cells_view = vecmem::get_data(cells);
 
-    auto clusters = sa(cells_view);
+    auto clusters = cc(cells_view);
     auto measurements =
-        ma(cells_view, vecmem::get_data(clusters), det_descr_data);
+        mc(cells_view, vecmem::get_data(clusters), det_descr_data);
 
     evt_data.fill_cca_result(cells, clusters, measurements, det_descr);
 
     EXPECT_EQ(evt_data.m_found_meas_to_ptc_map.size(), 2u);
+    EXPECT_EQ(evt_data.m_found_meas_to_param_map.size(), 2u);
 
     bool has_first_cluster = false;
     bool has_second_cluster = false;
@@ -206,4 +207,20 @@ TEST(event_data, mock_data) {
     EXPECT_EQ(has_first_particle, true);
     EXPECT_EQ(has_second_particle, true);
     EXPECT_EQ(has_third_particle, true);
+
+    bool has_first_param = false;
+    bool has_second_param = false;
+
+    for (auto const& [meas, param] : evt_data.m_found_meas_to_param_map) {
+        if (meas.measurement_id == 0u) {
+            has_first_param =true;
+            EXPECT_NEAR(param.first[0u], 31.5048428f, 1e-4f);
+        } else if (meas.measurement_id == 1u) {
+            has_second_param =true;
+            EXPECT_NEAR(param.first[0u], 90.4015808f, 1e-4f);
+        }
+    }
+
+    EXPECT_EQ(has_first_param, true);
+    EXPECT_EQ(has_second_param, true);
 }

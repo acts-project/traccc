@@ -48,11 +48,11 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
      ********************/
 
     // CSV IO EDM containers
-    std::vector<io::csv::cell> m_cells;
-    std::vector<io::csv::hit> m_hits;
-    std::vector<io::csv::measurement> m_measurements;
-    std::vector<io::csv::measurement_hit_id> m_meas_hit_ids;
-    std::vector<io::csv::particle> m_particles;
+    std::vector<io::csv::cell> csv_cells;
+    std::vector<io::csv::hit> csv_hits;
+    std::vector<io::csv::measurement> csv_measurements;
+    std::vector<io::csv::measurement_hit_id> csv_meas_hit_ids;
+    std::vector<io::csv::particle> csv_particles;
 
     if (include_silicon_cells) {
         // Read the cells from the relevant event file
@@ -66,7 +66,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         io::csv::cell iocell;
 
         while (creader.read(iocell)) {
-            m_cells.push_back(iocell);
+            csv_cells.push_back(iocell);
         }
     }
 
@@ -80,7 +80,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
     {
         io::csv::hit iohit;
         while (hreader.read(iohit)) {
-            m_hits.push_back(iohit);
+            csv_hits.push_back(iohit);
         }
     }
 
@@ -95,7 +95,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
     {
         io::csv::measurement iomeas;
         while (mreader.read(iomeas)) {
-            m_measurements.push_back(iomeas);
+            csv_measurements.push_back(iomeas);
         }
     }
 
@@ -111,7 +111,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
     {
         io::csv::measurement_hit_id mh_id;
         while (mhid_reader.read(mh_id)) {
-            m_meas_hit_ids.push_back(mh_id);
+            csv_meas_hit_ids.push_back(mh_id);
         }
     }
 
@@ -126,21 +126,8 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
     {
         io::csv::particle ioptc;
         while (preader.read(ioptc)) {
-            m_particles.push_back(ioptc);
+            csv_particles.push_back(ioptc);
         }
-    }
-
-    // Particle map
-    for (const auto& ioptc : m_particles) {
-
-        point3 pos{ioptc.vx, ioptc.vy, ioptc.vz};
-        vector3 mom{ioptc.px, ioptc.py, ioptc.pz};
-
-        m_particle_map[ioptc.particle_id] =
-            traccc::particle{ioptc.particle_id, ioptc.particle_type,
-                             ioptc.process,     pos,
-                             ioptc.vt,          mom,
-                             ioptc.m,           ioptc.q};
     }
 
     /********************
@@ -156,6 +143,36 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         }
     }
 
+    /********************
+     * Make EDM maps    *
+     ********************/
+
+    // Measurement map
+    for (const auto& iomeas : csv_measurements) {
+        // Construct the measurement object.
+        traccc::measurement meas;
+        if (use_acts_geom_source) {
+            meas = traccc::io::csv::make_measurement_edm(iomeas,
+                                                         &acts_to_detray_id);
+        } else {
+            meas = traccc::io::csv::make_measurement_edm(iomeas, nullptr);
+        }
+        m_measurement_map[iomeas.measurement_id] = meas;
+    }
+
+    // Particle map
+    for (const auto& ioptc : csv_particles) {
+
+        point3 pos{ioptc.vx, ioptc.vy, ioptc.vz};
+        vector3 mom{ioptc.px, ioptc.py, ioptc.pz};
+
+        m_particle_map[ioptc.particle_id] =
+            traccc::particle{ioptc.particle_id, ioptc.particle_type,
+                             ioptc.process,     pos,
+                             ioptc.vt,          mom,
+                             ioptc.m,           ioptc.q};
+    }
+
     /************************************
      * Make measurement to particle map *
      ************************************/
@@ -165,16 +182,14 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
 
         std::map<measurement, std::vector<io::csv::cell>> meas_to_cluster_map;
 
-        for (const auto& iocell : m_cells) {
+        for (const auto& iocell : csv_cells) {
 
             // Fill the measurement_to_cluster_map
             auto meas_id = iocell.measurement_id;
-            auto hid = m_meas_hit_ids[meas_id].hit_id;
-            const auto& iohit = m_hits[hid];
+            auto hid = csv_meas_hit_ids[meas_id].hit_id;
+            const auto& iohit = csv_hits[hid];
 
-            const auto& iomeas = m_measurements[meas_id];
-            const auto meas = traccc::io::csv::make_measurement_edm(
-                iomeas, &acts_to_detray_id);
+            const auto meas = m_measurement_map[meas_id];
             meas_to_cluster_map[meas].push_back(iocell);
 
             const auto& ptc = m_particle_map[iohit.particle_id];
@@ -190,13 +205,13 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         }
     }
 
-    for (const auto& iomeas : m_measurements) {
+    for (const auto& iomeas : csv_measurements) {
 
         // Hit index
-        const auto hid = m_meas_hit_ids[iomeas.measurement_id].hit_id;
+        const auto hid = csv_meas_hit_ids[iomeas.measurement_id].hit_id;
 
         // Make spacepoint
-        const auto& iohit = m_hits[hid];
+        const auto& iohit = csv_hits[hid];
         point3 global_pos{iohit.tx, iohit.ty, iohit.tz};
         point3 global_mom{iohit.tpx, iohit.tpy, iohit.tpz};
 
@@ -204,13 +219,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         const auto& ptc = m_particle_map[iohit.particle_id];
 
         // Construct the measurement object.
-        traccc::measurement meas;
-        if (use_acts_geom_source) {
-            meas = traccc::io::csv::make_measurement_edm(iomeas,
-                                                         &acts_to_detray_id);
-        } else {
-            meas = traccc::io::csv::make_measurement_edm(iomeas, nullptr);
-        }
+        traccc::measurement meas = m_measurement_map[iomeas.measurement_id];
 
         // Fill measurement to truth global position and momentum map
         m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
@@ -256,15 +265,35 @@ void event_data::fill_cca_result(
     }
 
     for (auto const& [ms, cluster] : found_meas_to_cluster_map) {
+
+        std::map<uint64_t, std::size_t> meas_counts;
+
+        // Cells from CCL
         for (const auto& cell1 : cluster) {
+
+            // Cells from truth [cell, particle] map
             for (auto const& [cell2, ptc] : m_cell_to_particle_map) {
+                // Increase the particle number if the cell is the same
                 if (cell1.geometry_id == cell2.geometry_id &&
                     cell1.channel0 == cell2.channel0 &&
                     cell1.channel1 == cell2.channel1) {
                     m_found_meas_to_ptc_map[ms][ptc]++;
+                    meas_counts[cell2.measurement_id]++;
                 }
             }
         }
+
+        // Find most contributing measurement and its corresponding hit
+        using pair_type = decltype(meas_counts)::value_type;
+        auto pr =
+            std::max_element(std::begin(meas_counts), std::end(meas_counts),
+                             [](const pair_type& p1, const pair_type& p2) {
+                                 return p1.second < p2.second;
+                             });
+
+        const auto& meas_id = pr->first;
+        m_found_meas_to_param_map[ms] =
+            m_meas_to_param_map[m_measurement_map[meas_id]];
     }
 }
 
