@@ -109,12 +109,14 @@ TEST(event_data, mock_data) {
     traccc::event_data evt_data(path, 0u, resource, true, &host_det,
                                 traccc::data_format::csv, true);
 
-    auto m_p_map = evt_data.m_meas_to_ptc_map;
-
     // There are three measurements
-    EXPECT_EQ(m_p_map.size(), 3);
+    EXPECT_EQ(evt_data.m_meas_to_ptc_map.size(), 3u);
+    EXPECT_EQ(evt_data.m_meas_to_param_map.size(), 3u);
+    // There are three particles
+    EXPECT_EQ(evt_data.m_particle_map.size(), 3u);
+    EXPECT_EQ(evt_data.m_ptc_to_meas_map.size(), 3u);
 
-    for (auto const& [meas, ptcs] : m_p_map) {
+    for (auto const& [meas, ptcs] : evt_data.m_meas_to_ptc_map) {
         EXPECT_EQ(ptcs.size(), 1);
 
         for (auto const& [ptc, count] : ptcs) {
