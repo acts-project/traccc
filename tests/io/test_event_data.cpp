@@ -213,10 +213,10 @@ TEST(event_data, mock_data) {
 
     for (auto const& [meas, param] : evt_data.m_found_meas_to_param_map) {
         if (meas.measurement_id == 0u) {
-            has_first_param =true;
+            has_first_param = true;
             EXPECT_NEAR(param.first[0u], 31.5048428f, 1e-4f);
         } else if (meas.measurement_id == 1u) {
-            has_second_param =true;
+            has_second_param = true;
             EXPECT_NEAR(param.first[0u], 90.4015808f, 1e-4f);
         }
     }

@@ -24,9 +24,10 @@ static const char* data_format_option = "input-data-format";
 
 input_data::input_data() : interface("Input Data Options") {
 
-    m_desc.add_options()("use-acts-geom-source",
-                         po::bool_switch(&use_acts_geom_source),
-                         "Use acts geometry source");
+    m_desc.add_options()(
+        "use-acts-geom-source",
+        po::bool_switch(&use_acts_geom_source)->default_value(false),
+        "Use acts geometry source");
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
                          "Format of the input file(s)");

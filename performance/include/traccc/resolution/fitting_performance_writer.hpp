@@ -75,7 +75,8 @@ class fitting_performance_writer {
 
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
-        std::map<particle, uint64_t> contributing_particles = meas_to_ptc_map[meas];
+        std::map<particle, uint64_t> contributing_particles =
+            meas_to_ptc_map[meas];
 
         const particle ptc = contributing_particles.begin()->first;
 

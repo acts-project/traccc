@@ -10,6 +10,7 @@
 
 #include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
+#include "traccc/io/csv/make_measurement_edm.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 #include "traccc/io/csv/make_measurement_reader.hpp"
 #include "traccc/io/csv/make_particle_reader.hpp"

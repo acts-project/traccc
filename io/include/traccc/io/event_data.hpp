@@ -45,6 +45,17 @@ struct event_data {
 
     event_data() = delete;
 
+    /// Event data constructor
+    ///
+    /// @param[in] event_dir Event data directory
+    /// data
+    /// @param[in] event_id  Event id
+    /// @param[in] use_acts_geom_source  Use acts geometry source
+    /// @param[in] det       detray detector
+    /// @param[in] format    file format
+    /// @param[in] include_silicon_cells Use silicon cell data in object
+    /// construction
+    ///
     event_data(const std::string& event_dir, const std::size_t event_id,
                vecmem::memory_resource& resource,
                bool use_acts_geom_source = false,
@@ -52,17 +63,29 @@ struct event_data {
                data_format format = data_format::csv,
                bool include_silicon_cells = false);
 
+    /// Fill the member variables related to CCA
+    ///
+    /// @param[in] cells cell EDM
+    /// @param[in] cca_clusters cluster EDM from CCL algorithm
+    /// @param[in] cca_measurements measurement EDM from measurement creation
+    /// @param[in] dd    Detector description
+    ///
     void fill_cca_result(
         const edm::silicon_cell_collection::host& cells,
         const edm::silicon_cluster_collection::host& cca_clusters,
         const measurement_collection_types::host& cca_measurements,
         const silicon_detector_description::host& dd);
 
+    /// Generate truth candidate used for truth fitting
+    ///
+    /// @param[in] sg Seed generator for fitting
+    /// @param[in] resource vecmem memory resource
+    ///
     track_candidate_container_types::host generate_truth_candidates(
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource);
 
     // Measurement map
-    std::map<uint64_t, measurement> m_measurement_map;
+    std::map<measurement_id, measurement> m_measurement_map;
     // Particle map
     std::map<particle_id, particle> m_particle_map;
     // Measurement to the contributing particle map
