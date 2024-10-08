@@ -9,7 +9,7 @@ on:
 jobs:
   format:
     runs-on: ubuntu-latest
-    container: ghcr.io/acts-project/format10:v11
+    container: ghcr.io/acts-project/format18:47
     steps:
       - uses: actions/checkout@v3
       - name: Check
