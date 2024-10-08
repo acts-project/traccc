@@ -19,12 +19,8 @@ struct seedfinder_config {
     seedfinder_config() { setup(); }
 
     // limiting location of measurements
-    // Beomki's note: this value introduces redundant bins
-    // without any spacepoints
-    // m_config.zMin = -2800.;
-    // m_config.zMax = 2800.;
-    float zMin = -1186.f * unit<float>::mm;
-    float zMax = 1186.f * unit<float>::mm;
+    float zMin = -2000.f * unit<float>::mm;
+    float zMax = 2000.f * unit<float>::mm;
     float rMax = 200.f * unit<float>::mm;
     // WARNING: if rMin is smaller than impactMax, the bin size will be 2*pi,
     // which will make seeding very slow!
@@ -42,12 +38,12 @@ struct seedfinder_config {
     // lower cutoff for seeds in MeV
     float minPt = 500.f * unit<float>::MeV;
     // cot of maximum theta angle
-    // equivalent to 2.7 eta (pseudorapidity)
-    float cotThetaMax = 7.40627f;
+    // equivalent to 4 eta (pseudorapidity)
+    float cotThetaMax = 27.2845f;
     // minimum distance in mm in r between two measurements within one seed
-    float deltaRMin = 1 * unit<float>::mm;
+    float deltaRMin = 20 * unit<float>::mm;
     // maximum distance in mm in r between two measurements within one seed
-    float deltaRMax = 60 * unit<float>::mm;
+    float deltaRMax = 280 * unit<float>::mm;
 
     // FIXME: this is not used yet
     //        float upperPtResolutionPerSeed = 20* Acts::GeV;
