@@ -76,7 +76,7 @@ void seeding_performance_writer::write(
         std::vector<particle_hit_count> particle_hit_counts =
             identify_contributing_particles(measurements, evt_map.meas_ptc_map);
 
-        if (particle_hit_counts.size() > measurements.size() / 2) {
+        if (particle_hit_counts.at(0).hit_counts > measurements.size() / 2) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
         }
