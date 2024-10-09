@@ -73,19 +73,15 @@ void seeding_performance_writer::write(
 
         std::vector<particle_hit_count> particle_hit_counts;
 
-        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
-            particle_hit_counts = identify_contributing_particles(
-                sd.get_measurements(spacepoints_view),
-                evt_data.m_found_meas_to_ptc_map);
-        } else {
-            particle_hit_counts = identify_contributing_particles(
-                sd.get_measurements(spacepoints_view),
-                evt_data.m_meas_to_ptc_map);
         const auto measurements = sd.get_measurements(spacepoints_view);
 
-        // Check which particle matches this seed.
-        std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(measurements, evt_map.meas_ptc_map);
+        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
+            particle_hit_counts = identify_contributing_particles(
+                measurements, evt_data.m_found_meas_to_ptc_map);
+        } else {
+            particle_hit_counts = identify_contributing_particles(
+                measurements, evt_data.m_meas_to_ptc_map);
+        }
 
         if (particle_hit_counts.size() > measurements.size() / 2) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
