@@ -50,7 +50,7 @@ class seeding_performance_writer {
             {"Num", plot_helpers::binning("N", 30, -0.5f, 29.5f)}};
 
         /// Cut values
-        scalar pT_cut = 1.f * traccc::unit<scalar>::GeV;
+        scalar pT_cut = 0.5f * traccc::unit<scalar>::GeV;
         scalar z_min = -500.f * traccc::unit<scalar>::mm;
         scalar z_max = 500.f * traccc::unit<scalar>::mm;
         scalar r_max = 200.f * traccc::unit<scalar>::mm;
