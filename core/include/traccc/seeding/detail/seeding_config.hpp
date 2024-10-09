@@ -62,7 +62,7 @@ struct seedfinder_config {
     float maxPtScattering = 10 * unit<float>::GeV;
 
     // for how many seeds can one SpacePoint be the middle SpacePoint?
-    int maxSeedsPerSpM = 20;
+    int maxSeedsPerSpM = 10;
 
     float bFieldInZ = 1.99724f * unit<float>::T;
     // location of beam in x,y plane.
