@@ -70,12 +70,13 @@ void seeding_performance_writer::write(
     seed_collection_types::const_device seeds(seeds_view);
     for (const seed& sd : seeds) {
 
+        const auto measurements = sd.get_measurements(spacepoints_view);
+
         // Check which particle matches this seed.
         std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(
-                sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
+            identify_contributing_particles(measurements, evt_map.meas_ptc_map);
 
-        if (particle_hit_counts.size() == 1) {
+        if (particle_hit_counts.size() > measurements.size() / 2) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
         }
