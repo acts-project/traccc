@@ -51,6 +51,9 @@ class seeding_performance_writer {
 
         /// Cut values
         scalar pT_cut = 1.f * traccc::unit<scalar>::GeV;
+        scalar z_min = -500.f * traccc::unit<scalar>::mm;
+        scalar z_max = 500.f * traccc::unit<scalar>::mm;
+        scalar r_max = 200.f * traccc::unit<scalar>::mm;
     };
 
     /// Construct from configuration and log level.
