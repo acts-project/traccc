@@ -257,8 +257,8 @@ void event_data::fill_cca_result(
                                  0u,
                                  cell.channel0(),
                                  cell.channel1(),
-                                 cell.time(),
-                                 cell.activation()};
+                                 static_cast<float>(cell.time()),
+                                 static_cast<float>(cell.activation())};
 
             iocells.push_back(iocell);
         }
