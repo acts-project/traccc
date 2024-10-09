@@ -37,8 +37,8 @@ cca_function_t f = [](const traccc::edm::silicon_cell_collection::host& cells,
         vecmem::get_data(dd);
     auto measurements = ca(cells_data, dd_data);
     for (std::size_t i = 0; i < measurements.size(); i++) {
-        result[dd.acts_geometry_id().at(measurements.at(i).module_link)]
-            .push_back(measurements.at(i));
+        result[measurements.at(i).surface_link.value()].push_back(
+            measurements.at(i));
     }
 
     return result;

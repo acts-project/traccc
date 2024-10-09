@@ -36,15 +36,6 @@ void read_measurements(measurement_collection_types::host& measurements,
     csv::measurement iomeas;
     while (reader.read(iomeas)) {
 
-        // Find the module index for the measurement.
-        unsigned int link = 0u;
-        if (dd != nullptr) {
-            auto it = m.find(iomeas.geometry_id);
-            if (it != m.end()) {
-                link = it->second;
-            }
-        }
-
         // Construct the measurement object.
         traccc::measurement meas;
         std::array<typename transform3::size_type, 2u> indices{0u, 0u};
@@ -75,7 +66,6 @@ void read_measurements(measurement_collection_types::host& measurements,
 
         meas.subs.set_indices(indices);
         meas.surface_link = detray::geometry::barcode{iomeas.geometry_id};
-        meas.module_link = link;
         // Keeps measurement_id for ambiguity resolution
         meas.measurement_id = iomeas.measurement_id;
 
