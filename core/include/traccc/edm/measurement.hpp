@@ -45,7 +45,6 @@ struct measurement {
 
     /// Link to Module vector index
     using link_type = unsigned int;
-    link_type module_link = 0;
 
     /// Cluster link
     std::size_t cluster_link = std::numeric_limits<std::size_t>::max();

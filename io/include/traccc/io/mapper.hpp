@@ -42,10 +42,9 @@ using measurement_particle_map =
 particle_map generate_particle_map(std::size_t event,
                                    const std::string& particle_dir);
 
-hit_particle_map generate_hit_particle_map(
-    std::size_t event, const std::string& hits_dir,
-    const std::string& particle_dir,
-    const geoId_link_map& link_map = geoId_link_map());
+hit_particle_map generate_hit_particle_map(std::size_t event,
+                                           const std::string& hits_dir,
+                                           const std::string& particle_dir);
 
 hit_map generate_hit_map(std::size_t event, const std::string& hits_dir);
 

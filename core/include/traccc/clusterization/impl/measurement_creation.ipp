@@ -129,7 +129,6 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     const auto module_dd = det_descr.at(module_idx);
 
     // Fill the measurement object.
-    m.module_link = module_idx;
     m.surface_link = module_dd.geometry_id();
     // normalize the cell position
     m.local = mean;
