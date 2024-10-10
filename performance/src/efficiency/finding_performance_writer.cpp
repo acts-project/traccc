@@ -174,7 +174,7 @@ void finding_performance_writer::write_common(
         // of the number of measurements
         assert(measurements.size() > 0u);
         if (particle_hit_counts.at(0).hit_counts / measurements.size() >
-            matching_ratio) {
+            m_cfg.matching_ratio) {
             const auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
         } else {
