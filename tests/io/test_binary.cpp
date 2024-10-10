@@ -97,8 +97,7 @@ TEST(io_binary, spacepoint) {
 
     // Read csv file
     traccc::spacepoint_collection_types::host spacepoints_csv(&host_mr);
-    traccc::io::read_spacepoints(spacepoints_csv, event, hits_directory, &dd,
-                                 traccc::data_format::csv);
+    traccc::io::read_spacepoints(spacepoints_csv, event, hits_directory);
 
     // // Write binary file
     traccc::io::write(event, hits_directory, traccc::data_format::binary,
@@ -106,8 +105,8 @@ TEST(io_binary, spacepoint) {
 
     // Read binary file
     traccc::spacepoint_collection_types::host spacepoints_binary(&host_mr);
-    traccc::io::read_spacepoints(spacepoints_binary, event, hits_directory, &dd,
-                                 traccc::data_format::binary);
+    traccc::io::read_spacepoints(spacepoints_binary, event, hits_directory,
+                                 false, nullptr, traccc::data_format::binary);
 
     // Delete binary file
     std::string io_spacepoints_file =
@@ -145,8 +144,7 @@ TEST(io_binary, measurement) {
     // Read csv file
     traccc::measurement_collection_types::host measurements_csv(&host_mr);
     traccc::io::read_measurements(measurements_csv, event,
-                                  measurements_directory, &dd,
-                                  traccc::data_format::csv);
+                                  measurements_directory);
 
     // Write binary file
     traccc::io::write(event, measurements_directory,
@@ -156,7 +154,7 @@ TEST(io_binary, measurement) {
     // Read binary file
     traccc::measurement_collection_types::host measurements_binary(&host_mr);
     traccc::io::read_measurements(measurements_binary, event,
-                                  measurements_directory, &dd,
+                                  measurements_directory, false, nullptr,
                                   traccc::data_format::binary);
 
     // Delete binary file

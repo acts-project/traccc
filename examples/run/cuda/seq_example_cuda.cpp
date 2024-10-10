@@ -16,6 +16,7 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
@@ -35,6 +36,7 @@
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
+#include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -161,6 +163,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const detray::bfield::const_field_t field =
         detray::bfield::create_const_field(field_vec);
 
+    traccc::host::sparse_ccl_algorithm cc(host_mr);
+    traccc::host::measurement_creation_algorithm mc(host_mr);
     traccc::host::clusterization_algorithm ca(host_mr);
     host_spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
@@ -190,6 +194,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
+    traccc::finding_performance_writer find_performance_writer(
+        traccc::finding_performance_writer::config{});
+    traccc::fitting_performance_writer fit_performance_writer(
+        traccc::fitting_performance_writer::config{});
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -198,6 +206,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
+        traccc::edm::silicon_cell_collection::host cells_per_event{host_mr};
+        traccc::host::sparse_ccl_algorithm::output_type clusters_per_event{
+            host_mr};
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event;
         traccc::host::spacepoint_formation_algorithm<
@@ -220,8 +231,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
         {
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
-
-            traccc::edm::silicon_cell_collection::host cells_per_event{host_mr};
 
             {
                 traccc::performance::timer t("File reading  (cpu)",
@@ -446,17 +455,45 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map evt_map(
-                event, input_opts.directory, input_opts.directory,
-                input_opts.directory, host_det_descr, host_mr);
+            // TODO: Do evt_data.fill_cca_result(...) with cuda clusters and
+            // measurements
+            /*
+            traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                        input_opts.use_acts_geom_source,
+                                        &host_detector, input_opts.format,
+                                        true);
+
+            auto clusters = cc(vecmem::get_data(cells_per_event));
+            auto measurements =
+                mc(vecmem::get_data(cells_per_event),
+                   vecmem::get_data(clusters), host_det_descr_data);
+            evt_data.fill_cca_result(cells_per_event, clusters, measurements,
+                                     host_det_descr);
+
             sd_performance_writer.write(
                 vecmem::get_data(seeds_cuda),
-                vecmem::get_data(spacepoints_per_event_cuda), evt_map);
+                vecmem::get_data(spacepoints_per_event_cuda), evt_data);
+
+            find_performance_writer.write(
+                traccc::get_data(track_candidates_cuda), evt_data);
+
+            for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
+                const auto& trk_states_per_track =
+                    track_states_cuda.at(i).items;
+
+                const auto& fit_res = track_states_cuda[i].header;
+
+                fit_performance_writer.write(trk_states_per_track, fit_res,
+                                             host_detector, evt_data);
+            }
+            */
         }
     }
 
     if (performance_opts.run) {
         sd_performance_writer.finalize();
+        find_performance_writer.finalize();
+        fit_performance_writer.finalize();
     }
 
     std::cout << "==> Statistics ... " << std::endl;

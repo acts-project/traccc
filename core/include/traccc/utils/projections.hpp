@@ -24,7 +24,7 @@ struct [[maybe_unused]] cell_module_projection{
 
 struct [[maybe_unused]] measurement_module_projection{
     TRACCC_HOST_DEVICE auto operator()(const traccc::measurement& m)
-        const {return m.module_link;
+        const {return m.surface_link;
 }
 }
 ;

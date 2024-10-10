@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -105,15 +106,13 @@ TEST_F(io, csv_read_tml_single_muon) {
     // Read the hits from the relevant event file
     traccc::spacepoint_collection_types::host spacepoints_per_event(&resource);
     traccc::io::read_spacepoints(spacepoints_per_event, 0,
-                                 "tml_full/single_muon/", &dd,
-                                 traccc::data_format::csv);
+                                 "tml_full/single_muon/");
 
     // Read the measurements from the relevant event file
     traccc::measurement_collection_types::host measurements_per_event(
         &resource);
     traccc::io::read_measurements(measurements_per_event, 0,
-                                  "tml_full/single_muon/", &dd,
-                                  traccc::data_format::csv);
+                                  "tml_full/single_muon/", false, nullptr);
 
     // Read the particles from the relevant event file
     traccc::particle_collection_types::host particles_per_event(&resource);
@@ -132,10 +131,14 @@ TEST_F(io, csv_read_odd_single_muon) {
     // Memory resource used by the test.
     vecmem::host_memory_resource mr;
 
+    traccc::default_detector::host detector{mr};
+    traccc::io::read_detector(detector, mr,
+                              "geometries/odd/odd-detray_geometry_detray.json");
+
     // Read the truth particles for the first event.
     traccc::particle_container_types::host particles{&mr};
-    traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/",
-                               traccc::data_format::csv);
+    traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/", true,
+                               &detector, traccc::data_format::csv);
 
     // Look at the read container.
     ASSERT_EQ(particles.size(), 265u);
