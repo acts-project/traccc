@@ -31,8 +31,9 @@ spacepoint_formation_algorithm<detector_t>::operator()(
 
     // Set up each spacepoint in the result container.
     for (const auto& meas : measurements) {
-
-        result.push_back(details::create_spacepoint(det, meas));
+        if (details::is_valid_measurement(meas)) {
+            result.push_back(details::create_spacepoint(det, meas));
+        }
     }
 
     // Return the created container.

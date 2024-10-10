@@ -39,7 +39,9 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     const auto& meas = measurements.at(globalIndex);
 
     // Fill the spacepoint using the common function.
-    spacepoints.push_back(details::create_spacepoint(det, meas));
+    if (details::is_valid_measurement(meas)) {
+        spacepoints.push_back(details::create_spacepoint(det, meas));
+    }
 }
 
 }  // namespace traccc::device
