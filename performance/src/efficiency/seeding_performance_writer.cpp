@@ -83,6 +83,9 @@ void seeding_performance_writer::write(
                 measurements, evt_data.m_meas_to_ptc_map);
         }
 
+        // Consider it being matched if hit counts is larger than the half
+        // of the number of measurements
+        assert(measurements.size() > 0u);
         if (particle_hit_counts.at(0).hit_counts > measurements.size() / 2) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
