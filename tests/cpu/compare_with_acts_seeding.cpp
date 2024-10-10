@@ -78,6 +78,13 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Seeding Config
     traccc::seedfinder_config traccc_config;
+    traccc_config.zMin = -1186.f * traccc::unit<float>::mm;
+    traccc_config.zMax = 1186.f * traccc::unit<float>::mm;
+    traccc_config.cotThetaMax = 7.40627f;
+    traccc_config.deltaRMin = 1.f * traccc::unit<float>::mm;
+    traccc_config.deltaRMax = 60.f * traccc::unit<float>::mm;
+    traccc_config.sigmaScattering = 1.0f;
+
     traccc::spacepoint_grid_config grid_config(traccc_config);
 
     // Declare algorithms

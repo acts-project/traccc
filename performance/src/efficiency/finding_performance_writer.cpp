@@ -188,7 +188,9 @@ void finding_performance_writer::write_common(
     for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
         // Count only charged particles which satisfy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 
