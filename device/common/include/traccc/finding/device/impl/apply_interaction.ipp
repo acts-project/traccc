@@ -13,6 +13,7 @@
 
 // Detray include(s).
 #include "detray/geometry/tracking_surface.hpp"
+#include "vecmem/containers/device_vector.hpp"
 
 namespace traccc::device {
 
@@ -20,7 +21,8 @@ template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
     std::size_t globalIndex, const finding_config& cfg,
     typename detector_t::view_type det_data, const int n_params,
-    bound_track_parameters_collection_types::view params_view) {
+    bound_track_parameters_collection_types::view params_view,
+    vecmem::data::vector_view<const unsigned int> params_liveness_view) {
 
     // Type definitions
     using algebra_type = typename detector_t::algebra_type;
@@ -31,6 +33,8 @@ TRACCC_DEVICE inline void apply_interaction(
 
     // in param
     bound_track_parameters_collection_types::device params(params_view);
+    vecmem::device_vector<const unsigned int> params_liveness(
+        params_liveness_view);
 
     if (globalIndex >= n_params) {
         return;
@@ -38,17 +42,20 @@ TRACCC_DEVICE inline void apply_interaction(
 
     auto& bound_param = params.at(globalIndex);
 
-    // Get surface corresponding to bound params
-    const detray::tracking_surface sf{det, bound_param.surface_link()};
-    const typename detector_t::geometry_context ctx{};
+    if (params_liveness.at(globalIndex) != 0u) {
+        // Get surface corresponding to bound params
+        const detray::tracking_surface sf{det, bound_param.surface_link()};
+        const typename detector_t::geometry_context ctx{};
 
-    // Apply interactor
-    typename interactor_type::state interactor_state;
-    interactor_type{}.update(
-        ctx,
-        detail::correct_particle_hypothesis(cfg.ptc_hypothesis, bound_param),
-        bound_param, interactor_state,
-        static_cast<int>(detray::navigation::direction::e_forward), sf);
+        // Apply interactor
+        typename interactor_type::state interactor_state;
+        interactor_type{}.update(
+            ctx,
+            detail::correct_particle_hypothesis(cfg.ptc_hypothesis,
+                                                bound_param),
+            bound_param, interactor_state,
+            static_cast<int>(detray::navigation::direction::e_forward), sf);
+    }
 }
 
 }  // namespace traccc::device

@@ -21,12 +21,14 @@ namespace traccc::device {
 /// @param[in] det_data        Detector view object
 /// @param[in] n_params        The number of parameters (or tracks)
 /// @param[out] params_view    Collection of output bound track_parameters
+/// @param[in] params_liveness_view Vector of parameter liveness indicators
 ///
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
     std::size_t globalIndex, const finding_config& cfg,
     typename detector_t::view_type det_data, const int n_params,
-    bound_track_parameters_collection_types::view params_view);
+    bound_track_parameters_collection_types::view params_view,
+    vecmem::data::vector_view<const unsigned int> params_liveness_view);
 
 }  // namespace traccc::device
 
