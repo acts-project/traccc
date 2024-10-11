@@ -113,8 +113,8 @@ struct kalman_actor : detray::actor {
             // Change the charge of hypothesized particles when the sign of qop
             // is changed (This rarely happens when qop is set with a poor seed
             // resolution)
-            detail::correct_particle_hypothesis(stepping._ptc,
-                                                trk_state.filtered());
+            propagation.set_particle(detail::correct_particle_hypothesis(
+                stepping._ptc, propagation._stepping._bound_params));
 
             // Update iterator
             actor_state.next();

@@ -170,14 +170,16 @@ void finding_performance_writer::write_common(
         std::vector<particle_hit_count> particle_hit_counts =
             identify_contributing_particles(measurements, evt_map.meas_ptc_map);
 
-        if (particle_hit_counts.size() == 1) {
-            auto pid = particle_hit_counts.at(0).ptc.particle_id;
+        // Consider it being matched if hit counts is larger than the half
+        // of the number of measurements
+        assert(measurements.size() > 0u);
+        if (particle_hit_counts.at(0).hit_counts / measurements.size() >
+            m_cfg.matching_ratio) {
+            const auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
-        }
-
-        if (particle_hit_counts.size() > 1) {
+        } else {
             for (particle_hit_count const& phc : particle_hit_counts) {
-                auto pid = phc.ptc.particle_id;
+                const auto pid = phc.ptc.particle_id;
                 fake_counter[pid]++;
             }
         }
@@ -187,7 +189,9 @@ void finding_performance_writer::write_common(
     for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
         // Count only charged particles which satisfy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 

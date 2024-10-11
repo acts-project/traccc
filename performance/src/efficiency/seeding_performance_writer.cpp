@@ -70,12 +70,14 @@ void seeding_performance_writer::write(
     seed_collection_types::const_device seeds(seeds_view);
     for (const seed& sd : seeds) {
 
+        const auto measurements = sd.get_measurements(spacepoints_view);
+
         // Check which particle matches this seed.
         std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(
-                sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
+            identify_contributing_particles(measurements, evt_map.meas_ptc_map);
 
-        if (particle_hit_counts.size() == 1) {
+        if (particle_hit_counts.at(0).hit_counts / measurements.size() >
+            m_cfg.matching_ratio) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
         }
@@ -84,7 +86,9 @@ void seeding_performance_writer::write(
     for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
         // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 
@@ -128,7 +132,9 @@ void seeding_performance_writer::write(
     for (auto const& [pid, ptc] : evt_map.ptc_map) {
 
         // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 
