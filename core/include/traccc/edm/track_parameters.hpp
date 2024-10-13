@@ -9,6 +9,7 @@
 
 // traccc include
 #include "traccc/definitions/common.hpp"
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
