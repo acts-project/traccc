@@ -31,4 +31,20 @@ using bound_covariance = bound_track_parameters::covariance_type;
 using bound_track_parameters_collection_types =
     collection_types<bound_track_parameters>;
 
+// Wrap the phi of track parameters to [-pi,pi]
+TRACCC_HOST_DEVICE
+inline void wrap_phi(bound_track_parameters& param) {
+
+    traccc::scalar phi = param.phi();
+    static constexpr traccc::scalar TWOPI =
+        2. * traccc::constant<traccc::scalar>::pi;
+    phi = math::fmod(phi, TWOPI);
+    if (phi > traccc::constant<traccc::scalar>::pi) {
+        phi -= TWOPI;
+    } else if (phi < -traccc::constant<traccc::scalar>::pi) {
+        phi += TWOPI;
+    }
+    param.set_phi(phi);
+}
+
 }  // namespace traccc

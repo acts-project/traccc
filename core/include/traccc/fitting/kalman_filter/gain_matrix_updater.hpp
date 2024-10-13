@@ -124,6 +124,8 @@ struct gain_matrix_updater {
         // Set the stepper parameter
         bound_params.set_vector(filtered_vec);
         bound_params.set_covariance(filtered_cov);
+        // Wrap the phi in the range of [-pi, pi]
+        wrap_phi(bound_params);
 
         // Set the track state parameters
         trk_state.filtered().set_vector(filtered_vec);
