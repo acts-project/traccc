@@ -136,7 +136,6 @@ inline void aggregate_cluster(
     out.local = mean + offset;
     out.variance = var;
     out.surface_link = module_descr.geometry_id();
-    out.module_link = module_idx;
     // Set a unique identifier for the measurement.
     out.measurement_id = link;
     // Set the dimensionality of the measurement.
