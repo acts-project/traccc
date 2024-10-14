@@ -38,7 +38,7 @@ inline void wrap_phi(bound_track_parameters& param) {
 
     traccc::scalar phi = param.phi();
     static constexpr traccc::scalar TWOPI =
-        2. * traccc::constant<traccc::scalar>::pi;
+        2.f * traccc::constant<traccc::scalar>::pi;
     phi = math::fmod(phi, TWOPI);
     if (phi > traccc::constant<traccc::scalar>::pi) {
         phi -= TWOPI;
