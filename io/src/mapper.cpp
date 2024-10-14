@@ -61,8 +61,7 @@ particle_map generate_particle_map(std::size_t event,
 
 hit_particle_map generate_hit_particle_map(std::size_t event,
                                            const std::string& hits_dir,
-                                           const std::string& particle_dir,
-                                           const geoId_link_map& link_map) {
+                                           const std::string& particle_dir) {
     hit_particle_map result;
 
     auto pmap = generate_particle_map(event, particle_dir);
@@ -81,14 +80,6 @@ hit_particle_map generate_hit_particle_map(std::size_t event,
 
         spacepoint sp;
         sp.global = {iohit.tx, iohit.ty, iohit.tz};
-
-        unsigned int link = 0;
-        auto it = link_map.find(iohit.geometry_id);
-        if (it != link_map.end()) {
-            link = (*it).second;
-        }
-
-        sp.meas.module_link = link;
 
         particle ptc = pmap[iohit.particle_id];
 
@@ -198,8 +189,7 @@ particle_cell_map generate_particle_cell_map(std::size_t event,
 
     particle_cell_map result;
 
-    auto h_p_map =
-        generate_hit_particle_map(event, hits_dir, particle_dir, link_map);
+    auto h_p_map = generate_hit_particle_map(event, hits_dir, particle_dir);
 
     auto h_c_map =
         generate_hit_cell_map(event, cells_dir, hits_dir, resource, link_map);
@@ -324,8 +314,7 @@ measurement_particle_map generate_measurement_particle_map(
         link_map[dd.geometry_id()[i].value()] = i;
     }
 
-    auto h_p_map =
-        generate_hit_particle_map(event, hits_dir, particle_dir, link_map);
+    auto h_p_map = generate_hit_particle_map(event, hits_dir, particle_dir);
 
     for (const auto& hit : spacepoints) {
         const auto& meas = hit.meas;
