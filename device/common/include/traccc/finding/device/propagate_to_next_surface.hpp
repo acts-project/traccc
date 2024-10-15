@@ -41,16 +41,14 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     std::size_t globalIndex, const config_t cfg,
     typename propagator_t::detector_type::view_type det_data,
     bfield_t field_data,
-    bound_track_parameters_collection_types::const_view in_params_view,
+    bound_track_parameters_collection_types::view params_view,
+    vecmem::data::vector_view<unsigned int> params_liveness_view,
     const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     vecmem::data::vector_view<const candidate_link> links_view,
     const unsigned int step, const unsigned int n_in_params,
-    bound_track_parameters_collection_types::view out_params_view,
-    vecmem::data::vector_view<unsigned int> param_to_link_view,
     vecmem::data::vector_view<typename candidate_link::link_index_type>
         tips_view,
-    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view,
-    unsigned int* n_out_params);
+    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view);
 
 }  // namespace traccc::device
 

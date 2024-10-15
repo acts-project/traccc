@@ -15,7 +15,6 @@ TRACCC_DEVICE inline void build_tracks(
     measurement_collection_types::const_view measurements_view,
     bound_track_parameters_collection_types::const_view seeds_view,
     vecmem::data::jagged_vector_view<const candidate_link> links_view,
-    vecmem::data::jagged_vector_view<const unsigned int> param_to_link_view,
     vecmem::data::vector_view<const typename candidate_link::link_index_type>
         tips_view,
     track_candidate_container_types::view track_candidates_view,
@@ -27,9 +26,6 @@ TRACCC_DEVICE inline void build_tracks(
     bound_track_parameters_collection_types::const_device seeds(seeds_view);
 
     vecmem::jagged_device_vector<const candidate_link> links(links_view);
-
-    vecmem::jagged_device_vector<const unsigned int> param_to_link(
-        param_to_link_view);
 
     vecmem::device_vector<const typename candidate_link::link_index_type> tips(
         tips_view);
@@ -62,9 +58,7 @@ TRACCC_DEVICE inline void build_tracks(
             break;
         }
 
-        const unsigned int link_pos =
-            param_to_link[L.previous.first][L.previous.second];
-        L = links[L.previous.first][link_pos];
+        L = links[L.previous.first][L.previous.second];
     }
 
     // Retrieve tip
@@ -86,10 +80,8 @@ TRACCC_DEVICE inline void build_tracks(
                L.previous.first !=
                    std::numeric_limits<
                        candidate_link::link_index_type::first_type>::max()) {
-            const auto link_pos =
-                param_to_link[L.previous.first][L.previous.second];
 
-            L = links[L.previous.first][link_pos];
+            L = links[L.previous.first][L.previous.second];
         }
 
         // Break if the measurement is still invalid
@@ -107,9 +99,7 @@ TRACCC_DEVICE inline void build_tracks(
             break;
         }
 
-        const auto l_pos = param_to_link[L.previous.first][L.previous.second];
-
-        L = links[L.previous.first][l_pos];
+        L = links[L.previous.first][L.previous.second];
     }
 
     // Criteria for valid tracks
