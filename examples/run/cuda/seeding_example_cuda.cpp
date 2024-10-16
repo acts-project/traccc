@@ -130,7 +130,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};
-    assert(detector_opts.use_detray_detector == true);
     traccc::io::read_detector(host_det, mng_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);
@@ -226,13 +225,15 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(spacepoints_per_event, event,
-                                             input_opts.directory, nullptr,
-                                             input_opts.format);
+                                             input_opts.directory,
+                                             input_opts.use_acts_geom_source,
+                                             &host_det, input_opts.format);
 
                 // Read measurements
                 traccc::io::read_measurements(measurements_per_event, event,
-                                              input_opts.directory, nullptr,
-                                              input_opts.format);
+                                              input_opts.directory,
+                                              input_opts.use_acts_geom_source,
+                                              &host_det, input_opts.format);
             }  // stop measuring hit reading timer
 
             /*----------------------------
@@ -404,15 +405,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------*/
 
         if (performance_opts.run) {
-            traccc::event_map2 evt_map(event, input_opts.directory,
-                                       input_opts.directory,
-                                       input_opts.directory);
+
+            traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                        input_opts.use_acts_geom_source,
+                                        &host_det, input_opts.format, false);
+
             sd_performance_writer.write(vecmem::get_data(seeds_cuda),
                                         vecmem::get_data(spacepoints_per_event),
-                                        evt_map);
+                                        evt_data);
 
             find_performance_writer.write(
-                traccc::get_data(track_candidates_cuda), evt_map);
+                traccc::get_data(track_candidates_cuda), evt_data);
 
             for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
                 const auto& trk_states_per_track =
@@ -421,7 +424,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 const auto& fit_res = track_states_cuda[i].header;
 
                 fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             host_det, evt_map);
+                                             host_det, evt_data);
             }
         }
     }

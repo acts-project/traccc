@@ -16,25 +16,31 @@
 namespace traccc::io::csv {
 
 void read_measurements(measurement_collection_types::host& measurements,
-                       std::string_view filename,
-                       const silicon_detector_description::host* dd,
+                       std::string_view filename, bool use_acts_geom_source,
+                       const traccc::default_detector::host* detector,
                        const bool do_sort) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
 
-    // Create a lookup map associating geometry IDs to detector description
-    // module indices.
-    std::map<geometry_id, unsigned int> m;
-    if (dd != nullptr) {
-        for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
-            m[dd->acts_geometry_id()[i]] = i;
+    // For Acts data, build a map of acts->detray geometry IDs
+    std::map<geometry_id, geometry_id> acts_to_detray_id;
+
+    if (use_acts_geom_source && detector) {
+        for (const auto& surface_desc : detector->surfaces()) {
+            acts_to_detray_id[surface_desc.source] =
+                surface_desc.barcode().value();
         }
     }
 
     // Read the measurements from the input file.
     csv::measurement iomeas;
     while (reader.read(iomeas)) {
+
+        traccc::geometry_id geom_id = iomeas.geometry_id;
+        if (use_acts_geom_source && detector) {
+            geom_id = acts_to_detray_id[iomeas.geometry_id];
+        }
 
         // Construct the measurement object.
         traccc::measurement meas;
@@ -65,7 +71,7 @@ void read_measurements(measurement_collection_types::host& measurements,
         }
 
         meas.subs.set_indices(indices);
-        meas.surface_link = detray::geometry::barcode{iomeas.geometry_id};
+        meas.surface_link = detray::geometry::barcode{geom_id};
         // Keeps measurement_id for ambiguity resolution
         meas.measurement_id = iomeas.measurement_id;
 

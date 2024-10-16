@@ -64,7 +64,8 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Read the hits from the relevant event file
     traccc::spacepoint_collection_types::host spacepoints_truth{&host_mr};
-    traccc::io::read_spacepoints(spacepoints_truth, event, data_dir, &dd);
+    traccc::io::read_spacepoints(spacepoints_truth, event, data_dir, true,
+                                 &detector);
 
     // Check the size of spacepoints
     EXPECT_TRUE(spacepoints_recon.size() > 0);

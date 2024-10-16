@@ -128,7 +128,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     fitting_cfg.propagation = propagation_config;
 
     // Algorithms
-    traccc::host::clusterization_algorithm ca(host_mr);
+    traccc::host::sparse_ccl_algorithm cc(host_mr);
+    traccc::host::measurement_creation_algorithm mc(host_mr);
     spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
@@ -157,7 +158,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
     for (unsigned int event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
-        traccc::host::clusterization_algorithm::output_type
+        traccc::edm::silicon_cell_collection::host cells_per_event{host_mr};
+        traccc::host::sparse_ccl_algorithm::output_type clusters_per_event{
+            host_mr};
+        traccc::host::measurement_creation_algorithm::output_type
             measurements_per_event{&host_mr};
         traccc::host::spacepoint_formation_algorithm<
             const traccc::default_detector>::output_type spacepoints_per_event{
@@ -171,8 +175,6 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
         {  // Start measuring wall time.
             traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
-
-            traccc::edm::silicon_cell_collection::host cells_per_event{host_mr};
 
             {
                 traccc::performance::timer timer{"Read cells", elapsedTimes};
@@ -189,8 +191,11 @@ int seq_run(const traccc::opts::input_data& input_opts,
             {
                 traccc::performance::timer timer{"Clusterization",
                                                  elapsedTimes};
+
+                clusters_per_event = cc(vecmem::get_data(cells_per_event));
                 measurements_per_event =
-                    ca(vecmem::get_data(cells_per_event), det_descr_data);
+                    mc(vecmem::get_data(cells_per_event),
+                       vecmem::get_data(clusters_per_event), det_descr_data);
             }
 
             // Perform seeding, track finding and fitting only when using a
@@ -284,15 +289,17 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map2 evt_map(event, input_opts.directory,
-                                       input_opts.directory,
-                                       input_opts.directory);
+            traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                        input_opts.use_acts_geom_source,
+                                        &detector, input_opts.format, true);
+            evt_data.fill_cca_result(cells_per_event, clusters_per_event,
+                                     measurements_per_event, det_descr);
 
             sd_performance_writer.write(vecmem::get_data(seeds),
                                         vecmem::get_data(spacepoints_per_event),
-                                        evt_map);
+                                        evt_data);
             find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_map);
+                                          evt_data);
 
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
@@ -300,12 +307,12 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 const auto& fit_res = track_states[i].header;
 
                 fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_map);
+                                             detector, evt_data);
             }
 
             if (resolution_opts.run) {
                 ar_performance_writer.write(
-                    traccc::get_data(resolved_track_states), evt_map);
+                    traccc::get_data(resolved_track_states), evt_data);
             }
         }
     }
