@@ -7,21 +7,23 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/edm/device/sort_key.hpp"
+#include "traccc/edm/track_candidate.hpp"
+
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
-    std::size_t globalIndex,
-    bound_track_parameters_collection_types::const_view params_view,
-    vecmem::data::vector_view<device::sort_key> keys_view,
-    vecmem::data::vector_view<unsigned int> ids_view) {
+    std::size_t globalIndex, const fill_sort_keys_payload& payload) {
 
-    bound_track_parameters_collection_types::const_device params(params_view);
+    bound_track_parameters_collection_types::const_device params(
+        payload.params_view);
 
     // Keys
-    vecmem::device_vector<device::sort_key> keys_device(keys_view);
+    vecmem::device_vector<device::sort_key> keys_device(payload.keys_view);
 
     // Param id
-    vecmem::device_vector<unsigned int> ids_device(ids_view);
+    vecmem::device_vector<unsigned int> ids_device(payload.ids_view);
 
     if (globalIndex >= keys_device.size()) {
         return;

@@ -11,6 +11,7 @@
 #include "detray/definitions/detail/qualifiers.hpp"
 #include "detray/propagator/base_actor.hpp"
 #include "detray/propagator/base_stepper.hpp"
+#include "traccc/definitions/primitives.hpp"
 
 // System include(s)
 #include <limits>
