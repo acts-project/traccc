@@ -193,13 +193,12 @@ TRACCC_DEVICE inline void find_tracks(
             const detray::tracking_surface sf{det, in_par.surface_link()};
 
             // Run the Kalman update
-            sf.template visit_mask<
+            const bool res = sf.template visit_mask<
                 gain_matrix_updater<typename detector_t::algebra_type>>(
                 trk_state, in_par);
-            // Get the chi-square
-            const auto chi2 = trk_state.filtered_chi2();
 
-            if (chi2 < cfg.chi2_max) {
+            // The chi2 from Kalman update should be less than chi2_max
+            if (res && trk_state.filtered_chi2() < cfg.chi2_max) {
                 // Add measurement candidates to link
                 const unsigned int l_pos = num_total_candidates.fetch_add(1);
 

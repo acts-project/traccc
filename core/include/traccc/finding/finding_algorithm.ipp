@@ -186,14 +186,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
                 // Run the Kalman update on a copy of the track parameters
                 bound_track_parameters bound_param(in_param);
-                sf.template visit_mask<gain_matrix_updater<algebra_type>>(
-                    trk_state, bound_param);
+                const bool res =
+                    sf.template visit_mask<gain_matrix_updater<algebra_type>>(
+                        trk_state, bound_param);
 
-                // Get the chi-square
-                const auto chi2 = trk_state.filtered_chi2();
-
-                // Found a good measurement
-                if (chi2 < m_cfg.chi2_max) {
+                // The chi2 from Kalman update should be less than chi2_max
+                if (res && trk_state.filtered_chi2() < m_cfg.chi2_max) {
                     n_branches++;
 
                     links[step].push_back({{previous_step, in_param_id},
