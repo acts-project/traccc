@@ -12,21 +12,30 @@
 #include "traccc/edm/track_candidate.hpp"
 
 namespace traccc::device {
+struct fill_sort_keys_payload {
+    /**
+     * @brief View object to the vector of bound track parameters
+     */
+    bound_track_parameters_collection_types::const_view params_view;
+
+    /**
+     * @brief View object to the vector of sort keys
+     */
+    vecmem::data::vector_view<device::sort_key> keys_view;
+
+    /**
+     * @brief View object to the vector of parameter indices, which is the
+     * output to the algorithm
+     */
+    vecmem::data::vector_view<unsigned int> ids_view;
+};
 
 /// Function used for fill key container
 ///
 /// @param[in] globalIndex   The index of the current thread
-/// @param[in] params_view   The input parameters
-/// @param[out] keys_view    The key values
-/// @param[out] ids_view     The param ids
-///
+/// @param[inout] payload      The function call payload
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
-    std::size_t globalIndex,
-    bound_track_parameters_collection_types::const_view params_view,
-    vecmem::data::vector_view<device::sort_key> keys_view,
-    vecmem::data::vector_view<unsigned int> ids_view);
-
+    std::size_t globalIndex, const fill_sort_keys_payload& payload);
 }  // namespace traccc::device
 
-// Include the implementation.
-#include "traccc/finding/device/impl/fill_sort_keys.ipp"
+#include "./impl/fill_sort_keys.ipp"

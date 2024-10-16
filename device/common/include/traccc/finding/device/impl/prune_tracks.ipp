@@ -7,19 +7,22 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/track_candidate.hpp"
+
 namespace traccc::device {
 
-TRACCC_DEVICE inline void prune_tracks(
-    std::size_t globalIndex,
-    track_candidate_container_types::const_view track_candidates_view,
-    vecmem::data::vector_view<const unsigned int> valid_indices_view,
-    track_candidate_container_types::view prune_candidates_view) {
+TRACCC_DEVICE inline void prune_tracks(std::size_t globalIndex,
+                                       const prune_tracks_payload& payload) {
 
     track_candidate_container_types::const_device track_candidates(
-        track_candidates_view);
-    vecmem::device_vector<const unsigned int> valid_indices(valid_indices_view);
+        payload.track_candidates_view);
+    vecmem::device_vector<const unsigned int> valid_indices(
+        payload.valid_indices_view);
     track_candidate_container_types::device prune_candidates(
-        prune_candidates_view);
+        payload.prune_candidates_view);
 
     if (globalIndex >= prune_candidates.size()) {
         return;
