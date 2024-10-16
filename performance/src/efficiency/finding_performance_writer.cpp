@@ -154,7 +154,7 @@ void finding_performance_writer::write_common(
 
     for (unsigned int i = 0; i < n_tracks; i++) {
 
-        const std::vector<measurement>& measurements = tracks[i];
+        const std::vector<measurement>& found_measurements = tracks[i];
 
         // Check which particle matches this seed.
         // Input :
@@ -171,18 +171,31 @@ void finding_performance_writer::write_common(
 
         if (!evt_data.m_found_meas_to_ptc_map.empty()) {
             particle_hit_counts = identify_contributing_particles(
-                measurements, evt_data.m_found_meas_to_ptc_map);
+                found_measurements, evt_data.m_found_meas_to_ptc_map);
         } else {
             particle_hit_counts = identify_contributing_particles(
-                measurements, evt_data.m_meas_to_ptc_map);
+                found_measurements, evt_data.m_meas_to_ptc_map);
         }
+
+        const auto major_ptc = particle_hit_counts.at(0).ptc;
+        const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
+
+        // Truth measureemnt from the particle
+        const std::vector<measurement> truth_measurements =
+            evt_data.m_ptc_to_meas_map.at(major_ptc);
 
         // Consider it being matched if hit counts is larger than the half
         // of the number of measurements
-        assert(measurements.size() > 0u);
-        if (particle_hit_counts.at(0).hit_counts / measurements.size() >
-            m_cfg.matching_ratio) {
-            const auto pid = particle_hit_counts.at(0).ptc.particle_id;
+        assert(found_measurements.size() > 0u);
+        assert(truth_measurements.size() > 0u);
+        const bool reco_matched =
+            n_major_hits / found_measurements.size() > m_cfg.matching_ratio;
+        const bool truth_matched =
+            n_major_hits / truth_measurements.size() > m_cfg.matching_ratio;
+
+        if ((!m_cfg.double_matching && reco_matched) ||
+            (m_cfg.double_matching && reco_matched && truth_matched)) {
+            const auto pid = major_ptc.particle_id;
             match_counter[pid]++;
         } else {
             for (particle_hit_count const& phc : particle_hit_counts) {

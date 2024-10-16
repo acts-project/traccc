@@ -56,6 +56,7 @@ class finding_performance_writer {
         scalar z_max = 500.f * traccc::unit<scalar>::mm;
         scalar r_max = 200.f * traccc::unit<scalar>::mm;
         scalar matching_ratio = 0.5f;
+        bool double_matching = true;
     };
 
     /// Construct from configuration and log level.
