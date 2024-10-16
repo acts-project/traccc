@@ -12,9 +12,9 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
-#include "traccc/finding/ckf_aborter.hpp"
+#include "traccc/finding/actors/ckf_aborter.hpp"
+#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/finding_config.hpp"
-#include "traccc/finding/interaction_register.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
