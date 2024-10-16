@@ -101,14 +101,21 @@ struct kalman_actor : detray::actor {
             // This track state is not a hole
             trk_state.is_hole = false;
 
-            // Set full jacobian
-            trk_state.jacobian() = stepping._full_jacobian;
-
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            sf.template visit_mask<gain_matrix_updater<algebra_t>>(
-                trk_state, propagation._stepping._bound_params);
+            const bool res =
+                sf.template visit_mask<gain_matrix_updater<algebra_t>>(
+                    trk_state, propagation._stepping._bound_params);
+
+            // Abort if the Kalman update fails
+            if (!res) {
+                propagation._heartbeat &= navigation.abort();
+                return;
+            }
+
+            // Set full jacobian
+            trk_state.jacobian() = stepping._full_jacobian;
 
             // Change the charge of hypothesized particles when the sign of qop
             // is changed (This rarely happens when qop is set with a poor seed
