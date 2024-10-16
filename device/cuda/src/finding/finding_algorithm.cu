@@ -288,10 +288,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     std::map<unsigned int, vecmem::data::vector_buffer<candidate_link>>
         link_map;
 
-    // Create a map for tip links
-    std::map<unsigned int, vecmem::data::vector_buffer<
-                               typename candidate_link::link_index_type>>
-        tips_map;
+    // Create a buffer of tip links
+    vecmem::data::vector_buffer<typename candidate_link::link_index_type>
+        tips_buffer{m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
+                    vecmem::data::buffer_type::resizable};
+    m_copy.setup(tips_buffer)->wait();
 
     // Link size
     std::vector<std::size_t> n_candidates_per_step;
@@ -419,11 +420,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *****************************************************************/
 
             {
-                // Create the tip map
-                tips_map[step] = {n_candidates, m_mr.main,
-                                  vecmem::data::buffer_type::resizable};
-                m_copy.setup(tips_map[step])->ignore();
-
                 // Reset the number of tracks per seed
                 m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
 
@@ -435,7 +431,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     <<<nBlocks, nThreads, 0, stream>>>(
                         m_cfg, det_view, field_view, in_params_buffer,
                         param_liveness_buffer, param_ids_buffer, link_map[step],
-                        step, n_candidates, tips_map[step],
+                        step, n_candidates, tips_buffer,
                         n_tracks_per_seed_buffer);
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -466,40 +462,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                      in.begin() + n_candidates_per_step[it], out.begin());
     }
 
-    // Get the number of tips per step
-    std::vector<unsigned int> n_tips_per_step;
-    n_tips_per_step.reserve(n_steps);
-    for (unsigned int it = 0; it < n_steps; it++) {
-        n_tips_per_step.push_back(m_copy.get_size(tips_map[it]));
-    }
-
-    // Copy tips_map into the tips vector (D->D)
-    unsigned int n_tips_total =
-        std::accumulate(n_tips_per_step.begin(), n_tips_per_step.end(), 0);
-    vecmem::data::vector_buffer<typename candidate_link::link_index_type>
-        tips_buffer{n_tips_total, m_mr.main};
-    m_copy.setup(tips_buffer)->ignore();
-
-    vecmem::device_vector<typename candidate_link::link_index_type> tips(
-        tips_buffer);
-
-    unsigned int prefix_sum = 0;
-
-    for (unsigned int it = 0; it < n_steps; it++) {
-        vecmem::device_vector<typename candidate_link::link_index_type> in(
-            tips_map[it]);
-
-        const unsigned int n_tips = n_tips_per_step[it];
-        if (n_tips > 0) {
-            thrust::copy(thrust::cuda::par.on(stream), in.begin(),
-                         in.begin() + n_tips, tips.begin() + prefix_sum);
-            prefix_sum += n_tips;
-        }
-    }
-
     /*****************************************************************
      * Kernel6: Build tracks
      *****************************************************************/
+
+    // Get the number of tips
+    auto n_tips_total = m_copy.get_size(tips_buffer);
 
     // Create track candidate buffer
     track_candidate_container_types::buffer track_candidates_buffer{
