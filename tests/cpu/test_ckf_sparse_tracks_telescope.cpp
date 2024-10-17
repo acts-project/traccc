@@ -120,6 +120,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     typename traccc::finding_algorithm<rk_stepper_type,
                                        host_navigator_type>::config_type cfg;
     cfg.ptc_hypothesis = ptc;
+    cfg.chi2_max = 30.f;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
