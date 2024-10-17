@@ -2,7 +2,7 @@
 #
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2023 CERN for the benefit of the ACTS project
+# (c) 2023-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 #
@@ -138,13 +138,14 @@ for NTHREAD in $(seq 1 ${TRACCC_MAX_THREADS}); do
 
          # Run the throughput test.
          ${TRACCC_EXECUTABLE}                                                 \
-            --detector_file="${TRACCC_DET_FILE}"                              \
-            --digitization_config_file="${TRACCC_DIGI_FILE}"                  \
-            --input_directory="tml_full/${EVTDIR}/"                           \
-            --threads=${NTHREAD}                                              \
-            --cold_run_events=$((20*${NTHREAD}))                              \
-            --processed_events=$((${TRACCC_EVT_COUNT[${EVTDIR}]}*${NTHREAD})) \
-            --log_file="${TRACCC_CSV_FILE}"
+            --detector-file="${TRACCC_DET_FILE}"                              \
+            --digitization-file="${TRACCC_DIGI_FILE}"                         \
+            --input-directory="tml_full/${EVTDIR}/"                           \
+            --input-events=10                                                 \
+            --cpu-threads=${NTHREAD}                                          \
+            --cold-run-events=$((20*${NTHREAD}))                              \
+            --processed-events=$((${TRACCC_EVT_COUNT[${EVTDIR}]}*${NTHREAD})) \
+            --log-file="${TRACCC_CSV_FILE}"
       done
    done
 done
