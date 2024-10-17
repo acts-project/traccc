@@ -139,11 +139,13 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         rk_stepper_type, device_navigator_type>::config_type cfg_no_limit;
     cfg_no_limit.ptc_hypothesis = ptc;
     cfg_no_limit.max_num_branches_per_seed = 100000;
+    cfg_no_limit.chi2_max = 30.f;
 
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
     cfg_limit.max_num_branches_per_seed = 500;
+    cfg_limit.chi2_max = 30.f;
 
     // Finding algorithm object
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
