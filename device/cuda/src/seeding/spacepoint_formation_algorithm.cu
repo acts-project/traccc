@@ -18,11 +18,11 @@ namespace traccc::cuda {
 namespace kernels {
 
 template <typename detector_t>
-__global__ void form_spacepoints(
-    typename detector_t::view_type det_view,
-    measurement_collection_types::const_view measurements_view,
-    const unsigned int measurement_count,
-    spacepoint_collection_types::view spacepoints_view) {
+__global__ void __launch_bounds__(1024, 1)
+    form_spacepoints(typename detector_t::view_type det_view,
+                     measurement_collection_types::const_view measurements_view,
+                     const unsigned int measurement_count,
+                     spacepoint_collection_types::view spacepoints_view) {
 
     device::form_spacepoints<detector_t>(threadIdx.x + blockIdx.x * blockDim.x,
                                          det_view, measurements_view,
