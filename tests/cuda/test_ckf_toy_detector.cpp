@@ -10,11 +10,11 @@
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/finding/finding_algorithm.hpp"
-#include "traccc/io/event_map2.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
@@ -154,10 +154,10 @@ TEST_P(CkfToyDetectorTests, Run) {
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map(i_evt, path, path, path);
+        traccc::event_data evt_data(path, i_evt, host_mr);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
 

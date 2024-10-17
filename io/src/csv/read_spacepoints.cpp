@@ -25,12 +25,12 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const silicon_detector_description::host* dd) {
+                      const traccc::default_detector::host* detector) {
 
     // Read all measurements.
     measurement_collection_types::host measurements;
     static constexpr bool sort_measurements = false;
-    read_measurements(measurements, meas_filename, dd, sort_measurements);
+    read_measurements(measurements, meas_filename, detector, sort_measurements);
 
     // Measurement hit id reader
     auto mhid_reader =

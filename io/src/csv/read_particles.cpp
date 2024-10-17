@@ -44,7 +44,7 @@ void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
-                    const silicon_detector_description::host* dd) {
+                    const traccc::default_detector::host* detector) {
 
     // Memory resource used by the temporary collections.
     vecmem::host_memory_resource mr;
@@ -61,7 +61,7 @@ void read_particles(particle_container_types::host& particles,
     // Read in all measurements, into a temporary collection.
     static constexpr bool sort_measurements = false;
     measurement_collection_types::host temp_measurements{&mr};
-    read_measurements(temp_measurements, measurements_file, dd,
+    read_measurements(temp_measurements, measurements_file, detector,
                       sort_measurements);
 
     // Make a hit to measurement map.

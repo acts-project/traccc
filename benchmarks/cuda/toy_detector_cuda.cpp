@@ -12,7 +12,6 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/io/event_map2.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"

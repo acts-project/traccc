@@ -125,7 +125,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
 
         std::vector<traccc::io::csv::particle> particles;
         auto particle_reader = traccc::io::csv::make_particle_reader(
-            traccc::io::get_event_filename(i_event, "-particles.csv"));
+            traccc::io::get_event_filename(i_event, "-particles_initial.csv"));
         traccc::io::csv::particle io_particle;
         while (particle_reader.read(io_particle)) {
             particles.push_back(io_particle);
