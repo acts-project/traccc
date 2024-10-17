@@ -147,7 +147,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             &host_mr};
         traccc::io::read_measurements(
             measurements_per_event, event, input_opts.directory,
-            input_opts.use_acts_geom_source, &detector, input_opts.format);
+            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            input_opts.format);
 
         // Run finding
         auto track_candidates =

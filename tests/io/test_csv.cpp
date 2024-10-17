@@ -112,7 +112,7 @@ TEST_F(io, csv_read_tml_single_muon) {
     traccc::measurement_collection_types::host measurements_per_event(
         &resource);
     traccc::io::read_measurements(measurements_per_event, 0,
-                                  "tml_full/single_muon/", false, nullptr);
+                                  "tml_full/single_muon/", nullptr);
 
     // Read the particles from the relevant event file
     traccc::particle_collection_types::host particles_per_event(&resource);
@@ -137,7 +137,7 @@ TEST_F(io, csv_read_odd_single_muon) {
 
     // Read the truth particles for the first event.
     traccc::particle_container_types::host particles{&mr};
-    traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/", true,
+    traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/",
                                &detector, traccc::data_format::csv);
 
     // Look at the read container.

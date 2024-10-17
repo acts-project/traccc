@@ -23,14 +23,12 @@ namespace traccc::io::csv {
 /// @param[in]  meas_filename The file to read the measurement data from
 /// @param[in]  meas_hit_map_filename The file to read the mapping from
 ///                                   measurements to hits from
-/// @param[in]  use_acts_geom_source  Use acts geometry source
 /// @param[in]  detector  detray detector
 ///
 void read_spacepoints(spacepoint_collection_types::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      bool use_acts_geom_source = false,
                       const traccc::default_detector::host* detector = nullptr);
 
 }  // namespace traccc::io::csv

@@ -31,13 +31,12 @@ void read_particles(particle_collection_types::host& particles,
 /// @param[in]  hits_file     The file to read the simulated hits from
 /// @param[in]  measurements_file The file to read the "Acts measurements" from
 /// @param[in]  hit_map_file  The file to read the hit->measurement mapping from
-/// @param[in]  use_acts_geom_source  Use acts geometry source
 /// @param[in]  detector  detray detector
 ///
 void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
-                    std::string_view hit_map_file, bool use_acts_geom_source,
+                    std::string_view hit_map_file,
                     const traccc::default_detector::host* detector);
 
 }  // namespace traccc::io::csv

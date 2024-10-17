@@ -93,10 +93,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Hit reading  (cpu)",
                                              elapsedTimes);
                 // Read the hits from the relevant event file
-                traccc::io::read_spacepoints(spacepoints_per_event, event,
-                                             input_opts.directory,
-                                             input_opts.use_acts_geom_source,
-                                             &host_det, input_opts.format);
+                traccc::io::read_spacepoints(
+                    spacepoints_per_event, event, input_opts.directory,
+                    (input_opts.use_acts_geom_source ? &host_det : nullptr),
+                    input_opts.format);
             }  // stop measuring hit reading timer
 
             {  // Spacepoin binning for kokkos

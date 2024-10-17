@@ -106,7 +106,7 @@ TEST(io_binary, spacepoint) {
     // Read binary file
     traccc::spacepoint_collection_types::host spacepoints_binary(&host_mr);
     traccc::io::read_spacepoints(spacepoints_binary, event, hits_directory,
-                                 false, nullptr, traccc::data_format::binary);
+                                 nullptr, traccc::data_format::binary);
 
     // Delete binary file
     std::string io_spacepoints_file =
@@ -154,7 +154,7 @@ TEST(io_binary, measurement) {
     // Read binary file
     traccc::measurement_collection_types::host measurements_binary(&host_mr);
     traccc::io::read_measurements(measurements_binary, event,
-                                  measurements_directory, false, nullptr,
+                                  measurements_directory, nullptr,
                                   traccc::data_format::binary);
 
     // Delete binary file
