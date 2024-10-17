@@ -47,8 +47,9 @@ struct finding_performance_writer_data {
     fake_tracks_plot_tool m_fake_tracks_plot_tool;
     fake_tracks_plot_tool::fake_tracks_plot_cache m_fake_tracks_plot_cache;
 
-    measurement_particle_map m_measurement_particle_map;
-    particle_map m_particle_map;
+    std::map<measurement, std::map<particle, std::size_t>>
+        m_measurement_particle_map;
+    std::map<std::uint64_t, particle> m_particle_map;
 
 };  // struct finding_performance_writer_data
 
@@ -138,7 +139,7 @@ std::vector<std::vector<measurement>> prepare_data(
 
 void finding_performance_writer::write_common(
     const std::vector<std::vector<measurement>>& tracks,
-    const event_map2& evt_map) {
+    const event_data& evt_data) {
 
     // Associates truth particle_ids with the number of tracks made entirely of
     // some (or all) of its hits.
@@ -166,9 +167,15 @@ void finding_performance_writer::write_common(
         // then increment the match_counter for this truth particle id.
         // If there are at least two particles contributing to the hit list of
         // this track, increment the fake_counter for each truth particle.
+        std::vector<particle_hit_count> particle_hit_counts;
 
-        std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(measurements, evt_map.meas_ptc_map);
+        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
+            particle_hit_counts = identify_contributing_particles(
+                measurements, evt_data.m_found_meas_to_ptc_map);
+        } else {
+            particle_hit_counts = identify_contributing_particles(
+                measurements, evt_data.m_meas_to_ptc_map);
+        }
 
         // Consider it being matched if hit counts is larger than the half
         // of the number of measurements
@@ -186,7 +193,7 @@ void finding_performance_writer::write_common(
     }
 
     // For each truth particle...
-    for (auto const& [pid, ptc] : evt_map.ptc_map) {
+    for (auto const& [pid, ptc] : evt_data.m_particle_map) {
 
         // Count only charged particles which satisfy pT_cut
         if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
@@ -225,19 +232,19 @@ void finding_performance_writer::write_common(
 /// For track finding
 void finding_performance_writer::write(
     const track_candidate_container_types::const_view& track_candidates_view,
-    const event_map2& evt_map) {
+    const event_data& evt_data) {
     std::vector<std::vector<measurement>> tracks =
         prepare_data(track_candidates_view);
-    write_common(tracks, evt_map);
+    write_common(tracks, evt_data);
 }
 
 /// For ambiguity resolution
 void finding_performance_writer::write(
     const track_state_container_types::const_view& track_states_view,
-    const event_map2& evt_map) {
+    const event_data& evt_data) {
     std::vector<std::vector<measurement>> tracks =
         prepare_data(track_states_view);
-    write_common(tracks, evt_map);
+    write_common(tracks, evt_data);
 }
 
 void finding_performance_writer::finalize() {

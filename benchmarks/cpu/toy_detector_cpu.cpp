@@ -15,7 +15,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Traccc IO include(s).
-#include "traccc/io/event_map2.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"

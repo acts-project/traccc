@@ -307,12 +307,14 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map evt_map(
-                event, input_opts.directory, input_opts.directory,
-                input_opts.directory, host_det_descr, host_mr);
-            sd_performance_writer.write(
-                vecmem::get_data(seeds_alpaka),
-                vecmem::get_data(spacepoints_per_event_alpaka), evt_map);
+            traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                        input_opts.use_acts_geom_source,
+                                        &host_detector, input_opts.format,
+                                        false);
+
+            sd_performance_writer.write(vecmem::get_data(seeds),
+                                        vecmem::get_data(spacepoints_per_event),
+                                        evt_data);
         }
     }
 

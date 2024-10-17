@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -28,12 +28,12 @@ namespace traccc::io {
 /// @param[out] measurements The measurement collection to fill
 /// @param[in]  event     The event ID to read in the measurements for
 /// @param[in]  directory The directory holding the measurement data files
-/// @param[in]  dd        The detector description to point the measurements at
+/// @param[in]  detector  detray detector
 /// @param[in]  format    The format of the measurement data files (to read)
 ///
 void read_measurements(measurement_collection_types::host& measurements,
                        std::size_t event, std::string_view directory,
-                       const silicon_detector_description::host* dd = nullptr,
+                       const traccc::default_detector::host* detector = nullptr,
                        data_format format = data_format::csv);
 
 /// Read measurement data into memory
@@ -42,12 +42,12 @@ void read_measurements(measurement_collection_types::host& measurements,
 ///
 /// @param[out] measurements The measurement collection to fill
 /// @param[in]  filename The file to read the measurement data from
-/// @param[in]  dd       The detector description to point the measurements at
+/// @param[in]  detector  detray detector
 /// @param[in]  format   The format of the measurement data files (to read)
 ///
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       const silicon_detector_description::host* dd = nullptr,
+                       const traccc::default_detector::host* detector = nullptr,
                        data_format format = data_format::csv);
 
 }  // namespace traccc::io

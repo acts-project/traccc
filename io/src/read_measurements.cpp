@@ -19,7 +19,7 @@ namespace traccc::io {
 
 void read_measurements(measurement_collection_types::host& measurements,
                        std::size_t event, std::string_view directory,
-                       const silicon_detector_description::host* dd,
+                       const traccc::default_detector::host* detector,
                        data_format format) {
 
     switch (format) {
@@ -30,7 +30,7 @@ void read_measurements(measurement_collection_types::host& measurements,
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.csv")))
                                       .native()),
-                dd, format);
+                detector, format);
             break;
         }
         case data_format::binary: {
@@ -50,13 +50,13 @@ void read_measurements(measurement_collection_types::host& measurements,
 
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       const silicon_detector_description::host* dd,
+                       const traccc::default_detector::host* detector,
                        data_format format) {
 
     static constexpr bool sort_measurements = true;
     switch (format) {
         case data_format::csv:
-            return csv::read_measurements(measurements, filename, dd,
+            return csv::read_measurements(measurements, filename, detector,
                                           sort_measurements);
         default:
             throw std::invalid_argument("Unsupported data format");
