@@ -115,10 +115,12 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
         rk_stepper_type, host_navigator_type>::config_type cfg_no_limit;
     cfg_no_limit.max_num_branches_per_seed =
         std::numeric_limits<unsigned int>::max();
+    cfg_no_limit.chi2_max = 30.f;
 
     typename traccc::finding_algorithm<
         rk_stepper_type, host_navigator_type>::config_type cfg_limit;
     cfg_limit.max_num_branches_per_seed = 500;
+    cfg_limit.chi2_max = 30.f;
 
     // Finding algorithm object
     traccc::finding_algorithm<rk_stepper_type, host_navigator_type>

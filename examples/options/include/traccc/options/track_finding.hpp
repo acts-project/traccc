@@ -47,7 +47,7 @@ class track_finding : public interface, public config_provider<finding_config> {
     /// Maximum step counts that track can make to reach the next surface
     unsigned int max_step_counts_for_next_surface = 100;
     /// Maximum chi2 for a measurement to be included in the track
-    float chi2_max = 30.f;
+    float chi2_max = 10.f;
     /// Maximum number of branches which each initial seed can have at a step
     unsigned int nmax_per_seed = 10;
     /// Maximum allowed number of skipped steps per candidate

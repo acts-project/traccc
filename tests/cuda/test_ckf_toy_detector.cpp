@@ -139,7 +139,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         rk_stepper_type, device_navigator_type>::config_type cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
-
+    cfg.chi2_max = 30.f;
     cfg.propagation.navigation.search_window = search_window;
 
     // Finding algorithm object
