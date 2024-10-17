@@ -174,13 +174,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
                     spacepoints_per_event, event, input_opts.directory,
-                    (input_opts.use_acts_geom_source ? &detector : nullptr),
+                    (input_opts.use_acts_geom_source ? &host_det : nullptr),
                     input_opts.format);
 
                 // Read measurements
                 traccc::io::read_measurements(
                     measurements_per_event, event, input_opts.directory,
-                    (input_opts.use_acts_geom_source ? &detector : nullptr),
+                    (input_opts.use_acts_geom_source ? &host_det : nullptr),
                     input_opts.format);
             }  // stop measuring hit reading timer
 
