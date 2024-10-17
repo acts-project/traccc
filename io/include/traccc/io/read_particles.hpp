@@ -57,13 +57,11 @@ void read_particles(particle_collection_types::host &particles,
 /// @param[in]  event     The event ID to read in the particles for
 /// @param[in]  directory The directory holding the particle data files
 /// @param[in]  format    The format of the particle data files (to read)
-/// @param[in]  use_acts_geom_source  Use acts geometry source
 /// @param[in]  detector  detray detector
 /// @param[in]  filename_postfix Postfix for the particle file name(s)
 ///
 void read_particles(particle_container_types::host &particles,
                     std::size_t event, std::string_view directory,
-                    bool use_acts_geom_source = true,
                     const traccc::default_detector::host *detector = nullptr,
                     data_format format = data_format::csv,
                     std::string_view filename_postfix = "-particles_initial");
@@ -77,7 +75,6 @@ void read_particles(particle_container_types::host &particles,
 /// @param[in]  hits_file     The file to read the simulated hits from
 /// @param[in]  measurements_file The file to read the "Acts measurements" from
 /// @param[in]  hit_map_file  The file to read the hit->measurement mapping from
-/// @param[in]  use_acts_geom_source  Use acts geometry source
 /// @param[in]  detector  detray detector
 /// @param[in]  format        The format of the particle data files (to read)
 ///
@@ -85,7 +82,6 @@ void read_particles(particle_container_types::host &particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
-                    bool use_acts_geom_source = true,
                     const traccc::default_detector::host *detector = nullptr,
                     data_format format = data_format::csv);
 

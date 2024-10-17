@@ -20,13 +20,11 @@ namespace traccc::io::csv {
 ///
 /// @param[out] measurements The collection to fill with the measurement data
 /// @param[in]  filename     The file to read the measurement data from
-/// @param[in]  use_acts_geom_source  Use acts geometry source
 /// @param[in]  detector  detray detector
 /// @param[in]  do_sort      Whether to sort the measurements or not
 ///
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       bool use_acts_geom_source = true,
                        const traccc::default_detector::host* detector = nullptr,
                        const bool do_sort = true);
 

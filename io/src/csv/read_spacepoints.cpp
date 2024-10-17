@@ -25,14 +25,12 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      bool use_acts_geom_source,
                       const traccc::default_detector::host* detector) {
 
     // Read all measurements.
     measurement_collection_types::host measurements;
     static constexpr bool sort_measurements = false;
-    read_measurements(measurements, meas_filename, use_acts_geom_source,
-                      detector, sort_measurements);
+    read_measurements(measurements, meas_filename, detector, sort_measurements);
 
     // Measurement hit id reader
     auto mhid_reader =
