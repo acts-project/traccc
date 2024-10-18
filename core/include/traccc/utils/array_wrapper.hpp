@@ -205,9 +205,12 @@ struct aos {
         constexpr std::size_t size() const { return _size; }
 
         constexpr const vecmem::unique_alloc_ptr<pod<Ts...>[]>& pointer()
-            const { return _ptr; }
+            const {
+            return _ptr;
+        }
 
-        private : std::size_t _size;
+        private:
+        std::size_t _size;
         vecmem::unique_alloc_ptr<pod<Ts...>[]> _ptr;
     };
 
