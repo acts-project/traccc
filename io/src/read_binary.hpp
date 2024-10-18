@@ -8,6 +8,7 @@
 #pragma once
 
 // VecMem include(s).
+#include <ios>
 #include <vecmem/edm/host.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 
@@ -46,7 +47,8 @@ container_t read_binary_container(std::string_view filename,
     // Read the sizes of the item vector.
     std::vector<std::size_t> items_size(headers_size);
     in_file.read(reinterpret_cast<char*>(items_size.data()),
-                 headers_size * sizeof(typename std::size_t));
+                 static_cast<std::streamsize>(headers_size *
+                                              sizeof(typename std::size_t)));
 
     // Create the result container, and set it to the correct (outer) size right
     // away.
@@ -92,7 +94,8 @@ void read_binary_collection(collection_t& result, std::string_view filename) {
 
     // Read the items into memory.
     in_file.read(reinterpret_cast<char*>(result.data()),
-                 size * sizeof(typename collection_t::value_type));
+                 static_cast<std::streamsize>(
+                     size * sizeof(typename collection_t::value_type)));
 }
 
 /// Implementation detail for @c traccc::io::details::read_binary_soa
@@ -124,7 +127,8 @@ void read_binary_soa_variable(std::vector<TYPE, ALLOC>& result,
     result.resize(size);
 
     // Read the items into memory.
-    in_file.read(reinterpret_cast<char*>(result.data()), size * sizeof(TYPE));
+    in_file.read(reinterpret_cast<char*>(result.data()),
+                 static_cast<std::streamsize>(size * sizeof(TYPE)));
 }
 
 /// Implementation detail for @c traccc::io::details::read_binary_soa
@@ -144,7 +148,8 @@ void read_binary_soa_variable(
     // Read the sizes of the "inner" vectors.
     std::vector<std::size_t> inner_sizes(outer_size);
     in_file.read(reinterpret_cast<char*>(inner_sizes.data()),
-                 outer_size * sizeof(typename std::size_t));
+                 static_cast<std::streamsize>(outer_size *
+                                              sizeof(typename std::size_t)));
 
     // Resize the outer vector.
     result.resize(outer_size);

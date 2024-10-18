@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Iterate over events
-    for (unsigned int event = input_opts.skip;
+    for (auto event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
@@ -141,7 +141,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Number of fitted tracks: " << track_states.size()
                   << std::endl;
 
-        const unsigned int n_fitted_tracks = track_states.size();
+        const decltype(track_states)::size_type n_fitted_tracks =
+            track_states.size();
 
         if (performance_opts.run) {
 

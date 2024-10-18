@@ -23,8 +23,9 @@
 namespace {
 double delta_ms(std::chrono::high_resolution_clock::time_point s,
                 std::chrono::high_resolution_clock::time_point e) {
-    return std::chrono::duration_cast<std::chrono::microseconds>(e - s)
-               .count() /
+    return static_cast<double>(
+               std::chrono::duration_cast<std::chrono::microseconds>(e - s)
+                   .count()) /
            1000.0;
 }
 }  // namespace

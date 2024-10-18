@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
     traccc::performance::timing_info elapsedTimes;
 
     // Iterate over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates

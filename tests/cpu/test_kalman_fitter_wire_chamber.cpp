@@ -173,8 +173,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
      * Success rate test
      ********************/
 
-    scalar success_rate =
-        static_cast<scalar>(n_success) / (n_truth_tracks * n_events);
+    scalar success_rate = static_cast<scalar>(n_success) /
+                          static_cast<scalar>(n_truth_tracks * n_events);
 
     ASSERT_GE(success_rate, 0.99f);
     ASSERT_LE(success_rate, 1.00f);

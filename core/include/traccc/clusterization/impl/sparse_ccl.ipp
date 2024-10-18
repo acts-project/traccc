@@ -28,7 +28,7 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(
     vecmem::device_vector<unsigned int>& labels, unsigned int e1,
     unsigned int e2) {
 
-    int e;
+    unsigned int e;
     if (e1 < e2) {
         e = e1;
         assert(e2 < labels.size());

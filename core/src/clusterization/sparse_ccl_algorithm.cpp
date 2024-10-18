@@ -45,7 +45,7 @@ sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
     clusters.resize(num_clusters);
 
     // Add cells to their clusters.
-    for (std::size_t cell_idx = 0; cell_idx < cluster_indices.size();
+    for (unsigned int cell_idx = 0; cell_idx < cluster_indices.size();
          ++cell_idx) {
         clusters.cell_indices()[cluster_indices[cell_idx]].push_back(cell_idx);
     }
