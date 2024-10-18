@@ -270,15 +270,17 @@ void event_data::fill_cca_result(
         std::map<uint64_t, std::size_t> meas_counts;
 
         // Cells from CCL
-        for (const auto& ce : cluster) {
+        for (const auto& cell1 : cluster) {
 
-            const auto it_lo = m_cell_to_particle_map.lower_bound(ce);
-            const auto it_up = m_cell_to_particle_map.upper_bound(ce);
-
-            for (auto it = it_lo; it != it_up; it++) {
-                const auto ptc = it->second;
-                m_found_meas_to_ptc_map[ms][ptc]++;
-                meas_counts[it->first.measurement_id]++;
+            // Cells from truth [cell, particle] map
+            for (auto const& [cell2, ptc] : m_cell_to_particle_map) {
+                // Increase the particle number if the cell is the same
+                if (cell1.geometry_id == cell2.geometry_id &&
+                    cell1.channel0 == cell2.channel0 &&
+                    cell1.channel1 == cell2.channel1) {
+                    m_found_meas_to_ptc_map[ms][ptc]++;
+                    meas_counts[cell2.measurement_id]++;
+                }
             }
         }
 

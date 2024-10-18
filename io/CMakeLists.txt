@@ -53,7 +53,6 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/read_binary.hpp"
   "src/write_binary.hpp"
   "src/details/read_surfaces.cpp"
-  "src/csv/cell.cpp"
   "src/csv/make_surface_reader.cpp"
   "src/csv/read_surfaces.hpp"
   "src/csv/read_surfaces.cpp"

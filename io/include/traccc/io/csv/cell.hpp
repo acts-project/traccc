@@ -25,13 +25,11 @@ struct cell {
     float timestamp = 0.;
     float value = 0.;
 
-    // auto operator<=>(const cell& other) const = default;
+    auto operator<=>(const cell& other) const = default;
 
     // geometry_id,measurement_id,channel0,channel1,timestamp,value
     DFE_NAMEDTUPLE(cell, geometry_id, measurement_id, channel0, channel1,
                    timestamp, value);
 };
-
-bool operator<(const cell& lhs, const cell& rhs);
 
 }  // namespace traccc::io::csv
