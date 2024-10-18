@@ -30,8 +30,9 @@ struct seed {
         const spacepoint_collection_types::const_view& spacepoints_view) const {
         const spacepoint_collection_types::const_device spacepoints(
             spacepoints_view);
-        return {spacepoints.at(spB_link).meas, spacepoints.at(spM_link).meas,
-                spacepoints.at(spT_link).meas};
+        return {spacepoints.at(static_cast<unsigned int>(spB_link)).meas,
+                spacepoints.at(static_cast<unsigned int>(spM_link)).meas,
+                spacepoints.at(static_cast<unsigned int>(spT_link)).meas};
     }
 
     TRACCC_HOST_DEVICE
@@ -39,8 +40,9 @@ struct seed {
         const spacepoint_collection_types::const_view& spacepoints_view) const {
         const spacepoint_collection_types::const_device spacepoints(
             spacepoints_view);
-        return {spacepoints.at(spB_link), spacepoints.at(spM_link),
-                spacepoints.at(spT_link)};
+        return {spacepoints.at(static_cast<unsigned int>(spB_link)),
+                spacepoints.at(static_cast<unsigned int>(spM_link)),
+                spacepoints.at(static_cast<unsigned int>(spT_link))};
     }
 };
 

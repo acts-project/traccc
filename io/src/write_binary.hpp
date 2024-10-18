@@ -84,7 +84,8 @@ void write_binary_collection(std::string_view filename,
 
     // Write the items.
     out_file.write(reinterpret_cast<const char*>(collection.data()),
-                   size * sizeof(typename collection_t::value_type));
+                   static_cast<std::streamsize>(
+                       size * sizeof(typename collection_t::value_type)));
 }
 
 /// Implementation detail for @c traccc::io::details::write_binary_soa
@@ -114,7 +115,7 @@ void write_binary_soa_variable(const vecmem::device_vector<TYPE>& var,
 
     // Write the contents of the vector.
     out_file.write(reinterpret_cast<const char*>(var.data()),
-                   size * sizeof(TYPE));
+                   static_cast<std::streamsize>(size * sizeof(TYPE)));
 }
 
 /// Implementation detail for @c traccc::io::details::write_binary_soa

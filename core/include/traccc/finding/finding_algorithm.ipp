@@ -28,6 +28,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     const measurement_collection_types::host& measurements,
     const bound_track_parameters_collection_types::host& seeds) const {
 
+    assert(m_cfg.min_track_candidates_per_track > 1);
+
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
@@ -42,7 +44,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     auto end = std::unique_copy(measurements.begin(), measurements.end(),
                                 uniques.begin(), measurement_equal_comp());
-    const unsigned int n_modules = end - uniques.begin();
+    const unsigned int n_modules =
+        static_cast<unsigned int>(end - uniques.begin());
 
     // Get upper bounds of unique elements
     std::vector<unsigned int> upper_bounds;
@@ -50,7 +53,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     for (unsigned int i = 0; i < n_modules; i++) {
         auto up = std::upper_bound(measurements.begin(), measurements.end(),
                                    uniques[i], measurement_sort_comp());
-        upper_bounds.push_back(std::distance(measurements.begin(), up));
+        upper_bounds.push_back(
+            static_cast<unsigned int>(std::distance(measurements.begin(), up)));
     }
     const auto n_meas = measurements.size();
 
@@ -88,8 +92,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     std::vector<bound_track_parameters> out_params;
 
-    for (int step = 0;
-         step < static_cast<int>(m_cfg.max_track_candidates_per_track);
+    for (unsigned int step = 0; step < m_cfg.max_track_candidates_per_track;
          step++) {
 
         // Iterate over input parameters
@@ -104,8 +107,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         out_params.reserve(n_in_params);
 
         // Previous step ID
-        const int previous_step =
-            (step == 0) ? std::numeric_limits<int>::max() : step - 1;
+        const unsigned int previous_step =
+            (step == 0) ? std::numeric_limits<unsigned int>::max() : step - 1;
 
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0);
 
@@ -158,13 +161,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
             if (lo2 == barcodes.begin()) {
                 range.first = 0u;
-                range.second = upper_bounds[bcd_id];
+                range.second = upper_bounds[static_cast<std::size_t>(bcd_id)];
             } else if (lo2 == barcodes.end()) {
                 range.first = 0u;
                 range.second = 0u;
             } else {
-                range.first = upper_bounds[bcd_id - 1];
-                range.second = upper_bounds[bcd_id];
+                range.first =
+                    upper_bounds[static_cast<std::size_t>(bcd_id - 1)];
+                range.second = upper_bounds[static_cast<std::size_t>(bcd_id)];
             }
 
             unsigned int n_branches = 0;
@@ -223,7 +227,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
          * Propagate to the next surface
          *********************************/
 
-        const unsigned int n_links = links[step].size();
+        const std::size_t n_links = links[step].size();
         for (unsigned int link_id = 0; link_id < n_links; link_id++) {
 
             const unsigned int seed_idx = links[step][link_id].seed_idx;
@@ -276,7 +280,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             // Unless the track found a surface, it is considered a
             // tip
             else if (!s4.success &&
-                     step >= static_cast<int>(
+                     step >= static_cast<unsigned int>(
                                  m_cfg.min_track_candidates_per_track) -
                                  1) {
                 tips.push_back({step, link_id});
@@ -285,7 +289,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             // If no more CKF step is expected, current candidate is
             // kept as a tip
             if (s4.success &&
-                step == static_cast<int>(m_cfg.max_track_candidates_per_track) -
+                step == static_cast<unsigned int>(
+                            m_cfg.max_track_candidates_per_track) -
                             1) {
                 tips.push_back({step, link_id});
             }
@@ -319,7 +324,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 break;
             }
 
-            const unsigned int link_pos =
+            const unsigned long link_pos =
                 param_to_link[L.previous.first][L.previous.second];
             L = links[L.previous.first][link_pos];
         }

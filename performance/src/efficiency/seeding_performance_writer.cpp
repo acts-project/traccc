@@ -86,7 +86,8 @@ void seeding_performance_writer::write(
         // Consider it being matched if hit counts is larger than the half
         // of the number of measurements
         assert(measurements.size() > 0u);
-        if (particle_hit_counts.at(0).hit_counts / measurements.size() >
+        if (static_cast<double>(particle_hit_counts.at(0).hit_counts) /
+                static_cast<double>(measurements.size()) >
             m_cfg.matching_ratio) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;

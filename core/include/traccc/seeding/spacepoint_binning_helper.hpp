@@ -68,8 +68,9 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
         // seed making step. So each individual bin should cover
         // 1/config.phiBinDeflectionCoverage of the maximum expected azimutal
         // deflection
-        scalar deltaPhi = (outerAngle - innerAngle + deltaAngleWithMaxD0) /
-                          grid_config.phiBinDeflectionCoverage;
+        scalar deltaPhi =
+            (outerAngle - innerAngle + deltaAngleWithMaxD0) /
+            static_cast<scalar>(grid_config.phiBinDeflectionCoverage);
 
         // sanity check: if the delta phi is equal to or less than zero, we'll
         // be creating an infinite or a negative number of bins, which would be
@@ -82,7 +83,8 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
 
         // divide 2pi by angle delta to get number of phi-bins
         // size is always 2pi even for regions of interest
-        phiBins = std::llround(2 * M_PI / deltaPhi + 0.5);
+        phiBins = static_cast<detray::dindex>(
+            std::llround(2 * M_PI / deltaPhi + 0.5));
         // need to scale the number of phi bins accordingly to the number of
         // consecutive phi bins in the seed making step.
         // Each individual bin should be approximately a fraction (depending on
@@ -99,8 +101,9 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
 
     scalar zBinSize = grid_config.cotThetaMax * grid_config.deltaRMax;
     detray::dindex zBins = std::max(
-        1, static_cast<int>(
-               std::floor((grid_config.zMax - grid_config.zMin) / zBinSize)));
+        static_cast<detray::dindex>(1),
+        static_cast<detray::dindex>(
+            std::floor((grid_config.zMax - grid_config.zMin) / zBinSize)));
 
     detray::axis2::regular m_z_axis{zBins, grid_config.zMin, grid_config.zMax,
                                     mr};

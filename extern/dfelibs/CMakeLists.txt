@@ -33,3 +33,8 @@ set( dfelibs_ENABLE_INSTALL TRUE CACHE BOOL
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( dfelibs )
+
+get_target_property( _incDirs dfelibs INTERFACE_INCLUDE_DIRECTORIES )
+target_include_directories( dfelibs
+   SYSTEM INTERFACE ${_incDirs} )
+unset( _incDirs )
