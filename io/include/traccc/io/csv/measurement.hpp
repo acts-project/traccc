@@ -7,10 +7,6 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
-
 // DFE include(s).
 #include <dfe/dfe_namedtuple.hpp>
 
