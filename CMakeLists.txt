@@ -76,6 +76,31 @@ if(${TRACCC_BUILD_HIP} AND ${CMAKE_HIP_STANDARD} LESS 20)
    message(SEND_ERROR "CMAKE_HIP_STANDARD=${CMAKE_HIP_STANDARD}, but traccc requires C++>=20")
 endif()
 
+# Set up build profiling for the project.
+if( CTEST_USE_LAUNCHERS )
+
+   # Find the bash and time executables.
+   find_program( BASH_EXECUTABLE bash REQUIRED )
+   find_program( TIME_EXECUTABLE time REQUIRED )
+
+   # Configure the script that would intercept the build commands and save
+   # profile logs for them.
+   configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/traccc-ctest.sh.in"
+      "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/traccc-ctest.sh"
+      @ONLY )
+   set( CMAKE_CTEST_COMMAND
+      "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/traccc-ctest.sh" )
+
+   # Remove the performance log during a cleaning step.
+   set_property( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" APPEND PROPERTY
+      ADDITIONAL_MAKE_CLEAN_FILES
+      "${CMAKE_CURRENT_BINARY_DIR}/traccc_build_performance.log" )
+
+   # Let the user know what happened.
+   message( STATUS
+      "Saving traccc build performance logs using: ${CMAKE_CTEST_COMMAND}" )
+endif()
+
 # Set up VecMem.
 option( TRACCC_SETUP_VECMEM
    "Set up the VecMem target(s) explicitly" TRUE )
