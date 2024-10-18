@@ -189,9 +189,11 @@ void finding_performance_writer::write_common(
         assert(found_measurements.size() > 0u);
         assert(truth_measurements.size() > 0u);
         const bool reco_matched =
-            n_major_hits / found_measurements.size() > m_cfg.matching_ratio;
+            static_cast<double>(n_major_hits) / found_measurements.size() >
+            m_cfg.matching_ratio;
         const bool truth_matched =
-            n_major_hits / truth_measurements.size() > m_cfg.matching_ratio;
+            static_cast<double>(n_major_hits) / truth_measurements.size() >
+            m_cfg.matching_ratio;
 
         if ((!m_cfg.double_matching && reco_matched) ||
             (m_cfg.double_matching && reco_matched && truth_matched)) {
