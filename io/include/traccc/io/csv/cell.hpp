@@ -32,6 +32,4 @@ struct cell {
                    timestamp, value);
 };
 
-bool operator<(const cell& lhs, const cell& rhs);
-
 }  // namespace traccc::io::csv
