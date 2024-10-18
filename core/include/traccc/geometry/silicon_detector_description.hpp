@@ -222,6 +222,6 @@ using silicon_detector_description = vecmem::edm::container<
     vecmem::edm::type::vector<geometry_id>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<char> >;
+    vecmem::edm::type::vector<unsigned char> >;
 
 }  // namespace traccc

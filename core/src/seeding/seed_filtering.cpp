@@ -91,7 +91,7 @@ void seed_filtering::operator()(
         seeds_per_spM = std::move(new_seeds);
     }
 
-    unsigned int maxSeeds = seeds_per_spM.size();
+    decltype(seeds_per_spM)::size_type maxSeeds = seeds_per_spM.size();
 
     if (maxSeeds > m_filter_config.maxSeedsPerSpM) {
         maxSeeds = m_filter_config.maxSeedsPerSpM + 1;
@@ -103,7 +103,7 @@ void seed_filtering::operator()(
     // ordering by weight by filterSeeds_2SpFixed means these are the lowest
     // weight seeds
 
-    for (; it < itBegin + maxSeeds; ++it) {
+    for (; it < itBegin + static_cast<long>(maxSeeds); ++it) {
         seeds.push_back(*it);
     }
 }

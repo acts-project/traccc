@@ -85,7 +85,7 @@ void KalmanFittingTests::ndf_tests(
     const fitting_result<traccc::default_algebra>& fit_res,
     const track_state_collection_types::host& track_states_per_track) {
 
-    scalar dim_sum = 0;
+    unsigned int dim_sum = 0;
     std::size_t n_effective_states = 0;
 
     for (const auto& state : track_states_per_track) {

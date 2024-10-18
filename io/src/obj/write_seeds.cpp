@@ -33,9 +33,10 @@ void write_seeds(std::string_view filename,
     std::map<std::size_t, std::size_t> spacepoint_indices;
 
     // Helper lambda to write a spacepoint to the output file.
-    auto write_spacepoint = [&file, &spacepoints, &spacepoint_indices](
-                                std::size_t memory_index,
-                                std::size_t file_index) -> bool {
+    auto write_spacepoint =
+        [&file, &spacepoints, &spacepoint_indices](
+            spacepoint_collection_types::const_device::size_type memory_index,
+            std::size_t file_index) -> bool {
         // Check whether this spacepoint has already been written.
         if (spacepoint_indices.find(memory_index) != spacepoint_indices.end()) {
             return false;
@@ -54,13 +55,25 @@ void write_seeds(std::string_view filename,
     std::size_t file_index = 1;
     file << "# Spacepoints from which the seeds are built\n";
     for (const seed& s : seeds) {
-        if (write_spacepoint(s.spB_link, file_index)) {
+        if (write_spacepoint(
+                static_cast<
+                    spacepoint_collection_types::const_device::size_type>(
+                    s.spB_link),
+                file_index)) {
             file_index++;
         }
-        if (write_spacepoint(s.spM_link, file_index)) {
+        if (write_spacepoint(
+                static_cast<
+                    spacepoint_collection_types::const_device::size_type>(
+                    s.spM_link),
+                file_index)) {
             file_index++;
         }
-        if (write_spacepoint(s.spT_link, file_index)) {
+        if (write_spacepoint(
+                static_cast<
+                    spacepoint_collection_types::const_device::size_type>(
+                    s.spT_link),
+                file_index)) {
             file_index++;
         }
     }

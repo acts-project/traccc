@@ -150,9 +150,9 @@ void finding_performance_writer::write_common(
     std::map<particle_id, std::size_t> fake_counter;
 
     // Iterate over the tracks.
-    const unsigned int n_tracks = tracks.size();
+    const std::size_t n_tracks = tracks.size();
 
-    for (unsigned int i = 0; i < n_tracks; i++) {
+    for (std::size_t i = 0; i < n_tracks; i++) {
 
         const std::vector<measurement>& measurements = tracks[i];
 
@@ -180,7 +180,8 @@ void finding_performance_writer::write_common(
         // Consider it being matched if hit counts is larger than the half
         // of the number of measurements
         assert(measurements.size() > 0u);
-        if (particle_hit_counts.at(0).hit_counts / measurements.size() >
+        if (static_cast<double>(particle_hit_counts.at(0).hit_counts) /
+                static_cast<double>(measurements.size()) >
             m_cfg.matching_ratio) {
             const auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
