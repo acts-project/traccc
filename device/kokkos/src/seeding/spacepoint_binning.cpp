@@ -35,16 +35,16 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
-    vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
-                                                                   m_mr.main);
+    vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(
+        static_cast<unsigned int>(grid_bins), m_mr.main);
     m_copy->setup(grid_capacities_buff);
     m_copy->memset(grid_capacities_buff, 0);
     vecmem::data::vector_view<unsigned int> grid_capacities_view =
         grid_capacities_buff;
 
     // Calculate the number of threads and thread blocks to run the kernels for.
-    const unsigned int num_threads = 32 * 8;
-    const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
+    const int num_threads = 32 * 8;
+    const int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
     // Hack to avoid warnings thrown by C++20
     seedfinder_config config = m_config;
@@ -57,8 +57,9 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
                 Kokkos::TeamThreadRange(team_member, num_threads),
                 [&](const int& thr) {
                     device::count_grid_capacities(
-                        team_member.league_rank() * team_member.team_size() +
-                            thr,
+                        static_cast<std::size_t>(team_member.league_rank() *
+                                                     team_member.team_size() +
+                                                 thr),
                         config, axes.first, axes.second, spacepoints_view,
                         grid_capacities_view);
                 });
@@ -86,8 +87,9 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
                 Kokkos::TeamThreadRange(team_member, num_threads),
                 [&](const int& thr) {
                     device::populate_grid(
-                        team_member.league_rank() * team_member.team_size() +
-                            thr,
+                        static_cast<unsigned int>(team_member.league_rank() *
+                                                      team_member.team_size() +
+                                                  thr),
                         config, spacepoints_view, grid_view);
                 });
         });

@@ -34,7 +34,8 @@ TRACCC_HOST_DEVICE inline void fit(
         return;
     }
 
-    const unsigned int param_id = param_ids.at(globalIndex);
+    const unsigned int param_id =
+        param_ids.at(static_cast<unsigned int>(globalIndex));
 
     // Track candidates per track
     const auto& track_candidates_per_track =

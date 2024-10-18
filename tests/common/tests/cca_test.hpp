@@ -74,8 +74,8 @@ class ConnectedComponentAnalysisTests
         uint64_t num_cells = 0;
         traccc::scalar channel0 = 0;
         traccc::scalar channel1 = 0;
-        traccc::scalar variance0 = 0.;
-        traccc::scalar variance1 = 0.;
+        traccc::scalar variance0 = 0.f;
+        traccc::scalar variance1 = 0.f;
 
         DFE_NAMEDTUPLE(cca_truth_hit, geometry_id, measurement_id, num_cells,
                        channel0, channel1, variance0, variance1);

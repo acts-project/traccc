@@ -72,8 +72,8 @@ TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
          * together.
          */
         for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-            const details::index_t cid =
-                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
+            const auto cid = static_cast<details::index_t>(
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
 
             TRACCC_ASSUME(adjc[tst] <= 8);
             for (unsigned char k = 0; k < adjc[tst]; ++k) {
@@ -93,8 +93,8 @@ TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
         barrier.blockBarrier();
 
         for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-            const details::index_t cid =
-                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
+            const auto cid = static_cast<details::index_t>(
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
             /*
              * The second stage is shortcutting, which is an optimisation that
              * allows us to look at any shortcuts in the cluster IDs that we
@@ -111,8 +111,8 @@ TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
         barrier.blockBarrier();
 
         for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-            const details::index_t cid =
-                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
+            const auto cid = static_cast<details::index_t>(
+                tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
             /*
              * Update the array for the next generation, keeping track of any
              * changes we make.
@@ -145,29 +145,32 @@ TRACCC_DEVICE inline void ccl_core(
     const silicon_detector_description::const_device& det_descr,
     measurement_collection_types::device measurements_device,
     barrier_t& barrier) {
-    const details::index_t size = partition_end - partition_start;
+    const auto size =
+        static_cast<details::index_t>(partition_end - partition_start);
 
     assert(size <= f.size());
     assert(size <= gf.size());
 
-    details::index_t thread_cell_count =
+    auto thread_cell_count = static_cast<details::index_t>(
         (size - thread_id.getLocalThreadIdX() + thread_id.getBlockDimX() - 1) /
-        thread_id.getBlockDimX();
+        thread_id.getBlockDimX());
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
         /*
          * Look for adjacent cells to the current one.
          */
-        const details::index_t cid =
-            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
+        const auto cid = static_cast<details::index_t>(
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
         adjc[tst] = 0;
-        reduce_problem_cell(cells_device, cid, partition_start, partition_end,
-                            adjc[tst], &adjv[8 * tst]);
+        reduce_problem_cell(cells_device, cid,
+                            static_cast<unsigned int>(partition_start),
+                            static_cast<unsigned int>(partition_end), adjc[tst],
+                            &adjv[8 * tst]);
     }
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-        const details::index_t cid =
-            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
+        const auto cid = static_cast<details::index_t>(
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
         /*
          * At the start, the values of f and gf should be equal to the
          * ID of the cell.
@@ -191,17 +194,19 @@ TRACCC_DEVICE inline void ccl_core(
     barrier.blockBarrier();
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-        const details::index_t cid =
-            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
+        const auto cid = static_cast<details::index_t>(
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
         if (f.at(cid) == cid) {
             // Add a new measurement to the output buffer. Remembering its
             // position inside of the container.
             const measurement_collection_types::device::size_type meas_pos =
                 measurements_device.push_back({});
             // Set up the measurement under the appropriate index.
-            aggregate_cluster(
-                cells_device, det_descr, f, partition_start, partition_end, cid,
-                measurements_device.at(meas_pos), cell_links, meas_pos);
+            aggregate_cluster(cells_device, det_descr, f,
+                              static_cast<unsigned int>(partition_start),
+                              static_cast<unsigned int>(partition_end), cid,
+                              measurements_device.at(meas_pos), cell_links,
+                              meas_pos);
         }
     }
 }
@@ -237,7 +242,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     mutex<uint32_t> mutex(backup_mutex);
     unique_lock lock(mutex, std::defer_lock);
 
-    const std::size_t num_cells = cells_device.size();
+    const unsigned int num_cells = cells_device.size();
 
     /*
      * First, we determine the exact range of cells that is to be examined
@@ -248,10 +253,11 @@ TRACCC_DEVICE inline void ccl_kernel(
      * amounts.
      */
     if (thread_id.getLocalThreadIdX() == 0) {
-        std::size_t start =
-            thread_id.getBlockIdX() * cfg.target_partition_size();
+        unsigned int start =
+            static_cast<unsigned int>(thread_id.getBlockIdX()) *
+            cfg.target_partition_size();
         assert(start < num_cells);
-        std::size_t end =
+        unsigned int end =
             std::min(num_cells, start + cfg.target_partition_size());
         outi = 0;
 
@@ -304,7 +310,8 @@ TRACCC_DEVICE inline void ccl_kernel(
     // into a return. As such, we cannot use returns in this kernel.
 
     // Get partition for this thread group
-    const details::index_t size = partition_end - partition_start;
+    const auto size =
+        static_cast<details::index_t>(partition_end - partition_start);
 
     // If the size is zero, we can just retire the whole block.
     if (size == 0) {

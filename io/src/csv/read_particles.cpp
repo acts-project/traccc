@@ -103,8 +103,10 @@ void read_particles(particle_container_types::host& particles,
             std::distance(temp_particles.begin(), particle_it);
 
         // Add the measurement to the particle's collection.
-        particle_measurements[particle_index].push_back(
-            temp_measurements.at(hit_to_measurement_it->second));
+        particle_measurements[static_cast<decltype(
+                                  particle_measurements)::size_type>(
+                                  particle_index)]
+            .push_back(temp_measurements.at(hit_to_measurement_it->second));
 
         // Increment the hit ID.
         ++hit_id;

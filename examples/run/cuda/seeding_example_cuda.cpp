@@ -243,13 +243,15 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
             // Copy the spacepoint and module data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
-                spacepoints_per_event.size(), mr.main);
+                static_cast<unsigned int>(spacepoints_per_event.size()),
+                mr.main);
             async_copy(vecmem::get_data(spacepoints_per_event),
                        spacepoints_cuda_buffer);
 
             traccc::measurement_collection_types::buffer
-                measurements_cuda_buffer(measurements_per_event.size(),
-                                         mr.main);
+                measurements_cuda_buffer(
+                    static_cast<unsigned int>(measurements_per_event.size()),
+                    mr.main);
             async_copy(vecmem::get_data(measurements_per_event),
                        measurements_cuda_buffer);
 
@@ -384,7 +386,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 }
             }
             std::cout << "Track candidate matching Rate: "
-                      << float(n_matches) / track_candidates.size()
+                      << float(n_matches) /
+                             static_cast<float>(track_candidates.size())
                       << std::endl;
         }
 

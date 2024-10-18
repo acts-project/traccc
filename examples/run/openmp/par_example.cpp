@@ -79,7 +79,7 @@ int par_run(const traccc::opts::input_data& input_opts,
 
 #pragma omp parallel for reduction(+ : n_cells, n_measurements, n_spacepoints)
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the cells from the relevant event file

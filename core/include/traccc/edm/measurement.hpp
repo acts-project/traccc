@@ -33,9 +33,9 @@ namespace traccc {
 struct measurement {
 
     /// Local 2D coordinates for a measurement on a detector module
-    point2 local{0., 0.};
+    point2 local{0.f, 0.f};
     /// Variance on the 2D coordinates of the measurement
-    variance2 variance{0., 0.};
+    variance2 variance{0.f, 0.f};
 
     /// Geometry ID
     detray::geometry::barcode surface_link;

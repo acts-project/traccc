@@ -71,7 +71,7 @@ struct track_params_estimation
     stream& m_stream;
 
     /// Warp size of the GPU being used
-    int m_warp_size;
+    unsigned int m_warp_size;
 };
 
 }  // namespace traccc::cuda

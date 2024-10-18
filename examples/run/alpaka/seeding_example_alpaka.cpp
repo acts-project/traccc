@@ -191,8 +191,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             // TODO: Check this (and all other copies) are intelligent.
             // Copy the spacepoint data to the device.
             traccc::spacepoint_collection_types::buffer
-                spacepoints_alpaka_buffer(spacepoints_per_event.size(),
-                                          mr.main);
+                spacepoints_alpaka_buffer(
+                    static_cast<unsigned int>(spacepoints_per_event.size()),
+                    mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_alpaka_buffer);
 

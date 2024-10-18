@@ -32,8 +32,8 @@ vecmem::host_memory_resource host_mr;
 TEST(track_params_estimation, helix_negative_charge) {
 
     // Set B field
-    const vector3 B{0. * unit<scalar>::T, 0. * unit<scalar>::T,
-                    2. * unit<scalar>::T};
+    const vector3 B{0.f * unit<scalar>::T, 0.f * unit<scalar>::T,
+                    2.f * unit<scalar>::T};
 
     // Track property
     const scalar q{-1.f * unit<scalar>::e};
@@ -69,8 +69,8 @@ TEST(track_params_estimation, helix_negative_charge) {
 TEST(track_params_estimation, helix_positive_charge) {
 
     // Set B field
-    const vector3 B{0. * unit<scalar>::T, 0. * unit<scalar>::T,
-                    2. * unit<scalar>::T};
+    const vector3 B{0.f * unit<scalar>::T, 0.f * unit<scalar>::T,
+                    2.f * unit<scalar>::T};
 
     // Track property
     const scalar q{1.f * unit<scalar>::e};

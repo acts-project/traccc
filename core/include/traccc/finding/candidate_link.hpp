@@ -20,7 +20,7 @@ namespace traccc {
 struct candidate_link {
 
     // Type of index
-    using link_index_type = thrust::pair<int, unsigned int>;
+    using link_index_type = thrust::pair<unsigned int, unsigned int>;
 
     // Index of link from the previous step
     link_index_type previous;

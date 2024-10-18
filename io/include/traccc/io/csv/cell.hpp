@@ -22,8 +22,8 @@ struct cell {
     uint64_t measurement_id = 0;
     uint32_t channel0 = 0;
     uint32_t channel1 = 0;
-    float timestamp = 0.;
-    float value = 0.;
+    float timestamp = 0.f;
+    float value = 0.f;
 
     auto operator<=>(const cell& other) const = default;
 

@@ -117,7 +117,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
@@ -157,7 +157,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             // Copy the spacepoint and module data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_sycl_buffer(
-                spacepoints_per_event.size(), mr.main);
+                static_cast<unsigned int>(spacepoints_per_event.size()),
+                mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_sycl_buffer);
 

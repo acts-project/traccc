@@ -92,7 +92,7 @@ void KalmanFittingTests::ndf_tests(
 
         if (!state.is_hole) {
 
-            dim_sum += state.get_measurement().meas_dim;
+            dim_sum += static_cast<scalar>(state.get_measurement().meas_dim);
             n_effective_states++;
         }
     }

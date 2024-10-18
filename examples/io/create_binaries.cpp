@@ -37,7 +37,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
                                            : traccc::data_format::csv));
 
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the cells from the relevant event file

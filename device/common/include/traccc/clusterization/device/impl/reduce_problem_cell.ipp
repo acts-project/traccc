@@ -52,7 +52,7 @@ inline void reduce_problem_cell(
          */
         if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
             assert(adjc < 8);
-            adjv[adjc++] = j - start;
+            adjv[adjc++] = static_cast<unsigned short>(j - start);
         }
     }
 
@@ -71,7 +71,7 @@ inline void reduce_problem_cell(
 
         if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
             assert(adjc < 8);
-            adjv[adjc++] = j - start;
+            adjv[adjc++] = static_cast<unsigned short>(j - start);
         }
     }
 }

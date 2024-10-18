@@ -27,8 +27,10 @@ TRACCC_HOST_DEVICE inline void fill_sort_keys(
         return;
     }
 
-    keys_device.at(globalIndex) = device::get_sort_key(params.at(globalIndex));
-    ids_device.at(globalIndex) = globalIndex;
+    keys_device.at(static_cast<unsigned int>(globalIndex)) =
+        device::get_sort_key(params.at(static_cast<unsigned int>(globalIndex)));
+    ids_device.at(static_cast<unsigned int>(globalIndex)) =
+        static_cast<unsigned int>(globalIndex);
 }
 
 }  // namespace traccc::device

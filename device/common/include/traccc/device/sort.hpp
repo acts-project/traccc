@@ -64,7 +64,8 @@ TRACCC_DEVICE void blockOddEvenSort(T& thread_id, B& barrier, K* keys,
     do {
         sorted = true;
 
-        for (uint32_t j = 2 * thread_id.getLocalThreadIdX() + 1;
+        for (uint32_t j =
+                 2 * static_cast<uint32_t>(thread_id.getLocalThreadIdX()) + 1;
              j < num_keys - 1; j += 2 * thread_id.getBlockDimX()) {
             if (comparison(keys[j + 1], keys[j])) {
                 swap(keys[j + 1], keys[j]);
@@ -74,8 +75,9 @@ TRACCC_DEVICE void blockOddEvenSort(T& thread_id, B& barrier, K* keys,
 
         barrier.blockBarrier();
 
-        for (uint32_t j = 2 * thread_id.getLocalThreadIdX(); j < num_keys - 1;
-             j += 2 * thread_id.getBlockDimX()) {
+        for (uint32_t j =
+                 2 * static_cast<uint32_t>(thread_id.getLocalThreadIdX());
+             j < num_keys - 1; j += 2 * thread_id.getBlockDimX()) {
             if (comparison(keys[j + 1], keys[j])) {
                 swap(keys[j + 1], keys[j]);
                 sorted = false;

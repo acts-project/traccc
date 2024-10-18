@@ -47,10 +47,9 @@ struct CCLKernel {
         device::details::index_t* const shared_v =
             ::alpaka::getDynSharedMem<device::details::index_t>(acc);
         vecmem::data::vector_view<device::details::index_t> f_view{
-            static_cast<unsigned int>(cfg.max_partition_size()), shared_v};
+            cfg.max_partition_size(), shared_v};
         vecmem::data::vector_view<device::details::index_t> gf_view{
-            static_cast<unsigned int>(cfg.max_partition_size()),
-            shared_v + cfg.max_partition_size()};
+            cfg.max_partition_size(), shared_v + cfg.max_partition_size()};
 
         vecmem::device_atomic_ref<uint32_t> backup_mutex(*backup_mutex_ptr);
 
@@ -121,9 +120,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy.get().setup(cell_links)->ignore();
 
     // Launch ccl kernel. Each thread will handle a single cell.
-    std::size_t num_blocks =
-        (num_cells + (m_config.target_partition_size()) - 1) /
-        m_config.target_partition_size();
+    Idx num_blocks = (num_cells + (m_config.target_partition_size()) - 1) /
+                     m_config.target_partition_size();
     static_assert(accSupportsMultiThreadBlocks<Acc>(),
                   "Clustering algorithm must be compiled for an accelerator "
                   "with support for multi-thread blocks.");

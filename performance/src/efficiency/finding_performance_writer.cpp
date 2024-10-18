@@ -150,9 +150,9 @@ void finding_performance_writer::write_common(
     std::map<particle_id, std::size_t> fake_counter;
 
     // Iterate over the tracks.
-    const unsigned int n_tracks = tracks.size();
+    const std::size_t n_tracks = tracks.size();
 
-    for (unsigned int i = 0; i < n_tracks; i++) {
+    for (std::size_t i = 0; i < n_tracks; i++) {
 
         const std::vector<measurement>& found_measurements = tracks[i];
 
@@ -189,10 +189,12 @@ void finding_performance_writer::write_common(
         assert(found_measurements.size() > 0u);
         assert(truth_measurements.size() > 0u);
         const bool reco_matched =
-            static_cast<double>(n_major_hits) / found_measurements.size() >
+            static_cast<double>(n_major_hits) /
+                static_cast<double>(found_measurements.size()) >
             m_cfg.matching_ratio;
         const bool truth_matched =
-            static_cast<double>(n_major_hits) / truth_measurements.size() >
+            static_cast<double>(n_major_hits) /
+                static_cast<double>(truth_measurements.size()) >
             m_cfg.matching_ratio;
 
         if ((!m_cfg.double_matching && reco_matched) ||

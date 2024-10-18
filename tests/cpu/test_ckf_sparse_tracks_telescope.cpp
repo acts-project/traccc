@@ -191,8 +191,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
      * Success rate test
      ********************/
 
-    float success_rate =
-        static_cast<float>(n_success) / (n_truth_tracks * n_events);
+    float success_rate = static_cast<float>(n_success) /
+                         static_cast<float>(n_truth_tracks * n_events);
 
     ASSERT_FLOAT_EQ(success_rate, 1.00f);
 }

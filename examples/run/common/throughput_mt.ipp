@@ -33,7 +33,19 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // TBB include(s).
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <tbb/global_control.h>
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <tbb/global_control.h>
+#pragma GCC diagnostic pop
+#else
+#include <tbb/global_control.h>
+#endif
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
@@ -157,7 +169,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     }
 
     // Seed the random number generator.
-    std::srand(std::time(0));
+    std::srand(static_cast<unsigned int>(std::time(0)));
 
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
@@ -173,15 +185,16 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(
-                        algs.at(tbb::this_task_arena::current_thread_index())(
-                                input[event])
-                            .size());
+                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
+                        tbb::this_task_arena::current_thread_index()))(
+                                                       input[event])
+                                                   .size());
                 });
             });
         }
@@ -201,15 +214,16 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(
-                        algs.at(tbb::this_task_arena::current_thread_index())(
-                                input[event])
-                            .size());
+                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
+                        tbb::this_task_arena::current_thread_index()))(
+                                                       input[event])
+                                                   .size());
                 });
             });
         }
