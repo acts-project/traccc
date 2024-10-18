@@ -128,11 +128,12 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map2(event, input_opts.directory,
-                                    input_opts.directory, input_opts.directory);
+        traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                    input_opts.use_acts_geom_source, &detector,
+                                    input_opts.format, false);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map2.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
@@ -144,9 +145,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         // Read measurements
         traccc::measurement_collection_types::host measurements_per_event{
             &host_mr};
-        traccc::io::read_measurements(measurements_per_event, event,
-                                      input_opts.directory, nullptr,
-                                      input_opts.format);
+        traccc::io::read_measurements(
+            measurements_per_event, event, input_opts.directory,
+            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            input_opts.format);
 
         // Run finding
         auto track_candidates =
@@ -165,7 +167,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         if (performance_opts.run) {
             find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_map2);
+                                          evt_data);
 
             for (unsigned int i = 0; i < n_fitted_tracks; i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
@@ -173,7 +175,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                 const auto& fit_res = track_states[i].header;
 
                 fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_map2);
+                                             detector, evt_data);
             }
         }
     }

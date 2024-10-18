@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-#include "traccc/io/read_detector_description.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/kokkos/seeding/spacepoint_binning.hpp"
 #include "traccc/options/accelerator.hpp"
@@ -47,18 +47,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     vecmem::host_memory_resource host_mr;
     traccc::memory_resource mr{host_mr, &host_mr};
 
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host host_det{host_mr};
+    assert(detector_opts.use_detray_detector == true);
+    traccc::io::read_detector(host_det, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
+
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
-
-    // Construct the detector description object.
-    traccc::silicon_detector_description::host host_det_descr{host_mr};
-    traccc::io::read_detector_description(
-        host_det_descr, detector_opts.detector_file,
-        detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -96,7 +95,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
                     spacepoints_per_event, event, input_opts.directory,
-                    &host_det_descr, input_opts.format);
+                    (input_opts.use_acts_geom_source ? &host_det : nullptr),
+                    input_opts.format);
             }  // stop measuring hit reading timer
 
             {  // Spacepoin binning for kokkos

@@ -47,8 +47,9 @@ struct smearing_writer : detray::actor {
     struct state {
         state(std::size_t event_id, config&& writer_cfg,
               const std::string directory)
-            : m_particle_writer(directory + traccc::io::get_event_filename(
-                                                event_id, "-particles.csv")),
+            : m_particle_writer(directory +
+                                traccc::io::get_event_filename(
+                                    event_id, "-particles_initial.csv")),
               m_hit_writer(directory + traccc::io::get_event_filename(
                                            event_id, "-hits.csv")),
               m_meas_writer(directory + traccc::io::get_event_filename(

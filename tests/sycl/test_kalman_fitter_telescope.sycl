@@ -169,11 +169,11 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
         // Event map
-        traccc::event_map2 evt_map(i_evt, path, path, path);
+        traccc::event_data evt_data(path, i_evt, host_mr, host_det);
 
         // Truth Track Candidates
         traccc::track_candidate_container_types::host track_candidates =
-            evt_map.generate_truth_candidates(sg, shared_mr);
+            evt_data.generate_truth_candidates(sg, shared_mr);
 
         // Instantiate cuda containers/collections
         traccc::track_state_container_types::buffer track_states_sycl_buffer{

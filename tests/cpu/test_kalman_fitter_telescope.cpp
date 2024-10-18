@@ -120,12 +120,12 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
-        // Event map
-        traccc::event_map2 evt_map(i_evt, path, path, path);
 
+        // Event map
+        traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
         traccc::track_candidate_container_types::host track_candidates =
-            evt_map.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         // n_trakcs = 100
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
@@ -149,7 +149,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
             ndf_tests(fit_res, track_states_per_track);
 
             fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_map);
+                                         host_det, evt_data);
         }
     }
 

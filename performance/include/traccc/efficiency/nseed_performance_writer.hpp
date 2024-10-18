@@ -17,7 +17,7 @@
 #include <traccc/edm/spacepoint.hpp>
 #include <traccc/efficiency/track_filter.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
-#include <traccc/io/event_map.hpp>
+#include <traccc/utils/event_data.hpp>
 
 namespace traccc {
 class nseed_performance_writer {
@@ -36,7 +36,7 @@ class nseed_performance_writer {
 
     template <typename SeedIt, typename SpIt>
     void register_event(std::size_t ev, const SeedIt sb, const SeedIt se,
-                        const SpIt pb, const event_map& em) {
+                        const SpIt pb, const event_data& em) {
         std::size_t seed_id = 0;
 
         std::multiset<std::size_t> matched_tracks;
@@ -50,7 +50,7 @@ class nseed_performance_writer {
                  &em](const spacepoint_collection_types::host::size_type& l) {
                     traccc::measurement meas = (pb + l)->meas;
 
-                    const auto& ptcs = em.meas_ptc_map.find(meas)->second;
+                    const auto& ptcs = em.m_meas_to_ptc_map.find(meas)->second;
 
                     std::vector<uint64_t> ptc_ids;
 
@@ -74,7 +74,7 @@ class nseed_performance_writer {
             write_seed_row(ev, seed_id++, s->size(), pid);
         }
 
-        for (const auto& [_, ptc] : em.ptc_map) {
+        for (const auto& [_, ptc] : em.m_particle_map) {
             bool pass = _filter->operator()(ptc);
 
             if (pass) {

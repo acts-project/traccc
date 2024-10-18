@@ -39,6 +39,9 @@
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_seeding.hpp"
 
+// Detray include(s).
+#include "detray/core/detector_metadata.hpp"
+
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
@@ -323,12 +326,14 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map evt_map(
-                event, input_opts.directory, input_opts.directory,
-                input_opts.directory, host_det_descr, host_mr);
-            sd_performance_writer.write(
-                vecmem::get_data(seeds_sycl),
-                vecmem::get_data(spacepoints_per_event_sycl), evt_map);
+            traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                        input_opts.use_acts_geom_source,
+                                        &host_detector, input_opts.format,
+                                        true);
+
+            sd_performance_writer.write(vecmem::get_data(seeds_sycl),
+                                        vecmem::get_data(spacepoints_per_event),
+                                        evt_data);
         }
     }
 

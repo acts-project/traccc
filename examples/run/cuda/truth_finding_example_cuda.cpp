@@ -175,11 +175,12 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map2(event, input_opts.directory,
-                                    input_opts.directory, input_opts.directory);
+        traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                    input_opts.use_acts_geom_source, &detector,
+                                    input_opts.format, false);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map2.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
@@ -197,9 +198,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         // Read measurements
         traccc::measurement_collection_types::host measurements_per_event{
             mr.host};
-        traccc::io::read_measurements(measurements_per_event, event,
-                                      input_opts.directory, nullptr,
-                                      input_opts.format);
+        traccc::io::read_measurements(
+            measurements_per_event, event, input_opts.directory,
+            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            input_opts.format);
 
         traccc::measurement_collection_types::buffer measurements_cuda_buffer(
             measurements_per_event.size(), mr.main);
@@ -301,7 +303,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         if (performance_opts.run) {
             find_performance_writer.write(
-                traccc::get_data(track_candidates_cuda), evt_map2);
+                traccc::get_data(track_candidates_cuda), evt_data);
 
             for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
                 const auto& trk_states_per_track =
@@ -310,7 +312,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                 const auto& fit_res = track_states_cuda[i].header;
 
                 fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_map2);
+                                             detector, evt_data);
             }
         }
     }

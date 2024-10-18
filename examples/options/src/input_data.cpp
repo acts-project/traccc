@@ -24,6 +24,10 @@ static const char* data_format_option = "input-data-format";
 
 input_data::input_data() : interface("Input Data Options") {
 
+    m_desc.add_options()(
+        "use-acts-geom-source",
+        po::bool_switch(&use_acts_geom_source)->default_value(false),
+        "Use acts geometry source");
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
                          "Format of the input file(s)");
@@ -57,7 +61,9 @@ void input_data::read(const po::variables_map& vm) {
 
 std::ostream& input_data::print_impl(std::ostream& out) const {
 
-    out << "  Input data format             : " << format << "\n"
+    out << "  Use ACTS geometry source      : "
+        << (use_acts_geom_source ? "yes" : "no") << "\n"
+        << "  Input data format             : " << format << "\n"
         << "  Input directory               : " << directory << "\n"
         << "  Number of input events        : " << events << "\n"
         << "  Number of input events to skip: " << skip;

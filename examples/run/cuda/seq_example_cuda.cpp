@@ -446,12 +446,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_map evt_map(
-                event, input_opts.directory, input_opts.directory,
-                input_opts.directory, host_det_descr, host_mr);
-            sd_performance_writer.write(
-                vecmem::get_data(seeds_cuda),
-                vecmem::get_data(spacepoints_per_event_cuda), evt_map);
+            // TODO: Do evt_data.fill_cca_result(...) with cuda clusters and
+            // measurements
         }
     }
 

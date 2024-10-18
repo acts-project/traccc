@@ -8,7 +8,6 @@
 #pragma once
 
 #include "traccc/edm/particle.hpp"
-#include "traccc/io/mapper.hpp"
 
 namespace traccc {
 
