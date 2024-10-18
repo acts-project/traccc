@@ -38,6 +38,11 @@ telescope_detector::telescope_detector()
     m_desc.add_options()("half-length-mm",
                          po::value(&half_length)->default_value(half_length),
                          "Half length of plane [mm]");
+    m_desc.add_options()("align-vector",
+                         po::value(&align_vector)
+                             ->value_name("X:Y:Z")
+                             ->default_value(align_vector),
+                         "Vector for plane placement");
 }
 
 void telescope_detector::read(const po::variables_map&) {
@@ -59,7 +64,8 @@ std::ostream& telescope_detector::print_impl(std::ostream& out) const {
         << "  Smearing        : " << smearing / detray::unit<float>::um
         << " [um]\n"
         << "  Half length     : " << half_length / detray::unit<float>::mm
-        << " [mm]";
+        << " [mm]"
+        << "  Align axis      : " << align_vector << " \n";
     return out;
 }
 
