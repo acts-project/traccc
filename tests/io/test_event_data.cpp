@@ -70,7 +70,7 @@ TEST(event_data, mock_data) {
      * thrid particle: one hit, three cells
      *
      * [ ] [1] [ ] [ ] [ ] [ ] [ ] [ ]
-     * [1] [1] [ ] [ ] [ ] [ ] [ ] [ ]
+     * [1][1,2][2] [ ] [ ] [ ] [ ] [ ]
      * [ ] [2] [2] [ ] [ ] [ ] [ ] [ ]
      * [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ]
      * [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ]
@@ -125,7 +125,7 @@ TEST(event_data, mock_data) {
                 EXPECT_EQ(count, 3);
             } else if (ptc.particle_id == 4503599660924928) {
                 // number of cells from 2nd particle
-                EXPECT_EQ(count, 2);
+                EXPECT_EQ(count, 4);
             } else if (ptc.particle_id == 4503599744811008) {
                 // number of cells from 3rd particle
                 EXPECT_EQ(count, 3);
@@ -180,7 +180,7 @@ TEST(event_data, mock_data) {
                     has_first_particle = true;
                 } else if (ptc.particle_id == 4503599660924928) {
                     // number of cells from 2nd particle
-                    EXPECT_EQ(count, 2);
+                    EXPECT_EQ(count, 4);
                     has_second_particle = true;
                 }
             }
