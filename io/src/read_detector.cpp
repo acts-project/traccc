@@ -20,7 +20,8 @@
 namespace {
 
 /// Common implementation for constructing a detector from a set of input files
-template <typename detector_t>
+/// @tparam CAP Grid bin capacity 0: dynamic bin capacity
+template <typename detector_t, unsigned int CAP = 0u>
 void read_detector(detector_t& detector, vecmem::memory_resource& mr,
                    const std::string_view& geometry_file,
                    const std::string_view& material_file,
@@ -37,7 +38,7 @@ void read_detector(detector_t& detector, vecmem::memory_resource& mr,
     }
 
     // Read the detector.
-    auto det = detray::io::read_detector<detector_t>(mr, cfg);
+    auto det = detray::io::read_detector<detector_t, CAP>(mr, cfg);
     detector = std::move(det.first);
 }
 
@@ -50,8 +51,16 @@ void read_detector(default_detector::host& detector,
                    const std::string_view& geometry_file,
                    const std::string_view& material_file,
                    const std::string_view& grid_file) {
-
     ::read_detector(detector, mr, geometry_file, material_file, grid_file);
+}
+
+void read_detector(toy_detector::host& detector, vecmem::memory_resource& mr,
+                   const std::string_view& geometry_file,
+                   const std::string_view& material_file,
+                   const std::string_view& grid_file) {
+
+    ::read_detector<toy_detector::host, 1u>(detector, mr, geometry_file,
+                                            material_file, grid_file);
 }
 
 }  // namespace traccc::io
