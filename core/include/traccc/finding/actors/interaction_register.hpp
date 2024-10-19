@@ -26,7 +26,7 @@ struct interaction_register : detray::actor {
     DETRAY_HOST_DEVICE void operator()(state &s,
                                        propagator_state_t &prop_state) const {
 
-        auto &navigation = prop_state._navigation;
+        auto &navigation = prop_state.navigation();
 
         // Do not apply material interaction on the sensitive surface - it is
         // applied outside the propagator

@@ -78,8 +78,8 @@ struct kalman_actor : detray::actor {
     TRACCC_HOST_DEVICE void operator()(state& actor_state,
                                        propagator_state_t& propagation) const {
 
-        const auto& stepping = propagation._stepping;
-        auto& navigation = propagation._navigation;
+        const auto& stepping = propagation.stepping();
+        auto& navigation = propagation.navigation();
 
         // If the iterator reaches the end, terminate the propagation
         if (actor_state.is_complete()) {
@@ -106,13 +106,16 @@ struct kalman_actor : detray::actor {
 
             const bool res =
                 sf.template visit_mask<gain_matrix_updater<algebra_t>>(
-                    trk_state, propagation._stepping.bound_params());
+                    trk_state, propagation.stepping().bound_params());
 
             // Abort if the Kalman update fails
             if (!res) {
                 propagation._heartbeat &= navigation.abort();
                 return;
             }
+
+            // Update the propagation flow
+            propagation.stepping().bound_params() = trk_state.filtered();
 
             // Set full jacobian
             trk_state.jacobian() = stepping.full_jacobian();
@@ -122,7 +125,7 @@ struct kalman_actor : detray::actor {
             // resolution)
             propagation.set_particle(detail::correct_particle_hypothesis(
                 stepping.particle_hypothesis(),
-                propagation._stepping.bound_params()));
+                propagation.stepping().bound_params()));
 
             // Update iterator
             actor_state.next();

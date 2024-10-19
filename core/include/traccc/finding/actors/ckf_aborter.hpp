@@ -34,8 +34,8 @@ struct ckf_aborter : detray::actor {
     DETRAY_HOST_DEVICE void operator()(state &abrt_state,
                                        propagator_state_t &prop_state) const {
 
-        auto &navigation = prop_state._navigation;
-        auto &stepping = prop_state._stepping;
+        auto &navigation = prop_state.navigation();
+        auto &stepping = prop_state.stepping();
 
         abrt_state.count++;
 

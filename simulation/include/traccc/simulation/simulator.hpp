@@ -105,9 +105,10 @@ struct simulator {
                 propagator_type p(m_cfg.propagation);
 
                 // Set overstep tolerance and stepper constraint
-                propagation._stepping.template set_constraint<
-                    detray::step::constraint::e_accuracy>(
-                    m_cfg.propagation.stepping.step_constraint);
+                propagation.stepping()
+                    .template set_constraint<
+                        detray::step::constraint::e_accuracy>(
+                        m_cfg.propagation.stepping.step_constraint);
 
                 p.propagate(propagation, actor_states);
 

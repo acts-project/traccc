@@ -174,6 +174,12 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
                   std::pow(n_truth_tracks, plane_positions.size() + 1));
         ASSERT_EQ(track_candidates_limit.size(),
                   n_truth_tracks * cfg_limit.max_num_branches_per_seed);
+        for (std::size_t i = 0u; i < track_candidates.size(); ++i) {
+            const auto& [seed, track] = track_candidates[i];
+            ASSERT_EQ(track.size(), plane_positions.size());
+            const auto& [lim_seed, lim_track] = track_candidates[i];
+            ASSERT_EQ(track.size(), plane_positions.size());
+        }
     }
 }
 

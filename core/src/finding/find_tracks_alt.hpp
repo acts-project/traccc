@@ -17,7 +17,7 @@
 #include "traccc/utils/projections.hpp"
 
 // Detray include(s).
-//#include <detray/definitions/detail/algorithms.hpp>
+// #include <detray/definitions/detail/algorithms.hpp> // < detray::upper_bound
 #include <detray/propagator/actor_chain.hpp>
 #include <detray/propagator/actors/aborters.hpp>
 #include <detray/propagator/actors/parameter_resetter.hpp>
@@ -61,7 +61,7 @@ track_candidate_container_types::host find_tracks(
     /// @{
     /// Navigation state and current bound track params for a track candidate
     struct navigation_stream {
-        typename navigator_t::state navigation;
+        typename navigator_t::state state;
         bound_track_parameters track_params;
     };
 
@@ -127,7 +127,7 @@ track_candidate_container_types::host find_tracks(
         }
 
         auto up = std::upper_bound(measurements.begin(), measurements.end(),
-                                      sf_desc.barcode(), measurement_bcd_comp());
+                                   sf_desc.barcode(), measurement_bcd_comp());
         meas_ranges.push_back(
             static_cast<unsigned int>(std::distance(measurements.begin(), up)));
     }
@@ -150,7 +150,7 @@ track_candidate_container_types::host find_tracks(
     traces.resize(n_seeds * n_max_nav_streams);
 
     // Compatible measurements and filtered track params on a given surface
-    std::vector<candidate> candidates{};
+    std::vector<candidate> candidates;
     candidates.reserve(n_max_branches_per_surface);
 
     // Create detray propagator
@@ -168,11 +168,11 @@ track_candidate_container_types::host find_tracks(
 
         auto& nav_stream =
             nav_streams.emplace_back(typename navigator_t::state(det), seed);
-        nav_stream.navigation.set_volume(seed.surface_link().volume());
+        nav_stream.state.set_volume(seed.surface_link().volume());
 
         // Construct propagation state around the navigation stream
         typename propagator_type::non_owning_state propagation(
-            nav_stream.track_params, field, nav_stream.navigation);
+            nav_stream.track_params, field, nav_stream.state);
         propagation.set_particle(detail::correct_particle_hypothesis(
             config.ptc_hypothesis, nav_stream.track_params));
 
@@ -184,26 +184,23 @@ track_candidate_container_types::host find_tracks(
 
         auto actor_states = detray::tie(s0, s1, s2, s3);
 
-        propagator.init(propagation, actor_states);
+        propagator.propagate_init(propagation, actor_states);
 
         // Make sure the CKF can start on a sensitive surface
-        if (propagation._heartbeat &&
-            !nav_stream.navigation.is_on_sensitive()) {
+        if (propagation._heartbeat && !nav_stream.state.is_on_sensitive()) {
             propagator.propagate_to_next(propagation, actor_states);
         }
         // Either exited detector by portal right away or are on first
         // sensitive surface
-        assert(nav_stream.navigation.is_complete() ||
-               nav_stream.navigation.is_on_sensitive());
+        assert(nav_stream.state.is_complete() ||
+               nav_stream.state.is_on_sensitive());
     }
 
     // Step through the sensitive surfaces along the tracks
     const auto n_steps{static_cast<int>(config.max_track_candidates_per_track)};
     for (int step = 0; step < n_steps; step++) {
-std::cout << "Step " << step << std::endl;
         // Step through all track candidates (branches) for a given seed
         for (unsigned int seed_idx = 0u; seed_idx < n_seeds; seed_idx++) {
-std::cout << "Seed " << seed_idx << std::endl;
 
             auto& nav_streams = nav_streams_per_seed[seed_idx];
             const auto n_traces{static_cast<unsigned int>(nav_streams.size())};
@@ -211,7 +208,7 @@ std::cout << "Seed " << seed_idx << std::endl;
             for (unsigned int br_idx = 0u; br_idx < n_traces; ++br_idx) {
                 // The navigation stream for this trace
                 auto& nav_stream = nav_streams[br_idx];
-                const auto& navigation = nav_stream.navigation;
+                const auto& navigation = nav_stream.state;
 
                 // Propagation is no longer alive (trace finished or hit error)
                 if (!navigation.is_alive()) {
@@ -237,10 +234,9 @@ std::cout << "Seed " << seed_idx << std::endl;
                     track_state<algebra_t> trk_state(measurements[meas_id]);
 
                     // Run the Kalman update on a copy of the track parameters
-                    const bool res = sf.template visit_mask<
-                        gain_matrix_updater<algebra_t>>(
-                        trk_state, nav_stream.track_params);
-                    std::cout << "Measurement chi2: " << trk_state.filtered_chi2() << std::endl;
+                    const bool res =
+                        sf.template visit_mask<gain_matrix_updater<algebra_t>>(
+                            trk_state, nav_stream.track_params);
                     // Found a good measurement?
                     if (const auto chi2 = trk_state.filtered_chi2();
                         res && chi2 < config.chi2_max) {
@@ -254,7 +250,7 @@ std::cout << "Seed " << seed_idx << std::endl;
                  **************************************************************/
 
                 const unsigned int trc_idx{seed_idx * n_max_nav_streams +
-                                             br_idx};
+                                           br_idx};
                 auto& parent = traces[trc_idx];
 
                 // Count hole in case no measurements were found
@@ -263,9 +259,8 @@ std::cout << "Seed " << seed_idx << std::endl;
 
                     // If number of skips is larger than the maximal value,
                     // consider the track to be finished
-                    if (parent.n_skipped >
-                        config.max_num_skipping_per_cand) {
-                        nav_stream.navigation.abort();
+                    if (parent.n_skipped > config.max_num_skipping_per_cand) {
+                        nav_stream.state.abort();
                         assert(!navigation.is_alive());
                     }
                 } else {
@@ -276,7 +271,8 @@ std::cout << "Seed " << seed_idx << std::endl;
                     nav_stream.track_params = candidates[0u].filtered_params;
                     parent.meas_indices.push_back(candidates[0u].meas_idx);
                     parent.n_meas++;
-                    nav_stream.navigation.set_high_trust();
+                    // @TODO: Make truslevel setting configurable
+                    nav_stream.state.set_high_trust();
 
                     // Number of potential new branches
                     unsigned int n_branches{math::min(
@@ -297,22 +293,26 @@ std::cout << "Seed " << seed_idx << std::endl;
                         // Clone current navigation stream for new branch with
                         // updated track parameters
                         nav_streams.emplace_back(
-                            nav_stream.navigation,
+                            nav_stream.state,
                             candidates[i + 1u].filtered_params);
 
                         // Get the measurement trace for the new branch
                         const std::size_t branch_idx{nav_streams.size() - 1u};
-                        auto& branch = traces[seed_idx * n_max_nav_streams + branch_idx];
+                        auto& branch =
+                            traces[seed_idx * n_max_nav_streams + branch_idx];
 
                         // Copy metadata from original track candidate to branch
                         branch.parent_idx = br_idx;
-                        branch.branch_meas_idx = static_cast<unsigned int>(parent.meas_indices.size()) - 1u;
+                        branch.branch_meas_idx = parent.n_meas - 1u;
                         branch.n_meas = parent.n_meas;
                         branch.n_skipped = parent.n_skipped;
 
                         // Add new measurement
-                        branch.meas_indices.reserve(config.max_track_candidates_per_track - branch.n_meas);
-                        branch.meas_indices.push_back(candidates[i + 1u].meas_idx);
+                        branch.meas_indices.reserve(
+                            config.max_track_candidates_per_track -
+                            branch.n_meas);
+                        branch.meas_indices.push_back(
+                            candidates[i + 1u].meas_idx);
                     }
                 }
                 candidates.clear();
@@ -323,28 +323,28 @@ std::cout << "Seed " << seed_idx << std::endl;
              *******************************************************/
             for (auto& nav_stream : nav_streams) {
                 // Propagation is no longer alive (track finished or hit error)
-                if (!nav_stream.navigation.is_alive()) {
+                if (!nav_stream.state.is_alive()) {
                     continue;
                 }
-                assert(nav_stream.navigation.is_on_sensitive());
+                assert(nav_stream.state.is_on_sensitive());
 
                 typename propagator_type::non_owning_state propagation(
-                    nav_stream.track_params, field, nav_stream.navigation);
+                    nav_stream.track_params, field, nav_stream.state);
                 propagation.set_particle(detail::correct_particle_hypothesis(
                     config.ptc_hypothesis, nav_stream.track_params));
-                propagation._heartbeat = true;
+                // Has been initialized in the beginning
+                propagation._heartbeat = nav_stream.state.is_alive();
 
-                // Update distance to next surface after KF
-                propagation._heartbeat &= navigator_t{}.update(
-                    propagation, config.propagation.navigation);
-                propagation._stepping._prev_step_size = nav_stream.navigation();
-                propagation._stepping._step_size = nav_stream.navigation();
+                // Update distance to next surface for filtered track state
+                navigator_t{}.update(propagation.stepping()(), nav_stream.state,
+                                     config.propagation.navigation);
+                propagation.stepping().set_step_size(nav_stream.state());
 
                 assert(propagation._heartbeat);
-                assert(nav_stream.navigation.is_alive());
+                assert(nav_stream.state.is_alive());
 
                 // Create actor states
-                // TODO: This does not work, the actor states need to be kept
+                // @TODO: This does not work, the actor states need to be kept
                 // alive as well
                 typename aborter::state s0{
                     config.propagation.stepping.path_limit};
@@ -356,11 +356,11 @@ std::cout << "Seed " << seed_idx << std::endl;
                 propagator.propagate_to_next(propagation,
                                              detray::tie(s0, s1, s2, s3));
 
-                assert(nav_stream.navigation.is_complete() ||
-                       nav_stream.navigation.is_on_sensitive());
+                assert(nav_stream.state.is_complete() ||
+                       nav_stream.state.is_on_sensitive());
 
                 // TODO: Find a way to not copy the track params all the time
-                nav_stream.track_params = propagation._stepping._bound_params;
+                nav_stream.track_params = propagation.stepping().bound_params();
             }
         }
     }
@@ -374,22 +374,46 @@ std::cout << "Seed " << seed_idx << std::endl;
     output_candidates.reserve(2u * n_seeds);
 
     // Map the position of a branch in the output container to its index in the
-    // trace vector
-    std::map<unsigned int, std::size_t> branch_to_track_map{};
+    // trace vector (some branches are skipped if they are too short, in which
+    // case this is not a 1:1 relation anymore)
+    vecmem::vector<unsigned int> branch_to_track_map{};
+    branch_to_track_map.resize(n_max_nav_streams);
+
+    // Buffer to keep the first few measurements that were not saved in the
+    // output collection in case the original branch(es) (stem) were too short
+    // This can never be more than the min. number of measurements per track
+    vecmem::vector<measurement> stem_buffer{};
+    stem_buffer.reserve(config.min_track_candidates_per_track);
 
     // Step through all track candidates for a given seed
     for (unsigned int seed_idx = 0u; seed_idx < n_seeds; seed_idx++) {
-        for (unsigned int br_idx = 0u;
-            br_idx < nav_streams_per_seed[seed_idx].size(); ++br_idx) {
+        // Get the seed
+        const auto seed = seeds[seed_idx];
+        // Buffer the first measurements of the new seed
+        stem_buffer.clear();
+
+        const std::size_t n_branches{nav_streams_per_seed[seed_idx].size()};
+        for (unsigned int br_idx = 0u; br_idx < n_branches; ++br_idx) {
 
             const unsigned int trc_idx{seed_idx * n_max_nav_streams + br_idx};
             const auto& trace = traces[trc_idx];
+            // Reset the map for this seed as we go along (branches will
+            // strictly only look for a parent in the preceeding entries)
+            branch_to_track_map[br_idx] =
+                std::numeric_limits<unsigned int>::max();
 
-            std::cout << "Testing: " << trc_idx << std::endl;
-
-            // Not enough measurements found to make a track candidate
+            // Not enough measurements found to make a track candidate, but keep
+            // the measurements around to build the branches of this track
             if (trace.n_meas < config.min_track_candidates_per_track) {
-                std::cout << "Problem:" << trace.n_skipped << std::endl;
+                // Fill the stem buffer instead of the output collection
+                for (unsigned int meas_idx : trace.meas_indices) {
+                    assert(meas_idx < measurements.size());
+                    stem_buffer.push_back(measurements[meas_idx]);
+                    // If more measurements had accumulated, the track would be
+                    // in the output collection
+                    assert(stem_buffer.size() <=
+                           config.min_track_candidates_per_track);
+                }
                 continue;
             }
 
@@ -397,28 +421,48 @@ std::cout << "Seed " << seed_idx << std::endl;
             trk_measurements.reserve(trace.n_meas);
 
             // Get the relevant measurement collection from the parent
-            // Later branches appear at the back of the collection, so the 
-            // parent is already fully assembled in the output container
+            // Later branches appear at the back of the collection, so the
+            // parent is already fully assembled in the output cont./stem buffer
             if (trace.parent_idx < traces.size()) {
-                const auto parent_trk_idx{branch_to_track_map.at(trace.parent_idx)};
-                const auto& [_, parent_trk] = output_candidates.at(parent_trk_idx);
+                std::size_t parent_trk_idx{
+                    branch_to_track_map[trace.parent_idx]};
 
-                std::ranges::copy_n(std::ranges::begin(parent_trk), trace.branch_meas_idx, std::ranges::begin(trk_measurements));
+                if (parent_trk_idx < output_candidates.size()) {
+
+                    const auto& [_, parent_trk] =
+                        output_candidates.at(parent_trk_idx);
+
+                    assert(trace.branch_meas_idx < parent_trk.size());
+
+                    std::ranges::copy_n(std::ranges::begin(parent_trk),
+                                        trace.branch_meas_idx,
+                                        std::back_inserter(trk_measurements));
+                } else {
+                    // The branching meas. index on a short track must be small
+                    assert(trace.branch_meas_idx < stem_buffer.size());
+
+                    std::ranges::copy_n(std::ranges::begin(stem_buffer),
+                                        trace.branch_meas_idx,
+                                        std::back_inserter(trk_measurements));
+                }
             }
 
             // Add the measurements collected on this branch
             for (unsigned int meas_idx : trace.meas_indices) {
+                assert(meas_idx < measurements.size());
                 trk_measurements.push_back(measurements[meas_idx]);
             }
+            assert(trace.n_meas == trk_measurements.size());
 
             // All measurements have been transcribed, move to final container
+            assert(br_idx < branch_to_track_map.size());
             branch_to_track_map[br_idx] = output_candidates.size();
-            output_candidates.push_back(
-                bound_track_parameters{seeds[seed_idx]}, std::move(trk_measurements));
+            output_candidates.push_back(bound_track_parameters{seed},
+                                        std::move(trk_measurements));
         }
     }
 
     return output_candidates;
 }
 
-}  // namespace traccc
+}  // namespace traccc::details

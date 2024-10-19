@@ -141,8 +141,6 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
-        // std::cout << i_evt << std::endl;
-
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
         traccc::track_candidate_container_types::host truth_track_candidates =

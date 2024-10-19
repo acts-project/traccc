@@ -301,7 +301,7 @@ track_candidate_container_types::host find_tracks(
             propagation.set_particle(detail::correct_particle_hypothesis(
                 config.ptc_hypothesis, param));
 
-            propagation._stepping
+            propagation.stepping()
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     config.propagation.stepping.step_constraint);
 
@@ -315,7 +315,7 @@ track_candidate_container_types::host find_tracks(
 
             // @TODO: Should be removed once detray is fixed to set the
             // volume in the constructor
-            propagation._navigation.set_volume(param.surface_link().volume());
+            propagation.navigation().set_volume(param.surface_link().volume());
 
             // Propagate to the next surface
             propagator.propagate_sync(propagation,
@@ -324,7 +324,7 @@ track_candidate_container_types::host find_tracks(
             // If a surface found, add the parameter for the next
             // step
             if (s4.success) {
-                out_params.push_back(propagation._stepping.bound_params());
+                out_params.push_back(propagation.stepping().bound_params());
                 param_to_link[step].push_back(link_id);
             }
             // Unless the track found a surface, it is considered a

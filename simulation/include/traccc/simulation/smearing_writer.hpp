@@ -109,8 +109,8 @@ struct smearing_writer : detray::actor {
     void operator()(state& writer_state,
                     propagator_state_t& propagation) const {
 
-        auto& navigation = propagation._navigation;
-        auto& stepping = propagation._stepping;
+        auto& navigation = propagation.navigation();
+        auto& stepping = propagation.stepping();
 
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
