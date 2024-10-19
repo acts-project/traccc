@@ -53,9 +53,13 @@ int simulate(const traccc::opts::generation& generation_opts,
      * Build a telescope geometry
      *****************************/
 
+    const auto align_vec = telescope_opts.align_vector;
+    vector3 align_axis{align_vec[0u], align_vec[1u], align_vec[2u]};
+    align_axis = vector::normalize(align_axis);
+
     // Plane alignment direction (aligned to z-axis)
     detray::detail::ray<traccc::default_algebra> traj{
-        {0, 0, 0}, 0, {0, 0, 1}, -1};
+        {0, 0, 0}, 0, align_axis, -1};
     // Position of planes (in mm unit)
     std::vector<scalar> plane_positions;
 

@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/options/details/interface.hpp"
+#include "traccc/options/details/value_array.hpp"
 
 namespace traccc::opts {
 
@@ -31,6 +32,8 @@ class telescope_detector : public interface {
     float smearing = 50.f;
     /// Half length of plane [mm]
     float half_length = 1000000.f;
+    /// Vector for plane alingment
+    opts::value_array<float, 3> align_vector{0.f, 0.f, 1.f};
 
     /// @}
 
