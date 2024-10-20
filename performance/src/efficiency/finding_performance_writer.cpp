@@ -97,7 +97,9 @@ std::vector<std::vector<measurement>> prepare_data(
         std::vector<measurement> measurements;
         measurements.reserve(cands.size());
         for (const auto& cand : cands) {
-            measurements.push_back(cand);
+            if (cand.surface_link.index() != 0u) {
+                measurements.push_back(cand);
+            }
         }
         result.push_back(std::move(measurements));
     }
