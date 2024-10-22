@@ -31,7 +31,6 @@
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
@@ -44,10 +43,9 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     // Type declarations
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t,
-                           typename detector_type::algebra_type,
-                           detray::constrained_step<>>;
-    using host_detector_type = traccc::default_detector::host;
-    using device_detector_type = traccc::default_detector::device;
+                           typename detector_type::algebra_type>;
+    using host_detector_type = traccc::toy_detector::host;
+    using device_detector_type = traccc::toy_detector::device;
     using device_navigator_type = detray::navigator<const device_detector_type>;
     using device_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
@@ -56,7 +54,6 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
-    vecmem::cuda::managed_memory_resource mng_mr;
 
     // Copy and stream
     vecmem::copy host_copy;
@@ -65,9 +62,9 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     // Read back detector file
-    host_detector_type det{mng_mr};
+    host_detector_type det{cuda_host_mr};
     traccc::io::read_detector(
-        det, mng_mr, sim_dir + "toy_detector_geometry.json",
+        det, cuda_host_mr, sim_dir + "toy_detector_geometry.json",
         sim_dir + "toy_detector_homogeneous_material.json",
         sim_dir + "toy_detector_surface_grids.json");
 
@@ -83,8 +80,10 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fitting_cfg, mr, async_copy, stream);
 
+    // Copy detector to device
+    auto det_fixed_buff = detray::get_buffer(det, device_mr, copy);
     // Detector view object
-    auto det_view = detray::get_data(det);
+    auto det_view = detray::get_data(det_fixed_buff);
 
     // D2H copy object
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
@@ -109,7 +108,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
 
             auto& spacepoints_per_event = spacepoints[i_evt];
             auto& measurements_per_event = measurements[i_evt];
-
+            state.PauseTiming();
             // Copy the spacepoint and module data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
                 spacepoints_per_event.size(), mr.main);
@@ -122,6 +121,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
             async_copy(vecmem::get_data(measurements_per_event),
                        measurements_cuda_buffer);
 
+            state.ResumeTiming();
             // Run seeding
             traccc::seed_collection_types::buffer seeds_cuda_buffer =
                 sa_cuda(spacepoints_cuda_buffer);
@@ -141,7 +141,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
             traccc::track_state_container_types::buffer
                 track_states_cuda_buffer = device_fitting(
                     det_view, field, track_candidates_cuda_buffer);
-
+            state.PauseTiming();
             // Create a temporary buffer that will receive the device memory.
             auto size = track_states_cuda_buffer.headers.size();
             std::vector<std::size_t> capacities(size, 0);
@@ -153,6 +153,8 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
             // Copy the track states back to the host.
             traccc::track_state_container_types::host track_states_host =
                 track_state_d2h(track_states_cuda_buffer);
+
+            state.ResumeTiming();
         }
     }
 

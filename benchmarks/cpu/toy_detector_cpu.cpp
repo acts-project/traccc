@@ -42,9 +42,8 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     // Type declarations
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t,
-                           typename detector_type::algebra_type,
-                           detray::constrained_step<>>;
-    using host_detector_type = traccc::default_detector::host;
+                           typename detector_type::algebra_type>;
+    using host_detector_type = traccc::toy_detector::host;
     using host_navigator_type = detray::navigator<const host_detector_type>;
     using host_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
