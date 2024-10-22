@@ -12,6 +12,6 @@ set -o pipefail
 
 # Run every command through the time command. Recording the time, memory, etc.
 # used by each and every build command.
-@TIME_EXECUTABLE@ --verbose \
+command @TIME_EXECUTABLE@ --verbose \
    --output=@CMAKE_CURRENT_BINARY_DIR@/traccc_build_performance.log --append \
    @CMAKE_CTEST_COMMAND@ $*
