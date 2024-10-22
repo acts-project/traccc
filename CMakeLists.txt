@@ -83,6 +83,18 @@ if( CTEST_USE_LAUNCHERS )
    find_program( BASH_EXECUTABLE bash REQUIRED )
    find_program( TIME_EXECUTABLE time REQUIRED )
 
+   # Decide what flag to use with the time executable to make it print verbose
+   # information.
+   if( "${CMAKE_HOST_SYSTEM_NAME}" MATCHES "Darwin" )
+      set( TIME_VERBOSE_FLAG "-l" )
+   elseif( "${CMAKE_HOST_SYSTEM_NAME}" MATCHES "Linux" )
+      set( TIME_VERBOSE_FLAG "-v" )
+   else()
+      message( WARNING "Build profiling is only supported on Linux and macOS."
+                       "This build will likely fail." )
+      set( TIME_VERBOSE_FLAG "" )
+   endif()
+
    # Configure the script that would intercept the build commands and save
    # profile logs for them.
    configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/traccc-ctest.sh.in"
@@ -90,6 +102,9 @@ if( CTEST_USE_LAUNCHERS )
       @ONLY )
    set( CMAKE_CTEST_COMMAND
       "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/traccc-ctest.sh" )
+
+   # Clean up.
+   unset( TIME_VERBOSE_FLAG )
 
    # Remove the performance log during a cleaning step.
    set_property( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" APPEND PROPERTY
