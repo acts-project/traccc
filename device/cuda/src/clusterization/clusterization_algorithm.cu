@@ -124,7 +124,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy.get().setup(cell_links)->ignore();
 
     // Launch ccl kernel. Each thread will handle a single cell.
-    std::size_t num_blocks =
+    unsigned int num_blocks =
         (num_cells + (m_config.target_partition_size()) - 1) /
         m_config.target_partition_size();
 

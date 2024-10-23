@@ -36,7 +36,7 @@ measurement_creation_algorithm::operator()(
     measurement_collection_types::device measurements{vecmem::get_data(result)};
 
     // Process the clusters one-by-one.
-    for (std::size_t i = 0; i < clusters.size(); ++i) {
+    for (decltype(clusters)::size_type i = 0; i < clusters.size(); ++i) {
 
         // Get the cluster.
         const auto cluster = clusters[i];

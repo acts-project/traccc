@@ -51,12 +51,12 @@ inline void aggregate_cluster(
      *
      * $$\sigma^2(x_1, \ldots, x_n) = \sigma^2(x_1 - C, \ldots, x_n - C)$$
      */
-    scalar totalWeight = 0.;
-    point2 mean{0., 0.}, var{0., 0.}, offset{0., 0.};
+    scalar totalWeight = 0.f;
+    point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f};
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
     const auto module_descr = det_descr.at(module_idx);
-    const unsigned short partition_size = end - start;
+    const auto partition_size = static_cast<unsigned short>(end - start);
 
     bool first_processed = false;
 

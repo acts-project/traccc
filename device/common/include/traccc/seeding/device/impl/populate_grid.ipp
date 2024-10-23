@@ -37,7 +37,7 @@ inline void populate_grid(
         // Find the grid bin that the spacepoint belongs to.
         const internal_spacepoint<spacepoint> isp(sp, globalIndex,
                                                   config.beamPos);
-        const std::size_t bin_index =
+        const unsigned int bin_index =
             phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 
         // Add the spacepoint to the grid.

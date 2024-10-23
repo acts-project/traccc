@@ -183,7 +183,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         traccc::io::read_measurements(measurements_per_event, i_evt, path);
 
         traccc::measurement_collection_types::buffer measurements_buffer(
-            measurements_per_event.size(), mr.main);
+            static_cast<unsigned int>(measurements_per_event.size()), mr.main);
         copy(vecmem::get_data(measurements_per_event), measurements_buffer);
 
         // Instantiate output cuda containers/collections

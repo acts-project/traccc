@@ -34,7 +34,8 @@ inline void count_triplets(
     }
 
     // Get current mid bottom doublet
-    const device_doublet mid_bot = mid_bot_doublet_device.at(globalIndex);
+    const device_doublet mid_bot =
+        mid_bot_doublet_device.at(static_cast<unsigned int>(globalIndex));
 
     // Create device copy of input parameters
     const device_doublet_collection_types::const_device mid_top_doublet_device(

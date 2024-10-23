@@ -47,7 +47,8 @@ struct is_ordered_on {
         const CONTAINER in(m_view);
 
         if (tid > 0 && tid < in.size()) {
-            if (!m_relation(in.at(tid - 1), in.at(tid))) {
+            if (!m_relation(in.at(static_cast<CONTAINER::size_type>(tid - 1)),
+                            in.at(static_cast<CONTAINER::size_type>(tid)))) {
                 *m_out = false;
             }
         }

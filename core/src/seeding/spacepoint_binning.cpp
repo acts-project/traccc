@@ -8,6 +8,8 @@
 // Library include(s).
 #include "traccc/seeding/spacepoint_binning.hpp"
 
+#include <detray/definitions/detail/indexing.hpp>
+
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/seeding/spacepoint_binning_helper.hpp"
 
@@ -37,7 +39,8 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
             detray::detail::invalid_value<size_t>()) {
             const std::size_t bin_index =
                 phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
-            g2.bin(bin_index).push_back(std::move(isp));
+            g2.bin(static_cast<detray::dindex>(bin_index))
+                .push_back(std::move(isp));
         }
     }
     return g2;

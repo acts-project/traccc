@@ -20,6 +20,7 @@ foreach( mode RELEASE RELWITHDEBINFO MINSIZEREL DEBUG )
    traccc_add_flag( CMAKE_SYCL_FLAGS_${mode} "-Wno-unknown-cuda-version" )
    traccc_add_flag( CMAKE_SYCL_FLAGS_${mode} "-Wshadow" )
    traccc_add_flag( CMAKE_SYCL_FLAGS_${mode} "-Wunused-local-typedefs" )
+   traccc_add_flag( CMAKE_SYCL_FLAGS_${mode} "-Wconversion" )
 endforeach()
 
 if( NOT WIN32 )

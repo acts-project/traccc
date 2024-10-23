@@ -121,9 +121,9 @@ class fake_tracks_plot_tool {
         (void)n_fake_tracks;
 
 #ifdef TRACCC_HAVE_ROOT
-        cache.n_fake_vs_pT->Fill(t_pT, n_fake_tracks);
-        cache.n_fake_vs_eta->Fill(t_eta, n_fake_tracks);
-        cache.n_fake_vs_phi->Fill(t_phi, n_fake_tracks);
+        cache.n_fake_vs_pT->Fill(t_pT, static_cast<double>(n_fake_tracks));
+        cache.n_fake_vs_eta->Fill(t_eta, static_cast<double>(n_fake_tracks));
+        cache.n_fake_vs_phi->Fill(t_phi, static_cast<double>(n_fake_tracks));
 #endif  // TRACCC_HAVE_ROOT
     }
 

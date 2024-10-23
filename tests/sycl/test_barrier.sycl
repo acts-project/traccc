@@ -118,8 +118,8 @@ TEST(SYCLBarrier, BarrierCount) {
     cl::sycl::queue queue;
     constexpr std::size_t n_ints = 4;
 
-    vecmem::unique_alloc_ptr<int[]> out =
-        vecmem::make_unique_alloc<int[]>(mr, n_ints);
+    vecmem::unique_alloc_ptr<unsigned int[]> out =
+        vecmem::make_unique_alloc<unsigned int[]>(mr, n_ints);
 
     cl::sycl::nd_range test_range(cl::sycl::range<1>(128),
                                   cl::sycl::range<1>(128));
@@ -130,7 +130,7 @@ TEST(SYCLBarrier, BarrierCount) {
                 test_range, [=](cl::sycl::nd_item<1> item) {
                     traccc::sycl::barrier bar(item);
 
-                    int v;
+                    unsigned int v;
 
                     v = bar.blockCount(false);
                     if (item.get_local_id() == 0) {

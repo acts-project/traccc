@@ -72,7 +72,8 @@ struct seed_selecting_helper {
         const spacepoint_collection_t& sp_collection, const seed& seed,
         const scalar& triplet_weight) {
 
-        const auto& spB = sp_collection.at(seed.spB_link);
+        const auto& spB =
+            sp_collection.at(static_cast<unsigned int>(seed.spB_link));
 
         return (triplet_weight > filter_config.seed_min_weight ||
                 spB.radius() > filter_config.spB_min_radius);

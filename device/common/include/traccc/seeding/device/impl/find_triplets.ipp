@@ -42,7 +42,8 @@ inline void find_triplets(
         spM_tc_view);
 
     // Get the current work item information
-    const triplet_counter mid_bot_counter = triplet_counts.at(globalIndex);
+    const triplet_counter mid_bot_counter =
+        triplet_counts.at(static_cast<unsigned int>(globalIndex));
     const triplet_counter_spM spM_counter =
         triplet_counts_spM.at(mid_bot_counter.spM_counter_link);
     const doublet_counter doublet_count =

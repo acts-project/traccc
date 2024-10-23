@@ -52,14 +52,16 @@ struct is_contiguous_on_compress_adjacent {
         vecmem::device_vector<S> out(m_out_view);
 
         if (tid > 0 && tid < in.size()) {
-            S v1 = m_projection(in.at(tid - 1));
-            S v2 = m_projection(in.at(tid));
+            S v1 =
+                m_projection(in.at(static_cast<CONTAINER::size_type>(tid - 1)));
+            S v2 = m_projection(in.at(static_cast<CONTAINER::size_type>(tid)));
 
             if (v1 != v2) {
                 out.push_back(v2);
             }
         } else if (tid == 0) {
-            out.push_back(m_projection(in.at(tid)));
+            out.push_back(
+                m_projection(in.at(static_cast<CONTAINER::size_type>(tid))));
         }
     }
 
@@ -171,7 +173,8 @@ is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
                 const vecmem::device_vector<projection_t> in(in_view);
 
                 if (tid_x < in.size() && tid_y < in.size() && tid_x != tid_y &&
-                    in.at(tid_x) == in.at(tid_y)) {
+                    in.at(static_cast<CONTAINER::size_type>(tid_x)) ==
+                        in.at(static_cast<CONTAINER::size_type>(tid_y))) {
                     *out = false;
                 }
             });

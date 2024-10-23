@@ -36,7 +36,7 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     assert(measurements.size() == measurement_count);
     spacepoint_collection_types::device spacepoints(spacepoints_view);
 
-    const auto& meas = measurements.at(globalIndex);
+    const auto& meas = measurements.at(static_cast<unsigned int>(globalIndex));
 
     // Fill the spacepoint using the common function.
     if (details::is_valid_measurement(meas)) {

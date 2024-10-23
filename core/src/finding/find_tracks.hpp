@@ -76,6 +76,8 @@ track_candidate_container_types::host find_tracks(
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;
 
+    assert(config.min_track_candidates_per_track >= 1);
+
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
@@ -93,7 +95,8 @@ track_candidate_container_types::host find_tracks(
     std::vector<measurement>::iterator uniques_end =
         std::unique_copy(measurements.begin(), measurements.end(),
                          uniques.begin(), measurement_equal_comp());
-    const unsigned int n_modules = uniques_end - uniques.begin();
+    const auto n_modules =
+        static_cast<unsigned int>(uniques_end - uniques.begin());
 
     // Get upper bounds of unique elements
     std::vector<unsigned int> upper_bounds;
@@ -102,7 +105,8 @@ track_candidate_container_types::host find_tracks(
         measurement_collection_types::const_device::iterator up =
             std::upper_bound(measurements.begin(), measurements.end(),
                              uniques[i], measurement_sort_comp());
-        upper_bounds.push_back(std::distance(measurements.begin(), up));
+        upper_bounds.push_back(
+            static_cast<unsigned int>(std::distance(measurements.begin(), up)));
     }
     const measurement_collection_types::const_device::size_type n_meas =
         measurements.size();
@@ -207,13 +211,14 @@ track_candidate_container_types::host find_tracks(
 
             if (lo2 == barcodes.begin()) {
                 range.first = 0u;
-                range.second = upper_bounds[bcd_id];
+                range.second = upper_bounds[static_cast<std::size_t>(bcd_id)];
             } else if (lo2 == barcodes.end()) {
                 range.first = 0u;
                 range.second = 0u;
             } else {
-                range.first = upper_bounds[bcd_id - 1];
-                range.second = upper_bounds[bcd_id];
+                range.first =
+                    upper_bounds[static_cast<std::size_t>(bcd_id - 1)];
+                range.second = upper_bounds[static_cast<std::size_t>(bcd_id)];
             }
 
             unsigned int n_branches = 0;
@@ -272,7 +277,7 @@ track_candidate_container_types::host find_tracks(
          * Propagate to the next surface
          *********************************/
 
-        const unsigned int n_links = links[step].size();
+        const std::size_t n_links = links[step].size();
         for (unsigned int link_id = 0; link_id < n_links; link_id++) {
 
             const unsigned int seed_idx = links[step][link_id].seed_idx;
@@ -365,7 +370,7 @@ track_candidate_container_types::host find_tracks(
                 break;
             }
 
-            const unsigned int link_pos =
+            const unsigned long link_pos =
                 param_to_link[L.previous.first][L.previous.second];
             L = links[L.previous.first][link_pos];
         }
@@ -389,10 +394,6 @@ track_candidate_container_types::host find_tracks(
              it++) {
 
             while (L.meas_idx > n_meas) {
-                if (L.previous.first < 0) {
-                    break;
-                }
-
                 const auto link_pos =
                     param_to_link[L.previous.first][L.previous.second];
 

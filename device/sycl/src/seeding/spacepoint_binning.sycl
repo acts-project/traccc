@@ -52,7 +52,7 @@ sp_grid_buffer spacepoint_binning::operator()(
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
-    const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
+    const unsigned int grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
     vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
                                                                    m_mr.main);
     m_copy.setup(grid_capacities_buff)->wait();
@@ -99,8 +99,9 @@ sp_grid_buffer spacepoint_binning::operator()(
             h.parallel_for<kernels::populate_grid>(
                 range, [config = m_config, spacepoints = spacepoints_view,
                         grid = grid_view](::sycl::nd_item<1> item) {
-                    device::populate_grid(item.get_global_linear_id(), config,
-                                          spacepoints, grid);
+                    device::populate_grid(
+                        static_cast<unsigned int>(item.get_global_linear_id()),
+                        config, spacepoints, grid);
                 });
         })
         .wait_and_throw();

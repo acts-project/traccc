@@ -75,7 +75,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         traccc::spacepoint_collection_types::host spacepoints_per_event{

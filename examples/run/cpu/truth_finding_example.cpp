@@ -122,7 +122,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                                               stddevs);
 
     // Iterate over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
@@ -135,8 +135,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
-        const unsigned int n_tracks = truth_track_candidates.size();
-        for (unsigned int i_trk = 0; i_trk < n_tracks; i_trk++) {
+        const std::size_t n_tracks = truth_track_candidates.size();
+        for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
             seeds.push_back(truth_track_candidates.at(i_trk).header);
         }
 
@@ -162,13 +162,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         std::cout << "Number of fitted tracks: " << track_states.size()
                   << std::endl;
 
-        const unsigned int n_fitted_tracks = track_states.size();
+        const std::size_t n_fitted_tracks = track_states.size();
 
         if (performance_opts.run) {
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_data);
 
-            for (unsigned int i = 0; i < n_fitted_tracks; i++) {
+            for (std::size_t i = 0; i < n_fitted_tracks; i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
 
                 const auto& fit_res = track_states[i].header;

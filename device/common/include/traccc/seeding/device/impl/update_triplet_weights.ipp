@@ -37,7 +37,8 @@ inline void update_triplet_weights(
         tc_view);
 
     // Current work item
-    device_triplet this_triplet = triplets[globalIndex];
+    device_triplet this_triplet =
+        triplets[static_cast<unsigned int>(globalIndex)];
 
     const sp_location& spT_idx = this_triplet.spT;
 
@@ -56,7 +57,7 @@ inline void update_triplet_weights(
     std::size_t num_compat_seedR = 0;
 
     const triplet_counter mb_count =
-        triplet_counts.at(this_triplet.counter_link);
+        triplet_counts.at(static_cast<unsigned int>(this_triplet.counter_link));
 
     // Check if anything needs to be done.
     if (mb_count.m_nTriplets <= 1) {
@@ -127,7 +128,8 @@ inline void update_triplet_weights(
         }
     }
 
-    triplets[globalIndex].weight = this_triplet.weight;
+    triplets[static_cast<unsigned int>(globalIndex)].weight =
+        this_triplet.weight;
 }
 
 }  // namespace traccc::device

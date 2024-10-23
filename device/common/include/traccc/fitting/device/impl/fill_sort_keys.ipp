@@ -29,9 +29,12 @@ TRACCC_HOST_DEVICE inline void fill_sort_keys(
     }
 
     // Key = The number of measurements
-    keys_device.at(globalIndex) = static_cast<traccc::scalar>(
-        track_candidates.at(globalIndex).items.size());
-    ids_device.at(globalIndex) = globalIndex;
+    keys_device.at(static_cast<unsigned int>(globalIndex)) =
+        static_cast<traccc::scalar>(
+            track_candidates.at(static_cast<unsigned int>(globalIndex))
+                .items.size());
+    ids_device.at(static_cast<unsigned int>(globalIndex)) =
+        static_cast<unsigned int>(globalIndex);
 }
 
 }  // namespace traccc::device

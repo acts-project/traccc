@@ -96,12 +96,9 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
 
         for (int i = -10; i < n_events; i++) {
 
-            int i_evt = i;
-
             // First 10 events are for cold run
-            if (i < 0) {
-                i_evt = 0;
-            }
+            auto i_evt = static_cast<unsigned int>(std::max(i, 0));
+
             // Measure the time after the cold run
             if (i == 0) {
                 state.ResumeTiming();
@@ -112,13 +109,15 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
 
             // Copy the spacepoint and module data to the device.
             traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
-                spacepoints_per_event.size(), mr.main);
+                static_cast<unsigned int>(spacepoints_per_event.size()),
+                mr.main);
             async_copy(vecmem::get_data(spacepoints_per_event),
                        spacepoints_cuda_buffer);
 
             traccc::measurement_collection_types::buffer
-                measurements_cuda_buffer(measurements_per_event.size(),
-                                         mr.main);
+                measurements_cuda_buffer(
+                    static_cast<unsigned int>(measurements_per_event.size()),
+                    mr.main);
             async_copy(vecmem::get_data(measurements_per_event),
                        measurements_cuda_buffer);
 

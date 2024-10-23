@@ -69,7 +69,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
 
 // Iterate over events
 #pragma omp parallel for
-        for (int i_evt = 0; i_evt < n_events; i_evt++) {
+        for (unsigned int i_evt = 0; i_evt < n_events; i_evt++) {
 
             auto& spacepoints_per_event = spacepoints[i_evt];
             auto& measurements_per_event = measurements[i_evt];

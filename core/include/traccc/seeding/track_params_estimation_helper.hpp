@@ -45,9 +45,12 @@ seed_to_bound_vector(const spacepoint_collection_t& sp_collection,
 
     bound_vector params;
 
-    const auto& spB = sp_collection.at(seed.spB_link);
-    const auto& spM = sp_collection.at(seed.spM_link);
-    const auto& spT = sp_collection.at(seed.spT_link);
+    const auto& spB =
+        sp_collection.at(static_cast<unsigned int>(seed.spB_link));
+    const auto& spM =
+        sp_collection.at(static_cast<unsigned int>(seed.spM_link));
+    const auto& spT =
+        sp_collection.at(static_cast<unsigned int>(seed.spT_link));
 
     darray<vector3, 3> sp_global_positions;
     sp_global_positions[0] = spB.global;
@@ -110,7 +113,7 @@ seed_to_bound_vector(const spacepoint_collection_t& sp_collection,
     scalar qOverPt = 1.f / (R * getter::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
     getter::element(params, e_bound_qoverp, 0) =
-        qOverPt / getter::perp(vector2{1., invTanTheta});
+        qOverPt / getter::perp(vector2{1.f, invTanTheta});
 
     // Make sure the time is a finite value
     assert(std::isfinite(getter::element(params, e_bound_time, 0)));

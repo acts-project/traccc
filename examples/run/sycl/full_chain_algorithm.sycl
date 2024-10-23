@@ -141,8 +141,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {
 
     // Create device copy of input collections
-    edm::silicon_cell_collection::buffer cells_buffer(cells.size(),
-                                                      *m_cached_device_mr);
+    edm::silicon_cell_collection::buffer cells_buffer(
+        static_cast<unsigned int>(cells.size()), *m_cached_device_mr);
     m_copy(vecmem::get_data(cells), cells_buffer)->wait();
 
     // Execute the algorithms.

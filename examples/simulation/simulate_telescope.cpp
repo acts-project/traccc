@@ -64,7 +64,8 @@ int simulate(const traccc::opts::generation& generation_opts,
     std::vector<scalar> plane_positions;
 
     for (unsigned int i = 0; i < telescope_opts.n_planes; i++) {
-        plane_positions.push_back(i * telescope_opts.spacing);
+        plane_positions.push_back(static_cast<float>(i) *
+                                  telescope_opts.spacing);
     }
 
     // B field value and its type

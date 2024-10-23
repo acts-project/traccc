@@ -26,9 +26,11 @@ TRACCC_HOST_DEVICE inline vector2 position_from_cell(
     const auto module_dd = det_descr.at(cell.module_index());
     // Calculate / construct the local cell position.
     return {module_dd.reference_x() +
-                (scalar{0.5} + cell.channel0()) * module_dd.pitch_x(),
+                (scalar{0.5f} + static_cast<scalar>(cell.channel0())) *
+                    module_dd.pitch_x(),
             module_dd.reference_y() +
-                (scalar{0.5} + cell.channel1()) * module_dd.pitch_y()};
+                (scalar{0.5f} + static_cast<scalar>(cell.channel1())) *
+                    module_dd.pitch_y()};
 }
 
 template <typename T>
@@ -38,7 +40,7 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const silicon_detector_description::const_device& det_descr, point2& mean,
     point2& var, scalar& totalWeight) {
 
-    point2 offset{0., 0.};
+    point2 offset{0.f, 0.f};
     bool first_processed = false;
 
     // Loop over the cell indices of the cluster.

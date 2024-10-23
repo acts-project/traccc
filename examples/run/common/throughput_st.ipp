@@ -120,7 +120,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         (detector_opts.use_detray_detector ? &detector : nullptr));
 
     // Seed the random number generator.
-    std::srand(std::time(0));
+    std::srand(static_cast<unsigned int>(std::time(0)));
 
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
@@ -136,7 +136,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();
@@ -154,7 +155,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();

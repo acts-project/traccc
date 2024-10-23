@@ -48,7 +48,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Get the size of the seeds view
-    const std::size_t seeds_size = m_copy.get_size(seeds_view);
+    const unsigned int seeds_size = m_copy.get_size(seeds_view);
 
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,

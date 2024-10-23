@@ -21,15 +21,15 @@ struct particle {
     uint64_t particle_id = 0;
     int particle_type = 0;
     int process = 0;
-    float vx = 0.;
-    float vy = 0.;
-    float vz = 0.;
-    float vt = 0.;
-    float px = 0.;
-    float py = 0.;
-    float pz = 0.;
-    float m = 0.;
-    float q = 0.;
+    float vx = 0.f;
+    float vy = 0.f;
+    float vz = 0.f;
+    float vt = 0.f;
+    float px = 0.f;
+    float py = 0.f;
+    float pz = 0.f;
+    float m = 0.f;
+    float q = 0.f;
 
     DFE_NAMEDTUPLE(particle, particle_id, particle_type, process, vx, vy, vz,
                    vt, px, py, pz, m, q);

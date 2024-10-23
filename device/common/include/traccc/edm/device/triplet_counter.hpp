@@ -37,7 +37,7 @@ struct triplet_counter {
     /// Bottom spacepoint location in internal spacepoint container
     sp_location spB;
 
-    using link_type = triplet_counter_spM_collection_types::host::size_type;
+    using link_type = triplet_counter_spM_collection_types::device::size_type;
     /// Link to the triplet counter per middle spacepoint
     link_type spM_counter_link;
 

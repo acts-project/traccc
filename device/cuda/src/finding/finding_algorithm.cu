@@ -69,7 +69,7 @@ __global__ void make_barcode_sequence(
 template <typename detector_t>
 __global__ void apply_interaction(
     typename detector_t::view_type det_data, const finding_config cfg,
-    const int n_params,
+    const unsigned int n_params,
     bound_track_parameters_collection_types::view params_view,
     vecmem::data::vector_view<const unsigned int> params_liveness_view) {
 
@@ -228,7 +228,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             thrust::cuda::par.on(stream), measurements.ptr(),
             measurements.ptr() + n_measurements, uniques.begin(),
             measurement_equal_comp());
-        n_modules = uniques_end - uniques.begin();
+        n_modules = static_cast<unsigned int>(uniques_end - uniques.begin());
     }
 
     // Get upper bounds of unique elements

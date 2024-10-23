@@ -16,8 +16,8 @@ namespace {
 inline traccc::scalar wrap_to_pi(traccc::scalar phi) {
 
     // Make sure that we only use the precision necessary.
-    static constexpr traccc::scalar PI = static_cast<traccc::scalar>(M_PI);
-    static constexpr traccc::scalar TWOPI = 2. * PI;
+    static constexpr traccc::scalar PI = std::numbers::pi_v<traccc::scalar>;
+    static constexpr traccc::scalar TWOPI = 2.f * PI;
 
     // Bring the value within bounds.
     while (phi > PI) {

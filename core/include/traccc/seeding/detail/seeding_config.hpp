@@ -55,19 +55,19 @@ struct seedfinder_config {
     // compatible
 
     // impact parameter in mm
-    float impactMax = 10. * unit<float>::mm;
+    float impactMax = 10.f * unit<float>::mm;
     // how many sigmas of scattering angle should be considered?
-    float sigmaScattering = 3.0;
+    float sigmaScattering = 3.0f;
     // Upper pt limit for scattering calculation
-    float maxPtScattering = 10 * unit<float>::GeV;
+    float maxPtScattering = 10.f * unit<float>::GeV;
 
     // for how many seeds can one SpacePoint be the middle SpacePoint?
-    int maxSeedsPerSpM = 10;
+    unsigned int maxSeedsPerSpM = 10;
 
     float bFieldInZ = 1.99724f * unit<float>::T;
     // location of beam in x,y plane.
     // used as offset for Space Points
-    vector2 beamPos{-.0 * unit<float>::mm, -.0 * unit<float>::mm};
+    vector2 beamPos{-.0f * unit<float>::mm, -.0f * unit<float>::mm};
 
     // average radiation lengths of material on the length of a seed. used for
     // scattering.

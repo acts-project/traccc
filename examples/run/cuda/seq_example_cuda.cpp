@@ -193,7 +193,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
@@ -235,7 +235,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             // Create device copy of input collections
             traccc::edm::silicon_cell_collection::buffer cells_buffer(
-                cells_per_event.size(), mr.main);
+                static_cast<unsigned int>(cells_per_event.size()), mr.main);
             copy(vecmem::get_data(cells_per_event), cells_buffer);
 
             // CUDA
@@ -420,9 +420,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
             }
 
             std::cout << "  Track candidates (item) matching rate: "
-                      << 100. * float(n_matches) /
-                             std::max(track_candidates.size(),
-                                      track_candidates_cuda.size())
+                      << 100. * static_cast<double>(n_matches) /
+                             static_cast<double>(
+                                 std::max(track_candidates.size(),
+                                          track_candidates_cuda.size()))
                       << "%" << std::endl;
 
             // Compare tracks fitted on the host and on the device.

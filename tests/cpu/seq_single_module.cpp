@@ -32,8 +32,8 @@ TEST(algorithms, seq_single_module) {
     cells.resize(9);
     cells.channel0() = {1, 8, 10, 9, 10, 12, 3, 11, 4};
     cells.channel1() = {0, 4, 4, 5, 5, 12, 13, 13, 14};
-    cells.activation() = {1., 2., 3., 4., 5., 6., 7., 8., 9.};
-    cells.time() = {0., 0., 0., 0., 0., 0., 0., 0., 0.};
+    cells.activation() = {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f};
+    cells.time() = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
     cells.module_index() = {0, 0, 0, 0, 0, 0, 0, 0, 0};
     traccc::silicon_detector_description::host dd{resource};
     dd.resize(1);

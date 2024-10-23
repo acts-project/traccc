@@ -28,7 +28,7 @@ namespace traccc {
 struct spacepoint {
 
     /// The global position of the spacepoint in 3D space
-    point3 global{0., 0., 0.};
+    point3 global{0.f, 0.f, 0.f};
     /// The local measurement of the spacepoint on the detector surface
     measurement meas;
 

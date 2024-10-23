@@ -33,7 +33,8 @@ inline void reduce_triplet_counts(
     assert(doublet_counts.size() == spM_counts.size());
 
     // Get triplet counter for this middle spacepoint
-    triplet_counter_spM& this_spM_counter = spM_counts.at(globalIndex);
+    triplet_counter_spM& this_spM_counter =
+        spM_counts.at(static_cast<unsigned int>(globalIndex));
 
     // Check if anything needs to be done.
     if (this_spM_counter.m_nTriplets == 0) {
@@ -41,7 +42,8 @@ inline void reduce_triplet_counts(
     }
 
     // Fill the middle spacepoint information of the spM triplet counter
-    this_spM_counter.spM = doublet_counts.at(globalIndex).m_spM;
+    this_spM_counter.spM =
+        doublet_counts.at(static_cast<unsigned int>(globalIndex)).m_spM;
 
     // Increment total number of triplets and claim position for this middle
     // spacepoint's triplets

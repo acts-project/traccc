@@ -33,7 +33,8 @@ inline void count_doublets(
     }
 
     // Get the middle spacepoint that we need to be looking at.
-    const prefix_sum_element_t middle_sp_idx = sp_prefix_sum[globalIndex];
+    const prefix_sum_element_t middle_sp_idx =
+        sp_prefix_sum[static_cast<unsigned int>(globalIndex)];
 
     // Set up the device containers.
     const const_sp_grid_device sp_grid(sp_view);

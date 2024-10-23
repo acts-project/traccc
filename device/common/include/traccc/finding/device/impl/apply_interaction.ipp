@@ -20,7 +20,7 @@ namespace traccc::device {
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
     std::size_t globalIndex, const finding_config& cfg,
-    typename detector_t::view_type det_data, const int n_params,
+    typename detector_t::view_type det_data, const unsigned int n_params,
     bound_track_parameters_collection_types::view params_view,
     vecmem::data::vector_view<const unsigned int> params_liveness_view) {
 

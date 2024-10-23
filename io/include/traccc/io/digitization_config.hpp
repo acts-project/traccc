@@ -16,7 +16,7 @@ namespace traccc {
 /// Type describing the digitization configuration of a detector module
 struct module_digitization_config {
     Acts::BinUtility segmentation;
-    char dimensions = 2;
+    unsigned char dimensions = 2;
 };
 
 /// Type describing the digitization configuration for the whole detector
