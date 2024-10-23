@@ -18,7 +18,7 @@
 
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -126,13 +126,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     detray::propagation::config propagation_config(propagation_opts);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg(finding_opts);
-
+    traccc::finding_config cfg(finding_opts);
     cfg.propagation = propagation_config;
 
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg);
+    traccc::host::ckf_algorithm host_finding(cfg);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
@@ -186,8 +183,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Finding with CKF
           ------------------------*/
 
-        track_candidates =
-            host_finding(detector, field, measurements_per_event, params);
+        track_candidates = host_finding(
+            detector, field, vecmem::get_data(measurements_per_event),
+            vecmem::get_data(params));
         n_found_tracks += track_candidates.size();
 
         /*------------------------

@@ -17,7 +17,7 @@
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -136,8 +136,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using device_navigator_type =
         detray::navigator<const traccc::default_detector::device>;
 
-    using host_finding_algorithm =
-        traccc::finding_algorithm<stepper_type, host_navigator_type>;
+    using host_finding_algorithm = traccc::host::ckf_algorithm;
     using device_finding_algorithm =
         traccc::cuda::finding_algorithm<stepper_type, device_navigator_type>;
 
@@ -324,8 +323,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer timer{"Track finding (cpu)",
                                                      elapsedTimes};
-                    track_candidates = finding_alg(
-                        host_detector, field, measurements_per_event, params);
+                    track_candidates =
+                        finding_alg(host_detector, field,
+                                    vecmem::get_data(measurements_per_event),
+                                    vecmem::get_data(params));
                 }
 
                 // CUDA

@@ -9,7 +9,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -105,13 +105,11 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     detray::propagation::config propagation_config(propagation_opts);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg(finding_opts);
+    typename traccc::finding_config cfg(finding_opts);
     cfg.propagation = propagation_config;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg);
+    traccc::host::ckf_algorithm host_finding(cfg);
 
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
@@ -151,8 +149,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             input_opts.format);
 
         // Run finding
-        auto track_candidates =
-            host_finding(detector, field, measurements_per_event, seeds);
+        auto track_candidates = host_finding(
+            detector, field, vecmem::get_data(measurements_per_event),
+            vecmem::get_data(seeds));
 
         std::cout << "Number of found tracks: " << track_candidates.size()
                   << std::endl;
