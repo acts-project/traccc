@@ -17,7 +17,7 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
-#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -61,8 +61,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     using clustering_algorithm = host::clusterization_algorithm;
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
-        traccc::host::spacepoint_formation_algorithm<
-            traccc::default_detector::host>;
+        traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     /// Track finding algorithm type
     using finding_algorithm = traccc::host::ckf_algorithm;
     /// Track fitting algorithm type
@@ -112,9 +111,9 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// @{
 
     /// Clusterization algorithm
-    host::clusterization_algorithm m_clusterization;
+    clustering_algorithm m_clusterization;
     /// Spacepoint formation algorithm
-    host::spacepoint_formation_algorithm<detector_type> m_spacepoint_formation;
+    spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm

@@ -18,7 +18,7 @@
 #include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
-#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
@@ -99,8 +99,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
     // Type definitions
     using spacepoint_formation_algorithm =
-        traccc::host::spacepoint_formation_algorithm<
-            traccc::default_detector::host>;
+        traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     using stepper_type =
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
                            traccc::default_detector::host::algebra_type,
@@ -162,8 +161,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
             host_mr};
         traccc::host::measurement_creation_algorithm::output_type
             measurements_per_event{&host_mr};
-        traccc::host::spacepoint_formation_algorithm<
-            const traccc::default_detector>::output_type spacepoints_per_event{
+        spacepoint_formation_algorithm::output_type spacepoints_per_event{
             &host_mr};
         traccc::seeding_algorithm::output_type seeds{&host_mr};
         traccc::track_params_estimation::output_type params{&host_mr};

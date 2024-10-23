@@ -28,7 +28,7 @@
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
-#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // VecMem include(s).
@@ -121,8 +121,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     // Type definitions
     using host_spacepoint_formation_algorithm =
-        traccc::host::spacepoint_formation_algorithm<
-            traccc::default_detector::host>;
+        traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     using device_spacepoint_formation_algorithm =
         traccc::alpaka::spacepoint_formation_algorithm<
             traccc::default_detector::device>;
@@ -156,8 +155,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         // Instantiate host containers/collections
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event;
-        traccc::host::spacepoint_formation_algorithm<
-            traccc::default_detector::host>::output_type spacepoints_per_event;
+        host_spacepoint_formation_algorithm::output_type spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 

@@ -14,7 +14,7 @@
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
-#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -50,9 +50,7 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Algorithms
     traccc::host::clusterization_algorithm ca(host_mr);
-    traccc::host::spacepoint_formation_algorithm<
-        const traccc::default_detector::host>
-        sf(host_mr);
+    traccc::host::silicon_pixel_spacepoint_formation_algorithm sf(host_mr);
 
     // Read the cells from the relevant event file
     traccc::edm::silicon_cell_collection::host cells_truth{host_mr};

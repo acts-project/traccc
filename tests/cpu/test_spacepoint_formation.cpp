@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 // Detray include(s).
 #include "detray/geometry/shapes/rectangle2D.hpp"
@@ -60,7 +60,7 @@ TEST(spacepoint_formation, cpu) {
     measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
 
     // Run spacepoint formation
-    host::spacepoint_formation_algorithm<decltype(det)> sp_formation(host_mr);
+    host::silicon_pixel_spacepoint_formation_algorithm sp_formation(host_mr);
     auto spacepoints = sp_formation(det, vecmem::get_data(measurements));
 
     // Check the results
