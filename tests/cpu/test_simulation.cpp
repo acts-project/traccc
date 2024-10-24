@@ -271,6 +271,10 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
         std::numeric_limits<float>::max();
 
     // Run simulation
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    sim.get_config().propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
     sim.run();
 
     for (std::size_t i_event{0u}; i_event < n_events; i_event++) {

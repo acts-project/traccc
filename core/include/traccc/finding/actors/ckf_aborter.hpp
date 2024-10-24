@@ -41,7 +41,7 @@ struct ckf_aborter : detray::actor {
 
         // Abort at the next sensitive surface
         if (navigation.is_on_sensitive() &&
-            stepping._s > abrt_state.min_step_length) {
+            stepping.path_from_surface() > abrt_state.min_step_length) {
             prop_state._heartbeat &= navigation.abort();
             abrt_state.success = true;
         }

@@ -107,6 +107,10 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    sim.get_config().propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
     sim.run();
 
     /*****************************
@@ -120,6 +124,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     typename traccc::finding_config cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.chi2_max = 30.f;
+    cfg.propagation.navigation.overstep_tolerance = -100.f * unit<float>::um;
+    cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
 
     // Finding algorithm object
     traccc::host::ckf_algorithm host_finding(cfg);
@@ -127,6 +133,9 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     // Fitting algorithm object
     typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
+    fit_cfg.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
 
     // Iterate over events

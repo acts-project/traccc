@@ -117,7 +117,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     // If a surface found, add the parameter for the next step
     if (s4.success) {
-        params[param_id] = propagation._stepping._bound_params;
+        params[param_id] = propagation._stepping.bound_params();
 
         if (payload.step == cfg.max_track_candidates_per_track - 1) {
             tips.push_back({payload.step, param_id});

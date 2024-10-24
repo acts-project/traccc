@@ -112,6 +112,10 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    sim.get_config().propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
     sim.run();
 
     /*****************************
@@ -140,12 +144,19 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     cfg_no_limit.ptc_hypothesis = ptc;
     cfg_no_limit.max_num_branches_per_seed = 100000;
     cfg_no_limit.chi2_max = 30.f;
+    cfg_no_limit.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    cfg_no_limit.propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
 
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
     cfg_limit.max_num_branches_per_seed = 500;
     cfg_limit.chi2_max = 30.f;
+    cfg_limit.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    cfg_limit.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
 
     // Finding algorithm object
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
