@@ -1,0 +1,147 @@
+/*
+ * traccc library, part of the ACTS project (R&D line)
+ *
+ * (c) 2024 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// vecmem includes
+#include <vecmem/memory/sycl/device_memory_resource.hpp>
+#include <vecmem/utils/sycl/async_copy.hpp>
+
+// traccc includes
+#include <traccc/definitions/qualifiers.hpp>
+
+#include "../../device/sycl/src/sanity/predicate.hpp"
+
+// GTest include(s).
+#include <gtest/gtest.h>
+
+struct IsLessThan {
+    bool operator()(int i) const { return i < m_val; }
+
+    int m_val;
+};
+
+class SYCLSanityPredicate : public testing::Test {
+    protected:
+    SYCLSanityPredicate() : queue_wrapper(&queue), copy(&queue) {}
+
+    vecmem::sycl::device_memory_resource mr;
+    cl::sycl::queue queue;
+    traccc::sycl::queue_wrapper queue_wrapper;
+    vecmem::sycl::async_copy copy;
+};
+
+TEST_F(SYCLSanityPredicate, TrueForAllTrue) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_TRUE(traccc::sycl::true_for_all(IsLessThan{5001}, mr, copy,
+                                           queue_wrapper, device_data));
+}
+
+TEST_F(SYCLSanityPredicate, TrueForAllFalse) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_FALSE(traccc::sycl::true_for_all(IsLessThan{4500}, mr, copy,
+                                            queue_wrapper, device_data));
+}
+
+TEST_F(SYCLSanityPredicate, TrueForAnyTrue) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_TRUE(traccc::sycl::true_for_any(IsLessThan{1}, mr, copy,
+                                           queue_wrapper, device_data));
+}
+
+TEST_F(SYCLSanityPredicate, TrueForAnyFalse) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_FALSE(traccc::sycl::true_for_any(IsLessThan{0}, mr, copy,
+                                            queue_wrapper, device_data));
+}
+
+TEST_F(SYCLSanityPredicate, FalseForAllTrue) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_TRUE(traccc::sycl::false_for_all(IsLessThan{0}, mr, copy,
+                                            queue_wrapper, device_data));
+}
+
+TEST_F(SYCLSanityPredicate, FalseForAllFalse) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_FALSE(traccc::sycl::false_for_all(IsLessThan{1}, mr, copy,
+                                             queue_wrapper, device_data));
+}
+
+TEST_F(SYCLSanityPredicate, FalseForAnyTrue) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_TRUE(traccc::sycl::false_for_any(IsLessThan{1}, mr, copy,
+                                            queue_wrapper, device_data));
+}
+
+TEST_F(SYCLSanityPredicate, FalseForAnyFalse) {
+    std::vector<int> host_vector;
+
+    for (int i = 0; i < 5000; ++i) {
+        host_vector.push_back(i);
+    }
+
+    auto device_data = copy.to(vecmem::get_data(host_vector), mr,
+                               vecmem::copy::type::host_to_device);
+
+    ASSERT_FALSE(traccc::sycl::false_for_any(IsLessThan{6000}, mr, copy,
+                                             queue_wrapper, device_data));
+}
