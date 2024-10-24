@@ -324,7 +324,7 @@ track_candidate_container_types::host find_tracks(
             // If a surface found, add the parameter for the next
             // step
             if (s4.success) {
-                out_params.push_back(propagation._stepping._bound_params);
+                out_params.push_back(propagation._stepping.bound_params());
                 param_to_link[step].push_back(link_id);
             }
             // Unless the track found a surface, it is considered a
