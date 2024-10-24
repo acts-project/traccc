@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,35 +8,32 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/definitions/math.hpp"
+#include "detray/navigation/navigator.hpp"
+#include "detray/propagator/actors/pointwise_material_interactor.hpp"
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/particle.hpp"
-
-// Detray include(s).
-#include "detray/geometry/tracking_surface.hpp"
-#include "vecmem/containers/device_vector.hpp"
 
 namespace traccc::device {
 
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
     std::size_t globalIndex, const finding_config& cfg,
-    typename detector_t::view_type det_data, const unsigned int n_params,
-    bound_track_parameters_collection_types::view params_view,
-    vecmem::data::vector_view<const unsigned int> params_liveness_view) {
+    const apply_interaction_payload<detector_t>& payload) {
 
     // Type definitions
     using algebra_type = typename detector_t::algebra_type;
     using interactor_type = detray::pointwise_material_interactor<algebra_type>;
 
     // Detector
-    detector_t det(det_data);
+    detector_t det(payload.det_data);
 
     // in param
-    bound_track_parameters_collection_types::device params(params_view);
+    bound_track_parameters_collection_types::device params(payload.params_view);
     vecmem::device_vector<const unsigned int> params_liveness(
-        params_liveness_view);
+        payload.params_liveness_view);
 
-    if (globalIndex >= n_params) {
+    if (globalIndex >= payload.n_params) {
         return;
     }
 
@@ -57,5 +54,4 @@ TRACCC_DEVICE inline void apply_interaction(
             static_cast<int>(detray::navigation::direction::e_forward), sf);
     }
 }
-
 }  // namespace traccc::device
