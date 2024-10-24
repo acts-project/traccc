@@ -44,7 +44,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
 
     // Run the clusterization.
     auto cells_data = vecmem::get_data(cells);
-    const host::clusterization_algorithm::output_type measurements =
+    const clustering_algorithm::output_type measurements =
         m_clusterization(cells_data, det_descr_data);
 
     // If we have a Detray detector, run the seeding track finding and fitting.
@@ -53,8 +53,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         // Run the seed-finding.
         const measurement_collection_types::const_view measurements_view =
             vecmem::get_data(measurements);
-        const host::spacepoint_formation_algorithm<
-            const detector_type>::output_type spacepoints =
+        const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(*m_detector, measurements_view);
         const track_params_estimation::output_type track_params =
             m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),

@@ -99,10 +99,13 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/seeding/seed_finding.cpp"
   "include/traccc/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cpp"
-  "include/traccc/seeding/spacepoint_formation_algorithm.hpp"
-  "include/traccc/seeding/impl/spacepoint_formation_algorithm.ipp"
   "include/traccc/seeding/detail/spacepoint_formation.hpp"
   "include/traccc/seeding/impl/spacepoint_formation.ipp"
+  "src/seeding/silicon_pixel_spacepoint_formation.hpp"
+  "include/traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
+  "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
+  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_defdet.cpp"
+  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_teldet.cpp"
   # Ambiguity resolution
   "include/traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp" )
