@@ -75,6 +75,11 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
   "include/traccc/fitting/kalman_filter/statistics_updater.hpp"
   "include/traccc/fitting/fitting_algorithm.hpp"
+  "src/fitting/fit_tracks.hpp"
+  "include/traccc/fitting/kf_algorithm.hpp"
+  "src/fitting/kf_algorithm.cpp"
+  "src/fitting/kf_algorithm_defdet_cfield.cpp"
+  "src/fitting/kf_algorithm_teldet_cfield.cpp"
   # Seed finding algorithmic code.
   "include/traccc/seeding/detail/lin_circle.hpp"
   "include/traccc/seeding/detail/doublet.hpp"
