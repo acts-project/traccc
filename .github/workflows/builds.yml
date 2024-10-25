@@ -26,23 +26,23 @@ jobs:
         platform:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:56
-            cxx_standard: "20"
-            options:
+            options: --preset host-fp32
             run_tests: true
+          - name: CPU
+            container: ghcr.io/acts-project/ubuntu2404:56
+            options: --preset host-fp64
+            run_tests: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2404_cuda:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_CUDA=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
+            options: --preset cuda-fp32
             run_tests: false
           - name: SYCL
             container: ghcr.io/acts-project/ubuntu2404_oneapi:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_SYCL=TRUE -DCMAKE_SYCL_FLAGS="-fsycl -fsycl-targets=spir64"
+            options: --preset sycl-fp32 -DCMAKE_SYCL_FLAGS="-fsycl -fsycl-targets=spir64"
             run_tests: true
           - name: KOKKOS
             container: ghcr.io/acts-project/ubuntu2404:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_KOKKOS=TRUE
+            options: -DTRACCC_BUILD_CUDA=FALSE --preset kokkos-fp32
             run_tests: false
         build:
           - Release
@@ -51,34 +51,31 @@ jobs:
           - platform:
               name: CUDA
               container: ghcr.io/acts-project/ubuntu2404_cuda:56
-              cxx_standard: "20"
-              options: -DTRACCC_CUSTOM_SCALARTYPE=double -DDETRAY_CUSTOM_SCALARTYPE=double -DTRACCC_BUILD_CUDA=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
+              options: --preset cuda-fp64
               run_tests: false
             build: Release
           - platform:
               name: "SYCL"
               container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_SYCL=TRUE -DTRACCC_BUILD_CUDA=FALSE -DVECMEM_BUILD_CUDA_LIBRARY=FALSE
+              options: --preset sycl-fp32
+              run_tests: false
             build: Release
           - platform:
               name: "SYCL"
               container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_SYCL=TRUE -DVECMEM_BUILD_HIP_LIBRARY=FALSE
+              options: --preset sycl-fp32
+              run_tests: false
             build: Release
           - platform:
               name: ALPAKA
               container: ghcr.io/acts-project/ubuntu2404:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_ALPAKA=TRUE
+              options: -DTRACCC_BUILD_CUDA=FALSE --preset alpaka-fp32
               run_tests: true
             build: Release
           - platform:
               name: ALPAKA
               container: ghcr.io/acts-project/ubuntu2404:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_ALPAKA=TRUE
+              options: -DTRACCC_BUILD_CUDA=FALSE --preset alpaka-fp32
               run_tests: false
             build: Debug
     # Use BASH as the shell from the images.
@@ -92,12 +89,7 @@ jobs:
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-            -DCMAKE_CXX_STANDARD=${{ matrix.platform.cxx_standard }} \
-            -DCMAKE_CUDA_STANDARD=${{ matrix.platform.cxx_standard }} \
-            -DCMAKE_HIP_STANDARD=${{ matrix.platform.cxx_standard }} \
-            -DCMAKE_SYCL_STANDARD=${{ matrix.platform.cxx_standard }} \
             ${{ matrix.platform.options }} \
-            -DTRACCC_FAIL_ON_WARNINGS=TRUE \
             -S ${GITHUB_WORKSPACE} \
             -B build
       - name: Build
