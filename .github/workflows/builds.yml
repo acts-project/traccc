@@ -42,7 +42,7 @@ jobs:
             run_tests: true
           - name: KOKKOS
             container: ghcr.io/acts-project/ubuntu2404:56
-            options: -DTRACCC_BUILD_CUDA=FALSE --preset kokkos-fp32
+            options: --preset kokkos-fp32
             run_tests: false
         build:
           - Release
@@ -69,13 +69,13 @@ jobs:
           - platform:
               name: ALPAKA
               container: ghcr.io/acts-project/ubuntu2404:56
-              options: -DTRACCC_BUILD_CUDA=FALSE --preset alpaka-fp32
+              options: --preset alpaka-fp32
               run_tests: true
             build: Release
           - platform:
               name: ALPAKA
               container: ghcr.io/acts-project/ubuntu2404:56
-              options: -DTRACCC_BUILD_CUDA=FALSE --preset alpaka-fp32
+              options: --preset alpaka-fp32
               run_tests: false
             build: Debug
     # Use BASH as the shell from the images.
