@@ -129,7 +129,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
-            1.f * detray::unit<traccc::scalar>::mm;
+            1.f * detray::unit<float>::mm;
 
         sim.run();
 

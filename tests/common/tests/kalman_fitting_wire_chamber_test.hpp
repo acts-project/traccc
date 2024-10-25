@@ -34,7 +34,7 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
     static constexpr vector3 B{0, 0, 2 * detray::unit<scalar>::T};
 
     /// Step constraint
-    static const inline scalar step_constraint = 1 * detray::unit<scalar>::mm;
+    static const inline float step_constraint = 1.f * detray::unit<float>::mm;
 
     // Set mask tolerance to a large value not to miss the surface during KF
     static const inline scalar mask_tolerance = 75.f * detray::unit<scalar>::um;
