@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  builds:
+  containers:
     name: ${{ matrix.platform.name }}-${{ matrix.build }}
     runs-on: ubuntu-latest
     container: ${{ matrix.platform.container }}
@@ -117,3 +117,19 @@ jobs:
         if: "matrix.platform.name == 'CUDA' && matrix.build == 'Debug'"
         continue-on-error: true
         run: ${GITHUB_WORKSPACE}/.github/find_f64_ptx.py --source ${GITHUB_WORKSPACE} --build build $(find build -name "*.ptx")
+
+  macos:
+    runs-on: macos-14
+    name: macOS-Release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install boost
+      - name: Configure
+        run: cmake --preset base -S ${GITHUB_WORKSPACE} -B build
+      - name: Build
+        run: cmake --build build
+      - name: Download data files
+        run: ${GITHUB_WORKSPACE}/data/traccc_data_get_files.sh
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
