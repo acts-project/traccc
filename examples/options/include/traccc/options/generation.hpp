@@ -11,6 +11,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
+#include "traccc/utils/ranges.hpp"
 
 // detray include(s).
 #include "detray/definitions/pdg_particle.hpp"
@@ -42,6 +43,9 @@ class generation : public interface {
     opts::value_array<float, 2> phi_range{-180.f, 180.f};
     /// Range of eta
     opts::value_array<float, 2> eta_range{-2.f, 2.f};
+    /// Range of theta [rad] (corresponding to eta range of [-2,2])
+    opts::value_array<float, 2> theta_range{eta_to_theta_range(eta_range)};
+
     /// PDG number for particle type (Default: muon)
     int pdg_number = 13;
 
@@ -50,8 +54,6 @@ class generation : public interface {
     /// @name Derived options
     /// @{
 
-    /// Range of theta [rad]
-    opts::value_array<float, 2> theta_range{0.f, 0.f};
     /// Particle type
     detray::pdg_particle<traccc::scalar> ptc_type =
         detray::muon<traccc::scalar>();
