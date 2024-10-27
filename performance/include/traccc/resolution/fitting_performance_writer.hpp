@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -75,7 +75,7 @@ class fitting_performance_writer {
 
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
-        std::map<particle, uint64_t> contributing_particles =
+        std::map<particle, std::size_t> contributing_particles =
             meas_to_ptc_map[meas];
 
         const particle ptc = contributing_particles.begin()->first;
