@@ -118,7 +118,7 @@ jobs:
       - name: Install dependencies
         run: brew install boost
       - name: Configure
-        run: cmake --preset base -S ${GITHUB_WORKSPACE} -B build
+        run: cmake --preset base-fp32 -S ${GITHUB_WORKSPACE} -B build
       - name: Build
         run: cmake --build build
       - name: Download data files
