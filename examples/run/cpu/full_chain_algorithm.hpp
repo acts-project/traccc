@@ -12,8 +12,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
-#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/fitting/kf_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -50,14 +49,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// Detector type used during track finding and fitting
     using detector_type = traccc::default_detector::host;
 
-    /// Stepper type used by the track finding and fitting algorithms
-    using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           detector_type::algebra_type,
-                           detray::constrained_step<>>;
-    /// Navigator type used by the track finding and fitting algorithms
-    using navigator_type = detray::navigator<const detector_type>;
-
+    /// Clusterization algorithm type
     using clustering_algorithm = host::clusterization_algorithm;
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
@@ -66,8 +58,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     using finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
-    using fitting_algorithm = traccc::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, navigator_type>>;
+    using fitting_algorithm = traccc::host::kf_algorithm;
 
     /// @}
 

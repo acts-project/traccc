@@ -15,8 +15,8 @@
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/fitting/kf_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -69,10 +69,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<>>;
-    using host_navigator_type =
-        detray::navigator<const traccc::default_detector::host>;
-    using host_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
     using device_navigator_type =
         detray::navigator<const traccc::default_detector::device>;
     using device_fitter_type =
@@ -156,10 +152,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         device_finding(cfg, mr, async_copy, stream);
 
     // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_config;
 
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
+    traccc::host::kf_algorithm host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream);
 
@@ -245,7 +241,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         // CPU containers
         traccc::host::combinatorial_kalman_filter_algorithm::output_type
             track_candidates;
-        traccc::fitting_algorithm<host_fitter_type>::output_type track_states;
+        traccc::host::kf_algorithm::output_type track_states;
 
         if (accelerator_opts.compare_with_cpu) {
 
@@ -264,7 +260,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run fitting
-                track_states = host_fitting(detector, field, track_candidates);
+                track_states = host_fitting(detector, field,
+                                            traccc::get_data(track_candidates));
             }
         }
 

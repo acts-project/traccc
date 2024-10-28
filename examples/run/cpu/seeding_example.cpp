@@ -19,7 +19,7 @@
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/kf_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -64,17 +64,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts) {
-
-    /// Type declarations
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t,
-                           traccc::default_detector::host::algebra_type,
-                           detray::constrained_step<>>;
-    using host_navigator_type =
-        detray::navigator<const traccc::default_detector::host>;
-    using host_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -132,10 +121,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
 
     // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_config;
 
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
+    traccc::host::kf_algorithm host_fitting(fit_cfg);
 
     traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution{};
 
@@ -192,7 +181,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Fitting with KF
           ------------------------*/
 
-        track_states = host_fitting(detector, field, track_candidates);
+        track_states =
+            host_fitting(detector, field, traccc::get_data(track_candidates));
         n_fitted_tracks += track_states.size();
 
         /*-----------------------------------------

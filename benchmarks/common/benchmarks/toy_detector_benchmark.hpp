@@ -8,7 +8,7 @@
 // Traccc include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/finding/finding_config.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/fitting_config.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"

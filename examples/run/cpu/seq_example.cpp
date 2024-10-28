@@ -16,7 +16,7 @@
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/kf_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -100,16 +100,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Type definitions
     using spacepoint_formation_algorithm =
         traccc::host::silicon_pixel_spacepoint_formation_algorithm;
-    using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           traccc::default_detector::host::algebra_type,
-                           detray::constrained_step<>>;
-    using navigator_type =
-        detray::navigator<const traccc::default_detector::host>;
     using finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
-    using fitting_algorithm = traccc::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, navigator_type>>;
+    using fitting_algorithm = traccc::host::kf_algorithm;
 
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
@@ -257,8 +250,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 {
                     traccc::performance::timer timer{"Track fitting",
                                                      elapsedTimes};
-                    track_states =
-                        fitting_alg(detector, field, track_candidates);
+                    track_states = fitting_alg(
+                        detector, field, traccc::get_data(track_candidates));
                 }
             }
 

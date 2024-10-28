@@ -18,7 +18,7 @@
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/kf_algorithm.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -131,8 +131,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
                            traccc::default_detector::host::algebra_type,
                            detray::constrained_step<>>;
-    using host_navigator_type =
-        detray::navigator<const traccc::default_detector::host>;
     using device_navigator_type =
         detray::navigator<const traccc::default_detector::device>;
 
@@ -141,8 +139,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using device_finding_algorithm =
         traccc::cuda::finding_algorithm<stepper_type, device_navigator_type>;
 
-    using host_fitting_algorithm = traccc::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, host_navigator_type>>;
+    using host_fitting_algorithm = traccc::host::kf_algorithm;
     using device_fitting_algorithm = traccc::cuda::fitting_algorithm<
         traccc::kalman_fitter<stepper_type, device_navigator_type>>;
 
@@ -343,7 +340,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track fitting (cpu)",
                                                      elapsedTimes};
                     track_states =
-                        fitting_alg(host_detector, field, track_candidates);
+                        fitting_alg(host_detector, field,
+                                    traccc::get_data(track_candidates));
                 }
             }
 
