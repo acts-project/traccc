@@ -195,7 +195,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     static_cast<unsigned int>(spacepoints_per_event.size()),
                     mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
-                 spacepoints_alpaka_buffer);
+                 spacepoints_alpaka_buffer)
+                ->wait();
 
             {
                 traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
@@ -242,8 +243,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         // Copy the seeds to the host for comparisons
         traccc::seed_collection_types::host seeds_alpaka;
         traccc::bound_track_parameters_collection_types::host params_alpaka;
-        copy(seeds_alpaka_buffer, seeds_alpaka);
-        copy(params_alpaka_buffer, params_alpaka);
+        copy(seeds_alpaka_buffer, seeds_alpaka)->wait();
+        copy(params_alpaka_buffer, params_alpaka)->wait();
 
         if (accelerator_opts.compare_with_cpu) {
             // Show which event we are currently presenting the results for.

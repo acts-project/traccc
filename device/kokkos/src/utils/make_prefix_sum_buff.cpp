@@ -27,7 +27,7 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     // Create buffer and view objects for prefix sum vector
     vecmem::data::vector_buffer<device::prefix_sum_element_t> prefix_sum_buff(
         totalSize, mr.main);
-    copy.setup(prefix_sum_buff);
+    copy.setup(prefix_sum_buff)->wait();
 
     // Fill the prefix sum vector
     // kernels::fill_prefix_sum<<<(sizes_sum_view.size() / 32) + 1, 32>>>(

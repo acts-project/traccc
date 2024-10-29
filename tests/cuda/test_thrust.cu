@@ -44,7 +44,9 @@ TEST(CUDAThrust, sort) {
 
     thrust::sort(thrust::device, device_vector.begin(), device_vector.end());
 
-    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+        ->wait();
+    ;
 
     ASSERT_EQ(host_vector[0], 1);
     ASSERT_EQ(host_vector[1], 2);
@@ -66,7 +68,8 @@ TEST(CUDAThrust, scan) {
     thrust::inclusive_scan(thrust::device, device_vector.begin(),
                            device_vector.end(), device_vector.begin());
 
-    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+        ->wait();
 
     ASSERT_EQ(host_vector[0], 3);
     ASSERT_EQ(host_vector[1], 5);
@@ -89,7 +92,8 @@ TEST(CUDAThrust, fill) {
     thrust::fill(thrust::device, device_vector.begin(), device_vector.end(),
                  112);
 
-    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+        ->wait();
 
     ASSERT_EQ(host_vector[0], 112);
     ASSERT_EQ(host_vector[1], 112);

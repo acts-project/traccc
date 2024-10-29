@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -39,7 +39,7 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     // Create buffer and view objects for prefix sum vector
     vecmem::data::vector_buffer<device::prefix_sum_element_t> prefix_sum_buff(
         totalSize, mr.main);
-    copy.setup(prefix_sum_buff);
+    copy.setup(prefix_sum_buff)->wait();
     auto data_prefix_sum_buff = vecmem::get_data(prefix_sum_buff);
 
     // Setup Alpaka

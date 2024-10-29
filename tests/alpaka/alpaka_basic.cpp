@@ -168,7 +168,8 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
 
     alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{}, data_dev_vec_buf);
 
-    vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+    vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+        ->wait();
 
     for (uint32_t i = 0u; i < n; i++) {
         EXPECT_FLOAT_EQ(host_vector[i], static_cast<float>(std::sin(i)));

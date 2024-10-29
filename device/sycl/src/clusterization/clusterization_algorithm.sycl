@@ -67,7 +67,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Create the result object, overestimating the number of measurements.
     measurement_collection_types::buffer measurements{
         num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
-    m_copy.get().setup(measurements);
+    vecmem::copy::event_type measurements_setup_event =
+        m_copy.get().setup(measurements);
     measurement_collection_types::view measurements_view(measurements);
 
     // If there are no cells, return right away.
@@ -103,7 +104,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // debugging.
     //
     vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
-    m_copy.get().setup(cell_links)->wait();
+    vecmem::copy::event_type cell_links_setup_event =
+        m_copy.get().setup(cell_links);
     vecmem::data::vector_view<unsigned int> cell_links_view(cell_links);
 
     using vector_size_t =
@@ -115,6 +117,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
            device::details::CELLS_PER_THREAD_STACK_LIMIT);
 
     // Run ccl kernel
+    measurements_setup_event->wait();
+    cell_links_setup_event->wait();
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             // Allocate shared memory for the kernel.
