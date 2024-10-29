@@ -12,7 +12,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -58,7 +58,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     using finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
-    using fitting_algorithm = traccc::host::kf_algorithm;
+    using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
 
     /// @}
 

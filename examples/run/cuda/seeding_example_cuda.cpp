@@ -19,7 +19,7 @@
 #include "traccc/efficiency/track_filter.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -179,7 +179,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kf_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream);
 

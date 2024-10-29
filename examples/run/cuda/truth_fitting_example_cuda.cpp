@@ -13,7 +13,7 @@
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_opts;
 
-    traccc::host::kf_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream);
 
@@ -197,7 +197,7 @@ int main(int argc, char* argv[]) {
             track_state_d2h(track_states_cuda_buffer);
 
         // CPU container(s)
-        traccc::host::kf_algorithm::output_type track_states;
+        traccc::host::kalman_fitting_algorithm::output_type track_states;
 
         if (accelerator_opts.compare_with_cpu) {
 

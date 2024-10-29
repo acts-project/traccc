@@ -6,10 +6,11 @@
  */
 
 // Project include(s).
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 
 namespace traccc::host {
 
-kf_algorithm::kf_algorithm(const config_type& config) : m_config(config) {}
+kalman_fitting_algorithm::kalman_fitting_algorithm(const config_type& config)
+    : m_config(config) {}
 
 }  // namespace traccc::host

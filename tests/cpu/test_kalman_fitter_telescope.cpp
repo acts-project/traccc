@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/simulator.hpp"
@@ -123,7 +123,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     fit_cfg.propagation.navigation.overstep_tolerance =
         -100.f * unit<float>::um;
     fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
-    traccc::host::kf_algorithm fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm fitting(fit_cfg);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

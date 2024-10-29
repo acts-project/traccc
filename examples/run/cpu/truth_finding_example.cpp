@@ -10,7 +10,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -103,7 +103,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kf_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
 
     // Seed generator
     traccc::seed_generator<traccc::default_detector::host> sg(detector,

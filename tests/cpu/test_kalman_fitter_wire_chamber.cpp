@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
@@ -124,7 +124,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
     fit_cfg.ptc_hypothesis = ptc;
-    traccc::host::kf_algorithm fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm fitting(fit_cfg);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

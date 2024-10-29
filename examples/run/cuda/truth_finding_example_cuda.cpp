@@ -16,7 +16,7 @@
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -155,7 +155,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kf_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream);
 
@@ -241,7 +241,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         // CPU containers
         traccc::host::combinatorial_kalman_filter_algorithm::output_type
             track_candidates;
-        traccc::host::kf_algorithm::output_type track_states;
+        traccc::host::kalman_fitting_algorithm::output_type track_states;
 
         if (accelerator_opts.compare_with_cpu) {
 

@@ -19,7 +19,7 @@
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/kf_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -124,7 +124,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kf_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
 
     traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution{};
 

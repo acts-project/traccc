@@ -20,14 +20,15 @@
 namespace traccc::host {
 
 /// Kalman filter based track fitting algorithm
-class kf_algorithm : public algorithm<track_state_container_types::host(
-                         const default_detector::host&,
-                         const detray::bfield::const_field_t::view_t&,
-                         const track_candidate_container_types::const_view&)>,
-                     public algorithm<track_state_container_types::host(
-                         const telescope_detector::host&,
-                         const detray::bfield::const_field_t::view_t&,
-                         const track_candidate_container_types::const_view&)> {
+class kalman_fitting_algorithm
+    : public algorithm<track_state_container_types::host(
+          const default_detector::host&,
+          const detray::bfield::const_field_t::view_t&,
+          const track_candidate_container_types::const_view&)>,
+      public algorithm<track_state_container_types::host(
+          const telescope_detector::host&,
+          const detray::bfield::const_field_t::view_t&,
+          const track_candidate_container_types::const_view&)> {
 
     public:
     /// Configuration type
@@ -39,7 +40,7 @@ class kf_algorithm : public algorithm<track_state_container_types::host(
     ///
     /// @param config The configuration object
     ///
-    kf_algorithm(const config_type& config);
+    kalman_fitting_algorithm(const config_type& config);
 
     /// Execute the algorithm
     ///
@@ -71,6 +72,6 @@ class kf_algorithm : public algorithm<track_state_container_types::host(
     /// Algorithm configuration
     config_type m_config;
 
-};  // class kf_algorithm
+};  // class kalman_fitting_algorithm
 
 }  // namespace traccc::host
