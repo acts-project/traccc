@@ -190,9 +190,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
-        async_copy.setup(seeds_buffer);
+        async_copy.setup(seeds_buffer)->wait();
         async_copy(vecmem::get_data(seeds), seeds_buffer,
-                   vecmem::copy::type::host_to_device);
+                   vecmem::copy::type::host_to_device)
+            ->wait();
 
         // Read measurements
         traccc::measurement_collection_types::host measurements_per_event{
@@ -204,15 +205,17 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         traccc::measurement_collection_types::buffer measurements_cuda_buffer(
             static_cast<unsigned int>(measurements_per_event.size()), mr.main);
+        async_copy.setup(measurements_cuda_buffer)->wait();
         async_copy(vecmem::get_data(measurements_per_event),
-                   measurements_cuda_buffer);
+                   measurements_cuda_buffer)
+            ->wait();
 
         // Instantiate output cuda containers/collections
         traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer{{{}, *(mr.host)},
                                          {{}, *(mr.host), mr.host}};
-        async_copy.setup(track_candidates_cuda_buffer.headers);
-        async_copy.setup(track_candidates_cuda_buffer.items);
+        async_copy.setup(track_candidates_cuda_buffer.headers)->wait();
+        async_copy.setup(track_candidates_cuda_buffer.items)->wait();
 
         {
             traccc::performance::timer t("Track finding  (cuda)", elapsedTimes);

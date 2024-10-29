@@ -91,7 +91,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         static_cast<traccc::silicon_detector_description::buffer::size_type>(
             host_det_descr.size()),
         device_mr};
-    copy(host_det_descr_data, device_det_descr);
+    copy.setup(device_det_descr)->wait();
+    copy(host_det_descr_data, device_det_descr)->wait();
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_detector{host_mr};
@@ -234,7 +235,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
             // Create device copy of input collections
             traccc::edm::silicon_cell_collection::buffer cells_buffer(
                 static_cast<unsigned int>(cells_per_event.size()), mr.main);
-            copy(vecmem::get_data(cells_per_event), cells_buffer);
+            copy.setup(cells_buffer)->wait();
+            copy(vecmem::get_data(cells_per_event), cells_buffer)->wait();
 
             // CUDA
             {

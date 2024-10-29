@@ -173,9 +173,10 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
-        copy.setup(seeds_buffer);
+        copy.setup(seeds_buffer)->wait();
         copy(vecmem::get_data(seeds), seeds_buffer,
-             vecmem::copy::type::host_to_device);
+             vecmem::copy::type::host_to_device)
+            ->wait();
 
         // Read measurements
         traccc::measurement_collection_types::host measurements_per_event{
@@ -184,20 +185,22 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
         traccc::measurement_collection_types::buffer measurements_buffer(
             static_cast<unsigned int>(measurements_per_event.size()), mr.main);
-        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
+        copy.setup(measurements_buffer)->wait();
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer)
+            ->wait();
 
         // Instantiate output cuda containers/collections
         traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer{{{}, *(mr.host)},
                                          {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers);
-        copy.setup(track_candidates_cuda_buffer.items);
+        copy.setup(track_candidates_cuda_buffer.headers)->wait();
+        copy.setup(track_candidates_cuda_buffer.items)->wait();
 
         traccc::track_candidate_container_types::buffer
             track_candidates_limit_cuda_buffer{{{}, *(mr.host)},
                                                {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_limit_cuda_buffer.headers);
-        copy.setup(track_candidates_limit_cuda_buffer.items);
+        copy.setup(track_candidates_limit_cuda_buffer.headers)->wait();
+        copy.setup(track_candidates_limit_cuda_buffer.items)->wait();
 
         // Run device finding
         track_candidates_cuda_buffer =

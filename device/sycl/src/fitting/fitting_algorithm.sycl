@@ -72,8 +72,10 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 
-    m_copy->setup(track_states_buffer.headers);
-    m_copy->setup(track_states_buffer.items);
+    vecmem::copy::event_type track_states_headers_setup_event =
+        m_copy->setup(track_states_buffer.headers);
+    vecmem::copy::event_type track_states_items_setup_event =
+        m_copy->setup(track_states_buffer.items);
 
     track_state_container_types::view track_states_view(track_states_buffer);
 
@@ -113,6 +115,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                              keys_device.begin(), keys_device.end(),
                              param_ids_device.begin());
 
+    track_states_headers_setup_event->wait();
+    track_states_items_setup_event->wait();
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::fit>(

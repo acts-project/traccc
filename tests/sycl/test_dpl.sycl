@@ -56,7 +56,8 @@ TEST(dpl, sort) {
     oneapi::dpl::sort(oneapi::dpl::execution::dpcpp_default,
                       device_vector.begin(), device_vector.end());
 
-    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+        ->wait();
 
     ASSERT_EQ(host_vector[0], 1);
     ASSERT_EQ(host_vector[1], 2);
@@ -84,7 +85,8 @@ TEST(dpl, scan) {
                                 device_vector.begin(), device_vector.end(),
                                 device_vector.begin());
 
-    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+        ->wait();
 
     ASSERT_EQ(host_vector[0], 3);
     ASSERT_EQ(host_vector[1], 5);
@@ -112,7 +114,8 @@ TEST(dpl, fill) {
     oneapi::dpl::fill(oneapi::dpl::execution::dpcpp_default,
                       device_vector.begin(), device_vector.end(), 112);
 
-    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host);
+    copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+        ->wait();
 
     ASSERT_EQ(host_vector[0], 112);
     ASSERT_EQ(host_vector[1], 112);

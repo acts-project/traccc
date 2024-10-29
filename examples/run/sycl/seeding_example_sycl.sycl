@@ -160,7 +160,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 static_cast<unsigned int>(spacepoints_per_event.size()),
                 mr.main);
             copy(vecmem::get_data(spacepoints_per_event),
-                 spacepoints_sycl_buffer);
+                 spacepoints_sycl_buffer)
+                ->wait();
 
             {
                 traccc::performance::timer t("Seeding (sycl)", elapsedTimes);

@@ -245,15 +245,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
                 static_cast<unsigned int>(spacepoints_per_event.size()),
                 mr.main);
+            async_copy.setup(spacepoints_cuda_buffer)->wait();
             async_copy(vecmem::get_data(spacepoints_per_event),
-                       spacepoints_cuda_buffer);
+                       spacepoints_cuda_buffer)
+                ->wait();
 
             traccc::measurement_collection_types::buffer
                 measurements_cuda_buffer(
                     static_cast<unsigned int>(measurements_per_event.size()),
                     mr.main);
+            async_copy.setup(measurements_cuda_buffer)->wait();
             async_copy(vecmem::get_data(measurements_per_event),
-                       measurements_cuda_buffer);
+                       measurements_cuda_buffer)
+                ->wait();
 
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
