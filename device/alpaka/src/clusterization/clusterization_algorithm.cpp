@@ -122,7 +122,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Launch ccl kernel. Each thread will handle a single cell.
     Idx num_blocks = (num_cells + (m_config.target_partition_size()) - 1) /
                      m_config.target_partition_size();
-    static_assert(accSupportsMultiThreadBlocks<Acc>(),
+    static_assert(::alpaka::isMultiThreadAcc<Acc>,
                   "Clustering algorithm must be compiled for an accelerator "
                   "with support for multi-thread blocks.");
     auto workDiv = makeWorkDiv<Acc>(num_blocks, m_config.threads_per_partition);
