@@ -11,6 +11,7 @@
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/performance/collection_comparator.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
@@ -63,15 +64,25 @@ TEST(CUDAClustering, SingleModule) {
 
     // Check the results
     ASSERT_EQ(copy.get_size(measurements_buffer), 2u);
-    std::set<measurement> test;
-    test.insert(measurements[0]);
-    test.insert(measurements[1]);
 
-    std::set<measurement> ref;
-    ref.insert(
+    measurement_collection_types::host references;
+    references.push_back(
         {{2.5f, 2.5f}, {0.75f, 0.0833333f}, detray::geometry::barcode{0u}});
-    ref.insert(
+    references.push_back(
         {{6.5f, 5.5f}, {0.483333f, 0.483333f}, detray::geometry::barcode{0u}});
 
-    EXPECT_EQ(test, ref);
+    for (const auto& test : measurements) {
+        // 0.01 % uncertainty
+        auto iso = traccc::details::is_same_object<measurement>(test, 0.0001f);
+        bool matched = false;
+
+        for (const auto& ref : references) {
+            if (iso(ref)) {
+                matched = true;
+                break;
+            }
+        }
+
+        ASSERT_TRUE(matched);
+    }
 }
