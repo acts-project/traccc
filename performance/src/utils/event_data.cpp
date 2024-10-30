@@ -190,17 +190,17 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
             auto hid = csv_meas_hit_ids[meas_id].hit_id;
             const auto& iohit = csv_hits[hid];
 
-            const auto meas = m_measurement_map[meas_id];
+            const auto meas = m_measurement_map.at(meas_id);
             meas_to_cluster_map[meas].push_back(iocell);
 
-            const auto& ptc = m_particle_map[iohit.particle_id];
+            const auto& ptc = m_particle_map.at(iohit.particle_id);
             m_cell_to_particle_map[iocell] = ptc;
         }
 
         // Fill the meas_to_particle_map
         for (auto const& [ms, cluster] : meas_to_cluster_map) {
             for (const auto& cell : cluster) {
-                const auto& ptc = m_cell_to_particle_map[cell];
+                const auto& ptc = m_cell_to_particle_map.at(cell);
                 m_meas_to_ptc_map[ms][ptc]++;
             }
         }
@@ -209,18 +209,19 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
     for (const auto& iomeas : csv_measurements) {
 
         // Hit index
-        const auto hid = csv_meas_hit_ids[iomeas.measurement_id].hit_id;
+        const auto hid = csv_meas_hit_ids.at(iomeas.measurement_id).hit_id;
 
         // Make spacepoint
-        const auto& iohit = csv_hits[hid];
+        const auto& iohit = csv_hits.at(hid);
         point3 global_pos{iohit.tx, iohit.ty, iohit.tz};
         point3 global_mom{iohit.tpx, iohit.tpy, iohit.tpz};
 
         // Make particle
-        const auto& ptc = m_particle_map[iohit.particle_id];
+        const auto& ptc = m_particle_map.at(iohit.particle_id);
 
         // Construct the measurement object.
-        traccc::measurement meas = m_measurement_map[iomeas.measurement_id];
+        const traccc::measurement& meas =
+            m_measurement_map.at(iomeas.measurement_id);
 
         // Fill measurement to truth global position and momentum map
         m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
@@ -229,8 +230,15 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         m_ptc_to_meas_map[ptc].push_back(meas);
 
         if (!include_silicon_cells) {
-            // Fill measurement to particle map
-            m_meas_to_ptc_map[meas][ptc]++;
+            auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
+            if (insert_return.second == false) {
+                throw std::runtime_error(
+                    "The new measurement should not exist in the "
+                    "measurement-to-particle map");
+            }
+            // Each measurement is created by a single particle unless we use
+            // the clusterization results
+            (*(insert_return.first)).second[ptc] = 1u;
         }
     }
 }
@@ -305,7 +313,7 @@ track_candidate_container_types::host event_data::generate_truth_candidates(
 
     for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
 
-        const auto& param = m_meas_to_param_map[measurements[0]];
+        const auto& param = m_meas_to_param_map.at(measurements[0]);
         const free_track_parameters free_param(param.first, 0.f, param.second,
                                                ptc.charge);
 

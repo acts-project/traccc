@@ -76,13 +76,13 @@ class fitting_performance_writer {
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
         std::map<particle, std::size_t> contributing_particles =
-            meas_to_ptc_map[meas];
+            meas_to_ptc_map.at(meas);
 
         const particle ptc = contributing_particles.begin()->first;
 
         // Find the truth global position and momentum
-        const auto global_pos = meas_to_param_map[meas].first;
-        const auto global_mom = meas_to_param_map[meas].second;
+        const auto global_pos = meas_to_param_map.at(meas).first;
+        const auto global_mom = meas_to_param_map.at(meas).second;
 
         const detray::tracking_surface sf{det, meas.surface_link};
         using cxt_t = typename detector_t::geometry_context;
