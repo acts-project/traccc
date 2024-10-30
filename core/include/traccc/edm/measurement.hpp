@@ -62,11 +62,16 @@ TRACCC_HOST_DEVICE inline bool operator<(const measurement& lhs,
 
     if (lhs.surface_link != rhs.surface_link) {
         return lhs.surface_link < rhs.surface_link;
-    } else if (math::fabs(lhs.local[0] - rhs.local[0]) > float_epsilon) {
-        return (lhs.local[0] < rhs.local[0]);
-    } else {
-        return (lhs.local[1] < rhs.local[1]);
+    } else if (lhs.local[0] != rhs.local[0]) {
+        return lhs.local[0] < rhs.local[0];
+    } else if (lhs.local[1] != rhs.local[1]) {
+        return lhs.local[1] < rhs.local[1];
+    } else if (lhs.variance[0] != rhs.variance[0]) {
+        return lhs.variance[0] < rhs.variance[0];
+    } else if (lhs.variance[1] != rhs.variance[1]) {
+        return lhs.variance[1] < rhs.variance[1];
     }
+    return false;
 }
 
 /// Equality operator for measurements
