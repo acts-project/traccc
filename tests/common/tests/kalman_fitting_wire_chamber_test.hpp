@@ -13,7 +13,7 @@
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
-#include "detray/test/utils/detectors/create_wire_chamber.hpp"
+#include "detray/test/utils/detectors/build_wire_chamber.hpp"
 
 // System include(s)
 #include <array>
@@ -76,7 +76,7 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
         // wire_chamber_cfg.m_thickness = 100.f * detray::unit<scalar>::um;
 
         // Create telescope detector
-        auto [det, name_map] = create_wire_chamber(host_mr, wire_chamber_cfg);
+        auto [det, name_map] = build_wire_chamber(host_mr, wire_chamber_cfg);
 
         // Write detector file
         auto writer_cfg = detray::io::detector_writer_config{}
