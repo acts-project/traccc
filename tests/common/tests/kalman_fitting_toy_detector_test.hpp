@@ -12,8 +12,8 @@
 
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
+#include "detray/test/utils/detectors/build_toy_detector.hpp"
 
 // System include(s)
 #include <array>
@@ -49,7 +49,7 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
         0.01f * detray::unit<scalar>::mm,
         0.001f,
         0.001f,
-        0.01f / detray::unit<scalar>::GeV,
+        0.001f / detray::unit<scalar>::GeV,
         0.01f * detray::unit<scalar>::ns};
 
     protected:

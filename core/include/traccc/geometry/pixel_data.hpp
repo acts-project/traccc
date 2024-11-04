@@ -24,7 +24,6 @@ struct pixel_data {
     scalar pitch_x = 1.f;
     scalar pitch_y = 1.f;
     char dimension = 2;
-    scalar variance_y = 0.f;
 
     TRACCC_HOST_DEVICE
     vector2 get_pitch() const { return {pitch_x, pitch_y}; };

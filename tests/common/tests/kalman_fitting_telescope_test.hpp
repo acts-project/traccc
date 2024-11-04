@@ -11,11 +11,11 @@
 #include "kalman_fitting_test.hpp"
 
 // Detray include(s).
-#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
 #include "detray/navigation/detail/ray.hpp"
+#include "detray/test/utils/detectors/build_telescope_detector.hpp"
 
 namespace traccc {
 
@@ -31,14 +31,14 @@ class KalmanFittingTelescopeTests : public KalmanFittingTests {
     /// @NOTE: Increasing the number of planes will make
     /// test_ckf_combinatorics_telescope take too much time
     static const inline std::vector<scalar> plane_positions = {
-        0., 20., 40., 60., 80., 100., 120., 140, 160};
+        0.f, 20.f, 40.f, 60.f, 80.f, 100.f, 120.f, 140.f, 160.f};
 
     /// B field value and its type
     static constexpr vector3 B{2 * detray::unit<scalar>::T, 0, 0};
 
     /// Plane material and thickness
     static const inline detray::silicon_tml<scalar> mat = {};
-    static constexpr scalar thickness = 0.5 * detray::unit<scalar>::mm;
+    static constexpr scalar thickness = 0.5f * detray::unit<scalar>::mm;
 
     // Rectangle mask for the telescope geometry
     static constexpr detray::mask<detray::rectangle2D> rectangle{0u, 100000.f,

@@ -9,8 +9,52 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_parameters.hpp"
+#include "traccc/finding/candidate_link.hpp"
 
 namespace traccc::device {
+struct build_tracks_payload {
+    /**
+     * @brief View object to the vector of measurements
+     *
+     * @warning Measurements on the same surface must be adjacent
+     */
+    measurement_collection_types::const_view measurements_view;
+
+    /**
+     * @brief View object to the vector of measurements
+     */
+    bound_track_parameters_collection_types::const_view seeds_view;
+
+    /**
+     * @brief View object to the vector of candidate links
+     */
+    vecmem::data::jagged_vector_view<const candidate_link> links_view;
+
+    /**
+     * @brief View object to the vector of tips
+     */
+    vecmem::data::vector_view<const typename candidate_link::link_index_type>
+        tips_view;
+
+    /**
+     * @brief View object to the vector of track candidates
+     */
+    track_candidate_container_types::view track_candidates_view;
+
+    /**
+     * @brief View object to the vector of indices meeting the selection
+     * criteria
+     */
+    vecmem::data::vector_view<unsigned int> valid_indices_view;
+
+    /**
+     * @brief The number of valid tracks meeting criteria
+     */
+    unsigned int* n_valid_tracks;
+};
 
 /// Function for building full tracks from the link container:
 /// The full tracks are built using the link container and tip link container.
@@ -19,29 +63,12 @@ namespace traccc::device {
 ///
 /// @param[in] globalIndex         The index of the current thread
 /// @param[in] cfg                    Track finding config object
-/// @param[in] measurements_view   Measurements container view
-/// @param[in] seeds_view          Seed container view
-/// @param[in] link_view           Link container view
-/// @param[in] param_to_link_view  Container for param index -> link index
-/// @param[in] tips_view           Tip link container view
-/// @param[out] track_candidates_view  Track candidate container view
-/// @param[out] valid_indices_view   Valid indices meeting criteria
-/// @param[out] n_valid_tracks       The number of valid tracks meeting criteria
-
+/// @param[inout] payload      The function call payload
 template <typename config_t>
-TRACCC_DEVICE inline void build_tracks(
-    std::size_t globalIndex, const config_t cfg,
-    measurement_collection_types::const_view measurements_view,
-    bound_track_parameters_collection_types::const_view seeds_view,
-    vecmem::data::jagged_vector_view<const candidate_link> links_view,
-    vecmem::data::jagged_vector_view<const unsigned int> param_to_link_view,
-    vecmem::data::vector_view<const typename candidate_link::link_index_type>
-        tips_view,
-    track_candidate_container_types::view track_candidates_view,
-    vecmem::data::vector_view<unsigned int> valid_indices_view,
-    unsigned int& n_valid_tracks);
+TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
+                                       const config_t cfg,
+                                       const build_tracks_payload& payload);
 
 }  // namespace traccc::device
 
-// Include the implementation.
-#include "traccc/finding/device/impl/build_tracks.ipp"
+#include "./impl/build_tracks.ipp"

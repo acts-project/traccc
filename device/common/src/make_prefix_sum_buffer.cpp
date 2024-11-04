@@ -32,8 +32,8 @@ prefix_sum_buffer_t make_prefix_sum_buffer(
     if (mr.host != nullptr) {
         // Create buffer and view objects
         vecmem::data::vector_buffer<prefix_sum_size_t> sizes_sum_buff(
-            sizes_sum.size(), mr.main);
-        copy.setup(sizes_sum_buff);
+            static_cast<unsigned int>(sizes_sum.size()), mr.main);
+        copy.setup(sizes_sum_buff)->ignore();
         (copy)(vecmem::get_data(sizes_sum), sizes_sum_buff)->wait();
         vecmem::data::vector_view<prefix_sum_size_t> sizes_sum_view(
             sizes_sum_buff);

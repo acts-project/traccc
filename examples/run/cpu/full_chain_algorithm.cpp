@@ -17,9 +17,11 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
+    const silicon_detector_description::host& det_descr,
     detector_type* detector)
     : m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(detray::bfield::create_const_field(m_field_vec)),
+      m_det_descr(det_descr),
       m_detector(detector),
       m_clusterization(mr),
       m_spacepoint_formation(mr),
@@ -34,28 +36,35 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config) {}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
-    const cell_collection_types::host& cells,
-    const cell_module_collection_types::host& modules) const {
+    const edm::silicon_cell_collection::host& cells) const {
+
+    // Create a data object for the detector description.
+    const silicon_detector_description::const_data det_descr_data =
+        vecmem::get_data(m_det_descr.get());
 
     // Run the clusterization.
-    const host::clusterization_algorithm::output_type measurements =
-        m_clusterization(vecmem::get_data(cells), vecmem::get_data(modules));
+    auto cells_data = vecmem::get_data(cells);
+    const clustering_algorithm::output_type measurements =
+        m_clusterization(cells_data, det_descr_data);
 
-    // Run the seed-finding.
-    const host::spacepoint_formation_algorithm::output_type spacepoints =
-        m_spacepoint_formation(vecmem::get_data(measurements),
-                               vecmem::get_data(modules));
-    const track_params_estimation::output_type track_params =
-        m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
-                                     m_field_vec);
-
-    // If we have a Detray detector, run the track finding and fitting.
+    // If we have a Detray detector, run the seeding track finding and fitting.
     if (m_detector != nullptr) {
 
+        // Run the seed-finding.
+        const measurement_collection_types::const_view measurements_view =
+            vecmem::get_data(measurements);
+        const spacepoint_formation_algorithm::output_type spacepoints =
+            m_spacepoint_formation(*m_detector, measurements_view);
+        const track_params_estimation::output_type track_params =
+            m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
+                                         m_field_vec);
+        const bound_track_parameters_collection_types::const_view
+            track_params_view = vecmem::get_data(track_params);
+
         // Return the final container, after track finding and fitting.
-        return m_fitting(
-            *m_detector, m_field,
-            m_finding(*m_detector, m_field, measurements, track_params));
+        return m_fitting(*m_detector, m_field,
+                         m_finding(*m_detector, m_field, measurements_view,
+                                   track_params_view));
 
     }
     // If not, just return an empty object.

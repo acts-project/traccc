@@ -21,18 +21,17 @@ namespace traccc::device {
 ///
 /// @param[in] globalIndex   The index of the current thread
 /// @param[in] det_data      Detector view object
-/// @param[in] nav_candidates_buffer Buffer for navigation candidate objects
 /// @param[in] track_candidates_view The input track candidates
 /// @param[out] track_states_view The output of fitted track states
 ///
-template <typename fitter_t, typename detector_view_t>
+template <typename fitter_t>
 TRACCC_HOST_DEVICE inline void fit(
-    std::size_t globalIndex, detector_view_t det_data,
+    std::size_t globalIndex,
+    typename fitter_t::detector_type::view_type det_data,
     const typename fitter_t::bfield_type field_data,
     const typename fitter_t::config_type cfg,
-    vecmem::data::jagged_vector_view<typename fitter_t::intersection_type>
-        nav_candidates_buffer,
     track_candidate_container_types::const_view track_candidates_view,
+    const vecmem::data::vector_view<const unsigned int>& param_ids_view,
     track_state_container_types::view track_states_view);
 
 }  // namespace traccc::device

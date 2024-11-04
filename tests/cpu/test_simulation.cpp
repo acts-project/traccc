@@ -15,15 +15,15 @@
 
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/build_telescope_detector.hpp"
-#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/line.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/geometry/tracking_surface.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/detectors/build_telescope_detector.hpp"
+#include "detray/test/utils/detectors/build_toy_detector.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/statistics.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
-#include "detray/utils/statistics.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -43,10 +43,8 @@ TEST(traccc_simulation, simulation) {
     const detray::mask<detray::rectangle2D> re{
         0u, 10.f * detray::unit<scalar>::mm, 10.f * detray::unit<scalar>::mm};
 
-    detray::bound_track_parameters<traccc::default_algebra> bound_params;
-    auto& bound_vec = bound_params.vector();
-    getter::element(bound_vec, traccc::e_bound_loc0, 0u) = 1.f;
-    getter::element(bound_vec, traccc::e_bound_loc1, 0u) = 2.f;
+    detray::bound_track_parameters<traccc::default_algebra> bound_params{};
+    bound_params.set_bound_local({1.f, 2.f});
 
     measurement_smearer<traccc::default_algebra> smearer(0.f, 0.f);
 
@@ -112,11 +110,12 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
     typename writer_type::config writer_cfg{smearer};
 
     auto sim = simulator<detector_type, b_field_t, generator_type, writer_type>(
-        n_events, detector, field, std::move(generator), std::move(writer_cfg));
+        detray::muon<scalar>(), n_events, detector, field, std::move(generator),
+        std::move(writer_cfg));
 
     // Lift step size constraints
     sim.get_config().propagation.stepping.step_constraint =
-        std::numeric_limits<scalar>::max();
+        std::numeric_limits<float>::max();
     sim.get_config().propagation.navigation.search_window = {3u, 3u};
 
     // Do the simulation
@@ -126,7 +125,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
 
         std::vector<traccc::io::csv::particle> particles;
         auto particle_reader = traccc::io::csv::make_particle_reader(
-            traccc::io::get_event_filename(i_event, "-particles.csv"));
+            traccc::io::get_event_filename(i_event, "-particles_initial.csv"));
         traccc::io::csv::particle io_particle;
         while (particle_reader.read(io_particle)) {
             particles.push_back(io_particle);
@@ -264,14 +263,18 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     typename writer_type::config writer_cfg{smearer};
 
     auto sim = simulator<detector_type, b_field_t, generator_type, writer_type>(
-        n_events, detector, field, std::move(generator), std::move(writer_cfg),
-        directory);
+        detray::muon<scalar>(), n_events, detector, field, std::move(generator),
+        std::move(writer_cfg), directory);
 
     // Lift step size constraints
     sim.get_config().propagation.stepping.step_constraint =
-        std::numeric_limits<scalar>::max();
+        std::numeric_limits<float>::max();
 
     // Run simulation
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    sim.get_config().propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
     sim.run();
 
     for (std::size_t i_event{0u}; i_event < n_events; i_event++) {

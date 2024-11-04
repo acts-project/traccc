@@ -17,6 +17,7 @@
 #include "detray/propagator/actors/aborters.hpp"
 #include "detray/propagator/actors/parameter_resetter.hpp"
 #include "detray/propagator/actors/parameter_transporter.hpp"
+#include "detray/propagator/actors/pointwise_material_interactor.hpp"
 #include "detray/propagator/base_actor.hpp"
 #include "detray/propagator/propagator.hpp"
 
@@ -40,7 +41,7 @@ struct seed_generator {
                    const std::array<scalar, e_bound_size>& stddevs,
                    const std::size_t sd = 0)
         : m_detector(det), m_stddevs(stddevs) {
-        generator.seed(sd);
+        m_generator.seed(static_cast<std::mt19937::result_type>(sd));
     }
 
     /// Seed generator operation
@@ -49,13 +50,14 @@ struct seed_generator {
     /// @param stddevs standard deviations for track parameter smearing
     bound_track_parameters operator()(
         const detray::geometry::barcode surface_link,
-        const free_track_parameters& free_param) {
+        const free_track_parameters& free_param,
+        const detray::pdg_particle<scalar>& ptc_type) {
 
         // Get bound parameter
         const detray::tracking_surface sf{m_detector, surface_link};
 
         const cxt_t ctx{};
-        auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());
+        auto bound_vec = sf.free_to_bound_vector(ctx, free_param);
 
         auto bound_cov =
             matrix_operator().template zero<e_bound_size, e_bound_size>();
@@ -66,19 +68,19 @@ struct seed_generator {
         using interactor_type =
             detray::pointwise_material_interactor<algebra_type>;
 
+        assert(ptc_type.charge() * bound_param.qop() > 0.f);
+
         // Apply interactor
         typename interactor_type::state interactor_state;
         interactor_state.do_multiple_scattering = false;
         interactor_type{}.update(
-            ctx, bound_param, interactor_state,
+            ctx, ptc_type, bound_param, interactor_state,
             static_cast<int>(detray::navigation::direction::e_backward), sf);
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 
-            matrix_operator().element(bound_param.vector(), i, 0) =
-                std::normal_distribution<scalar>(
-                    matrix_operator().element(bound_param.vector(), i, 0),
-                    m_stddevs[i])(generator);
+            bound_param[i] = std::normal_distribution<scalar>(
+                bound_param[i], m_stddevs[i])(m_generator);
 
             matrix_operator().element(bound_param.covariance(), i, i) =
                 m_stddevs[i] * m_stddevs[i];
@@ -89,8 +91,8 @@ struct seed_generator {
 
     private:
     // Random generator
-    std::random_device rd{};
-    std::mt19937 generator{rd()};
+    std::random_device m_rd{};
+    std::mt19937 m_generator{m_rd()};
 
     // Detector object
     const detector_t& m_detector;

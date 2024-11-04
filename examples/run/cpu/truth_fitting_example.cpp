@@ -11,7 +11,6 @@
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/io/read_geometry.hpp"
-#include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
@@ -111,7 +110,7 @@ int main(int argc, char* argv[]) {
         0.03f * detray::unit<scalar>::mm,
         0.017f,
         0.017f,
-        0.01f / detray::unit<scalar>::GeV,
+        0.001f / detray::unit<scalar>::GeV,
         1.f * detray::unit<scalar>::ns};
 
     // Fitting algorithm object
@@ -124,15 +123,16 @@ int main(int argc, char* argv[]) {
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Iterate over events
-    for (unsigned int event = input_opts.skip;
+    for (auto event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map2(event, input_opts.directory,
-                                    input_opts.directory, input_opts.directory);
+        traccc::event_data evt_data(input_opts.directory, event, host_mr,
+                                    input_opts.use_acts_geom_source, &host_det,
+                                    input_opts.format, false);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map2.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         // Run fitting
         auto track_states =
@@ -141,7 +141,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Number of fitted tracks: " << track_states.size()
                   << std::endl;
 
-        const unsigned int n_fitted_tracks = track_states.size();
+        const decltype(track_states)::size_type n_fitted_tracks =
+            track_states.size();
 
         if (performance_opts.run) {
 
@@ -151,7 +152,7 @@ int main(int argc, char* argv[]) {
                 const auto& fit_res = track_states[i].header;
 
                 fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             host_det, evt_map2);
+                                             host_det, evt_data);
             }
         }
     }

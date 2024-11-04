@@ -8,8 +8,8 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // Test include(s).
 #include "tests/cca_test.hpp"
@@ -27,15 +27,18 @@ namespace {
 vecmem::host_memory_resource resource;
 traccc::host::clusterization_algorithm ca(resource);
 
-cca_function_t f = [](const traccc::cell_collection_types::host& cells,
-                      const traccc::cell_module_collection_types::host&
-                          modules) {
+cca_function_t f = [](const traccc::edm::silicon_cell_collection::host& cells,
+                      const traccc::silicon_detector_description::host& dd) {
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
 
-    auto measurements = ca(vecmem::get_data(cells), vecmem::get_data(modules));
+    const traccc::edm::silicon_cell_collection::const_data cells_data =
+        vecmem::get_data(cells);
+    const traccc::silicon_detector_description::const_data dd_data =
+        vecmem::get_data(dd);
+    auto measurements = ca(cells_data, dd_data);
     for (std::size_t i = 0; i < measurements.size(); i++) {
-        result[modules.at(measurements.at(i).module_link).surface_link.value()]
-            .push_back(measurements.at(i));
+        result[measurements.at(i).surface_link.value()].push_back(
+            measurements.at(i));
     }
 
     return result;

@@ -17,9 +17,9 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void reduce_problem_cell(
-    const cell_collection_types::const_device& cells, const unsigned short cid,
-    const unsigned int start, const unsigned int end, unsigned char& adjc,
-    unsigned short* adjv) {
+    const edm::silicon_cell_collection::const_device& cells,
+    const unsigned short cid, const unsigned int start, const unsigned int end,
+    unsigned char& adjc, unsigned short* adjv) {
 
     // Some sanity check(s).
     assert(start <= end);
@@ -28,7 +28,7 @@ inline void reduce_problem_cell(
     const unsigned int pos = cid + start;
 
     // Load the "reference cell" into a local variable.
-    const cell reference_cell = cells.at(pos);
+    const auto reference_cell = cells.at(pos);
 
     /*
      * First, we traverse the cells backwards, starting from the current
@@ -52,7 +52,7 @@ inline void reduce_problem_cell(
          */
         if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
             assert(adjc < 8);
-            adjv[adjc++] = j - start;
+            adjv[adjc++] = static_cast<unsigned short>(j - start);
         }
     }
 
@@ -71,7 +71,7 @@ inline void reduce_problem_cell(
 
         if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
             assert(adjc < 8);
-            adjv[adjc++] = j - start;
+            adjv[adjc++] = static_cast<unsigned short>(j - start);
         }
     }
 }

@@ -9,15 +9,13 @@
 
 // Local include(s).
 #include "traccc/io/data_format.hpp"
-#include "traccc/io/reader_edm.hpp"
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
+#include "traccc/geometry/detector.hpp"
 
 // System include(s).
 #include <cstddef>
-#include <cstdint>
-#include <map>
 #include <string_view>
 
 namespace traccc::io {
@@ -27,33 +25,29 @@ namespace traccc::io {
 /// The file to read is selected according the naming conventions used in
 /// our data.
 ///
-/// @param out A measurement & a cell_module (host) collections
-/// @param event The event ID to read in the cells for
-/// @param directory The directory holding the cell data files
-/// @param format The format of the cell data files (to read)
-/// @param bardoce_map An object to perform barcode re-mapping with
-///                    (For Acts->Detray identifier re-mapping, if necessary)
+/// @param[out] measurements The measurement collection to fill
+/// @param[in]  event     The event ID to read in the measurements for
+/// @param[in]  directory The directory holding the measurement data files
+/// @param[in]  detector  detray detector
+/// @param[in]  format    The format of the measurement data files (to read)
 ///
-void read_measurements(measurement_reader_output& out, std::size_t event,
-                       std::string_view directory,
-                       data_format format = data_format::csv,
-                       const std::map<std::uint64_t, detray::geometry::barcode>*
-                           barcode_map = nullptr);
+void read_measurements(measurement_collection_types::host& measurements,
+                       std::size_t event, std::string_view directory,
+                       const traccc::default_detector::host* detector = nullptr,
+                       data_format format = data_format::csv);
 
 /// Read measurement data into memory
 ///
 /// The file name is selected explicitly by the user.
 ///
-/// @param out A measurement & a cell_module (host) collections
-/// @param filename The file to read the cell data from
-/// @param format The format of the cell data files (to read)
-/// @param bardoce_map An object to perform barcode re-mapping with
-///                    (For Acts->Detray identifier re-mapping, if necessary)
+/// @param[out] measurements The measurement collection to fill
+/// @param[in]  filename The file to read the measurement data from
+/// @param[in]  detector  detray detector
+/// @param[in]  format   The format of the measurement data files (to read)
 ///
-void read_measurements(measurement_reader_output& out,
+void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
-                       data_format format = data_format::csv,
-                       const std::map<std::uint64_t, detray::geometry::barcode>*
-                           barcode_map = nullptr);
+                       const traccc::default_detector::host* detector = nullptr,
+                       data_format format = data_format::csv);
 
 }  // namespace traccc::io

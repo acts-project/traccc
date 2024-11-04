@@ -14,22 +14,18 @@ find_package( OpenMP COMPONENTS CXX )
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
   "include/traccc/io/digitization_config.hpp"
-  "include/traccc/io/read.hpp"
   "include/traccc/io/read_cells.hpp"
+  "include/traccc/io/read_detector.hpp"
+  "include/traccc/io/read_detector_description.hpp"
   "include/traccc/io/read_digitization_config.hpp"
   "include/traccc/io/read_geometry.hpp"
   "include/traccc/io/read_measurements.hpp"
   "include/traccc/io/read_particles.hpp"
   "include/traccc/io/read_spacepoints.hpp"
   "include/traccc/io/data_format.hpp"
-  "include/traccc/io/event_map.hpp"
-  "include/traccc/io/event_map2.hpp"
-  "include/traccc/io/demonstrator_edm.hpp"
-  "include/traccc/io/mapper.hpp"
   "include/traccc/io/write.hpp"
   "include/traccc/io/utils.hpp"
   "include/traccc/io/details/read_surfaces.hpp"
-  "include/traccc/io/reader_edm.hpp"
   "include/traccc/io/csv/cell.hpp"
   "include/traccc/io/csv/hit.hpp"
   "include/traccc/io/csv/measurement_hit_id.hpp"
@@ -38,15 +34,15 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/csv/surface.hpp"
   "include/traccc/io/csv/make_cell_reader.hpp"
   "include/traccc/io/csv/make_hit_reader.hpp"
+  "include/traccc/io/csv/make_measurement_edm.hpp"
   "include/traccc/io/csv/make_measurement_hit_id_reader.hpp"
   "include/traccc/io/csv/make_particle_reader.hpp"
   "include/traccc/io/csv/make_surface_reader.hpp"
   # Implementation
   "src/data_format.cpp"
-  "src/event_map2.cpp"
-  "src/mapper.cpp"
-  "src/read.cpp"
   "src/read_cells.cpp"
+  "src/read_detector.cpp"
+  "src/read_detector_description.cpp"
   "src/read_digitization_config.cpp"
   "src/read_geometry.cpp"
   "src/read_measurements.cpp"
@@ -68,6 +64,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/make_measurement_reader.cpp"
   "src/csv/read_measurements.hpp"
   "src/csv/read_measurements.cpp"
+  "src/csv/make_measurement_edm.cpp"
   "src/csv/make_measurement_hit_id_reader.cpp"
   "src/csv/make_hit_reader.cpp"
   "src/csv/make_particle_reader.cpp"
@@ -81,8 +78,8 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/obj/write_track_candidates.cpp"
   )
 target_link_libraries( traccc_io
-  PUBLIC vecmem::core traccc::core ActsCore
-  PRIVATE detray::core detray::io dfelibs::dfelibs ActsPluginJson )
+  PUBLIC vecmem::core traccc::core ActsCore dfelibs::dfelibs
+  PRIVATE detray::core detray::io ActsPluginJson )
 target_compile_definitions( traccc_io
   PRIVATE TRACCC_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data" )
 if( OpenMP_CXX_FOUND )

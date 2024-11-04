@@ -6,7 +6,6 @@
  */
 
 // io
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 
 // algorithms
@@ -79,22 +78,22 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Seeding Config
     traccc::seedfinder_config traccc_config;
+    traccc_config.zMin = -1186.f * traccc::unit<float>::mm;
+    traccc_config.zMax = 1186.f * traccc::unit<float>::mm;
+    traccc_config.cotThetaMax = 7.40627f;
+    traccc_config.deltaRMin = 1.f * traccc::unit<float>::mm;
+    traccc_config.deltaRMax = 60.f * traccc::unit<float>::mm;
+    traccc_config.sigmaScattering = 1.0f;
+
     traccc::spacepoint_grid_config grid_config(traccc_config);
 
     // Declare algorithms
     traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
     traccc::seed_finding sf(traccc_config, traccc::seedfilter_config());
 
-    // Read the surface transforms
-    auto [surface_transforms, _] = traccc::io::read_geometry(detector_file);
-
     // Read the hits from the relevant event file
-    traccc::io::spacepoint_reader_output reader_output(&host_mr);
-    traccc::io::read_spacepoints(reader_output, event, hits_dir,
-                                 surface_transforms, traccc::data_format::csv);
-
-    traccc::spacepoint_collection_types::host& spacepoints_per_event =
-        reader_output.spacepoints;
+    traccc::spacepoint_collection_types::host spacepoints_per_event{&host_mr};
+    traccc::io::read_spacepoints(spacepoints_per_event, event, hits_dir);
 
     /*--------------------------------
       TRACCC seeding
@@ -142,7 +141,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.rMin = traccc_config.rMin;
     acts_config.rMax = traccc_config.rMax;
     acts_config.rMinMiddle = 0.f;
-    acts_config.rMaxMiddle = std::numeric_limits<traccc::scalar>::max();
+    acts_config.rMaxMiddle = std::numeric_limits<float>::max();
     acts_config.deltaRMin = traccc_config.deltaRMin;
     acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
     acts_config.deltaRMinBottomSP = traccc_config.deltaRMin;
@@ -323,8 +322,12 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // Ensure that ACTS and traccc give the same result
     // @TODO Uncomment the line below once acts-project/acts#2132 is merged
     // EXPECT_EQ(seeds.size(), seedVector.size());
-    EXPECT_NEAR(seeds.size(), seedVector.size(), seeds.size() * 0.0023);
-    EXPECT_GT(float(n_seed_match) / seeds.size(), 0.9977);
+    EXPECT_NEAR(static_cast<double>(seeds.size()),
+                static_cast<double>(seedVector.size()),
+                static_cast<double>(seeds.size()) * 0.0023);
+    EXPECT_GT(
+        static_cast<double>(n_seed_match) / static_cast<double>(seeds.size()),
+        0.9977);
 }
 
 INSTANTIATE_TEST_SUITE_P(

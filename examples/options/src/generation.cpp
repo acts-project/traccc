@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/options/generation.hpp"
 
+#include "traccc/utils/particle.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Detray include(s).
@@ -48,17 +49,36 @@ generation::generation() : interface("Particle Generation Options") {
         "gen-eta",
         po::value(&eta_range)->value_name("MIN:MAX")->default_value(eta_range),
         "Range of eta");
-    m_desc.add_options()("charge", po::value(&charge)->default_value(charge),
-                         "Charge of particles");
+    m_desc.add_options()("gen-theta",
+                         po::value(&theta_range)
+                             ->value_name("MIN:MAX")
+                             ->default_value(theta_range),
+                         "Range of theta in degree");
+    m_desc.add_options()("particle-type",
+                         po::value<int>(&pdg_number)->default_value(pdg_number),
+                         "PDG number for the particle type");
 }
 
-void generation::read(const po::variables_map&) {
+void generation::read(const po::variables_map& vm) {
 
     vertex *= detray::unit<float>::mm;
     vertex_stddev *= detray::unit<float>::mm;
     mom_range *= detray::unit<float>::GeV;
     phi_range *= detray::unit<float>::degree;
-    theta_range = eta_to_theta_range(eta_range);
+
+    // The eta and theta range can not be specified at the same time
+    if (vm.count("gen-eta") && !vm["gen-eta"].defaulted() &&
+        vm.count("gen-theta") && !vm["gen-theta"].defaulted()) {
+        throw std::logic_error(
+            std::string("Conflicting options 'gen-eta' and 'gen-theta'"));
+    } else if (vm.count("gen-eta") && !vm["gen-eta"].defaulted()) {
+        theta_range = eta_to_theta_range(eta_range);
+    } else if (vm.count("gen-theta") && !vm["gen-theta"].defaulted()) {
+        theta_range *= detray::unit<float>::degree;
+        eta_range = theta_to_eta_range(theta_range);
+    }
+
+    ptc_type = detail::particle_from_pdg_number<traccc::scalar>(pdg_number);
 }
 
 std::ostream& generation::print_impl(std::ostream& out) const {
@@ -76,7 +96,7 @@ std::ostream& generation::print_impl(std::ostream& out) const {
         << "  Eta range                      : " << eta_range << "\n"
         << "  Theta range                    : "
         << theta_range / detray::unit<float>::degree << " deg\n"
-        << "  Charge                         : " << charge;
+        << "  PDG Number                     : " << pdg_number;
     return out;
 }
 

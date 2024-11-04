@@ -18,7 +18,7 @@ message( STATUS "Building Algebra Plugins as part of the TRACCC project" )
 
 # Declare where to get Algebra Plugins from.
 set( TRACCC_ALGEBRA_PLUGINS_SOURCE
-   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.24.0.tar.gz;URL_MD5;e9b4c531c61d9988aae6cab95f257948"
+   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.25.0.tar.gz;URL_MD5;8201744f8b2a8ff7fbcf21bd1b4549b9"
    CACHE STRING "Source for Algebra Plugins, when built as part of this project" )
 
 mark_as_advanced( TRACCC_ALGEBRA_PLUGINS_SOURCE )
@@ -46,6 +46,14 @@ set( ALGEBRA_PLUGINS_SETUP_GOOGLETEST FALSE CACHE BOOL
    "Do not set up GoogleTest in Algebra Plugins" )
 set( ALGEBRA_PLUGINS_SETUP_BENCHMARK FALSE CACHE BOOL
    "Do not set up GoogleTest in Algebra Plugins" )
+
+# Disable a pesky warning coming from the Vc build.
+include( CheckCXXCompilerFlag )
+check_cxx_compiler_flag( "-Wno-deprecated-enum-enum-conversion"
+   TRACCC_HAS_NO_DEPRECATED_ENUM_ENUM_CONVERSION )
+if( TRACCC_HAS_NO_DEPRECATED_ENUM_ENUM_CONVERSION )
+   traccc_add_flag( CMAKE_CXX_FLAGS "-Wno-deprecated-enum-enum-conversion" )
+endif()
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( AlgebraPlugins )

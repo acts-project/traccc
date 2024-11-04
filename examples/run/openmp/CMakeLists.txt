@@ -5,7 +5,5 @@
 # Mozilla Public License Version 2.0
 
 traccc_add_executable( par_example "par_example.cpp"
-   LINK_LIBRARIES OpenMP::OpenMP_CXX vecmem::core traccc::core traccc::io Boost::program_options)
-
-traccc_add_executable( io_dec_par_example "io_dec_par_example.cpp"
-   LINK_LIBRARIES OpenMP::OpenMP_CXX vecmem::core traccc::core traccc::io Boost::program_options)
+   LINK_LIBRARIES OpenMP::OpenMP_CXX vecmem::core traccc::core traccc::io
+                  traccc::options )

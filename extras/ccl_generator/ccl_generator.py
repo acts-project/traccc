@@ -40,7 +40,7 @@ def generate_file(name, Md, Hd, size, N):
             f,
             fieldnames=[
                 "geometry_id",
-                "hit_id",
+                "measurement_id",
                 "channel0",
                 "channel1",
                 "timestamp",
@@ -73,7 +73,7 @@ def generate_file(name, Md, Hd, size, N):
                         w.writerow(
                             {
                                 "geometry_id": m,
-                                "hit_id": h,
+                                "measurement_id": h,
                                 "channel0": p[0],
                                 "channel1": p[1],
                                 "timestamp": 0,

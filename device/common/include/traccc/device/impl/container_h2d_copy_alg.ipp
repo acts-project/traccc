@@ -28,13 +28,20 @@ container_h2d_copy_alg<CONTAINER_TYPES>::operator()(input_type input) const {
     // Create the output buffer with the correct sizes.
     output_type result{{static_cast<header_size_type>(sizes.size()), m_mr.main},
                        {sizes, m_mr.main, m_mr.host}};
-    m_deviceCopy.setup(result.headers);
-    m_deviceCopy.setup(result.items);
+    vecmem::copy::event_type header_setup_event =
+        m_deviceCopy.setup(result.headers);
+    vecmem::copy::event_type items_setup_event =
+        m_deviceCopy.setup(result.items);
+    header_setup_event->wait();
+    items_setup_event->wait();
 
     // Copy data straight into it.
-    m_deviceCopy(input.headers, result.headers,
-                 vecmem::copy::type::host_to_device);
-    m_deviceCopy(input.items, result.items, vecmem::copy::type::host_to_device);
+    vecmem::copy::event_type header_copy_event = m_deviceCopy(
+        input.headers, result.headers, vecmem::copy::type::host_to_device);
+    vecmem::copy::event_type items_copy_event = m_deviceCopy(
+        input.items, result.items, vecmem::copy::type::host_to_device);
+    header_copy_event->wait();
+    items_copy_event->wait();
 
     // Return the created buffer.
     return result;
@@ -56,23 +63,37 @@ container_h2d_copy_alg<CONTAINER_TYPES>::operator()(
     // Create/set the host buffer.
     hostBuffer =
         typename CONTAINER_TYPES::buffer{{size, *host_mr}, {sizes, *host_mr}};
-    m_hostCopy.setup(hostBuffer.headers);
-    m_hostCopy.setup(hostBuffer.items);
+    vecmem::copy::event_type host_header_setup_event =
+        m_hostCopy.setup(hostBuffer.headers);
+    vecmem::copy::event_type host_items_setup_event =
+        m_hostCopy.setup(hostBuffer.items);
+    host_header_setup_event->wait();
+    host_items_setup_event->wait();
 
     // Copy the data into the host buffer.
-    m_hostCopy(input.headers, hostBuffer.headers);
-    m_hostCopy(input.items, hostBuffer.items);
+    vecmem::copy::event_type host_header_copy_event =
+        m_hostCopy(input.headers, hostBuffer.headers);
+    vecmem::copy::event_type host_items_copy_event =
+        m_hostCopy(input.items, hostBuffer.items);
+    host_header_copy_event->wait();
+    host_items_copy_event->wait();
 
     // Create the output buffer with the correct sizes.
     output_type result{{size, m_mr.main}, {sizes, m_mr.main, m_mr.host}};
-    m_deviceCopy.setup(result.headers);
-    m_deviceCopy.setup(result.items);
+    vecmem::copy::event_type device_header_setup_event =
+        m_deviceCopy.setup(result.headers);
+    vecmem::copy::event_type device_items_setup_event =
+        m_deviceCopy.setup(result.items);
+    device_header_setup_event->wait();
+    device_items_setup_event->wait();
 
     // Copy data from the host buffer into the device/result buffer.
-    m_deviceCopy(hostBuffer.headers, result.headers,
-                 vecmem::copy::type::host_to_device);
-    m_deviceCopy(hostBuffer.items, result.items,
-                 vecmem::copy::type::host_to_device);
+    vecmem::copy::event_type device_header_copy_event = m_deviceCopy(
+        hostBuffer.headers, result.headers, vecmem::copy::type::host_to_device);
+    vecmem::copy::event_type device_items_copy_event = m_deviceCopy(
+        hostBuffer.items, result.items, vecmem::copy::type::host_to_device);
+    device_header_copy_event->wait();
+    device_items_copy_event->wait();
 
     // Return the created buffer.
     return result;

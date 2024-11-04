@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/utils/particle.hpp"
 
 // detray include(s).
 #include "detray/propagator/base_actor.hpp"
@@ -100,13 +101,28 @@ struct kalman_actor : detray::actor {
             // This track state is not a hole
             trk_state.is_hole = false;
 
-            // Set full jacobian
-            trk_state.jacobian() = stepping._full_jacobian;
-
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
-            sf.template visit_mask<gain_matrix_updater<algebra_t>>(
-                trk_state, propagation._stepping._bound_params);
+
+            const bool res =
+                sf.template visit_mask<gain_matrix_updater<algebra_t>>(
+                    trk_state, propagation._stepping.bound_params());
+
+            // Abort if the Kalman update fails
+            if (!res) {
+                propagation._heartbeat &= navigation.abort();
+                return;
+            }
+
+            // Set full jacobian
+            trk_state.jacobian() = stepping.full_jacobian();
+
+            // Change the charge of hypothesized particles when the sign of qop
+            // is changed (This rarely happens when qop is set with a poor seed
+            // resolution)
+            propagation.set_particle(detail::correct_particle_hypothesis(
+                stepping.particle_hypothesis(),
+                propagation._stepping.bound_params()));
 
             // Update iterator
             actor_state.next();

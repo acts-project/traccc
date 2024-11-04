@@ -19,15 +19,17 @@ namespace traccc::io::csv {
 struct cell {
 
     uint64_t geometry_id = 0;
-    uint64_t hit_id = 0;
+    uint64_t measurement_id = 0;
     uint32_t channel0 = 0;
     uint32_t channel1 = 0;
-    float timestamp = 0.;
-    float value = 0.;
+    float timestamp = 0.f;
+    float value = 0.f;
 
-    // geometry_id,hit_id,channel0,channel1,timestamp,value
-    DFE_NAMEDTUPLE(cell, geometry_id, hit_id, channel0, channel1, timestamp,
-                   value);
+    auto operator<=>(const cell& other) const = default;
+
+    // geometry_id,measurement_id,channel0,channel1,timestamp,value
+    DFE_NAMEDTUPLE(cell, geometry_id, measurement_id, channel0, channel1,
+                   timestamp, value);
 };
 
 }  // namespace traccc::io::csv

@@ -11,6 +11,7 @@
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
+#include "./kernels/ccl_kernel.cuh"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
@@ -18,54 +19,11 @@
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
-// Project include(s)
-#include "traccc/clusterization/device/ccl_kernel.hpp"
-
 // Vecmem include(s).
 #include <cstring>
 #include <vecmem/utils/copy.hpp>
 
 namespace traccc::cuda {
-
-namespace kernels {
-
-/// CUDA kernel for running @c traccc::device::ccl_kernel
-__global__ void ccl_kernel(
-    const clustering_config cfg,
-    const cell_collection_types::const_view cells_view,
-    const cell_module_collection_types::const_view modules_view,
-    measurement_collection_types::view measurements_view,
-    vecmem::data::vector_view<unsigned int> cell_links,
-    vecmem::data::vector_view<device::details::index_t> f_backup_view,
-    vecmem::data::vector_view<device::details::index_t> gf_backup_view,
-    vecmem::data::vector_view<unsigned char> adjc_backup_view,
-    vecmem::data::vector_view<device::details::index_t> adjv_backup_view,
-    unsigned int* backup_mutex_ptr) {
-
-    __shared__ std::size_t partition_start, partition_end;
-    __shared__ std::size_t outi;
-    extern __shared__ device::details::index_t shared_v[];
-    vecmem::device_atomic_ref<unsigned int> backup_mutex(*backup_mutex_ptr);
-
-    using vector_size_t =
-        vecmem::data::vector_view<device::details::index_t>::size_type;
-
-    vecmem::data::vector_view<device::details::index_t> f_view{
-        static_cast<vector_size_t>(cfg.max_partition_size()), shared_v};
-    vecmem::data::vector_view<device::details::index_t> gf_view{
-        static_cast<vector_size_t>(cfg.max_partition_size()),
-        shared_v + cfg.max_partition_size()};
-    traccc::cuda::barrier barry_r;
-    const cuda::thread_id1 thread_id;
-
-    device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
-                       partition_start, partition_end, outi, f_view, gf_view,
-                       f_backup_view, gf_backup_view, adjc_backup_view,
-                       adjv_backup_view, backup_mutex, barry_r,
-                       measurements_view, cell_links);
-}
-
-}  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
@@ -89,19 +47,14 @@ clusterization_algorithm::clusterization_algorithm(
 }
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_collection_types::const_view& cells,
-    const cell_module_collection_types::const_view& modules) const {
-
-    assert(is_contiguous_on(cell_module_projection(), m_mr.main, m_copy,
-                            m_stream, cells));
-    assert(is_ordered_on(channel0_major_cell_order_relation(), m_mr.main,
-                         m_copy, m_stream, cells));
+    const edm::silicon_cell_collection::const_view& cells,
+    const silicon_detector_description::const_view& det_descr) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Get the number of cells
-    const cell_collection_types::view::size_type num_cells =
+    const edm::silicon_cell_collection::const_view::size_type num_cells =
         m_copy.get().get_size(cells);
 
     // Create the result object, overestimating the number of measurements.
@@ -114,6 +67,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         return measurements;
     }
 
+    assert(is_contiguous_on<edm::silicon_cell_collection::const_device>(
+        cell_module_projection(), m_mr.main, m_copy, m_stream, cells));
+    assert(is_ordered_on<edm::silicon_cell_collection::const_device>(
+        channel0_major_cell_order_relation(), m_mr.main, m_copy, m_stream,
+        cells));
+
     // Create buffer for linking cells to their measurements.
     //
     // @todo Construct cell clusters on demand in a member function for
@@ -123,7 +82,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy.get().setup(cell_links)->ignore();
 
     // Launch ccl kernel. Each thread will handle a single cell.
-    std::size_t num_blocks =
+    unsigned int num_blocks =
         (num_cells + (m_config.target_partition_size()) - 1) /
         m_config.target_partition_size();
 
@@ -136,7 +95,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                           2 * m_config.max_partition_size() *
                               sizeof(device::details::index_t),
                           stream>>>(
-        m_config, cells, modules, measurements, cell_links, m_f_backup,
+        m_config, cells, det_descr, measurements, cell_links, m_f_backup,
         m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get());
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

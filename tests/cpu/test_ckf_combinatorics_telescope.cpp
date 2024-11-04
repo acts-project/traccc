@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
-#include "traccc/finding/finding_algorithm.hpp"
+#include "traccc/finding/ckf_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -21,7 +21,7 @@
 // detray include(s).
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/propagator/propagator.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -45,9 +45,9 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
     const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const scalar charge = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
+    const bool random_charge = std::get<9>(GetParam());
 
     /*****************************
      * Build a telescope geometry
@@ -82,7 +82,7 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     gen_cfg.phi_range(phi_range[0], phi_range[1]);
     gen_cfg.theta_range(theta_range[0], theta_range[1]);
     gen_cfg.mom_range(mom_range[0], mom_range[1]);
-    gen_cfg.charge(charge);
+    gen_cfg.randomize_charge(random_charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -99,8 +99,12 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), full_path);
+        std::get<6>(GetParam()), n_events, host_det, field,
+        std::move(generator), std::move(smearer_writer_cfg), full_path);
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    sim.get_config().propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
     sim.run();
 
     /*****************************
@@ -111,29 +115,33 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg_no_limit;
+    traccc::finding_config cfg_no_limit;
     cfg_no_limit.max_num_branches_per_seed =
         std::numeric_limits<unsigned int>::max();
+    cfg_no_limit.chi2_max = 30.f;
+    cfg_no_limit.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    cfg_no_limit.propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
 
-    typename traccc::finding_algorithm<
-        rk_stepper_type, host_navigator_type>::config_type cfg_limit;
+    traccc::finding_config cfg_limit;
     cfg_limit.max_num_branches_per_seed = 500;
+    cfg_limit.chi2_max = 30.f;
+    cfg_limit.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    cfg_limit.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg_no_limit);
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding_limit(cfg_limit);
+    traccc::host::ckf_algorithm host_finding(cfg_no_limit);
+    traccc::host::ckf_algorithm host_finding_limit(cfg_limit);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map(i_evt, path, path, path);
-
+        traccc::event_data evt_data(path, i_evt, host_mr);
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
 
@@ -143,20 +151,22 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
             seeds.push_back(truth_track_candidates.at(i_trk).header);
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
+        const traccc::bound_track_parameters_collection_types::const_view
+            seeds_view = vecmem::get_data(seeds);
 
         // Read measurements
-        traccc::io::measurement_reader_output readOut(&host_mr);
-        traccc::io::read_measurements(readOut, i_evt, path,
-                                      traccc::data_format::csv);
-        traccc::measurement_collection_types::host& measurements_per_event =
-            readOut.measurements;
+        traccc::measurement_collection_types::host measurements_per_event{
+            &host_mr};
+        traccc::io::read_measurements(measurements_per_event, i_evt, path);
+        const traccc::measurement_collection_types::const_view
+            measurements_view = vecmem::get_data(measurements_per_event);
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, field, measurements_per_event, seeds);
+            host_finding(host_det, field, measurements_view, seeds_view);
 
         auto track_candidates_limit =
-            host_finding_limit(host_det, field, measurements_per_event, seeds);
+            host_finding_limit(host_det, field, measurements_view, seeds_view);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
         ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());
@@ -170,17 +180,21 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 // Testing two identical tracks
 INSTANTIATE_TEST_SUITE_P(
     CpuCkfCombinatoricsTelescopeValidation0, CpuCkfCombinatoricsTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 2, 1)));
+    ::testing::Values(std::make_tuple("telescope_combinatorics_twin",
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 2u>{100.f, 100.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      detray::muon<scalar>(), 2, 1, false)));
 
 // Testing three identical tracks
 INSTANTIATE_TEST_SUITE_P(
     CpuCkfCombinatoricsTelescopeValidation1, CpuCkfCombinatoricsTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, -1.f, 3, 1)));
+    ::testing::Values(std::make_tuple("telescope_combinatorics_trio",
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
+                                      std::array<scalar, 2u>{100.f, 100.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      std::array<scalar, 2u>{0.f, 0.f},
+                                      detray::muon<scalar>(), 3, 1, false)));

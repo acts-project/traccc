@@ -24,8 +24,7 @@ bool is_same_object<measurement>::operator()(const measurement& obj) const {
     return (is_same_scalar(obj.local[0], m_ref.get().local[0], m_unc) &&
             is_same_scalar(obj.local[1], m_ref.get().local[1], m_unc) &&
             is_same_scalar(obj.variance[0], m_ref.get().variance[0], m_unc) &&
-            is_same_scalar(obj.variance[1], m_ref.get().variance[1], m_unc) &&
-            obj.module_link == m_ref.get().module_link);
+            is_same_scalar(obj.variance[1], m_ref.get().variance[1], m_unc));
 }
 
 /// @}
@@ -67,12 +66,19 @@ bool is_same_object<seed>::operator()(const seed& obj) const {
 is_same_object<spacepoint>::is_same_object(const spacepoint& ref, scalar unc)
     : m_ref(ref), m_unc(unc) {}
 
-bool is_same_object<spacepoint>::operator()(const spacepoint& obj) const {
+bool is_same_object<spacepoint>::operator()(const spacepoint& obj,
+                                            const bool include_meas) const {
 
-    return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
-            is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
-            is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
-            is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
+    if (include_meas) {
+        return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
+                is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
+                is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
+                is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
+    } else {
+        return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
+                is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
+                is_same_scalar(obj.z(), m_ref.get().z(), m_unc));
+    }
 }
 
 /// @}
@@ -113,8 +119,10 @@ is_same_object<track_candidate_collection_types::host>::is_same_object(
 bool is_same_object<track_candidate_collection_types::host>::operator()(
     const track_candidate_collection_types::host& obj) const {
 
-    const unsigned int n_cands = m_ref.get().size();
-    for (unsigned int i = 0; i < n_cands; i++) {
+    const track_candidate_collection_types::host::size_type n_cands =
+        m_ref.get().size();
+    for (track_candidate_collection_types::host::size_type i = 0; i < n_cands;
+         i++) {
 
         const bool is_same = m_ref.get()[i] == obj[i];
 

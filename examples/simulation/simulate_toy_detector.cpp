@@ -19,9 +19,9 @@
 
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/detectors/build_toy_detector.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -82,7 +82,6 @@ int simulate(const traccc::opts::generation& generation_opts,
     gen_cfg.phi_range(generation_opts.phi_range);
     gen_cfg.theta_range(generation_opts.theta_range);
     gen_cfg.mom_range(generation_opts.mom_range);
-    gen_cfg.charge(generation_opts.charge);
     generator_type generator(gen_cfg);
 
     // Smearing value for measurements
@@ -103,8 +102,8 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     auto sim = traccc::simulator<detector_type, b_field_t, generator_type,
                                  writer_type>(
-        generation_opts.events, det, field, std::move(generator),
-        std::move(smearer_writer_cfg), full_path);
+        generation_opts.ptc_type, generation_opts.events, det, field,
+        std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.get_config().propagation = propagation_opts;
 
     sim.run();

@@ -9,6 +9,7 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 
@@ -17,6 +18,9 @@
 #include "detray/detectors/bfield.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 
+// Thrust include(s).
+#include <thrust/sort.h>
+
 // System include(s).
 #include <vector>
 
@@ -24,19 +28,27 @@ namespace traccc::cuda {
 
 namespace kernels {
 
+__global__ void fill_sort_keys(
+    track_candidate_container_types::const_view track_candidates_view,
+    vecmem::data::vector_view<device::sort_key> keys_view,
+    vecmem::data::vector_view<unsigned int> ids_view) {
+
+    device::fill_sort_keys(threadIdx.x + blockIdx.x * blockDim.x,
+                           track_candidates_view, keys_view, ids_view);
+}
+
 template <typename fitter_t, typename detector_view_t>
 __global__ void fit(
     detector_view_t det_data, const typename fitter_t::bfield_type field_data,
     const typename fitter_t::config_type cfg,
-    vecmem::data::jagged_vector_view<typename fitter_t::intersection_type>
-        nav_candidates_buffer,
     track_candidate_container_types::const_view track_candidates_view,
+    vecmem::data::vector_view<const unsigned int> param_ids_view,
     track_state_container_types::view track_states_view) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::fit<fitter_t>(gid, det_data, field_data, cfg, nav_candidates_buffer,
-                          track_candidates_view, track_states_view);
+    device::fit<fitter_t>(gid, det_data, field_data, cfg, track_candidates_view,
+                          param_ids_view, track_states_view);
 }
 
 }  // namespace kernels
@@ -55,8 +67,6 @@ template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const vecmem::data::jagged_vector_view<
-        typename fitter_t::intersection_type>& navigation_buffer,
     const typename track_candidate_container_types::const_view&
         track_candidates_view) const {
 
@@ -77,9 +87,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 
-    m_copy.setup(track_states_buffer.headers);
-    m_copy.setup(track_states_buffer.items);
-    m_copy.setup(navigation_buffer);
+    m_copy.setup(track_states_buffer.headers)->ignore();
+    m_copy.setup(track_states_buffer.items)->ignore();
 
     // Calculate the number of threads and thread blocks to run the track
     // fitting
@@ -87,10 +96,27 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
+        vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
+                                                                  m_mr.main);
+        vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
+                                                                   m_mr.main);
+
+        // Get key and value for sorting
+        kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
+            track_candidates_view, keys_buffer, param_ids_buffer);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        // Sort the key to get the sorted parameter ids
+        vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
+        vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
+
+        thrust::sort_by_key(thrust::cuda::par.on(stream), keys_device.begin(),
+                            keys_device.end(), param_ids_device.begin());
+
         // Run the track fitting
         kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
-            det_view, field_view, m_cfg, navigation_buffer,
-            track_candidates_view, track_states_buffer);
+            det_view, field_view, m_cfg, track_candidates_view,
+            param_ids_buffer, track_states_buffer);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 

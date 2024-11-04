@@ -56,7 +56,7 @@ build:cuda:
   image: ghcr.io/acts-project/ubuntu2204_cuda:56
   variables:
     TRACCC_BUILD_TYPE: CUDA
-    TRACCC_BUILD_PRESET: cuda
+    TRACCC_BUILD_PRESET: cuda-fp32
 
 # CUDA test job.
 test:cuda:
@@ -73,7 +73,7 @@ build:sycl_intel:
   image: ghcr.io/acts-project/ubuntu2404_oneapi:56
   variables:
     TRACCC_BUILD_TYPE: SYCL
-    TRACCC_BUILD_PRESET: sycl
+    TRACCC_BUILD_PRESET: sycl-fp32
     TRACCC_SYCL_FLAGS: -fsycl -fsycl-targets=spir64
     TRACCC_CMAKE_ARGS: -DTRACCC_BUILD_CUDA=FALSE
 
@@ -93,7 +93,7 @@ build:sycl_nvidia:
   image: ghcr.io/acts-project/ubuntu2204_cuda_oneapi:56
   variables:
     TRACCC_BUILD_TYPE: SYCL
-    TRACCC_BUILD_PRESET: sycl
+    TRACCC_BUILD_PRESET: sycl-fp32
     TRACCC_SYCL_FLAGS: -fsycl -fsycl-targets=nvidia_gpu_sm_75 -Wno-unknown-cuda-version -Wno-deprecated-declarations
     TRACCC_CXX_FLAGS: -Wno-deprecated-declarations
     TRACCC_CMAKE_ARGS: -DTRACCC_BUILD_CUDA=FALSE

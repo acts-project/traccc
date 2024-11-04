@@ -18,7 +18,7 @@ message( STATUS "Building Alpaka as part of the TRACCC project" )
 
 # Declare where to get Alpaka from.
 set( TRACCC_ALPAKA_SOURCE
-   "URL;https://github.com/alpaka-group/alpaka/archive/refs/tags/1.1.0.tar.gz;URL_MD5;e788ec42c8c4ebd87d12647940a01458"
+   "URL;https://github.com/alpaka-group/alpaka/archive/refs/tags/1.2.0.tar.gz;URL_MD5;0e2dcf4ddf7987532835d7b2b3680843"
    CACHE STRING "Source for Alpaka, when built as part of this project" )
 mark_as_advanced( TRACCC_ALPAKA_SOURCE )
 FetchContent_Declare( Alpaka ${TRACCC_ALPAKA_SOURCE} )

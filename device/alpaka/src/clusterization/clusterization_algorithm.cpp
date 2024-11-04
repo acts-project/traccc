@@ -26,8 +26,8 @@ struct CCLKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const clustering_config cfg,
-        const cell_collection_types::const_view cells_view,
-        const cell_module_collection_types::const_view modules_view,
+        const edm::silicon_cell_collection::const_view cells_view,
+        const silicon_detector_description::const_view det_descr_view,
         vecmem::data::vector_view<device::details::index_t> f_backup_view,
         vecmem::data::vector_view<device::details::index_t> gf_backup_view,
         vecmem::data::vector_view<unsigned char> adjc_backup_view,
@@ -47,16 +47,15 @@ struct CCLKernel {
         device::details::index_t* const shared_v =
             ::alpaka::getDynSharedMem<device::details::index_t>(acc);
         vecmem::data::vector_view<device::details::index_t> f_view{
-            static_cast<unsigned int>(cfg.max_partition_size()), shared_v};
+            cfg.max_partition_size(), shared_v};
         vecmem::data::vector_view<device::details::index_t> gf_view{
-            static_cast<unsigned int>(cfg.max_partition_size()),
-            shared_v + cfg.max_partition_size()};
+            cfg.max_partition_size(), shared_v + cfg.max_partition_size()};
 
         vecmem::device_atomic_ref<uint32_t> backup_mutex(*backup_mutex_ptr);
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
-        device::ccl_kernel(cfg, thread_id, cells_view, modules_view,
+        device::ccl_kernel(cfg, thread_id, cells_view, det_descr_view,
                            partition_start, partition_end, outi, f_view,
                            gf_view, f_backup_view, gf_backup_view,
                            adjc_backup_view, adjv_backup_view, backup_mutex,
@@ -84,8 +83,8 @@ clusterization_algorithm::clusterization_algorithm(
       m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const cell_collection_types::const_view& cells,
-    const cell_module_collection_types::const_view& modules) const {
+    const edm::silicon_cell_collection::const_view& cells,
+    const silicon_detector_description::const_view& det_descr) const {
 
     // Setup alpaka
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
@@ -99,7 +98,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     });
 
     // Number of cells
-    const cell_collection_types::view::size_type num_cells =
+    const edm::silicon_cell_collection::view::size_type num_cells =
         m_copy.get().get_size(cells);
 
     // Create the result object, overestimating the number of measurements.
@@ -121,16 +120,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     m_copy.get().setup(cell_links)->ignore();
 
     // Launch ccl kernel. Each thread will handle a single cell.
-    std::size_t num_blocks =
-        (num_cells + (m_config.target_partition_size()) - 1) /
-        m_config.target_partition_size();
-    static_assert(accSupportsMultiThreadBlocks<Acc>(),
+    Idx num_blocks = (num_cells + (m_config.target_partition_size()) - 1) /
+                     m_config.target_partition_size();
+    static_assert(::alpaka::isMultiThreadAcc<Acc>,
                   "Clustering algorithm must be compiled for an accelerator "
                   "with support for multi-thread blocks.");
     auto workDiv = makeWorkDiv<Acc>(num_blocks, m_config.threads_per_partition);
 
     ::alpaka::exec<Acc>(
-        queue, workDiv, CCLKernel{}, m_config, cells, modules,
+        queue, workDiv, CCLKernel{}, m_config, cells, det_descr,
         vecmem::get_data(m_f_backup), vecmem::get_data(m_gf_backup),
         vecmem::get_data(m_adjc_backup), vecmem::get_data(m_adjv_backup),
         m_backup_mutex.get(), vecmem::get_data(measurements),

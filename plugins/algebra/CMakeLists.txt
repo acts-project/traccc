@@ -31,8 +31,8 @@ if( ALGEBRA_PLUGINS_INCLUDE_SMATRIX )
   target_link_libraries( traccc_algebra INTERFACE traccc::smatrix )
 endif()
 
-# Make use of algebra::vc_vc, if it is available.
+# Make use of algebra::vc_aos, if it is available.
 if( ALGEBRA_PLUGINS_INCLUDE_VC )
   add_subdirectory( vc )
-  target_link_libraries( traccc_algebra INTERFACE traccc::vc )
+  target_link_libraries( traccc_algebra INTERFACE traccc::vc_aos )
 endif()

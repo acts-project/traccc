@@ -78,10 +78,10 @@ struct internal_spacepoint {
     scalar phi() const { return m_phi; }
 
     TRACCC_HOST_DEVICE
-    scalar varianceR() const { return 0.; }
+    scalar varianceR() const { return 0.f; }
 
     TRACCC_HOST_DEVICE
-    scalar varianceZ() const { return 0.; }
+    scalar varianceZ() const { return 0.f; }
 };
 
 template <typename spacepoint_t>

@@ -31,7 +31,7 @@ int get_device();
 ///
 /// @return The warp size for the device.
 ///
-int get_warp_size(int device);
+unsigned int get_warp_size(int device);
 
 /// Get concrete @c cudaStream_t object out of our wrapper
 cudaStream_t get_stream(const stream& str);

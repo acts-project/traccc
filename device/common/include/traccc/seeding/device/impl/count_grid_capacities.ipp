@@ -28,7 +28,8 @@ inline void count_grid_capacities(
     if (globalIndex >= spacepoints.size()) {
         return;
     }
-    const spacepoint sp = spacepoints.at(globalIndex);
+    const spacepoint sp =
+        spacepoints.at(static_cast<unsigned int>(globalIndex));
 
     /// Check out if the spacepoint can be used for seeding.
     if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {
@@ -36,7 +37,7 @@ inline void count_grid_capacities(
         // Find the grid bin that the spacepoint belongs to.
         const internal_spacepoint<spacepoint> isp(sp, globalIndex,
                                                   config.beamPos);
-        const std::size_t bin_index =
+        const unsigned int bin_index =
             phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
 
         // Increase the capacity of the grid bin.

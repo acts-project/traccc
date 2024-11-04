@@ -29,7 +29,7 @@ set ( CCCL_ENABLE_INSTALL_RULES ON CACHE BOOL "Install CCCL as part of traccc." 
 set ( THRUST_ENABLE_INSTALL_RULES ON CACHE BOOL "Install Thrust as part of traccc." )
 set ( CUB_ENABLE_INSTALL_RULES ON CACHE BOOL "Install CUB as part of traccc." )
 set ( libcudacxx_ENABLE_INSTALL_RULES ON CACHE BOOL "Install libcudacxx as part of traccc." )
-set ( CCCL_ENABLE_LIBCUDACXX ON CACHE BOOL "Disable libcudacxx" )
+set ( CCCL_ENABLE_LIBCUDACXX OFF CACHE BOOL "Disable libcudacxx" )
 set ( CCCL_ENABLE_CUB ON CACHE BOOL "Enable CUB" )
 set ( CCCL_ENABLE_THRUST ON CACHE BOOL "Enable Thrust" )
 set ( CCCL_ENABLE_TESTING OFF CACHE BOOL "Disable CCCL tests" )
@@ -44,3 +44,24 @@ set ( CUB_ENABLE_HEADER_TESTING OFF CACHE BOOL "Disable CUB header testing" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( CCCL )
+
+# Check if <thrust/pair.h> works out of the box.
+include( CheckCXXSourceCompiles )
+set( CMAKE_REQUIRED_INCLUDES
+   "${CCCL_SOURCE_DIR}/thrust"
+   "${CCCL_SOURCE_DIR}/libcudacxx/include" )
+set( _THRUST_TEST_SOURCE "#include <thrust/pair.h>\nint main() { return 0; }" )
+check_cxx_source_compiles( "${_THRUST_TEST_SOURCE}" TRACCC_THRUST_WORKS )
+# If not, check if the _LIBCUDACXX_STRING_H_HAS_CONST_OVERLOADS flag makes it
+# work.
+if( NOT TRACCC_THRUST_WORKS )
+   set( CMAKE_REQUIRED_DEFINITIONS -D_LIBCUDACXX_STRING_H_HAS_CONST_OVERLOADS )
+   check_cxx_source_compiles( "${_THRUST_TEST_SOURCE}"
+      TRACCC_THRUST_WORKS_WITH_PATCH )
+   if( TRACCC_THRUST_WORKS_WITH_PATCH )
+      target_compile_definitions( _Thrust_Thrust
+         INTERFACE _LIBCUDACXX_STRING_H_HAS_CONST_OVERLOADS )
+   else()
+      message( WARNING "Thrust does not seem to work. The build may fail." )
+   endif()
+endif()

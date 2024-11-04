@@ -40,11 +40,11 @@ void read_particles(particle_collection_types::host& particles,
     }
 }
 
-void read_particles(
-    particle_container_types::host& particles, std::string_view particles_file,
-    std::string_view hits_file, std::string_view measurements_file,
-    std::string_view hit_map_file,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+void read_particles(particle_container_types::host& particles,
+                    std::string_view particles_file, std::string_view hits_file,
+                    std::string_view measurements_file,
+                    std::string_view hit_map_file,
+                    const traccc::default_detector::host* detector) {
 
     // Memory resource used by the temporary collections.
     vecmem::host_memory_resource mr;
@@ -60,9 +60,9 @@ void read_particles(
 
     // Read in all measurements, into a temporary collection.
     static constexpr bool sort_measurements = false;
-    measurement_reader_output temp_measurements{&mr};
-    read_measurements(temp_measurements, measurements_file, sort_measurements,
-                      barcode_map);
+    measurement_collection_types::host temp_measurements{&mr};
+    read_measurements(temp_measurements, measurements_file, detector,
+                      sort_measurements);
 
     // Make a hit to measurement map.
     std::unordered_map<std::size_t, std::size_t> hit_to_measurement;
@@ -103,8 +103,10 @@ void read_particles(
             std::distance(temp_particles.begin(), particle_it);
 
         // Add the measurement to the particle's collection.
-        particle_measurements[particle_index].push_back(
-            temp_measurements.measurements.at(hit_to_measurement_it->second));
+        particle_measurements[static_cast<decltype(
+                                  particle_measurements)::size_type>(
+                                  particle_index)]
+            .push_back(temp_measurements.at(hit_to_measurement_it->second));
 
         // Increment the hit ID.
         ++hit_id;

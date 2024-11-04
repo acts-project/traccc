@@ -18,19 +18,15 @@
 #include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
-#include "traccc/io/demonstrator_edm.hpp"
-#include "traccc/io/read.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/utils.hpp"
 
 // Performance measurement include(s).
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
-
-// Detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -70,32 +66,19 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     std::unique_ptr<vecmem::binary_page_memory_resource> cached_host_mr =
         std::make_unique<vecmem::binary_page_memory_resource>(uncached_host_mr);
 
-    // Read in the geometry.
-    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
-        detector_opts.detector_file,
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host det_descr{uncached_host_mr};
+    traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json
                                            : traccc::data_format::csv));
-    using detector_type = detray::detector<detray::default_metadata,
-                                           detray::host_container_types>;
-    detector_type detector{uncached_host_mr};
-    if (detector_opts.use_detray_detector) {
-        // Set up the detector reader configuration.
-        detray::io::detector_reader_config cfg;
-        cfg.add_file(traccc::io::data_directory() +
-                     detector_opts.detector_file);
-        if (detector_opts.material_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.material_file);
-        }
-        if (detector_opts.grid_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.grid_file);
-        }
 
-        // Read the detector.
-        auto det =
-            detray::io::read_detector<detector_type>(uncached_host_mr, cfg);
-        detector = std::move(det.first);
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host detector{uncached_host_mr};
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            detector, uncached_host_mr, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
     }
 
     vecmem::memory_resource& alg_host_mr =
@@ -104,21 +87,16 @@ int throughput_st(std::string_view description, int argc, char* argv[],
             : static_cast<vecmem::memory_resource&>(uncached_host_mr);
 
     // Read in all input events into memory.
-    demonstrator_input input(&uncached_host_mr);
-
+    vecmem::vector<edm::silicon_cell_collection::host> input{&uncached_host_mr};
     {
         performance::timer t{"File reading", times};
-        // Create empty inputs using the correct memory resource
+        // Read the input cells into memory event-by-event.
+        input.reserve(input_opts.events);
         for (std::size_t i = 0; i < input_opts.events; ++i) {
-            input.push_back(demonstrator_input::value_type(&uncached_host_mr));
+            input.push_back({uncached_host_mr});
+            io::read_cells(input.back(), i, input_opts.directory, &det_descr,
+                           input_opts.format);
         }
-        // Read event data into input vector
-        io::read(
-            input, input_opts.events, input_opts.directory,
-            detector_opts.detector_file, detector_opts.digitization_file,
-            input_opts.format,
-            (detector_opts.use_detray_detector ? traccc::data_format::json
-                                               : traccc::data_format::csv));
     }
 
     // Algorithm configuration(s).
@@ -138,11 +116,11 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
         spacepoint_grid_config{seeding_opts.seedfinder},
-        seeding_opts.seedfilter, finding_cfg, fitting_cfg,
+        seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr,
         (detector_opts.use_detray_detector ? &detector : nullptr));
 
     // Seed the random number generator.
-    std::srand(std::time(0));
+    std::srand(static_cast<unsigned int>(std::time(0)));
 
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
@@ -158,11 +136,11 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Process one event.
-            rec_track_params +=
-                (*alg)(input[event].cells, input[event].modules).size();
+            rec_track_params += (*alg)(input[event]).size();
         }
     }
 
@@ -177,11 +155,11 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Process one event.
-            rec_track_params +=
-                (*alg)(input[event].cells, input[event].modules).size();
+            rec_track_params += (*alg)(input[event]).size();
         }
     }
 

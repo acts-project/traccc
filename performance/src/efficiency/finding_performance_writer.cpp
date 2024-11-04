@@ -47,8 +47,9 @@ struct finding_performance_writer_data {
     fake_tracks_plot_tool m_fake_tracks_plot_tool;
     fake_tracks_plot_tool::fake_tracks_plot_cache m_fake_tracks_plot_cache;
 
-    measurement_particle_map m_measurement_particle_map;
-    particle_map m_particle_map;
+    std::map<measurement, std::map<particle, std::size_t>>
+        m_measurement_particle_map;
+    std::map<std::uint64_t, particle> m_particle_map;
 
 };  // struct finding_performance_writer_data
 
@@ -138,7 +139,7 @@ std::vector<std::vector<measurement>> prepare_data(
 
 void finding_performance_writer::write_common(
     const std::vector<std::vector<measurement>>& tracks,
-    const event_map2& evt_map) {
+    const event_data& evt_data) {
 
     // Associates truth particle_ids with the number of tracks made entirely of
     // some (or all) of its hits.
@@ -149,11 +150,11 @@ void finding_performance_writer::write_common(
     std::map<particle_id, std::size_t> fake_counter;
 
     // Iterate over the tracks.
-    const unsigned int n_tracks = tracks.size();
+    const std::size_t n_tracks = tracks.size();
 
-    for (unsigned int i = 0; i < n_tracks; i++) {
+    for (std::size_t i = 0; i < n_tracks; i++) {
 
-        const std::vector<measurement>& measurements = tracks[i];
+        const std::vector<measurement>& found_measurements = tracks[i];
 
         // Check which particle matches this seed.
         // Input :
@@ -166,28 +167,55 @@ void finding_performance_writer::write_common(
         // then increment the match_counter for this truth particle id.
         // If there are at least two particles contributing to the hit list of
         // this track, increment the fake_counter for each truth particle.
+        std::vector<particle_hit_count> particle_hit_counts;
 
-        std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(measurements, evt_map.meas_ptc_map);
-
-        if (particle_hit_counts.size() == 1) {
-            auto pid = particle_hit_counts.at(0).ptc.particle_id;
-            match_counter[pid]++;
+        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
+            particle_hit_counts = identify_contributing_particles(
+                found_measurements, evt_data.m_found_meas_to_ptc_map);
+        } else {
+            particle_hit_counts = identify_contributing_particles(
+                found_measurements, evt_data.m_meas_to_ptc_map);
         }
 
-        if (particle_hit_counts.size() > 1) {
+        const auto major_ptc = particle_hit_counts.at(0).ptc;
+        const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
+
+        // Truth measureemnt from the particle
+        const std::vector<measurement> truth_measurements =
+            evt_data.m_ptc_to_meas_map.at(major_ptc);
+
+        // Consider it being matched if hit counts is larger than the half
+        // of the number of measurements
+        assert(found_measurements.size() > 0u);
+        assert(truth_measurements.size() > 0u);
+        const bool reco_matched =
+            static_cast<double>(n_major_hits) /
+                static_cast<double>(found_measurements.size()) >
+            m_cfg.matching_ratio;
+        const bool truth_matched =
+            static_cast<double>(n_major_hits) /
+                static_cast<double>(truth_measurements.size()) >
+            m_cfg.matching_ratio;
+
+        if ((!m_cfg.double_matching && reco_matched) ||
+            (m_cfg.double_matching && reco_matched && truth_matched)) {
+            const auto pid = major_ptc.particle_id;
+            match_counter[pid]++;
+        } else {
             for (particle_hit_count const& phc : particle_hit_counts) {
-                auto pid = phc.ptc.particle_id;
+                const auto pid = phc.ptc.particle_id;
                 fake_counter[pid]++;
             }
         }
     }
 
     // For each truth particle...
-    for (auto const& [pid, ptc] : evt_map.ptc_map) {
+    for (auto const& [pid, ptc] : evt_data.m_particle_map) {
 
         // Count only charged particles which satisfy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 
@@ -221,19 +249,19 @@ void finding_performance_writer::write_common(
 /// For track finding
 void finding_performance_writer::write(
     const track_candidate_container_types::const_view& track_candidates_view,
-    const event_map2& evt_map) {
+    const event_data& evt_data) {
     std::vector<std::vector<measurement>> tracks =
         prepare_data(track_candidates_view);
-    write_common(tracks, evt_map);
+    write_common(tracks, evt_data);
 }
 
 /// For ambiguity resolution
 void finding_performance_writer::write(
     const track_state_container_types::const_view& track_states_view,
-    const event_map2& evt_map) {
+    const event_data& evt_data) {
     std::vector<std::vector<measurement>> tracks =
         prepare_data(track_states_view);
-    write_common(tracks, evt_map);
+    write_common(tracks, evt_data);
 }
 
 void finding_performance_writer::finalize() {

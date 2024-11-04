@@ -7,37 +7,37 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_parameters.hpp"
+#include "traccc/finding/candidate_link.hpp"
+
 namespace traccc::device {
 
 template <typename config_t>
-TRACCC_DEVICE inline void build_tracks(
-    std::size_t globalIndex, const config_t cfg,
-    measurement_collection_types::const_view measurements_view,
-    bound_track_parameters_collection_types::const_view seeds_view,
-    vecmem::data::jagged_vector_view<const candidate_link> links_view,
-    vecmem::data::jagged_vector_view<const unsigned int> param_to_link_view,
-    vecmem::data::vector_view<const typename candidate_link::link_index_type>
-        tips_view,
-    track_candidate_container_types::view track_candidates_view,
-    vecmem::data::vector_view<unsigned int> valid_indices_view,
-    unsigned int& n_valid_tracks) {
+TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
+                                       const config_t cfg,
+                                       const build_tracks_payload& payload) {
 
-    measurement_collection_types::const_device measurements(measurements_view);
+    measurement_collection_types::const_device measurements(
+        payload.measurements_view);
 
-    bound_track_parameters_collection_types::const_device seeds(seeds_view);
+    bound_track_parameters_collection_types::const_device seeds(
+        payload.seeds_view);
 
-    vecmem::jagged_device_vector<const candidate_link> links(links_view);
-
-    vecmem::jagged_device_vector<const unsigned int> param_to_link(
-        param_to_link_view);
+    vecmem::jagged_device_vector<const candidate_link> links(
+        payload.links_view);
 
     vecmem::device_vector<const typename candidate_link::link_index_type> tips(
-        tips_view);
+        payload.tips_view);
 
     track_candidate_container_types::device track_candidates(
-        track_candidates_view);
+        payload.track_candidates_view);
 
-    vecmem::device_vector<unsigned int> valid_indices(valid_indices_view);
+    vecmem::device_vector<unsigned int> valid_indices(
+        payload.valid_indices_view);
 
     if (globalIndex >= tips.size()) {
         return;
@@ -54,7 +54,6 @@ TRACCC_DEVICE inline void build_tracks(
     // Count the number of skipped steps
     unsigned int n_skipped{0u};
     while (true) {
-
         if (L.meas_idx > n_meas) {
             n_skipped++;
         }
@@ -63,9 +62,7 @@ TRACCC_DEVICE inline void build_tracks(
             break;
         }
 
-        const unsigned int link_pos =
-            param_to_link[L.previous.first][L.previous.second];
-        L = links[L.previous.first][link_pos];
+        L = links[L.previous.first][L.previous.second];
     }
 
     // Retrieve tip
@@ -83,15 +80,12 @@ TRACCC_DEVICE inline void build_tracks(
          it++) {
         i++;
 
-        while (L.meas_idx > n_meas) {
-            if (L.previous.first < 0) {
-                break;
-            }
+        while (L.meas_idx > n_meas &&
+               L.previous.first !=
+                   std::numeric_limits<
+                       candidate_link::link_index_type::first_type>::max()) {
 
-            const auto link_pos =
-                param_to_link[L.previous.first][L.previous.second];
-
-            L = links[L.previous.first][link_pos];
+            L = links[L.previous.first][L.previous.second];
         }
 
         // Break if the measurement is still invalid
@@ -109,9 +103,7 @@ TRACCC_DEVICE inline void build_tracks(
             break;
         }
 
-        const auto l_pos = param_to_link[L.previous.first][L.previous.second];
-
-        L = links[L.previous.first][l_pos];
+        L = links[L.previous.first][L.previous.second];
     }
 
     // Criteria for valid tracks
@@ -119,7 +111,7 @@ TRACCC_DEVICE inline void build_tracks(
         n_cands <= cfg.max_track_candidates_per_track) {
 
         vecmem::device_atomic_ref<unsigned int> num_valid_tracks(
-            n_valid_tracks);
+            *payload.n_valid_tracks);
 
         const unsigned int pos = num_valid_tracks.fetch_add(1);
         valid_indices[pos] = globalIndex;

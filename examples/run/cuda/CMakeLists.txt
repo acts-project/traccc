@@ -13,7 +13,7 @@ find_package( CUDAToolkit REQUIRED )
 traccc_add_executable( seq_example_cuda "seq_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
-                  traccc::options detray::utils detray::io )
+                  traccc::options detray::detectors detray::io )
 traccc_add_executable( seeding_example_cuda "seeding_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
@@ -33,17 +33,17 @@ add_library( traccc_examples_cuda STATIC
    "full_chain_algorithm.hpp"
    "full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cuda
-   PUBLIC CUDA::cudart vecmem::core vecmem::cuda detray::core detray::utils
+   PUBLIC CUDA::cudart vecmem::core vecmem::cuda detray::core detray::detectors
           traccc::core traccc::device_common traccc::cuda )
 
 traccc_add_executable( throughput_st_cuda "throughput_st.cpp"
-   LINK_LIBRARIES vecmem::core vecmem::cuda detray::utils detray::io
+   LINK_LIBRARIES vecmem::core vecmem::cuda detray::detectors detray::io
                   traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options traccc_examples_cuda )
 
 traccc_add_executable( throughput_mt_cuda "throughput_mt.cpp"
-   LINK_LIBRARIES TBB::tbb vecmem::core vecmem::cuda detray::utils detray::io
+   LINK_LIBRARIES TBB::tbb vecmem::core vecmem::cuda detray::detectors detray::io
                   traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options traccc_examples_cuda )

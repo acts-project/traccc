@@ -35,16 +35,16 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
     const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
-    vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
-                                                                   m_mr.main);
-    m_copy->setup(grid_capacities_buff);
-    m_copy->memset(grid_capacities_buff, 0);
+    vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(
+        static_cast<unsigned int>(grid_bins), m_mr.main);
+    m_copy->setup(grid_capacities_buff)->wait();
+    m_copy->memset(grid_capacities_buff, 0)->wait();
     vecmem::data::vector_view<unsigned int> grid_capacities_view =
         grid_capacities_buff;
 
     // Calculate the number of threads and thread blocks to run the kernels for.
-    const unsigned int num_threads = 32 * 8;
-    const unsigned int num_blocks = (sp_size + num_threads - 1) / num_threads;
+    const int num_threads = 32 * 8;
+    const int num_blocks = (sp_size + num_threads - 1) / num_threads;
 
     // Hack to avoid warnings thrown by C++20
     seedfinder_config config = m_config;
@@ -57,8 +57,9 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
                 Kokkos::TeamThreadRange(team_member, num_threads),
                 [&](const int& thr) {
                     device::count_grid_capacities(
-                        team_member.league_rank() * team_member.team_size() +
-                            thr,
+                        static_cast<std::size_t>(team_member.league_rank() *
+                                                     team_member.team_size() +
+                                                 thr),
                         config, axes.first, axes.second, spacepoints_view,
                         grid_capacities_view);
                 });
@@ -67,7 +68,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
                                                                 : &(m_mr.main));
-    (*m_copy)(grid_capacities_buff, grid_capacities_host);
+    (*m_copy)(grid_capacities_buff, grid_capacities_host)->wait();
 
     // Create the grid buffer.
     sp_grid_buffer grid_buffer(
@@ -75,7 +76,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable);
-    m_copy->setup(grid_buffer._buffer);
+    m_copy->setup(grid_buffer._buffer)->wait();
     sp_grid_view grid_view = grid_buffer;
 
     // Populate the grid.
@@ -86,8 +87,9 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
                 Kokkos::TeamThreadRange(team_member, num_threads),
                 [&](const int& thr) {
                     device::populate_grid(
-                        team_member.league_rank() * team_member.team_size() +
-                            thr,
+                        static_cast<unsigned int>(team_member.league_rank() *
+                                                      team_member.team_size() +
+                                                  thr),
                         config, spacepoints_view, grid_view);
                 });
         });

@@ -24,6 +24,8 @@ class input_data : public interface {
     /// @name Options
     /// @{
 
+    // Use acts geometry source
+    bool use_acts_geom_source = false;
     /// The data format of the input files
     traccc::data_format format = data_format::csv;
     /// Directory of the input files
