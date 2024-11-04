@@ -100,23 +100,21 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         s0{};
     typename detray::detail::tuple_element<1, actor_list_type>::type::state
         s1{};
-    typename detray::detail::tuple_element<3, actor_list_type>::type::state
-        s3{};
-    typename detray::detail::tuple_element<2, actor_list_type>::type::state s2{
-        s3};
-    typename detray::detail::tuple_element<4, actor_list_type>::type::state s4;
-    s4.min_step_length = cfg.min_step_length_for_next_surface;
-    s4.max_count = cfg.max_step_counts_for_next_surface;
+    typename detray::detail::tuple_element<2, actor_list_type>::type::state
+        s2{};
+    typename detray::detail::tuple_element<3, actor_list_type>::type::state s3;
+    s3.min_step_length = cfg.min_step_length_for_next_surface;
+    s3.max_count = cfg.max_step_counts_for_next_surface;
 
     // @TODO: Should be removed once detray is fixed to set the volume in the
     // constructor
     propagation._navigation.set_volume(in_par.surface_link().volume());
 
     // Propagate to the next surface
-    propagator.propagate_sync(propagation, detray::tie(s0, s1, s2, s3, s4));
+    propagator.propagate_sync(propagation, detray::tie(s0, s1, s2, s3));
 
     // If a surface found, add the parameter for the next step
-    if (s4.success) {
+    if (s3.success) {
         params[param_id] = propagation._stepping.bound_params();
 
         if (payload.step == cfg.max_track_candidates_per_track - 1) {

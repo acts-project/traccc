@@ -16,29 +16,25 @@
 
 namespace traccc {
 
-template <typename interactor_t>
 struct interaction_register : detray::actor {
-    struct state {
-        typename interactor_t::state &interactor_state;
-    };
 
-    template <typename propagator_state_t>
-    DETRAY_HOST_DEVICE void operator()(state &s,
-                                       propagator_state_t &prop_state) const {
+    template <typename interactor_state_t, typename propagator_state_t>
+    DETRAY_HOST_DEVICE void operator()(
+        interactor_state_t &s, const propagator_state_t &prop_state) const {
 
-        auto &navigation = prop_state._navigation;
+        const auto &navigation = prop_state._navigation;
 
         // Do not apply material interaction on the sensitive surface - it is
         // applied outside the propagator
         if (navigation.is_on_sensitive()) {
-            s.interactor_state.do_energy_loss = false;
-            s.interactor_state.do_multiple_scattering = false;
-            s.interactor_state.do_covariance_transport = false;
+            s.do_energy_loss = false;
+            s.do_multiple_scattering = false;
+            s.do_covariance_transport = false;
         } else if (!navigation.is_on_sensitive() &&
                    navigation.encountered_sf_material()) {
-            s.interactor_state.do_energy_loss = true;
-            s.interactor_state.do_multiple_scattering = true;
-            s.interactor_state.do_covariance_transport = true;
+            s.do_energy_loss = true;
+            s.do_multiple_scattering = true;
+            s.do_covariance_transport = true;
         }
     }
 };
