@@ -43,7 +43,7 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-#include "traccc/alpaka/utils/vecmem_typedefs.hpp"
+#include "traccc/alpaka/utils/vecmem_type_traits.hpp"
 
 // System include(s).
 #include <exception>
@@ -63,10 +63,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     /// Type declarations
     using host_detector_type = detray::detector<>;
 
-    traccc::alpaka::vecmem::device_copy copy;
-    traccc::alpaka::vecmem::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::device_memory_resource device_mr;
-    traccc::alpaka::vecmem::managed_memory_resource mng_mr;
+    traccc::alpaka::vecmem::host_device_traits::device_copy copy;
+    traccc::alpaka::vecmem::host_device_traits::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::host_device_traits::device_memory_resource device_mr;
+    traccc::alpaka::vecmem::host_device_traits::managed_memory_resource mng_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 
     // Performance writer

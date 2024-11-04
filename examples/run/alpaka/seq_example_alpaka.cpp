@@ -11,7 +11,7 @@
 #include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/alpaka/utils/vecmem_typedefs.hpp"
+#include "traccc/alpaka/utils/vecmem_type_traits.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -71,9 +71,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                        seeding_opts.seedfinder.bFieldInZ};
 
     // Memory resources used by the application.
-    traccc::alpaka::vecmem::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::device_copy copy;
-    traccc::alpaka::vecmem::device_memory_resource device_mr;
+    traccc::alpaka::vecmem::host_device_traits::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::host_device_traits::device_copy copy;
+    traccc::alpaka::vecmem::host_device_traits::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 
     traccc::host::clusterization_algorithm ca(host_mr);

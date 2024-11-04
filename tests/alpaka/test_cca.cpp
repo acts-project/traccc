@@ -12,7 +12,7 @@
 
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-#include "traccc/alpaka/utils/vecmem_typedefs.hpp"
+#include "traccc/alpaka/utils/vecmem_type_traits.hpp"
 
 namespace {
 
@@ -24,8 +24,8 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
 
         vecmem::host_memory_resource host_mr;
 
-        traccc::alpaka::vecmem::device_copy copy;
-        traccc::alpaka::vecmem::device_memory_resource device_mr;
+        traccc::alpaka::vecmem::host_device_traits::device_copy copy;
+        traccc::alpaka::vecmem::host_device_traits::device_memory_resource device_mr;
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
