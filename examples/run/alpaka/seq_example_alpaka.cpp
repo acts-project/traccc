@@ -62,7 +62,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Memory resources used by the application.
     traccc::alpaka::vecmem::host_device_traits::host_memory_resource host_mr;
     traccc::alpaka::vecmem::host_device_traits::device_copy copy;
-    traccc::alpaka::vecmem::host_device_traits::device_memory_resource device_mr;
+    traccc::alpaka::vecmem::host_device_traits::device_memory_resource
+        device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 
     // Construct the detector description object.

@@ -35,32 +35,32 @@
 
 namespace traccc::alpaka::vecmem {
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-    struct host_device_traits {
-      using device_memory_resource = ::vecmem::cuda::device_memory_resource;
-      using host_memory_resource = ::vecmem::cuda::host_memory_resource ;
-      using managed_memory_resource = ::vecmem::cuda::managed_memory_resource;
-      using device_copy = ::vecmem::cuda::copy;
-    };  // struct host_device_traits
+struct host_device_traits {
+    using device_memory_resource = ::vecmem::cuda::device_memory_resource;
+    using host_memory_resource = ::vecmem::cuda::host_memory_resource;
+    using managed_memory_resource = ::vecmem::cuda::managed_memory_resource;
+    using device_copy = ::vecmem::cuda::copy;
+};  // struct host_device_traits
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    struct host_device_traits {
-      using device_memory_resource = ::vecmem::hip::device_memory_resource;
-      using host_memory_resource = ::vecmem::hip::host_memory_resource ;
-      using managed_memory_resource = ::vecmem::hip::managed_memory_resource;
-      using device_copy = ::vecmem::hip::copy;
-    };  // struct host_device_traits
+struct host_device_traits {
+    using device_memory_resource = ::vecmem::hip::device_memory_resource;
+    using host_memory_resource = ::vecmem::hip::host_memory_resource;
+    using managed_memory_resource = ::vecmem::hip::managed_memory_resource;
+    using device_copy = ::vecmem::hip::copy;
+};  // struct host_device_traits
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
-    struct host_device_traits {
-      using device_memory_resource = ::vecmem::sycl::device_memory_resource;
-      using host_memory_resource = ::vecmem::sycl::host_memory_resource ;
-      using managed_memory_resource = ::vecmem::sycl::managed_memory_resource;
-      using device_copy = ::vecmem::sycl::copy;
-    };  // struct host_device_traits
+struct host_device_traits {
+    using device_memory_resource = ::vecmem::sycl::device_memory_resource;
+    using host_memory_resource = ::vecmem::sycl::host_memory_resource;
+    using managed_memory_resource = ::vecmem::sycl::managed_memory_resource;
+    using device_copy = ::vecmem::sycl::copy;
+};  // struct host_device_traits
 #else  // host-only
-    struct host_device_traits {
-      using device_memory_resource = ::vecmem::host_memory_resource;
-      using host_memory_resource = ::vecmem::host_memory_resource ;
-      using managed_memory_resource = ::vecmem::managed_memory_resource;
-      using device_copy = ::vecmem::copy;
-    };  // struct host_device_traits
+struct host_device_traits {
+    using device_memory_resource = ::vecmem::host_memory_resource;
+    using host_memory_resource = ::vecmem::host_memory_resource;
+    using managed_memory_resource = ::vecmem::managed_memory_resource;
+    using device_copy = ::vecmem::copy;
+};  // struct host_device_traits
 #endif
 }  // namespace traccc::alpaka::vecmem

@@ -26,7 +26,8 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         vecmem::host_memory_resource host_mr;
 
         traccc::alpaka::vecmem::host_device_traits::device_copy copy;
-        traccc::alpaka::vecmem::host_device_traits::device_memory_resource device_mr;
+        traccc::alpaka::vecmem::host_device_traits::device_memory_resource
+            device_mr;
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
