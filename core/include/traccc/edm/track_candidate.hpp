@@ -8,11 +8,9 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
-
-// Detray include(s).
-#include "detray/geometry/barcode.hpp"
 
 namespace traccc {
 

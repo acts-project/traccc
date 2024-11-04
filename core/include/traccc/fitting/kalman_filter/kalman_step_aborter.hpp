@@ -46,7 +46,7 @@ struct kalman_step_aborter : public detray::actor {
                                        propagator_state_t& prop_state) const {
 
         // Convenience reference to the navigation state.
-        auto& navigation = prop_state._navigation;
+        auto& navigation = prop_state.navigation();
 
         // Reset the step count if the track is on a sensitive surface.
         if (navigation.is_on_sensitive()) {

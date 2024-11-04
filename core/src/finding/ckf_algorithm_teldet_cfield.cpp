@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "find_tracks.hpp"
+#include "find_tracks_alt.hpp"
 #include "traccc/finding/ckf_algorithm.hpp"
 
 // Detray include(s).

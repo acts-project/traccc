@@ -64,18 +64,21 @@ struct seed_generator {
 
         bound_track_parameters bound_param{surface_link, bound_vec, bound_cov};
 
-        // Type definitions
-        using interactor_type =
-            detray::pointwise_material_interactor<algebra_type>;
-
         assert(ptc_type.charge() * bound_param.qop() > 0.f);
 
         // Apply interactor
-        typename interactor_type::state interactor_state;
-        interactor_state.do_multiple_scattering = false;
-        interactor_type{}.update(
-            ctx, ptc_type, bound_param, interactor_state,
-            static_cast<int>(detray::navigation::direction::e_backward), sf);
+        if (sf.has_material()) {
+            // Type definitions
+            using interactor_type =
+                detray::pointwise_material_interactor<algebra_type>;
+
+            typename interactor_type::state interactor_state;
+            interactor_state.do_multiple_scattering = false;
+            interactor_type{}.update(
+                ctx, ptc_type, bound_param, interactor_state,
+                static_cast<int>(detray::navigation::direction::e_backward),
+                sf);
+        }
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 

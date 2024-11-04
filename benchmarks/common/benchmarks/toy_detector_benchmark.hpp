@@ -60,8 +60,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
     static constexpr std::array<float, 2> phi_range{
         -traccc::constant<float>::pi, traccc::constant<float>::pi};
-    static constexpr std::array<float, 2> theta_range{
-        0.f, traccc::constant<float>::pi};
+    static constexpr std::array<float, 2> eta_range{-4, 4};
     static constexpr std::array<float, 2> mom_range{
         10.f * traccc::unit<float>::GeV, 100.f * traccc::unit<float>::GeV};
 
@@ -83,6 +82,10 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
                      "the simulation data."
                   << std::endl;
 
+        // Apply correct propagation config
+        apply_propagation_config(finding_cfg);
+        apply_propagation_config(fitting_cfg);
+
         // Use deterministic random number generator for testing
         using uniform_gen_t = detray::detail::random_numbers<
             traccc::scalar, std::uniform_real_distribution<traccc::scalar>>;
@@ -101,7 +104,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         generator_type::configuration gen_cfg{};
         gen_cfg.n_tracks(n_tracks);
         gen_cfg.phi_range(phi_range);
-        gen_cfg.theta_range(theta_range);
+        gen_cfg.eta_range(eta_range);
         gen_cfg.mom_range(mom_range);
         generator_type generator(gen_cfg);
 
@@ -127,6 +130,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
             detray::muon<traccc::scalar>(), n_events, det, field,
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
+        // Same propagation configuration for sim and reco
+        apply_propagation_config(sim.get_config());
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
             1.f * detray::unit<float>::mm;
@@ -153,6 +158,20 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         toy_cfg.module_mat_thickness(0.11f * detray::unit<traccc::scalar>::mm);
 
         return toy_cfg;
+    }
+
+    template <typename config_t>
+    void apply_propagation_config(config_t& cfg) const {
+
+        // Configure the propagation for the toy detector
+        cfg.propagation.navigation.search_window = {3, 3};
+        cfg.propagation.navigation.overstep_tolerance =
+            -300.f * detray::unit<float>::um;
+        cfg.propagation.navigation.min_mask_tolerance =
+            1e-5f * detray::unit<float>::mm;
+        cfg.propagation.navigation.max_mask_tolerance =
+            3.f * detray::unit<float>::mm;
+        cfg.propagation.navigation.mask_tolerance_scalor = 0.05f;
     }
 
     void SetUp(::benchmark::State& /*state*/) {

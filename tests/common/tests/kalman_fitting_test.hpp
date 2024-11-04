@@ -19,6 +19,7 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
+#include "detray/test/utils/inspectors.hpp"
 #include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // GTest include(s).
@@ -75,7 +76,7 @@ class KalmanFittingTests
         detray::detail::random_numbers<scalar,
                                        std::uniform_real_distribution<scalar>>;
 
-    /// Verify that pull distribtions follow the normal distribution
+    /// Verify that pull distributions follow the normal distribution
     ///
     /// @param file_name The name of the file holding the distributions
     /// @param hist_names The names of the histograms to process

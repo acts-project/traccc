@@ -87,7 +87,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     typename propagator_t::state propagation(in_par, payload.field_data, det);
     propagation.set_particle(
         detail::correct_particle_hypothesis(cfg.ptc_hypothesis, in_par));
-    propagation._stepping
+    propagation.stepping()
         .template set_constraint<detray::step::constraint::e_accuracy>(
             cfg.propagation.stepping.step_constraint);
 
@@ -110,14 +110,14 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     // @TODO: Should be removed once detray is fixed to set the volume in the
     // constructor
-    propagation._navigation.set_volume(in_par.surface_link().volume());
+    propagation.navigation().set_volume(in_par.surface_link().volume());
 
     // Propagate to the next surface
     propagator.propagate_sync(propagation, detray::tie(s0, s1, s2, s3, s4));
 
     // If a surface found, add the parameter for the next step
     if (s4.success) {
-        params[param_id] = propagation._stepping.bound_params();
+        params[param_id] = propagation.stepping().bound_params();
 
         if (payload.step == cfg.max_track_candidates_per_track - 1) {
             tips.push_back({payload.step, param_id});

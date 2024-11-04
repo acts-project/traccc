@@ -171,10 +171,11 @@ class kalman_fitter {
 
         // @TODO: Should be removed once detray is fixed to set the
         // volume in the constructor
-        propagation._navigation.set_volume(seed_params.surface_link().volume());
+        propagation.navigation().set_volume(
+            seed_params.surface_link().volume());
 
         // Set overstep tolerance, stepper constraint and mask tolerance
-        propagation._stepping
+        propagation.stepping()
             .template set_constraint<detray::step::constraint::e_accuracy>(
                 m_cfg.propagation.stepping.step_constraint);
 
