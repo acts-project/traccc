@@ -17,6 +17,12 @@
 // Detray include(s).
 #include <detray/detectors/bfield.hpp>
 
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
+
 namespace traccc::host {
 
 /// Kalman filter based track fitting algorithm
@@ -40,7 +46,8 @@ class kalman_fitting_algorithm
     ///
     /// @param config The configuration object
     ///
-    kalman_fitting_algorithm(const config_type& config);
+    explicit kalman_fitting_algorithm(const config_type& config,
+                                      vecmem::memory_resource& mr);
 
     /// Execute the algorithm
     ///
@@ -71,6 +78,8 @@ class kalman_fitting_algorithm
     private:
     /// Algorithm configuration
     config_type m_config;
+    /// Memory resource to use in the algorithm
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 
 };  // class kalman_fitting_algorithm
 

@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_opts;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
 
     // Seed generator
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);

@@ -10,7 +10,8 @@
 
 namespace traccc::host {
 
-kalman_fitting_algorithm::kalman_fitting_algorithm(const config_type& config)
-    : m_config(config) {}
+kalman_fitting_algorithm::kalman_fitting_algorithm(const config_type& config,
+                                                   vecmem::memory_resource& mr)
+    : m_config{config}, m_mr{mr} {}
 
 }  // namespace traccc::host

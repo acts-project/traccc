@@ -28,7 +28,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_seeding(finder_config, grid_config, filter_config, mr),
       m_track_parameter_estimation(mr),
       m_finding(finding_config),
-      m_fitting(fitting_config),
+      m_fitting(fitting_config, mr),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),

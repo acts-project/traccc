@@ -11,6 +11,9 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
 namespace traccc::host::details {
 
 /// Templated implementation of the track fitting algorithm.
@@ -19,27 +22,26 @@ namespace traccc::host::details {
 /// specializations, to fit tracks on top of a specific detector type, magnetic
 /// field type, and track fitting configuration.
 ///
+/// @note The memory resource received by this function is not used thoroughly
+///       for the setup of the output container. Inner vectors in the output's
+///       jagged vector are created using the default memory resource.
+///
 /// @tparam fitter_t The fitter type used for the track fitting
 ///
-/// @param det               The detector object
-/// @param field             The magnetic field object
-/// @param track_candidates  All track candidates to fit
-/// @param config            The track fitting configuration
+/// @param[in] fitter           The fitter object to use on the track candidates
+/// @param[in] track_candidates All track candidates to fit
+/// @param[in] mr               Memory resource to use for the output container
 ///
 /// @return A container of the fitted track states
 ///
 template <typename fitter_t>
 track_state_container_types::host fit_tracks(
-    const typename fitter_t::detector_type& det,
-    const typename fitter_t::bfield_type& field,
+    fitter_t& fitter,
     const track_candidate_container_types::const_view& track_candidates_view,
-    const typename fitter_t::config_type& config) {
+    vecmem::memory_resource& mr) {
 
-    // Create the fitter object.
-    fitter_t fitter(det, field, config);
-
-    // Output container.
-    track_state_container_types::host output_states;
+    // Create the output container.
+    track_state_container_types::host result{&mr};
 
     // Iterate over the tracks,
     const track_candidate_container_types::const_device track_candidates{
@@ -62,13 +64,13 @@ track_state_container_types::host fit_tracks(
         fitter.fit(track_candidates.get_headers()[i], fitter_state);
 
         // Save the results into the output container.
-        output_states.push_back(
+        result.push_back(
             std::move(fitter_state.m_fit_res),
             std::move(fitter_state.m_fit_actor_state.m_track_states));
     }
 
     // Return the fitted track states.
-    return output_states;
+    return result;
 }
 
 }  // namespace traccc::host::details

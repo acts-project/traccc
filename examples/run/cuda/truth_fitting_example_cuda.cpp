@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_opts;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream);
 

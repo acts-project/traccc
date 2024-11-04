@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "fit_tracks.hpp"
+#include "traccc/fitting/details/fit_tracks.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 
@@ -21,18 +21,16 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const detray::bfield::const_field_t::view_t& field,
     const track_candidate_container_types::const_view& track_candidates) const {
 
-    // Set up the fitter type(s).
-    using stepper_type =
+    // Create the fitter object.
+    kalman_fitter<
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
                            traccc::telescope_detector::host::algebra_type,
-                           detray::constrained_step<>>;
-    using navigator_type =
-        detray::navigator<const traccc::telescope_detector::host>;
-    using fitter_type = kalman_fitter<stepper_type, navigator_type>;
+                           detray::constrained_step<>>,
+        detray::navigator<const traccc::telescope_detector::host>>
+        fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.
-    return details::fit_tracks<fitter_type>(det, field, track_candidates,
-                                            m_config);
+    return details::fit_tracks(fitter, track_candidates, m_mr.get());
 }
 
 }  // namespace traccc::host

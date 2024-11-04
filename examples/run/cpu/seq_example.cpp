@@ -128,7 +128,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                  seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
     finding_algorithm finding_alg(finding_cfg);
-    fitting_algorithm fitting_alg(fitting_cfg);
+    fitting_algorithm fitting_alg(fitting_cfg, host_mr);
     traccc::greedy_ambiguity_resolution_algorithm resolution_alg;
 
     // performance writer

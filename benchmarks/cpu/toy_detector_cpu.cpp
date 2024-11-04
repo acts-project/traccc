@@ -57,7 +57,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     traccc::track_params_estimation tp(host_mr);
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         finding_cfg);
-    traccc::host::kalman_fitting_algorithm host_fitting(fitting_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fitting_cfg, host_mr);
 
     for (auto _ : state) {
 

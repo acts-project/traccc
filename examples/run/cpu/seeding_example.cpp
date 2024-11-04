@@ -124,7 +124,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
 
     traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution{};
 
