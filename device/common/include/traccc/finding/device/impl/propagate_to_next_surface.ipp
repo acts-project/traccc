@@ -23,7 +23,7 @@ namespace traccc::device {
 template <typename propagator_t, typename bfield_t, typename config_t>
 TRACCC_DEVICE inline void propagate_to_next_surface(
     std::size_t globalIndex, const config_t cfg,
-    const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
+    const propagate_to_next_surface_payload<propagator_t, bfield_t> &payload) {
 
     if (globalIndex >= payload.n_in_params) {
         return;
@@ -91,30 +91,29 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         .template set_constraint<detray::step::constraint::e_accuracy>(
             cfg.propagation.stepping.step_constraint);
 
-    // Actor state
-    // @TODO: simplify the syntax here
-    // @NOTE: Post material interaction might be required here
-    using actor_list_type =
-        typename propagator_t::actor_chain_type::actor_list_type;
-    typename detray::detail::tuple_element<0, actor_list_type>::type::state
-        s0{};
-    typename detray::detail::tuple_element<1, actor_list_type>::type::state
-        s1{};
-    typename detray::detail::tuple_element<2, actor_list_type>::type::state
-        s2{};
-    typename detray::detail::tuple_element<3, actor_list_type>::type::state s3;
-    s3.min_step_length = cfg.min_step_length_for_next_surface;
-    s3.max_count = cfg.max_step_counts_for_next_surface;
+    // Generate actor states and references to the states
+    using actor_chain_t = typename propagator_t::actor_chain_type;
+    auto [actors_states, actor_chain_state] =
+        actor_chain_t::make_actor_states();
+
+    auto &path_abrt_state =
+        detray::detail::get<detray::pathlimit_aborter::state>(actors_states);
+    path_abrt_state.set_path_limit(cfg.propagation.stepping.path_limit);
+
+    auto &ckf_abrt_state =
+        detray::detail::get<ckf_aborter::state>(actors_states);
+    ckf_abrt_state.min_step_length = cfg.min_step_length_for_next_surface;
+    ckf_abrt_state.max_count = cfg.max_step_counts_for_next_surface;
 
     // @TODO: Should be removed once detray is fixed to set the volume in the
     // constructor
     propagation._navigation.set_volume(in_par.surface_link().volume());
 
     // Propagate to the next surface
-    propagator.propagate_sync(propagation, detray::tie(s0, s1, s2, s3));
+    propagator.propagate_sync(propagation, actor_chain_state);
 
     // If a surface found, add the parameter for the next step
-    if (s3.success) {
+    if (ckf_abrt_state.success) {
         params[param_id] = propagation._stepping.bound_params();
 
         if (payload.step == cfg.max_track_candidates_per_track - 1) {
