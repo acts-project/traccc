@@ -33,7 +33,7 @@
 
 #include <alpaka/alpaka.hpp>
 
-//Forward declarations so we can compile the types below
+// Forward declarations so we can compile the types below
 namespace vecmem {
 class host_memory_resource;
 class copy;
@@ -58,7 +58,7 @@ class copy;
 }  // namespace vecmem
 
 namespace traccc::alpaka::vecmem {
-//For all CPU accelerators (except SYCL), just use host
+// For all CPU accelerators (except SYCL), just use host
 template <typename T>
 struct host_device_types {
     using device_memory_resource = ::vecmem::host_memory_resource;
