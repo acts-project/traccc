@@ -78,7 +78,7 @@ struct kalman_actor : detray::actor {
     TRACCC_HOST_DEVICE void operator()(state& actor_state,
                                        propagator_state_t& propagation) const {
 
-        const auto& stepping = propagation._stepping;
+        auto& stepping = propagation._stepping;
         auto& navigation = propagation._navigation;
 
         // If the iterator reaches the end, terminate the propagation
@@ -113,6 +113,9 @@ struct kalman_actor : detray::actor {
                 propagation._heartbeat &= navigation.abort();
                 return;
             }
+
+            // Update the propagation flow
+            stepping.bound_params() = trk_state.filtered();
 
             // Set full jacobian
             trk_state.jacobian() = stepping.full_jacobian();
