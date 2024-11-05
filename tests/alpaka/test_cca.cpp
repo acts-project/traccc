@@ -7,26 +7,36 @@
 
 #include <gtest/gtest.h>
 
+#include <alpaka/alpaka.hpp>
+#include <alpaka/example/ExampleDefaultAcc.hpp>
 #include <functional>
 #include <vecmem/memory/host_memory_resource.hpp>
 
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-#include "traccc/alpaka/utils/vecmem_type_traits.hpp"
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
 
+// template <TAccTag>
 cca_function_t get_f_with(traccc::clustering_config cfg) {
     return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
                  const traccc::silicon_detector_description::host& dd) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
-        vecmem::host_memory_resource host_mr;
+        using namespace alpaka;
+        using Dim = DimInt<1>;
+        using Idx = uint32_t;
 
-        traccc::alpaka::vecmem::host_device_traits::device_copy copy;
-        traccc::alpaka::vecmem::host_device_traits::device_memory_resource
+        using Acc = ExampleDefaultAcc<Dim, Idx>;
+        traccc::alpaka::vecmem::host_device_types<
+            alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
+        traccc::alpaka::vecmem::host_device_types<
+            alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+        traccc::alpaka::vecmem::host_device_types<
+            alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
             device_mr;
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);

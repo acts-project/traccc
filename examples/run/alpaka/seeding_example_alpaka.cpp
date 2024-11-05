@@ -34,6 +34,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Detray include(s).
+#include "alpaka/example/ExampleDefaultAcc.hpp"
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
@@ -41,7 +42,7 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-#include "traccc/alpaka/utils/vecmem_type_traits.hpp"
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 
 // System include(s).
 #include <exception>
@@ -58,11 +59,18 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
-    traccc::alpaka::vecmem::host_device_traits::device_copy copy;
-    traccc::alpaka::vecmem::host_device_traits::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::host_device_traits::device_memory_resource
-        device_mr;
-    traccc::alpaka::vecmem::host_device_traits::managed_memory_resource mng_mr;
+    using Dim = ::alpaka::DimInt<1>;
+    using Idx = uint32_t;
+
+    using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource mng_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 
     // Performance writer

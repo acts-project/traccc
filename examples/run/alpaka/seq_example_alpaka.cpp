@@ -6,12 +6,13 @@
  */
 
 // Project include(s).
+#include "alpaka/example/ExampleDefaultAcc.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/alpaka/utils/vecmem_type_traits.hpp"
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_cells.hpp"
@@ -59,11 +60,17 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
 
+    using Dim = ::alpaka::DimInt<1>;
+    using Idx = uint32_t;
+
+    using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
     // Memory resources used by the application.
-    traccc::alpaka::vecmem::host_device_traits::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::host_device_traits::device_copy copy;
-    traccc::alpaka::vecmem::host_device_traits::device_memory_resource
-        device_mr;
+    traccc::alpaka::vecmem::host_device_types<
+        alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::host_device_types<
+        alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+    traccc::alpaka::vecmem::host_device_types<
+        alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 
     // Construct the detector description object.
