@@ -87,15 +87,15 @@ int main(int argc, char* argv[]) {
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(traccc::io::get_absolute_path(
-                        detector_opts.detector_file));
+    reader_cfg.add_file(
+        traccc::io::get_absolute_path(detector_opts.detector_file));
     if (!detector_opts.material_file.empty()) {
-        reader_cfg.add_file(traccc::io::get_absolute_path(
-                            detector_opts.material_file));
+        reader_cfg.add_file(
+            traccc::io::get_absolute_path(detector_opts.material_file));
     }
     if (!detector_opts.grid_file.empty()) {
-        reader_cfg.add_file(traccc::io::get_absolute_path(
-                            detector_opts.grid_file));
+        reader_cfg.add_file(
+            traccc::io::get_absolute_path(detector_opts.grid_file));
     }
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
