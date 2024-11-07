@@ -182,7 +182,7 @@ TRACCC_DEVICE inline void find_tracks(
                 owner_local_thread_id +
                 thread_id.getBlockDimX() * thread_id.getBlockIdX();
             assert(in_params_liveness.at(owner_global_thread_id) != 0u);
-            bound_track_parameters in_par =
+            const bound_track_parameters& in_par =
                 in_params.at(owner_global_thread_id);
             const unsigned int meas_idx =
                 shared_payload.shared_candidates[thread_id.getLocalThreadIdX()]
