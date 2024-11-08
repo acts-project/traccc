@@ -28,12 +28,12 @@ void read_detector(detector_t& detector, vecmem::memory_resource& mr,
 
     // Set up the detector reader configuration.
     detray::io::detector_reader_config cfg;
-    cfg.add_file(traccc::io::data_directory() + std::string{geometry_file});
+    cfg.add_file(traccc::io::get_absolute_path(geometry_file));
     if (material_file.empty() == false) {
-        cfg.add_file(traccc::io::data_directory() + std::string{material_file});
+        cfg.add_file(traccc::io::get_absolute_path(material_file));
     }
     if (grid_file.empty() == false) {
-        cfg.add_file(traccc::io::data_directory() + std::string{grid_file});
+        cfg.add_file(traccc::io::get_absolute_path(grid_file));
     }
 
     // Read the detector.

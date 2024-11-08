@@ -45,8 +45,8 @@ void read_csv_dd(traccc::silicon_detector_description::host& dd,
 
     // Read the geometry description as a map of surface tranformations.
     const std::map<traccc::geometry_id, traccc::transform3> surfaces =
-        traccc::io::csv::read_surfaces(traccc::io::data_directory() +
-                                       geometry_file.data());
+        traccc::io::csv::read_surfaces(
+            traccc::io::get_absolute_path(geometry_file.data()));
 
     // Fill the detector description with information about the (sensitive)
     // surfaces, and the digitization configurations belonging to those
