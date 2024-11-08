@@ -13,7 +13,7 @@
 #include "traccc/seeding/spacepoint_binning.hpp"
 
 // tests
-//#include "tests/atlas_cuts.hpp"
+#include "tests/atlas_cuts.hpp"
 #include "tests/space_point.hpp"
 
 // acts
@@ -208,11 +208,11 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // there are a lot more variables here tbh
 
     // We also need some atlas-specific cut
-    //    Acts::ATLASCuts<SpacePoint> atlasCuts = Acts::ATLASCuts<SpacePoint>();
+    Acts::ATLASCuts<spacepoint_t> atlasCuts;
     
     // Start creating the seed finder object. It needs a Config option
     seedfinderconfig_t acts_config;
-    acts_config.seedFilter = std::make_shared<seedfilter_t>(sfconf.toInternalUnits()); //, &atlasCuts);
+    acts_config.seedFilter = std::make_shared<seedfilter_t>(sfconf.toInternalUnits(), &atlasCuts);
     // Phi range go from -pi to +pi
     acts_config.phiMin = traccc_config.phiMin;
     acts_config.phiMax = traccc_config.phiMax;
