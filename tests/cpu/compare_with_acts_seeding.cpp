@@ -53,7 +53,7 @@ public:
   friend Acts::SpacePointContainer<SpacePointCollector, Acts::detail::RefHolder>;
   using ValueType = SpacePoint;
   
-  SpacePointCollector(std::vector<const ValueType*>& externalCollection)
+  explicit SpacePointCollector(std::vector<const ValueType*>& externalCollection)
     : m_storage(&externalCollection)
   {}
 
@@ -75,7 +75,7 @@ public:
     case "TopStripCenterPosition"_hash:
       return Acts::Vector3( {0, 0, 0} );
     default:
-      throw std::runtime_error("no such component " + std::to_string(key));	  
+      throw std::invalid_argument("no such component " + std::to_string(key));	  
     }
   }  
   
@@ -232,8 +232,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.rMaxMiddle = std::numeric_limits<float>::max();
     acts_config.useVariableMiddleSPRange = false;
     acts_config.rRangeMiddleSP = {};
-    acts_config.deltaRMiddleMinSPRange = 10 * Acts::UnitConstants::mm;
-    acts_config.deltaRMiddleMaxSPRange = 10 * Acts::UnitConstants::mm;    
+    acts_config.deltaRMiddleMinSPRange = 10.f; // mm
+    acts_config.deltaRMiddleMaxSPRange = 10.f; // mm
     acts_config.deltaRMin = traccc_config.deltaRMin;
     acts_config.deltaRMax = traccc_config.deltaRMax;    
     acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
@@ -338,7 +338,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // the constructor can accept a mixture of all of these types
     int numPhiNeighbors = 1;
     int numRadiusNeighbors = 0;
-    // TODO: set some reasonable values here!!!
     std::vector<std::pair<int, int>> zBinNeighborsTop{};
     std::vector<std::pair<int, int>> zBinNeighborsBottom{};
     
