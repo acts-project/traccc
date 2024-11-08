@@ -17,20 +17,20 @@
 #include "tests/space_point.hpp"
 
 // acts
+#include "Acts/EventData/Seed.hpp"
+#include "Acts/EventData/SpacePointContainer.hpp"
 #include "Acts/Geometry/GeometryContext.hpp"
 #include "Acts/MagneticField/ConstantBField.hpp"
-#include "Acts/Utilities/GridBinFinder.hpp"
 #include "Acts/Seeding/BinnedGroup.hpp"
 #include "Acts/Seeding/EstimateTrackParamsFromSeed.hpp"
-#include "Acts/EventData/Seed.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinder.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Surfaces/DiscSurface.hpp"
 #include "Acts/Surfaces/PlaneSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
+#include "Acts/Utilities/GridBinFinder.hpp"
 #include "Acts/Utilities/Helpers.hpp"
-#include "Acts/EventData/SpacePointContainer.hpp"
 
 // VecMem
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -49,41 +49,47 @@
 
 // The internal details of this class are totally up to the user
 class SpacePointCollector {
-public:
-  friend Acts::SpacePointContainer<SpacePointCollector, Acts::detail::RefHolder>;
-  using ValueType = SpacePoint;
-  
-  explicit SpacePointCollector(std::vector<const ValueType*>& externalCollection)
-    : m_storage(&externalCollection)
-  {}
+    public:
+    friend Acts::SpacePointContainer<SpacePointCollector,
+                                     Acts::detail::RefHolder>;
+    using ValueType = SpacePoint;
 
-  std::size_t size_impl() const {return storage().size(); }
-  float x_impl(std::size_t idx) const { return storage()[idx]->x(); }
-  float y_impl(std::size_t idx) const { return storage()[idx]->y(); }
-  float z_impl(std::size_t idx) const { return storage()[idx]->z(); }  
-  float varianceR_impl(std::size_t idx) const { return storage()[idx]->varianceR; }
-  float varianceZ_impl(std::size_t idx) const { return storage()[idx]->varianceZ; }
+    explicit SpacePointCollector(
+        std::vector<const ValueType*>& externalCollection)
+        : m_storage(&externalCollection) {}
 
-  const ValueType& get_impl(std::size_t idx) const { return *storage()[idx]; }
-
-  std::any component_impl(Acts::HashedString key, std::size_t) const {
-    using namespace Acts::HashedStringLiteral;      
-    switch (key) {
-    case "TopStripVector"_hash:
-    case "BottomStripVector"_hash:
-    case "StripCenterDistance"_hash:
-    case "TopStripCenterPosition"_hash:
-      return Acts::Vector3( {0, 0, 0} );
-    default:
-      throw std::invalid_argument("no such component " + std::to_string(key));	  
+    std::size_t size_impl() const { return storage().size(); }
+    float x_impl(std::size_t idx) const { return storage()[idx]->x(); }
+    float y_impl(std::size_t idx) const { return storage()[idx]->y(); }
+    float z_impl(std::size_t idx) const { return storage()[idx]->z(); }
+    float varianceR_impl(std::size_t idx) const {
+        return storage()[idx]->varianceR;
     }
-  }  
-  
-private:
-  const std::vector<const ValueType*>& storage() const { return *m_storage; }
-  std::vector<const ValueType*>& storage() { return *m_storage; }
-  
-  std::vector<const ValueType*>* m_storage {nullptr};
+    float varianceZ_impl(std::size_t idx) const {
+        return storage()[idx]->varianceZ;
+    }
+
+    const ValueType& get_impl(std::size_t idx) const { return *storage()[idx]; }
+
+    std::any component_impl(Acts::HashedString key, std::size_t) const {
+        using namespace Acts::HashedStringLiteral;
+        switch (key) {
+            case "TopStripVector"_hash:
+            case "BottomStripVector"_hash:
+            case "StripCenterDistance"_hash:
+            case "TopStripCenterPosition"_hash:
+                return Acts::Vector3({0, 0, 0});
+            default:
+                throw std::invalid_argument("no such component " +
+                                            std::to_string(key));
+        }
+    }
+
+    private:
+    const std::vector<const ValueType*>& storage() const { return *m_storage; }
+    std::vector<const ValueType*>& storage() { return *m_storage; }
+
+    std::vector<const ValueType*>* m_storage{nullptr};
 };
 
 inline bool operator==(const SpacePoint* acts_sp,
@@ -127,7 +133,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc_config.cotThetaMax = 7.40627f;
     traccc_config.deltaRMin = 1.f * traccc::unit<float>::mm;
     traccc_config.deltaRMax = 60.f * traccc::unit<float>::mm;
-    traccc_config.sigmaScattering = 1.0f;    
+    traccc_config.sigmaScattering = 1.0f;
 
     traccc::spacepoint_grid_config grid_config(traccc_config);
 
@@ -175,22 +181,19 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     EXPECT_EQ(spacepoints_per_event.size(), n_sp_match);
     EXPECT_EQ(spVec.size(), n_sp_match);
 
-    // We need to do some operations on the space points before we can give them to the seeding
-    // Config
+    // We need to do some operations on the space points before we can give them
+    // to the seeding Config
     Acts::SpacePointContainerConfig spConfig;
     spConfig.useDetailedDoubleMeasurementInfo = false;
     // Options
     Acts::SpacePointContainerOptions spOptions;
-    spOptions.beamPos = {
-      traccc_config.beamPos[0],
-      traccc_config.beamPos[1]
-    };
-    
+    spOptions.beamPos = {traccc_config.beamPos[0], traccc_config.beamPos[1]};
+
     SpacePointCollector container(spVec);
     Acts::SpacePointContainer<decltype(container), Acts::detail::RefHolder>
-      spContainer(spConfig, spOptions, container);
-    // The seeding will then iterate on spContainer, that is on space point proxies
-    // This also means we will create seed of proxies of space points
+        spContainer(spConfig, spOptions, container);
+    // The seeding will then iterate on spContainer, that is on space point
+    // proxies This also means we will create seed of proxies of space points
 
     // Define some types
     using spacepoint_t = typename decltype(spContainer)::SpacePointProxyType;
@@ -201,7 +204,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     using seedfinder_t = Acts::SeedFinder<spacepoint_t, grid_t>;
     using seedfilter_t = Acts::SeedFilter<spacepoint_t>;
     using seed_t = Acts::Seed<spacepoint_t, 3ul>;
-    
+
     // Start creating Seed filter object
     Acts::SeedFilterConfig sfconf;
     sfconf.maxSeedsPerSpM = traccc::seedfilter_config().maxSeedsPerSpM;
@@ -209,10 +212,11 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // We also need some atlas-specific cut
     Acts::ATLASCuts<spacepoint_t> atlasCuts;
-    
+
     // Start creating the seed finder object. It needs a Config option
     seedfinderconfig_t acts_config;
-    acts_config.seedFilter = std::make_shared<seedfilter_t>(sfconf.toInternalUnits(), &atlasCuts);
+    acts_config.seedFilter =
+        std::make_shared<seedfilter_t>(sfconf.toInternalUnits(), &atlasCuts);
     // Phi range go from -pi to +pi
     acts_config.phiMin = traccc_config.phiMin;
     acts_config.phiMax = traccc_config.phiMax;
@@ -221,21 +225,21 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.rMin = traccc_config.rMin;
     acts_config.rMax = traccc_config.rMax;
 
-    // zBinEdges is used to understand the radius range of a middle space point candidate
-    // This property must be the same as the grid_config.zBinEdges
-    // however, it is only used if config.useVariableMiddleSPRange is set to false
-    // and if config.rRangeMiddleSP is not empty!
-    // Same value as in the seed finder config
+    // zBinEdges is used to understand the radius range of a middle space point
+    // candidate This property must be the same as the grid_config.zBinEdges
+    // however, it is only used if config.useVariableMiddleSPRange is set to
+    // false and if config.rRangeMiddleSP is not empty! Same value as in the
+    // seed finder config
     acts_config.zBinEdges = {};
-    
+
     acts_config.rMinMiddle = 0.f;
     acts_config.rMaxMiddle = std::numeric_limits<float>::max();
     acts_config.useVariableMiddleSPRange = false;
     acts_config.rRangeMiddleSP = {};
-    acts_config.deltaRMiddleMinSPRange = 10.f; // mm
-    acts_config.deltaRMiddleMaxSPRange = 10.f; // mm
+    acts_config.deltaRMiddleMinSPRange = 10.f;  // mm
+    acts_config.deltaRMiddleMaxSPRange = 10.f;  // mm
     acts_config.deltaRMin = traccc_config.deltaRMin;
-    acts_config.deltaRMax = traccc_config.deltaRMax;    
+    acts_config.deltaRMax = traccc_config.deltaRMax;
     acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
     acts_config.deltaRMaxTopSP = traccc_config.deltaRMax;
     acts_config.deltaRMinBottomSP = traccc_config.deltaRMin;
@@ -252,45 +256,50 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.useDetailedDoubleMeasurementInfo = false;
     // there are other variables here actualy ...
     acts_config = acts_config.toInternalUnits().calculateDerivedQuantities();
-    
+
     // We create also a Seed Finder Option object
     Acts::SeedFinderOptions acts_options;
     acts_options.bFieldInZ = traccc_config.bFieldInZ;
     acts_options.beamPos[0] = traccc_config.beamPos[0];
     acts_options.beamPos[1] = traccc_config.beamPos[1];
-    acts_options = acts_options.toInternalUnits().calculateDerivedQuantities(acts_config);
-    
+    acts_options =
+        acts_options.toInternalUnits().calculateDerivedQuantities(acts_config);
+
     // Create the grid. This is using a CylindricalSpacePointGrid which is
-    // a 3D grid (phi, z, radius). We need to pass a config and an option objects
+    // a 3D grid (phi, z, radius). We need to pass a config and an option
+    // objects
     Acts::CylindricalSpacePointGridConfig gridConf;
     gridConf.minPt = traccc_config.minPt;
     gridConf.rMax = traccc_config.rMax;
     gridConf.rMin = 0;
     gridConf.zMax = traccc_config.zMax;
-    gridConf.zMin = traccc_config.zMin;    
+    gridConf.zMin = traccc_config.zMin;
     gridConf.deltaRMax = traccc_config.deltaRMax;
     gridConf.cotThetaMax = traccc_config.cotThetaMax;
     gridConf.impactMax = traccc_config.impactMax;
     gridConf.phiMin = traccc_config.phiMin;
     gridConf.phiMax = traccc_config.phiMax;
-    // The Bin Ednges allow the user to define a variable binnin in the z or radius
-    // azis. If no value is provided, the values of zMin/zMax and rMin/rMax will be used
-    // For the phi axis the number of binnings are compute inside the createGrid function
+    // The Bin Ednges allow the user to define a variable binnin in the z or
+    // radius azis. If no value is provided, the values of zMin/zMax and
+    // rMin/rMax will be used For the phi axis the number of binnings are
+    // compute inside the createGrid function
     gridConf.zBinEdges = acts_config.zBinEdges;
     gridConf.rBinEdges = {};
     gridConf.phiBinDeflectionCoverage = traccc_config.phiBinDeflectionCoverage;
 
     // The b-field is used for defining the number of phi bins in the grid
-    // If the b-field is 0, the phi axis of the grid will be automatically set to 100
+    // If the b-field is 0, the phi axis of the grid will be automatically set
+    // to 100
     Acts::CylindricalSpacePointGridOptions gridOpts;
     gridOpts.bFieldInZ = traccc_config.bFieldInZ;
 
-    grid_t grid = Acts::CylindricalSpacePointGridCreator::createGrid<spacepoint_t>(gridConf.toInternalUnits(),
-										   gridOpts.toInternalUnits());
+    grid_t grid =
+        Acts::CylindricalSpacePointGridCreator::createGrid<spacepoint_t>(
+            gridConf.toInternalUnits(), gridOpts.toInternalUnits());
 
     // We fill the grid with the space points
-    Acts::CylindricalSpacePointGridCreator::fillGrid<spacepoint_t>(acts_config, acts_options,
-								   grid, spContainer);
+    Acts::CylindricalSpacePointGridCreator::fillGrid<spacepoint_t>(
+        acts_config, acts_options, grid, spContainer);
 
     // Perform some checks on the grid definition and its axes.
     // It looks like traccc is usind a 2D grid, while ACTS uses 3D
@@ -306,7 +315,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     const auto& gridAxes = grid.axes();
     auto acts_axis0 = gridAxes[0];
     auto acts_axis1 = gridAxes[1];
-    
+
     EXPECT_EQ(axis0.bins(), acts_axis0->getNBins());
     EXPECT_EQ(axis1.bins(), acts_axis1->getNBins());
 
@@ -329,21 +338,26 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     }
 
     // Define the Bin Finders, these search for neighbours bins
-    // The bin finders need instructions to let them know how many neighbour bins
-    // we want to retrieve. This is done by providing some inputs to the constructors
-    // one value for each axis (provided in the same order of the axes definitions)
-    // - if input is vector< pair<int, int> > we need to specify a pair for every bin in the axis
-    // - if input is a pair<int, int> these same values are used for all bins in the axis
+    // The bin finders need instructions to let them know how many neighbour
+    // bins we want to retrieve. This is done by providing some inputs to the
+    // constructors one value for each axis (provided in the same order of the
+    // axes definitions)
+    // - if input is vector< pair<int, int> > we need to specify a pair for
+    // every bin in the axis
+    // - if input is a pair<int, int> these same values are used for all bins in
+    // the axis
     // - if input is a int the same values are used for all bins in the axis
     // the constructor can accept a mixture of all of these types
     int numPhiNeighbors = 1;
     int numRadiusNeighbors = 0;
     std::vector<std::pair<int, int>> zBinNeighborsTop{};
     std::vector<std::pair<int, int>> zBinNeighborsBottom{};
-    
+
     // grid is phi, z, radius
-    binfinder_t bottomBinFinder( numPhiNeighbors, zBinNeighborsBottom, numRadiusNeighbors );
-    binfinder_t topBinFinder( numPhiNeighbors, zBinNeighborsTop, numRadiusNeighbors );
+    binfinder_t bottomBinFinder(numPhiNeighbors, zBinNeighborsBottom,
+                                numRadiusNeighbors);
+    binfinder_t topBinFinder(numPhiNeighbors, zBinNeighborsTop,
+                             numRadiusNeighbors);
 
     // Compute radius Range for the middle space point candidate
     // we rely on the fact the grid is storing the proxies
@@ -351,27 +365,26 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     float minRange = std::numeric_limits<float>::max();
     float maxRange = std::numeric_limits<float>::lowest();
     for (const auto& coll : grid) {
-      if (coll.empty()) {
-	continue;
-      }
-      const auto* firstEl = coll.front();
-      const auto* lastEl = coll.back();
-      minRange = std::min(firstEl->radius(), minRange);
-      maxRange = std::max(lastEl->radius(), maxRange);
+        if (coll.empty()) {
+            continue;
+        }
+        const auto* firstEl = coll.front();
+        const auto* lastEl = coll.back();
+        minRange = std::min(firstEl->radius(), minRange);
+        maxRange = std::max(lastEl->radius(), maxRange);
     }
-    
-    const Acts::Range1D<float> rMiddleSPRange(std::floor(minRange / 2) * 2 +
-					      acts_config.deltaRMiddleMinSPRange,
-					      std::floor(maxRange / 2) * 2 -
-					      acts_config.deltaRMiddleMaxSPRange);
 
-    
+    const Acts::Range1D<float> rMiddleSPRange(
+        std::floor(minRange / 2) * 2 + acts_config.deltaRMiddleMinSPRange,
+        std::floor(maxRange / 2) * 2 - acts_config.deltaRMiddleMaxSPRange);
+
     // Create Grouping
     // Navigation objects instructs the grouping on how to iterate on the grid
     // This is a collection of vectors of std::size_t, one entry per grid axes
     // The bin group will take the ownership of the grid! Be aware of that.
-    std::array<std::vector<std::size_t>, grid_t::DIM> navigation {};
-    binnedgroup_t spGroup( std::move(grid), bottomBinFinder, topBinFinder, std::move(navigation) );
+    std::array<std::vector<std::size_t>, grid_t::DIM> navigation{};
+    binnedgroup_t spGroup(std::move(grid), bottomBinFinder, topBinFinder,
+                          std::move(navigation));
 
     // Create the seed filter object
     seedfinder_t a(acts_config);
@@ -380,18 +393,17 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     std::vector<seed_t> seedVector;
     static thread_local decltype(a)::SeedingState state;
     state.spacePointMutableData.resize(spContainer.size());
-    
+
     // Run the seeding
     for (const auto [bottom, middle, top] : spGroup) {
-      a.createSeedsForGroup(acts_options, state, spGroup.grid(),
-			    seedVector, bottom, middle,
-			    top, rMiddleSPRange);
+        a.createSeedsForGroup(acts_options, state, spGroup.grid(), seedVector,
+                              bottom, middle, top, rMiddleSPRange);
     }
 
     // We have created seeds of proxies to space point at this point
     // From a proxy we can retrieve the original space point object with
     // the externalSpacePoint() method
-    
+
     // Count the number of matching seeds
     // and push_back seed into sorted_seedVector
     std::vector<Acts::Seed<SpacePoint>> sorted_seedVector;
@@ -417,11 +429,12 @@ TEST_P(CompareWithActsSeedingTests, Run) {
             });
 
         if (it != seedVector.end()) {
-	  const auto& seed_proxies = *it;
-	  sorted_seedVector.push_back( Acts::Seed<SpacePoint>( seed_proxies.sp()[0]->externalSpacePoint(),
-							       seed_proxies.sp()[1]->externalSpacePoint(),
-							       seed_proxies.sp()[2]->externalSpacePoint()) );
-	  n_seed_match++;
+            const auto& seed_proxies = *it;
+            sorted_seedVector.push_back(Acts::Seed<SpacePoint>(
+                seed_proxies.sp()[0]->externalSpacePoint(),
+                seed_proxies.sp()[1]->externalSpacePoint(),
+                seed_proxies.sp()[2]->externalSpacePoint()));
+            n_seed_match++;
         }
     }
 
@@ -433,7 +446,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
                 static_cast<double>(seeds.size()) * 0.0023);
     EXPECT_GT(
         static_cast<double>(n_seed_match) / static_cast<double>(seeds.size()),
-	0.9977);
+        0.9977);
 }
 
 INSTANTIATE_TEST_SUITE_P(
