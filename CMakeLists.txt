@@ -384,7 +384,7 @@ add_subdirectory( plugins )
 
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
-   find_package( Boost REQUIRED COMPONENTS program_options filesystem)
+   find_package( Boost CONFIG REQUIRED COMPONENTS program_options filesystem )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the examples.")
    endif()
@@ -402,7 +402,7 @@ endif()
 # Set up the benchmark(s).
 if( TRACCC_BUILD_BENCHMARKS )
    # Find Boost.
-   find_package( Boost REQUIRED COMPONENTS filesystem)
+   find_package( Boost CONFIG REQUIRED COMPONENTS filesystem )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()
