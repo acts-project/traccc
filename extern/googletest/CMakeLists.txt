@@ -35,9 +35,7 @@ endif()
 set( CMAKE_MACOSX_RPATH TRUE )
 
 # Get it into the current directory.
-FetchContent_Populate( GoogleTest )
-add_subdirectory( "${googletest_SOURCE_DIR}" "${googletest_BINARY_DIR}"
-   EXCLUDE_FROM_ALL )
+FetchContent_MakeAvailable( GoogleTest )
 
 # Set up aliases for the GTest targets with the same name that they have
 # when we find GTest pre-installed.
