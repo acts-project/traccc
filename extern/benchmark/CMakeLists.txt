@@ -33,8 +33,10 @@ mark_as_advanced( TRACCC_BENCHMARK_SOURCE_FULL )
 FetchContent_Declare(Benchmark ${TRACCC_BENCHMARK_SOURCE_FULL})
 
 # Options used in the build of Google Benchmark.
+set(BUILD_SHARED_LIBS FALSE)
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Turn off the tests in Google Benchmark")
 set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "Turn off the -Werror for Release build")
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "Do not install Google Benchmark")
 
 # Get it into the current directory.
 FetchContent_MakeAvailable(Benchmark)
