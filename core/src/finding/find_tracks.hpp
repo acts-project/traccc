@@ -68,10 +68,15 @@ track_candidate_container_types::host find_tracks(
 
     using transporter_type = detray::parameter_transporter<algebra_type>;
     using interactor_type = detray::pointwise_material_interactor<algebra_type>;
+    // The interaction register 'observes' the pointwise interactor
+    using material_interactor_t =
+        detray::composite_actor<detray::tuple, interactor_type,
+                                interaction_register>;
 
-    using actor_type = detray::actor_chain<
-        detray::tuple, detray::pathlimit_aborter, transporter_type,
-        interaction_register<interactor_type>, interactor_type, ckf_aborter>;
+    using actor_type =
+        detray::actor_chain<detray::tuple, detray::pathlimit_aborter,
+                            transporter_type, material_interactor_t,
+                            ckf_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;
@@ -304,38 +309,45 @@ track_candidate_container_types::host find_tracks(
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     config.propagation.stepping.step_constraint);
 
-            detray::pathlimit_aborter::state s0;
-            typename detray::parameter_transporter<algebra_type>::state s1;
-            typename interactor_type::state s3;
-            typename interaction_register<interactor_type>::state s2{s3};
-            typename ckf_aborter::state s4;
-            s4.min_step_length = config.min_step_length_for_next_surface;
-            s4.max_count = config.max_step_counts_for_next_surface;
+            // Generate actor states and references to the states
+            auto [actors_states, actor_chain_state] =
+                actor_type::make_actor_states();
+
+            auto& path_abrt_state =
+                detray::detail::get<detray::pathlimit_aborter::state>(
+                    actors_states);
+            path_abrt_state.set_path_limit(
+                config.propagation.stepping.path_limit);
+
+            auto& ckf_abrt_state =
+                detray::detail::get<ckf_aborter::state>(actors_states);
+            ckf_abrt_state.min_step_length =
+                config.min_step_length_for_next_surface;
+            ckf_abrt_state.max_count = config.max_step_counts_for_next_surface;
 
             // @TODO: Should be removed once detray is fixed to set the
             // volume in the constructor
             propagation._navigation.set_volume(param.surface_link().volume());
 
             // Propagate to the next surface
-            propagator.propagate_sync(propagation,
-                                      detray::tie(s0, s1, s2, s3, s4));
+            propagator.propagate_sync(propagation, actor_chain_state);
 
             // If a surface found, add the parameter for the next
             // step
-            if (s4.success) {
+            if (ckf_abrt_state.success) {
                 out_params.push_back(propagation._stepping.bound_params());
                 param_to_link[step].push_back(link_id);
             }
             // Unless the track found a surface, it is considered a
             // tip
-            else if (!s4.success &&
+            else if (!ckf_abrt_state.success &&
                      (step >= (config.min_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
             }
 
             // If no more CKF step is expected, current candidate is
             // kept as a tip
-            if (s4.success &&
+            if (ckf_abrt_state.success &&
                 (step == (config.max_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
             }

@@ -58,13 +58,16 @@ class finding_algorithm
 
     /// Actor types
     using interactor = detray::pointwise_material_interactor<algebra_type>;
+    // The interaction register 'observes' the pointwise interactor
+    using material_interactor_t =
+        detray::composite_actor<detray::tuple, interactor,
+                                interaction_register>;
 
     /// Actor chain for propagate to the next surface and its propagator type
     using actor_type =
         detray::actor_chain<detray::dtuple, detray::pathlimit_aborter,
                             detray::parameter_transporter<algebra_type>,
-                            interaction_register<interactor>, interactor,
-                            ckf_aborter>;
+                            material_interactor_t, ckf_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;
