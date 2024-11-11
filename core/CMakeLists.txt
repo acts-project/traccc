@@ -62,7 +62,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/finding/finding_config.hpp"
   "include/traccc/finding/actors/ckf_aborter.hpp"
   "include/traccc/finding/actors/interaction_register.hpp"
-  "src/finding/find_tracks.hpp"
+  "include/traccc/finding/details/find_tracks.hpp"
   "include/traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
   "src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.cpp"

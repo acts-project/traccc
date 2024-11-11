@@ -6,11 +6,10 @@
  */
 
 // Local include(s).
-#include "find_tracks.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/finding/details/find_tracks.hpp"
 
 // Detray include(s).
-#include <detray/core/detector.hpp>
 #include <detray/detectors/bfield.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
