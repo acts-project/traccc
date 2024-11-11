@@ -17,7 +17,7 @@
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-#include "traccc/finding/ckf_algorithm.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -136,7 +136,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using device_navigator_type =
         detray::navigator<const traccc::default_detector::device>;
 
-    using host_finding_algorithm = traccc::host::ckf_algorithm;
+    using host_finding_algorithm =
+        traccc::host::combinatorial_kalman_filter_algorithm;
     using device_finding_algorithm =
         traccc::cuda::finding_algorithm<stepper_type, device_navigator_type>;
 

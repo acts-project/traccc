@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/finding/ckf_algorithm.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -132,8 +132,10 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     cfg_limit.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
 
     // Finding algorithm object
-    traccc::host::ckf_algorithm host_finding(cfg_no_limit);
-    traccc::host::ckf_algorithm host_finding_limit(cfg_limit);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding(
+        cfg_no_limit);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding_limit(
+        cfg_limit);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
