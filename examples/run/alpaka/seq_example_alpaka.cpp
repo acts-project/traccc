@@ -6,11 +6,13 @@
  */
 
 // Project include(s).
+#include "alpaka/example/ExampleDefaultAcc.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/io/read_cells.hpp"
@@ -30,22 +32,6 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-
-// VecMem include(s).
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-#endif
-
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-#include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/memory/hip/host_memory_resource.hpp>
-#include <vecmem/utils/hip/copy.hpp>
-#endif
-
-#include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <exception>
@@ -74,22 +60,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
 
+    using Dim = ::alpaka::DimInt<1>;
+    using Idx = uint32_t;
+
+    using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
     // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    vecmem::cuda::copy copy;
-    vecmem::cuda::host_memory_resource cuda_host_mr;
-    vecmem::cuda::device_memory_resource device_mr;
-    traccc::memory_resource mr{device_mr, &cuda_host_mr};
-#elif ALPAKA_ACC_GPU_HIP_ENABLED
-    vecmem::hip::copy copy;
-    vecmem::hip::host_memory_resource hip_host_mr;
-    vecmem::hip::device_memory_resource hip_device_mr;
-    traccc::memory_resource mr{hip_device_mr, &hip_host_mr};
-#else
-    vecmem::copy copy;
-    traccc::memory_resource mr{host_mr, &host_mr};
-#endif
+    traccc::alpaka::vecmem::host_device_types<
+        alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::host_device_types<
+        alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+    traccc::alpaka::vecmem::host_device_types<
+        alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr;
+    traccc::memory_resource mr{device_mr, &host_mr};
 
     // Construct the detector description object.
     traccc::silicon_detector_description::host host_det_descr{host_mr};

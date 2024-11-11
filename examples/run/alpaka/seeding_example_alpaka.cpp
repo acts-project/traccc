@@ -34,6 +34,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Detray include(s).
+#include "alpaka/example/ExampleDefaultAcc.hpp"
 #include "detray/core/detector.hpp"
 #include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
@@ -41,24 +42,7 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-
-// VecMem include(s).
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-#endif
-
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-#include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/memory/hip/host_memory_resource.hpp>
-#include <vecmem/memory/hip/managed_memory_resource.hpp>
-#include <vecmem/utils/hip/copy.hpp>
-#endif
-
-#include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/copy.hpp>
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 
 // System include(s).
 #include <exception>
@@ -75,24 +59,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-    vecmem::cuda::copy copy;
-    vecmem::cuda::host_memory_resource host_mr;
-    vecmem::cuda::device_memory_resource device_mr;
-    vecmem::cuda::managed_memory_resource mng_mr;
+    using Dim = ::alpaka::DimInt<1>;
+    using Idx = uint32_t;
+
+    using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr;
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource mng_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    vecmem::hip::copy copy;
-    vecmem::hip::host_memory_resource host_mr;
-    vecmem::hip::device_memory_resource device_mr;
-    vecmem::hip::managed_memory_resource mng_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
-#else
-    vecmem::copy copy;
-    vecmem::host_memory_resource host_mr;
-    vecmem::host_memory_resource mng_mr;
-    traccc::memory_resource mr{host_mr, &host_mr};
-#endif
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
