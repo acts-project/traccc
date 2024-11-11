@@ -9,7 +9,7 @@
 #include "traccc/geometry/detector.hpp"
 
 // Traccc algorithm include(s).
-#include "traccc/finding/ckf_algorithm.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -62,7 +62,8 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     // Algorithms
     traccc::seeding_algorithm sa(seeding_cfg, grid_cfg, filter_cfg, host_mr);
     traccc::track_params_estimation tp(host_mr);
-    traccc::host::ckf_algorithm host_finding(finding_cfg);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding(
+        finding_cfg);
     traccc::fitting_algorithm<host_fitter_type> host_fitting(fitting_cfg);
 
     for (auto _ : state) {

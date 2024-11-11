@@ -15,7 +15,7 @@
 // algorithms
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/finding/ckf_algorithm.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
@@ -106,7 +106,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                            detray::constrained_step<>>;
     using navigator_type =
         detray::navigator<const traccc::default_detector::host>;
-    using finding_algorithm = traccc::host::ckf_algorithm;
+    using finding_algorithm =
+        traccc::host::combinatorial_kalman_filter_algorithm;
     using fitting_algorithm = traccc::fitting_algorithm<
         traccc::kalman_fitter<stepper_type, navigator_type>>;
 

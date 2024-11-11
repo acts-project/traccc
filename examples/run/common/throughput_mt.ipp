@@ -46,6 +46,7 @@
 #else
 #include <tbb/global_control.h>
 #endif
+#include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
@@ -83,13 +84,6 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     // Set up the timing info holder.
     performance::timing_info times;
 
-    // Set up the TBB arena and thread group.
-    tbb::global_control global_thread_limit(
-        tbb::global_control::max_allowed_parallelism,
-        threading_opts.threads + 1);
-    tbb::task_arena arena{static_cast<int>(threading_opts.threads), 0};
-    tbb::task_group group;
-
     // Memory resource to use in the test.
     HOST_MR uncached_host_mr;
 
@@ -112,13 +106,21 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     vecmem::vector<edm::silicon_cell_collection::host> input{&uncached_host_mr};
     {
         performance::timer t{"File reading", times};
-        // Read the input cells into memory event-by-event.
+        // Set up the container for the input events.
         input.reserve(input_opts.events);
         for (std::size_t i = 0; i < input_opts.events; ++i) {
             input.push_back({uncached_host_mr});
-            io::read_cells(input.back(), i, input_opts.directory, &det_descr,
-                           input_opts.format);
         }
+        // Read the input cells into memory in parallel.
+        tbb::parallel_for(
+            tbb::blocked_range<std::size_t>{0u, input_opts.events},
+            [&](const tbb::blocked_range<std::size_t>& event_range) {
+                for (std::size_t event = event_range.begin();
+                     event != event_range.end(); ++event) {
+                    io::read_cells(input.at(event), event, input_opts.directory,
+                                   &det_descr, input_opts.format);
+                }
+            });
     }
 
     // Set up cached memory resources on top of the host memory resource
@@ -167,6 +169,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              det_descr,
              (detector_opts.use_detray_detector ? &detector : nullptr)});
     }
+
+    // Set up the TBB arena and thread group. From here on out TBB is only
+    // allowed to use the specified number of threads.
+    tbb::global_control global_thread_limit(
+        tbb::global_control::max_allowed_parallelism,
+        threading_opts.threads + 1);
+    tbb::task_arena arena{static_cast<int>(threading_opts.threads), 0};
+    tbb::task_group group;
 
     // Seed the random number generator.
     std::srand(static_cast<unsigned int>(std::time(0)));

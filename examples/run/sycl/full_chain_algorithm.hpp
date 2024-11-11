@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/finding/ckf_algorithm.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -73,7 +73,8 @@ class full_chain_algorithm
     /// Clustering algorithm type
     using clustering_algorithm = clusterization_algorithm;
     /// Track finding algorithm type
-    using finding_algorithm = traccc::host::ckf_algorithm;
+    using finding_algorithm =
+        traccc::host::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::fitting_algorithm<
         traccc::kalman_fitter<stepper_type, navigator_type>>;
