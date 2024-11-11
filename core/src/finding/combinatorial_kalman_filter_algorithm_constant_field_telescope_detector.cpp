@@ -7,7 +7,7 @@
 
 // Local include(s).
 #include "find_tracks.hpp"
-#include "traccc/finding/ckf_algorithm.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 
 // Detray include(s).
 #include <detray/core/detector.hpp>
@@ -18,8 +18,9 @@
 
 namespace traccc::host {
 
-ckf_algorithm::output_type ckf_algorithm::operator()(
-    const default_detector::host& det,
+combinatorial_kalman_filter_algorithm::output_type
+combinatorial_kalman_filter_algorithm::operator()(
+    const telescope_detector::host& det,
     const detray::bfield::const_field_t::view_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
@@ -27,9 +28,9 @@ ckf_algorithm::output_type ckf_algorithm::operator()(
     // Perform the track finding using the templated implementation.
     return details::find_tracks<
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
-                           default_detector::host::algebra_type,
+                           telescope_detector::host::algebra_type,
                            detray::constrained_step<>>,
-        detray::navigator<const default_detector::host>>(
+        detray::navigator<const telescope_detector::host>>(
         det, field, measurements, seeds, m_config);
 }
 

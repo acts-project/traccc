@@ -6,10 +6,12 @@
  */
 
 // Local include(s).
-#include "traccc/finding/ckf_algorithm.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 
 namespace traccc::host {
 
-ckf_algorithm::ckf_algorithm(const config_type& config) : m_config{config} {}
+combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
+    const config_type& config)
+    : m_config{config} {}
 
 }  // namespace traccc::host

@@ -25,7 +25,7 @@ namespace traccc::host {
 /// This is the main host-based track finding algorithm of the project. More
 /// documentation to be written later...
 ///
-class ckf_algorithm
+class combinatorial_kalman_filter_algorithm
     : public algorithm<track_candidate_container_types::host(
           const default_detector::host&,
           const detray::bfield::const_field_t::view_t&,
@@ -44,7 +44,7 @@ class ckf_algorithm
     using output_type = track_candidate_container_types::host;
 
     /// Constructor with the algorithm's configuration
-    ckf_algorithm(const config_type& config);
+    explicit combinatorial_kalman_filter_algorithm(const config_type& config);
 
     /// Execute the algorithm
     ///
@@ -84,6 +84,6 @@ class ckf_algorithm
     /// Algorithm configuration
     config_type m_config;
 
-};  // class ckf_algorithm
+};  // class combinatorial_kalman_filter_algorithm
 
 }  // namespace traccc::host
