@@ -119,13 +119,13 @@ class full_chain_algorithm
 
     private:
     /// Private data object
-    details::full_chain_algorithm_data* m_data;
+    std::unique_ptr<details::full_chain_algorithm_data> m_data;
     /// Host memory resource
-    vecmem::memory_resource& m_host_mr;
+    std::reference_wrapper<vecmem::memory_resource> m_host_mr;
     /// Device memory resource
-    std::unique_ptr<vecmem::sycl::device_memory_resource> m_device_mr;
+    vecmem::sycl::device_memory_resource m_device_mr;
     /// Device caching memory resource
-    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
+    mutable vecmem::binary_page_memory_resource m_cached_device_mr;
     /// Memory copy object
     mutable vecmem::sycl::async_copy m_copy;
 
