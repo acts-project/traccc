@@ -49,8 +49,6 @@ set( DETRAY_BUILD_TUTORIALS FALSE CACHE BOOL
    "Turn off the build of the Detray tutorials" )
 set( DETRAY_EIGEN_PLUGIN TRUE CACHE BOOL
    "Turn on the build of the Detray Eigen code" )
-set( DETRAY_VC_AOS_PLUGIN TRUE CACHE BOOL
-   "Turn on the build of the Detray Vc AoS code" )
 
 # Needed for 'performance', 'simulation', 'examples', 'tests' and 'benchmarks'
 if( TRACCC_BUILD_IO OR TRACCC_BUILD_EXAMPLES OR (BUILD_TESTING AND TRACCC_BUILD_TESTING) OR TRACCC_BUILD_BENCHMARKS )
