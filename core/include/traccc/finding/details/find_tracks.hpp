@@ -445,14 +445,14 @@ track_candidate_container_types::host find_tracks(
                     tip_state.filtered().covariance());
                 tip_state.smoothed_chi2() = tip_state.filtered_chi2();
 
-                next_state = tip_state;
-
                 // Set the back tip parameter
                 fitted_params_at_tip.second = tip_state.smoothed();
 
                 ndf_sum +=
                     static_cast<scalar>(tip_state.get_measurement().meas_dim);
                 chi2_sum += tip_state.smoothed_chi2();
+
+                next_state = tip_state;
             } else {
                 assert(L.track_state_idx !=
                        std::numeric_limits<unsigned int>::max());
@@ -474,7 +474,7 @@ track_candidate_container_types::host find_tracks(
                 chi2_sum += cur_state.smoothed_chi2();
 
                 // Swap the state
-                next_state = std::move(cur_state);
+                next_state = cur_state;
             }
 
             // Break the loop if the iterator is at the first candidate and
@@ -482,6 +482,7 @@ track_candidate_container_types::host find_tracks(
             if (it == cands_per_track.rend() - 1) {
 
                 auto cand_seed = seeds.at(L.previous.second);
+                
                 // Add seed and track candidates to the output container
                 output_candidates.push_back(
                     track_summary{cand_seed, fitted_params_at_tip, ndf_sum,

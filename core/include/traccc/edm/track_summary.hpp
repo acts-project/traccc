@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,9 +29,6 @@ struct track_summary {
 
     /// (Optional) The number of holes
     unsigned int n_holes{0u};
-
-    // @TODO: make constructors
-    // track_summary() = delete;
 };
 
 }  // namespace traccc
