@@ -28,7 +28,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_seeding(finder_config, grid_config, filter_config, mr),
       m_track_parameter_estimation(mr),
       m_finding(finding_config),
-      m_fitting(fitting_config),
+      m_fitting(fitting_config, mr),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
@@ -61,11 +61,14 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         const bound_track_parameters_collection_types::const_view
             track_params_view = vecmem::get_data(track_params);
 
-        // Return the final container, after track finding and fitting.
-        return m_fitting(*m_detector, m_field,
-                         m_finding(*m_detector, m_field, measurements_view,
-                                   track_params_view));
+        // Run the track finding.
+        const finding_algorithm::output_type track_candidates = m_finding(
+            *m_detector, m_field, measurements_view, track_params_view);
 
+        // Run the track fitting, and return its results.
+        const track_candidate_container_types::const_view
+            track_candidates_view = get_data(track_candidates);
+        return m_fitting(*m_detector, m_field, track_candidates_view);
     }
     // If not, just return an empty object.
     else {

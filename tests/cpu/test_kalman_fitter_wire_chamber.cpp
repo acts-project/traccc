@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
@@ -119,12 +119,12 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    traccc::fitting_config fit_cfg;
     fit_cfg.propagation.navigation.min_mask_tolerance =
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
     fit_cfg.ptc_hypothesis = ptc;
-    fitting_algorithm<host_fitter_type> fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -139,7 +139,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
         // Run fitting
-        auto track_states = fitting(host_det, field, track_candidates);
+        auto track_states =
+            fitting(host_det, field, traccc::get_data(track_candidates));
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();

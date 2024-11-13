@@ -12,8 +12,9 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -71,19 +72,13 @@ int main(int argc, char* argv[]) {
         argv};
 
     /// Type declarations
-    using host_detector_type = detray::detector<detray::default_metadata,
-                                                detray::host_container_types>;
-    using device_detector_type =
-        detray::detector<detray::default_metadata,
-                         detray::device_container_types>;
+    using host_detector_type = traccc::default_detector::host;
+    using device_detector_type = traccc::default_detector::device;
 
     using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<>>;
-    using host_navigator_type = detray::navigator<const host_detector_type>;
-    using host_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
     using device_navigator_type = detray::navigator<const device_detector_type>;
     using device_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
@@ -157,10 +152,10 @@ int main(int argc, char* argv[]) {
         1.f * detray::unit<scalar>::ns};
 
     // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_opts;
 
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream);
 
@@ -202,7 +197,7 @@ int main(int argc, char* argv[]) {
             track_state_d2h(track_states_cuda_buffer);
 
         // CPU container(s)
-        traccc::fitting_algorithm<host_fitter_type>::output_type track_states;
+        traccc::host::kalman_fitting_algorithm::output_type track_states;
 
         if (accelerator_opts.compare_with_cpu) {
 
@@ -211,8 +206,8 @@ int main(int argc, char* argv[]) {
                                              elapsedTimes);
 
                 // Run fitting
-                track_states =
-                    host_fitting(host_det, field, truth_track_candidates);
+                track_states = host_fitting(
+                    host_det, field, traccc::get_data(truth_track_candidates));
             }
         }
 

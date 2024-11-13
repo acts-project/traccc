@@ -8,8 +8,8 @@
 // Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
-#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
@@ -57,17 +57,7 @@ int main(int argc, char* argv[]) {
         argv};
 
     /// Type declarations
-    using host_detector_type = detray::detector<detray::default_metadata,
-                                                detray::host_container_types>;
-
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
-                           detray::constrained_step<>>;
-
-    using host_navigator_type = detray::navigator<const host_detector_type>;
-    using host_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
+    using host_detector_type = traccc::default_detector::host;
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -114,10 +104,10 @@ int main(int argc, char* argv[]) {
         1.f * detray::unit<scalar>::ns};
 
     // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_opts;
 
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fit_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
 
     // Seed generator
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
@@ -135,8 +125,8 @@ int main(int argc, char* argv[]) {
             evt_data.generate_truth_candidates(sg, host_mr);
 
         // Run fitting
-        auto track_states =
-            host_fitting(host_det, field, truth_track_candidates);
+        auto track_states = host_fitting(
+            host_det, field, traccc::get_data(truth_track_candidates));
 
         std::cout << "Number of fitted tracks: " << track_states.size()
                   << std::endl;

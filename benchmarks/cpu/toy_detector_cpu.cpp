@@ -10,7 +10,7 @@
 
 // Traccc algorithm include(s).
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -40,14 +40,7 @@
 BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
 
     // Type declarations
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t,
-                           typename detector_type::algebra_type,
-                           detray::constrained_step<>>;
     using host_detector_type = traccc::default_detector::host;
-    using host_navigator_type = detray::navigator<const host_detector_type>;
-    using host_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, host_navigator_type>;
 
     // Read back detector file
     host_detector_type det{host_mr};
@@ -64,7 +57,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     traccc::track_params_estimation tp(host_mr);
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         finding_cfg);
-    traccc::fitting_algorithm<host_fitter_type> host_fitting(fitting_cfg);
+    traccc::host::kalman_fitting_algorithm host_fitting(fitting_cfg, host_mr);
 
     for (auto _ : state) {
 
@@ -87,7 +80,8 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
                 vecmem::get_data(params));
 
             // Track fitting with KF
-            auto track_states = host_fitting(det, field, track_candidates);
+            auto track_states =
+                host_fitting(det, field, traccc::get_data(track_candidates));
         }
     }
 
