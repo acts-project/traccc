@@ -436,9 +436,6 @@ track_candidate_container_types::host find_tracks(
                 // considered to be the filtered one, we can reversly iterate
                 // the algorithm to obtain the smoothed parameter of other
                 // surfaces
-                assert(L.track_state_idx !=
-                       std::numeric_limits<unsigned int>::max());
-
                 auto& tip_state = track_states.at(step).at(L.track_state_idx);
                 tip_state.smoothed().set_parameter_vector(tip_state.filtered());
                 tip_state.smoothed().set_covariance(
@@ -452,11 +449,9 @@ track_candidate_container_types::host find_tracks(
                     static_cast<scalar>(tip_state.get_measurement().meas_dim);
                 chi2_sum += tip_state.smoothed_chi2();
 
+                // Swap the state
                 next_state = tip_state;
             } else {
-                assert(L.track_state_idx !=
-                       std::numeric_limits<unsigned int>::max());
-
                 // Current state
                 auto& cur_state = track_states.at(step).at(L.track_state_idx);
 
