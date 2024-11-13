@@ -12,6 +12,7 @@
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_summary.hpp"
 
 // detray include(s).
 #include "detray/navigation/navigator.hpp"

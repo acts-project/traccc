@@ -13,6 +13,9 @@
 // Thrust include(s).
 #include <thrust/pair.h>
 
+// System include(s).
+#include <limits>
+
 namespace traccc {
 
 // A link that contains the index of corresponding measurement and the index of
@@ -33,6 +36,9 @@ struct candidate_link {
 
     // How many times it skipped a surface
     unsigned int n_skipped;
+
+    // track state index
+    unsigned int track_state_idx{std::numeric_limits<unsigned int>::max()};
 };
 
 }  // namespace traccc

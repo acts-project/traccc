@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_summary.hpp"
 
 // Detray include(s).
 #include "detray/geometry/barcode.hpp"
@@ -23,6 +23,6 @@ using track_candidate = measurement;
 using track_candidate_collection_types = collection_types<track_candidate>;
 /// Declare a track candidates container type
 using track_candidate_container_types =
-    container_types<bound_track_parameters, track_candidate>;
+    container_types<track_summary, track_candidate>;
 
 }  // namespace traccc
