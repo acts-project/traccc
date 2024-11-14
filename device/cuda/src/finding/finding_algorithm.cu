@@ -148,8 +148,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     m_copy.setup(in_params_buffer)->ignore();
     m_copy(vecmem::get_data(seeds_buffer), vecmem::get_data(in_params_buffer))
         ->ignore();
-    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_seeds,
-                                                                    m_mr.main);
+    vecmem::data::vector_buffer<char> param_liveness_buffer(n_seeds, m_mr.main);
     m_copy.setup(param_liveness_buffer)->ignore();
     m_copy.memset(param_liveness_buffer, 1)->ignore();
 
@@ -215,9 +214,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     m_mr.main);
             m_copy.setup(updated_params_buffer)->ignore();
 
-            vecmem::data::vector_buffer<unsigned int> updated_liveness_buffer(
+            vecmem::data::vector_buffer<char> updated_liveness_buffer(
                 n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
+            m_copy.memset(updated_liveness_buffer, 0)->ignore();
 
             // Create the link map
             link_map[step] = {n_in_params * m_cfg.max_num_branches_per_surface,

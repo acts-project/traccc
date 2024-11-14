@@ -36,7 +36,7 @@ struct apply_interaction_payload {
      * @brief View object to the vector of boolean-like integers describing
      * whether each parameter is live. Has the same size as \ref params_view
      */
-    vecmem::data::vector_view<const unsigned int> params_liveness_view;
+    vecmem::data::vector_view<const char> params_liveness_view;
 };
 
 /// Function applying the Pre material interaction to tracks spawned by bound
