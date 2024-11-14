@@ -77,10 +77,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     }
 
     assert(is_contiguous_on<edm::silicon_cell_collection::const_device>(
-        cell_module_projection(), m_mr.main, m_copy, m_queue, cells_view));
+        cell_module_projection(), m_mr.main, m_copy,
+        details::get_queue(m_queue), cells_view));
     assert(is_ordered_on<edm::silicon_cell_collection::const_device>(
-        channel0_major_cell_order_relation(), m_mr.main, m_copy, m_queue,
-        cells_view));
+        channel0_major_cell_order_relation(), m_mr.main, m_copy,
+        details::get_queue(m_queue), cells_view));
 
     std::size_t num_blocks =
         (num_cells + m_config.target_partition_size() - 1) /
