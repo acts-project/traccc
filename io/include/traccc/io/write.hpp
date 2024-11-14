@@ -13,6 +13,7 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/io/data_format.hpp"
+#include "traccc/io/digitization_config.hpp"
 
 // Detray include(s).
 #include "detray/core/detector.hpp"
@@ -80,5 +81,14 @@ void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            track_candidate_container_types::const_view tracks,
            const detray::detector<>& detector);
+
+/// Write a digitization configuration to a file
+///
+/// @param filename The name of the file to write the data to
+/// @param format The format of the output file
+/// @param config The digitization configuration to write
+///
+void write(std::string_view filename, data_format format,
+           const digitization_config& config);
 
 }  // namespace traccc::io
