@@ -43,7 +43,7 @@ struct find_tracks_payload {
      * @brief View object to the vector of boolean-like integers describing the
      * liveness of each parameter
      */
-    vecmem::data::vector_view<const unsigned int> in_params_liveness_view;
+    vecmem::data::vector_view<const char> in_params_liveness_view;
 
     /**
      * @brief The total number of input parameters
@@ -84,7 +84,7 @@ struct find_tracks_payload {
     /**
      * @brief View object to the output track parameter liveness vector
      */
-    vecmem::data::vector_view<unsigned int> out_params_liveness_view;
+    vecmem::data::vector_view<char> out_params_liveness_view;
 
     /**
      * @brief View object to the output candidate links

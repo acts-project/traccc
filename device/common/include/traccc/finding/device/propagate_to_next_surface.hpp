@@ -36,7 +36,7 @@ struct propagate_to_next_surface_payload {
     /**
      * @brief View object to the vector of track parameter liveness values
      */
-    vecmem::data::vector_view<unsigned int> params_liveness_view;
+    vecmem::data::vector_view<char> params_liveness_view;
 
     /**
      * @brief View object to the access order of parameters so they are sorted

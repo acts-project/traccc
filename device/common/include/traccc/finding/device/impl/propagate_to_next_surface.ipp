@@ -49,8 +49,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         n_tracks_per_seed.at(orig_param_id));
 
     const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
-    vecmem::device_vector<unsigned int> params_liveness(
-        payload.params_liveness_view);
+    vecmem::device_vector<char> params_liveness(payload.params_liveness_view);
 
     if (s_pos >= cfg.max_num_branches_per_seed) {
         params_liveness[param_id] = 0u;
@@ -62,7 +61,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         payload.tips_view);
 
     if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
-        params_liveness[param_id] = 0u;
+        params_liveness[param_id] = 0;
         tips.push_back({payload.step, param_id});
         return;
     }
@@ -73,7 +72,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     // Parameters
     bound_track_parameters_collection_types::device params(payload.params_view);
 
-    if (params_liveness.at(param_id) == 0u) {
+    if (params_liveness.at(param_id) == 0) {
         return;
     }
 
@@ -121,12 +120,12 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
         if (payload.step == cfg.max_track_candidates_per_track - 1) {
             tips.push_back({payload.step, param_id});
-            params_liveness[param_id] = 0u;
+            params_liveness[param_id] = 0;
         } else {
-            params_liveness[param_id] = 1u;
+            params_liveness[param_id] = 1;
         }
     } else {
-        params_liveness[param_id] = 0u;
+        params_liveness[param_id] = 0;
 
         if (payload.step >= cfg.min_track_candidates_per_track - 1) {
             tips.push_back({payload.step, param_id});
