@@ -106,7 +106,14 @@ target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
   PUBLIC traccc::core detray::core vecmem::core covfie::core
-  PRIVATE CUDA::cudart traccc::Thrust traccc::device_common vecmem::cuda )
+  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda )
+
+# Set up Thrust specifically for the traccc::cuda library.
+thrust_create_target( traccc::cuda_thrust
+  HOST CPP
+  DEVICE CUDA )
+target_link_libraries( traccc_cuda
+  PRIVATE traccc::cuda_thrust )
 
 # For CUDA 11 turn on separable compilation. This is necessary for using
 # Thrust 2.1.0.

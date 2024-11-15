@@ -51,3 +51,10 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
 target_link_libraries( traccc_sycl
   PUBLIC traccc::core detray::core vecmem::core covfie::core
   PRIVATE traccc::device_common vecmem::sycl oneDPL )
+
+# Set up Thrust specifically for the traccc::sycl library.
+thrust_create_target( traccc::sycl_thrust
+  HOST CPP
+  DEVICE CPP )
+target_link_libraries( traccc_sycl
+  PRIVATE traccc::sycl_thrust )

@@ -176,12 +176,8 @@ if( TRACCC_SETUP_THRUST )
       add_subdirectory( extern/cccl )
    endif()
 endif()
-# Set up an IMPORTED library on top of the Thrust library/libraries. One that
-# the TRACCC/Detray code could depend on publicly.
-set( TRACCC_THRUST_OPTIONS "" CACHE STRING
-   "Extra options for configuring how Thrust should be used" )
-mark_as_advanced( TRACCC_THRUST_OPTIONS )
-thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+add_library( traccc::Thrust INTERFACE IMPORTED )
+target_link_libraries( traccc::Thrust INTERFACE Thrust::Thrust )
 
 # Set up rocThrust.
 option( TRACCC_SETUP_ROCTHRUST
