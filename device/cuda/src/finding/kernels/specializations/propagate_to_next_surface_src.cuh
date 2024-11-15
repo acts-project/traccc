@@ -18,10 +18,10 @@ __global__ void propagate_to_next_surface(
     const finding_config cfg,
     device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+    const unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::propagate_to_next_surface<propagator_t, bfield_t, finding_config>(
-        gid, cfg, payload);
+    device::propagate_to_next_surface<propagator_t, bfield_t>(gid, cfg,
+                                                              payload);
 }
 
 }  // namespace traccc::cuda::kernels
