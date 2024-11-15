@@ -12,7 +12,7 @@ namespace traccc::cuda::kernels {
 
 __global__ void prune_tracks(device::prune_tracks_payload payload) {
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+    const unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
     device::prune_tracks(gid, payload);
 }
