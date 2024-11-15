@@ -20,8 +20,26 @@
 
 namespace traccc {
 
-/// Combinatorial Kalman Finding Test with Sparse tracks
-class KalmanFittingWireChamberTests : public KalmanFittingTests {
+/// Kalman Fitting Test with Wire Chamber
+///
+/// Test parameters:
+/// (1) name
+/// (2) origin
+/// (3) origin stddev
+/// (4) momentum range
+/// (5) eta range
+/// (6) phi range
+/// (7) particle type
+/// (8) number of tracks per event
+/// (9) number of events
+/// (10) random charge
+class KalmanFittingWireChamberTests
+    : public KalmanFittingTests,
+      public testing::WithParamInterface<std::tuple<
+          std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
+          std::array<scalar, 2u>, std::array<scalar, 2u>,
+          std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
+          unsigned int, bool>> {
 
     public:
     /// Number of layers
