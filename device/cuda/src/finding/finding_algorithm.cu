@@ -188,8 +188,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
             kernels::apply_interaction<std::decay_t<detector_type>>
                 <<<nBlocks, nThreads, 0, stream>>>(
-                    m_cfg, {det_view, static_cast<int>(n_in_params),
-                            in_params_buffer, param_liveness_buffer});
+                    m_cfg, {det_view, n_in_params, in_params_buffer,
+                            param_liveness_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,7 +17,7 @@
 namespace traccc::device {
 
 template <typename config_t>
-TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
+TRACCC_DEVICE inline void build_tracks(unsigned int globalIndex,
                                        const config_t cfg,
                                        const build_tracks_payload& payload) {
 
@@ -73,12 +73,9 @@ TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
 
-    unsigned int i = 0;
-
     // Reversely iterate to fill the track candidates
     for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
          it++) {
-        i++;
 
         while (L.meas_idx > n_meas &&
                L.previous.first !=

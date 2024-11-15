@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,6 +13,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/particle.hpp"
 
 namespace traccc::device {
@@ -81,9 +82,9 @@ struct propagate_to_next_surface_payload {
 /// @param[in] globalIndex        The index of the current thread
 /// @param[in] cfg                Track finding config object
 /// @param[inout] payload      The function call payload
-template <typename propagator_t, typename bfield_t, typename config_t>
+template <typename propagator_t, typename bfield_t>
 TRACCC_DEVICE inline void propagate_to_next_surface(
-    std::size_t globalIndex, const config_t cfg,
+    unsigned int globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
 }  // namespace traccc::device
 

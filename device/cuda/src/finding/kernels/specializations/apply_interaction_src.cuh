@@ -18,7 +18,7 @@ __global__ void apply_interaction(
     const finding_config cfg,
     device::apply_interaction_payload<detector_t> payload) {
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+    const unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
     device::apply_interaction<detector_t>(gid, cfg, payload);
 }

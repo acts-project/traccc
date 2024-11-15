@@ -25,10 +25,10 @@
 
 namespace traccc::device {
 
-template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t,
-          typename detector_t, typename config_t>
+template <typename detector_t, concepts::thread_id1 thread_id_t,
+          concepts::barrier barrier_t>
 TRACCC_DEVICE inline void find_tracks(
-    thread_id_t& thread_id, barrier_t& barrier, const config_t cfg,
+    thread_id_t& thread_id, barrier_t& barrier, const finding_config& cfg,
     const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
 
@@ -116,7 +116,10 @@ TRACCC_DEVICE inline void find_tracks(
          * this thread.
          */
         else {
-            const auto bcd_id = std::distance(barcodes.begin(), lo);
+            const vecmem::device_vector<const unsigned int>::size_type bcd_id =
+                static_cast<
+                    vecmem::device_vector<const unsigned int>::size_type>(
+                    std::distance(barcodes.begin(), lo));
 
             init_meas = lo == barcodes.begin() ? 0u : upper_bounds[bcd_id - 1];
             num_meas = upper_bounds[bcd_id] - init_meas;

@@ -35,7 +35,7 @@ struct prune_tracks_payload {
 ///
 /// @param[in] globalIndex         The index of the current thread
 /// @param[inout] payload      The function call payload
-TRACCC_DEVICE inline void prune_tracks(std::size_t globalIndex,
+TRACCC_DEVICE inline void prune_tracks(unsigned int globalIndex,
                                        const prune_tracks_payload& payload);
 }  // namespace traccc::device
 

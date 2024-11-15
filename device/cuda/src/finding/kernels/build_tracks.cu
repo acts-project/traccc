@@ -18,7 +18,7 @@ namespace traccc::cuda::kernels {
 __global__ void build_tracks(const finding_config cfg,
                              device::build_tracks_payload payload) {
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
+    const unsigned int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
     device::build_tracks(gid, cfg, payload);
 }

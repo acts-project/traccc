@@ -14,7 +14,7 @@
 
 namespace traccc::device {
 
-TRACCC_DEVICE inline void prune_tracks(std::size_t globalIndex,
+TRACCC_DEVICE inline void prune_tracks(unsigned int globalIndex,
                                        const prune_tracks_payload& payload) {
 
     track_candidate_container_types::const_device track_candidates(

@@ -20,9 +20,9 @@
 
 namespace traccc::device {
 
-template <typename propagator_t, typename bfield_t, typename config_t>
+template <typename propagator_t, typename bfield_t>
 TRACCC_DEVICE inline void propagate_to_next_surface(
-    std::size_t globalIndex, const config_t cfg,
+    unsigned int globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
 
     if (globalIndex >= payload.n_in_params) {
