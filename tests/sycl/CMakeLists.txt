@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022 CERN for the benefit of the ACTS project
+# (c) 2022-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -14,6 +14,7 @@ traccc_add_test(
     # Define the sources for the test.
     # TODO: Reactivate this once #655 is fixed.
     # test_kalman_fitter_telescope.sycl
+    test_ckf_toy_detector.cpp
     test_clusterization.sycl
     test_dpl.sycl
     test_spacepoint_formation.sycl
