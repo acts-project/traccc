@@ -17,6 +17,28 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 namespace traccc::sycl {
+namespace kernels::combinatorial_kalman_filter_constant_field_default_detector {
+
+struct make_barcode_sequence;
+struct apply_interaction;
+struct find_tracks;
+struct fill_sort_keys;
+struct propagate_to_next_surface;
+struct build_tracks;
+struct prune_tracks;
+
+struct kernels {
+    using make_barcode_sequence_kernel_type = make_barcode_sequence;
+    using apply_interaction_kernel_type = apply_interaction;
+    using find_tracks_kernel_type = find_tracks;
+    using fill_sort_keys_kernel_type = fill_sort_keys;
+    using propagate_to_next_surface_kernel_type = propagate_to_next_surface;
+    using build_tracks_kernel_type = build_tracks;
+    using prune_tracks_kernel_type = prune_tracks;
+};  // namespace kernels
+
+}  // namespace
+   // kernels::combinatorial_kalman_filter_constant_field_default_detector
 
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
@@ -30,9 +52,10 @@ combinatorial_kalman_filter_algorithm::operator()(
         detray::rk_stepper<detray::bfield::const_field_t::view_t,
                            default_detector::device::algebra_type,
                            detray::constrained_step<>>,
-        detray::navigator<const default_detector::device>>(
-        det, field, measurements, seeds, m_config, m_mr, m_copy,
-        details::get_queue(m_queue));
+        detray::navigator<const default_detector::device>,
+        kernels::combinatorial_kalman_filter_constant_field_default_detector::
+            kernels>(det, field, measurements, seeds, m_config, m_mr, m_copy,
+                     details::get_queue(m_queue));
 }
 
 }  // namespace traccc::sycl
