@@ -11,6 +11,11 @@
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 namespace traccc::sycl {
+namespace kernels {
+
+struct form_spacepoints_default_detector;
+
+}  // namespace kernels
 
 silicon_pixel_spacepoint_formation_algorithm::output_type
 silicon_pixel_spacepoint_formation_algorithm::operator()(
@@ -18,8 +23,8 @@ silicon_pixel_spacepoint_formation_algorithm::operator()(
     const measurement_collection_types::const_view& meas) const {
 
     return details::silicon_pixel_spacepoint_formation<
-        default_detector::device>(det, meas, m_mr.main, m_copy,
-                                  details::get_queue(m_queue));
+        default_detector::device, kernels::form_spacepoints_default_detector>(
+        det, meas, m_mr.main, m_copy, details::get_queue(m_queue));
 }
 
 }  // namespace traccc::sycl
