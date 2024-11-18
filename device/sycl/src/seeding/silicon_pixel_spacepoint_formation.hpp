@@ -28,6 +28,7 @@ namespace traccc::sycl::details {
 /// functions
 ///
 /// @tparam detector_t The detector type to use
+/// @tparam kernel_t   The kernel type to use
 ///
 /// @param det_view          The view of the detector to use
 /// @param measurements_view The view of the measurements to process
@@ -36,7 +37,7 @@ namespace traccc::sycl::details {
 /// @param queue             The queue to use for the computation
 /// @return A buffer of the created spacepoints
 ///
-template <typename detector_t>
+template <typename detector_t, typename kernel_t>
 spacepoint_collection_types::buffer silicon_pixel_spacepoint_formation(
     const typename detector_t::view_type& det_view,
     const measurement_collection_types::const_view& measurements_view,
@@ -64,7 +65,7 @@ spacepoint_collection_types::buffer silicon_pixel_spacepoint_formation(
     // Run the spacepoint formation on the device.
     queue
         .submit([&](::sycl::handler& h) {
-            h.parallel_for(
+            h.parallel_for<kernel_t>(
                 countRange, [det_view, measurements_view, n_measurements,
                              spacepoints_view = vecmem::get_data(result)](
                                 ::sycl::nd_item<1> item) {
