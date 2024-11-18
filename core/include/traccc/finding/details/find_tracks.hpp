@@ -477,7 +477,7 @@ track_candidate_container_types::host find_tracks(
             if (it == cands_per_track.rend() - 1) {
 
                 auto cand_seed = seeds.at(L.previous.second);
-                
+
                 // Add seed and track candidates to the output container
                 output_candidates.push_back(
                     track_summary{cand_seed, fitted_params_at_tip, ndf_sum,
