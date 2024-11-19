@@ -151,7 +151,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).header);
+            seeds.push_back(truth_track_candidates.at(i_trk).header.seed);
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 

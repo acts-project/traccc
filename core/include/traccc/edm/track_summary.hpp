@@ -19,7 +19,7 @@ struct track_summary {
 
     /// (Optional) Fitted track parameter at the both ends
     thrust::pair<bound_track_parameters, bound_track_parameters>
-        fitted_params_at_tip;
+        fitted_params_at_tip{};
 
     /// (Optional) Number of degree of freedoms of the track
     scalar ndf{0.f};

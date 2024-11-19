@@ -329,7 +329,8 @@ track_candidate_container_types::host event_data::generate_truth_candidates(
             candidates.push_back(meas);
         }
 
-        track_candidates.push_back(std::move(seed_params),
+        track_summary trk_summary{seed_params};
+        track_candidates.push_back(std::move(trk_summary),
                                    std::move(candidates));
     }
 
