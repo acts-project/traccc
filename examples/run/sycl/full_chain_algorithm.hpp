@@ -15,7 +15,7 @@
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
-#include "traccc/sycl/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -67,8 +67,7 @@ class full_chain_algorithm
     using navigator_type = detray::navigator<const device_detector_type>;
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
-        traccc::sycl::spacepoint_formation_algorithm<
-            traccc::default_detector::device>;
+        traccc::sycl::silicon_pixel_spacepoint_formation_algorithm;
     /// Clustering algorithm type
     using clustering_algorithm = clusterization_algorithm;
     /// Track finding algorithm type

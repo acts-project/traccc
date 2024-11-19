@@ -8,6 +8,7 @@
 // Local include(s).
 #include "traccc/io/write.hpp"
 
+#include "json/write_digitization_config.hpp"
 #include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
 #include "obj/write_track_candidates.hpp"
@@ -114,6 +115,19 @@ void write(std::size_t event, std::string_view directory,
                                        event, "-track-candidates.obj")))
                                       .native()),
                 tracks, detector);
+            break;
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+void write(std::string_view filename, data_format format,
+           const digitization_config& config) {
+
+    switch (format) {
+        case data_format::json:
+            json::write_digitization_config(get_absolute_path(filename),
+                                            config);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

@@ -28,6 +28,8 @@ struct ckf_aborter : detray::actor {
 
         bool success = false;
         unsigned int count = 0;
+
+        scalar path_from_surface{0.f};
     };
 
     template <typename propagator_state_t>
@@ -38,12 +40,19 @@ struct ckf_aborter : detray::actor {
         auto &stepping = prop_state._stepping;
 
         abrt_state.count++;
+        abrt_state.path_from_surface += stepping.step_size();
 
         // Abort at the next sensitive surface
         if (navigation.is_on_sensitive() &&
-            stepping.path_from_surface() > abrt_state.min_step_length) {
+            abrt_state.path_from_surface > abrt_state.min_step_length) {
             prop_state._heartbeat &= navigation.abort();
             abrt_state.success = true;
+        }
+
+        // Reset path from surface
+        if (navigation.is_on_sensitive() ||
+            navigation.encountered_sf_material()) {
+            abrt_state.path_from_surface = 0.f;
         }
 
         if (abrt_state.count > abrt_state.max_count) {

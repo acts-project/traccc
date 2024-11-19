@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2023 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -17,8 +17,7 @@ add_library( traccc_tests_common STATIC
     "common/tests/kalman_fitting_telescope_test.hpp"
     "common/tests/kalman_fitting_toy_detector_test.hpp"
     "common/tests/kalman_fitting_wire_chamber_test.hpp"
-    "common/tests/kalman_fitting_test.cpp"
-    "common/tests/space_point.hpp" )
+    "common/tests/kalman_fitting_test.cpp" )
 target_include_directories( traccc_tests_common
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_tests_common
