@@ -10,30 +10,15 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/container.hpp"
+#include "traccc/edm/fitting_result.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
-#include "traccc/edm/track_summary.hpp"
 
 // detray include(s).
 #include "detray/navigation/navigator.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
 
 namespace traccc {
-
-/// Fitting result per track
-template <typename algebra_t>
-struct fitting_result {
-    using scalar_type = detray::dscalar<algebra_t>;
-
-    /// Fitted track parameter
-    detray::bound_track_parameters<algebra_t> fit_params;
-
-    /// Number of degree of freedoms of fitted track
-    scalar_type ndf{0};
-
-    /// Chi square of fitted track
-    scalar_type chi2{0};
-};
 
 /// Fitting result per measurement
 template <typename algebra_t>
@@ -217,7 +202,6 @@ using track_state_collection_types =
 
 /// Declare all track_state container types
 using track_state_container_types =
-    container_types<fitting_result<default_algebra>,
-                    track_state<default_algebra>>;
+    container_types<fitting_result, track_state<default_algebra>>;
 
 }  // namespace traccc

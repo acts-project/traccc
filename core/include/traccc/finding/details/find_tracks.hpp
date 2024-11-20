@@ -396,8 +396,8 @@ track_candidate_container_types::host find_tracks(
 
         // Storage for states used in smoother
         track_state<algebra_type> next_state(measurement{});
-        thrust::pair<bound_track_parameters, bound_track_parameters>
-            fitted_params_at_tip;
+        bound_track_parameters fit_par_ini;
+        bound_track_parameters fit_par_fin;
 
         // Track summary variables
         scalar ndf_sum = 0.f;
@@ -443,7 +443,7 @@ track_candidate_container_types::host find_tracks(
                 tip_state.smoothed_chi2() = tip_state.filtered_chi2();
 
                 // Set the back tip parameter
-                fitted_params_at_tip.second = tip_state.smoothed();
+                fit_par_fin = tip_state.smoothed();
 
                 ndf_sum +=
                     static_cast<scalar>(tip_state.get_measurement().meas_dim);
@@ -462,7 +462,8 @@ track_candidate_container_types::host find_tracks(
                     cur_state, next_state);
 
                 // Reset the front tip parameter
-                fitted_params_at_tip.first = cur_state.smoothed();
+                // FIXME: Should be called only for the front tip
+                fit_par_ini = cur_state.smoothed();
 
                 ndf_sum +=
                     static_cast<scalar>(cur_state.get_measurement().meas_dim);
@@ -480,8 +481,9 @@ track_candidate_container_types::host find_tracks(
 
                 // Add seed and track candidates to the output container
                 output_candidates.push_back(
-                    track_summary{cand_seed, fitted_params_at_tip, ndf_sum,
-                                  chi2_sum, n_skipped},
+                    track_summary{cand_seed,
+                                  {fit_par_ini, fit_par_fin, ndf_sum, chi2_sum,
+                                   n_skipped}},
                     cands_per_track);
                 break;
             }

@@ -82,7 +82,7 @@ void KalmanFittingTests::pull_value_tests(
 }
 
 void KalmanFittingTests::ndf_tests(
-    const fitting_result<traccc::default_algebra>& fit_res,
+    const fitting_result& fit_res,
     const track_state_collection_types::host& track_states_per_track) {
 
     scalar dim_sum = 0;

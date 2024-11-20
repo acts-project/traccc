@@ -9,12 +9,21 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_summary.hpp"
+#include "traccc/edm/fitting_result.hpp"
 
 // Detray include(s).
 #include "detray/geometry/barcode.hpp"
 
 namespace traccc {
+
+struct track_summary {
+
+    /// (Mandatory) Seed track parameter
+    bound_track_parameters seed;
+
+    /// (Optional) Fitting result
+    fitting_result fit_res;
+}; 
 
 /// Track candidate is the measurement
 using track_candidate = measurement;

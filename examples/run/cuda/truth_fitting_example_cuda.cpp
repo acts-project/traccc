@@ -216,8 +216,7 @@ int main(int argc, char* argv[]) {
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
 
             // Compare the track parameters made on the host and on the device.
-            traccc::collection_comparator<
-                traccc::fitting_result<traccc::default_algebra>>
+            traccc::collection_comparator<traccc::fitting_result>
                 compare_fitting_results{"fitted tracks"};
             compare_fitting_results(
                 vecmem::get_data(track_states.get_headers()),

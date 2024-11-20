@@ -55,8 +55,8 @@ class fitting_performance_writer {
     /// @param evt_map event map to find the truth values
     template <typename detector_t>
     void write(const track_state_collection_types::host& track_states_per_track,
-               const fitting_result<traccc::default_algebra>& fit_res,
-               const detector_t& det, event_data& evt_data) {
+               const fitting_result& fit_res, const detector_t& det,
+               event_data& evt_data) {
 
         std::map<measurement, std::map<particle, std::size_t>> meas_to_ptc_map;
         std::map<measurement, std::pair<point3, point3>> meas_to_param_map;
@@ -116,7 +116,7 @@ class fitting_performance_writer {
                    const particle& ptc);
 
     /// Non-templated part of the @c write(...) function
-    void write_stat(const fitting_result<traccc::default_algebra>& fit_res,
+    void write_stat(const fitting_result& fit_res,
                     const track_state_collection_types::host& track_states);
 
     /// Configuration for the tool

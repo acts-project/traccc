@@ -113,7 +113,7 @@ class kalman_fitter {
         kalman_step_aborter::state m_step_aborter_state{};
 
         /// Fitting result per track
-        fitting_result<algebra_type> m_fit_res;
+        fitting_result m_fit_res;
     };
 
     /// Run the kalman fitter for a given number of iterations
@@ -225,8 +225,10 @@ class kalman_fitter {
         auto& fit_res = fitter_state.m_fit_res;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
-        // Fit parameter = smoothed track parameter at the first surface
-        fit_res.fit_params = track_states[0].smoothed();
+        // Fit parameter = smoothed track parameter at the first and last
+        // surface
+        fit_res.fitted_params_initial = track_states.at(0).smoothed();
+        fit_res.fitted_params_final = track_states.back().smoothed();
 
         for (const auto& trk_state : track_states) {
 

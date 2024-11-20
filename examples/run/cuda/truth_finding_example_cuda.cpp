@@ -181,7 +181,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
         const std::size_t n_tracks = truth_track_candidates.size();
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).header);
+            seeds.push_back(truth_track_candidates.at(i_trk).header.seed);
         }
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
@@ -288,8 +288,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                       << std::endl;
 
             // Compare the track parameters made on the host and on the device.
-            traccc::collection_comparator<
-                traccc::fitting_result<traccc::default_algebra>>
+            traccc::collection_comparator<traccc::fitting_result>
                 compare_fitting_results{"fitted tracks"};
             compare_fitting_results(
                 vecmem::get_data(track_states.get_headers()),
