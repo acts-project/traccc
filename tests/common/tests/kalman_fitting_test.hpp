@@ -91,7 +91,7 @@ class KalmanFittingTests
     /// @param track_states_per_track Track states of a track
     ///
     void ndf_tests(
-        const fitting_result& fit_res,
+        const fitting_result<traccc::default_algebra>& fit_res,
         const track_state_collection_types::host& track_states_per_track);
 
     // The number of tracks successful with KF

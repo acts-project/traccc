@@ -145,7 +145,7 @@ is_same_object<fitting_result>::is_same_object(const fitting_result& ref,
     : m_ref(ref), m_unc(unc) {}
 
 bool is_same_object<fitting_result>::operator()(
-    const fitting_result& obj) const {
+    const fitting_result<traccc::default_algebra>& obj) const {
 
     return (
         is_same_object<bound_track_parameters>(

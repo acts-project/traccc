@@ -15,19 +15,22 @@
 
 namespace traccc {
 
+template <typename algebra_t>
 struct fitting_result {
 
+    using scalar_type = detray::dscalar<algebra_t>;
+
     /// Fitted track parameter at the first track state
-    bound_track_parameters fitted_params_initial;
+    detray::bound_track_parameters<algebra_t> fitted_params_initial;
 
     /// Fitted track parameter at the last track state
-    bound_track_parameters fitted_params_final;
+    detray::bound_track_parameters<algebra_t> fitted_params_final;
 
     /// Number of degree of freedoms of the track
-    scalar ndf{0.f};
+    scalar_type ndf{0.f};
 
     /// Chi square from finding/fitting algorithm
-    scalar chi2{std::numeric_limits<float>::max()};
+    scalar_type chi2{std::numeric_limits<scalar_type>::max()};
 
     /// The number of holes
     unsigned int n_holes{0u};
