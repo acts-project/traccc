@@ -32,11 +32,14 @@ namespace traccc::io {
 /// @param format is the data format (e.g. csv or binary) of output file
 /// @param cells is the cell collection to write
 /// @param dd is the silicon detector description
+/// @param use_acts_geometry_id is a flag to use the ACTS geometry ID (or the
+///                             Detray one)
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            traccc::edm::silicon_cell_collection::const_view cells,
-           traccc::silicon_detector_description::const_view dd = {});
+           traccc::silicon_detector_description::const_view dd = {},
+           bool use_acts_geometry_id = true);
 
 /// Function for hit file writing
 ///

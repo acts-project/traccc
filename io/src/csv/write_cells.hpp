@@ -20,9 +20,13 @@ namespace traccc::io::csv {
 ///
 /// @param filename The name of the file to write the data to
 /// @param cells    Cell collection to write
+/// @param dd       Silicon detector description
+/// @param use_acts_geometry_id Flag to use the ACTS geometry ID (or the Detray
+///                             one)
 ///
 void write_cells(std::string_view filename,
                  traccc::edm::silicon_cell_collection::const_view cells,
-                 traccc::silicon_detector_description::const_view dd);
+                 traccc::silicon_detector_description::const_view dd,
+                 bool use_acts_geometry_id);
 
 }  // namespace traccc::io::csv

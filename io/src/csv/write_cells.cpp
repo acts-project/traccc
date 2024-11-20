@@ -16,7 +16,8 @@ namespace traccc::io::csv {
 
 void write_cells(std::string_view filename,
                  traccc::edm::silicon_cell_collection::const_view cells_view,
-                 traccc::silicon_detector_description::const_view dd_view) {
+                 traccc::silicon_detector_description::const_view dd_view,
+                 bool use_acts_geometry_id) {
 
     // Make sure that a valid detector description would've been given to the
     // function.
@@ -46,9 +47,11 @@ void write_cells(std::string_view filename,
         const auto cell = cells.at(i);
 
         // Write the cell info to the file.
-        ofile << dd.acts_geometry_id().at(cell.module_index()) << ",0,"
-              << cell.channel0() << ',' << cell.channel1() << ',' << cell.time()
-              << ',' << cell.activation() << '\n';
+        ofile << (use_acts_geometry_id
+                      ? dd.acts_geometry_id().at(cell.module_index())
+                      : dd.geometry_id().at(cell.module_index()).value())
+              << ",0," << cell.channel0() << ',' << cell.channel1() << ','
+              << cell.time() << ',' << cell.activation() << '\n';
     }
 }
 
