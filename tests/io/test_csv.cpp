@@ -171,14 +171,13 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
     // Lambda comparing two cell collections.
     auto compare_cells =
         [](const traccc::edm::silicon_cell_collection::host& a,
-           const traccc::edm::silicon_cell_collection::host& b) {
-            EXPECT_EQ(a.size(), b.size());
-            for (traccc::edm::silicon_cell_collection::host::size_type i = 0;
-                 i < a.size(); ++i) {
-                EXPECT_EQ(a.at(i), b.at(i));
-            }
-            return true;
-        };
+           const traccc::edm::silicon_cell_collection::host& b) -> void {
+        ASSERT_EQ(a.size(), b.size());
+        for (traccc::edm::silicon_cell_collection::host::size_type i = 0;
+             i < a.size(); ++i) {
+            EXPECT_EQ(a.at(i), b.at(i));
+        }
+    };
 
     // Cell collections to use in the test.
     traccc::edm::silicon_cell_collection::host orig{mr}, copy{mr};
