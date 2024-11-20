@@ -8,11 +8,8 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/fitting_result.hpp"
-
-// Detray include(s).
-#include "detray/geometry/barcode.hpp"
+#include "traccc/edm/measurement.hpp"
 
 namespace traccc {
 
@@ -22,8 +19,8 @@ struct track_summary {
     bound_track_parameters seed;
 
     /// (Optional) Fitting result
-    fitting_result<traccc::default_algebra> fit_res;
-}; 
+    fitting_result<traccc::default_algebra> fit_res{};
+};
 
 /// Track candidate is the measurement
 using track_candidate = measurement;
