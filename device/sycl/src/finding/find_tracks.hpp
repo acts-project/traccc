@@ -331,9 +331,13 @@ track_candidate_container_types::buffer find_tracks(
                     keys_buffer);
                 vecmem::device_vector<unsigned int> param_ids_device(
                     param_ids_buffer);
-                oneapi::dpl::sort_by_key(policy, keys_device.begin(),
-                                         keys_device.end(),
-                                         param_ids_device.begin());
+                auto zipped_first = oneapi::dpl::make_zip_iterator(
+                    keys_device.begin(), param_ids_device.begin());
+                oneapi::dpl::sort(
+                    policy, zipped_first, zipped_first + keys_device.size(),
+                    [](auto lhs, auto rhs) {
+                        return std::get<0>(lhs) < std::get<0>(rhs);
+                    });
             }
 
             /*****************************************************************
