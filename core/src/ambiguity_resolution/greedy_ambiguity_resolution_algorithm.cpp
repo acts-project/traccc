@@ -111,7 +111,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         auto const [sm_headers, sm_items] = track_states.at(index);
 
         // Copy header
-        fitting_result header = sm_headers;
+        fitting_result<default_algebra> header = sm_headers;
 
         // Copy states
         vecmem::vector<track_state<default_algebra>> states;
@@ -142,7 +142,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     for (std::size_t track_index = 0; track_index < n_track_states;
          ++track_index) {
 
-        // fit_res is a fitting_result
+        // fit_res is a fitting_result<default_algebra>
         // states  is a vecmem_vector<track_state<default_algebra>>
         auto const& [fit_res, states] = track_states.at(track_index);
 

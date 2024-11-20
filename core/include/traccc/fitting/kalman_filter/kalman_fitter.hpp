@@ -113,7 +113,7 @@ class kalman_fitter {
         kalman_step_aborter::state m_step_aborter_state{};
 
         /// Fitting result per track
-        fitting_result m_fit_res;
+        fitting_result<algebra_type> m_fit_res;
     };
 
     /// Run the kalman fitter for a given number of iterations

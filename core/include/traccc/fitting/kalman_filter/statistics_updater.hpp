@@ -29,7 +29,7 @@ struct statistics_updater {
     template <typename mask_group_t, typename index_t>
     TRACCC_HOST_DEVICE inline void operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
-        fitting_result<traccc::default_algebra>& fit_res,
+        fitting_result<algebra_t>& fit_res,
         const track_state<algebra_t>& trk_state) {
 
         if (!trk_state.is_hole) {
