@@ -30,6 +30,6 @@ class is_same_object<fitting_result<traccc::default_algebra>> {
     /// The uncertainty
     scalar m_unc;
 
-};  // class is_same_object<fitting_result>
+};  // class is_same_object<fitting_result<traccc::default_algebra>>
 
 }  // namespace traccc::details

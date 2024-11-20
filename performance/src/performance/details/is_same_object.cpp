@@ -140,11 +140,11 @@ bool is_same_object<track_candidate_collection_types::host>::operator()(
 ///       @c traccc::details::is_same_object<fitting_result>
 /// @{
 
-is_same_object<fitting_result>::is_same_object(const fitting_result& ref,
-                                               scalar unc)
+is_same_object<fitting_result<traccc::default_algebra>>::is_same_object(
+    const fitting_result<traccc::default_algebra>& ref, scalar unc)
     : m_ref(ref), m_unc(unc) {}
 
-bool is_same_object<fitting_result>::operator()(
+bool is_same_object<fitting_result<traccc::default_algebra>>::operator()(
     const fitting_result<traccc::default_algebra>& obj) const {
 
     return (
@@ -169,8 +169,8 @@ bool is_same_object<track_summary>::operator()(const track_summary& obj) const {
 
     return (is_same_object<bound_track_parameters>(m_ref.get().seed,
                                                    m_unc)(obj.seed) &&
-            is_same_object<fitting_result>(m_ref.get().fit_res,
-                                           m_unc)(obj.fit_res));
+            is_same_object<fitting_result<traccc::default_algebra>>(
+                m_ref.get().fit_res, m_unc)(obj.fit_res));
 }
 
 /// @}
