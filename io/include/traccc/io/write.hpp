@@ -12,6 +12,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/digitization_config.hpp"
 
@@ -30,10 +31,12 @@ namespace traccc::io {
 /// @param directory is the directory for the output cell file
 /// @param format is the data format (e.g. csv or binary) of output file
 /// @param cells is the cell collection to write
+/// @param dd is the silicon detector description
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           traccc::edm::silicon_cell_collection::const_view cells);
+           traccc::edm::silicon_cell_collection::const_view cells,
+           traccc::silicon_detector_description::const_view dd = {});
 
 /// Function for hit file writing
 ///
