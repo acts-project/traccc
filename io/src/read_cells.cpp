@@ -20,7 +20,8 @@ namespace traccc::io {
 void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                 std::string_view directory,
                 const silicon_detector_description::host* dd,
-                data_format format, bool deduplicate) {
+                data_format format, bool deduplicate,
+                bool use_acts_geometry_id) {
 
     switch (format) {
         case data_format::csv:
@@ -30,7 +31,7 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.csv")))
                                       .native()),
-                dd, format, deduplicate);
+                dd, format, deduplicate, use_acts_geometry_id);
             break;
 
         case data_format::binary:
@@ -51,11 +52,13 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 const silicon_detector_description::host* dd,
-                data_format format, bool deduplicate) {
+                data_format format, bool deduplicate,
+                bool use_acts_geometry_id) {
 
     switch (format) {
         case data_format::csv:
-            csv::read_cells(cells, filename, dd, deduplicate);
+            csv::read_cells(cells, filename, dd, deduplicate,
+                            use_acts_geometry_id);
             break;
 
         case data_format::binary:

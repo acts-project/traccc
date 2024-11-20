@@ -111,8 +111,8 @@ namespace traccc::io::csv {
 
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
-                const silicon_detector_description::host* dd,
-                bool deduplicate) {
+                const silicon_detector_description::host* dd, bool deduplicate,
+                bool use_acts_geometry_id) {
 
     // Clear the output container.
     cells.resize(0u);
@@ -125,8 +125,14 @@ void read_cells(edm::silicon_cell_collection::host& cells,
     // to indices inside the detector description.
     std::map<geometry_id, unsigned int> geomIdMap;
     if (dd) {
-        for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
-            geomIdMap[dd->acts_geometry_id()[i]] = i;
+        if (use_acts_geometry_id) {
+            for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
+                geomIdMap[dd->acts_geometry_id()[i]] = i;
+            }
+        } else {
+            for (unsigned int i = 0; i < dd->geometry_id().size(); ++i) {
+                geomIdMap[dd->geometry_id()[i].value()] = i;
+            }
         }
     }
 

@@ -183,23 +183,32 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
     // Cell collections to use in the test.
     traccc::edm::silicon_cell_collection::host orig{mr}, copy{mr};
 
-    // Test the I/O for 10 events.
-    for (std::size_t event = 0; event < 10; ++event) {
+    // Lambda performing the test with either using "Acts geometry IDs" or
+    // "Detray ones".
+    auto perform_test = [&](bool use_acts_geometry_id) {
+        // Test the I/O for 10 events.
+        for (std::size_t event = 0; event < 10; ++event) {
 
-        // Read the cells for the current event.
-        traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/", &dd);
+            // Read the cells for the current event.
+            traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/", &dd);
 
-        // Write the cells into a temporary file.
-        traccc::io::write(event,
-                          std::filesystem::temp_directory_path().native(),
-                          traccc::data_format::csv, vecmem::get_data(orig),
-                          vecmem::get_data(dd));
+            // Write the cells into a temporary file.
+            traccc::io::write(event,
+                              std::filesystem::temp_directory_path().native(),
+                              traccc::data_format::csv, vecmem::get_data(orig),
+                              vecmem::get_data(dd), use_acts_geometry_id);
 
-        // Read the cells back in.
-        traccc::io::read_cells(
-            copy, event, std::filesystem::temp_directory_path().native(), &dd);
+            // Read the cells back in.
+            traccc::io::read_cells(
+                copy, event, std::filesystem::temp_directory_path().native(),
+                &dd, traccc::data_format::csv, false, use_acts_geometry_id);
 
-        // Compare the two cell collections.
-        compare_cells(orig, copy);
-    }
+            // Compare the two cell collections.
+            compare_cells(orig, copy);
+        }
+    };
+
+    // Perform the test with both "Acts geometry IDs" and "Detray ones".
+    perform_test(true);
+    perform_test(false);
 }
