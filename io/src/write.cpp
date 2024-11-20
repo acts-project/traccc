@@ -8,6 +8,7 @@
 // Local include(s).
 #include "traccc/io/write.hpp"
 
+#include "csv/write_cells.hpp"
 #include "json/write_digitization_config.hpp"
 #include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
@@ -23,7 +24,9 @@ namespace traccc::io {
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           traccc::edm::silicon_cell_collection::const_view cells) {
+           traccc::edm::silicon_cell_collection::const_view cells,
+           traccc::silicon_detector_description::const_view dd,
+           bool use_acts_geometry_id) {
 
     switch (format) {
         case data_format::binary:
@@ -33,6 +36,14 @@ void write(std::size_t event, std::string_view directory,
                                        get_event_filename(event, "-cells.dat")))
                                       .native()),
                 traccc::edm::silicon_cell_collection::const_device{cells});
+            break;
+        case data_format::csv:
+            csv::write_cells(
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-cells.csv")))
+                                      .native()),
+                cells, dd, use_acts_geometry_id);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

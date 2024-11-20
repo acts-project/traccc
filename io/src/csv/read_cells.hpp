@@ -22,10 +22,13 @@ namespace traccc::io::csv {
 /// @param[in]  filename    The name of the file to read
 /// @param[in]  dd          The detector description to point the cells at
 /// @param[in]  deduplicate Whether to deduplicate the cells
+/// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
+///                                  "Acts geometry ID", or a
+///                                  "Detray geometry ID"
 ///
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 const silicon_detector_description::host* dd = nullptr,
-                bool deduplicate = true);
+                bool deduplicate = true, bool use_acts_geometry_id = true);
 
 }  // namespace traccc::io::csv
