@@ -250,13 +250,14 @@ track_candidate_container_types::host find_tracks(
                 if (res && trk_state.filtered_chi2() < config.chi2_max) {
                     n_branches++;
 
-                    track_states[step].push_back(trk_state);
+                    track_states.at(step).push_back(trk_state);
                     links[step].push_back(
                         {{previous_step, in_param_id},
                          item_id,
                          orig_param_id,
                          skip_counter,
-                         static_cast<unsigned int>(track_states.size() - 1u)});
+                         static_cast<unsigned int>(
+                             track_states.at(step).size() - 1u)});
                     updated_params.push_back(trk_state.filtered());
                 }
             }
