@@ -17,8 +17,7 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 namespace traccc::sycl {
-namespace kernels::
-    combinatorial_kalman_filter_constant_field_telescope_detector {
+namespace kernels::ckf_cfield_teldet {
 
 struct make_barcode_sequence;
 struct apply_interaction;
@@ -38,8 +37,7 @@ struct kernels {
     using prune_tracks_kernel_type = prune_tracks;
 };  // namespace kernels
 
-}  // namespace
-   // kernels::combinatorial_kalman_filter_constant_field_telescope_detector
+}  // namespace kernels::ckf_cfield_teldet
 
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
@@ -54,9 +52,9 @@ combinatorial_kalman_filter_algorithm::operator()(
                            telescope_detector::device::algebra_type,
                            detray::constrained_step<>>,
         detray::navigator<const telescope_detector::device>,
-        kernels::combinatorial_kalman_filter_constant_field_telescope_detector::
-            kernels>(det, field, measurements, seeds, m_config, m_mr, m_copy,
-                     details::get_queue(m_queue));
+        kernels::ckf_cfield_teldet::kernels>(det, field, measurements, seeds,
+                                             m_config, m_mr, m_copy,
+                                             details::get_queue(m_queue));
 }
 
 }  // namespace traccc::sycl
