@@ -202,6 +202,7 @@ using track_state_collection_types =
 
 /// Declare all track_state container types
 using track_state_container_types =
-    container_types<fitting_result, track_state<default_algebra>>;
+    container_types<fitting_resul<traccc::default_algebra> t,
+                    track_state<default_algebra>>;
 
 }  // namespace traccc

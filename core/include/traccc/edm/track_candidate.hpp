@@ -22,7 +22,7 @@ struct track_summary {
     bound_track_parameters seed;
 
     /// (Optional) Fitting result
-    fitting_result fit_res;
+    fitting_result<traccc::default_algebra> fit_res;
 }; 
 
 /// Track candidate is the measurement
