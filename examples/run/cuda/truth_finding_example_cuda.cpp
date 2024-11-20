@@ -288,7 +288,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                       << std::endl;
 
             // Compare the track parameters made on the host and on the device.
-            traccc::collection_comparator<traccc::fitting_result>
+            traccc::collection_comparator<
+                traccc::fitting_result<traccc::default_algebra>>
                 compare_fitting_results{"fitted tracks"};
             compare_fitting_results(
                 vecmem::get_data(track_states.get_headers()),
