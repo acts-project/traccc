@@ -30,6 +30,9 @@ TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
     vecmem::jagged_device_vector<const candidate_link> links(
         payload.links_view);
 
+    vecmem::jagged_device_vector<const track_state<default_algebra>>
+        track_states(payload.track_states_view);
+
     vecmem::device_vector<const typename candidate_link::link_index_type> tips(
         payload.tips_view);
 

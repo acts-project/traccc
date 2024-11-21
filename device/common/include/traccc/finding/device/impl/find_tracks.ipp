@@ -61,6 +61,8 @@ TRACCC_DEVICE inline void find_tracks(
     vecmem::device_vector<unsigned int> out_params_liveness(
         payload.out_params_liveness_view);
     vecmem::device_vector<candidate_link> links(payload.links_view);
+    vecmem::device_vector<track_state<typename detector_t::algebra_type>>
+        track_states(payload.track_states_view);
     vecmem::device_atomic_ref<unsigned int> num_total_candidates(
         *payload.n_total_candidates);
     vecmem::device_vector<const detray::geometry::barcode> barcodes(
@@ -222,6 +224,7 @@ TRACCC_DEVICE inline void find_tracks(
                             prev_link.seed_idx,
                             prev_link.n_skipped};
                     }
+                    track_states.at(l_pos) = trk_state;
 
                     // Increase the number of candidates (or branches) per input
                     // parameter

@@ -95,6 +95,11 @@ struct find_tracks_payload {
     vecmem::data::vector_view<candidate_link> links_view;
 
     /**
+     * @brief View object to the track state vector
+     */
+    vecmem::data::vector_view<track_state<default_algebra>> track_states_view;
+
+    /**
      * @brief Pointer to the total of number of candidates; to be set to zero
      * before launching the kernel
      */
