@@ -14,6 +14,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_particles.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/write.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -23,6 +24,9 @@
 
 // GTest include(s).
 #include <gtest/gtest.h>
+
+// System include(s).
+#include <filesystem>
 
 class io : public traccc::tests::data_test {};
 
@@ -151,4 +155,59 @@ TEST_F(io, csv_read_odd_single_muon) {
         }
     }
     EXPECT_EQ(n_muons, 4u);
+}
+
+TEST_F(io, csv_write_odd_single_muon_cells) {
+
+    // Memory resource used by the test.
+    vecmem::host_memory_resource mr;
+
+    // Read the ODD detector description.
+    traccc::silicon_detector_description::host dd{mr};
+    traccc::io::read_detector_description(
+        dd, "geometries/odd/odd-detray_geometry_detray.json",
+        "geometries/odd/odd-digi-geometric-config.json");
+
+    // Lambda comparing two cell collections.
+    auto compare_cells =
+        [](const traccc::edm::silicon_cell_collection::host& a,
+           const traccc::edm::silicon_cell_collection::host& b) -> void {
+        ASSERT_EQ(a.size(), b.size());
+        for (traccc::edm::silicon_cell_collection::host::size_type i = 0;
+             i < a.size(); ++i) {
+            EXPECT_EQ(a.at(i), b.at(i));
+        }
+    };
+
+    // Cell collections to use in the test.
+    traccc::edm::silicon_cell_collection::host orig{mr}, copy{mr};
+
+    // Lambda performing the test with either using "Acts geometry IDs" or
+    // "Detray ones".
+    auto perform_test = [&](bool use_acts_geometry_id) {
+        // Test the I/O for 10 events.
+        for (std::size_t event = 0; event < 10; ++event) {
+
+            // Read the cells for the current event.
+            traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/", &dd);
+
+            // Write the cells into a temporary file.
+            traccc::io::write(event,
+                              std::filesystem::temp_directory_path().native(),
+                              traccc::data_format::csv, vecmem::get_data(orig),
+                              vecmem::get_data(dd), use_acts_geometry_id);
+
+            // Read the cells back in.
+            traccc::io::read_cells(
+                copy, event, std::filesystem::temp_directory_path().native(),
+                &dd, traccc::data_format::csv, false, use_acts_geometry_id);
+
+            // Compare the two cell collections.
+            compare_cells(orig, copy);
+        }
+    };
+
+    // Perform the test with both "Acts geometry IDs" and "Detray ones".
+    perform_test(true);
+    perform_test(false);
 }

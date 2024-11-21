@@ -31,11 +31,15 @@ namespace traccc::io {
 /// @param[in]  dd          The detector description to point the cells at
 /// @param[in]  format      The format of the cell data files (to read)
 /// @param[in]  deduplicate Whether to deduplicate the cells
+/// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
+///                                  "Acts geometry ID", or a
+///                                  "Detray geometry ID"
 ///
 void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                 std::string_view directory,
                 const silicon_detector_description::host* dd = nullptr,
-                data_format format = data_format::csv, bool deduplicate = true);
+                data_format format = data_format::csv, bool deduplicate = true,
+                bool use_acts_geometry_id = true);
 
 /// Read cell data into memory
 ///
@@ -46,10 +50,14 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
 /// @param[in]  dd          The detector description to point the cells at
 /// @param[in]  format      The format of the cell data files (to read)
 /// @param[in]  deduplicate Whether to deduplicate the cells
+/// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
+///                                  "Acts geometry ID", or a
+///                                  "Detray geometry ID"
 ///
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 const silicon_detector_description::host* dd = nullptr,
-                data_format format = data_format::csv, bool deduplicate = true);
+                data_format format = data_format::csv, bool deduplicate = true,
+                bool use_acts_geometry_id = true);
 
 }  // namespace traccc::io
