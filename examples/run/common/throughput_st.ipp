@@ -92,10 +92,13 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         performance::timer t{"File reading", times};
         // Read the input cells into memory event-by-event.
         input.reserve(input_opts.events);
-        for (std::size_t i = 0; i < input_opts.events; ++i) {
+        for (std::size_t i = input_opts.skip;
+             i < input_opts.skip + input_opts.events; ++i) {
             input.push_back({uncached_host_mr});
+            static constexpr bool DEDUPLICATE = true;
             io::read_cells(input.back(), i, input_opts.directory, &det_descr,
-                           input_opts.format);
+                           input_opts.format, DEDUPLICATE,
+                           input_opts.use_acts_geom_source);
         }
     }
 
