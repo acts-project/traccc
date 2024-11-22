@@ -32,6 +32,10 @@ struct fitting_result {
 
     /// Chi square of fitted track
     scalar_type chi2{0};
+
+    // The number of holes (The number of sensitive surfaces which do not have a
+    // measurement for the track pattern)
+    unsigned int n_holes{0u};
 };
 
 /// Fitting result per measurement

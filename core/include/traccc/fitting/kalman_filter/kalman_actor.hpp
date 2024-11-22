@@ -54,20 +54,15 @@ struct kalman_actor : detray::actor {
         TRACCC_HOST_DEVICE
         void next() { m_it++; }
 
-        /// @return true if the iterator reaches the end of vector
-        TRACCC_HOST_DEVICE
-        bool is_complete() const {
-            if (m_it == m_track_states.end()) {
-                return true;
-            }
-            return false;
-        }
-
         // vector of track states
         vector_t<track_state_type> m_track_states;
 
         // iterator for forward filtering
         typename vector_t<track_state_type>::iterator m_it;
+
+        // The number of holes (The number of sensitive surfaces which do not
+        // have a measurement for the track pattern)
+        unsigned int n_holes{0u};
     };
 
     /// Actor operation to perform the Kalman filtering
@@ -81,20 +76,13 @@ struct kalman_actor : detray::actor {
         auto& stepping = propagation._stepping;
         auto& navigation = propagation._navigation;
 
-        // If the iterator reaches the end, terminate the propagation
-        if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.abort();
-            return;
-        }
-
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
             auto& trk_state = actor_state();
 
-            // Abort if the propagator fails to find the next measurement
             if (navigation.barcode() != trk_state.surface_link()) {
-                // propagation._heartbeat &= navigation.abort();
+                actor_state.n_holes++;
                 return;
             }
 

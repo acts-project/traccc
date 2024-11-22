@@ -239,6 +239,9 @@ class kalman_fitter {
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
         fit_res.ndf = fit_res.ndf - 5.f;
+
+        // The number of holes
+        fit_res.n_holes = fitter_state.m_fit_actor_state.n_holes;
     }
 
     private:
