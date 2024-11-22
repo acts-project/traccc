@@ -66,9 +66,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             *m_detector, m_field, measurements_view, track_params_view);
 
         // Run the track fitting, and return its results.
-        const track_candidate_container_types::const_view
-            track_candidates_view = get_data(track_candidates);
-        return m_fitting(*m_detector, m_field, track_candidates_view);
+        const auto track_candidates_data = get_data(track_candidates);
+        return m_fitting(*m_detector, m_field, track_candidates_data);
     }
     // If not, just return an empty object.
     else {
