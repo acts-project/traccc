@@ -83,8 +83,10 @@ int par_run(const traccc::opts::input_data& input_opts,
 
         // Read the cells from the relevant event file
         traccc::edm::silicon_cell_collection::host cells_per_event{resource};
+        static constexpr bool DEDUPLICATE = true;
         traccc::io::read_cells(cells_per_event, event, input_opts.directory,
-                               &det_descr, input_opts.format);
+                               &det_descr, input_opts.format, DEDUPLICATE,
+                               input_opts.use_acts_geom_source);
 
         /*-------------------
             Clusterization

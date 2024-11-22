@@ -108,17 +108,22 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         performance::timer t{"File reading", times};
         // Set up the container for the input events.
         input.reserve(input_opts.events);
-        for (std::size_t i = 0; i < input_opts.events; ++i) {
+        const std::size_t first_event = input_opts.skip;
+        const std::size_t last_event = input_opts.skip + input_opts.events;
+        for (std::size_t i = first_event; i < last_event; ++i) {
             input.push_back({uncached_host_mr});
         }
         // Read the input cells into memory in parallel.
         tbb::parallel_for(
-            tbb::blocked_range<std::size_t>{0u, input_opts.events},
+            tbb::blocked_range<std::size_t>{first_event, last_event},
             [&](const tbb::blocked_range<std::size_t>& event_range) {
                 for (std::size_t event = event_range.begin();
                      event != event_range.end(); ++event) {
-                    io::read_cells(input.at(event), event, input_opts.directory,
-                                   &det_descr, input_opts.format);
+                    static constexpr bool DEDUPLICATE = true;
+                    io::read_cells(input.at(event - input_opts.skip), event,
+                                   input_opts.directory, &det_descr,
+                                   input_opts.format, DEDUPLICATE,
+                                   input_opts.use_acts_geom_source);
                 }
             });
     }

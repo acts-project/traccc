@@ -159,9 +159,11 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("File reading  (cpu)",
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
+                static constexpr bool DEDUPLICATE = true;
                 traccc::io::read_cells(cells_per_event, event,
                                        input_opts.directory, &host_det_descr,
-                                       input_opts.format);
+                                       input_opts.format, DEDUPLICATE,
+                                       input_opts.use_acts_geom_source);
             }  // stop measuring file reading timer
 
             n_cells += cells_per_event.size();
