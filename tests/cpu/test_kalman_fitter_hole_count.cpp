@@ -148,9 +148,9 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     cands.erase(cands.begin() + 2);
     cands.erase(cands.begin() + 2);
     cands.erase(cands.begin() + 7);
-    cands.erase(cands.end() - 1);
-    cands.erase(cands.end() - 1);
-    cands.erase(cands.end() - 1);
+    cands.pop_back();
+    cands.pop_back();
+    cands.pop_back();
 
     // A sanity check on the number of candidiates
     ASSERT_EQ(cands.size(), n_planes - 8u);
