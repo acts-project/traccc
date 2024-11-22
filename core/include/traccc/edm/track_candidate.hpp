@@ -8,13 +8,19 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/edm/fitting_result.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_parameters.hpp"
-
-// Detray include(s).
-#include "detray/geometry/barcode.hpp"
 
 namespace traccc {
+
+struct track_summary {
+
+    /// (Mandatory) Seed track parameter
+    bound_track_parameters seed;
+
+    /// (Optional) Fitting result
+    fitting_result<traccc::default_algebra> fit_res{};
+};
 
 /// Track candidate is the measurement
 using track_candidate = measurement;
@@ -23,6 +29,6 @@ using track_candidate = measurement;
 using track_candidate_collection_types = collection_types<track_candidate>;
 /// Declare a track candidates container type
 using track_candidate_container_types =
-    container_types<bound_track_parameters, track_candidate>;
+    container_types<track_summary, track_candidate>;
 
 }  // namespace traccc

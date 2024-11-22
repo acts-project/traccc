@@ -14,6 +14,7 @@
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/particle.hpp"
@@ -123,6 +124,8 @@ track_candidate_container_types::host find_tracks(
 
     std::vector<std::vector<candidate_link>> links;
     links.resize(config.max_track_candidates_per_track);
+    std::vector<std::vector<track_state<algebra_type>>> track_states;
+    track_states.resize(config.max_track_candidates_per_track);
 
     std::vector<std::vector<std::size_t>> param_to_link;
     param_to_link.resize(config.max_track_candidates_per_track);
@@ -247,10 +250,14 @@ track_candidate_container_types::host find_tracks(
                 if (res && trk_state.filtered_chi2() < config.chi2_max) {
                     n_branches++;
 
-                    links[step].push_back({{previous_step, in_param_id},
-                                           item_id,
-                                           orig_param_id,
-                                           skip_counter});
+                    track_states.at(step).push_back(trk_state);
+                    links[step].push_back(
+                        {{previous_step, in_param_id},
+                         item_id,
+                         orig_param_id,
+                         skip_counter,
+                         static_cast<unsigned int>(
+                             track_states.at(step).size() - 1u)});
                     updated_params.push_back(trk_state.filtered());
                 }
             }
@@ -388,7 +395,17 @@ track_candidate_container_types::host find_tracks(
         vecmem::vector<track_candidate> cands_per_track;
         cands_per_track.resize(n_cands);
 
-        // Reversely iterate to fill the track candidates
+        // Storage for states used in smoother
+        track_state<algebra_type> next_state(measurement{});
+        bound_track_parameters fit_par_ini;
+        bound_track_parameters fit_par_fin;
+
+        // Track summary variables
+        scalar ndf_sum = 0.f;
+        scalar chi2_sum = 0.f;
+
+        // Reversely iterate to fill the track candidates and run Kalman
+        // smoother
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
              it++) {
 
@@ -407,6 +424,56 @@ track_candidate_container_types::host find_tracks(
             auto& cand = *it;
             cand = measurements.at(L.meas_idx);
 
+            unsigned int step =
+                (L.previous.first == std::numeric_limits<int>::max())
+                    ? 0u
+                    : L.previous.first + 1;
+            if (it == cands_per_track.rbegin()) {
+                // The smoothing algorithm requires the following:
+                // (1) the filtered track parameter of the current surface
+                // (2) the smoothed track parameter of the next surface
+                //
+                // Since the smoothed track parameter of the last surface can be
+                // considered to be the filtered one, we can reversly iterate
+                // the algorithm to obtain the smoothed parameter of other
+                // surfaces
+                auto& tip_state = track_states.at(step).at(L.track_state_idx);
+                tip_state.smoothed().set_parameter_vector(tip_state.filtered());
+                tip_state.smoothed().set_covariance(
+                    tip_state.filtered().covariance());
+                tip_state.smoothed_chi2() = tip_state.filtered_chi2();
+
+                // Set the back tip parameter
+                fit_par_fin = tip_state.smoothed();
+
+                ndf_sum +=
+                    static_cast<scalar>(tip_state.get_measurement().meas_dim);
+                chi2_sum += tip_state.smoothed_chi2();
+
+                // Swap the state
+                next_state = tip_state;
+            } else {
+                // Current state
+                auto& cur_state = track_states.at(step).at(L.track_state_idx);
+
+                // Run kalman smoother
+                const detray::tracking_surface sf{det,
+                                                  cur_state.surface_link()};
+                sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
+                    cur_state, next_state);
+
+                // Reset the front tip parameter
+                // FIXME: Should be called only for the front tip
+                fit_par_ini = cur_state.smoothed();
+
+                ndf_sum +=
+                    static_cast<scalar>(cur_state.get_measurement().meas_dim);
+                chi2_sum += cur_state.smoothed_chi2();
+
+                // Swap the state
+                next_state = cur_state;
+            }
+
             // Break the loop if the iterator is at the first candidate and
             // fill the seed
             if (it == cands_per_track.rend() - 1) {
@@ -414,7 +481,11 @@ track_candidate_container_types::host find_tracks(
                 auto cand_seed = seeds.at(L.previous.second);
 
                 // Add seed and track candidates to the output container
-                output_candidates.push_back(cand_seed, cands_per_track);
+                output_candidates.push_back(
+                    track_summary{cand_seed,
+                                  {fit_par_ini, fit_par_fin, ndf_sum, chi2_sum,
+                                   n_skipped}},
+                    cands_per_track);
                 break;
             }
 

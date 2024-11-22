@@ -30,6 +30,9 @@ TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
     vecmem::jagged_device_vector<const candidate_link> links(
         payload.links_view);
 
+    vecmem::jagged_device_vector<const track_state<default_algebra>>
+        track_states(payload.track_states_view);
+
     vecmem::device_vector<const typename candidate_link::link_index_type> tips(
         payload.tips_view);
 
@@ -44,7 +47,7 @@ TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
     }
 
     const auto tip = tips.at(globalIndex);
-    auto& seed = track_candidates[globalIndex].header;
+    auto& trk_summary = track_candidates[globalIndex].header;
     auto cands_per_track = track_candidates[globalIndex].items;
 
     // Get the link corresponding to tip
@@ -99,7 +102,7 @@ TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
         // Break the loop if the iterator is at the first candidate and fill the
         // seed
         if (it == cands_per_track.rend() - 1) {
-            seed = seeds.at(L.previous.second);
+            trk_summary.seed = seeds.at(L.previous.second);
             break;
         }
 

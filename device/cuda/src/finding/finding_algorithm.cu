@@ -162,6 +162,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     std::map<unsigned int, vecmem::data::vector_buffer<candidate_link>>
         link_map;
 
+    // Create a map for track states
+    std::map<unsigned int, vecmem::data::vector_buffer<track_state<default_algebra>>>
+        track_state_map;
+
     // Create a buffer of tip links
     vecmem::data::vector_buffer<typename candidate_link::link_index_type>
         tips_buffer{m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
@@ -224,6 +228,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                               m_mr.main};
             m_copy.setup(link_map[step])->ignore();
 
+            // Create the track state map
+            track_state_map[step] = {
+                n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main};
+            m_copy.setup(track_state_map[step])->ignore();
+
             const unsigned int nThreads = m_warp_size * 2;
             const unsigned int nBlocks =
                 (n_in_params + nThreads - 1) / nThreads;
@@ -244,7 +253,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                             upper_bounds_buffer, link_map[prev_step], step,
                             n_max_candidates, updated_params_buffer,
                             updated_liveness_buffer, link_map[step],
-                            n_candidates_device.get()});
+                            track_state_map[step], n_candidates_device.get()});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -325,16 +334,30 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         n_candidates_per_step, m_mr.main, m_mr.host);
     m_copy.setup(links_buffer)->ignore();
 
-    // Copy link map to link buffer
+    // Create track state buffer
+    vecmem::data::jagged_vector_buffer<track_state<default_algebra>> track_states_buffer(
+        n_candidates_per_step, m_mr.main, m_mr.host);
+    m_copy.setup(track_states_buffer)->ignore();
+
+    // Copy links and track states to buffer
     const auto n_steps = n_candidates_per_step.size();
     for (unsigned int it = 0; it < n_steps; it++) {
 
-        vecmem::device_vector<candidate_link> in(link_map[it]);
-        vecmem::device_vector<candidate_link> out(
+        vecmem::device_vector<candidate_link> in_links(link_map[it]);
+        vecmem::device_vector<candidate_link> out_links(
             *(links_buffer.host_ptr() + it));
 
-        thrust::copy(thrust::cuda::par.on(stream), in.begin(),
-                     in.begin() + n_candidates_per_step[it], out.begin());
+        thrust::copy(thrust::cuda::par.on(stream), in_links.begin(),
+                     in_links.begin() + n_candidates_per_step[it],
+                     out_links.begin());
+
+        vecmem::device_vector<track_state<default_algebra>> in_states(track_state_map[it]);
+        vecmem::device_vector<track_state<default_algebra>> out_states(
+            *(track_states_buffer.host_ptr() + it));
+
+        thrust::copy(thrust::cuda::par.on(stream), in_states.begin(),
+                     in_states.begin() + n_candidates_per_step[it],
+                     out_states.begin());
     }
 
     /*****************************************************************
@@ -372,9 +395,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
 
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            m_cfg, {measurements, seeds_buffer, links_buffer, tips_buffer,
-                    track_candidates_buffer, valid_indices_buffer,
-                    n_valid_tracks_device.get()});
+            m_cfg, {measurements, seeds_buffer, links_buffer,
+                    track_states_buffer, tips_buffer, track_candidates_buffer,
+                    valid_indices_buffer, n_valid_tracks_device.get()});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         // Global counter object: Device -> Host

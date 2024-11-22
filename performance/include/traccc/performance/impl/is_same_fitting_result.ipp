@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/fitting_result.hpp"
 
 namespace traccc::details {
 

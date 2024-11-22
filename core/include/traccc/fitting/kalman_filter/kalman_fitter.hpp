@@ -122,8 +122,7 @@ class kalman_fitter {
     ///
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
-    template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE void fit(const seed_parameters_t& seed_params,
+    TRACCC_HOST_DEVICE void fit(const track_summary& trk_summary,
                                 state& fitter_state) {
 
         // Run the kalman filtering for a given number of iterations
@@ -133,7 +132,7 @@ class kalman_fitter {
             fitter_state.m_fit_actor_state.reset();
 
             if (i == 0) {
-                filter(seed_params, fitter_state);
+                filter(trk_summary.seed, fitter_state);
             }
             // From the second iteration, seed parameter is the smoothed track
             // parameter at the first surface
@@ -226,8 +225,10 @@ class kalman_fitter {
         auto& fit_res = fitter_state.m_fit_res;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
-        // Fit parameter = smoothed track parameter at the first surface
-        fit_res.fit_params = track_states[0].smoothed();
+        // Fit parameter = smoothed track parameter at the first and last
+        // surface
+        fit_res.fitted_params_initial = track_states.at(0).smoothed();
+        fit_res.fitted_params_final = track_states.back().smoothed();
 
         for (const auto& trk_state : track_states) {
 
