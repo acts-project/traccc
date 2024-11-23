@@ -31,6 +31,9 @@
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
+// Indicators include(s).
+#include <indicators/progress_bar.hpp>
+
 // System include(s).
 #include <cstdlib>
 #include <ctime>
@@ -132,6 +135,14 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     // Cold Run events. To discard any "initialisation issues" in the
     // measurements.
     {
+        // Set up a progress bar for the warm-up processing.
+        indicators::ProgressBar progress_bar{
+            indicators::option::BarWidth{50},
+            indicators::option::PrefixText{"Warm-up processing "},
+            indicators::option::ShowPercentage{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::MaxProgress{throughput_opts.cold_run_events}};
+
         // Measure the time of execution.
         performance::timer t{"Warm-up processing", times};
 
@@ -144,6 +155,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();
+            progress_bar.tick();
         }
     }
 
@@ -151,6 +163,14 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     rec_track_params = 0;
 
     {
+        // Set up a progress bar for the event processing.
+        indicators::ProgressBar progress_bar{
+            indicators::option::BarWidth{50},
+            indicators::option::PrefixText{"Event processing   "},
+            indicators::option::ShowPercentage{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::MaxProgress{throughput_opts.processed_events}};
+
         // Measure the total time of execution.
         performance::timer t{"Event processing", times};
 
@@ -163,6 +183,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();
+            progress_bar.tick();
         }
     }
 
