@@ -351,6 +351,21 @@ if( TRACCC_SETUP_BENCHMARKS )
    endif()
 endif()
 
+# Set up indicators.
+option( TRACCC_SETUP_INDICATORS
+   "Set up the indicators target(s) explicitly" ${TRACCC_BUILD_EXAMPLES} )
+option( TRACCC_USE_SYSTEM_INDICATORS
+   "Pick up an existing installation of indicators from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_INDICATORS )
+   if( TRACCC_USE_SYSTEM_INDICATORS )
+      find_package( indicators REQUIRED )
+   else()
+      add_subdirectory( extern/indicators )
+   endif()
+endif()
+
+
 option( TRACCC_ENABLE_NVTX_PROFILING
         "Use instrument functions to enable fine grained profiling" FALSE )
 
