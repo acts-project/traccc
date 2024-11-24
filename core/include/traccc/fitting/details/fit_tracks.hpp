@@ -51,7 +51,7 @@ track_state_container_types::host fit_tracks(
 
         // Make a vector of track states for this track.
         vecmem::vector<track_state<typename fitter_t::algebra_type> >
-            input_states;
+            input_states{&mr};
         input_states.reserve(track_candidates.get_items()[i].size());
         for (auto& measurement : track_candidates.get_items()[i]) {
             input_states.emplace_back(measurement);

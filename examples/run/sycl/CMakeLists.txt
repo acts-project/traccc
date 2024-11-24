@@ -39,13 +39,13 @@ target_link_libraries( traccc_examples_sycl
           traccc::core traccc::device_common traccc::sycl )
 
 traccc_add_executable( throughput_st_sycl "throughput_st.cpp"
-   LINK_LIBRARIES vecmem::core vecmem::sycl detray::detectors detray::io
-                  traccc::io traccc::performance
+   LINK_LIBRARIES indicators::indicators vecmem::core vecmem::sycl
+                  detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::sycl
                   traccc::options traccc_examples_sycl )
 
 traccc_add_executable( throughput_mt_sycl "throughput_mt.cpp"
-   LINK_LIBRARIES TBB::tbb vecmem::core vecmem::sycl detray::detectors detray::io
-                  traccc::io traccc::performance
+   LINK_LIBRARIES indicators::indicators TBB::tbb vecmem::core vecmem::sycl
+                  detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::sycl
                   traccc::options traccc_examples_sycl )

@@ -50,6 +50,9 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
+// Indicators include(s).
+#include <indicators/progress_bar.hpp>
+
 // System include(s).
 #include <atomic>
 #include <cstdlib>
@@ -108,17 +111,22 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         performance::timer t{"File reading", times};
         // Set up the container for the input events.
         input.reserve(input_opts.events);
-        for (std::size_t i = 0; i < input_opts.events; ++i) {
+        const std::size_t first_event = input_opts.skip;
+        const std::size_t last_event = input_opts.skip + input_opts.events;
+        for (std::size_t i = first_event; i < last_event; ++i) {
             input.push_back({uncached_host_mr});
         }
         // Read the input cells into memory in parallel.
         tbb::parallel_for(
-            tbb::blocked_range<std::size_t>{0u, input_opts.events},
+            tbb::blocked_range<std::size_t>{first_event, last_event},
             [&](const tbb::blocked_range<std::size_t>& event_range) {
                 for (std::size_t event = event_range.begin();
                      event != event_range.end(); ++event) {
-                    io::read_cells(input.at(event), event, input_opts.directory,
-                                   &det_descr, input_opts.format);
+                    static constexpr bool DEDUPLICATE = true;
+                    io::read_cells(input.at(event - input_opts.skip), event,
+                                   input_opts.directory, &det_descr,
+                                   input_opts.format, DEDUPLICATE,
+                                   input_opts.use_acts_geom_source);
                 }
             });
     }
@@ -188,6 +196,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     // Cold Run events. To discard any "initialisation issues" in the
     // measurements.
     {
+        // Set up a progress bar for the warm-up processing.
+        indicators::ProgressBar progress_bar{
+            indicators::option::BarWidth{50},
+            indicators::option::PrefixText{"Warm-up processing "},
+            indicators::option::ShowPercentage{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::MaxProgress{throughput_opts.cold_run_events}};
+
         // Measure the time of execution.
         performance::timer t{"Warm-up processing", times};
 
@@ -205,6 +221,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                         tbb::this_task_arena::current_thread_index()))(
                                                        input[event])
                                                    .size());
+                    progress_bar.tick();
                 });
             });
         }
@@ -217,6 +234,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     rec_track_params = 0;
 
     {
+        // Set up a progress bar for the event processing.
+        indicators::ProgressBar progress_bar{
+            indicators::option::BarWidth{50},
+            indicators::option::PrefixText{"Event processing   "},
+            indicators::option::ShowPercentage{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::MaxProgress{throughput_opts.processed_events}};
+
         // Measure the total time of execution.
         performance::timer t{"Event processing", times};
 
@@ -234,6 +259,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                         tbb::this_task_arena::current_thread_index()))(
                                                        input[event])
                                                    .size());
+                    progress_bar.tick();
                 });
             });
         }

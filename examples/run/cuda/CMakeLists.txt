@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -37,13 +37,13 @@ target_link_libraries( traccc_examples_cuda
           traccc::core traccc::device_common traccc::cuda )
 
 traccc_add_executable( throughput_st_cuda "throughput_st.cpp"
-   LINK_LIBRARIES vecmem::core vecmem::cuda detray::detectors detray::io
-                  traccc::io traccc::performance
+   LINK_LIBRARIES indicators::indicators vecmem::core vecmem::cuda
+                  detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options traccc_examples_cuda )
 
 traccc_add_executable( throughput_mt_cuda "throughput_mt.cpp"
-   LINK_LIBRARIES TBB::tbb vecmem::core vecmem::cuda detray::detectors detray::io
-                  traccc::io traccc::performance
+   LINK_LIBRARIES indicators::indicators TBB::tbb vecmem::core vecmem::cuda
+                  detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options traccc_examples_cuda )
