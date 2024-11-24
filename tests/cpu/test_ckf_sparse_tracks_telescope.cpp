@@ -209,43 +209,39 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation0, CkfSparseTrackTelescopeTests,
-    ::testing::Values(std::make_tuple("telescope_single_tracks",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 200.f, 200.f},
-                                      std::array<scalar, 2u>{1.f, 1.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 1, 5000, false)));
+    ::testing::Values(std::make_tuple(
+        "telescope_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 1, 5000,
+        false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation1, CkfSparseTrackTelescopeTests,
-    ::testing::Values(std::make_tuple("telescope_double_tracks",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 200.f, 200.f},
-                                      std::array<scalar, 2u>{1.f, 1.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 2, 2500, false)));
+    ::testing::Values(std::make_tuple(
+        "telescope_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 2500,
+        false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation2, CkfSparseTrackTelescopeTests,
-    ::testing::Values(std::make_tuple("telescope_quadra_tracks",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 200.f, 200.f},
-                                      std::array<scalar, 2u>{1.f, 1.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 4, 1250, false)));
+    ::testing::Values(std::make_tuple(
+        "telescope_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 4, 1250,
+        false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation3, CkfSparseTrackTelescopeTests,
-    ::testing::Values(std::make_tuple("telescope_decade_tracks",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 200.f, 200.f},
-                                      std::array<scalar, 2u>{1.f, 1.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 10, 500, false)));
+    ::testing::Values(std::make_tuple(
+        "telescope_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500,
+        false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation4, CkfSparseTrackTelescopeTests,
@@ -255,4 +251,5 @@ INSTANTIATE_TEST_SUITE_P(
                                       std::array<scalar, 2u>{1.f, 1.f},
                                       std::array<scalar, 2u>{0.f, 0.f},
                                       std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 10, 500, true)));
+                                      detray::muon<scalar>(), 10, 500, true,
+                                      20.f, 9u, 20.f)));
