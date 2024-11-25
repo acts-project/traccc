@@ -7,15 +7,19 @@
 
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/clusterization/spacepoint_formation_algorithm.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/pixel_data.hpp"
 #include "traccc/io/read_cells.hpp"
-#include "traccc/io/read_digitization_config.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
+#include "traccc/options/clusterization.hpp"
+#include "traccc/options/detector.hpp"
+#include "traccc/options/input_data.hpp"
+#include "traccc/options/program_options.hpp"
+#include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -35,66 +39,73 @@
 
 namespace po = boost::program_options;
 
-int par_run(const std::string &detector_file,
-            const std::string &digi_config_file, const std::string &cells_dir,
-            unsigned int events) {
-
-    // Read the surface transforms. We can't use structured bindings for
-    // the return value of read_geometry(...), because the old Intel compiler
-    // used in the CI, when using OpenMP, crashes on such code. :-(
-    auto geom_pair = traccc::io::read_geometry(detector_file);
-    auto &surface_transforms = geom_pair.first;
-
-    // Read the digitization configuration file
-    auto digi_cfg = traccc::io::read_digitization_config(digi_config_file);
+int par_run(const traccc::opts::input_data& input_opts,
+            const traccc::opts::detector& detector_opts,
+            const traccc::opts::clusterization& /*clusterization_opts*/) {
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource resource;
 
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host det_descr{resource};
+    traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
+    traccc::silicon_detector_description::data det_descr_data{
+        vecmem::get_data(det_descr)};
+
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host detector{resource};
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            detector, resource, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
+    }
+
+    // Type definitions
+    using spacepoint_formation_algorithm =
+        traccc::host::silicon_pixel_spacepoint_formation_algorithm;
+
     // Algorithms
     traccc::host::clusterization_algorithm ca(resource);
-    traccc::host::spacepoint_formation_algorithm sf(resource);
+    spacepoint_formation_algorithm sf(resource);
 
     // Output stats
-    uint64_t n_modules = 0;
     uint64_t n_cells = 0;
     uint64_t n_measurements = 0;
     uint64_t n_spacepoints = 0;
 
-#pragma omp parallel for reduction(+ : n_modules, n_cells, n_measurements, \
-                                       n_spacepoints)
+#pragma omp parallel for reduction(+ : n_cells, n_measurements, n_spacepoints)
     // Loop over events
-    for (unsigned int event = 0; event < events; ++event) {
+    for (std::size_t event = input_opts.skip;
+         event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::io::cell_reader_output readOut(&resource);
-        traccc::io::read_cells(readOut, event, cells_dir,
-                               traccc::data_format::csv, &surface_transforms,
-                               &digi_cfg);
-        traccc::cell_collection_types::host &cells_per_event = readOut.cells;
-        traccc::cell_module_collection_types::host &modules_per_event =
-            readOut.modules;
+        traccc::edm::silicon_cell_collection::host cells_per_event{resource};
+        static constexpr bool DEDUPLICATE = true;
+        traccc::io::read_cells(cells_per_event, event, input_opts.directory,
+                               &det_descr, input_opts.format, DEDUPLICATE,
+                               input_opts.use_acts_geom_source);
 
         /*-------------------
             Clusterization
           -------------------*/
 
-        auto measurements_per_event = ca(vecmem::get_data(cells_per_event),
-                                         vecmem::get_data(modules_per_event));
+        auto measurements_per_event =
+            ca(vecmem::get_data(cells_per_event), det_descr_data);
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
         auto spacepoints_per_event =
-            sf(vecmem::get_data(measurements_per_event),
-               vecmem::get_data(modules_per_event));
+            sf(detector, vecmem::get_data(measurements_per_event));
 
         /*----------------------------
           Statistics
           ----------------------------*/
 
-        n_modules += modules_per_event.size();
         n_cells += cells_per_event.size();
         n_measurements += measurements_per_event.size();
         n_spacepoints += spacepoints_per_event.size();
@@ -103,8 +114,7 @@ int par_run(const std::string &detector_file,
 #pragma omp critical
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_cells << " cells from " << n_modules
-              << " modules" << std::endl;
+    std::cout << "- read    " << n_cells << " cells" << std::endl;
     std::cout << "- created " << n_measurements << " measurements. "
               << std::endl;
     std::cout << "- created " << n_spacepoints << " spacepoints. " << std::endl;
@@ -114,52 +124,20 @@ int par_run(const std::string &detector_file,
 
 // The main routine
 //
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 
-    // Set up the program options.
-    po::options_description desc("Allowed options");
-    desc.add_options()("help,h", "Give some help with the program's options");
-    desc.add_options()("detector_file", po::value<std::string>()->required(),
-                       "specify detector file");
-    desc.add_options()("digitization_config_file",
-                       po::value<std::string>()->required(),
-                       "specify digitization configuration file");
-    desc.add_options()("cell_directory", po::value<std::string>()->required(),
-                       "specify the directory of cell files");
-    desc.add_options()("events", po::value<int>()->required(),
-                       "number of events");
-
-    // Interpret the program options.
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    // Print a help message if the user asked for it.
-    if (vm.count("help")) {
-        std::cout << desc << std::endl;
-        return 0;
-    }
-
-    // Handle any and all errors.
-    try {
-        po::notify(vm);
-    } catch (const std::exception &ex) {
-        std::cerr << "Couldn't interpret command line options because of:\n\n"
-                  << ex.what() << "\n\n"
-                  << desc << std::endl;
-        return 1;
-    }
-
-    auto detector_file = vm["detector_file"].as<std::string>();
-    auto digi_config_file = vm["digitization_config_file"].as<std::string>();
-    auto cell_directory = vm["cell_directory"].as<std::string>();
-    auto events = vm["events"].as<int>();
-
-    std::cout << "Running " << argv[0] << " " << detector_file << " "
-              << cell_directory << " " << events << std::endl;
+    // Program options.
+    traccc::opts::detector detector_opts;
+    traccc::opts::input_data input_opts;
+    traccc::opts::clusterization clusterization_opts;
+    traccc::opts::program_options program_opts{
+        "Clusterization + Spacepoint Formation with OpenMP",
+        {detector_opts, input_opts, clusterization_opts},
+        argc,
+        argv};
 
     auto start = std::chrono::system_clock::now();
-    auto result =
-        par_run(detector_file, digi_config_file, cell_directory, events);
+    const int result = par_run(input_opts, detector_opts, clusterization_opts);
     auto end = std::chrono::system_clock::now();
 
     std::chrono::duration<double> diff = end - start;

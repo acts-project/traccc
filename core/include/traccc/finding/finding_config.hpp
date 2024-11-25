@@ -40,7 +40,7 @@ struct finding_config {
     unsigned int max_step_counts_for_next_surface = 100;
 
     /// Maximum Chi-square that is allowed for branching
-    float chi2_max = 30.f;
+    float chi2_max = 10.f;
 
     /// Propagation configuration
     detray::propagation::config propagation{};
@@ -48,17 +48,6 @@ struct finding_config {
     /// Particle hypothesis
     detray::pdg_particle<traccc::scalar> ptc_hypothesis =
         detray::muon<traccc::scalar>();
-
-    /****************************
-     *  GPU-specfic parameters
-     ****************************/
-    /// The number of measurements to be iterated per thread
-    unsigned int n_measurements_per_thread = 8;
-
-    /// Max number of candidates per seed used for navigation buffer creation
-    /// @NOTE: This is supposed to be larger than (at least equal to)
-    /// max_num_branches_per_seed
-    unsigned int navigation_buffer_size_scaler = 20;
 };
 
 }  // namespace traccc

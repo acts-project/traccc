@@ -12,39 +12,55 @@
 namespace traccc::details {
 
 TRACCC_HOST_DEVICE
-inline scalar signal_cell_modelling(scalar signal_in,
-                                    const cell_module& /*mod*/) {
+inline scalar signal_cell_modelling(
+    scalar signal_in, const silicon_detector_description::const_device&) {
     return signal_in;
 }
 
-TRACCC_HOST_DEVICE
-inline vector2 position_from_cell(const cell& cell, const cell_module& mod) {
+template <typename T>
+TRACCC_HOST_DEVICE inline vector2 position_from_cell(
+    const edm::silicon_cell<T>& cell,
+    const silicon_detector_description::const_device& det_descr) {
 
-    // Retrieve the specific values based on module idx
-    return {mod.pixel.min_corner_x +
-                (scalar{0.5} + cell.channel0) * mod.pixel.pitch_x,
-            mod.pixel.min_corner_y +
-                (scalar{0.5} + cell.channel1) * mod.pixel.pitch_y};
+    // The detector description for the module that the cell is on.
+    const auto module_dd = det_descr.at(cell.module_index());
+    // Calculate / construct the local cell position.
+    return {module_dd.reference_x() +
+                (scalar{0.5f} + static_cast<scalar>(cell.channel0())) *
+                    module_dd.pitch_x(),
+            module_dd.reference_y() +
+                (scalar{0.5f} + static_cast<scalar>(cell.channel1())) *
+                    module_dd.pitch_y()};
 }
 
+template <typename T>
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
-    const cell_collection_types::const_device& cluster, const cell_module& mod,
-    point2& mean, point2& var, scalar& totalWeight) {
-    point2 offset{0., 0.};
+    const edm::silicon_cluster<T>& cluster,
+    const edm::silicon_cell_collection::const_device& cells,
+    const silicon_detector_description::const_device& det_descr, point2& mean,
+    point2& var, scalar& totalWeight) {
+
+    point2 offset{0.f, 0.f};
     bool first_processed = false;
 
-    // Loop over the cells of the cluster.
-    for (const cell& cell : cluster) {
+    // Loop over the cell indices of the cluster.
+    for (const unsigned int cell_idx : cluster.cell_indices()) {
+
+        // The cell object.
+        const auto cell = cells.at(cell_idx);
 
         // Translate the cell readout value into a weight.
-        const scalar weight = signal_cell_modelling(cell.activation, mod);
+        const scalar weight =
+            signal_cell_modelling(cell.activation(), det_descr);
 
         // Only consider cells over a minimum threshold.
-        if (weight > mod.threshold) {
+        if (weight > det_descr.threshold().at(cell.module_index())) {
+
+            // Update all output properties with this cell.
             totalWeight += weight;
             scalar weight_factor = weight / totalWeight;
 
-            point2 cell_position = position_from_cell(cell, mod);
+            point2 cell_position = position_from_cell(cell, det_descr);
 
             if (!first_processed) {
                 offset = cell_position;
@@ -67,11 +83,13 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     mean = mean + offset;
 }
 
+template <typename T>
 TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement_collection_types::device& measurements,
-    std::size_t measurement_index,
-    const cell_collection_types::const_device& cluster, const cell_module& mod,
-    const unsigned int mod_link) {
+    measurement_collection_types::device::size_type index,
+    const edm::silicon_cluster<T>& cluster,
+    const edm::silicon_cell_collection::const_device& cells,
+    const silicon_detector_description::const_device& det_descr) {
 
     // To calculate the mean and variance with high numerical stability
     // we use a weighted variant of Welford's algorithm. This is a
@@ -83,35 +101,51 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     // [2] The Art of Computer Programming, Donald E. Knuth, second
     //     edition, chapter 4.2.2.
 
+    // Security checks.
+    assert(cluster.cell_indices().empty() == false);
+    assert([&]() {
+        const unsigned int module_idx =
+            cells.module_index().at(cluster.cell_indices().front());
+        for (const unsigned int cell_idx : cluster.cell_indices()) {
+            if (cells.module_index().at(cell_idx) != module_idx) {
+                return false;
+            }
+        }
+        return true;
+    }() == true);
+
     // Calculate the cluster properties
     scalar totalWeight = 0.f;
     point2 mean{0.f, 0.f}, var{0.f, 0.f};
-    calc_cluster_properties(cluster, mod, mean, var, totalWeight);
+    calc_cluster_properties(cluster, cells, det_descr, mean, var, totalWeight);
 
     assert(totalWeight > 0.f);
 
     // Access the measurement in question.
-    measurement& m = measurements[measurement_index];
+    measurement& m = measurements[index];
 
-    m.module_link = mod_link;
-    m.surface_link = mod.surface_link;
+    // The index of the module the cluster is on.
+    const unsigned int module_idx =
+        cells.module_index().at(cluster.cell_indices().front());
+    // The detector description for the module that the cluster is on.
+    const auto module_dd = det_descr.at(module_idx);
+
+    // Fill the measurement object.
+    m.surface_link = module_dd.geometry_id();
     // normalize the cell position
     m.local = mean;
 
     // plus pitch^2 / 12
-    const auto pitch = mod.pixel.get_pitch();
-    m.variance = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
-                              pitch[1] * pitch[1] / static_cast<scalar>(12.)};
-    // @todo add variance estimation
+    const scalar pitch_x = module_dd.pitch_x();
+    const scalar pitch_y = module_dd.pitch_y();
+    m.variance = var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
+                              pitch_y * pitch_y / static_cast<scalar>(12.)};
 
     // For the ambiguity resolution algorithm, give a unique measurement ID
-    m.measurement_id = measurement_index;
+    m.measurement_id = index;
 
-    // Adjust the measurement object for 1D surfaces.
-    if (mod.pixel.dimension == 1) {
-        m.meas_dim = 1;
-        m.local[1] = 0.f;
-    }
+    // Set the measurement dimensionality.
+    m.meas_dim = module_dd.dimensions();
 }
 
 }  // namespace traccc::details

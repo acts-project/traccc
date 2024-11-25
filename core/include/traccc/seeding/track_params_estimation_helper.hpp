@@ -39,15 +39,18 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// @param bfield is the magnetic field
 /// @param mass is the mass of particle
 template <typename spacepoint_collection_t>
-inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
-    const spacepoint_collection_t& sp_collection, const seed& seed,
-    const vector3& bfield, const scalar mass) {
+inline TRACCC_HOST_DEVICE bound_vector
+seed_to_bound_vector(const spacepoint_collection_t& sp_collection,
+                     const seed& seed, const vector3& bfield) {
 
     bound_vector params;
 
-    const auto& spB = sp_collection.at(seed.spB_link);
-    const auto& spM = sp_collection.at(seed.spM_link);
-    const auto& spT = sp_collection.at(seed.spT_link);
+    const auto& spB =
+        sp_collection.at(static_cast<unsigned int>(seed.spB_link));
+    const auto& spM =
+        sp_collection.at(static_cast<unsigned int>(seed.spM_link));
+    const auto& spT =
+        sp_collection.at(static_cast<unsigned int>(seed.spT_link));
 
     darray<vector3, 3> sp_global_positions;
     sp_global_positions[0] = spB.global;
@@ -110,32 +113,10 @@ inline TRACCC_HOST_DEVICE bound_vector seed_to_bound_vector(
     scalar qOverPt = 1.f / (R * getter::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
     getter::element(params, e_bound_qoverp, 0) =
-        qOverPt / getter::perp(vector2{1., invTanTheta});
+        qOverPt / getter::perp(vector2{1.f, invTanTheta});
 
-    // The estimated momentum, and its projection along the magnetic
-    // field diretion
-    scalar pInGeV =
-        math::fabs(1.0f / getter::element(params, e_bound_qoverp, 0));
-    scalar pzInGeV = 1.0f / math::fabs(qOverPt) * invTanTheta;
-    scalar massInGeV = mass / unit<scalar>::GeV;
-
-    // The estimated velocity, and its projection along the magnetic
-    // field diretion
-    scalar v = pInGeV / getter::perp(vector2{pInGeV, massInGeV});
-    scalar vz = pzInGeV / getter::perp(vector2{pInGeV, massInGeV});
-    // The z coordinate of the bottom space point along the magnetic
-    // field direction
-    scalar pathz =
-        vector::dot(sp_global_positions[0], bfield) / getter::norm(bfield);
-
-    // The estimated time (use path length along magnetic field only if
-    // it's not zero)
-    if (pathz != 0) {
-        getter::element(params, e_bound_time, 0) = pathz / vz;
-    } else {
-        getter::element(params, e_bound_time, 0) =
-            getter::norm(sp_global_positions[0]) / v;
-    }
+    // Make sure the time is a finite value
+    assert(std::isfinite(getter::element(params, e_bound_time, 0)));
 
     return params;
 }

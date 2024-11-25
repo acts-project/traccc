@@ -19,9 +19,9 @@
 
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_wire_chamber.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/detectors/build_wire_chamber.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -62,7 +62,7 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // Create the toy geometry
     const auto [det, name_map] =
-        detray::create_wire_chamber(host_mr, wire_chamber_cfg);
+        detray::build_wire_chamber(host_mr, wire_chamber_cfg);
 
     /***************************
      * Generate simulation data

@@ -13,19 +13,24 @@
 #include "traccc/edm/measurement.hpp"
 
 namespace traccc::device {
+struct make_barcode_sequence_payload {
+    /**
+     * @brief View object to the vector of unique measurement indices
+     */
+    measurement_collection_types::const_view uniques_view;
+
+    /**
+     * @brief View object to the output vector of barcodes
+     */
+    vecmem::data::vector_view<detray::geometry::barcode> barcodes_view;
+};
 
 /// Function filling the barcode sequence
 ///
 /// @param[in] globalIndex   The index of the current thread
-/// @param[in] uniques_view   Measurement container view object
-/// @param[out] barcodes_view   Unsorted module map of <module ID, header ID>
-///
+/// @param[inout] payload      The function call payload
 TRACCC_DEVICE inline void make_barcode_sequence(
-    std::size_t globalIndex,
-    measurement_collection_types::const_view uniques_view,
-    vecmem::data::vector_view<detray::geometry::barcode> barcodes_view);
-
+    std::size_t globalIndex, const make_barcode_sequence_payload& payload);
 }  // namespace traccc::device
 
-// Include the implementation.
-#include "traccc/finding/device/impl/make_barcode_sequence.ipp"
+#include "./impl/make_barcode_sequence.ipp"

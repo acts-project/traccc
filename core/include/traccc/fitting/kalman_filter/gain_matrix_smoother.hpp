@@ -107,6 +107,8 @@ struct gain_matrix_smoother {
 
         cur_state.smoothed().set_vector(smt_vec);
         cur_state.smoothed().set_covariance(smt_cov);
+        // Wrap the phi in the range of [-pi, pi]
+        wrap_phi(cur_state.smoothed());
 
         matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
 

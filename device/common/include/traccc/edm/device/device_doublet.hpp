@@ -19,7 +19,8 @@ struct device_doublet {
     /// bottom (or top) spacepoint location in internal spacepoint container
     sp_location sp2;
 
-    using link_type = device::doublet_counter_collection_types::host::size_type;
+    using link_type =
+        device::doublet_counter_collection_types::device::size_type;
     /// Link to doublet counter where the middle spacepoint is stored
     link_type counter_link;
 };

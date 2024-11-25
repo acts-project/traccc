@@ -8,7 +8,7 @@
 
 // Project include(s).
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/io/read_cells.hpp"
 
 // VecMem include(s).
@@ -23,13 +23,14 @@
 namespace {
 double delta_ms(std::chrono::high_resolution_clock::time_point s,
                 std::chrono::high_resolution_clock::time_point e) {
-    return std::chrono::duration_cast<std::chrono::microseconds>(e - s)
-               .count() /
+    return static_cast<double>(
+               std::chrono::duration_cast<std::chrono::microseconds>(e - s)
+                   .count()) /
            1000.0;
 }
 }  // namespace
 
-void print_statistics(const traccc::cell_collection_types::host& data) {
+void print_statistics(const traccc::edm::silicon_cell_collection::host& data) {
     static std::vector<std::size_t> bins_edges = {
         0,   1,   2,    3,    4,    6,    8,    11,   16,
         23,  32,  45,   64,   91,   128,  181,  256,  362,
@@ -42,7 +43,7 @@ void print_statistics(const traccc::cell_collection_types::host& data) {
     unsigned int last = std::numeric_limits<unsigned int>::max();
     std::size_t count = 0;
     for (std::size_t i = 0; i < data.size(); ++i) {
-        if (last == data.at(i).module_link) {
+        if (last == data.module_index().at(i)) {
             count++;
         } else {
             for (std::size_t j = 0; j < bins_edges.size(); ++j) {
@@ -53,7 +54,7 @@ void print_statistics(const traccc::cell_collection_types::host& data) {
                 }
             }
             count = 1;
-            last = data.at(i).module_link;
+            last = data.module_index().at(i);
         }
     }
 
@@ -84,8 +85,8 @@ void print_statistics(const traccc::cell_collection_types::host& data) {
 }
 
 void run_on_event(traccc::host::sparse_ccl_algorithm& cc,
-                  traccc::cell_collection_types::host& data) {
-    traccc::cluster_container_types::host clusters = cc(vecmem::get_data(data));
+                  traccc::edm::silicon_cell_collection::host& data) {
+    auto clusters = cc(vecmem::get_data(data));
 }
 
 int main(int argc, char* argv[]) {
@@ -105,9 +106,8 @@ int main(int argc, char* argv[]) {
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
-    traccc::io::cell_reader_output readOut(&mem);
-    traccc::io::read_cells(readOut, event_file);
-    traccc::cell_collection_types::host data = readOut.cells;
+    traccc::edm::silicon_cell_collection::host data(mem);
+    traccc::io::read_cells(data, event_file);
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 

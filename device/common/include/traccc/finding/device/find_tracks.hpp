@@ -10,57 +10,134 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/barrier.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_state.hpp"
+#include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/finding_config.hpp"
+#include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 
 // Thrust include(s)
 #include <thrust/binary_search.h>
 
 namespace traccc::device {
+template <typename detector_t>
+struct find_tracks_payload {
+    /**
+     * @brief View object to the tracking detector description
+     */
+    typename detector_t::view_type det_data;
+
+    /**
+     * @brief View object to the vector of bound track parameters
+     *
+     * @warning Measurements on the same surface must be adjacent
+     */
+    measurement_collection_types::const_view measurements_view;
+
+    /**
+     * @brief View object to the vector of track parameters
+     */
+    bound_track_parameters_collection_types::const_view in_params_view;
+
+    /**
+     * @brief View object to the vector of boolean-like integers describing the
+     * liveness of each parameter
+     */
+    vecmem::data::vector_view<const unsigned int> in_params_liveness_view;
+
+    /**
+     * @brief The total number of input parameters
+     */
+    const unsigned int n_in_params;
+
+    /**
+     * @brief View object to the vector of barcodes for each measurement
+     */
+    vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view;
+
+    /**
+     * @brief View object to the vector of upper bounds of measurement indices
+     * per surface
+     */
+    vecmem::data::vector_view<const unsigned int> upper_bounds_view;
+
+    /**
+     * @brief View object to the link vector of the previous step
+     */
+    vecmem::data::vector_view<const candidate_link> prev_links_view;
+
+    /**
+     * @brief The current step identifier
+     */
+    const unsigned int step;
+
+    /**
+     * @brief The maximum number of new tracks to find
+     */
+    const unsigned int n_max_candidates;
+
+    /**
+     * @brief View object to the output track parameter vector
+     */
+    bound_track_parameters_collection_types::view out_params_view;
+
+    /**
+     * @brief View object to the output track parameter liveness vector
+     */
+    vecmem::data::vector_view<unsigned int> out_params_liveness_view;
+
+    /**
+     * @brief View object to the output candidate links
+     */
+    vecmem::data::vector_view<candidate_link> links_view;
+
+    /**
+     * @brief Pointer to the total of number of candidates; to be set to zero
+     * before launching the kernel
+     */
+    unsigned int* n_total_candidates;
+};
+
+struct find_tracks_shared_payload {
+    /**
+     * @brief Shared-memory vector with the number of measurements found per
+     * track
+     */
+    unsigned int* shared_num_candidates;
+
+    /**
+     * @brief Shared-memory vector of measurement candidats with ID and
+     * original track parameter identifier
+     *
+     * @note Length is always twice the block size
+     */
+    std::pair<unsigned int, unsigned int>* shared_candidates;
+
+    /**
+     * @brief Shared-memory atomic variable to track the size of
+     * \ref shared_candidates
+     */
+    unsigned int& shared_candidates_size;
+};
 
 /// Function for combinatorial finding.
 /// If the chi2 of the measurement < chi2_max, its measurement index and the
 /// index of the link from the previous step are added to the link container.
 ///
-/// @param[in] globalIndex        The index of the current thread
+/// @param[in] thread_id          A thread identifier object
+/// @param[in] barrier            A block-wide barrier
 /// @param[in] cfg                Track finding config object
-/// @param[in] det_data           Detector view object
-/// @param[in] measurements_view  Measurements container view
-/// @param[in] upper_bounds_view  Upper bounds of measurements unique w.r.t
-/// barcode
-/// @param[in] in_params_view     Input parameters
-/// @param[in] n_measurements_prefix_sum_view  Prefix sum of the number of
-/// measurements per parameter
-/// @param[in] ref_meas_idx_view  The first index of measurements per parameter
-/// @param[in] prev_links_view    link container from the previous step
-/// @param[in] prev_param_to_link_view  param_to_link container from the
-/// previous step
-/// @param[in] step               Step index
-/// @param[in] n_max_candidates   Number of maximum candidates
-/// @param[out] out_params_view   Output parameters
-/// @param[out] n_candidates_view  Number of candidates per input parameter
-/// @param[out] links_view        link container for the current step
-/// @param[out] n_total_candidates  The number of total candidates for the
-/// current step
-///
-template <typename detector_t, typename config_t>
+/// @param[inout] payload         The global memory payload
+/// @param[inout] shared_payload  The shared memory payload
+template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t,
+          typename detector_t, typename config_t>
 TRACCC_DEVICE inline void find_tracks(
-    std::size_t globalIndex, const config_t cfg,
-    typename detector_t::view_type det_data,
-    measurement_collection_types::const_view measurements_view,
-    bound_track_parameters_collection_types::const_view in_params_view,
-    vecmem::data::vector_view<const unsigned int>
-        n_measurements_prefix_sum_view,
-    vecmem::data::vector_view<const unsigned int> ref_meas_idx_view,
-    vecmem::data::vector_view<const candidate_link> prev_links_view,
-    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
-    const unsigned int step, const unsigned int& n_max_candidates,
-    bound_track_parameters_collection_types::view out_params_view,
-    vecmem::data::vector_view<unsigned int> n_candidates_view,
-    vecmem::data::vector_view<candidate_link> links_view,
-    unsigned int& n_total_candidates);
-
+    thread_id_t& thread_id, barrier_t& barrier, const config_t cfg,
+    const find_tracks_payload<detector_t>& payload,
+    const find_tracks_shared_payload& shared_payload);
 }  // namespace traccc::device
 
-// Include the implementation.
-#include "traccc/finding/device/impl/find_tracks.ipp"
+#include "./impl/find_tracks.ipp"

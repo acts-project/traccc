@@ -45,7 +45,7 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     // Create buffer and view objects for prefix sum vector
     vecmem::data::vector_buffer<device::prefix_sum_element_t> prefix_sum_buff(
         totalSize, mr.main);
-    copy.setup(prefix_sum_buff);
+    copy.setup(prefix_sum_buff)->wait();
 
     // Fill the prefix sum vector
     static const unsigned int threadsPerBlock = 32;
@@ -76,7 +76,7 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     // Create buffer and view objects for prefix sum vector
     vecmem::data::vector_buffer<device::prefix_sum_element_t> prefix_sum_buff(
         totalSize, mr.main);
-    copy.setup(prefix_sum_buff);
+    copy.setup(prefix_sum_buff)->ignore();
 
     // Fill the prefix sum vector
     static const unsigned int threadsPerBlock = 32;

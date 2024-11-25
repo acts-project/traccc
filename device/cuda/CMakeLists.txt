@@ -42,18 +42,32 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/seeding_algorithm.cpp"
   "include/traccc/cuda/seeding/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.cu"
-  "include/traccc/cuda/seeding/experimental/spacepoint_formation.hpp"
-  "src/seeding/experimental/spacepoint_formation.cu"
+  "include/traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
+  "src/seeding/spacepoint_formation_algorithm.cu"
   # Clusterization
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"
   "include/traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
   "src/clusterization/measurement_sorting_algorithm.cu"
-  "include/traccc/cuda/clusterization/spacepoint_formation_algorithm.hpp"
-  "src/clusterization/spacepoint_formation_algorithm.cu"
+  "src/clusterization/kernels/ccl_kernel.cu"
+  "src/clusterization/kernels/ccl_kernel.cuh"
   # Finding
   "include/traccc/cuda/finding/finding_algorithm.hpp"
   "src/finding/finding_algorithm.cu"
+  "src/finding/kernels/make_barcode_sequence.cu"
+  "src/finding/kernels/make_barcode_sequence.cuh"
+  "src/finding/kernels/apply_interaction.cuh"
+  "src/finding/kernels/fill_sort_keys.cu"
+  "src/finding/kernels/fill_sort_keys.cuh"
+  "src/finding/kernels/prune_tracks.cu"
+  "src/finding/kernels/prune_tracks.cuh"
+  "src/finding/kernels/build_tracks.cu"
+  "src/finding/kernels/build_tracks.cuh"
+  "src/finding/kernels/find_tracks.cuh"
+  "src/finding/kernels/propagate_to_next_surface.cuh"
+  "src/finding/kernels/specializations/find_tracks_default_detector.cu"
+  "src/finding/kernels/specializations/apply_interaction_default_detector.cu"
+  "src/finding/kernels/specializations/propagate_to_next_surface_default_detector.cu"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")
@@ -91,7 +105,7 @@ endif()
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
-  PUBLIC traccc::core detray::core detray::utils vecmem::core covfie::core
+  PUBLIC traccc::core detray::core vecmem::core covfie::core
   PRIVATE CUDA::cudart traccc::Thrust traccc::device_common vecmem::cuda )
 
 # For CUDA 11 turn on separable compilation. This is necessary for using

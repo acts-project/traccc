@@ -8,142 +8,286 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/barrier.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_state.hpp"
+#include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 
-// System include(s).
-#include <limits>
+// Thrust include(s)
+#include <thrust/binary_search.h>
 
 namespace traccc::device {
 
-template <typename detector_t, typename config_t>
+template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t,
+          typename detector_t, typename config_t>
 TRACCC_DEVICE inline void find_tracks(
-    std::size_t globalIndex, const config_t cfg,
-    typename detector_t::view_type det_data,
-    measurement_collection_types::const_view measurements_view,
-    bound_track_parameters_collection_types::const_view in_params_view,
-    vecmem::data::vector_view<const unsigned int>
-        n_measurements_prefix_sum_view,
-    vecmem::data::vector_view<const unsigned int> ref_meas_idx_view,
-    vecmem::data::vector_view<const candidate_link> prev_links_view,
-    vecmem::data::vector_view<const unsigned int> prev_param_to_link_view,
-    const unsigned int step, const unsigned int& n_max_candidates,
-    bound_track_parameters_collection_types::view out_params_view,
-    vecmem::data::vector_view<unsigned int> n_candidates_view,
-    vecmem::data::vector_view<candidate_link> links_view,
-    unsigned int& n_total_candidates) {
+    thread_id_t& thread_id, barrier_t& barrier, const config_t cfg,
+    const find_tracks_payload<detector_t>& payload,
+    const find_tracks_shared_payload& shared_payload) {
 
-    // Detector
-    detector_t det(det_data);
+    /*
+     * Initialize the block-shared data; in particular, set the total size of
+     * the candidate buffer to zero, and then set the number of candidates for
+     * each parameter to zero.
+     */
+    if (thread_id.getLocalThreadIdX() == 0) {
+        shared_payload.shared_candidates_size = 0;
+    }
 
-    // Measurement
-    measurement_collection_types::const_device measurements(measurements_view);
+    shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] = 0;
 
-    // Input parameters
+    barrier.blockBarrier();
+
+    /*
+     * Initialize all of the device vectors from their vecmem views.
+     */
+    detector_t det(payload.det_data);
+    measurement_collection_types::const_device measurements(
+        payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
-        in_params_view);
+        payload.in_params_view);
+    vecmem::device_vector<const unsigned int> in_params_liveness(
+        payload.in_params_liveness_view);
+    vecmem::device_vector<const candidate_link> prev_links(
+        payload.prev_links_view);
+    bound_track_parameters_collection_types::device out_params(
+        payload.out_params_view);
+    vecmem::device_vector<unsigned int> out_params_liveness(
+        payload.out_params_liveness_view);
+    vecmem::device_vector<candidate_link> links(payload.links_view);
+    vecmem::device_atomic_ref<unsigned int> num_total_candidates(
+        *payload.n_total_candidates);
+    vecmem::device_vector<const detray::geometry::barcode> barcodes(
+        payload.barcodes_view);
+    vecmem::device_vector<const unsigned int> upper_bounds(
+        payload.upper_bounds_view);
 
-    // Previous links
-    vecmem::device_vector<const candidate_link> prev_links(prev_links_view);
+    /*
+     * Compute the last step ID, using a sentinel value if the current step is
+     * step 0.
+     */
+    const candidate_link::link_index_type::first_type previous_step =
+        (payload.step == 0)
+            ? std::numeric_limits<
+                  candidate_link::link_index_type::first_type>::max()
+            : payload.step - 1;
 
-    // Previous param_to_link
-    vecmem::device_vector<const unsigned int> prev_param_to_link(
-        prev_param_to_link_view);
+    const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
 
-    // Output parameters
-    bound_track_parameters_collection_types::device out_params(out_params_view);
+    /*
+     * Step 1 of this kernel is to determine which indices belong to which
+     * parameter. Because the measurements are guaranteed to be grouped, we can
+     * simply find the first measurement's index and the total number of
+     * indices.
+     *
+     * This entire step is executed on a one-thread-one-parameter model.
+     */
+    unsigned int init_meas = 0;
+    unsigned int num_meas = 0;
 
-    // Number of candidates per parameter
-    vecmem::device_vector<unsigned int> n_candidates(n_candidates_view);
+    if (in_param_id < payload.n_in_params &&
+        in_params_liveness.at(in_param_id) > 0u) {
+        /*
+         * Get the barcode of this thread's parameters, then find the first
+         * measurement that matches it.
+         */
+        const auto bcd = in_params.at(in_param_id).surface_link();
+        const auto lo = thrust::lower_bound(thrust::seq, barcodes.begin(),
+                                            barcodes.end(), bcd);
 
-    // Links
-    vecmem::device_vector<candidate_link> links(links_view);
+        /*
+         * If we cannot find any corresponding measurements, set the number of
+         * measurements to zero.
+         */
+        if (lo == barcodes.end()) {
+            init_meas = 0;
+        }
+        /*
+         * If measurements are found, use the previously (outside this kernel)
+         * computed upper bound array to compute the range of measurements for
+         * this thread.
+         */
+        else {
+            const auto bcd_id = std::distance(barcodes.begin(), lo);
 
-    // Prefix sum of the number of measurements per parameter
-    vecmem::device_vector<const unsigned int> n_measurements_prefix_sum(
-        n_measurements_prefix_sum_view);
+            init_meas = lo == barcodes.begin() ? 0u : upper_bounds[bcd_id - 1];
+            num_meas = upper_bounds[bcd_id] - init_meas;
+        }
+    }
 
-    // Reference (first) measurement index per parameter
-    vecmem::device_vector<const unsigned int> ref_meas_idx(ref_meas_idx_view);
+    /*
+     * Step 2 of this kernel involves processing the candidate measurements and
+     * updating them on their corresponding surface.
+     *
+     * Because the number of measurements per parameter can vary wildly
+     * (between 0 and 20), a naive one-thread-one-parameter model would incur a
+     * lot of thread divergence here. Instead, we use a load-balanced model in
+     * which threads process each others' measurements.
+     *
+     * The core idea is that each thread places its measurements into a shared
+     * pool. We keep track of how many measurements each thread has placed into
+     * the pool.
+     */
+    unsigned int curr_meas = 0;
 
-    // Last step ID
-    const int previous_step =
-        (step == 0) ? std::numeric_limits<int>::max() : step - 1;
+    /*
+     * This loop keeps running until all threads have processed all of their
+     * measurements.
+     */
+    while (barrier.blockOr(curr_meas < num_meas ||
+                           shared_payload.shared_candidates_size > 0)) {
+        /*
+         * The outer loop consists of three general components. The first
+         * components is that each thread starts to fill a shared buffer of
+         * measurements. The buffer is twice the size of the block to
+         * accomodate any overflow.
+         *
+         * Threads insert their measurements into the shared buffer until they
+         * either run out of measurements, or until the shared buffer is full.
+         */
+        for (; curr_meas < num_meas &&
+               shared_payload.shared_candidates_size < thread_id.getBlockDimX();
+             curr_meas++) {
+            unsigned int idx = vecmem::device_atomic_ref<unsigned int>(
+                                   shared_payload.shared_candidates_size)
+                                   .fetch_add(1u);
 
-    const unsigned int n_measurements_sum = n_measurements_prefix_sum.back();
-    const unsigned int stride = globalIndex * cfg.n_measurements_per_thread;
-
-    vecmem::device_vector<const unsigned int>::iterator lo1;
-
-    for (unsigned int i_meas = 0; i_meas < cfg.n_measurements_per_thread;
-         i_meas++) {
-        const unsigned int idx = stride + i_meas;
-
-        if (idx >= n_measurements_sum) {
-            break;
+            /*
+             * The buffer elemements are tuples of the measurement index and
+             * the index of the thread that originally inserted that
+             * measurement.
+             */
+            shared_payload.shared_candidates[idx] = {
+                init_meas + curr_meas, thread_id.getLocalThreadIdX()};
         }
 
-        if (i_meas == 0 || idx == *lo1) {
-            lo1 = thrust::lower_bound(thrust::seq,
-                                      n_measurements_prefix_sum.begin(),
-                                      n_measurements_prefix_sum.end(), idx + 1);
+        barrier.blockBarrier();
+
+        /*
+         * The shared buffer is now full; each thread picks out zero or one of
+         * the measurements and processes it.
+         */
+        if (thread_id.getLocalThreadIdX() <
+            shared_payload.shared_candidates_size) {
+            const unsigned int owner_local_thread_id =
+                shared_payload.shared_candidates[thread_id.getLocalThreadIdX()]
+                    .second;
+            const unsigned int owner_global_thread_id =
+                owner_local_thread_id +
+                thread_id.getBlockDimX() * thread_id.getBlockIdX();
+            assert(in_params_liveness.at(owner_global_thread_id) != 0u);
+            const bound_track_parameters& in_par =
+                in_params.at(owner_global_thread_id);
+            const unsigned int meas_idx =
+                shared_payload.shared_candidates[thread_id.getLocalThreadIdX()]
+                    .first;
+
+            const auto& meas = measurements.at(meas_idx);
+
+            track_state<typename detector_t::algebra_type> trk_state(meas);
+            const detray::tracking_surface sf{det, in_par.surface_link()};
+
+            // Run the Kalman update
+            const bool res = sf.template visit_mask<
+                gain_matrix_updater<typename detector_t::algebra_type>>(
+                trk_state, in_par);
+
+            // The chi2 from Kalman update should be less than chi2_max
+            if (res && trk_state.filtered_chi2() < cfg.chi2_max) {
+                // Add measurement candidates to link
+                const unsigned int l_pos = num_total_candidates.fetch_add(1);
+
+                if (l_pos >= payload.n_max_candidates) {
+                    *payload.n_total_candidates = payload.n_max_candidates;
+                } else {
+                    if (payload.step == 0) {
+                        links.at(l_pos) = {
+                            {previous_step, owner_global_thread_id},
+                            meas_idx,
+                            owner_global_thread_id,
+                            0};
+                    } else {
+                        const candidate_link& prev_link =
+                            prev_links[owner_global_thread_id];
+
+                        links.at(l_pos) = {
+                            {previous_step, owner_global_thread_id},
+                            meas_idx,
+                            prev_link.seed_idx,
+                            prev_link.n_skipped};
+                    }
+
+                    // Increase the number of candidates (or branches) per input
+                    // parameter
+                    vecmem::device_atomic_ref<unsigned int>(
+                        shared_payload
+                            .shared_num_candidates[owner_local_thread_id])
+                        .fetch_add(1u);
+
+                    out_params.at(l_pos) = trk_state.filtered();
+                    out_params_liveness.at(l_pos) = 1u;
+                }
+            }
         }
 
-        const unsigned int in_param_id =
-            std::distance(n_measurements_prefix_sum.begin(), lo1);
-        const detray::geometry::barcode bcd =
-            in_params.at(in_param_id).surface_link();
-        const unsigned int offset =
-            lo1 == n_measurements_prefix_sum.begin() ? idx : idx - *(lo1 - 1);
-        const unsigned int meas_idx = ref_meas_idx.at(in_param_id) + offset;
-        bound_track_parameters in_par = in_params.at(in_param_id);
+        barrier.blockBarrier();
 
-        const auto& meas = measurements.at(meas_idx);
-        track_state<typename detector_t::algebra_type> trk_state(meas);
-        const detray::tracking_surface sf{det, bcd};
+        /*
+         * The reason the buffer is twice the size of the block is that we
+         * might end up having some spill-over; this spill-over should be moved
+         * to the front of the buffer.
+         */
+        shared_payload.shared_candidates[thread_id.getLocalThreadIdX()] =
+            shared_payload.shared_candidates[thread_id.getLocalThreadIdX() +
+                                             thread_id.getBlockDimX()];
 
-        // Run the Kalman update
-        sf.template visit_mask<
-            gain_matrix_updater<typename detector_t::algebra_type>>(trk_state,
-                                                                    in_par);
-        // Get the chi-square
-        const auto chi2 = trk_state.filtered_chi2();
+        if (thread_id.getLocalThreadIdX() == 0) {
+            if (shared_payload.shared_candidates_size >=
+                thread_id.getBlockDimX()) {
+                shared_payload.shared_candidates_size -=
+                    thread_id.getBlockDimX();
+            } else {
+                shared_payload.shared_candidates_size = 0;
+            }
+        }
+    }
 
-        if (chi2 < cfg.chi2_max) {
+    /*
+     * Part three of the kernel inserts holes for parameters which did not
+     * match any measurements.
+     */
+    if (in_param_id < payload.n_in_params &&
+        in_params_liveness.at(in_param_id) > 0u &&
+        shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] ==
+            0u) {
+        // Add measurement candidates to link
+        const unsigned int l_pos = num_total_candidates.fetch_add(1);
 
-            // Add measurement candidates to link
-            vecmem::device_atomic_ref<unsigned int> num_total_candidates(
-                n_total_candidates);
+        if (l_pos >= payload.n_max_candidates) {
+            *payload.n_total_candidates = payload.n_max_candidates;
+        } else {
+            if (payload.step == 0) {
+                links.at(l_pos) = {{previous_step, in_param_id},
+                                   std::numeric_limits<unsigned int>::max(),
+                                   in_param_id,
+                                   1};
+            } else {
+                const candidate_link& prev_link = prev_links[in_param_id];
 
-            const unsigned int l_pos = num_total_candidates.fetch_add(1);
-
-            if (l_pos >= n_max_candidates) {
-                n_total_candidates = n_max_candidates;
-                return;
+                links.at(l_pos) = {{previous_step, in_param_id},
+                                   std::numeric_limits<unsigned int>::max(),
+                                   prev_link.seed_idx,
+                                   prev_link.n_skipped + 1};
             }
 
-            // Seed id
-            unsigned int orig_param_id =
-                (step == 0
-                     ? in_param_id
-                     : prev_links[prev_param_to_link[in_param_id]].seed_idx);
-            // Skip counter
-            unsigned int skip_counter =
-                (step == 0
-                     ? 0
-                     : prev_links[prev_param_to_link[in_param_id]].n_skipped);
-
-            links[l_pos] = {{previous_step, in_param_id},
-                            meas_idx,
-                            orig_param_id,
-                            skip_counter};
-
-            // Increase the number of candidates (or branches) per input
-            // parameter
-            vecmem::device_atomic_ref<unsigned int> num_candidates(
-                n_candidates[in_param_id]);
-            num_candidates.fetch_add(1);
-
-            out_params[l_pos] = trk_state.filtered();
+            out_params.at(l_pos) = in_params.at(in_param_id);
+            out_params_liveness.at(l_pos) = 1u;
         }
     }
 }

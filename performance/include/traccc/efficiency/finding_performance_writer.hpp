@@ -13,7 +13,7 @@
 // Project include(s).
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/io/event_map2.hpp"
+#include "traccc/utils/event_data.hpp"
 
 // System include(s).
 #include <map>
@@ -51,7 +51,12 @@ class finding_performance_writer {
             {"Num", plot_helpers::binning("N", 30, -0.5f, 29.5f)}};
 
         /// Cut values
-        scalar pT_cut = 0.1f * traccc::unit<scalar>::GeV;
+        scalar pT_cut = 0.5f * traccc::unit<scalar>::GeV;
+        scalar z_min = -500.f * traccc::unit<scalar>::mm;
+        scalar z_max = 500.f * traccc::unit<scalar>::mm;
+        scalar r_max = 200.f * traccc::unit<scalar>::mm;
+        scalar matching_ratio = 0.5f;
+        bool double_matching = true;
     };
 
     /// Construct from configuration and log level.
@@ -64,10 +69,10 @@ class finding_performance_writer {
 
     void write(const track_candidate_container_types::const_view&
                    track_candidates_view,
-               const event_map2& evt_map);
+               const event_data& evt_data);
 
     void write(const track_state_container_types::const_view& track_states_view,
-               const event_map2& evt_map);
+               const event_data& evt_data);
 
     void finalize();
 
@@ -80,7 +85,7 @@ class finding_performance_writer {
 
     /// Common method to both track finding and ambiguity resolution
     void write_common(const std::vector<std::vector<measurement>>& tracks,
-                      const event_map2& evt_map);
+                      const event_data& evt_data);
 
 };  // class finding_performance_writer
 

@@ -7,68 +7,65 @@
 
 #include <gtest/gtest.h>
 
+#include <alpaka/alpaka.hpp>
+#include <alpaka/example/ExampleDefaultAcc.hpp>
 #include <functional>
 #include <vecmem/memory/host_memory_resource.hpp>
 
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-#include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/memory/hip/host_memory_resource.hpp>
-#include <vecmem/utils/hip/copy.hpp>
-#endif
+#include "traccc/alpaka/utils/vecmem_types.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
 
+// template <TAccTag>
 cca_function_t get_f_with(traccc::clustering_config cfg) {
-    return [cfg](const traccc::cell_collection_types::host& cells,
-                 const traccc::cell_module_collection_types::host& modules) {
+    return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
+                 const traccc::silicon_detector_description::host& dd) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
-        vecmem::host_memory_resource host_mr;
+        using namespace alpaka;
+        using Dim = DimInt<1>;
+        using Idx = uint32_t;
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-        vecmem::cuda::copy copy;
-        vecmem::cuda::device_memory_resource device_mr;
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-        vecmem::hip::copy copy;
-        vecmem::hip::device_memory_resource device_mr;
-#else
-        vecmem::copy copy;
-        vecmem::host_memory_resource device_mr;
-#endif
+        using Acc = ExampleDefaultAcc<Dim, Idx>;
+        traccc::alpaka::vecmem::host_device_types<
+            alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
+        traccc::alpaka::vecmem::host_device_types<
+            alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+        traccc::alpaka::vecmem::host_device_types<
+            alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
+            device_mr;
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
-        traccc::cell_collection_types::buffer cells_buffer{
-            static_cast<traccc::cell_collection_types::buffer::size_type>(
+        traccc::silicon_detector_description::buffer dd_buffer{
+            static_cast<
+                traccc::silicon_detector_description::buffer::size_type>(
+                dd.size()),
+            device_mr};
+        copy.setup(dd_buffer)->ignore();
+        copy(vecmem::get_data(dd), dd_buffer,
+             vecmem::copy::type::host_to_device)
+            ->ignore();
+
+        traccc::edm::silicon_cell_collection::buffer cells_buffer{
+            static_cast<
+                traccc::edm::silicon_cell_collection::buffer::size_type>(
                 cells.size()),
             device_mr};
         copy.setup(cells_buffer)->wait();
         copy(vecmem::get_data(cells), cells_buffer)->wait();
 
-        traccc::cell_module_collection_types::buffer modules_buffer{
-            static_cast<
-                traccc::cell_module_collection_types::buffer::size_type>(
-                modules.size()),
-            device_mr};
-        copy.setup(modules_buffer)->wait();
-        copy(vecmem::get_data(modules), modules_buffer)->wait();
-
-        auto measurements_buffer = cc(cells_buffer, modules_buffer);
+        auto measurements_buffer = cc(cells_buffer, dd_buffer);
         traccc::measurement_collection_types::host measurements{&host_mr};
         copy(measurements_buffer, measurements)->wait();
 
         for (std::size_t i = 0; i < measurements.size(); i++) {
-            result[modules.at(measurements.at(i).module_link)
-                       .surface_link.value()]
-                .push_back(measurements.at(i));
+            result[measurements.at(i).surface_link.value()].push_back(
+                measurements.at(i));
         }
 
         return result;

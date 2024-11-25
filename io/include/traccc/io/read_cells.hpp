@@ -9,17 +9,13 @@
 
 // Local include(s).
 #include "traccc/io/data_format.hpp"
-#include "traccc/io/reader_edm.hpp"
 
 // Project include(s).
-#include "traccc/edm/cell.hpp"
-#include "traccc/geometry/geometry.hpp"
-#include "traccc/io/digitization_config.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <cstddef>
-#include <cstdint>
-#include <map>
 #include <string_view>
 
 namespace traccc::io {
@@ -29,43 +25,39 @@ namespace traccc::io {
 /// The file to read is selected according the naming conventions used in
 /// our data.
 ///
-/// @param out A cell & a cell_module (host) collections
-/// @param event The event ID to read in the cells for
-/// @param directory The directory holding the cell data files
-/// @param format The format of the cell data files (to read)
-/// @param geom The description of the detector geometry
-/// @param dconfig The detector's digitization configuration
-/// @param bardoce_map An object to perform barcode re-mapping with
-///                    (For Acts->Detray identifier re-mapping, if necessary)
-/// @param deduplicate Whether to deduplicate the cells
+/// @param[out] cells       The cell collection to fill
+/// @param[in]  event       The event ID to read in the cells for
+/// @param[in]  directory   The directory holding the cell data files
+/// @param[in]  dd          The detector description to point the cells at
+/// @param[in]  format      The format of the cell data files (to read)
+/// @param[in]  deduplicate Whether to deduplicate the cells
+/// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
+///                                  "Acts geometry ID", or a
+///                                  "Detray geometry ID"
 ///
-void read_cells(
-    cell_reader_output &out, std::size_t event, std::string_view directory,
-    data_format format = data_format::csv, const geometry *geom = nullptr,
-    const digitization_config *dconfig = nullptr,
-    const std::map<std::uint64_t, detray::geometry::barcode> *barcode_map =
-        nullptr,
-    bool deduplicate = true);
+void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
+                std::string_view directory,
+                const silicon_detector_description::host* dd = nullptr,
+                data_format format = data_format::csv, bool deduplicate = true,
+                bool use_acts_geometry_id = true);
 
 /// Read cell data into memory
 ///
 /// The file name is selected explicitly by the user.
 ///
-/// @param out A cell & a cell_module (host) collections
-/// @param filename The file to read the cell data from
-/// @param format The format of the cell data files (to read)
-/// @param geom The description of the detector geometry
-/// @param dconfig The detector's digitization configuration
-/// @param bardoce_map An object to perform barcode re-mapping with
-///                    (For Acts->Detray identifier re-mapping, if necessary)
-/// @param deduplicate Whether to deduplicate the cells
+/// @param[out] cells       The cell collection to fill
+/// @param[in]  filename    The name of the file to read
+/// @param[in]  dd          The detector description to point the cells at
+/// @param[in]  format      The format of the cell data files (to read)
+/// @param[in]  deduplicate Whether to deduplicate the cells
+/// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
+///                                  "Acts geometry ID", or a
+///                                  "Detray geometry ID"
 ///
-void read_cells(cell_reader_output &out, std::string_view filename,
-                data_format format = data_format::csv,
-                const geometry *geom = nullptr,
-                const digitization_config *dconfig = nullptr,
-                const std::map<std::uint64_t, detray::geometry::barcode>
-                    *barcode_map = nullptr,
-                bool deduplicate = true);
+void read_cells(edm::silicon_cell_collection::host& cells,
+                std::string_view filename,
+                const silicon_detector_description::host* dd = nullptr,
+                data_format format = data_format::csv, bool deduplicate = true,
+                bool use_acts_geometry_id = true);
 
 }  // namespace traccc::io

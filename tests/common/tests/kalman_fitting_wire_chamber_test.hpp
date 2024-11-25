@@ -12,16 +12,34 @@
 
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/create_wire_chamber.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
+#include "detray/test/utils/detectors/build_wire_chamber.hpp"
 
 // System include(s)
 #include <array>
 
 namespace traccc {
 
-/// Combinatorial Kalman Finding Test with Sparse tracks
-class KalmanFittingWireChamberTests : public KalmanFittingTests {
+/// Kalman Fitting Test with Wire Chamber
+///
+/// Test parameters:
+/// (1) name
+/// (2) origin
+/// (3) origin stddev
+/// (4) momentum range
+/// (5) eta range
+/// (6) phi range
+/// (7) particle type
+/// (8) number of tracks per event
+/// (9) number of events
+/// (10) random charge
+class KalmanFittingWireChamberTests
+    : public KalmanFittingTests,
+      public testing::WithParamInterface<std::tuple<
+          std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
+          std::array<scalar, 2u>, std::array<scalar, 2u>,
+          std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
+          unsigned int, bool>> {
 
     public:
     /// Number of layers
@@ -34,7 +52,7 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
     static constexpr vector3 B{0, 0, 2 * detray::unit<scalar>::T};
 
     /// Step constraint
-    static const inline scalar step_constraint = 1 * detray::unit<scalar>::mm;
+    static const inline float step_constraint = 1.f * detray::unit<float>::mm;
 
     // Set mask tolerance to a large value not to miss the surface during KF
     static const inline scalar mask_tolerance = 75.f * detray::unit<scalar>::um;
@@ -76,7 +94,7 @@ class KalmanFittingWireChamberTests : public KalmanFittingTests {
         // wire_chamber_cfg.m_thickness = 100.f * detray::unit<scalar>::um;
 
         // Create telescope detector
-        auto [det, name_map] = create_wire_chamber(host_mr, wire_chamber_cfg);
+        auto [det, name_map] = build_wire_chamber(host_mr, wire_chamber_cfg);
 
         // Write detector file
         auto writer_cfg = detray::io::detector_writer_config{}

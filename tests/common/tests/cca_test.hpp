@@ -10,9 +10,9 @@
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/cell.hpp"
-#include "traccc/edm/cluster.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/read_cells.hpp"
 
 // Test include(s).
@@ -20,6 +20,7 @@
 
 // VecMem include(s).
 #include <vecmem/containers/vector.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -37,8 +38,8 @@
 
 using cca_function_t = std::function<
     std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
-        const traccc::cell_collection_types::host &,
-        const traccc::cell_module_collection_types::host &)>;
+        const traccc::edm::silicon_cell_collection::host &,
+        const traccc::silicon_detector_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
     traccc::clustering_config rv;
@@ -69,15 +70,15 @@ class ConnectedComponentAnalysisTests
     public:
     struct cca_truth_hit {
         uint64_t geometry_id = 0;
-        uint64_t hit_id = 0;
+        uint64_t measurement_id = 0;
         uint64_t num_cells = 0;
         traccc::scalar channel0 = 0;
         traccc::scalar channel1 = 0;
-        traccc::scalar variance0 = 0.;
-        traccc::scalar variance1 = 0.;
+        traccc::scalar variance0 = 0.f;
+        traccc::scalar variance1 = 0.f;
 
-        DFE_NAMEDTUPLE(cca_truth_hit, geometry_id, hit_id, num_cells, channel0,
-                       channel1, variance0, variance1);
+        DFE_NAMEDTUPLE(cca_truth_hit, geometry_id, measurement_id, num_cells,
+                       channel0, channel1, variance0, variance1);
     };
 
     using cca_truth_hit_reader = dfe::NamedTupleCsvReader<cca_truth_hit>;
@@ -136,19 +137,29 @@ class ConnectedComponentAnalysisTests
         std::string file_truth =
             get_datafile("cca_test/" + file_prefix + "_truth.csv");
 
-        traccc::io::cell_reader_output data;
-        traccc::io::read_cells(data, file_hits);
-        traccc::cell_collection_types::host &cells = data.cells;
-        traccc::cell_module_collection_types::host &modules = data.modules;
+        // Host memory resource for the test.
+        vecmem::host_memory_resource mr;
 
-        traccc::scalar pitch = 1.f;
-
-        for (std::size_t i = 0; i < modules.size(); i++) {
-            modules.at(i).pixel = {-0.5f, -0.5f, pitch, pitch};
+        // Create a dummy detector description. With a description of enough
+        // detector modules for all the input files that the test uses.
+        static constexpr std::size_t NMODULES = 2500;
+        static constexpr traccc::scalar pitch = 1.f;
+        traccc::silicon_detector_description::host dd{mr};
+        dd.resize(NMODULES);
+        for (std::size_t i = 0; i < NMODULES; ++i) {
+            dd.geometry_id()[i] = detray::geometry::barcode{i};
+            dd.acts_geometry_id()[i] = i;
+            dd.reference_x()[i] = -0.5f;
+            dd.reference_y()[i] = -0.5f;
+            dd.pitch_x()[i] = pitch;
+            dd.pitch_y()[i] = pitch;
         }
 
+        traccc::edm::silicon_cell_collection::host cells{mr};
+        traccc::io::read_cells(cells, file_hits, &dd);
+
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
-            result = f(cells, modules);
+            result = f(cells, dd);
 
         std::size_t total_truth = 0, total_found = 0;
 

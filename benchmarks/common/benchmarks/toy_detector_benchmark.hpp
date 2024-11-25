@@ -7,8 +7,8 @@
 
 // Traccc include(s).
 #include "traccc/definitions/common.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/finding/finding_config.hpp"
+#include "traccc/fitting/fitting_config.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -20,7 +20,6 @@
 #include "detray/core/detector.hpp"
 #include "detray/definitions/units.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
@@ -29,7 +28,8 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/detectors/build_toy_detector.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -42,6 +42,9 @@
 
 class ToyDetectorBenchmark : public benchmark::Fixture {
     public:
+    // VecMem memory resource(s)
+    vecmem::host_memory_resource host_mr;
+
     static const int n_events = 100u;
     static const int n_tracks = 5000u;
 
@@ -79,9 +82,6 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         std::cout << "Please be patient. It may take some time to generate "
                      "the simulation data."
                   << std::endl;
-
-        // VecMem memory resource(s)
-        vecmem::host_memory_resource host_mr;
 
         // Use deterministic random number generator for testing
         using uniform_gen_t = detray::detail::random_numbers<
@@ -129,7 +129,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
-            1.f * detray::unit<traccc::scalar>::mm;
+            1.f * detray::unit<float>::mm;
 
         sim.run();
 
@@ -139,7 +139,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
                               .replace_files(true)
                               .write_grids(true)
                               .write_material(true)
-                              .path(sim_dir);
+                              .path(full_path);
         detray::io::write_detector(det, name_map, writer_cfg);
     }
 
@@ -157,30 +157,18 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
     void SetUp(::benchmark::State& /*state*/) {
 
-        // VecMem memory resource(s)
-        vecmem::host_memory_resource host_mr;
-
-        // Build the detector
-        auto [det, name_map] =
-            detray::build_toy_detector(host_mr, get_toy_config());
-
-        // Read geometry
-        traccc::geometry surface_transforms =
-            traccc::io::alt_read_geometry(det);
-
         // Read events
         for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
             // Read the hits from the relevant event file
-            traccc::io::spacepoint_reader_output readOut(&host_mr);
-            traccc::io::read_spacepoints(readOut, i_evt, sim_dir,
-                                         surface_transforms);
-            spacepoints.push_back(readOut.spacepoints);
+            traccc::spacepoint_collection_types::host sp{&host_mr};
+            traccc::io::read_spacepoints(sp, i_evt, sim_dir);
+            spacepoints.push_back(sp);
 
             // Read measurements
-            traccc::io::measurement_reader_output meas_read_out(&host_mr);
-            traccc::io::read_measurements(meas_read_out, i_evt, sim_dir);
-            measurements.push_back(meas_read_out.measurements);
+            traccc::measurement_collection_types::host meas{&host_mr};
+            traccc::io::read_measurements(meas, i_evt, sim_dir);
+            measurements.push_back(meas);
         }
     }
 };

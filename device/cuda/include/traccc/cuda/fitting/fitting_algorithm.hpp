@@ -30,8 +30,6 @@ class fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
           const typename fitter_t::detector_type::view_type&,
           const typename fitter_t::bfield_type&,
-          const vecmem::data::jagged_vector_view<
-              typename fitter_t::intersection_type>&,
           const typename track_candidate_container_types::const_view&)> {
 
     public:
@@ -52,8 +50,6 @@ class fitting_algorithm
     track_state_container_types::buffer operator()(
         const typename fitter_t::detector_type::view_type& det_view,
         const typename fitter_t::bfield_type& field_view,
-        const vecmem::data::jagged_vector_view<
-            typename fitter_t::intersection_type>& navigation_buffer,
         const typename track_candidate_container_types::const_view&
             track_candidates_view) const override;
 
@@ -67,7 +63,7 @@ class fitting_algorithm
     /// The CUDA stream to use
     stream& m_stream;
     /// Warp size of the GPU being used
-    int m_warp_size;
+    unsigned int m_warp_size;
 };
 
 }  // namespace traccc::cuda

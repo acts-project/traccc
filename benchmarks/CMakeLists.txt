@@ -8,13 +8,13 @@
 include( traccc-compiler-options-cpp )
 
 # Set up a common library, shared by all of the tests.
-add_library( traccc_benchmarks_common STATIC
+add_library( traccc_benchmarks_common INTERFACE
     "common/benchmarks/toy_detector_benchmark.hpp" )
 target_include_directories( traccc_benchmarks_common
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_benchmarks_common
-    PUBLIC benchmark::benchmark benchmark::benchmark_main 
-    traccc::core traccc::io traccc::simulation detray::core detray::utils 
+    INTERFACE benchmark::benchmark benchmark::benchmark_main
+    traccc::core traccc::io traccc::simulation detray::core detray::test_utils
     vecmem::core Boost::filesystem)
 
 add_subdirectory(cpu)

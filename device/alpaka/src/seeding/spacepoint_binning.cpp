@@ -74,7 +74,7 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
 
     // Set up the container that will be filled with the required capacities for
     // the spacepoint grid.
-    const std::size_t grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
+    const unsigned int grid_bins = m_axes.first.n_bins * m_axes.second.n_bins;
     vecmem::data::vector_buffer<unsigned int> grid_capacities_buff(grid_bins,
                                                                    m_mr.main);
     m_copy.setup(grid_capacities_buff)->ignore();

@@ -21,11 +21,11 @@ struct stat_plot_tool_config {
 
     /// Binning setups
     std::map<std::string, plot_helpers::binning> var_binning = {
-        {"ndf", plot_helpers::binning("ndf", 35, -5., 30.)},
-        {"chi2", plot_helpers::binning("chi2", 100, 0., 50.)},
-        {"reduced_chi2", plot_helpers::binning("chi2/ndf", 100, 0., 10.)},
-        {"pval", plot_helpers::binning("pval", 100, 0., 1.)},
-        {"chi2_local", plot_helpers::binning("chi2", 100, 0., 10.)}};
+        {"ndf", plot_helpers::binning("ndf", 35, -5.f, 30.f)},
+        {"chi2", plot_helpers::binning("chi2", 100, 0.f, 50.f)},
+        {"reduced_chi2", plot_helpers::binning("chi2/ndf", 100, 0.f, 10.f)},
+        {"pval", plot_helpers::binning("pval", 100, 0.f, 1.f)},
+        {"chi2_local", plot_helpers::binning("chi2", 100, 0.f, 10.f)}};
 };
 
 }  // namespace traccc

@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
+#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/simulator.hpp"
@@ -19,7 +19,7 @@
 
 // detray include(s).
 #include "detray/io/frontend/detector_reader.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -104,6 +104,10 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    sim.get_config().propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
     sim.run();
 
     /***************
@@ -114,24 +118,28 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Fitting algorithm object
-    typename traccc::fitting_algorithm<host_fitter_type>::config_type fit_cfg;
+    traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    fitting_algorithm<host_fitter_type> fitting(fit_cfg);
+    fit_cfg.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
+    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
-        // Event map
-        traccc::event_map2 evt_map(i_evt, path, path, path);
 
+        // Event map
+        traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
         traccc::track_candidate_container_types::host track_candidates =
-            evt_map.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         // n_trakcs = 100
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
 
         // Run fitting
-        auto track_states = fitting(host_det, field, track_candidates);
+        auto track_states =
+            fitting(host_det, field, traccc::get_data(track_candidates));
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();
@@ -149,7 +157,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
             ndf_tests(fit_res, track_states_per_track);
 
             fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_map);
+                                         host_det, evt_data);
         }
     }
 
@@ -167,8 +175,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
      * Success rate test
      ********************/
 
-    float success_rate =
-        static_cast<float>(n_success) / (n_truth_tracks * n_events);
+    float success_rate = static_cast<float>(n_success) /
+                         static_cast<float>(n_truth_tracks * n_events);
 
     ASSERT_FLOAT_EQ(success_rate, 1.00f);
 }
@@ -179,7 +187,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::muon<scalar>(), 100, 100, false)));
+        detray::muon<scalar>(), 100, 100, false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
@@ -188,7 +196,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false)));
+        false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
@@ -197,7 +205,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false)));
+        false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation3, KalmanFittingTelescopeTests,
@@ -206,7 +214,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::antimuon<scalar>(), 100, 100, false)));
+        detray::antimuon<scalar>(), 100, 100, false, 20.f, 9u, 20.f)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation4, KalmanFittingTelescopeTests,
@@ -215,4 +223,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::antimuon<scalar>(), 100, 100, true)));
+        detray::antimuon<scalar>(), 100, 100, true, 20.f, 9u, 20.f)));

@@ -28,7 +28,7 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(
     vecmem::device_vector<unsigned int>& labels, unsigned int e1,
     unsigned int e2) {
 
-    int e;
+    unsigned int e;
     if (e1 < e2) {
         e = e1;
         assert(e2 < labels.size());
@@ -41,23 +41,27 @@ TRACCC_HOST_DEVICE inline unsigned int make_union(
     return e;
 }
 
-TRACCC_HOST_DEVICE inline bool is_adjacent(const traccc::cell& a,
-                                           const traccc::cell& b) {
+template <typename T1, typename T2>
+TRACCC_HOST_DEVICE inline bool is_adjacent(const edm::silicon_cell<T1>& a,
+                                           const edm::silicon_cell<T2>& b) {
 
-    return (a.channel0 - b.channel0) * (a.channel0 - b.channel0) <= 1 &&
-           (a.channel1 - b.channel1) * (a.channel1 - b.channel1) <= 1 &&
-           a.module_link == b.module_link;
+    return (a.channel0() - b.channel0()) * (a.channel0() - b.channel0()) <= 1 &&
+           (a.channel1() - b.channel1()) * (a.channel1() - b.channel1()) <= 1 &&
+           a.module_index() == b.module_index();
 }
 
-TRACCC_HOST_DEVICE inline bool is_far_enough(const traccc::cell& a,
-                                             const traccc::cell& b) {
+template <typename T1, typename T2>
+TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
+                                             const edm::silicon_cell<T2>& b) {
 
-    assert((a.channel1 >= b.channel1) || (a.module_link != b.module_link));
-    return (a.channel1 > (b.channel1 + 1)) || (a.module_link != b.module_link);
+    assert((a.channel1() >= b.channel1()) ||
+           (a.module_index() != b.module_index()));
+    return (a.channel1() > (b.channel1() + 1)) ||
+           (a.module_index() != b.module_index());
 }
 
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
-    const cell_collection_types::const_device& cells,
+    const edm::silicon_cell_collection::const_device& cells,
     vecmem::device_vector<unsigned int>& labels) {
 
     unsigned int nlabels = 0;

@@ -10,8 +10,9 @@
 // Library include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // VecMem include(s).
@@ -30,8 +31,8 @@ namespace traccc::host {
 ///
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::host(
-          const cell_collection_types::const_view&,
-          const cell_module_collection_types::const_view&)> {
+          const edm::silicon_cell_collection::const_view&,
+          const silicon_detector_description::const_view&)> {
 
     public:
     using config_type = std::monostate;
@@ -45,12 +46,12 @@ class clusterization_algorithm
     /// Construct measurements for each detector module
     ///
     /// @param cells_view The cells for every detector module in the event
-    /// @param modules_view A collection of detector modules
+    /// @param dd_view The detector description
     /// @return The measurements reconstructed for every detector module
     ///
-    output_type operator()(const cell_collection_types::const_view& cells_view,
-                           const cell_module_collection_types::const_view&
-                               modules_view) const override;
+    output_type operator()(
+        const edm::silicon_cell_collection::const_view& cells_view,
+        const silicon_detector_description::const_view& dd_view) const override;
 
     private:
     /// @name Sub-algorithms used by this algorithm

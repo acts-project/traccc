@@ -20,13 +20,13 @@
 
 // detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/geometry/mask.hpp"
 #include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
 #include "detray/materials/material.hpp"
 #include "detray/navigation/detail/ray.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/detectors/build_telescope_detector.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -53,14 +53,19 @@ int simulate(const traccc::opts::generation& generation_opts,
      * Build a telescope geometry
      *****************************/
 
+    const auto align_vec = telescope_opts.align_vector;
+    vector3 align_axis{align_vec[0u], align_vec[1u], align_vec[2u]};
+    align_axis = vector::normalize(align_axis);
+
     // Plane alignment direction (aligned to z-axis)
     detray::detail::ray<traccc::default_algebra> traj{
-        {0, 0, 0}, 0, {0, 0, 1}, -1};
+        {0, 0, 0}, 0, align_axis, -1};
     // Position of planes (in mm unit)
     std::vector<scalar> plane_positions;
 
     for (unsigned int i = 0; i < telescope_opts.n_planes; i++) {
-        plane_positions.push_back((i + 1) * telescope_opts.spacing);
+        plane_positions.push_back(static_cast<float>(i) *
+                                  telescope_opts.spacing);
     }
 
     // B field value and its type

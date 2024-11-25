@@ -6,7 +6,7 @@
 
 # Set up the project.
 cmake_minimum_required( VERSION 3.22 )
-project( traccc VERSION 0.15.0 LANGUAGES CXX )
+project( traccc VERSION 0.17.0 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 20 CACHE STRING "The (host) C++ standard to use" )
@@ -76,6 +76,46 @@ if(${TRACCC_BUILD_HIP} AND ${CMAKE_HIP_STANDARD} LESS 20)
    message(SEND_ERROR "CMAKE_HIP_STANDARD=${CMAKE_HIP_STANDARD}, but traccc requires C++>=20")
 endif()
 
+# Set up build profiling for the project.
+if( CTEST_USE_LAUNCHERS )
+
+   # Find the bash and time executables.
+   find_program( BASH_EXECUTABLE bash REQUIRED )
+   find_program( TIME_EXECUTABLE time REQUIRED )
+
+   # Decide what flag to use with the time executable to make it print verbose
+   # information.
+   if( "${CMAKE_HOST_SYSTEM_NAME}" MATCHES "Darwin" )
+      set( TIME_VERBOSE_FLAG "-l" )
+   elseif( "${CMAKE_HOST_SYSTEM_NAME}" MATCHES "Linux" )
+      set( TIME_VERBOSE_FLAG "-v" )
+   else()
+      message( WARNING "Build profiling is only supported on Linux and macOS."
+                       "This build will likely fail." )
+      set( TIME_VERBOSE_FLAG "" )
+   endif()
+
+   # Configure the script that would intercept the build commands and save
+   # profile logs for them.
+   configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/traccc-ctest.sh.in"
+      "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/traccc-ctest.sh"
+      @ONLY )
+   set( CMAKE_CTEST_COMMAND
+      "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/traccc-ctest.sh" )
+
+   # Clean up.
+   unset( TIME_VERBOSE_FLAG )
+
+   # Remove the performance log during a cleaning step.
+   set_property( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" APPEND PROPERTY
+      ADDITIONAL_MAKE_CLEAN_FILES
+      "${CMAKE_CURRENT_BINARY_DIR}/traccc_build_performance.log" )
+
+   # Let the user know what happened.
+   message( STATUS
+      "Saving traccc build performance logs using: ${CMAKE_CTEST_COMMAND}" )
+endif()
+
 # Set up VecMem.
 option( TRACCC_SETUP_VECMEM
    "Set up the VecMem target(s) explicitly" TRUE )
@@ -84,13 +124,16 @@ option( TRACCC_USE_SYSTEM_VECMEM
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_SETUP_VECMEM )
    if( TRACCC_USE_SYSTEM_VECMEM )
-      find_package( vecmem 0.7.0 REQUIRED COMPONENTS LANGUAGE )
+      find_package( vecmem 1.9.0 REQUIRED )
    else()
       add_subdirectory( extern/vecmem )
       # Make the "VecMem language code" available for the whole project.
-      include( "${VECMEM_LANGUAGE_DIR}/vecmem-check-language.cmake" )
+      list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}" )
    endif()
 endif()
+# Including vecmem-check-language makes sure that the HIP and SYCL languages
+# would be picked up from VecMem.
+include( vecmem-check-language )
 
 # Set up Eigen3.
 option( TRACCC_SETUP_EIGEN3
@@ -103,6 +146,20 @@ if( TRACCC_SETUP_EIGEN3 )
       find_package( Eigen3 REQUIRED )
    else()
       add_subdirectory( extern/eigen3 )
+   endif()
+endif()
+
+# Set up TBB.
+option( TRACCC_SETUP_TBB
+   "Set up the TBB target(s) explicitly" TRUE )
+option( TRACCC_USE_SYSTEM_TBB
+   "Pick up an existing installation of TBB from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_TBB )
+   if( TRACCC_USE_SYSTEM_TBB )
+      find_package( TBB REQUIRED )
+   else()
+      add_subdirectory( extern/tbb )
    endif()
 endif()
 
@@ -165,12 +222,18 @@ option( TRACCC_SETUP_TBB
    "Set up the TBB target(s) explicitly" TRUE )
 option( TRACCC_USE_SYSTEM_TBB
    "Pick up an existing installation of TBB from the build environment"
+
+# Set up DPL if SYCL is built.
+option( TRACCC_SETUP_DPL
+   "Set up the DPL target(s) explicitly" ${TRACCC_BUILD_SYCL} )
+option( TRACCC_USE_SYSTEM_DPL
+   "Pick up an existing installation of DPL from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_SETUP_TBB )
-   if( TRACCC_USE_SYSTEM_TBB )
-      find_package( TBB REQUIRED )
+if( TRACCC_SETUP_DPL )
+   if( TRACCC_USE_SYSTEM_DPL )
+      find_package( DPL REQUIRED )
    else()
-      add_subdirectory( extern/tbb )
+      add_subdirectory( extern/dpl )
    endif()
 endif()
 
@@ -308,13 +371,26 @@ if( TRACCC_SETUP_BENCHMARKS )
    endif()
 endif()
 
+# Set up indicators.
+option( TRACCC_SETUP_INDICATORS
+   "Set up the indicators target(s) explicitly" ${TRACCC_BUILD_EXAMPLES} )
+option( TRACCC_USE_SYSTEM_INDICATORS
+   "Pick up an existing installation of indicators from the build environment"
+   ${TRACCC_USE_SYSTEM_LIBS} )
+if( TRACCC_SETUP_INDICATORS )
+   if( TRACCC_USE_SYSTEM_INDICATORS )
+      find_package( indicators REQUIRED )
+   else()
+      add_subdirectory( extern/indicators )
+   endif()
+endif()
+
+
 option( TRACCC_ENABLE_NVTX_PROFILING
         "Use instrument functions to enable fine grained profiling" FALSE )
 
 # option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
 set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the build")
-message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGINS})
-add_definitions(-DALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
 
 # Build the traccc code.
 add_subdirectory( core )
@@ -343,7 +419,7 @@ add_subdirectory( plugins )
 
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
-   find_package( Boost REQUIRED COMPONENTS program_options filesystem)
+   find_package( Boost CONFIG REQUIRED COMPONENTS program_options filesystem )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the examples.")
    endif()
@@ -361,7 +437,7 @@ endif()
 # Set up the benchmark(s).
 if( TRACCC_BUILD_BENCHMARKS )
    # Find Boost.
-   find_package( Boost REQUIRED COMPONENTS filesystem)
+   find_package( Boost CONFIG REQUIRED COMPONENTS filesystem )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()

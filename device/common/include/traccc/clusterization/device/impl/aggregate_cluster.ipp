@@ -14,8 +14,8 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
-    const cell_collection_types::const_device& cells,
-    const cell_module_collection_types::const_device& modules,
+    const edm::silicon_cell_collection::const_device& cells,
+    const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, const unsigned int start,
     const unsigned int end, const unsigned short cid, measurement& out,
     vecmem::data::vector_view<unsigned int> cell_links,
@@ -51,12 +51,12 @@ inline void aggregate_cluster(
      *
      * $$\sigma^2(x_1, \ldots, x_n) = \sigma^2(x_1 - C, \ldots, x_n - C)$$
      */
-    scalar totalWeight = 0.;
-    point2 mean{0., 0.}, var{0., 0.}, offset{0., 0.};
+    scalar totalWeight = 0.f;
+    point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f};
 
-    const auto module_link = cells[cid + start].module_link;
-    const cell_module this_module = modules.at(module_link);
-    const unsigned short partition_size = end - start;
+    const unsigned int module_idx = cells.module_index().at(cid + start);
+    const auto module_descr = det_descr.at(module_idx);
+    const auto partition_size = static_cast<unsigned short>(end - start);
 
     bool first_processed = false;
 
@@ -65,15 +65,15 @@ inline void aggregate_cluster(
     for (unsigned short j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
+        const auto cell = cells.at(pos);
+
         /*
          * Terminate the process earlier if we have reached a cell sufficiently
          * in a different module.
          */
-        if (cells[pos].module_link != module_link) {
+        if (cell.module_index() != module_idx) {
             break;
         }
-
-        const cell this_cell = cells[pos];
 
         /*
          * If the value of this cell is equal to our, that means it
@@ -82,19 +82,19 @@ inline void aggregate_cluster(
          */
         if (f.at(j) == cid) {
 
-            if (this_cell.channel1 > maxChannel1) {
-                maxChannel1 = this_cell.channel1;
+            if (cell.channel1() > maxChannel1) {
+                maxChannel1 = cell.channel1();
             }
 
             const scalar weight = traccc::details::signal_cell_modelling(
-                this_cell.activation, this_module);
+                cell.activation(), det_descr);
 
-            if (weight > this_module.threshold) {
+            if (weight > module_descr.threshold()) {
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
                 point2 cell_position =
-                    traccc::details::position_from_cell(this_cell, this_module);
+                    traccc::details::position_from_cell(cell, det_descr);
 
                 if (!first_processed) {
                     offset = cell_position;
@@ -120,31 +120,26 @@ inline void aggregate_cluster(
          * Terminate the process earlier if we have reached a cell sufficiently
          * far away from the cluster in the dominant axis.
          */
-        if (this_cell.channel1 > maxChannel1 + 1) {
+        if (cell.channel1() > maxChannel1 + 1) {
             break;
         }
     }
 
-    const auto pitch = this_module.pixel.get_pitch();
-    var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
-                       pitch[1] * pitch[1] / static_cast<scalar>(12.)};
+    var = var + point2{module_descr.pitch_x() * module_descr.pitch_x() /
+                           static_cast<scalar>(12.),
+                       module_descr.pitch_y() * module_descr.pitch_y() /
+                           static_cast<scalar>(12.)};
 
     /*
      * Fill output vector with calculated cluster properties
      */
     out.local = mean + offset;
     out.variance = var;
-    out.surface_link = this_module.surface_link;
-    out.module_link = module_link;
+    out.surface_link = module_descr.geometry_id();
     // Set a unique identifier for the measurement.
     out.measurement_id = link;
-    // Adjust the output object for 1D surfaces.
-    if (this_module.pixel.dimension == 1) {
-        out.meas_dim = 1;
-        out.local[1] = 0.f;
-    } else {
-        out.meas_dim = 2;
-    }
+    // Set the dimensionality of the measurement.
+    out.meas_dim = module_descr.dimensions();
 }
 
 }  // namespace traccc::device

@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/io/write.hpp"
 
+#include "csv/write_cells.hpp"
+#include "json/write_digitization_config.hpp"
 #include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
 #include "obj/write_track_candidates.hpp"
@@ -22,23 +24,26 @@ namespace traccc::io {
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           traccc::cell_collection_types::const_view cells,
-           traccc::cell_module_collection_types::const_view modules) {
+           traccc::edm::silicon_cell_collection::const_view cells,
+           traccc::silicon_detector_description::const_view dd,
+           bool use_acts_geometry_id) {
 
     switch (format) {
         case data_format::binary:
-            details::write_binary_collection(
+            details::write_binary_soa(
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.dat")))
                                       .native()),
-                traccc::cell_collection_types::const_device{cells});
-            details::write_binary_collection(
+                traccc::edm::silicon_cell_collection::const_device{cells});
+            break;
+        case data_format::csv:
+            csv::write_cells(
                 get_absolute_path((std::filesystem::path(directory) /
-                                   std::filesystem::path(get_event_filename(
-                                       event, "-modules.dat")))
+                                   std::filesystem::path(
+                                       get_event_filename(event, "-cells.csv")))
                                       .native()),
-                traccc::cell_module_collection_types::const_device{modules});
+                cells, dd, use_acts_geometry_id);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
@@ -47,8 +52,7 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           spacepoint_collection_types::const_view spacepoints,
-           cell_module_collection_types::const_view modules) {
+           spacepoint_collection_types::const_view spacepoints) {
 
     switch (format) {
         case data_format::binary:
@@ -58,12 +62,6 @@ void write(std::size_t event, std::string_view directory,
                                        get_event_filename(event, "-hits.dat")))
                                       .native()),
                 traccc::spacepoint_collection_types::const_device{spacepoints});
-            details::write_binary_collection(
-                get_absolute_path((std::filesystem::path(directory) /
-                                   std::filesystem::path(get_event_filename(
-                                       event, "-modules.dat")))
-                                      .native()),
-                traccc::cell_module_collection_types::const_device{modules});
             break;
         case data_format::obj:
             obj::write_spacepoints(
@@ -80,8 +78,7 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           measurement_collection_types::const_view measurements,
-           traccc::cell_module_collection_types::const_view modules) {
+           measurement_collection_types::const_view measurements) {
 
     switch (format) {
         case data_format::binary:
@@ -92,12 +89,6 @@ void write(std::size_t event, std::string_view directory,
                                       .native()),
                 traccc::measurement_collection_types::const_device{
                     measurements});
-            details::write_binary_collection(
-                get_absolute_path((std::filesystem::path(directory) /
-                                   std::filesystem::path(get_event_filename(
-                                       event, "-modules.dat")))
-                                      .native()),
-                traccc::cell_module_collection_types::const_device{modules});
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
@@ -135,6 +126,19 @@ void write(std::size_t event, std::string_view directory,
                                        event, "-track-candidates.obj")))
                                       .native()),
                 tracks, detector);
+            break;
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+void write(std::string_view filename, data_format format,
+           const digitization_config& config) {
+
+    switch (format) {
+        case data_format::json:
+            json::write_digitization_config(get_absolute_path(filename),
+                                            config);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

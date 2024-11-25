@@ -12,16 +12,34 @@
 
 // Detray include(s).
 #include "detray/detectors/bfield.hpp"
-#include "detray/detectors/build_toy_detector.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
+#include "detray/test/utils/detectors/build_toy_detector.hpp"
 
 // System include(s)
 #include <array>
 
 namespace traccc {
 
-/// Kalman Finding Test for toy geometry
-class KalmanFittingToyDetectorTests : public KalmanFittingTests {
+/// Kalman Fitting Test with Toy Geometry
+///
+/// Test parameters:
+/// (1) name
+/// (2) origin
+/// (3) origin stddev
+/// (4) momentum range
+/// (5) eta range
+/// (6) phi range
+/// (7) particle type
+/// (8) number of tracks per event
+/// (9) number of events
+/// (10) random charge
+class KalmanFittingToyDetectorTests
+    : public KalmanFittingTests,
+      public testing::WithParamInterface<std::tuple<
+          std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
+          std::array<scalar, 2u>, std::array<scalar, 2u>,
+          std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
+          unsigned int, bool>> {
 
     public:
     /// Number of barrel layers
@@ -49,7 +67,7 @@ class KalmanFittingToyDetectorTests : public KalmanFittingTests {
         0.01f * detray::unit<scalar>::mm,
         0.001f,
         0.001f,
-        0.01f / detray::unit<scalar>::GeV,
+        0.001f / detray::unit<scalar>::GeV,
         0.01f * detray::unit<scalar>::ns};
 
     protected:

@@ -9,12 +9,12 @@
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/finding/finding_algorithm.hpp"
-#include "traccc/io/event_map2.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
@@ -24,7 +24,7 @@
 // detray include(s).
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/propagator/propagator.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -124,9 +124,6 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
-        measurement_h2d{mr, copy};
-
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
         track_candidate_d2h{mr, copy};
@@ -142,13 +139,11 @@ TEST_P(CkfToyDetectorTests, Run) {
         rk_stepper_type, device_navigator_type>::config_type cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
-    cfg.navigation_buffer_size_scaler = 100;
-
+    cfg.chi2_max = 30.f;
     cfg.propagation.navigation.search_window = search_window;
 
     // Finding algorithm object
-    traccc::finding_algorithm<rk_stepper_type, host_navigator_type>
-        host_finding(cfg);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
 
     // Finding algorithm object
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
@@ -158,10 +153,10 @@ TEST_P(CkfToyDetectorTests, Run) {
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map(i_evt, path, path, path);
+        traccc::event_data evt_data(path, i_evt, host_mr);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
 
@@ -174,49 +169,45 @@ TEST_P(CkfToyDetectorTests, Run) {
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
-        copy.setup(seeds_buffer);
+        copy.setup(seeds_buffer)->wait();
         copy(vecmem::get_data(seeds), seeds_buffer,
-             vecmem::copy::type::host_to_device);
+             vecmem::copy::type::host_to_device)
+            ->wait();
 
         // Read measurements
-        traccc::io::measurement_reader_output readOut(&host_mr);
-        traccc::io::read_measurements(readOut, i_evt, path,
-                                      traccc::data_format::csv);
-        traccc::measurement_collection_types::host& measurements_per_event =
-            readOut.measurements;
+        traccc::measurement_collection_types::host measurements_per_event{
+            &host_mr};
+        traccc::io::read_measurements(measurements_per_event, i_evt, path);
 
         traccc::measurement_collection_types::buffer measurements_buffer(
-            measurements_per_event.size(), mr.main);
-        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
+            static_cast<unsigned int>(measurements_per_event.size()), mr.main);
+        copy.setup(measurements_buffer)->wait();
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer)
+            ->wait();
 
         // Instantiate output cuda containers/collections
         traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer{{{}, *(mr.host)},
                                          {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers);
-        copy.setup(track_candidates_cuda_buffer.items);
-
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding.get_config().navigation_buffer_size_scaler *
-                seeds.size(),
-            mr.main, mr.host);
+        copy.setup(track_candidates_cuda_buffer.headers)->wait();
+        copy.setup(track_candidates_cuda_buffer.items)->wait();
 
         // Run host finding
-        auto track_candidates =
-            host_finding(host_det, field, measurements_per_event, seeds);
+        auto track_candidates = host_finding(
+            host_det, field, vecmem::get_data(measurements_per_event),
+            vecmem::get_data(seeds));
 
         // Run device finding
         track_candidates_cuda_buffer =
-            device_finding(det_view, field, navigation_buffer,
-                           measurements_buffer, seeds_buffer);
+            device_finding(det_view, field, measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);
 
         // Simple check
-        ASSERT_NEAR(track_candidates.size(), track_candidates_cuda.size(), 1u);
+        ASSERT_TRUE(
+            std::llabs(static_cast<long>(track_candidates.size()) -
+                       static_cast<long>(track_candidates_cuda.size())) <= 1u);
         ASSERT_GE(track_candidates.size(), n_truth_tracks);
 
         // Make sure that the outputs from cpu and cuda CKF are equivalent
@@ -235,7 +226,8 @@ TEST_P(CkfToyDetectorTests, Run) {
 
         float matching_rate =
             float(n_matches) /
-            std::max(track_candidates.size(), track_candidates_cuda.size());
+            static_cast<float>(std::max(track_candidates.size(),
+                                        track_candidates_cuda.size()));
         EXPECT_GE(matching_rate, 0.999f);
     }
 }

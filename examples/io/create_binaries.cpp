@@ -7,8 +7,7 @@
 
 // Project include(s).
 #include "traccc/io/read_cells.hpp"
-#include "traccc/io/read_digitization_config.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/write.hpp"
@@ -27,55 +26,48 @@ int create_binaries(const traccc::opts::detector& detector_opts,
                     const traccc::opts::input_data& input_opts,
                     const traccc::opts::output_data& output_opts) {
 
-    // Read the surface transforms
-    auto [surface_transforms, _] =
-        traccc::io::read_geometry(detector_opts.detector_file);
-
-    // Read the digitization configuration file
-    auto digi_cfg =
-        traccc::io::read_digitization_config(detector_opts.digitization_file);
-
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host det_descr{host_mr};
+    traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
+        (detector_opts.use_detray_detector ? traccc::data_format::json
+                                           : traccc::data_format::csv));
+
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
-        traccc::io::cell_reader_output cells_csv(&host_mr);
-        traccc::io::read_cells(cells_csv, event, input_opts.directory,
-                               input_opts.format, &surface_transforms,
-                               &digi_cfg);
+        traccc::edm::silicon_cell_collection::host cells{host_mr};
+        traccc::io::read_cells(cells, event, input_opts.directory, &det_descr,
+                               input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,
-                          traccc::data_format::binary,
-                          vecmem::get_data(cells_csv.cells),
-                          vecmem::get_data(cells_csv.modules));
+                          traccc::data_format::binary, vecmem::get_data(cells));
 
         // Read the hits from the relevant event file
-        traccc::io::spacepoint_reader_output spacepoints_csv(&host_mr);
-        traccc::io::read_spacepoints(spacepoints_csv, event,
-                                     input_opts.directory, surface_transforms,
-                                     input_opts.format);
+        traccc::spacepoint_collection_types::host spacepoints{&host_mr};
+        traccc::io::read_spacepoints(spacepoints, event, input_opts.directory,
+                                     nullptr, input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,
                           traccc::data_format::binary,
-                          vecmem::get_data(spacepoints_csv.spacepoints),
-                          vecmem::get_data(spacepoints_csv.modules));
+                          vecmem::get_data(spacepoints));
 
         // Read the measurements from the relevant event file
-        traccc::io::measurement_reader_output measurements_csv(&host_mr);
-        traccc::io::read_measurements(measurements_csv, event,
-                                      input_opts.directory, input_opts.format);
+        traccc::measurement_collection_types::host measurements{&host_mr};
+        traccc::io::read_measurements(measurements, event, input_opts.directory,
+                                      nullptr, input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,
                           traccc::data_format::binary,
-                          vecmem::get_data(measurements_csv.measurements),
-                          vecmem::get_data(measurements_csv.modules));
+                          vecmem::get_data(measurements));
     }
 
     return EXIT_SUCCESS;

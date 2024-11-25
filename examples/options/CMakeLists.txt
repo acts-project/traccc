@@ -49,6 +49,5 @@ target_link_libraries( traccc_options
    PUBLIC
       Boost::program_options
       traccc::io
-   PRIVATE
       traccc::performance
 )

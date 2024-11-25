@@ -21,13 +21,13 @@ track_params_estimation::output_type track_params_estimation::operator()(
     const seed_collection_types::host& seeds, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
 
-    const unsigned int num_seeds = seeds.size();
+    const seed_collection_types::host::size_type num_seeds = seeds.size();
     output_type result(num_seeds, &m_mr.get());
 
-    for (unsigned int i = 0; i < num_seeds; ++i) {
+    for (seed_collection_types::host::size_type i = 0; i < num_seeds; ++i) {
         bound_track_parameters track_params;
         track_params.set_vector(
-            seed_to_bound_vector(spacepoints, seeds[i], bfield, PION_MASS_MEV));
+            seed_to_bound_vector(spacepoints, seeds[i], bfield));
 
         // Set Covariance
         for (std::size_t j = 0; j < e_bound_size; ++j) {

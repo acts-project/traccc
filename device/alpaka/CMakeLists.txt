@@ -8,7 +8,7 @@
 include( traccc-alpaka-functions )
 include( traccc-compiler-options-cpp )
 
-set(PUBLIC_LIBRARIES traccc::core traccc::device_common detray::core detray::utils vecmem::core covfie::core)
+set(PUBLIC_LIBRARIES traccc::core traccc::device_common vecmem::core covfie::core)
 set(PRIVATE_LIBRARIES alpaka::alpaka traccc::Thrust)
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)
@@ -36,8 +36,8 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/clusterization/clusterization_algorithm.cpp"
   "include/traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
   "src/clusterization/measurement_sorting_algorithm.cpp"
-  "include/traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
-  "src/clusterization/spacepoint_formation_algorithm.cpp"
+  "include/traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
+  "src/seeding/spacepoint_formation_algorithm.cpp"
   # Seeding code
   "src/seeding/spacepoint_binning.cpp"
   "src/seeding/seed_finding.cpp"

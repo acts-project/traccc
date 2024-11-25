@@ -13,8 +13,7 @@
 // Project include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/io/event_map.hpp"
-#include "traccc/io/event_map2.hpp"
+#include "traccc/utils/event_data.hpp"
 
 // System include(s).
 #include <map>
@@ -50,7 +49,11 @@ class seeding_performance_writer {
             {"Num", plot_helpers::binning("N", 30, -0.5f, 29.5f)}};
 
         /// Cut values
-        scalar pT_cut = 1.f * traccc::unit<scalar>::GeV;
+        scalar pT_cut = 0.5f * traccc::unit<scalar>::GeV;
+        scalar z_min = -500.f * traccc::unit<scalar>::mm;
+        scalar z_max = 500.f * traccc::unit<scalar>::mm;
+        scalar r_max = 200.f * traccc::unit<scalar>::mm;
+        scalar matching_ratio = 0.5f;
     };
 
     /// Construct from configuration and log level.
@@ -63,11 +66,7 @@ class seeding_performance_writer {
 
     void write(const seed_collection_types::const_view& seeds_view,
                const spacepoint_collection_types::const_view& spacepoints_view,
-               const event_map& evt_map);
-
-    void write(const seed_collection_types::const_view& seeds_view,
-               const spacepoint_collection_types::const_view& spacepoints_view,
-               const event_map2& evt_map);
+               const event_data& evt_data);
 
     void finalize();
 

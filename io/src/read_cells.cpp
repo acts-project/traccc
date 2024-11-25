@@ -17,54 +17,53 @@
 
 namespace traccc::io {
 
-void read_cells(
-    cell_reader_output& out, std::size_t event, std::string_view directory,
-    data_format format, const geometry* geom,
-    const digitization_config* dconfig,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
-    bool deduplicate) {
+void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
+                std::string_view directory,
+                const silicon_detector_description::host* dd,
+                data_format format, bool deduplicate,
+                bool use_acts_geometry_id) {
 
     switch (format) {
-        case data_format::csv: {
+        case data_format::csv:
             read_cells(
-                out,
+                cells,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.csv")))
                                       .native()),
-                format, geom, dconfig, barcode_map, deduplicate);
+                dd, format, deduplicate, use_acts_geometry_id);
             break;
-        }
-        case data_format::binary: {
-            details::read_binary_collection<cell_collection_types::host>(
-                out.cells,
+
+        case data_format::binary:
+            read_cells(
+                cells,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.dat")))
-                                      .native()));
-            details::read_binary_collection<cell_module_collection_types::host>(
-                out.modules,
-                get_absolute_path((std::filesystem::path(directory) /
-                                   std::filesystem::path(get_event_filename(
-                                       event, "-modules.dat")))
-                                      .native()));
+                                      .native()),
+                dd, format, deduplicate);
             break;
-        }
+
         default:
             throw std::invalid_argument("Unsupported data format");
     }
 }
 
-void read_cells(
-    cell_reader_output& out, std::string_view filename, data_format format,
-    const geometry* geom, const digitization_config* dconfig,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
-    bool deduplicate) {
+void read_cells(edm::silicon_cell_collection::host& cells,
+                std::string_view filename,
+                const silicon_detector_description::host* dd,
+                data_format format, bool deduplicate,
+                bool use_acts_geometry_id) {
 
     switch (format) {
         case data_format::csv:
-            return csv::read_cells(out, filename, geom, dconfig, barcode_map,
-                                   deduplicate);
+            csv::read_cells(cells, filename, dd, deduplicate,
+                            use_acts_geometry_id);
+            break;
+
+        case data_format::binary:
+            details::read_binary_soa(cells, filename);
+            break;
 
         default:
             throw std::invalid_argument("Unsupported data format");

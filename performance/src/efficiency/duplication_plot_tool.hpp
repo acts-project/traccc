@@ -122,9 +122,12 @@ class duplication_plot_tool {
         (void)n_duplicated_tracks;
 
 #ifdef TRACCC_HAVE_ROOT
-        cache.n_duplicated_vs_pT->Fill(t_pT, n_duplicated_tracks);
-        cache.n_duplicated_vs_eta->Fill(t_eta, n_duplicated_tracks);
-        cache.n_duplicated_vs_phi->Fill(t_phi, n_duplicated_tracks);
+        cache.n_duplicated_vs_pT->Fill(
+            t_pT, static_cast<double>(n_duplicated_tracks));
+        cache.n_duplicated_vs_eta->Fill(
+            t_eta, static_cast<double>(n_duplicated_tracks));
+        cache.n_duplicated_vs_phi->Fill(
+            t_phi, static_cast<double>(n_duplicated_tracks));
 #endif  // TRACCC_HAVE_ROOT
     }
 

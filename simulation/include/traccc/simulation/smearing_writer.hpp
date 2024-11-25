@@ -47,8 +47,9 @@ struct smearing_writer : detray::actor {
     struct state {
         state(std::size_t event_id, config&& writer_cfg,
               const std::string directory)
-            : m_particle_writer(directory + traccc::io::get_event_filename(
-                                                event_id, "-particles.csv")),
+            : m_particle_writer(directory +
+                                traccc::io::get_event_filename(
+                                    event_id, "-particles_initial.csv")),
               m_hit_writer(directory + traccc::io::get_event_filename(
                                            event_id, "-hits.csv")),
               m_meas_writer(directory + traccc::io::get_event_filename(
@@ -119,7 +120,7 @@ struct smearing_writer : detray::actor {
 
             const auto track = stepping();
             const auto pos = track.pos();
-            const auto mom = track.mom(stepping._ptc.charge());
+            const auto mom = track.mom(stepping.particle_hypothesis().charge());
 
             const auto sf = navigation.get_surface();
 
@@ -137,7 +138,7 @@ struct smearing_writer : detray::actor {
 
             // Write measurements
             io::csv::measurement meas;
-            const auto bound_params = stepping._bound_params;
+            const auto bound_params = stepping.bound_params();
 
             meas.measurement_id = writer_state.m_hit_count;
             meas.geometry_id = hit.geometry_id;

@@ -27,20 +27,21 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     // Create buffer and view objects for prefix sum vector
     vecmem::data::vector_buffer<device::prefix_sum_element_t> prefix_sum_buff(
         totalSize, mr.main);
-    copy.setup(prefix_sum_buff);
+    copy.setup(prefix_sum_buff)->wait();
 
     // Fill the prefix sum vector
     // kernels::fill_prefix_sum<<<(sizes_sum_view.size() / 32) + 1, 32>>>(
     //    sizes_sum_view, prefix_sum_buff);
-    uint64_t num_blocks = (sizes_sum_view.size() / 32) + 1;
-    uint64_t num_threads = 32;
+    int num_blocks = (sizes_sum_view.size() / 32) + 1;
+    int num_threads = 32;
     auto data_prefix_sum_buff = vecmem::get_data(prefix_sum_buff);
     Kokkos::parallel_for(
         "fill_prefix_sum", team_policy(num_blocks, num_threads),
         KOKKOS_LAMBDA(const member_type& team_member) {
             device::fill_prefix_sum(
-                team_member.league_rank() * team_member.team_size() +
-                    team_member.team_rank(),
+                static_cast<std::size_t>(team_member.league_rank() *
+                                             team_member.team_size() +
+                                         team_member.team_rank()),
                 sizes_sum_view, data_prefix_sum_buff);
         });
     return prefix_sum_buff;

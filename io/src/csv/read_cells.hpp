@@ -8,32 +8,27 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/cell.hpp"
-#include "traccc/geometry/geometry.hpp"
-#include "traccc/io/digitization_config.hpp"
-#include "traccc/io/reader_edm.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
-#include <cstdint>
-#include <map>
 #include <string_view>
 
 namespace traccc::io::csv {
 
 /// Read cell information from a specific CSV file
 ///
-/// @param out A cell (host) collection & a cell_module collection
-/// @param filename The file to read the cell data from
-/// @param geom The description of the detector geometry
-/// @param dconfig The detector's digitization configuration
-/// @param bardoce_map An object to perform barcode re-mapping with
-/// @param deduplicate Whether to deduplicate the cells
+/// @param[out] cells       The cell collection to fill
+/// @param[in]  filename    The name of the file to read
+/// @param[in]  dd          The detector description to point the cells at
+/// @param[in]  deduplicate Whether to deduplicate the cells
+/// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
+///                                  "Acts geometry ID", or a
+///                                  "Detray geometry ID"
 ///
-void read_cells(cell_reader_output& out, std::string_view filename,
-                const geometry* geom = nullptr,
-                const digitization_config* dconfig = nullptr,
-                const std::map<std::uint64_t, detray::geometry::barcode>*
-                    barcode_map = nullptr,
-                bool deduplicate = true);
+void read_cells(edm::silicon_cell_collection::host& cells,
+                std::string_view filename,
+                const silicon_detector_description::host* dd = nullptr,
+                bool deduplicate = true, bool use_acts_geometry_id = true);
 
 }  // namespace traccc::io::csv

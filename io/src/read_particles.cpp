@@ -48,11 +48,10 @@ void read_particles(particle_collection_types::host& particles,
     }
 }
 
-void read_particles(
-    particle_container_types::host& particles, std::size_t event,
-    std::string_view directory, data_format format,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
-    std::string_view filename_postfix) {
+void read_particles(particle_container_types::host& particles,
+                    std::size_t event, std::string_view directory,
+                    const traccc::default_detector::host* detector,
+                    data_format format, std::string_view filename_postfix) {
 
     switch (format) {
         case data_format::csv:
@@ -75,23 +74,24 @@ void read_particles(
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurement-simhit-map.csv")))
                                       .native()),
-                format, barcode_map);
+                detector, format);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
     }
 }
 
-void read_particles(
-    particle_container_types::host& particles, std::string_view particles_file,
-    std::string_view hits_file, std::string_view measurements_file,
-    std::string_view hit_map_file, data_format format,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+void read_particles(particle_container_types::host& particles,
+                    std::string_view particles_file, std::string_view hits_file,
+                    std::string_view measurements_file,
+                    std::string_view hit_map_file,
+                    const traccc::default_detector::host* detector,
+                    data_format format) {
 
     switch (format) {
         case data_format::csv:
             csv::read_particles(particles, particles_file, hits_file,
-                                measurements_file, hit_map_file, barcode_map);
+                                measurements_file, hit_map_file, detector);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

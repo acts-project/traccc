@@ -25,8 +25,8 @@ namespace {
 vecmem::host_memory_resource host_mr;
 
 // Set B field
-static constexpr vector3 B{0. * unit<scalar>::T, 0. * unit<scalar>::T,
-                           2. * unit<scalar>::T};
+static constexpr vector3 B{0.f * unit<scalar>::T, 0.f * unit<scalar>::T,
+                           2.f * unit<scalar>::T};
 
 }  // namespace
 
@@ -39,8 +39,8 @@ TEST(seeding, case1) {
     traccc::seedfilter_config filter_config;
 
     // Adjust parameters
-    finder_config.deltaRMax = 100. * unit<scalar>::mm;
-    finder_config.maxPtScattering = 0.5 * unit<scalar>::GeV;
+    finder_config.deltaRMax = 100.f * unit<float>::mm;
+    finder_config.maxPtScattering = 0.5f * unit<float>::GeV;
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
                                  host_mr);
 
@@ -81,8 +81,8 @@ TEST(seeding, case2) {
     traccc::seedfilter_config filter_config;
 
     // Adjust parameters
-    finder_config.deltaRMax = 100. * unit<scalar>::mm;
-    finder_config.maxPtScattering = 0.5 * unit<scalar>::GeV;
+    finder_config.deltaRMax = 100.f * unit<float>::mm;
+    finder_config.maxPtScattering = 0.5f * unit<float>::GeV;
     traccc::seeding_algorithm sa(finder_config, grid_config, filter_config,
                                  host_mr);
 

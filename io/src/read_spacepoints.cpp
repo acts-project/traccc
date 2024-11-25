@@ -17,14 +17,15 @@
 
 namespace traccc::io {
 
-void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
-                      std::string_view directory, const geometry& geom,
+void read_spacepoints(spacepoint_collection_types::host& spacepoints,
+                      std::size_t event, std::string_view directory,
+                      const traccc::default_detector::host* detector,
                       data_format format) {
 
     switch (format) {
         case data_format::csv: {
             read_spacepoints(
-                out,
+                spacepoints,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-hits.csv")))
@@ -37,21 +38,15 @@ void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurement-simhit-map.csv")))
                                       .native()),
-                geom, format);
+                detector, format);
             break;
         }
         case data_format::binary: {
             details::read_binary_collection<spacepoint_collection_types::host>(
-                out.spacepoints,
+                spacepoints,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-hits.dat")))
-                                      .native()));
-            details::read_binary_collection<cell_module_collection_types::host>(
-                out.modules,
-                get_absolute_path((std::filesystem::path(directory) /
-                                   std::filesystem::path(get_event_filename(
-                                       event, "-modules.dat")))
                                       .native()));
             break;
         }
@@ -60,15 +55,18 @@ void read_spacepoints(spacepoint_reader_output& out, std::size_t event,
     }
 }
 
-void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+void read_spacepoints(spacepoint_collection_types::host& spacepoints,
+                      std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const geometry& geom, data_format format) {
+                      const traccc::default_detector::host* detector,
+                      data_format format) {
 
     switch (format) {
         case data_format::csv:
-            return csv::read_spacepoints(out, filename, meas_filename,
-                                         meas_hit_map_filename, geom);
+            return csv::read_spacepoints(spacepoints, hit_filename,
+                                         meas_filename, meas_hit_map_filename,
+                                         detector);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

@@ -57,21 +57,21 @@ struct clustering_config {
     /**
      * @brief The maximum number of cells per partition.
      */
-    TRACCC_HOST_DEVICE constexpr std::size_t max_partition_size() const {
+    TRACCC_HOST_DEVICE constexpr unsigned int max_partition_size() const {
         return threads_per_partition * max_cells_per_thread;
     }
 
     /**
      * @brief The target number of cells per partition.
      */
-    TRACCC_HOST_DEVICE constexpr std::size_t target_partition_size() const {
+    TRACCC_HOST_DEVICE constexpr unsigned int target_partition_size() const {
         return threads_per_partition * target_cells_per_thread;
     }
 
     /**
      * @brief The total size of the scratch space, in number of cells.
      */
-    TRACCC_HOST_DEVICE constexpr std::size_t backup_size() const {
+    TRACCC_HOST_DEVICE constexpr unsigned int backup_size() const {
         return max_partition_size() * backup_size_multiplier;
     }
 };

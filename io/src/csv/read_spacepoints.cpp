@@ -21,13 +21,16 @@
 
 namespace traccc::io::csv {
 
-void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+void read_spacepoints(spacepoint_collection_types::host& spacepoints,
+                      std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const geometry& geom) {
-    // Read measurements
-    measurement_reader_output meas_reader_out;
-    read_measurements(meas_reader_out, meas_filename, false);
+                      const traccc::default_detector::host* detector) {
+
+    // Read all measurements.
+    measurement_collection_types::host measurements;
+    static constexpr bool sort_measurements = false;
+    read_measurements(measurements, meas_filename, detector, sort_measurements);
 
     // Measurement hit id reader
     auto mhid_reader =
@@ -38,30 +41,12 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
         measurement_hit_ids.push_back(io_mh_id);
     }
 
-    // Construct the spacepoint reader object.
-    auto reader = make_hit_reader(filename);
+    // Construct the hit reader object.
+    auto hit_reader = make_hit_reader(hit_filename);
 
-    // Create the result collection.
-    spacepoint_collection_types::host& result_spacepoints = out.spacepoints;
-    cell_module_collection_types::host& result_modules = out.modules;
-
-    std::map<geometry_id, unsigned int> m;
-
-    // Read the spacepoints from the input file.
+    // Read the hits from the input file.
     hit iohit;
-    while (reader.read(iohit)) {
-        unsigned int link;
-        auto it = m.find(iohit.geometry_id);
-        if (it != m.end()) {
-            link = (*it).second;
-        } else {
-            link = result_modules.size();
-            m[iohit.geometry_id] = link;
-            cell_module mod;
-            mod.surface_link = detray::geometry::barcode{iohit.geometry_id};
-            mod.placement = geom[iohit.geometry_id];
-            result_modules.push_back(mod);
-        }
+    while (hit_reader.read(iohit)) {
 
         // Construct the global 3D position of the spacepoint.
         const point3 pos{iohit.tx, iohit.ty, iohit.tz};
@@ -69,16 +54,14 @@ void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
         // Construct the local 3D(2D) position of the measurement.
         measurement meas;
         for (auto const [meas_id, hit_id] : measurement_hit_ids) {
-            if (hit_id == result_spacepoints.size()) {
-                meas = meas_reader_out.measurements[meas_id];
+            if (hit_id == spacepoints.size()) {
+                meas = measurements[meas_id];
             }
         }
 
         // Create the spacepoint object (with its member measurement) from all
         // this information.
-        const traccc::spacepoint sp{pos, meas};
-
-        result_spacepoints.push_back(sp);
+        spacepoints.push_back({pos, meas});
     }
 }
 

@@ -25,10 +25,9 @@ namespace {
 /// Comparator used for sorting cells. This sorting is one of the assumptions
 /// made in the clusterization algorithm
 struct cell_order {
-    bool operator()(const traccc::cell& lhs, const traccc::cell& rhs) const {
-        if (lhs.module_link != rhs.module_link) {
-            return lhs.module_link < rhs.module_link;
-        } else if (lhs.channel1 != rhs.channel1) {
+    bool operator()(const traccc::io::csv::cell& lhs,
+                    const traccc::io::csv::cell& rhs) const {
+        if (lhs.channel1 != rhs.channel1) {
             return (lhs.channel1 < rhs.channel1);
         } else {
             return (lhs.channel0 < rhs.channel0);
@@ -36,63 +35,12 @@ struct cell_order {
     }
 };  // struct cell_order
 
-/// Helper function which finds module from csv::cell in the geometry and
-/// digitization config, and initializes the modules limits with the cell's
-/// properties
-traccc::cell_module get_module(const std::uint64_t geometry_id,
-                               const traccc::geometry* geom,
-                               const traccc::digitization_config* dconfig,
-                               const std::uint64_t original_geometry_id) {
-
-    traccc::cell_module result;
-    result.surface_link = detray::geometry::barcode{geometry_id};
-
-    // Find/set the 3D position of the detector module.
-    if (geom != nullptr) {
-
-        // Check if the module ID is known.
-        if (!geom->contains(result.surface_link.value())) {
-            throw std::runtime_error(
-                "Could not find placement for geometry ID " +
-                std::to_string(result.surface_link.value()));
-        }
-
-        // Set the value on the module description.
-        result.placement = (*geom)[result.surface_link.value()];
-    }
-
-    // Find/set the digitization configuration of the detector module.
-    if (dconfig != nullptr) {
-
-        // Check if the module ID is known.
-        const traccc::digitization_config::Iterator geo_it =
-            dconfig->find(original_geometry_id);
-        if (geo_it == dconfig->end()) {
-            throw std::runtime_error(
-                "Could not find digitization config for geometry ID " +
-                std::to_string(original_geometry_id));
-        }
-
-        // Set the value on the module description.
-        const auto& binning_data = geo_it->segmentation.binningData();
-        assert(binning_data.size() > 0);
-        result.pixel.min_corner_x = binning_data[0].min;
-        result.pixel.pitch_x = binning_data[0].step;
-        if (binning_data.size() > 1) {
-            result.pixel.min_corner_y = binning_data[1].min;
-            result.pixel.pitch_y = binning_data[1].step;
-        }
-        result.pixel.dimension = geo_it->dimensions;
-    }
-
-    return result;
-}
-
-std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
-    std::string_view filename) {
+std::map<std::uint64_t, std::vector<traccc::io::csv::cell> >
+read_deduplicated_cells(std::string_view filename) {
 
     // Temporary storage for all the cells and modules.
-    std::map<std::uint64_t, std::map<traccc::cell, float, ::cell_order> >
+    std::map<std::uint64_t,
+             std::map<traccc::io::csv::cell, float, ::cell_order> >
         cellMap;
 
     // Construct the cell reader object.
@@ -103,15 +51,11 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
     unsigned int nduplicates = 0;
     while (reader.read(iocell)) {
 
-        // Construct a cell object.
-        const traccc::cell cell{iocell.channel0, iocell.channel1, iocell.value,
-                                iocell.timestamp, 0};
-
         // Add the cell to the module. At this point the module link of the
         // cells is not set up correctly yet.
-        auto ret = cellMap[iocell.geometry_id].insert({cell, iocell.value});
+        auto ret = cellMap[iocell.geometry_id].insert({iocell, iocell.value});
         if (ret.second == false) {
-            cellMap[iocell.geometry_id].at(cell) += iocell.value;
+            cellMap[iocell.geometry_id].at(iocell) += iocell.value;
             ++nduplicates;
         }
     }
@@ -121,11 +65,11 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
     }
 
     // Create and fill the result container. With summed activation values.
-    std::map<std::uint64_t, std::vector<traccc::cell> > result;
+    std::map<std::uint64_t, std::vector<traccc::io::csv::cell> > result;
     for (const auto& [geometry_id, cells] : cellMap) {
         for (const auto& [cell, value] : cells) {
-            traccc::cell summed_cell{cell};
-            summed_cell.activation = value;
+            traccc::io::csv::cell summed_cell{cell};
+            summed_cell.value = value;
             result[geometry_id].push_back(summed_cell);
         }
     }
@@ -134,11 +78,11 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_deduplicated_cells(
     return result;
 }
 
-std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
+std::map<std::uint64_t, std::vector<traccc::io::csv::cell> > read_all_cells(
     std::string_view filename) {
 
     // The result container.
-    std::map<std::uint64_t, std::vector<traccc::cell> > result;
+    std::map<std::uint64_t, std::vector<traccc::io::csv::cell> > result;
 
     // Construct the cell reader object.
     auto reader = traccc::io::csv::make_cell_reader(filename);
@@ -149,9 +93,7 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
 
         // Add the cell to the module. At this point the module link of the
         // cells is not set up correctly yet.
-        result[iocell.geometry_id].push_back({iocell.channel0, iocell.channel1,
-                                              iocell.value, iocell.timestamp,
-                                              0});
+        result[iocell.geometry_id].push_back(iocell);
     }
 
     // Sort the cells. Deduplication or not, they do need to be sorted.
@@ -167,39 +109,63 @@ std::map<std::uint64_t, std::vector<traccc::cell> > read_all_cells(
 
 namespace traccc::io::csv {
 
-void read_cells(
-    cell_reader_output& out, std::string_view filename, const geometry* geom,
-    const digitization_config* dconfig,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map,
-    const bool deduplicate) {
+void read_cells(edm::silicon_cell_collection::host& cells,
+                std::string_view filename,
+                const silicon_detector_description::host* dd, bool deduplicate,
+                bool use_acts_geometry_id) {
+
+    // Clear the output container.
+    cells.resize(0u);
 
     // Get the cells and modules into an intermediate format.
     auto cellsMap = (deduplicate ? read_deduplicated_cells(filename)
                                  : read_all_cells(filename));
 
-    // Fill the output containers with the ordered cells and modules.
-    for (const auto& [original_geometry_id, cells] : cellsMap) {
-        // Modify the geometry ID of the module if a barcode map is
-        // provided.
-        std::uint64_t geometry_id = original_geometry_id;
-        if (barcode_map != nullptr) {
-            const auto it = barcode_map->find(geometry_id);
-            if (it != barcode_map->end()) {
-                geometry_id = it->second.value();
-            } else {
-                throw std::runtime_error(
-                    "Could not find barcode for geometry ID " +
-                    std::to_string(geometry_id));
+    // If there is a detector description object, build a map of geometry IDs
+    // to indices inside the detector description.
+    std::map<geometry_id, unsigned int> geomIdMap;
+    if (dd) {
+        if (use_acts_geometry_id) {
+            for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
+                geomIdMap[dd->acts_geometry_id()[i]] = i;
+            }
+        } else {
+            for (unsigned int i = 0; i < dd->geometry_id().size(); ++i) {
+                geomIdMap[dd->geometry_id()[i].value()] = i;
             }
         }
+    }
 
-        // Add the module and its cells to the output.
-        out.modules.push_back(
-            get_module(geometry_id, geom, dconfig, original_geometry_id));
-        for (auto& cell : cells) {
-            out.cells.push_back(cell);
-            // Set the module link.
-            out.cells.back().module_link = out.modules.size() - 1;
+    // Fill the output containers with the ordered cells and modules.
+    for (const auto& [geometry_id, cellz] : cellsMap) {
+
+        // Figure out the index of the detector description object, for this
+        // group of cells.
+        unsigned int ddIndex = 0;
+        if (dd) {
+            auto it = geomIdMap.find(geometry_id);
+            if (it == geomIdMap.end()) {
+                throw std::runtime_error("Could not find geometry ID (" +
+                                         std::to_string(geometry_id) +
+                                         ") in the detector description");
+            }
+            ddIndex = it->second;
+        }
+
+        // Helper lambda for setting up SoA cells.
+        auto assign = [ddIndex](auto soa_cell, const cell& iocell) {
+            soa_cell.channel0() = iocell.channel0;
+            soa_cell.channel1() = iocell.channel1;
+            soa_cell.activation() = iocell.value;
+            soa_cell.time() = iocell.timestamp;
+            soa_cell.module_index() = ddIndex;
+        };
+
+        // Add the cells to the output.
+        for (auto& cell : cellz) {
+            const std::size_t cellIndex = cells.size();
+            cells.resize(cellIndex + 1);
+            assign(cells.at(cellIndex), cell);
         }
     }
 }

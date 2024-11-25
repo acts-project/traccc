@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  builds:
+  containers:
     name: ${{ matrix.platform.name }}-${{ matrix.build }}
     runs-on: ubuntu-latest
     container: ${{ matrix.platform.container }}
@@ -26,28 +26,23 @@ jobs:
         platform:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:56
-            cxx_standard: "20"
-            options:
+            options: --preset host-fp32 -DALGEBRA_PLUGINS_USE_SYSTEM_VC=FALSE
             run_tests: true
-          - name: HIP
-            container: ghcr.io/acts-project/ubuntu2204_rocm_clang_cxx20:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_HIP=TRUE -DTRACCC_SETUP_ROCTHRUST=TRUE
+          - name: CPU
+            container: ghcr.io/acts-project/ubuntu2404:56
+            options: --preset host-fp64 -DALGEBRA_PLUGINS_USE_SYSTEM_VC=FALSE
             run_tests: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2404_cuda:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_CUDA=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
+            options: --preset cuda-fp32
             run_tests: false
           - name: SYCL
             container: ghcr.io/acts-project/ubuntu2404_oneapi:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_SYCL=TRUE -DCMAKE_SYCL_FLAGS="-fsycl -fsycl-targets=spir64"
+            options: --preset sycl-fp32 -DCMAKE_SYCL_FLAGS="-fsycl -fsycl-targets=spir64"
             run_tests: true
           - name: KOKKOS
             container: ghcr.io/acts-project/ubuntu2404:56
-            cxx_standard: "20"
-            options: -DTRACCC_BUILD_KOKKOS=TRUE
+            options: --preset kokkos-fp32
             run_tests: false
         build:
           - Release
@@ -56,34 +51,31 @@ jobs:
           - platform:
               name: CUDA
               container: ghcr.io/acts-project/ubuntu2404_cuda:56
-              cxx_standard: "20"
-              options: -DTRACCC_CUSTOM_SCALARTYPE=double -DDETRAY_CUSTOM_SCALARTYPE=double -DTRACCC_BUILD_CUDA=TRUE -DCMAKE_CUDA_FLAGS="-std=c++20"
+              options: --preset cuda-fp64
               run_tests: false
             build: Release
           - platform:
               name: "SYCL"
               container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_SYCL=TRUE -DTRACCC_BUILD_CUDA=FALSE -DVECMEM_BUILD_CUDA_LIBRARY=FALSE
+              options: --preset sycl-fp32
+              run_tests: false
             build: Release
           - platform:
               name: "SYCL"
               container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_SYCL=TRUE -DVECMEM_BUILD_HIP_LIBRARY=FALSE
+              options: --preset sycl-fp32
+              run_tests: false
             build: Release
           - platform:
               name: ALPAKA
               container: ghcr.io/acts-project/ubuntu2404:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_ALPAKA=TRUE
+              options: --preset alpaka-fp32
               run_tests: true
             build: Release
           - platform:
               name: ALPAKA
               container: ghcr.io/acts-project/ubuntu2404:56
-              cxx_standard: "20"
-              options: -DTRACCC_BUILD_ALPAKA=TRUE
+              options: --preset alpaka-fp32
               run_tests: false
             build: Debug
     # Use BASH as the shell from the images.
@@ -97,12 +89,7 @@ jobs:
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-            -DCMAKE_CXX_STANDARD=${{ matrix.platform.cxx_standard }} \
-            -DCMAKE_CUDA_STANDARD=${{ matrix.platform.cxx_standard }} \
-            -DCMAKE_HIP_STANDARD=${{ matrix.platform.cxx_standard }} \
-            -DCMAKE_SYCL_STANDARD=${{ matrix.platform.cxx_standard }} \
             ${{ matrix.platform.options }} \
-            -DTRACCC_FAIL_ON_WARNINGS=TRUE \
             -S ${GITHUB_WORKSPACE} \
             -B build
       - name: Build
@@ -122,3 +109,19 @@ jobs:
         if: "matrix.platform.name == 'CUDA' && matrix.build == 'Debug'"
         continue-on-error: true
         run: ${GITHUB_WORKSPACE}/.github/find_f64_ptx.py --source ${GITHUB_WORKSPACE} --build build $(find build -name "*.ptx")
+
+  macos:
+    runs-on: macos-14
+    name: macOS-Release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install boost
+      - name: Configure
+        run: cmake --preset base-fp32 -S ${GITHUB_WORKSPACE} -B build
+      - name: Build
+        run: cmake --build build
+      - name: Download data files
+        run: ${GITHUB_WORKSPACE}/data/traccc_data_get_files.sh
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

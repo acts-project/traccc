@@ -19,10 +19,10 @@ namespace traccc::io::csv {
 struct surface {
 
     uint64_t geometry_id = 0;
-    float cx = 0., cy = 0., cz = 0.;
-    float rot_xu = 0., rot_xv = 0., rot_xw = 0.;
-    float rot_yu = 0., rot_yv = 0., rot_yw = 0.;
-    float rot_zu = 0., rot_zv = 0., rot_zw = 0.;
+    float cx = 0.f, cy = 0.f, cz = 0.f;
+    float rot_xu = 0.f, rot_xv = 0.f, rot_xw = 0.f;
+    float rot_yu = 0.f, rot_yv = 0.f, rot_yw = 0.f;
+    float rot_zu = 0.f, rot_zv = 0.f, rot_zw = 0.f;
 
     // geometry_id,hit_id,channel0,channel1,timestamp,value
     DFE_NAMEDTUPLE(surface, geometry_id, cx, cy, cz, rot_xu, rot_xv, rot_xw,

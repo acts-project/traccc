@@ -8,11 +8,13 @@
 // Project include(s).
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_digitization_config.hpp"
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_particles.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/io/write.hpp"
 
 // Test include(s).
 #include "tests/data_test.hpp"
@@ -23,59 +25,53 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
+// System include(s).
+#include <filesystem>
+
 class io : public traccc::tests::data_test {};
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_single_module) {
 
-    traccc::io::cell_reader_output single_module_cells;
-    traccc::io::read_cells(
-        single_module_cells, get_datafile("single_module/cells.csv"),
-        traccc::data_format::csv, nullptr, nullptr, nullptr, false);
-    auto& cells = single_module_cells.cells;
-    auto& modules = single_module_cells.modules;
-    ASSERT_EQ(cells.size(), 6u);
-    ASSERT_EQ(modules.size(), 1u);
-    auto mod = single_module_cells.modules.at(0);
+    vecmem::host_memory_resource resource;
 
-    ASSERT_EQ(mod.surface_link.value(), 0u);
-    ASSERT_EQ(cells.at(0).channel0, 123u);
-    ASSERT_EQ(cells.at(0).channel1, 32u);
-    ASSERT_EQ(cells.at(5).channel0, 174u);
-    ASSERT_EQ(cells.at(5).channel1, 880u);
+    traccc::edm::silicon_cell_collection::host cells{resource};
+    traccc::io::read_cells(cells, get_datafile("single_module/cells.csv"));
+
+    ASSERT_EQ(cells.size(), 6u);
+
+    EXPECT_EQ(cells.channel0().at(0), 123u);
+    EXPECT_EQ(cells.channel1().at(0), 32u);
+    EXPECT_FLOAT_EQ(static_cast<float>(cells.activation().at(0)), 0.002f);
+    EXPECT_EQ(cells.module_index().at(0), 0u);
+
+    EXPECT_EQ(cells.channel0().at(5), 174u);
+    EXPECT_EQ(cells.channel1().at(5), 880u);
+    EXPECT_FLOAT_EQ(static_cast<float>(cells.activation().at(5)), 0.23f);
+    EXPECT_EQ(cells.module_index().at(5), 0u);
 }
 
 // This defines the local frame test suite
 TEST_F(io, csv_read_two_modules) {
 
-    traccc::io::cell_reader_output two_module_cells;
-    traccc::io::read_cells(
-        two_module_cells, get_datafile("two_modules/cells.csv"),
-        traccc::data_format::csv, nullptr, nullptr, nullptr, false);
-    auto& cells = two_module_cells.cells;
-    auto& modules = two_module_cells.modules;
-    ASSERT_EQ(modules.size(), 2u);
+    vecmem::host_memory_resource resource;
+
+    traccc::edm::silicon_cell_collection::host cells{resource};
+    traccc::io::read_cells(cells, get_datafile("two_modules/cells.csv"));
+
     ASSERT_EQ(cells.size(), 14u);
 
     // Check cells in first module
-    ASSERT_EQ(cells.at(0).channel0, 123u);
-    ASSERT_EQ(cells.at(0).channel1, 32u);
-    ASSERT_EQ(cells.at(0).module_link, 0u);
-    ASSERT_EQ(cells.at(5).channel0, 174u);
-    ASSERT_EQ(cells.at(5).channel1, 880u);
-    ASSERT_EQ(cells.at(5).module_link, 0u);
-
-    ASSERT_EQ(modules.at(0u).surface_link.value(), 0u);
+    EXPECT_EQ(cells.channel0().at(0), 123u);
+    EXPECT_EQ(cells.channel1().at(0), 32u);
+    EXPECT_EQ(cells.channel0().at(5), 174u);
+    EXPECT_EQ(cells.channel1().at(5), 880u);
 
     // Check cells in second module
-    ASSERT_EQ(cells.at(6).channel0, 0u);
-    ASSERT_EQ(cells.at(6).channel1, 4u);
-    ASSERT_EQ(cells.at(6).module_link, 1u);
-    ASSERT_EQ(cells.at(13).channel0, 5u);
-    ASSERT_EQ(cells.at(13).channel1, 98u);
-    ASSERT_EQ(cells.at(13).module_link, 1u);
-
-    ASSERT_EQ(modules.at(1u).surface_link.value(), 1u);
+    EXPECT_EQ(cells.channel0().at(6), 0u);
+    EXPECT_EQ(cells.channel1().at(6), 4u);
+    EXPECT_EQ(cells.channel0().at(13), 5u);
+    EXPECT_EQ(cells.channel1().at(13), 98u);
 }
 
 // This reads in the tml pixel barrel first event
@@ -90,46 +86,47 @@ TEST_F(io, csv_read_tml_transforms) {
 // This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_pixelbarrel) {
 
-    traccc::io::cell_reader_output readOut;
-    traccc::io::read_cells(
-        readOut, get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
-        traccc::data_format::csv);
+    vecmem::host_memory_resource resource;
 
-    ASSERT_EQ(readOut.modules.size(), 2382u);
+    traccc::edm::silicon_cell_collection::host cells{resource};
+    traccc::io::read_cells(
+        cells, get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
+        nullptr, traccc::data_format::csv, false);
+
+    EXPECT_EQ(cells.size(), 179961u);
 }
 
 // This checks if hit and measurement container from the first single muon event
 TEST_F(io, csv_read_tml_single_muon) {
     vecmem::host_memory_resource resource;
 
-    // Read the surface transforms
-    auto [surface_transforms, _] =
-        traccc::io::read_geometry("tml_detector/trackml-detector.csv");
+    // Read the detector description.
+    traccc::silicon_detector_description::host dd{resource};
+    traccc::io::read_detector_description(
+        dd, "tml_detector/trackml-detector.csv",
+        "tml_detector/default-geometric-config-generic.json",
+        traccc::data_format::csv);
 
     // Read the hits from the relevant event file
-    traccc::io::spacepoint_reader_output spacepoints_per_event(&resource);
+    traccc::spacepoint_collection_types::host spacepoints_per_event(&resource);
     traccc::io::read_spacepoints(spacepoints_per_event, 0,
-                                 "tml_full/single_muon/", surface_transforms,
-                                 traccc::data_format::csv);
+                                 "tml_full/single_muon/");
 
     // Read the measurements from the relevant event file
-    traccc::io::measurement_reader_output measurements_per_event(&resource);
+    traccc::measurement_collection_types::host measurements_per_event(
+        &resource);
     traccc::io::read_measurements(measurements_per_event, 0,
-                                  "tml_full/single_muon/",
-                                  traccc::data_format::csv);
+                                  "tml_full/single_muon/", nullptr);
 
     // Read the particles from the relevant event file
     traccc::particle_collection_types::host particles_per_event(&resource);
     traccc::io::read_particles(particles_per_event, 0, "tml_full/single_muon/",
                                traccc::data_format::csv);
 
-    ASSERT_EQ(spacepoints_per_event.modules.size(), 11u);
-    ASSERT_EQ(measurements_per_event.modules.size(), 11u);
+    EXPECT_EQ(spacepoints_per_event.size(), 11u);
+    EXPECT_EQ(measurements_per_event.size(), 11u);
 
-    ASSERT_EQ(spacepoints_per_event.spacepoints.size(), 11u);
-    ASSERT_EQ(measurements_per_event.measurements.size(), 11u);
-
-    ASSERT_EQ(particles_per_event.size(), 1u);
+    EXPECT_EQ(particles_per_event.size(), 1u);
 }
 
 /// Tests with ODD "single" muon events.
@@ -138,10 +135,14 @@ TEST_F(io, csv_read_odd_single_muon) {
     // Memory resource used by the test.
     vecmem::host_memory_resource mr;
 
+    traccc::default_detector::host detector{mr};
+    traccc::io::read_detector(detector, mr,
+                              "geometries/odd/odd-detray_geometry_detray.json");
+
     // Read the truth particles for the first event.
     traccc::particle_container_types::host particles{&mr};
     traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/",
-                               traccc::data_format::csv);
+                               &detector, traccc::data_format::csv);
 
     // Look at the read container.
     ASSERT_EQ(particles.size(), 265u);
@@ -154,4 +155,59 @@ TEST_F(io, csv_read_odd_single_muon) {
         }
     }
     EXPECT_EQ(n_muons, 4u);
+}
+
+TEST_F(io, csv_write_odd_single_muon_cells) {
+
+    // Memory resource used by the test.
+    vecmem::host_memory_resource mr;
+
+    // Read the ODD detector description.
+    traccc::silicon_detector_description::host dd{mr};
+    traccc::io::read_detector_description(
+        dd, "geometries/odd/odd-detray_geometry_detray.json",
+        "geometries/odd/odd-digi-geometric-config.json");
+
+    // Lambda comparing two cell collections.
+    auto compare_cells =
+        [](const traccc::edm::silicon_cell_collection::host& a,
+           const traccc::edm::silicon_cell_collection::host& b) -> void {
+        ASSERT_EQ(a.size(), b.size());
+        for (traccc::edm::silicon_cell_collection::host::size_type i = 0;
+             i < a.size(); ++i) {
+            EXPECT_EQ(a.at(i), b.at(i));
+        }
+    };
+
+    // Cell collections to use in the test.
+    traccc::edm::silicon_cell_collection::host orig{mr}, copy{mr};
+
+    // Lambda performing the test with either using "Acts geometry IDs" or
+    // "Detray ones".
+    auto perform_test = [&](bool use_acts_geometry_id) {
+        // Test the I/O for 10 events.
+        for (std::size_t event = 0; event < 10; ++event) {
+
+            // Read the cells for the current event.
+            traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/", &dd);
+
+            // Write the cells into a temporary file.
+            traccc::io::write(event,
+                              std::filesystem::temp_directory_path().native(),
+                              traccc::data_format::csv, vecmem::get_data(orig),
+                              vecmem::get_data(dd), use_acts_geometry_id);
+
+            // Read the cells back in.
+            traccc::io::read_cells(
+                copy, event, std::filesystem::temp_directory_path().native(),
+                &dd, traccc::data_format::csv, false, use_acts_geometry_id);
+
+            // Compare the two cell collections.
+            compare_cells(orig, copy);
+        }
+    };
+
+    // Perform the test with both "Acts geometry IDs" and "Detray ones".
+    perform_test(true);
+    perform_test(false);
 }

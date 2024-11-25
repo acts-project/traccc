@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,8 +15,7 @@
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/io/event_map2.hpp"
-#include "traccc/io/mapper.hpp"
+#include "traccc/utils/event_data.hpp"
 
 // System include(s).
 #include <memory>
@@ -57,9 +56,18 @@ class fitting_performance_writer {
     template <typename detector_t>
     void write(const track_state_collection_types::host& track_states_per_track,
                const fitting_result<traccc::default_algebra>& fit_res,
-               const detector_t& det, event_map2& evt_map) {
+               const detector_t& det, event_data& evt_data) {
 
-        auto& m_p_map = evt_map.meas_ptc_map;
+        std::map<measurement, std::map<particle, std::size_t>> meas_to_ptc_map;
+        std::map<measurement, std::pair<point3, point3>> meas_to_param_map;
+
+        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
+            meas_to_ptc_map = evt_data.m_found_meas_to_ptc_map;
+            meas_to_param_map = evt_data.m_found_meas_to_param_map;
+        } else {
+            meas_to_ptc_map = evt_data.m_meas_to_ptc_map;
+            meas_to_param_map = evt_data.m_meas_to_param_map;
+        }
 
         // Get the track state at the first surface
         const auto& trk_state = track_states_per_track[0];
@@ -67,32 +75,29 @@ class fitting_performance_writer {
 
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
-        std::map<particle, uint64_t> contributing_particles = m_p_map[meas];
+        std::map<particle, std::size_t> contributing_particles =
+            meas_to_ptc_map.at(meas);
 
         const particle ptc = contributing_particles.begin()->first;
 
         // Find the truth global position and momentum
-        const auto global_pos = evt_map.meas_xp_map[meas].first;
-        const auto global_mom = evt_map.meas_xp_map[meas].second;
+        const auto global_pos = meas_to_param_map.at(meas).first;
+        const auto global_mom = meas_to_param_map.at(meas).second;
 
         const detray::tracking_surface sf{det, meas.surface_link};
         using cxt_t = typename detector_t::geometry_context;
         const cxt_t ctx{};
-        const auto truth_local =
-            sf.global_to_local(ctx, global_pos, vector::normalize(global_mom));
+        const auto truth_bound =
+            sf.global_to_bound(ctx, global_pos, vector::normalize(global_mom));
 
         // Return value
-        bound_track_parameters truth_param;
-        auto& truth_vec = truth_param.vector();
-        getter::element(truth_vec, e_bound_loc0, 0) = truth_local[0];
-        getter::element(truth_vec, e_bound_loc1, 0) = truth_local[1];
-        getter::element(truth_vec, e_bound_phi, 0) = getter::phi(global_mom);
-        getter::element(truth_vec, e_bound_theta, 0) =
-            getter::theta(global_mom);
+        bound_track_parameters truth_param{};
+        truth_param.set_bound_local(truth_bound);
+        truth_param.set_phi(getter::phi(global_mom));
+        truth_param.set_theta(getter::theta(global_mom));
         // @todo: Assign a proper value to time
-        getter::element(truth_vec, e_bound_time, 0) = 0.;
-        getter::element(truth_vec, e_bound_qoverp, 0) =
-            ptc.charge / getter::norm(global_mom);
+        truth_param.set_time(0.f);
+        truth_param.set_qop(ptc.charge / getter::norm(global_mom));
 
         // For the moment, only fill with the first measurements
         if (fit_res.ndf > 0 && !trk_state.is_hole) {

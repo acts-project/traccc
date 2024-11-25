@@ -7,7 +7,8 @@
  */
 
 // vecmem includes
-#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/vector.hpp>
 
 // traccc includes
 #include <traccc/definitions/qualifiers.hpp>
@@ -38,9 +39,11 @@ TEST_F(CPUSanityOrderedOn, TrueConsecutiveNoRepeatsLeq) {
         host_vector.push_back(i);
     }
 
-    auto device_data = vecmem::get_data(host_vector);
+    ASSERT_TRUE(traccc::host::is_ordered_on(int_leq_relation(), host_vector));
 
-    ASSERT_TRUE(traccc::host::is_ordered_on(int_leq_relation(), device_data));
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_TRUE(traccc::host::is_ordered_on(int_leq_relation(), device_vector));
 }
 
 TEST_F(CPUSanityOrderedOn, TrueConsecutiveNoRepeatsLt) {
@@ -50,9 +53,11 @@ TEST_F(CPUSanityOrderedOn, TrueConsecutiveNoRepeatsLt) {
         host_vector.push_back(i);
     }
 
-    auto device_data = vecmem::get_data(host_vector);
+    ASSERT_TRUE(traccc::host::is_ordered_on(int_lt_relation(), host_vector));
 
-    ASSERT_TRUE(traccc::host::is_ordered_on(int_lt_relation(), device_data));
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_TRUE(traccc::host::is_ordered_on(int_lt_relation(), device_vector));
 }
 
 TEST_F(CPUSanityOrderedOn, TrueConsecutiveRepeatsLeq) {
@@ -64,9 +69,11 @@ TEST_F(CPUSanityOrderedOn, TrueConsecutiveRepeatsLeq) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
+    ASSERT_TRUE(traccc::host::is_ordered_on(int_leq_relation(), host_vector));
 
-    ASSERT_TRUE(traccc::host::is_ordered_on(int_leq_relation(), device_data));
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_TRUE(traccc::host::is_ordered_on(int_leq_relation(), device_vector));
 }
 
 TEST_F(CPUSanityOrderedOn, FalseConsecutiveRepeatLt) {
@@ -78,9 +85,11 @@ TEST_F(CPUSanityOrderedOn, FalseConsecutiveRepeatLt) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
+    ASSERT_FALSE(traccc::host::is_ordered_on(int_lt_relation(), host_vector));
 
-    ASSERT_FALSE(traccc::host::is_ordered_on(int_lt_relation(), device_data));
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_FALSE(traccc::host::is_ordered_on(int_lt_relation(), device_vector));
 }
 
 TEST_F(CPUSanityOrderedOn, TrueConsecutivePathologicalFirstLeq) {
@@ -94,9 +103,12 @@ TEST_F(CPUSanityOrderedOn, TrueConsecutivePathologicalFirstLeq) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
+    ASSERT_FALSE(traccc::host::is_ordered_on(int_leq_relation(), host_vector));
 
-    ASSERT_FALSE(traccc::host::is_ordered_on(int_leq_relation(), device_data));
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_FALSE(
+        traccc::host::is_ordered_on(int_leq_relation(), device_vector));
 }
 
 TEST_F(CPUSanityOrderedOn, TrueConsecutivePathologicalLastLeq) {
@@ -110,7 +122,10 @@ TEST_F(CPUSanityOrderedOn, TrueConsecutivePathologicalLastLeq) {
         }
     }
 
-    auto device_data = vecmem::get_data(host_vector);
+    ASSERT_FALSE(traccc::host::is_ordered_on(int_leq_relation(), host_vector));
 
-    ASSERT_FALSE(traccc::host::is_ordered_on(int_leq_relation(), device_data));
+    vecmem::device_vector<int> device_vector(vecmem::get_data(host_vector));
+
+    ASSERT_FALSE(
+        traccc::host::is_ordered_on(int_leq_relation(), device_vector));
 }

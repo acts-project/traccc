@@ -6,13 +6,13 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/seeding/experimental/spacepoint_formation.hpp"
+#include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
 // Detray include(s).
-#include "detray/detectors/build_telescope_detector.hpp"
 #include "detray/navigation/detail/ray.hpp"
+#include "detray/test/utils/detectors/build_telescope_detector.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -73,7 +73,7 @@ TEST(CUDASpacepointFormation, cuda) {
     measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
 
     // Run spacepoint formation
-    traccc::cuda::experimental::spacepoint_formation<device_detector_type>
+    traccc::cuda::spacepoint_formation_algorithm<device_detector_type>
         sp_formation(mr, copy, stream);
     auto spacepoints_buffer =
         sp_formation(detray::get_data(det), vecmem::get_data(measurements));

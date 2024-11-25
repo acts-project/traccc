@@ -12,9 +12,9 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
-#include "traccc/finding/ckf_aborter.hpp"
+#include "traccc/finding/actors/ckf_aborter.hpp"
+#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/finding_config.hpp"
-#include "traccc/finding/interaction_register.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -41,8 +41,6 @@ class finding_algorithm
     : public algorithm<track_candidate_container_types::buffer(
           const typename navigator_t::detector_type::view_type&,
           const typename stepper_t::magnetic_field_type&,
-          const vecmem::data::jagged_vector_view<
-              typename navigator_t::intersection_type>&,
           const typename measurement_collection_types::view&,
           const bound_track_parameters_collection_types::buffer&)> {
 
@@ -63,7 +61,7 @@ class finding_algorithm
 
     /// Actor chain for propagate to the next surface and its propagator type
     using actor_type =
-        detray::actor_chain<std::tuple, detray::pathlimit_aborter,
+        detray::actor_chain<detray::dtuple, detray::pathlimit_aborter,
                             detray::parameter_transporter<algebra_type>,
                             interaction_register<interactor>, interactor,
                             ckf_aborter>;
@@ -90,13 +88,10 @@ class finding_algorithm
     /// Run the algorithm
     ///
     /// @param det_view  Detector view object
-    /// @param navigation_buffer  Buffer for navigation candidates
     /// @param seeds     Input seeds
     track_candidate_container_types::buffer operator()(
         const typename detector_type::view_type& det_view,
         const bfield_type& field_view,
-        const vecmem::data::jagged_vector_view<
-            typename navigator_t::intersection_type>& navigation_buffer,
         const typename measurement_collection_types::view& measurements,
         const bound_track_parameters_collection_types::buffer& seeds)
         const override;
@@ -111,7 +106,7 @@ class finding_algorithm
     /// The CUDA stream to use
     stream& m_stream;
     /// Warp size of the GPU being used
-    int m_warp_size;
+    unsigned int m_warp_size;
 };
 
 }  // namespace traccc::cuda

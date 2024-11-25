@@ -17,35 +17,29 @@
 
 namespace traccc::io {
 
-void read_measurements(
-    measurement_reader_output& out, std::size_t event,
-    std::string_view directory, data_format format,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+void read_measurements(measurement_collection_types::host& measurements,
+                       std::size_t event, std::string_view directory,
+                       const traccc::default_detector::host* detector,
+                       data_format format) {
 
     switch (format) {
         case data_format::csv: {
             read_measurements(
-                out,
+                measurements,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.csv")))
                                       .native()),
-                format, barcode_map);
+                detector, format);
             break;
         }
         case data_format::binary: {
 
             details::read_binary_collection<measurement_collection_types::host>(
-                out.measurements,
+                measurements,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.dat")))
-                                      .native()));
-            details::read_binary_collection<cell_module_collection_types::host>(
-                out.modules,
-                get_absolute_path((std::filesystem::path(directory) /
-                                   std::filesystem::path(get_event_filename(
-                                       event, "-modules.dat")))
                                       .native()));
             break;
         }
@@ -54,16 +48,16 @@ void read_measurements(
     }
 }
 
-void read_measurements(
-    measurement_reader_output& out, std::string_view filename,
-    data_format format,
-    const std::map<std::uint64_t, detray::geometry::barcode>* barcode_map) {
+void read_measurements(measurement_collection_types::host& measurements,
+                       std::string_view filename,
+                       const traccc::default_detector::host* detector,
+                       data_format format) {
 
     static constexpr bool sort_measurements = true;
     switch (format) {
         case data_format::csv:
-            return csv::read_measurements(out, filename, sort_measurements,
-                                          barcode_map);
+            return csv::read_measurements(measurements, filename, detector,
+                                          sort_measurements);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

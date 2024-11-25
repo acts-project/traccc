@@ -8,7 +8,6 @@
 #pragma once
 
 #include "traccc/edm/particle.hpp"
-#include "traccc/io/mapper.hpp"
 
 namespace traccc {
 
@@ -50,11 +49,11 @@ std::vector<particle_hit_count> identify_contributing_particles(
 
             // particle has been already added to the result vector
             if (it != result.end()) {
-                it->hit_counts += count;
+                it->hit_counts++;
             }
             // particle has not been added
             else {
-                result.push_back({ptc, count});
+                result.push_back({ptc, 1u});
             }
         }
     }

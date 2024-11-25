@@ -19,7 +19,7 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -31,26 +31,7 @@
 
 namespace traccc {
 
-/// Kalman Fitting Test with Telescope Geometry
-///
-/// Test parameters:
-/// (1) name
-/// (2) origin
-/// (3) origin stddev
-/// (4) momentum range
-/// (5) eta range
-/// (6) phi range
-/// (7) particle type
-/// (8) number of tracks per event
-/// (9) number of events
-/// (10) random charge
-class KalmanFittingTests
-    : public ::testing::TestWithParam<std::tuple<
-          std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
-          std::array<scalar, 2u>, std::array<scalar, 2u>,
-          std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
-          unsigned int, bool>> {
-
+class KalmanFittingTests : public testing::Test {
     public:
     /// Type declarations
     using host_detector_type = detray::detector<detray::default_metadata,

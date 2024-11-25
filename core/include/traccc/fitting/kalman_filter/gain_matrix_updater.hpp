@@ -36,26 +36,28 @@ struct gain_matrix_updater {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE inline void operator()(
+    TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        bound_track_parameters& bound_params) const {
+        const bound_track_parameters& bound_params) const {
 
         using shape_type = typename mask_group_t::value_type::shape;
 
         const auto D = trk_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
         if (D == 1u) {
-            update<1u, shape_type>(trk_state, bound_params);
+            return update<1u, shape_type>(trk_state, bound_params);
         } else if (D == 2u) {
-            update<2u, shape_type>(trk_state, bound_params);
+            return update<2u, shape_type>(trk_state, bound_params);
         }
+
+        return false;
     }
 
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE inline void update(
+    TRACCC_HOST_DEVICE inline bool update(
         track_state<algebra_t>& trk_state,
-        bound_track_parameters& bound_params) const {
+        const bound_track_parameters& bound_params) const {
 
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
@@ -121,16 +123,22 @@ struct gain_matrix_updater {
         const matrix_type<1, 1> chi2 = matrix_operator().transpose(residual) *
                                        matrix_operator().inverse(R) * residual;
 
-        // Set the stepper parameter
-        bound_params.set_vector(filtered_vec);
-        bound_params.set_covariance(filtered_cov);
+        // Return false if track is parallel to z-axis or phi is not finite
+        const scalar theta = bound_params.theta();
+        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi ||
+            !std::isfinite(bound_params.phi())) {
+            return false;
+        }
 
         // Set the track state parameters
         trk_state.filtered().set_vector(filtered_vec);
         trk_state.filtered().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = matrix_operator().element(chi2, 0, 0);
 
-        return;
+        // Wrap the phi in the range of [-pi, pi]
+        wrap_phi(trk_state.filtered());
+
+        return true;
     }
 };
 

@@ -1,11 +1,11 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022 CERN for the benefit of the ACTS project
+# (c) 2022-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
 # CMake include(s).
-cmake_minimum_required( VERSION 3.14 )
+cmake_minimum_required( VERSION 3.24 )
 include( FetchContent )
 
 # Silence FetchContent warnings with CMake >=3.24.
@@ -18,10 +18,10 @@ message( STATUS "Building TBB as part of the TRACCC project" )
 
 # Declare where to get TBB from.
 set( TRACCC_TBB_SOURCE
-   "URL;https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.7.0.tar.gz;URL_MD5;68e617448f71df02d8688c84d53778f6"
+   "URL;https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.13.0.tar.gz;URL_MD5;f287cd007240a838286ff13e7deaee12"
    CACHE STRING "Source for TBB, when built as part of this project" )
 mark_as_advanced( TRACCC_TBB_SOURCE )
-FetchContent_Declare( TBB ${TRACCC_TBB_SOURCE} )
+FetchContent_Declare( TBB ${TRACCC_TBB_SOURCE} OVERRIDE_FIND_PACKAGE )
 
 # Options used in the build of TBB.
 set( TBB_TEST FALSE CACHE BOOL "Turn off the TBB tests" )

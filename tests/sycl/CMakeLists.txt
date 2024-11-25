@@ -15,6 +15,7 @@ traccc_add_test(
     # TODO: Reactivate this once #655 is fixed.
     # test_kalman_fitter_telescope.sycl
     test_clusterization.sycl
+    test_dpl.sycl
     test_spacepoint_formation.sycl
     test_barrier.sycl
     test_mutex.sycl
@@ -29,7 +30,7 @@ traccc_add_test(
     vecmem::sycl
     detray::core
     detray::io
-    detray::utils
+    detray::test_utils
     traccc::core
     traccc::device_common
     traccc::sycl
@@ -37,4 +38,5 @@ traccc_add_test(
     traccc::io
     traccc::simulation
     traccc_tests_common
+    oneDPL
 )

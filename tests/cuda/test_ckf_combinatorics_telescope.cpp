@@ -9,10 +9,10 @@
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/io/event_map2.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
@@ -22,7 +22,7 @@
 // detray include(s).
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/propagator/propagator.hpp"
-#include "detray/simulation/event_generator/track_generators.hpp"
+#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -112,6 +112,10 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    sim.get_config().propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
     sim.run();
 
     /*****************************
@@ -123,9 +127,6 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
-
-    traccc::device::container_h2d_copy_alg<traccc::measurement_container_types>
-        measurement_h2d{mr, copy};
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
@@ -142,14 +143,20 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         rk_stepper_type, device_navigator_type>::config_type cfg_no_limit;
     cfg_no_limit.ptc_hypothesis = ptc;
     cfg_no_limit.max_num_branches_per_seed = 100000;
-    cfg_no_limit.navigation_buffer_size_scaler =
-        cfg_no_limit.max_num_branches_per_seed;
+    cfg_no_limit.chi2_max = 30.f;
+    cfg_no_limit.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    cfg_no_limit.propagation.navigation.max_mask_tolerance =
+        1.f * unit<float>::mm;
 
     typename traccc::cuda::finding_algorithm<
         rk_stepper_type, device_navigator_type>::config_type cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
     cfg_limit.max_num_branches_per_seed = 500;
-    cfg_limit.navigation_buffer_size_scaler = 5000;
+    cfg_limit.chi2_max = 30.f;
+    cfg_limit.propagation.navigation.overstep_tolerance =
+        -100.f * unit<float>::um;
+    cfg_limit.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
 
     // Finding algorithm object
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
@@ -161,10 +168,10 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
         // Truth Track Candidates
-        traccc::event_map2 evt_map(i_evt, path, path, path);
+        traccc::event_data evt_data(path, i_evt, host_mr);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_map.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
 
@@ -177,56 +184,42 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
-        copy.setup(seeds_buffer);
+        copy.setup(seeds_buffer)->wait();
         copy(vecmem::get_data(seeds), seeds_buffer,
-             vecmem::copy::type::host_to_device);
+             vecmem::copy::type::host_to_device)
+            ->wait();
 
         // Read measurements
-        traccc::io::measurement_reader_output readOut(&host_mr);
-        traccc::io::read_measurements(readOut, i_evt, path,
-                                      traccc::data_format::csv);
-        traccc::measurement_collection_types::host& measurements_per_event =
-            readOut.measurements;
+        traccc::measurement_collection_types::host measurements_per_event{
+            &host_mr};
+        traccc::io::read_measurements(measurements_per_event, i_evt, path);
 
         traccc::measurement_collection_types::buffer measurements_buffer(
-            measurements_per_event.size(), mr.main);
-        copy(vecmem::get_data(measurements_per_event), measurements_buffer);
+            static_cast<unsigned int>(measurements_per_event.size()), mr.main);
+        copy.setup(measurements_buffer)->wait();
+        copy(vecmem::get_data(measurements_per_event), measurements_buffer)
+            ->wait();
 
         // Instantiate output cuda containers/collections
         traccc::track_candidate_container_types::buffer
             track_candidates_cuda_buffer{{{}, *(mr.host)},
                                          {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers);
-        copy.setup(track_candidates_cuda_buffer.items);
+        copy.setup(track_candidates_cuda_buffer.headers)->wait();
+        copy.setup(track_candidates_cuda_buffer.items)->wait();
 
         traccc::track_candidate_container_types::buffer
             track_candidates_limit_cuda_buffer{{{}, *(mr.host)},
                                                {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_limit_cuda_buffer.headers);
-        copy.setup(track_candidates_limit_cuda_buffer.items);
-
-        // Navigation buffer
-        auto navigation_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding.get_config().navigation_buffer_size_scaler *
-                seeds.size(),
-            mr.main, mr.host);
-
-        auto navigation_limit_buffer = detray::create_candidates_buffer(
-            host_det,
-            device_finding_limit.get_config().navigation_buffer_size_scaler *
-                seeds.size(),
-            mr.main, mr.host);
+        copy.setup(track_candidates_limit_cuda_buffer.headers)->wait();
+        copy.setup(track_candidates_limit_cuda_buffer.items)->wait();
 
         // Run device finding
         track_candidates_cuda_buffer =
-            device_finding(det_view, field, navigation_buffer,
-                           measurements_buffer, seeds_buffer);
+            device_finding(det_view, field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
-        track_candidates_limit_cuda_buffer =
-            device_finding_limit(det_view, field, navigation_limit_buffer,
-                                 measurements_buffer, seeds_buffer);
+        track_candidates_limit_cuda_buffer = device_finding_limit(
+            det_view, field, measurements_buffer, seeds_buffer);
 
         traccc::track_candidate_container_types::host track_candidates_cuda =
             track_candidate_d2h(track_candidates_cuda_buffer);
@@ -238,7 +231,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         ASSERT_TRUE(track_candidates_cuda.size() >
                     track_candidates_limit_cuda.size());
         ASSERT_EQ(track_candidates_cuda.size(),
-                  std::pow(n_truth_tracks, plane_positions.size() + 1));
+                  std::pow(n_truth_tracks, std::get<11>(GetParam()) + 1));
         ASSERT_EQ(track_candidates_limit_cuda.size(),
                   n_truth_tracks * cfg_limit.max_num_branches_per_seed);
     }
@@ -253,11 +246,13 @@ INSTANTIATE_TEST_SUITE_P(
                                       std::array<scalar, 2u>{100.f, 100.f},
                                       std::array<scalar, 2u>{0.f, 0.f},
                                       std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 2, 1, false),
+                                      detray::muon<scalar>(), 2, 1, false, 20.f,
+                                      9u, 20.f),
                       std::make_tuple("telescope_combinatorics_trio",
                                       std::array<scalar, 3u>{0.f, 0.f, 0.f},
                                       std::array<scalar, 3u>{0.f, 0.f, 0.f},
                                       std::array<scalar, 2u>{100.f, 100.f},
                                       std::array<scalar, 2u>{0.f, 0.f},
                                       std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 3, 1, false)));
+                                      detray::muon<scalar>(), 3, 1, false, 20.f,
+                                      9u, 20.f)));

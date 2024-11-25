@@ -27,7 +27,7 @@ usage() {
 }
 
 # Default script arguments.
-TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v8"}
+TRACCC_DATA_NAME=${TRACCC_DATA_NAME:-"traccc-data-v10"}
 TRACCC_DATA_DIRECTORY_NAMES=("cca_test" "detray_simulation" "geometries" "odd"
    "single_module" "tml_detector" "tml_full" "tml_pixel_barrel" "tml_pixels"
    "two_modules")

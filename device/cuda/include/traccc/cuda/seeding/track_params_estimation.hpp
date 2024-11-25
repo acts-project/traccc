@@ -9,7 +9,6 @@
 
 // Project include(s)
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/edm/cell.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -72,7 +71,7 @@ struct track_params_estimation
     stream& m_stream;
 
     /// Warp size of the GPU being used
-    int m_warp_size;
+    unsigned int m_warp_size;
 };
 
 }  // namespace traccc::cuda

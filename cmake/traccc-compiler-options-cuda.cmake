@@ -19,6 +19,10 @@ if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Xcompiler /Zc:__cplusplus" )
 endif()
 
+if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
+   traccc_add_flag( CMAKE_CUDA_FLAGS "-Wconversion" )
+endif()
+
 # Set the CUDA architecture to build code for.
 set( CMAKE_CUDA_ARCHITECTURES "52" CACHE STRING
    "CUDA architectures to build device code for" )

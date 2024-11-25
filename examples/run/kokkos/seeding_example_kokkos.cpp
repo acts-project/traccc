@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/efficiency/seeding_performance_writer.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/kokkos/seeding/spacepoint_binning.hpp"
 #include "traccc/options/accelerator.hpp"
@@ -43,24 +43,26 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
-    // Read the surface transforms
-    auto [surface_transforms, _] =
-        traccc::io::read_geometry(detector_opts.detector_file);
-
-    // Output stats
-    uint64_t n_modules = 0;
-    uint64_t n_spacepoints = 0;
-    uint64_t n_seeds = 0;
-    uint64_t n_seeds_kokkos = 0;
-
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     traccc::memory_resource mr{host_mr, &host_mr};
+
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host host_det{host_mr};
+    assert(detector_opts.use_detray_detector == true);
+    traccc::io::read_detector(host_det, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
 
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
+
+    // Output stats
+    uint64_t n_spacepoints = 0;
+    uint64_t n_seeds = 0;
+    uint64_t n_seeds_kokkos = 0;
 
     // KOKKOS Spacepoint Binning
     traccc::kokkos::spacepoint_binning m_spacepoint_binning(
@@ -73,10 +75,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
-    for (unsigned int event = input_opts.skip;
+    for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
-        traccc::io::spacepoint_reader_output reader_output(&host_mr);
+        traccc::spacepoint_collection_types::host spacepoints_per_event{
+            &host_mr};
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
 
@@ -91,12 +94,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
-                    reader_output, event, input_opts.directory,
-                    surface_transforms, input_opts.format);
+                    spacepoints_per_event, event, input_opts.directory,
+                    (input_opts.use_acts_geom_source ? &host_det : nullptr),
+                    input_opts.format);
             }  // stop measuring hit reading timer
-
-            traccc::spacepoint_collection_types::host& spacepoints_per_event =
-                reader_output.spacepoints;
 
             {  // Spacepoin binning for kokkos
                 traccc::performance::timer t("Spacepoint binning (kokkos)",
@@ -129,6 +130,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time
+
+        /*----------------
+             Statistics
+          ---------------*/
+
+        n_spacepoints += spacepoints_per_event.size();
+        n_seeds += seeds.size();
     }
 
     if (performance_opts.run) {
@@ -136,8 +144,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     }
 
     std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_spacepoints << " spacepoints from "
-              << n_modules << " modules" << std::endl;
+    std::cout << "- read    " << n_spacepoints << " spacepoints" << std::endl;
     std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (kokkos) " << n_seeds_kokkos << " seeds"
               << std::endl;

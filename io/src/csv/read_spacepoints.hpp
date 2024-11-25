@@ -9,23 +9,26 @@
 
 // Project include(s).
 #include "traccc/edm/spacepoint.hpp"
-#include "traccc/geometry/geometry.hpp"
-#include "traccc/io/reader_edm.hpp"
+#include "traccc/geometry/detector.hpp"
 
 // System include(s).
 #include <string_view>
 
 namespace traccc::io::csv {
 
-/// Read spacepoint information from a specific CSV file
+/// Read spacepoint information from specific CSV files
 ///
-/// @param out A spacepoint & a cell_module (host) collections
-/// @param filename The file to read the spacepoint data from
-/// @param geom The description of the detector geometry
+/// @param[out] spacepoints The spacepoint collection to fill
+/// @param[in]  hit_filename  The file to read the hit/spacepoint data from
+/// @param[in]  meas_filename The file to read the measurement data from
+/// @param[in]  meas_hit_map_filename The file to read the mapping from
+///                                   measurements to hits from
+/// @param[in]  detector  detray detector
 ///
-void read_spacepoints(spacepoint_reader_output& out, std::string_view filename,
+void read_spacepoints(spacepoint_collection_types::host& spacepoints,
+                      std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const geometry& geom);
+                      const traccc::default_detector::host* detector = nullptr);
 
 }  // namespace traccc::io::csv

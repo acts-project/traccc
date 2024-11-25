@@ -9,7 +9,7 @@
 #include "res_plot_tool.hpp"
 
 // Detray include(s).
-#include "detray/utils/statistics.hpp"
+#include "detray/test/utils/statistics.hpp"
 
 // ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT
@@ -76,17 +76,19 @@ void res_plot_tool::book(res_plot_cache& cache) const {
             Form("Residual of %s vs. pT", par_name.c_str()), b_pT, b_residual);
 
         for (int i = 0; i < b_eta.n_bins; i++) {
-            cache.residuals_per_eta[par_name][i] = plot_helpers::book_histo(
-                Form("residual_%s_at_%d_th_eta", par_name.c_str(), i),
-                Form("Residual of %s at %d th eta", par_name.c_str(), i),
-                b_residual);
+            cache.residuals_per_eta[par_name][static_cast<unsigned long>(i)] =
+                plot_helpers::book_histo(
+                    Form("residual_%s_at_%d_th_eta", par_name.c_str(), i),
+                    Form("Residual of %s at %d th eta", par_name.c_str(), i),
+                    b_residual);
         }
 
         for (int i = 0; i < b_pT.n_bins; i++) {
-            cache.residuals_per_pT[par_name][i] = plot_helpers::book_histo(
-                Form("residual_%s_at_%d_th_pT", par_name.c_str(), i),
-                Form("Residual of %s at %d th pT", par_name.c_str(), i),
-                b_residual);
+            cache.residuals_per_pT[par_name][static_cast<unsigned long>(i)] =
+                plot_helpers::book_histo(
+                    Form("residual_%s_at_%d_th_pT", par_name.c_str(), i),
+                    Form("Residual of %s at %d th pT", par_name.c_str(), i),
+                    b_residual);
         }
 #endif  // TRACCC_HAVE_ROOT
     }
@@ -113,8 +115,7 @@ void res_plot_tool::fill(res_plot_cache& cache,
         scalar pull = 0.f;
 
         if (idx < e_bound_size) {
-            residual = getter::element(fit_param.vector(), idx, 0) -
-                       getter::element(truth_param.vector(), idx, 0);
+            residual = fit_param[idx] - truth_param[idx];
             pull = residual /
                    std::sqrt(getter::element(fit_param.covariance(), idx, idx));
         } else if (par_name == "qopT") {
@@ -141,8 +142,12 @@ void res_plot_tool::fill(res_plot_cache& cache,
         }
         cache.residuals_eta.at(par_name)->Fill(eta, residual);
         cache.residuals_pT.at(par_name)->Fill(pT, residual);
-        cache.residuals_per_eta.at(par_name).at(eta_idx)->Fill(residual);
-        cache.residuals_per_pT.at(par_name).at(pT_idx)->Fill(residual);
+        cache.residuals_per_eta.at(par_name)
+            .at(static_cast<std::size_t>(eta_idx))
+            ->Fill(residual);
+        cache.residuals_per_pT.at(par_name)
+            .at(static_cast<std::size_t>(pT_idx))
+            ->Fill(residual);
 #endif  // TRACCC_HAVE_ROOT
     }
 }
@@ -174,7 +179,7 @@ void res_plot_tool::write(res_plot_cache& cache) const {
         std::vector<float> sigmas;
 
         for (int i = 0; i < n_bins; i++) {
-            auto& data = residuals[i];
+            auto& data = residuals[static_cast<std::size_t>(i)];
 
             // When there is no entry
             if (data->GetEntries() == 0) {
@@ -196,7 +201,8 @@ void res_plot_tool::write(res_plot_cache& cache) const {
             std::make_unique<TGraphErrors>(H.get());
 
         for (int i = 0; i < n_bins; i++) {
-            G->SetPointError(i, H->GetBinWidth(i) / 2.f, sigmas[i]);
+            G->SetPointError(i, H->GetBinWidth(i) / 2.f,
+                             sigmas[static_cast<std::size_t>(i)]);
         }
         G->SetName(H->GetName());
         G->SetMinimum(1e-5);

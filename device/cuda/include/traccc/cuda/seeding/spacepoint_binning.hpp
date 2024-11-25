@@ -56,7 +56,7 @@ class spacepoint_binning
     stream& m_stream;
 
     /// Warp size of the GPU being used
-    int m_warp_size;
+    unsigned int m_warp_size;
 
 };  // class spacepoint_binning
 

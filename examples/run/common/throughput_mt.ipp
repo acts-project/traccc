@@ -19,9 +19,9 @@
 #include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
-#include "traccc/io/demonstrator_edm.hpp"
-#include "traccc/io/read.hpp"
-#include "traccc/io/read_geometry.hpp"
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/utils.hpp"
 
 // Performance measurement include(s).
@@ -29,17 +29,29 @@
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
 
-// Detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
-
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // TBB include(s).
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <tbb/global_control.h>
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <tbb/global_control.h>
+#pragma GCC diagnostic pop
+#else
+#include <tbb/global_control.h>
+#endif
+#include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
+
+// Indicators include(s).
+#include <indicators/progress_bar.hpp>
 
 // System include(s).
 #include <atomic>
@@ -75,66 +87,62 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     // Set up the timing info holder.
     performance::timing_info times;
 
-    // Set up the TBB arena and thread group.
-    tbb::global_control global_thread_limit(
-        tbb::global_control::max_allowed_parallelism,
-        threading_opts.threads + 1);
-    tbb::task_arena arena{static_cast<int>(threading_opts.threads), 0};
-    tbb::task_group group;
-
     // Memory resource to use in the test.
     HOST_MR uncached_host_mr;
 
-    // Read in the geometry.
-    auto [surface_transforms, barcode_map] = traccc::io::read_geometry(
-        detector_opts.detector_file,
+    // Construct the detector description object.
+    traccc::silicon_detector_description::host det_descr{uncached_host_mr};
+    traccc::io::read_detector_description(
+        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
         (detector_opts.use_detray_detector ? traccc::data_format::json
                                            : traccc::data_format::csv));
-    using detector_type = detray::detector<detray::default_metadata,
-                                           detray::host_container_types>;
-    detector_type detector{uncached_host_mr};
-    if (detector_opts.use_detray_detector) {
-        // Set up the detector reader configuration.
-        detray::io::detector_reader_config cfg;
-        cfg.add_file(traccc::io::data_directory() +
-                     detector_opts.detector_file);
-        if (detector_opts.material_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.material_file);
-        }
-        if (detector_opts.grid_file.empty() == false) {
-            cfg.add_file(traccc::io::data_directory() +
-                         detector_opts.grid_file);
-        }
 
-        // Read the detector.
-        auto det =
-            detray::io::read_detector<detector_type>(uncached_host_mr, cfg);
-        detector = std::move(det.first);
+    // Construct a Detray detector object, if supported by the configuration.
+    traccc::default_detector::host detector{uncached_host_mr};
+    if (detector_opts.use_detray_detector) {
+        traccc::io::read_detector(
+            detector, uncached_host_mr, detector_opts.detector_file,
+            detector_opts.material_file, detector_opts.grid_file);
     }
 
     // Read in all input events into memory.
-    demonstrator_input input(&uncached_host_mr);
-
+    vecmem::vector<edm::silicon_cell_collection::host> input{&uncached_host_mr};
     {
         performance::timer t{"File reading", times};
-        // Create empty inputs using the correct memory resource
-        for (std::size_t i = 0; i < input_opts.events; ++i) {
-            input.push_back(demonstrator_input::value_type(&uncached_host_mr));
+        // Set up the container for the input events.
+        input.reserve(input_opts.events);
+        const std::size_t first_event = input_opts.skip;
+        const std::size_t last_event = input_opts.skip + input_opts.events;
+        for (std::size_t i = first_event; i < last_event; ++i) {
+            input.push_back({uncached_host_mr});
         }
-        // Read event data into input vector
-        io::read(
-            input, input_opts.events, input_opts.directory,
-            detector_opts.detector_file, detector_opts.digitization_file,
-            input_opts.format,
-            (detector_opts.use_detray_detector ? traccc::data_format::json
-                                               : traccc::data_format::csv));
+        // Read the input cells into memory in parallel.
+        tbb::parallel_for(
+            tbb::blocked_range<std::size_t>{first_event, last_event},
+            [&](const tbb::blocked_range<std::size_t>& event_range) {
+                for (std::size_t event = event_range.begin();
+                     event != event_range.end(); ++event) {
+                    static constexpr bool DEDUPLICATE = true;
+                    io::read_cells(input.at(event - input_opts.skip), event,
+                                   input_opts.directory, &det_descr,
+                                   input_opts.format, DEDUPLICATE,
+                                   input_opts.use_acts_geom_source);
+                }
+            });
     }
 
     // Set up cached memory resources on top of the host memory resource
     // separately for each CPU thread.
     std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
-        cached_host_mrs{threading_opts.threads + 1};
+        cached_host_mrs;
+    if (use_host_caching) {
+        cached_host_mrs.reserve(threading_opts.threads + 1);
+        for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
+            cached_host_mrs.push_back(
+                std::make_unique<vecmem::binary_page_memory_resource>(
+                    uncached_host_mr));
+        }
+    }
 
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
@@ -153,9 +161,6 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     algs.reserve(threading_opts.threads + 1);
     for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
 
-        cached_host_mrs.at(i) =
-            std::make_unique<vecmem::binary_page_memory_resource>(
-                uncached_host_mr);
         vecmem::memory_resource& alg_host_mr =
             use_host_caching
                 ? static_cast<vecmem::memory_resource&>(
@@ -169,11 +174,20 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              seeding_opts.seedfilter,
              finding_cfg,
              fitting_cfg,
+             det_descr,
              (detector_opts.use_detray_detector ? &detector : nullptr)});
     }
 
+    // Set up the TBB arena and thread group. From here on out TBB is only
+    // allowed to use the specified number of threads.
+    tbb::global_control global_thread_limit(
+        tbb::global_control::max_allowed_parallelism,
+        threading_opts.threads + 1);
+    tbb::task_arena arena{static_cast<int>(threading_opts.threads), 0};
+    tbb::task_group group;
+
     // Seed the random number generator.
-    std::srand(std::time(0));
+    std::srand(static_cast<unsigned int>(std::time(0)));
 
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
@@ -182,6 +196,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     // Cold Run events. To discard any "initialisation issues" in the
     // measurements.
     {
+        // Set up a progress bar for the warm-up processing.
+        indicators::ProgressBar progress_bar{
+            indicators::option::BarWidth{50},
+            indicators::option::PrefixText{"Warm-up processing "},
+            indicators::option::ShowPercentage{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::MaxProgress{throughput_opts.cold_run_events}};
+
         // Measure the time of execution.
         performance::timer t{"Warm-up processing", times};
 
@@ -189,15 +211,17 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(
-                        algs.at(tbb::this_task_arena::current_thread_index())(
-                                input[event].cells, input[event].modules)
-                            .size());
+                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
+                        tbb::this_task_arena::current_thread_index()))(
+                                                       input[event])
+                                                   .size());
+                    progress_bar.tick();
                 });
             });
         }
@@ -210,6 +234,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     rec_track_params = 0;
 
     {
+        // Set up a progress bar for the event processing.
+        indicators::ProgressBar progress_bar{
+            indicators::option::BarWidth{50},
+            indicators::option::PrefixText{"Event processing   "},
+            indicators::option::ShowPercentage{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::MaxProgress{throughput_opts.processed_events}};
+
         // Measure the total time of execution.
         performance::timer t{"Event processing", times};
 
@@ -217,15 +249,17 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
 
             // Choose which event to process.
-            const std::size_t event = std::rand() % input_opts.events;
+            const std::size_t event =
+                static_cast<std::size_t>(std::rand()) % input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(
-                        algs.at(tbb::this_task_arena::current_thread_index())(
-                                input[event].cells, input[event].modules)
-                            .size());
+                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
+                        tbb::this_task_arena::current_thread_index()))(
+                                                       input[event])
+                                                   .size());
+                    progress_bar.tick();
                 });
             });
         }

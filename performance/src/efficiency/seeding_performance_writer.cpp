@@ -41,8 +41,9 @@ struct seeding_performance_writer_data {
     duplication_plot_tool m_duplication_plot_tool;
     duplication_plot_tool::duplication_plot_cache m_duplication_plot_cache;
 
-    measurement_particle_map m_measurement_particle_map;
-    particle_map m_particle_map;
+    std::map<measurement, std::map<particle, std::size_t>>
+        m_measurement_particle_map;
+    std::map<std::uint64_t, particle> m_particle_map;
 
 };  // struct seeding_performance_writer_data
 
@@ -62,7 +63,7 @@ seeding_performance_writer::~seeding_performance_writer() {}
 void seeding_performance_writer::write(
     const seed_collection_types::const_view& seeds_view,
     const spacepoint_collection_types::const_view& spacepoints_view,
-    const event_map& evt_map) {
+    const event_data& evt_data) {
 
     std::map<particle_id, std::size_t> match_counter;
 
@@ -70,65 +71,35 @@ void seeding_performance_writer::write(
     seed_collection_types::const_device seeds(seeds_view);
     for (const seed& sd : seeds) {
 
-        // Check which particle matches this seed.
-        std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(
-                sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
+        std::vector<particle_hit_count> particle_hit_counts;
 
-        if (particle_hit_counts.size() == 1) {
+        const auto measurements = sd.get_measurements(spacepoints_view);
+
+        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
+            particle_hit_counts = identify_contributing_particles(
+                measurements, evt_data.m_found_meas_to_ptc_map);
+        } else {
+            particle_hit_counts = identify_contributing_particles(
+                measurements, evt_data.m_meas_to_ptc_map);
+        }
+
+        // Consider it being matched if hit counts is larger than the half
+        // of the number of measurements
+        assert(measurements.size() > 0u);
+        if (static_cast<double>(particle_hit_counts.at(0).hit_counts) /
+                static_cast<double>(measurements.size()) >
+            m_cfg.matching_ratio) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
         }
     }
 
-    for (auto const& [pid, ptc] : evt_map.ptc_map) {
+    for (auto const& [pid, ptc] : evt_data.m_particle_map) {
 
         // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
-            continue;
-        }
-
-        bool is_matched = false;
-        std::size_t n_matched_seeds_for_particle = 0;
-        auto it = match_counter.find(pid);
-        if (it != match_counter.end()) {
-            is_matched = true;
-            n_matched_seeds_for_particle = it->second;
-        }
-
-        m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_cache, ptc, is_matched);
-        m_data->m_duplication_plot_tool.fill(m_data->m_duplication_plot_cache,
-                                             ptc,
-                                             n_matched_seeds_for_particle - 1);
-    }
-}
-
-void seeding_performance_writer::write(
-    const seed_collection_types::const_view& seeds_view,
-    const spacepoint_collection_types::const_view& spacepoints_view,
-    const event_map2& evt_map) {
-
-    std::map<particle_id, std::size_t> match_counter;
-
-    // Iterate over the seeds.
-    seed_collection_types::const_device seeds(seeds_view);
-    for (const seed& sd : seeds) {
-
-        // Check which particle matches this seed.
-        std::vector<particle_hit_count> particle_hit_counts =
-            identify_contributing_particles(
-                sd.get_measurements(spacepoints_view), evt_map.meas_ptc_map);
-
-        if (particle_hit_counts.size() == 1) {
-            auto pid = particle_hit_counts.at(0).ptc.particle_id;
-            match_counter[pid]++;
-        }
-    }
-
-    for (auto const& [pid, ptc] : evt_map.ptc_map) {
-
-        // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut) {
+        if (ptc.charge == 0 || getter::perp(ptc.momentum) < m_cfg.pT_cut ||
+            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
+            getter::perp(ptc.vertex) > m_cfg.r_max) {
             continue;
         }
 
