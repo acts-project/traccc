@@ -96,6 +96,8 @@ struct kalman_actor : detray::actor {
 
             auto& trk_state = actor_state();
 
+            // Increase the hole counts if the propagator fails to find the next
+            // measurement
             if (navigation.barcode() != trk_state.surface_link()) {
                 actor_state.n_holes++;
                 return;
