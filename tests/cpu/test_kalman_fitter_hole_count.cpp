@@ -169,8 +169,8 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
 
     // Some sanity checks
     ASSERT_EQ(track_states.at(0u).items.size(), n_planes - fit_res.n_holes);
-    ASSERT_FLOAT_EQ(fit_res.ndf,
-                    static_cast<scalar>(n_planes - fit_res.n_holes) * 2.f - 5u);
+    ASSERT_FLOAT_EQ(static_cast<float>(fit_res.ndf),
+                    static_cast<float>(n_planes - fit_res.n_holes) * 2.f - 5.f);
 }
 
 INSTANTIATE_TEST_SUITE_P(
