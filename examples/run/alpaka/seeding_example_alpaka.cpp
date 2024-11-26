@@ -42,7 +42,6 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-
 #include "traccc/alpaka/utils/vecmem_types.hpp"
 #ifdef ALPAKA_ACC_SYCL_ENABLED
 #include <CL/sycl.hpp>
@@ -68,15 +67,15 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     using Idx = uint32_t;
 
     using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
-    #ifdef ALPAKA_ACC_SYCL_ENABLED
-      ::sycl::queue q;
-      vecmem::sycl::queue_wrapper qw{&q};
+#ifdef ALPAKA_ACC_SYCL_ENABLED
+    ::sycl::queue q;
+    vecmem::sycl::queue_wrapper qw{&q};
     traccc::alpaka::vecmem::host_device_types<
         ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy(qw);
-    #else
-      traccc::alpaka::vecmem::host_device_types<
-         ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
-    #endif
+#else
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+#endif
     traccc::alpaka::vecmem::host_device_types<
         ::alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
     traccc::alpaka::vecmem::host_device_types<

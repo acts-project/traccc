@@ -12,7 +12,6 @@
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-
 #include "traccc/alpaka/utils/vecmem_types.hpp"
 #ifdef ALPAKA_ACC_SYCL_ENABLED
 #include <CL/sycl.hpp>
@@ -73,15 +72,15 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Memory resources used by the application.
     traccc::alpaka::vecmem::host_device_types<
         alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
-    #ifdef ALPAKA_ACC_SYCL_ENABLED
-      ::sycl::queue q;
-      vecmem::sycl::queue_wrapper qw{&q};
+#ifdef ALPAKA_ACC_SYCL_ENABLED
+    ::sycl::queue q;
+    vecmem::sycl::queue_wrapper qw{&q};
     traccc::alpaka::vecmem::host_device_types<
         alpaka::trait::AccToTag<Acc>::type>::device_copy copy(qw);
-    #else
-      traccc::alpaka::vecmem::host_device_types<
-         alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
-    #endif
+#else
+    traccc::alpaka::vecmem::host_device_types<
+        alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+#endif
     traccc::alpaka::vecmem::host_device_types<
         alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
