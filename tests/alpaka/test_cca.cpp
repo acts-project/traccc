@@ -12,6 +12,11 @@
 #include <functional>
 #include <vecmem/memory/host_memory_resource.hpp>
 
+#ifdef ALPAKA_ACC_SYCL_ENABLED
+#include <CL/sycl.hpp>
+#include <vecmem/utils/sycl/queue_wrapper.hpp>
+#endif
+
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/utils/vecmem_types.hpp"
@@ -33,8 +38,15 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         using Acc = ExampleDefaultAcc<Dim, Idx>;
         traccc::alpaka::vecmem::host_device_types<
             alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
+#ifdef ALPAKA_ACC_SYCL_ENABLED
+        ::sycl::queue q;
+        vecmem::sycl::queue_wrapper qw{&q};
         traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+          alpaka::trait::AccToTag<Acc>::type>::device_copy copy(qw);
+#else
+        traccc::alpaka::vecmem::host_device_types<
+          alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
+#endif
         traccc::alpaka::vecmem::host_device_types<
             alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
             device_mr;

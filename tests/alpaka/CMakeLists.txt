@@ -18,6 +18,10 @@ elseif(alpaka_ACC_GPU_HIP_ENABLE)
   enable_language(HIP)
   set_source_files_properties(${TRACCC_ALPAKA_TEST_SOURCES} PROPERTIES LANGUAGE HIP)
   list(APPEND DEVICE_LIBRARIES vecmem::hip)
+elseif(alpaka_ACC_SYCL_ENABLE)
+  enable_language(SYCL)
+  list(APPEND DEVICE_LIBRARIES vecmem::sycl)
+  set_source_files_properties(${TRACCC_ALPAKA_TEST_SOURCES} PROPERTIES LANGUAGE SYCL)
 endif()
 
 traccc_add_test( alpaka
