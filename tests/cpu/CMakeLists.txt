@@ -13,6 +13,7 @@ traccc_add_test(cpu
     "test_ckf_sparse_tracks_telescope.cpp"
     "test_clusterization_resolution.cpp"
     "test_copy.cpp"
+    "test_kalman_fitter_hole_count.cpp"
     "test_kalman_fitter_telescope.cpp"
     "test_kalman_fitter_wire_chamber.cpp"
     "test_ranges.cpp"

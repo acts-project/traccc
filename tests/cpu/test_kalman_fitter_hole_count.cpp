@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -33,7 +33,9 @@
 
 using namespace traccc;
 
-TEST_P(KalmanFittingTelescopeTests, Run) {
+class KalmanFittingHoleCountTests : public KalmanFittingTelescopeTests {};
+
+TEST_P(KalmanFittingHoleCountTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
@@ -48,10 +50,9 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());
 
-    // Performance writer
-    traccc::fitting_performance_writer::config fit_writer_cfg;
-    fit_writer_cfg.file_path = "performance_track_fitting_" + name + ".root";
-    traccc::fitting_performance_writer fit_performance_writer(fit_writer_cfg);
+    // We only test one track of one event
+    ASSERT_EQ(n_truth_tracks, 1u);
+    ASSERT_EQ(n_events, 1u);
 
     /*****************************
      * Build a telescope geometry
@@ -125,104 +126,59 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
-    // Iterate over events
-    for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
+    // Event map
+    traccc::event_data evt_data(path, 0u, host_mr);
 
-        // Event map
-        traccc::event_data evt_data(path, i_evt, host_mr);
-        // Truth Track Candidates
-        traccc::track_candidate_container_types::host track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+    // Truth Track Candidates
+    traccc::track_candidate_container_types::host track_candidates =
+        evt_data.generate_truth_candidates(sg, host_mr);
+    // Candidate vector
+    auto& cands = track_candidates.at(0u).items;
 
-        // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+    // Some sanity checks
+    ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+    const auto n_planes = std::get<11>(GetParam());
+    ASSERT_EQ(cands.size(), n_planes);
 
-        // Run fitting
-        auto track_states =
-            fitting(host_det, field, traccc::get_data(track_candidates));
+    // Pop some track candidates to create holes
+    // => The number of holes = 8
+    ASSERT_TRUE(cands.size() > 8u);
+    cands.erase(cands.begin());
+    cands.erase(cands.begin());
+    cands.erase(cands.begin() + 2);
+    cands.erase(cands.begin() + 2);
+    cands.erase(cands.begin() + 7);
+    cands.pop_back();
+    cands.pop_back();
+    cands.pop_back();
 
-        // Iterator over tracks
-        const std::size_t n_tracks = track_states.size();
+    // A sanity check on the number of candidiates
+    ASSERT_EQ(cands.size(), n_planes - 8u);
 
-        // n_trakcs = 100
-        ASSERT_EQ(n_tracks, n_truth_tracks);
+    // Run fitting
+    auto track_states =
+        fitting(host_det, field, traccc::get_data(track_candidates));
 
-        for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
+    // A sanity check
+    const std::size_t n_tracks = track_states.size();
+    ASSERT_EQ(n_tracks, n_truth_tracks);
 
-            const auto& track_states_per_track = track_states[i_trk].items;
-            const auto& fit_res = track_states[i_trk].header;
+    // Check the number of holes
+    // The three holes at the end are not counted as KF aborts once it goes
+    // through all track candidates
+    const auto& fit_res = track_states.at(0u).header;
+    ASSERT_EQ(fit_res.n_holes, 5u);
 
-            consistency_tests(track_states_per_track);
-
-            ndf_tests(fit_res, track_states_per_track);
-
-            ASSERT_EQ(fit_res.n_holes, 0u);
-
-            fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_data);
-        }
-    }
-
-    fit_performance_writer.finalize();
-
-    /********************
-     * Pull value test
-     ********************/
-
-    static const std::vector<std::string> pull_names{
-        "pull_d0", "pull_z0", "pull_phi", "pull_theta", "pull_qop"};
-    pull_value_tests(fit_writer_cfg.file_path, pull_names);
-
-    /********************
-     * Success rate test
-     ********************/
-
-    float success_rate = static_cast<float>(n_success) /
-                         static_cast<float>(n_truth_tracks * n_events);
-
-    ASSERT_FLOAT_EQ(success_rate, 1.00f);
+    // Some sanity checks
+    ASSERT_FLOAT_EQ(
+        static_cast<float>(fit_res.ndf),
+        static_cast<float>(track_states.at(0u).items.size()) * 2.f - 5.f);
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation0, KalmanFittingTelescopeTests,
+    KalmanFittingHoleCount, KalmanFittingHoleCountTests,
     ::testing::Values(std::make_tuple(
         "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::muon<scalar>(), 100, 100, false, 20.f, 9u, 20.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_10_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false, 20.f, 9u, 20.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_100_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false, 20.f, 9u, 20.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation3, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_1_GeV_0_phi_anti_muon",
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
-        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::antimuon<scalar>(), 100, 100, false, 20.f, 9u, 20.f)));
-
-INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation4, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_1_GeV_0_random_charge",
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
-        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::antimuon<scalar>(), 100, 100, true, 20.f, 9u, 20.f)));
+        detray::muon<scalar>(), 1, 1, false, 20.f, 20u, 20.f)));

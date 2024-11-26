@@ -68,6 +68,10 @@ struct kalman_actor : detray::actor {
 
         // iterator for forward filtering
         typename vector_t<track_state_type>::iterator m_it;
+
+        // The number of holes (The number of sensitive surfaces which do not
+        // have a measurement for the track pattern)
+        unsigned int n_holes{0u};
     };
 
     /// Actor operation to perform the Kalman filtering
@@ -92,9 +96,10 @@ struct kalman_actor : detray::actor {
 
             auto& trk_state = actor_state();
 
-            // Abort if the propagator fails to find the next measurement
+            // Increase the hole counts if the propagator fails to find the next
+            // measurement
             if (navigation.barcode() != trk_state.surface_link()) {
-                // propagation._heartbeat &= navigation.abort();
+                actor_state.n_holes++;
                 return;
             }
 
