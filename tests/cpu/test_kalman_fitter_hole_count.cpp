@@ -164,8 +164,10 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     ASSERT_EQ(n_tracks, n_truth_tracks);
 
     // Check the number of holes
+    // The three holes at the end are not counted as KF aborts once it goes
+    // through all track candidates
     const auto& fit_res = track_states.at(0u).header;
-    ASSERT_EQ(fit_res.n_holes, 8u);
+    ASSERT_EQ(fit_res.n_holes, 5u);
 
     // Some sanity checks
     ASSERT_EQ(track_states.at(0u).items.size(), n_planes - fit_res.n_holes);
