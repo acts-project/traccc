@@ -12,7 +12,6 @@ set(TRACCC_ALPAKA_EXAMPLE_SOURCES
 )
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)
-  enable_language(CUDA)
   set_source_files_properties(${TRACCC_ALPAKA_EXAMPLE_SOURCES} PROPERTIES LANGUAGE CUDA)
 
   list (APPEND EXTRA_LIBS vecmem::cuda)

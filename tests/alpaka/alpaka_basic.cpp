@@ -18,7 +18,7 @@
 #include "traccc/alpaka/utils/vecmem_types.hpp"
 
 #ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <vecmem/utils/sycl/queue_wrapper.hpp>
 #endif
 
