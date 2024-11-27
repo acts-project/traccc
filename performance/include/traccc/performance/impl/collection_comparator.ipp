@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,6 +8,7 @@
 #pragma once
 
 // Library include(s).
+#include "traccc/performance/details/comparison_progress.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
 
 // Project include(s).
@@ -52,6 +53,10 @@ void collection_comparator<TYPE>::operator()(
                 << " (" << m_lhs_type << "), " << rhs_coll.size() << " ("
                 << m_rhs_type << ")\n";
 
+    // Create a progress bar.
+    details::comparison_progress progress{
+        lhs_coll.size() * m_uncertainties.size(), m_out.get()};
+
     // Calculate the agreements at various uncertainties.
     std::vector<scalar> agreements;
     agreements.reserve(m_uncertainties.size());
@@ -66,6 +71,7 @@ void collection_comparator<TYPE>::operator()(
                                  obj, uncertainty)) != rhs_coll.end()) {
                 ++matched;
             }
+            progress.tick();
         }
         // Calculate the agreement value.
         agreements.push_back(
