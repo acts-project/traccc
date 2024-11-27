@@ -75,9 +75,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::alpaka::vecmem::host_device_types<
         ::alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr(qw);
     traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr(qw);
+        ::alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
+        device_mr(qw);
     traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource mng_mr(qw);
+        ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource
+        mng_mr(qw);
     traccc::memory_resource mr{device_mr, &host_mr};
 #else
     traccc::alpaka::vecmem::host_device_types<

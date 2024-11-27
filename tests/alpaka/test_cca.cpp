@@ -40,7 +40,8 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         ::sycl::queue q;
         vecmem::sycl::queue_wrapper qw{&q};
         traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr(qw);
+            alpaka::trait::AccToTag<Acc>::type>::host_memory_resource
+            host_mr(qw);
         traccc::alpaka::vecmem::host_device_types<
             alpaka::trait::AccToTag<Acc>::type>::device_copy copy(qw);
         traccc::alpaka::vecmem::host_device_types<
