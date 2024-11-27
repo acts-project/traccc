@@ -43,8 +43,9 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
             h.parallel_for<kernels::fill_prefix_sum>(
                 ::sycl::nd_range<1>(((sizes_sum_view.size() / 32) + 1) * 32,
                                     32),
-                [sizes_sum_view, prefix_sum_view](::sycl::id<1> idx) {
-                    device::fill_prefix_sum(idx, sizes_sum_view,
+                [sizes_sum_view,
+                 prefix_sum_view](const ::sycl::nd_item<1> idx) {
+                    device::fill_prefix_sum(idx.get_global_id(), sizes_sum_view,
                                             prefix_sum_view);
                 });
         })
