@@ -362,8 +362,13 @@ if( TRACCC_SETUP_BENCHMARKS )
 endif()
 
 # Set up indicators.
+set( _indicatorsDefault FALSE )
+if( TRACCC_BUILD_EXAMPLES OR TRACCC_BUILD_IO )
+   set( _indicatorsDefault TRUE )
+endif()
 option( TRACCC_SETUP_INDICATORS
-   "Set up the indicators target(s) explicitly" ${TRACCC_BUILD_EXAMPLES} )
+   "Set up the indicators target(s) explicitly" ${_indicatorsDefault} )
+unset( _indicatorsDefault )
 option( TRACCC_USE_SYSTEM_INDICATORS
    "Pick up an existing installation of indicators from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
