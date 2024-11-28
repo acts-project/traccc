@@ -324,6 +324,25 @@ Attaching file performance_track_finding.root as _file0...
 root [1] finding_trackeff_vs_eta->Draw()
 ```
 
+## Contributing
+
+### Code formatting
+
+The traccc code is formatted using clang-format; the recommended way to ensure that your code is properly formatted is to use [pre-commit](https://pre-commit.com/). The pre-commit webpage has a useful guide for using the tool, but the simplest way of using it (without installing it as a pre-commit hook) is as follows. First, install the tool with your favourite Python package manager:
+
+```console
+# With pip
+$ pip install pre-commit
+# With pipx
+$ pip install pre-commit
+```
+
+The install step needs to be executed only once. After that, the code can be easily formatted as follows:
+
+```console
+$ pre-commit run --all-files
+```
+
 ## Continuous benchmark
 
 Monitoring the event throughput of track reconstruction with the toy geometry
