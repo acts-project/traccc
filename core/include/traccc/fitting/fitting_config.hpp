@@ -25,6 +25,9 @@ struct fitting_config {
     /// Particle hypothesis
     detray::pdg_particle<traccc::scalar> ptc_hypothesis =
         detray::muon<traccc::scalar>();
+
+    /// Smoothing with backward filter
+    bool use_two_filters = false;
 };
 
 }  // namespace traccc

@@ -52,12 +52,20 @@ struct kalman_actor : detray::actor {
 
         /// Advance the iterator
         TRACCC_HOST_DEVICE
-        void next() { m_it++; }
+        void next() {
+            if (!backward_mode) {
+                m_it++;
+            } else {
+                m_it--;
+            }
+        }
 
         /// @return true if the iterator reaches the end of vector
         TRACCC_HOST_DEVICE
         bool is_complete() const {
-            if (m_it == m_track_states.end()) {
+            if (!backward_mode && m_it == m_track_states.end()) {
+                return true;
+            } else if (backward_mode && m_it == m_track_states.rbegin()) {
                 return true;
             }
             return false;
@@ -72,6 +80,9 @@ struct kalman_actor : detray::actor {
         // The number of holes (The number of sensitive surfaces which do not
         // have a measurement for the track pattern)
         unsigned int n_holes{0u};
+
+        // Run back filtering for smoothing, if true
+        bool backward_mode = false;
     };
 
     /// Actor operation to perform the Kalman filtering

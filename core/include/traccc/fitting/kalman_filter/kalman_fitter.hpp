@@ -196,28 +196,50 @@ class kalman_fitter {
     /// @param fitter_state the state of kalman fitter
     TRACCC_HOST_DEVICE
     void smooth(state& fitter_state) {
-        auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
-        // The smoothing algorithm requires the following:
-        // (1) the filtered track parameter of the current surface
-        // (2) the smoothed track parameter of the next surface
-        //
-        // Since the smoothed track parameter of the last surface can be
-        // considered to be the filtered one, we can reversly iterate the
-        // algorithm to obtain the smoothed parameter of other surfaces
-        auto& last = track_states.back();
-        last.smoothed().set_parameter_vector(last.filtered());
-        last.smoothed().set_covariance(last.filtered().covariance());
-        last.smoothed_chi2() = last.filtered_chi2();
+        if (use_two_filters) {
+            // Seed param for backward seed = last state of forward filter
+            // @TODO: Inflate the covariance of backward seed param
+            const auto bw_seed_param =
+                fitter_state.m_track_state.back().filtered();
 
-        for (typename vector_type<track_state<algebra_type>>::reverse_iterator
-                 it = track_states.rbegin() + 1;
-             it != track_states.rend(); ++it) {
+            // Two filters (forward & backward) method
+            typename propagator_type::state propagation(bw_seed_params, m_field,
+                                                        m_detector);
+            propagation._navigation.set_volume(
+                bw_seed_params.surface_link().volume());
 
-            // Run kalman smoother
-            const detray::tracking_surface sf{m_detector, it->surface_link()};
-            sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
-                *it, *(it - 1));
+            propagation._navigation.set_direction(
+                navigation::direction::e_backward);
+            fitter_state.backward_mode = true;
+
+            propagator.propagate(propagation, fitter_state());
+        } else {
+            auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
+
+            // The Rauch-Tung-Striebel(RTS) smoother requires the following:
+            // (1) the filtered track parameter of the current surface
+            // (2) the smoothed track parameter of the next surface
+            //
+            // Since the smoothed track parameter of the last surface can be
+            // considered to be the filtered one, we can reversly iterate the
+            // algorithm to obtain the smoothed parameter of other surfaces
+            auto& last = track_states.back();
+            last.smoothed().set_parameter_vector(last.filtered());
+            last.smoothed().set_covariance(last.filtered().covariance());
+            last.smoothed_chi2() = last.filtered_chi2();
+
+            for (typename vector_type<
+                     track_state<algebra_type>>::reverse_iterator it =
+                     track_states.rbegin() + 1;
+                 it != track_states.rend(); ++it) {
+
+                // Run kalman smoother
+                const detray::tracking_surface sf{m_detector,
+                                                  it->surface_link()};
+                sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
+                    *it, *(it - 1));
+            }
         }
     }
 
