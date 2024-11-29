@@ -206,7 +206,8 @@ class kalman_fitter {
                 m_cfg.propagation.stepping.path_limit);
 
             // Seed param for backward seed = last state of forward filter
-            auto bw_seed_params = fitter_state.m_track_state.back().filtered();
+            auto bw_seed_params =
+                fitter_state.m_fit_actor_state.m_track_states.back().filtered();
             inflate_covariance(bw_seed_params, m_cfg.cov_inflate_factor);
 
             // Two filters (forward & backward) method
@@ -217,7 +218,7 @@ class kalman_fitter {
 
             propagation._navigation.set_direction(
                 detray::navigation::direction::e_backward);
-            fitter_state.backward_mode = true;
+            fitter_state.m_fit_actor_state.backward_mode = true;
 
             propagator.propagate(propagation, fitter_state());
         } else {

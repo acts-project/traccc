@@ -33,6 +33,7 @@ struct kalman_actor : detray::actor {
         state(vector_t<track_state_type>&& track_states)
             : m_track_states(std::move(track_states)) {
             m_it = m_track_states.begin();
+            m_it_rev = m_track_states.rbegin();
         }
 
         /// Constructor with the vector of track states
@@ -40,15 +41,25 @@ struct kalman_actor : detray::actor {
         state(const vector_t<track_state_type>& track_states)
             : m_track_states(track_states) {
             m_it = m_track_states.begin();
+            m_it_rev = m_track_states.rbegin();
         }
 
         /// @return the reference of track state pointed by the iterator
         TRACCC_HOST_DEVICE
-        track_state_type& operator()() { return *m_it; }
+        track_state_type& operator()() {
+            if (!backward_mode) {
+                return *m_it;
+            } else {
+                return *m_it_rev;
+            }
+        }
 
         /// Reset the iterator
         TRACCC_HOST_DEVICE
-        void reset() { m_it = m_track_states.begin(); }
+        void reset() {
+            m_it = m_track_states.begin();
+            m_it_rev = m_track_states.rbegin();
+        }
 
         /// Advance the iterator
         TRACCC_HOST_DEVICE
@@ -56,7 +67,7 @@ struct kalman_actor : detray::actor {
             if (!backward_mode) {
                 m_it++;
             } else {
-                m_it--;
+                m_it_rev++;
             }
         }
 
@@ -65,7 +76,7 @@ struct kalman_actor : detray::actor {
         bool is_complete() const {
             if (!backward_mode && m_it == m_track_states.end()) {
                 return true;
-            } else if (backward_mode && m_it == m_track_states.rbegin()) {
+            } else if (backward_mode && m_it_rev == m_track_states.rend()) {
                 return true;
             }
             return false;
@@ -76,6 +87,9 @@ struct kalman_actor : detray::actor {
 
         // iterator for forward filtering
         typename vector_t<track_state_type>::iterator m_it;
+
+        // iterator for backward filtering
+        typename vector_t<track_state_type>::reverse_iterator m_it_rev;
 
         // The number of holes (The number of sensitive surfaces which do not
         // have a measurement for the track pattern)
@@ -122,7 +136,8 @@ struct kalman_actor : detray::actor {
 
             const bool res =
                 sf.template visit_mask<gain_matrix_updater<algebra_t>>(
-                    trk_state, propagation._stepping.bound_params());
+                    trk_state, propagation._stepping.bound_params(),
+                    actor_state.backward_mode);
 
             // Abort if the Kalman update fails
             if (!res) {

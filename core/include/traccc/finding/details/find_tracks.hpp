@@ -241,7 +241,7 @@ track_candidate_container_types::host find_tracks(
                 // Run the Kalman update on a copy of the track parameters
                 const bool res =
                     sf.template visit_mask<gain_matrix_updater<algebra_type>>(
-                        trk_state, in_param);
+                        trk_state, in_param, false);
 
                 // The chi2 from Kalman update should be less than chi2_max
                 if (res && trk_state.filtered_chi2() < config.chi2_max) {
