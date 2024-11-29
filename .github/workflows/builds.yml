@@ -25,23 +25,23 @@ jobs:
       matrix:
         platform:
           - name: CPU
-            container: ghcr.io/acts-project/ubuntu2404:56
+            container: ghcr.io/acts-project/ubuntu2404:69
             options: --preset host-fp32 -DALGEBRA_PLUGINS_USE_SYSTEM_VC=FALSE
             run_tests: true
           - name: CPU
-            container: ghcr.io/acts-project/ubuntu2404:56
+            container: ghcr.io/acts-project/ubuntu2404:69
             options: --preset host-fp64 -DALGEBRA_PLUGINS_USE_SYSTEM_VC=FALSE
             run_tests: false
           - name: CUDA
-            container: ghcr.io/acts-project/ubuntu2404_cuda:56
+            container: ghcr.io/acts-project/ubuntu2404_cuda:69
             options: --preset cuda-fp32
             run_tests: false
-          - name: SYCL
-            container: ghcr.io/acts-project/ubuntu2404_oneapi:56
-            options: --preset sycl-fp32 -DCMAKE_SYCL_FLAGS="-fsycl -fsycl-targets=spir64"
+          - name: "SYCL Intel"
+            container: ghcr.io/acts-project/ubuntu2404_oneapi:69
+            options: --preset sycl-fp32
             run_tests: true
           - name: KOKKOS
-            container: ghcr.io/acts-project/ubuntu2404:56
+            container: ghcr.io/acts-project/ubuntu2404:69
             options: --preset kokkos-fp32
             run_tests: false
         build:
@@ -50,31 +50,31 @@ jobs:
         include:
           - platform:
               name: CUDA
-              container: ghcr.io/acts-project/ubuntu2404_cuda:56
+              container: ghcr.io/acts-project/ubuntu2404_cuda:69
               options: --preset cuda-fp64
               run_tests: false
             build: Release
           - platform:
-              name: "SYCL"
-              container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:56
+              name: "SYCL NVIDIA"
+              container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:69
               options: --preset sycl-fp32
               run_tests: false
             build: Release
           - platform:
-              name: "SYCL"
-              container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:56
+              name: "SYCL AMD"
+              container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:69
               options: --preset sycl-fp32
               run_tests: false
             build: Release
           - platform:
               name: ALPAKA
-              container: ghcr.io/acts-project/ubuntu2404:56
+              container: ghcr.io/acts-project/ubuntu2404:69
               options: --preset alpaka-fp32
               run_tests: true
             build: Release
           - platform:
               name: ALPAKA
-              container: ghcr.io/acts-project/ubuntu2404:56
+              container: ghcr.io/acts-project/ubuntu2404:69
               options: --preset alpaka-fp32
               run_tests: false
             build: Debug
@@ -83,7 +83,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          apt install -y zstd
+          curl --retry 5 --retry-delay 10 --output deps.tar.zst https://acts.web.cern.ch/ACTS/ci/ubuntu-24.04/deps.v6.tar.zst
+          tar -xf deps.tar.zst -C /usr/local --strip-components=1
+          rm deps.tar.zst
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
