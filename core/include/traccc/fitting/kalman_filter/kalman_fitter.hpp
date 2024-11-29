@@ -197,7 +197,7 @@ class kalman_fitter {
     TRACCC_HOST_DEVICE
     void smooth(state& fitter_state) {
 
-        if (m_cfg.use_backward_filters) {
+        if (m_cfg.use_backward_filter) {
             // Create propagator
             propagator_type propagator(m_cfg.propagation);
 
