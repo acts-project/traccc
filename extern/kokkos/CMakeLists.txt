@@ -1,17 +1,12 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2023 CERN for the benefit of the ACTS project
+# (c) 2022-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
 # CMake include(s).
-cmake_minimum_required( VERSION 3.16 )
+cmake_minimum_required( VERSION 3.25 )
 include( FetchContent )
-
-# Silence FetchContent warnings with CMake >=3.24.
-if( POLICY CMP0135 )
-   cmake_policy( SET CMP0135 NEW )
-endif()
 
 # Tell the user what's happening.
 message( STATUS "Building Kokkos as part of the TRACCC project" )
@@ -21,7 +16,7 @@ set( TRACCC_KOKKOS_SOURCE
    "URL;https://github.com/kokkos/kokkos/archive/refs/tags/4.3.01.tar.gz;URL_MD5;243de871b3dc2cf3990c1c404032df83"
    CACHE STRING "Source for Kokkos, when built as part of this project" )
 mark_as_advanced( TRACCC_KOKKOS_SOURCE )
-FetchContent_Declare( Kokkos ${TRACCC_KOKKOS_SOURCE} )
+FetchContent_Declare( Kokkos SYSTEM ${TRACCC_KOKKOS_SOURCE} )
 
 # Default options for the Kokkos build.
 set( Kokkos_ENABLE_SERIAL TRUE CACHE BOOL
@@ -31,10 +26,3 @@ set( BUILD_SHARED_LIBS TRUE CACHE BOOL
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Kokkos )
-
-# Treat the Kokkos headers as "system headers", to avoid getting warnings from
-# them.
-get_target_property( _incDirs kokkoscore INTERFACE_INCLUDE_DIRECTORIES )
-target_include_directories( kokkoscore
-   SYSTEM PUBLIC ${_incDirs} )
-unset( _incDirs )
