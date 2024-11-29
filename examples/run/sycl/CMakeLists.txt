@@ -13,10 +13,6 @@ include( traccc-compiler-options-sycl )
 # We need the SYCL language in this directory.
 enable_language( SYCL )
 
-# Example executable(s).
-traccc_add_executable( traccc_sycl_language_example
-   "sycl_language_example.sycl" )
-
 # SYCL seeding executable(s).
 traccc_add_executable( seeding_example_sycl "seeding_example_sycl.sycl"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
