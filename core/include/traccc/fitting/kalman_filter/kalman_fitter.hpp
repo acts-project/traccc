@@ -197,11 +197,17 @@ class kalman_fitter {
     TRACCC_HOST_DEVICE
     void smooth(state& fitter_state) {
 
-        if (use_two_filters) {
+        if (m_cfg.use_backward_filters) {
+            // Create propagator
+            propagator_type propagator(m_cfg.propagation);
+
+            // Set path limit
+            fitter_state.m_aborter_state.set_path_limit(
+                m_cfg.propagation.stepping.path_limit);
+
             // Seed param for backward seed = last state of forward filter
-            // @TODO: Inflate the covariance of backward seed param
-            const auto bw_seed_param =
-                fitter_state.m_track_state.back().filtered();
+            auto bw_seed_params = fitter_state.m_track_state.back().filtered();
+            inflate_covariance(bw_seed_params, m_cfg.cov_inflate_factor);
 
             // Two filters (forward & backward) method
             typename propagator_type::state propagation(bw_seed_params, m_field,
@@ -210,7 +216,7 @@ class kalman_fitter {
                 bw_seed_params.surface_link().volume());
 
             propagation._navigation.set_direction(
-                navigation::direction::e_backward);
+                detray::navigation::direction::e_backward);
             fitter_state.backward_mode = true;
 
             propagator.propagate(propagation, fitter_state());
