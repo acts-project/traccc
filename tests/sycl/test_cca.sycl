@@ -7,8 +7,8 @@
 
 #include <gtest/gtest.h>
 
-#include <CL/sycl.hpp>
 #include <functional>
+#include <sycl/sycl.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
@@ -27,7 +27,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             result;
 
         vecmem::host_memory_resource host_mr;
-        cl::sycl::queue q;
+        ::sycl::queue q;
         traccc::sycl::queue_wrapper queue{&q};
         vecmem::sycl::device_memory_resource device_mr;
         vecmem::sycl::async_copy copy{&q};

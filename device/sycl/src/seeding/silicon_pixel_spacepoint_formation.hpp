@@ -20,7 +20,7 @@
 #include <vecmem/memory/memory_resource.hpp>
 
 // SYCL include(s).
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {
 
@@ -40,7 +40,7 @@ template <typename detector_t>
 spacepoint_collection_types::buffer silicon_pixel_spacepoint_formation(
     const typename detector_t::view_type& det_view,
     const measurement_collection_types::const_view& measurements_view,
-    vecmem::memory_resource& mr, vecmem::copy& copy, cl::sycl::queue& queue) {
+    vecmem::memory_resource& mr, vecmem::copy& copy, ::sycl::queue& queue) {
 
     // Get the number of measurements.
     const measurement_collection_types::const_view::size_type n_measurements =
@@ -63,11 +63,11 @@ spacepoint_collection_types::buffer silicon_pixel_spacepoint_formation(
 
     // Run the spacepoint formation on the device.
     queue
-        .submit([&](cl::sycl::handler& h) {
+        .submit([&](::sycl::handler& h) {
             h.parallel_for(
                 countRange, [det_view, measurements_view, n_measurements,
                              spacepoints_view = vecmem::get_data(result)](
-                                cl::sycl::nd_item<1> item) {
+                                ::sycl::nd_item<1> item) {
                     device::form_spacepoints<detector_t>(
                         item.get_global_linear_id(), det_view,
                         measurements_view, n_measurements, spacepoints_view);

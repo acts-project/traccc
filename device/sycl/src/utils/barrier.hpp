@@ -11,12 +11,12 @@
 #include "traccc/definitions/qualifiers.hpp"
 
 // SYCL includes
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 namespace traccc::sycl {
 
 struct barrier {
-    barrier(::sycl::nd_item<1> item) : m_item(item){};
+    barrier(::sycl::nd_item<1> item) : m_item(item) {}
 
     TRACCC_DEVICE
     void blockBarrier() { m_item.barrier(); }

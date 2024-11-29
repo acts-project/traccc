@@ -6,7 +6,7 @@
  */
 
 // SYCL include(s)
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // io
 #include "traccc/io/read_cells.hpp"

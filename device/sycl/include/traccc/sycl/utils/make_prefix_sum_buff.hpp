@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,7 +8,7 @@
 #pragma once
 
 // Sycl include(s).
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // Project include(s).
 #include "traccc/device/fill_prefix_sum.hpp"

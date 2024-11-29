@@ -10,7 +10,7 @@
 #include <oneapi/dpl/execution>
 
 // SYCL include(s).
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>

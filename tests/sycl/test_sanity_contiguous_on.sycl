@@ -18,7 +18,7 @@
 #include <gtest/gtest.h>
 
 // System include
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 struct int_identity_projection {
     int operator()(const int& v) const { return v; }
@@ -26,7 +26,7 @@ struct int_identity_projection {
 
 class SYCLSanityContiguousOn : public testing::Test {
     protected:
-    cl::sycl::queue queue;
+    ::sycl::queue queue;
     traccc::sycl::queue_wrapper queue_wrapper{&queue};
     vecmem::sycl::device_memory_resource mr{&queue};
     vecmem::sycl::async_copy copy{&queue};
