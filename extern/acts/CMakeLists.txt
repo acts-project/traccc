@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -18,7 +18,7 @@ message( STATUS "Building Acts as part of the TRACCC project" )
 
 # Declare where to get Acts from.
 set( TRACCC_ACTS_SOURCE
-   "URL;https://github.com/acts-project/acts/archive/refs/tags/v37.3.0.tar.gz;URL_MD5;95cf54fe7986cece23ca7004d1138b01"
+   "URL;https://github.com/acts-project/acts/archive/refs/tags/v38.0.0.tar.gz;URL_MD5;295c73b1069e571af92e6d853a069e65"
    CACHE STRING "Source for Acts, when built as part of this project" )
 mark_as_advanced( TRACCC_ACTS_SOURCE )
 
