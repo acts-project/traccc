@@ -56,8 +56,8 @@ endif()
 
 # Set up the traccc::Thrust target.
 if ( NOT TARGET traccc::Thrust )
-   set( TRACCC_THRUST_OPTIONS @TRACCC_THRUST_OPTIONS@ )
-   thrust_create_target( traccc::Thrust ${TRACCC_THRUST_OPTIONS} )
+   add_library( traccc::Thrust INTERFACE IMPORTED )
+   target_link_libraries( traccc::Thrust INTERFACE Thrust::Thrust )
 endif()
 
 # Include the file listing all the imported targets and options.
