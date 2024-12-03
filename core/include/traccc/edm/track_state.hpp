@@ -36,6 +36,14 @@ struct fitting_result {
     // The number of holes (The number of sensitive surfaces which do not have a
     // measurement for the track pattern)
     unsigned int n_holes{0u};
+
+    // Reset the statistics
+    TRACCC_HOST_DEVICE
+    void reset_statistics() {
+        ndf = 0.f;
+        chi2 = 0.f;
+        n_holes = 0u;
+    }    
 };
 
 /// Fitting result per measurement

@@ -178,6 +178,9 @@ class kalman_fitter {
             .template set_constraint<detray::step::constraint::e_accuracy>(
                 m_cfg.propagation.stepping.step_constraint);
 
+        // Reset fitter statistics
+        fitter_state.m_fit_res.reset_statistics();
+
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());
 
