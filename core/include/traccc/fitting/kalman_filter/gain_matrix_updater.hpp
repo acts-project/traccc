@@ -148,6 +148,9 @@ struct gain_matrix_updater {
         }
 
         if (backward_mode) {
+            assert(trk_state.filtered().surface_link() ==
+                   bound_params.surface_link());
+
             const matrix_type<e_bound_size, e_bound_size> predicted_cov_inv =
                 matrix_operator().inverse(predicted_cov);
             const matrix_type<e_bound_size, e_bound_size> filtered_cov_inv =
