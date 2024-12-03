@@ -71,7 +71,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -214,7 +214,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 1, 5000,
-        false, 20.f, 9u, 20.f)));
+        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation1, CkfSparseTrackTelescopeTests,
@@ -223,7 +223,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 2500,
-        false, 20.f, 9u, 20.f)));
+        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation2, CkfSparseTrackTelescopeTests,
@@ -232,7 +232,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 4, 1250,
-        false, 20.f, 9u, 20.f)));
+        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation3, CkfSparseTrackTelescopeTests,
@@ -241,15 +241,14 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 200.f, 200.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500,
-        false, 20.f, 9u, 20.f)));
+        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation4, CkfSparseTrackTelescopeTests,
-    ::testing::Values(std::make_tuple("telescope_decade_tracks_random_charge",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 200.f, 200.f},
-                                      std::array<scalar, 2u>{1.f, 1.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      detray::muon<scalar>(), 10, 500, true,
-                                      20.f, 9u, 20.f)));
+    ::testing::Values(std::make_tuple(
+        "telescope_decade_tracks_random_charge",
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500, true,
+        20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
