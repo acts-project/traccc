@@ -167,8 +167,9 @@ struct gain_matrix_updater {
             // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
             // Reconstruction in Particle Detectors"
             const matrix_type<e_bound_size, 1u> smoothed_vec =
-                smoothed_cov * (filtered_cov_inv * filtered_vec +
-                                predicted_cov_inv * predicted_vec);
+                smoothed_cov *
+                (filtered_cov_inv * trk_state.filtered().vector() +
+                 predicted_cov_inv * predicted_vec);
 
             trk_state.smoothed().set_vector(smoothed_vec);
             trk_state.smoothed().set_covariance(smoothed_cov);
