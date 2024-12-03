@@ -5,13 +5,8 @@
 # Mozilla Public License Version 2.0
 
 # CMake include(s).
-cmake_minimum_required( VERSION 3.11 )
+cmake_minimum_required( VERSION 3.25 )
 include( FetchContent )
-
-# Silence FetchContent warnings with CMake >=3.24.
-if( POLICY CMP0135 )
-   cmake_policy( SET CMP0135 NEW )
-endif()
 
 # Tell the user what's happening.
 message( STATUS "Building GoogleTest as part of the TRACCC project" )
@@ -21,7 +16,7 @@ set( TRACCC_GOOGLETEST_SOURCE
    "URL;https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz;URL_MD5;7e11f6cfcf6498324ac82d567dcb891e"
    CACHE STRING "Source for GoogleTest, when built as part of this project" )
 mark_as_advanced( TRACCC_GOOGLETEST_SOURCE )
-FetchContent_Declare( GoogleTest ${TRACCC_GOOGLETEST_SOURCE} )
+FetchContent_Declare( GoogleTest SYSTEM ${TRACCC_GOOGLETEST_SOURCE} )
 
 # Options used in the build of GoogleTest.
 set( BUILD_GMOCK TRUE CACHE BOOL "Turn off the build of GMock" )
@@ -39,5 +34,9 @@ FetchContent_MakeAvailable( GoogleTest )
 
 # Set up aliases for the GTest targets with the same name that they have
 # when we find GTest pre-installed.
-add_library( GTest::gtest ALIAS gtest )
-add_library( GTest::gtest_main ALIAS gtest_main )
+if( NOT TARGET GTest::gtest )
+   add_library( GTest::gtest ALIAS gtest )
+endif()
+if( NOT TARGET GTest::gtest_main )
+   add_library( GTest::gtest_main ALIAS gtest_main )
+endif()
