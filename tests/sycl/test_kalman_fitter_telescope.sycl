@@ -6,7 +6,7 @@
  */
 
 // SYCL include(s)
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // Project include(s).
 #include "traccc/device/container_d2h_copy_alg.hpp"

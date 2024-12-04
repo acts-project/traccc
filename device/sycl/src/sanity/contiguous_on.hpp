@@ -19,7 +19,7 @@
 #include <vecmem/utils/copy.hpp>
 
 // SYCL include
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // System include
 #include <concepts>
@@ -44,7 +44,7 @@ struct is_contiguous_on_compress_adjacent {
         : m_projection(projection), m_view(view), m_out_view(out_view) {}
 
     /// Execution operator for the kernel
-    void operator()(cl::sycl::nd_item<1> item) const {
+    void operator()(::sycl::nd_item<1> item) const {
 
         std::size_t tid = item.get_global_linear_id();
 
@@ -111,7 +111,7 @@ is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
     constexpr int local_size = 512;
     constexpr int local_size_2d = 32;
 
-    cl::sycl::queue& queue = details::get_queue(queue_wrapper);
+    ::sycl::queue& queue = details::get_queue(queue_wrapper);
 
     // Grab the number of elements in our vector.
     const typename VIEW::size_type n = copy.get_size(view);
@@ -133,16 +133,16 @@ is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
 
     bool initial_out = true;
 
-    cl::sycl::event kernel2_memcpy_evt = queue.copy(&initial_out, out.get(), 1);
+    ::sycl::event kernel2_memcpy_evt = queue.copy(&initial_out, out.get(), 1);
 
-    cl::sycl::nd_range<1> compress_adjacent_range{
-        cl::sycl::range<1>(((n + local_size - 1) / local_size) * local_size),
-        cl::sycl::range<1>(local_size)};
+    ::sycl::nd_range<1> compress_adjacent_range{
+        ::sycl::range<1>(((n + local_size - 1) / local_size) * local_size),
+        ::sycl::range<1>(local_size)};
 
     // Launch the first kernel, which will squash consecutive equal elements
     // into one element.
     queue
-        .submit([&](cl::sycl::handler& h) {
+        .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::is_contiguous_on_compress_adjacent<
                 CONTAINER, P, VIEW, projection_t>>(
                 compress_adjacent_range,
@@ -156,17 +156,17 @@ is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
         copy.get_size(iout);
     uint32_t grid_size_rd =
         (host_iout_size + local_size_2d - 1) / local_size_2d;
-    cl::sycl::nd_range<2> all_unique_range{
-        cl::sycl::range<2>(grid_size_rd * local_size_2d,
-                           grid_size_rd * local_size_2d),
-        cl::sycl::range<2>(local_size_2d, local_size_2d)};
+    ::sycl::nd_range<2> all_unique_range{
+        ::sycl::range<2>(grid_size_rd * local_size_2d,
+                         grid_size_rd * local_size_2d),
+        ::sycl::range<2>(local_size_2d, local_size_2d)};
 
     // Launch the second kernel, which will check if the values are unique.
-    cl::sycl::event kernel2_evt = queue.submit([&](cl::sycl::handler& h) {
+    ::sycl::event kernel2_evt = queue.submit([&](::sycl::handler& h) {
         h.depends_on(kernel2_memcpy_evt);
         h.parallel_for<kernels::is_contiguous_on_all_unique<projection_t>>(
             all_unique_range, [in_view = vecmem::get_data(iout),
-                               out = out.get()](cl::sycl::nd_item<2> item) {
+                               out = out.get()](::sycl::nd_item<2> item) {
                 std::size_t tid_x = item.get_global_id(0);
                 std::size_t tid_y = item.get_global_id(1);
 

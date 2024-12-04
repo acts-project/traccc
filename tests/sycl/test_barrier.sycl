@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
@@ -17,19 +17,18 @@
 TEST(SYCLBarrier, BarrierAnd) {
     vecmem::sycl::shared_memory_resource mr;
 
-    cl::sycl::queue queue;
+    ::sycl::queue queue;
     constexpr std::size_t n_bools = 4;
 
     vecmem::unique_alloc_ptr<bool[]> out =
         vecmem::make_unique_alloc<bool[]>(mr, n_bools);
 
-    cl::sycl::nd_range test_range(cl::sycl::range<1>(128),
-                                  cl::sycl::range<1>(128));
+    ::sycl::nd_range test_range(::sycl::range<1>(128), ::sycl::range<1>(128));
 
     queue
-        .submit([&, out = out.get()](cl::sycl::handler &h) {
+        .submit([&, out = out.get()](::sycl::handler &h) {
             h.parallel_for<class BarrierAndTest>(
-                test_range, [=](cl::sycl::nd_item<1> item) {
+                test_range, [=](::sycl::nd_item<1> item) {
                     traccc::sycl::barrier bar(item);
 
                     bool v;
@@ -66,19 +65,18 @@ TEST(SYCLBarrier, BarrierAnd) {
 TEST(SYCLBarrier, BarrierOr) {
     vecmem::sycl::shared_memory_resource mr;
 
-    cl::sycl::queue queue;
+    ::sycl::queue queue;
     constexpr std::size_t n_bools = 4;
 
     vecmem::unique_alloc_ptr<bool[]> out =
         vecmem::make_unique_alloc<bool[]>(mr, n_bools);
 
-    cl::sycl::nd_range test_range(cl::sycl::range<1>(128),
-                                  cl::sycl::range<1>(128));
+    ::sycl::nd_range test_range(::sycl::range<1>(128), ::sycl::range<1>(128));
 
     queue
-        .submit([&, out = out.get()](cl::sycl::handler &h) {
+        .submit([&, out = out.get()](::sycl::handler &h) {
             h.parallel_for<class BarrierOrTest>(
-                test_range, [=](cl::sycl::nd_item<1> item) {
+                test_range, [=](::sycl::nd_item<1> item) {
                     traccc::sycl::barrier bar(item);
 
                     bool v;
@@ -115,19 +113,18 @@ TEST(SYCLBarrier, BarrierOr) {
 TEST(SYCLBarrier, BarrierCount) {
     vecmem::sycl::shared_memory_resource mr;
 
-    cl::sycl::queue queue;
+    ::sycl::queue queue;
     constexpr std::size_t n_ints = 4;
 
     vecmem::unique_alloc_ptr<unsigned int[]> out =
         vecmem::make_unique_alloc<unsigned int[]>(mr, n_ints);
 
-    cl::sycl::nd_range test_range(cl::sycl::range<1>(128),
-                                  cl::sycl::range<1>(128));
+    ::sycl::nd_range test_range(::sycl::range<1>(128), ::sycl::range<1>(128));
 
     queue
-        .submit([&, out = out.get()](cl::sycl::handler &h) {
+        .submit([&, out = out.get()](::sycl::handler &h) {
             h.parallel_for<class BarrierCountTest>(
-                test_range, [=](cl::sycl::nd_item<1> item) {
+                test_range, [=](::sycl::nd_item<1> item) {
                     traccc::sycl::barrier bar(item);
 
                     unsigned int v;
