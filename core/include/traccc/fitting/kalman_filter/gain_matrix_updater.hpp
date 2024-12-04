@@ -45,13 +45,14 @@ struct gain_matrix_updater {
 
         const auto D = trk_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
-        if (D == 1u) {
-            return update<1u, shape_type>(trk_state, bound_params);
-        } else if (D == 2u) {
-            return update<2u, shape_type>(trk_state, bound_params);
+        switch (D) {
+            case 1u:
+                return update<1u, shape_type>(trk_state, bound_params);
+            case 2u:
+                return update<2u, shape_type>(trk_state, bound_params);
+            default:
+                return false;
         }
-
-        return false;
     }
 
     template <size_type D, typename shape_t>
