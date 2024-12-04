@@ -19,7 +19,7 @@
 #include <gtest/gtest.h>
 
 // System include
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 struct int_lt_relation {
     bool operator()(const int& a, const int& b) const { return a < b; }
@@ -31,7 +31,7 @@ struct int_leq_relation {
 
 class SYCLSanityOrderedOn : public testing::Test {
     protected:
-    cl::sycl::queue queue;
+    ::sycl::queue queue;
     traccc::sycl::queue_wrapper queue_wrapper{&queue};
     vecmem::sycl::device_memory_resource mr{&queue};
     vecmem::sycl::async_copy copy{&queue};

@@ -5,24 +5,18 @@
 # Mozilla Public License Version 2.0
 
 # CMake include(s).
-cmake_minimum_required( VERSION 3.14 )
+cmake_minimum_required( VERSION 3.25 )
 include( FetchContent )
-
-# Silence FetchContent warnings with CMake >=3.24.
-if( POLICY CMP0135 )
-   cmake_policy( SET CMP0135 NEW )
-endif()
 
 # Tell the user what's happening.
 message( STATUS "Building Algebra Plugins as part of the TRACCC project" )
 
 # Declare where to get Algebra Plugins from.
 set( TRACCC_ALGEBRA_PLUGINS_SOURCE
-   "URL;https://github.com/acts-project/algebra-plugins/archive/refs/tags/v0.25.0.tar.gz;URL_MD5;8201744f8b2a8ff7fbcf21bd1b4549b9"
+   "URL;https://github.com/krasznaa/algebra-plugins/archive/refs/tags/v0.25.1.tar.gz;URL_MD5;fa75a55330ad37ec812842fd7a07eb15"
    CACHE STRING "Source for Algebra Plugins, when built as part of this project" )
-
 mark_as_advanced( TRACCC_ALGEBRA_PLUGINS_SOURCE )
-FetchContent_Declare( AlgebraPlugins ${TRACCC_ALGEBRA_PLUGINS_SOURCE} )
+FetchContent_Declare( AlgebraPlugins SYSTEM ${TRACCC_ALGEBRA_PLUGINS_SOURCE} )
 
 # Options used in the build of Algebra Plugins.
 set( ALGEBRA_PLUGINS_BUILD_TESTING FALSE CACHE BOOL
@@ -40,14 +34,6 @@ set( ALGEBRA_PLUGINS_SETUP_GOOGLETEST FALSE CACHE BOOL
    "Do not set up GoogleTest in Algebra Plugins" )
 set( ALGEBRA_PLUGINS_SETUP_BENCHMARK FALSE CACHE BOOL
    "Do not set up GoogleTest in Algebra Plugins" )
-
-# Disable a pesky warning coming from the Vc build.
-include( CheckCXXCompilerFlag )
-check_cxx_compiler_flag( "-Wno-deprecated-enum-enum-conversion"
-   TRACCC_HAS_NO_DEPRECATED_ENUM_ENUM_CONVERSION )
-if( TRACCC_HAS_NO_DEPRECATED_ENUM_ENUM_CONVERSION )
-   traccc_add_flag( CMAKE_CXX_FLAGS "-Wno-deprecated-enum-enum-conversion" )
-endif()
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( AlgebraPlugins )

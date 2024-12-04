@@ -11,7 +11,7 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // SYCL include(s).
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {
 

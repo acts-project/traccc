@@ -1,17 +1,12 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2022 CERN for the benefit of the ACTS project
+# (c) 2021-2024 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
 # CMake include(s).
-cmake_minimum_required( VERSION 3.11 )
+cmake_minimum_required( VERSION 3.25 )
 include( FetchContent )
-
-# Silence FetchContent warnings with CMake >=3.24.
-if( POLICY CMP0135 )
-   cmake_policy( SET CMP0135 NEW )
-endif()
 
 # Tell the user what's happening.
 message( STATUS "Building dfelibs as part of the TRACCC project" )
@@ -21,7 +16,7 @@ set( TRACCC_DFELIBS_SOURCE
    "URL;https://github.com/acts-project/dfelibs/archive/refs/tags/v20211029.tar.gz;URL_MD5;87fb09c5a11b98250f5e266e9cd501ea"
    CACHE STRING "Source for dfelibs, when built as part of this project" )
 mark_as_advanced( TRACCC_DFELIBS_SOURCE )
-FetchContent_Declare( dfelibs ${TRACCC_DFELIBS_SOURCE} )
+FetchContent_Declare( dfelibs SYSTEM ${TRACCC_DFELIBS_SOURCE} )
 
 # Options used in the build of dfelibs.
 set( dfelibs_BUILD_EXAMPLES FALSE CACHE BOOL
@@ -33,8 +28,3 @@ set( dfelibs_ENABLE_INSTALL TRUE CACHE BOOL
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( dfelibs )
-
-get_target_property( _incDirs dfelibs INTERFACE_INCLUDE_DIRECTORIES )
-target_include_directories( dfelibs
-   SYSTEM INTERFACE ${_incDirs} )
-unset( _incDirs )

@@ -5,13 +5,8 @@
 # Mozilla Public License Version 2.0
 
 # CMake include(s).
-cmake_minimum_required( VERSION 3.14 )
+cmake_minimum_required( VERSION 3.25 )
 include( FetchContent )
-
-# Silence FetchContent warnings with CMake >=3.24.
-if( POLICY CMP0135 )
-   cmake_policy( SET CMP0135 NEW )
-endif()
 
 # Tell the user what's happening.
 message( STATUS "Building CCCL as part of the TRACCC project" )
@@ -21,6 +16,8 @@ set( TRACCC_CCCL_SOURCE
    "GIT_REPOSITORY;https://github.com/stephenswat/cccl.git;GIT_TAG;build/allow_installing_when_downstream"
    CACHE STRING "Source for CCCL, when built as part of this project" )
 mark_as_advanced( TRACCC_CCCL_SOURCE )
+# Note that we must not use SYSTEM here. Otherwise nvcc would pick up Thrust
+# from its own installation, and not from the version that we are downloading.
 FetchContent_Declare( CCCL ${TRACCC_CCCL_SOURCE} )
 
 # There are a few things to configure here... May not all be necessary but

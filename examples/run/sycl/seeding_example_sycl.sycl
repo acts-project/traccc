@@ -6,7 +6,7 @@
  */
 
 // SYCL include(s)
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"

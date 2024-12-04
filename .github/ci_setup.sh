@@ -19,7 +19,7 @@ export CTEST_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL}
 export MAKEFLAGS="-j${CMAKE_BUILD_PARALLEL_LEVEL}"
 
 # Set up the correct environment for the SYCL tests.
-if [ "${PLATFORM_NAME}" = "SYCL" ]; then
+if [[ "${PLATFORM_NAME}" == *"SYCL"* ]]; then
    if [ -f "/opt/intel/oneapi/setvars.sh" ]; then
       OLD_CPATH=${CPATH}
       source /opt/intel/oneapi/setvars.sh --include-intel-llvm

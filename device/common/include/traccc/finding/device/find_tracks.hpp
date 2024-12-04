@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,9 +18,6 @@
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
-
-// Thrust include(s)
-#include <thrust/binary_search.h>
 
 namespace traccc::device {
 template <typename detector_t>

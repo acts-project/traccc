@@ -23,6 +23,11 @@ target_link_libraries(
     GTest::gtest
 )
 
+# Set up Thrust specifically for the CUDA unit tests.
+thrust_create_target( traccc_test_cuda_thrust
+  HOST CPP
+  DEVICE CUDA )
+
 traccc_add_test(
     cuda
 
@@ -48,7 +53,7 @@ traccc_add_test(
 
     LINK_LIBRARIES
     CUDA::cudart
-    traccc::Thrust
+    traccc_test_cuda_thrust
     GTest::gtest
     vecmem::cuda
     detray::core

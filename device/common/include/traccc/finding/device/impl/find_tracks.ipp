@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,6 +21,7 @@
 
 // Thrust include(s)
 #include <thrust/binary_search.h>
+#include <thrust/execution_policy.h>
 
 namespace traccc::device {
 
@@ -61,8 +62,9 @@ TRACCC_DEVICE inline void find_tracks(
     vecmem::device_vector<unsigned int> out_params_liveness(
         payload.out_params_liveness_view);
     vecmem::device_vector<candidate_link> links(payload.links_view);
-    vecmem::device_atomic_ref<unsigned int> num_total_candidates(
-        *payload.n_total_candidates);
+    vecmem::device_atomic_ref<unsigned int,
+                              vecmem::device_address_space::global>
+        num_total_candidates(*payload.n_total_candidates);
     vecmem::device_vector<const detray::geometry::barcode> barcodes(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
@@ -154,9 +156,11 @@ TRACCC_DEVICE inline void find_tracks(
         for (; curr_meas < num_meas &&
                shared_payload.shared_candidates_size < thread_id.getBlockDimX();
              curr_meas++) {
-            unsigned int idx = vecmem::device_atomic_ref<unsigned int>(
-                                   shared_payload.shared_candidates_size)
-                                   .fetch_add(1u);
+            unsigned int idx =
+                vecmem::device_atomic_ref<unsigned int,
+                                          vecmem::device_address_space::local>(
+                    shared_payload.shared_candidates_size)
+                    .fetch_add(1u);
 
             /*
              * The buffer elemements are tuples of the measurement index and
@@ -225,7 +229,8 @@ TRACCC_DEVICE inline void find_tracks(
 
                     // Increase the number of candidates (or branches) per input
                     // parameter
-                    vecmem::device_atomic_ref<unsigned int>(
+                    vecmem::device_atomic_ref<
+                        unsigned int, vecmem::device_address_space::local>(
                         shared_payload
                             .shared_num_candidates[owner_local_thread_id])
                         .fetch_add(1u);

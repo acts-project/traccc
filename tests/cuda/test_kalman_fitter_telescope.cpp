@@ -83,7 +83,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Detector view object
     auto det_view = detray::get_data(host_det);
 
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -227,23 +227,23 @@ INSTANTIATE_TEST_SUITE_P(
             std::array<scalar, 3u>{0.f, 0.f, 0.f},
             std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
             std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-            false, 20.f, 9u, 20.f),
+            false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0}),
         std::make_tuple("cuda_telescope_10_GeV_0_phi",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 2u>{10.f, 10.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
-                        detray::muon<scalar>(), 100, 100, false, 20.f, 9u,
-                        20.f),
+                        detray::muon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
+                        vector3{2 * detray::unit<scalar>::T, 0, 0}),
         std::make_tuple("cuda_telescope_100_GeV_0_phi",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 2u>{100.f, 100.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
-                        detray::muon<scalar>(), 100, 100, false, 20.f, 9u,
-                        20.f),
+                        detray::muon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
+                        vector3{2 * detray::unit<scalar>::T, 0, 0}),
         std::make_tuple("cuda_telescope_1_GeV_0_phi_antimuon",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -251,12 +251,12 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         detray::antimuon<scalar>(), 100, 100, false, 20.f, 9u,
-                        20.f),
+                        20.f, vector3{2 * detray::unit<scalar>::T, 0, 0}),
         std::make_tuple("cuda_telescope_1_GeV_0_phi_random_charge",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 2u>{1.f, 1.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
-                        detray::muon<scalar>(), 100, 100, true, 20.f, 9u,
-                        20.f)));
+                        detray::muon<scalar>(), 100, 100, true, 20.f, 9u, 20.f,
+                        vector3{2 * detray::unit<scalar>::T, 0, 0})));

@@ -69,7 +69,7 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
 
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -181,4 +181,5 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::muon<scalar>(), 1, 1, false, 20.f, 20u, 20.f)));
+        detray::muon<scalar>(), 1, 1, false, 20.f, 20u, 20.f,
+        vector3{2 * detray::unit<scalar>::T, 0, 0})));
