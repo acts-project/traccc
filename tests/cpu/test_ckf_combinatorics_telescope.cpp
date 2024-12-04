@@ -64,7 +64,7 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -186,7 +186,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 1, false,
-        20.f, 9u, 20.f)));
+        20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
 
 // Testing three identical tracks
 INSTANTIATE_TEST_SUITE_P(
@@ -196,4 +196,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 3, 1, false,
-        20.f, 9u, 20.f)));
+        20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));

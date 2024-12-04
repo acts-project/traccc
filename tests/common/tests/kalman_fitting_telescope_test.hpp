@@ -35,21 +35,19 @@ namespace traccc {
 /// (11) offset from origin of the first plane in mm
 /// (12) Number of planes
 /// (13) Spacing between planes in mm
+/// (14) Magnetic field
 class KalmanFittingTelescopeTests
     : public KalmanFittingTests,
       public testing::WithParamInterface<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
           std::array<scalar, 2u>, std::array<scalar, 2u>,
           std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
-          unsigned int, bool, scalar, unsigned int, scalar>> {
+          unsigned int, bool, scalar, unsigned int, scalar, vector3>> {
 
     public:
     /// Plane alignment direction (aligned to x-axis)
     static const inline detray::detail::ray<traccc::default_algebra> traj{
         {0, 0, 0}, 0, {1, 0, 0}, -1};
-
-    /// B field value and its type
-    static constexpr vector3 B{2 * detray::unit<scalar>::T, 0, 0};
 
     /// Plane material and thickness
     static const inline detray::silicon_tml<scalar> mat = {};
