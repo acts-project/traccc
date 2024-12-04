@@ -64,6 +64,8 @@ struct gain_matrix_updater {
         const bound_track_parameters& bound_params,
         const bool backward_mode) const {
 
+        std::cout << bound_params.surface_link() << std::endl;
+
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
 
