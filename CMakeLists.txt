@@ -241,17 +241,6 @@ if( TRACCC_SETUP_ALPAKA )
    # Default options for the Alpaka build.
    set( alpaka_ACC_CPU_B_SEQ_T_THREADS_ENABLE TRUE CACHE BOOL
       "Enable the serial backend of Alpaka" )
-   #enable_language cannot be called by a function: put it in the top-level directory so it's available for all client code
-   if(alpaka_ACC_GPU_CUDA_ENABLE)
-     enable_language(CUDA)
-     include( traccc-compiler-options-cuda )
-   elseif(alpaka_ACC_GPU_HIP_ENABLE)
-     enable_language(HIP)
-   elseif(alpaka_ACC_SYCL_ENABLE)
-     enable_language(SYCL)
-     include( traccc-compiler-options-sycl )
-   endif()
-
    if( TRACCC_USE_SYSTEM_ALPAKA )
       find_package( alpaka REQUIRED )
    else()

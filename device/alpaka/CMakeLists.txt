@@ -11,6 +11,8 @@ include( traccc-compiler-options-cpp )
 set(PUBLIC_LIBRARIES traccc::core traccc::device_common vecmem::core covfie::core)
 set(PRIVATE_LIBRARIES alpaka::alpaka traccc::Thrust)
 
+traccc_enable_language_alpaka()
+
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   list(APPEND PRIVATE_LIBRARIES CUDA::cudart vecmem::cuda)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)

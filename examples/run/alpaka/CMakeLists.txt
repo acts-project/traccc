@@ -11,6 +11,9 @@ set(TRACCC_ALPAKA_EXAMPLE_SOURCES
     seeding_example_alpaka.cpp
 )
 
+include(traccc-alpaka-functions)
+traccc_enable_language_alpaka()
+
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   set_source_files_properties(${TRACCC_ALPAKA_EXAMPLE_SOURCES} PROPERTIES LANGUAGE CUDA)
 

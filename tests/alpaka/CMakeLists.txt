@@ -9,6 +9,10 @@ set(TRACCC_ALPAKA_TEST_SOURCES
   test_cca.cpp
 )
 
+
+include(traccc-alpaka-functions)
+traccc_enable_language_alpaka()
+
 if(alpaka_ACC_GPU_CUDA_ENABLE)
   set_source_files_properties(${TRACCC_ALPAKA_TEST_SOURCES} PROPERTIES LANGUAGE CUDA)
   list(APPEND DEVICE_LIBRARIES vecmem::cuda)
