@@ -64,8 +64,6 @@ struct gain_matrix_updater {
         const bound_track_parameters& bound_params,
         const bool backward_mode) const {
 
-        std::cout << bound_params.surface_link() << std::endl;
-
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
 
@@ -155,18 +153,39 @@ struct gain_matrix_updater {
             const matrix_type<e_bound_size, e_bound_size> filtered_cov_inv =
                 matrix_operator().inverse(trk_state.filtered().covariance());
 
+            // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
             const matrix_type<e_bound_size, e_bound_size> smoothed_cov_inv =
                 predicted_cov_inv + filtered_cov_inv;
 
             const matrix_type<e_bound_size, e_bound_size> smoothed_cov =
                 matrix_operator().inverse(smoothed_cov_inv);
 
+            // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
             const matrix_type<e_bound_size, 1u> smoothed_vec =
                 smoothed_cov * (filtered_cov_inv * filtered_vec +
                                 predicted_cov_inv * predicted_vec);
 
             trk_state.smoothed().set_vector(smoothed_vec);
             trk_state.smoothed().set_covariance(smoothed_cov);
+
+            const matrix_type<D, 1> residual_smt =
+                meas_local - H * smoothed_vec;
+
+            // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
+            const matrix_type<D, D> R_smt =
+                V - H * smoothed_cov * matrix_operator().transpose(H);
+
+            // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
+            const matrix_type<1, 1> chi2_smt =
+                matrix_operator().transpose(residual_smt) *
+                matrix_operator().inverse(R_smt) * residual_smt;
+
+            trk_state.smoothed_chi2() =
+                matrix_operator().element(chi2_smt, 0, 0);
         }
 
         return true;
