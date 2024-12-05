@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -43,12 +44,11 @@ template <typename algebra_t>
 struct track_state {
 
     using scalar_type = detray::dscalar<algebra_t>;
+    using size_type = detray::dsize_type<algebra_t>;
 
     using bound_track_parameters_type =
         detray::bound_track_parameters<algebra_t>;
     using bound_matrix = detray::bound_matrix<algebra_t>;
-    using matrix_operator = detray::dmatrix_operator<algebra_t>;
-    using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
@@ -85,17 +85,15 @@ struct track_state {
         matrix_type<D, 1> ret;
         switch (m_measurement.subs.get_indices()[0]) {
             case e_bound_loc0:
-                matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
+                getter::element(ret, 0, 0) = m_measurement.local[0];
                 if constexpr (D == 2u) {
-                    matrix_operator().element(ret, 1, 0) =
-                        m_measurement.local[1];
+                    getter::element(ret, 1, 0) = m_measurement.local[1];
                 }
                 break;
             case e_bound_loc1:
-                matrix_operator().element(ret, 0, 0) = m_measurement.local[1];
+                getter::element(ret, 0, 0) = m_measurement.local[1];
                 if constexpr (D == 2u) {
-                    matrix_operator().element(ret, 1, 0) =
-                        m_measurement.local[0];
+                    getter::element(ret, 1, 0) = m_measurement.local[0];
                 }
                 break;
             default:
@@ -115,23 +113,19 @@ struct track_state {
         matrix_type<D, D> ret;
         switch (m_measurement.subs.get_indices()[0]) {
             case e_bound_loc0:
-                matrix_operator().element(ret, 0, 0) =
-                    m_measurement.variance[0];
+                getter::element(ret, 0, 0) = m_measurement.variance[0];
                 if constexpr (D == 2u) {
-                    matrix_operator().element(ret, 0, 1) = 0.f;
-                    matrix_operator().element(ret, 1, 0) = 0.f;
-                    matrix_operator().element(ret, 1, 1) =
-                        m_measurement.variance[1];
+                    getter::element(ret, 0, 1) = 0.f;
+                    getter::element(ret, 1, 0) = 0.f;
+                    getter::element(ret, 1, 1) = m_measurement.variance[1];
                 }
                 break;
             case e_bound_loc1:
-                matrix_operator().element(ret, 0, 0) =
-                    m_measurement.variance[1];
+                getter::element(ret, 0, 0) = m_measurement.variance[1];
                 if constexpr (D == 2u) {
-                    matrix_operator().element(ret, 0, 1) = 0.f;
-                    matrix_operator().element(ret, 1, 0) = 0.f;
-                    matrix_operator().element(ret, 1, 1) =
-                        m_measurement.variance[0];
+                    getter::element(ret, 0, 1) = 0.f;
+                    getter::element(ret, 1, 0) = 0.f;
+                    getter::element(ret, 1, 1) = m_measurement.variance[0];
                 }
                 break;
             default:
@@ -200,8 +194,7 @@ struct track_state {
     private:
     detray::geometry::barcode m_surface_link;
     measurement m_measurement;
-    bound_matrix m_jacobian =
-        matrix_operator().template zero<e_bound_size, e_bound_size>();
+    bound_matrix m_jacobian = matrix::zero<bound_matrix>();
     bound_track_parameters_type m_predicted;
     scalar_type m_filtered_chi2 = 0.f;
     bound_track_parameters_type m_filtered;

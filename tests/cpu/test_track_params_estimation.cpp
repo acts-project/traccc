@@ -43,7 +43,7 @@ TEST(track_params_estimation, helix_negative_charge) {
 
     // Make a helix
     detray::detail::helix<traccc::default_algebra> hlx(
-        pos, time, vector::normalize(mom), q / getter::norm(mom), &B);
+        pos, time, vector::normalize(mom), q / vector::norm(mom), &B);
 
     // Make three spacepoints with the helix
     spacepoint_collection_types::host spacepoints;
@@ -62,7 +62,7 @@ TEST(track_params_estimation, helix_negative_charge) {
     // Make sure that the reconstructed momentum is equal to the original
     // momentum
     ASSERT_EQ(bound_params.size(), 1u);
-    ASSERT_NEAR(bound_params[0].p(q), getter::norm(mom), 2.f * 1e-4);
+    ASSERT_NEAR(bound_params[0].p(q), vector::norm(mom), 2.f * 1e-4);
     ASSERT_TRUE(bound_params[0].qop() < 0.f);
 }
 
@@ -80,7 +80,7 @@ TEST(track_params_estimation, helix_positive_charge) {
 
     // Make a helix
     detray::detail::helix<traccc::default_algebra> hlx(
-        pos, time, vector::normalize(mom), q / getter::norm(mom), &B);
+        pos, time, vector::normalize(mom), q / vector::norm(mom), &B);
 
     // Make three spacepoints with the helix
     spacepoint_collection_types::host spacepoints;
@@ -99,6 +99,6 @@ TEST(track_params_estimation, helix_positive_charge) {
     // Make sure that the reconstructed momentum is equal to the original
     // momentum
     ASSERT_EQ(bound_params.size(), 1u);
-    ASSERT_NEAR(bound_params[0].p(q), getter::norm(mom), 2.f * 1e-4);
+    ASSERT_NEAR(bound_params[0].p(q), vector::norm(mom), 2.f * 1e-4);
     ASSERT_TRUE(bound_params[0].qop() > 0.f);
 }

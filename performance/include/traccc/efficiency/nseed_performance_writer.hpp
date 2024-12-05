@@ -85,9 +85,9 @@ class nseed_performance_writer {
                 }
             }
 
-            const scalar eta = getter::eta(ptc.momentum);
-            const scalar phi = getter::phi(ptc.momentum);
-            const scalar pT = getter::perp(ptc.momentum);
+            const scalar eta = vector::eta(ptc.momentum);
+            const scalar phi = vector::phi(ptc.momentum);
+            const scalar pT = vector::perp(ptc.momentum);
 
             write_track_row(ev, ptc.particle_id, pass, ptc.charge, eta, phi,
                             pT);

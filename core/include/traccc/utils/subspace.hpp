@@ -26,7 +26,6 @@ struct subspace {
 
     public:
     // Type declarations
-    using matrix_operator = detray::dmatrix_operator<algebra_t>;
     using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
@@ -36,8 +35,8 @@ struct subspace {
     using projection_matrix = matrix_type<kSize, kFullSize>;
     using expansion_matrix = matrix_type<kFullSize, kSize>;
 
-    static const size_type size = kSize;
-    static const size_type fullSize = kFullSize;
+    static constexpr size_type size = kSize;
+    static constexpr size_type fullSize = kFullSize;
 
     /// Construct from a container of axis indices.
     ///
@@ -76,8 +75,7 @@ struct subspace {
                       "The dimension of projection should be smaller than "
                       "subspace dimension");
 
-        matrix_type<D, kFullSize> proj =
-            matrix_operator().template zero<D, kFullSize>();
+        auto proj = matrix::zero<matrix_type<D, kFullSize>>();
 
         for (size_type i = 0u; i < D; ++i) {
             getter::element(proj, i, m_axes[i]) = 1;
@@ -92,8 +90,7 @@ struct subspace {
                       "The dimension of projection should be smaller than "
                       "subspace dimension");
 
-        matrix_type<kFullSize, D> expn =
-            matrix_operator().template zero<kFullSize, D>();
+        auto expn = matrix::zero<matrix_type<kFullSize, D>>();
 
         for (size_type i = 0u; i < kSize; ++i) {
             getter::element(expn, m_axes[i], i) = 1;

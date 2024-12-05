@@ -19,10 +19,11 @@ template <typename algebra_t>
 struct gain_matrix_updater {
 
     // Type declarations
-    using matrix_operator = detray::dmatrix_operator<algebra_t>;
     using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
+    using bound_vector_type = detray::bound_vector<algebra_t>;
+    using bound_matrix_type = detray::bound_matrix<algebra_t>;
 
     /// Gain matrix updater operation
     ///
@@ -70,12 +71,9 @@ struct gain_matrix_updater {
         const auto meas = trk_state.get_measurement();
 
         // Some identity matrices
-        // @Note: Make constexpr work
-        const matrix_type<e_bound_size, e_bound_size> I66 =
-            matrix_operator().template identity<e_bound_size, e_bound_size>();
-
-        const matrix_type<D, D> I_m =
-            matrix_operator().template identity<D, D>();
+        // @TODO: Make constexpr work
+        const auto I66 = matrix::identity<bound_matrix_type>();
+        const auto I_m = matrix::identity<matrix_type<D, D>>();
 
         matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
 
@@ -84,12 +82,10 @@ struct gain_matrix_updater {
             trk_state.template measurement_local<D>();
 
         // Predicted vector of bound track parameters
-        const matrix_type<e_bound_size, 1>& predicted_vec =
-            bound_params.vector();
+        const bound_vector_type& predicted_vec = bound_params.vector();
 
         // Predicted covaraince of bound track parameters
-        const matrix_type<e_bound_size, e_bound_size>& predicted_cov =
-            bound_params.covariance();
+        const bound_matrix_type& predicted_cov = bound_params.covariance();
 
         // Set track state parameters
         trk_state.predicted().set_vector(predicted_vec);
@@ -108,12 +104,11 @@ struct gain_matrix_updater {
             trk_state.template measurement_covariance<D>();
 
         const matrix_type<D, D> M =
-            H * predicted_cov * matrix_operator().transpose(H) + V;
+            H * predicted_cov * matrix::transpose(H) + V;
 
         // Kalman gain matrix
-        const matrix_type<6, D> K = predicted_cov *
-                                    matrix_operator().transpose(H) *
-                                    matrix_operator().inverse(M);
+        const matrix_type<6, D> K =
+            predicted_cov * matrix::transpose(H) * matrix::inverse(M);
 
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
@@ -125,8 +120,8 @@ struct gain_matrix_updater {
 
         // Calculate the chi square
         const matrix_type<D, D> R = (I_m - H * K) * V;
-        const matrix_type<1, 1> chi2 = matrix_operator().transpose(residual) *
-                                       matrix_operator().inverse(R) * residual;
+        const matrix_type<1, 1> chi2 =
+            matrix::transpose(residual) * matrix::inverse(R) * residual;
 
         // Return false if track is parallel to z-axis or phi is not finite
         const scalar theta = bound_params.theta();
@@ -138,7 +133,7 @@ struct gain_matrix_updater {
         // Set the track state parameters
         trk_state.filtered().set_vector(filtered_vec);
         trk_state.filtered().set_covariance(filtered_cov);
-        trk_state.filtered_chi2() = matrix_operator().element(chi2, 0, 0);
+        trk_state.filtered_chi2() = getter::element(chi2, 0, 0);
 
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered());

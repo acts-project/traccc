@@ -93,11 +93,11 @@ class fitting_performance_writer {
         // Return value
         bound_track_parameters truth_param{};
         truth_param.set_bound_local(truth_bound);
-        truth_param.set_phi(getter::phi(global_mom));
-        truth_param.set_theta(getter::theta(global_mom));
+        truth_param.set_phi(vector::phi(global_mom));
+        truth_param.set_theta(vector::theta(global_mom));
         // @todo: Assign a proper value to time
         truth_param.set_time(0.f);
-        truth_param.set_qop(ptc.charge / getter::norm(global_mom));
+        truth_param.set_qop(ptc.charge / vector::norm(global_mom));
 
         // For the moment, only fill with the first measurements
         if (fit_res.ndf > 0 && !trk_state.is_hole) {

@@ -22,8 +22,8 @@ std::string simple_charged_eta_pt_cut::get_name() const {
 }
 
 bool simple_charged_eta_pt_cut::operator()(const particle& p) const {
-    const scalar eta = getter::eta(p.momentum);
-    const scalar pT = getter::perp(p.momentum);
+    const scalar eta = vector::eta(p.momentum);
+    const scalar pT = vector::perp(p.momentum);
 
     return p.charge != 0 && std::abs(eta) <= m_eta && pT >= m_pT;
 }

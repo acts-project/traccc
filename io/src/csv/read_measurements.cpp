@@ -44,7 +44,7 @@ void read_measurements(measurement_collection_types::host& measurements,
 
         // Construct the measurement object.
         traccc::measurement meas;
-        std::array<typename transform3::size_type, 2u> indices{0u, 0u};
+        std::array<detray::dsize_type<default_algebra>, 2u> indices{0u, 0u};
         meas.meas_dim = 0u;
 
         // Local key is a 8 bit char and first and last bit are dummy value. 2 -

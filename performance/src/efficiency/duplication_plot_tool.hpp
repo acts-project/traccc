@@ -109,9 +109,9 @@ class duplication_plot_tool {
     /// @param nDuplicatedTracks the number of duplicated tracks
     void fill(duplication_plot_cache& cache, const particle& truth_particle,
               size_t n_duplicated_tracks) const {
-        const auto t_phi = getter::phi(truth_particle.momentum);
-        const auto t_eta = getter::eta(truth_particle.momentum);
-        const auto t_pT = getter::perp(
+        const auto t_phi = vector::phi(truth_particle.momentum);
+        const auto t_eta = vector::eta(truth_particle.momentum);
+        const auto t_pT = vector::perp(
             vector2{truth_particle.momentum[0], truth_particle.momentum[1]});
 
         // Avoid unused variable warnings when building the code without ROOT.
