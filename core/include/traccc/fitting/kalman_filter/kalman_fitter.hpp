@@ -17,6 +17,7 @@
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
+#include "traccc/utils/chi2_cdf.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -133,13 +134,23 @@ class kalman_fitter {
             fitter_state.m_fit_actor_state.reset();
 
             if (i == 0) {
-                filter(seed_params, fitter_state);
+                // filter(seed_params, fitter_state);
+                auto new_seed_params = seed_params;
+                /*
+                inflate_covariance(new_seed_params,
+                                   m_cfg.covariance_inflation_factor);
+                */
+                filter(new_seed_params, fitter_state);
             }
             // From the second iteration, seed parameter is the smoothed track
             // parameter at the first surface
             else {
-                const auto& new_seed_params =
+                auto new_seed_params =
                     fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
+
+                // new_seed_params.set_covariance(seed_params.covariance());
+                inflate_covariance(new_seed_params,
+                                   m_cfg.covariance_inflation_factor);
 
                 filter(new_seed_params, fitter_state);
             }
@@ -185,7 +196,7 @@ class kalman_fitter {
         propagator.propagate(propagation, fitter_state());
 
         // Run smoothing
-        smooth(fitter_state);
+        smooth(fitter_state, seed_params.covariance());
 
         // Update track fitting qualities
         update_statistics(fitter_state);
@@ -198,7 +209,7 @@ class kalman_fitter {
     ///
     /// @param fitter_state the state of kalman fitter
     TRACCC_HOST_DEVICE
-    void smooth(state& fitter_state) {
+    void smooth(state& fitter_state, const bound_covariance& cov) {
 
         if (m_cfg.use_backward_filter) {
             // Create propagator
@@ -211,7 +222,11 @@ class kalman_fitter {
             // Seed param for backward seed = last state of forward filter
             auto bw_seed_params =
                 fitter_state.m_fit_actor_state.m_track_states.back().filtered();
-            inflate_covariance(bw_seed_params, m_cfg.cov_inflate_factor);
+            /*
+            inflate_covariance(bw_seed_params,
+                               m_cfg.covariance_inflation_factor);
+            */
+            bw_seed_params.set_covariance(cov);
 
             // Two filters (forward & backward) method
             typename propagator_type::state propagation(bw_seed_params, m_field,
@@ -224,6 +239,9 @@ class kalman_fitter {
             fitter_state.m_fit_actor_state.backward_mode = true;
 
             propagator.propagate(propagation, fitter_state());
+
+            // Reset the backward mode to false
+            fitter_state.m_fit_actor_state.backward_mode = false;
         } else {
             auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
@@ -271,6 +289,9 @@ class kalman_fitter {
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
         fit_res.ndf = fit_res.ndf - 5.f;
+
+        // P-value
+        //fit_res.pval = chisquared_cdf_c<scalar_type>(fit_res.chi2, fit_res.ndf);
 
         // The number of holes
         fit_res.n_holes = fitter_state.m_fit_actor_state.n_holes;

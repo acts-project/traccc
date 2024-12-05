@@ -28,7 +28,7 @@ struct fitting_config {
 
     /// Smoothing with backward filter
     bool use_backward_filter = false;
-    traccc::scalar cov_inflate_factor = 1e3f;
+    traccc::scalar covariance_inflation_factor = 1e3f;
 };
 
 }  // namespace traccc
