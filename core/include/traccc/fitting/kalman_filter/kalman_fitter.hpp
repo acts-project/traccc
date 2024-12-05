@@ -17,7 +17,6 @@
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
-#include "traccc/utils/chi2_cdf.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).

@@ -44,9 +44,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/utils/memory_resource.hpp"
   "include/traccc/utils/seed_generator.hpp"
   "include/traccc/utils/subspace.hpp"
-  "include/traccc/utils/chi2_cdf.hpp"
-  "include/traccc/utils/gamma_functions.hpp"
-  "src/utils/gamma_functions.cpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/details/sparse_ccl.hpp"
   "include/traccc/clusterization/impl/sparse_ccl.ipp"
