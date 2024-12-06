@@ -79,14 +79,11 @@ struct track_state {
     TRACCC_HOST_DEVICE inline matrix_type<D, 1> measurement_local() const {
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
+        assert((m_measurement.subs.get_indices()[0] == e_bound_loc0) ||
+               (m_measurement.subs.get_indices()[0] == e_bound_loc1));
 
         matrix_type<D, 1> ret;
         switch (m_measurement.subs.get_indices()[0]) {
-            default:
-                assert(
-                    "The measurement index out of e_bound_loc0 and "
-                    "e_bound_loc1 should not happen.");
-                [[fallthrough]];
             case e_bound_loc0:
                 matrix_operator().element(ret, 0, 0) = m_measurement.local[0];
                 if constexpr (D == 2u) {
@@ -101,6 +98,8 @@ struct track_state {
                         m_measurement.local[0];
                 }
                 break;
+            default:
+                __builtin_unreachable();
         }
         return ret;
     }
@@ -110,14 +109,11 @@ struct track_state {
     TRACCC_HOST_DEVICE inline matrix_type<D, D> measurement_covariance() const {
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
+        assert((m_measurement.subs.get_indices()[0] == e_bound_loc0) ||
+               (m_measurement.subs.get_indices()[0] == e_bound_loc1));
 
         matrix_type<D, D> ret;
         switch (m_measurement.subs.get_indices()[0]) {
-            default:
-                assert(
-                    "The measurement index out of e_bound_loc0 and "
-                    "e_bound_loc1 should not happen.");
-                [[fallthrough]];
             case e_bound_loc0:
                 matrix_operator().element(ret, 0, 0) =
                     m_measurement.variance[0];
@@ -138,6 +134,8 @@ struct track_state {
                         m_measurement.variance[0];
                 }
                 break;
+            default:
+                __builtin_unreachable();
         }
         return ret;
     }
