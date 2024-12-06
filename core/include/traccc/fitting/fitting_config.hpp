@@ -17,7 +17,7 @@ namespace traccc {
 /// Configuration struct for track fitting
 struct fitting_config {
 
-    std::size_t n_iterations = 1;
+    std::size_t n_max_iterations = 1;
 
     /// Propagation configuration
     detray::propagation::config propagation{};
@@ -25,6 +25,10 @@ struct fitting_config {
     /// Particle hypothesis
     detray::pdg_particle<traccc::scalar> ptc_hypothesis =
         detray::muon<traccc::scalar>();
+
+    /// Smoothing with backward filter
+    bool use_backward_filter = false;
+    traccc::scalar covariance_inflation_factor = 1e3f;
 };
 
 }  // namespace traccc

@@ -33,22 +33,26 @@ struct gain_matrix_updater {
     /// @param index mask index of surface
     /// @param trk_state track state of the surface
     /// @param bound_params bound parameter
+    /// @param backward_mode backward propagation for smoothing
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
     TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        const bound_track_parameters& bound_params,
+        const bool backward_mode) const {
 
         using shape_type = typename mask_group_t::value_type::shape;
 
         const auto D = trk_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
         if (D == 1u) {
-            return update<1u, shape_type>(trk_state, bound_params);
+            return update<1u, shape_type>(trk_state, bound_params,
+                                          backward_mode);
         } else if (D == 2u) {
-            return update<2u, shape_type>(trk_state, bound_params);
+            return update<2u, shape_type>(trk_state, bound_params,
+                                          backward_mode);
         }
 
         return false;
@@ -57,7 +61,8 @@ struct gain_matrix_updater {
     template <size_type D, typename shape_t>
     TRACCC_HOST_DEVICE inline bool update(
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        const bound_track_parameters& bound_params,
+        const bool backward_mode) const {
 
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
@@ -87,8 +92,10 @@ struct gain_matrix_updater {
             bound_params.covariance();
 
         // Set track state parameters
-        trk_state.predicted().set_vector(predicted_vec);
-        trk_state.predicted().set_covariance(predicted_cov);
+        if (!backward_mode) {
+            trk_state.predicted().set_vector(predicted_vec);
+            trk_state.predicted().set_covariance(predicted_cov);
+        }
 
         if constexpr (std::is_same_v<shape_t, detray::line<true>> ||
                       std::is_same_v<shape_t, detray::line<false>>) {
@@ -131,12 +138,59 @@ struct gain_matrix_updater {
         }
 
         // Set the track state parameters
-        trk_state.filtered().set_vector(filtered_vec);
-        trk_state.filtered().set_covariance(filtered_cov);
-        trk_state.filtered_chi2() = matrix_operator().element(chi2, 0, 0);
+        if (!backward_mode) {
+            trk_state.filtered().set_vector(filtered_vec);
+            trk_state.filtered().set_covariance(filtered_cov);
+            trk_state.filtered_chi2() = matrix_operator().element(chi2, 0, 0);
 
-        // Wrap the phi in the range of [-pi, pi]
-        wrap_phi(trk_state.filtered());
+            // Wrap the phi in the range of [-pi, pi]
+            wrap_phi(trk_state.filtered());
+        }
+
+        if (backward_mode) {
+            assert(trk_state.filtered().surface_link() ==
+                   bound_params.surface_link());
+
+            const matrix_type<e_bound_size, e_bound_size> predicted_cov_inv =
+                matrix_operator().inverse(predicted_cov);
+            const matrix_type<e_bound_size, e_bound_size> filtered_cov_inv =
+                matrix_operator().inverse(trk_state.filtered().covariance());
+
+            // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
+            const matrix_type<e_bound_size, e_bound_size> smoothed_cov_inv =
+                predicted_cov_inv + filtered_cov_inv;
+
+            const matrix_type<e_bound_size, e_bound_size> smoothed_cov =
+                matrix_operator().inverse(smoothed_cov_inv);
+
+            // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
+            const matrix_type<e_bound_size, 1u> smoothed_vec =
+                smoothed_cov *
+                (filtered_cov_inv * trk_state.filtered().vector() +
+                 predicted_cov_inv * predicted_vec);
+
+            trk_state.smoothed().set_vector(smoothed_vec);
+            trk_state.smoothed().set_covariance(smoothed_cov);
+
+            const matrix_type<D, 1> residual_smt =
+                meas_local - H * smoothed_vec;
+
+            // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
+            const matrix_type<D, D> R_smt =
+                V - H * smoothed_cov * matrix_operator().transpose(H);
+
+            // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
+            // Reconstruction in Particle Detectors"
+            const matrix_type<1, 1> chi2_smt =
+                matrix_operator().transpose(residual_smt) *
+                matrix_operator().inverse(R_smt) * residual_smt;
+
+            trk_state.smoothed_chi2() =
+                matrix_operator().element(chi2_smt, 0, 0);
+        }
 
         return true;
     }
