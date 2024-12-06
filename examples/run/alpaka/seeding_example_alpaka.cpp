@@ -43,6 +43,10 @@
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 #include "traccc/alpaka/utils/vecmem_types.hpp"
+#ifdef ALPAKA_ACC_SYCL_ENABLED
+#include <sycl/sycl.hpp>
+#include <vecmem/utils/sycl/queue_wrapper.hpp>
+#endif
 
 // System include(s).
 #include <exception>
@@ -63,6 +67,21 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     using Idx = uint32_t;
 
     using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
+#ifdef ALPAKA_ACC_SYCL_ENABLED
+    ::sycl::queue q;
+    vecmem::sycl::queue_wrapper qw{&q};
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy(qw);
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr(qw);
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
+        device_mr(qw);
+    traccc::alpaka::vecmem::host_device_types<
+        ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource
+        mng_mr(qw);
+    traccc::memory_resource mr{device_mr, &host_mr};
+#else
     traccc::alpaka::vecmem::host_device_types<
         ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
     traccc::alpaka::vecmem::host_device_types<
@@ -72,6 +91,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::alpaka::vecmem::host_device_types<
         ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource mng_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
+#endif
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(

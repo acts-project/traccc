@@ -67,3 +67,16 @@ function( traccc_add_alpaka_library fullname basename )
    endif()
 
 endfunction( traccc_add_alpaka_library )
+
+macro (traccc_enable_language_alpaka)
+   #enable_language cannot be called by a function: put it in a macro
+   if(alpaka_ACC_GPU_CUDA_ENABLE)
+     enable_language(CUDA)
+     include( traccc-compiler-options-cuda )
+   elseif(alpaka_ACC_GPU_HIP_ENABLE)
+     enable_language(HIP)
+   elseif(alpaka_ACC_SYCL_ENABLE)
+     enable_language(SYCL)
+     include( traccc-compiler-options-sycl )
+   endif()
+endmacro(traccc_enable_language_alpaka)
