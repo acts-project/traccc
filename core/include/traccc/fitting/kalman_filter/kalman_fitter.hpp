@@ -221,10 +221,8 @@ class kalman_fitter {
             // Seed param for backward seed = last state of forward filter
             auto bw_seed_params =
                 fitter_state.m_fit_actor_state.m_track_states.back().filtered();
-            
             inflate_covariance(bw_seed_params,
                                m_cfg.covariance_inflation_factor);
-            
             //bw_seed_params.set_covariance(cov);
 
             // Two filters (forward & backward) method
