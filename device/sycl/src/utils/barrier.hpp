@@ -16,12 +16,8 @@
 namespace traccc::sycl::details {
 
 /// A barrier type for SYCL kernels.
-template <std::size_t DIMENSIONS = 1>
-struct barrier {
-
-    /// Verify that the barrier is used on a supported dimensionality.
-    static_assert(DIMENSIONS > 0 && DIMENSIONS < 4,
-                  "Only 1D, 2D, and 3D barriers are supported.");
+template <std::size_t DIMENSIONS>
+requires(DIMENSIONS >= 1 && DIMENSIONS <= 3) struct barrier {
 
     /// Dimensions of the barrier
     static constexpr std::size_t dimensions = DIMENSIONS;
@@ -31,6 +27,9 @@ struct barrier {
     /// @param item The @c ::sycl::nd_item<1> to use for the barrier.
     ///
     explicit barrier(const ::sycl::nd_item<dimensions>& item) : m_item(item) {}
+
+    /// @name Function(s) implementing @c traccc::device::concepts::barrier
+    /// @{
 
     inline void blockBarrier() const {
         ::sycl::group_barrier(m_item.get_group());
@@ -52,10 +51,16 @@ struct barrier {
                                          predicate ? 1u : 0u, ::sycl::plus<>());
     }
 
+    /// @}
+
     private:
     /// Item object coming from the SYCL kernel
     const ::sycl::nd_item<dimensions>& m_item;
 };
+
+/// Template deduction guide for the barrier type.
+template <int N>
+barrier(::sycl::nd_item<N>) -> barrier<N>;
 
 /// Verify that @c traccc::sycl::details::barrier fulfills the
 /// @c traccc::device::concepts::barrier concept.

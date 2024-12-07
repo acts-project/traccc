@@ -17,12 +17,8 @@
 namespace traccc::sycl::details {
 
 /// A SYCL thread identifier type
-template <std::size_t DIMENSIONS = 1>
-struct thread_id {
-
-    /// Verify that the thread identifier is used on a supported dimensionality.
-    static_assert(DIMENSIONS > 0 && DIMENSIONS < 4,
-                  "Only 1D, 2D, and 3D barriers are supported.");
+template <std::size_t DIMENSIONS>
+requires(DIMENSIONS >= 1 && DIMENSIONS <= 3) struct thread_id {
 
     /// Dimensions of the thread identifier
     static constexpr std::size_t dimensions = DIMENSIONS;
@@ -33,6 +29,9 @@ struct thread_id {
     ///
     explicit thread_id(const ::sycl::nd_item<dimensions>& item)
         : m_item(item) {}
+
+    /// @name Function(s) implementing @c traccc::device::concepts::thread_id1
+    /// @{
 
     inline auto getLocalThreadId() const {
         return m_item.get_local_linear_id();
@@ -52,11 +51,17 @@ struct thread_id {
 
     inline auto getGridDimX() const { return m_item.get_global_range(0); }
 
+    /// @}
+
     private:
     /// Item object coming from the SYCL kernel
     const ::sycl::nd_item<dimensions>& m_item;
 
 };  // struct thread_id
+
+/// Template deduction guide for the thread identifier type.
+template <int N>
+thread_id(::sycl::nd_item<N>) -> thread_id<N>;
 
 /// Verify that @c traccc::sycl::details::thread_id fulfills the
 /// @c traccc::device::concepts::thread_id1 concept.

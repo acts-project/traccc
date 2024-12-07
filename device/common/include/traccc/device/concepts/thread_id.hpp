@@ -19,7 +19,7 @@ namespace traccc::device::concepts {
  * @tparam T The thread identifier-like type.
  */
 template <typename T>
-concept thread_id1 = requires(const T& i) {
+concept thread_id1 = requires(T& i) {
     /*
      * This function should return the local thread identifier in a *flat* way,
      * e.g. compressing two or three dimensional blocks into one dimension.

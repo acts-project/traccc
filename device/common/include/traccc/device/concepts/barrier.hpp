@@ -18,7 +18,7 @@ namespace traccc::device::concepts {
  * @tparam T The barrier-like type.
  */
 template <typename T>
-concept barrier = requires(const T& b) {
+concept barrier = requires(T& b) {
     /*
      * Check for the general, nulary barrier function which simply synchronizes
      * threads without return value.
