@@ -29,7 +29,7 @@ TEST(SYCLBarrier, BarrierAnd) {
         .submit([&, out = out.get()](::sycl::handler &h) {
             h.parallel_for<class BarrierAndTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
-                    traccc::sycl::barrier bar(item);
+                    const traccc::sycl::details::barrier bar{item};
 
                     bool v;
 
@@ -77,7 +77,7 @@ TEST(SYCLBarrier, BarrierOr) {
         .submit([&, out = out.get()](::sycl::handler &h) {
             h.parallel_for<class BarrierOrTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
-                    traccc::sycl::barrier bar(item);
+                    const traccc::sycl::details::barrier bar{item};
 
                     bool v;
 
@@ -125,7 +125,7 @@ TEST(SYCLBarrier, BarrierCount) {
         .submit([&, out = out.get()](::sycl::handler &h) {
             h.parallel_for<class BarrierCountTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
-                    traccc::sycl::barrier bar(item);
+                    const traccc::sycl::details::barrier bar{item};
 
                     unsigned int v;
 

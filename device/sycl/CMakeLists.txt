@@ -13,44 +13,47 @@ enable_language( SYCL )
 
 # Set up the build of the traccc::sycl library.
 traccc_add_library( traccc_sycl sycl TYPE SHARED
-  # Spacepoint formation algorithm.
+  # Clusterization algorithm(s).
+  "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
+  "src/clusterization/clusterization_algorithm.sycl"
+  # Seeding algorithm(s).
   "include/traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm_default_detector.sycl"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm_telescope_detector.sycl"
   "src/seeding/silicon_pixel_spacepoint_formation.hpp"
-  # Track fitting algorithm.
+  "include/traccc/sycl/seeding/spacepoint_binning.hpp"
+  "src/seeding/spacepoint_binning.sycl"
+  "include/traccc/sycl/seeding/seed_finding.hpp"
+  "src/seeding/seed_finding.sycl"
+  "include/traccc/sycl/seeding/seeding_algorithm.hpp"
+  "src/seeding/seeding_algorithm.cpp"
+  "include/traccc/sycl/seeding/track_params_estimation.hpp"
+  "src/seeding/track_params_estimation.sycl"
+  # Track fitting algorithm(s).
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
   "src/fitting/kalman_fitting_algorithm_constant_field_default_detector.sycl"
   "src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.sycl"
   "src/fitting/fit_tracks.hpp"
-  # header files
-  "include/traccc/sycl/seeding/seeding_algorithm.hpp"
-  "include/traccc/sycl/seeding/seed_finding.hpp"
-  "include/traccc/sycl/seeding/spacepoint_binning.hpp"
-  "include/traccc/sycl/seeding/track_params_estimation.hpp"
-  "include/traccc/sycl/utils/queue_wrapper.hpp"
-  "include/traccc/sycl/utils/calculate1DimNdRange.hpp"
+  # Utilities.
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
-  # implementation files
-  "src/clusterization/clusterization_algorithm.sycl"
-  "src/seeding/seed_finding.sycl"
-  "src/seeding/seeding_algorithm.cpp"
-  "src/seeding/spacepoint_binning.sycl"
-  "src/seeding/track_params_estimation.sycl"
+  "src/utils/make_prefix_sum_buff.sycl"
+  "include/traccc/sycl/utils/queue_wrapper.hpp"
+  "src/utils/queue_wrapper.cpp"
   "src/utils/barrier.hpp"
+  "src/utils/calculate1DimNdRange.hpp"
+  "src/utils/calculate1DimNdRange.sycl"
   "src/utils/get_queue.hpp"
   "src/utils/get_queue.sycl"
-  "src/utils/queue_wrapper.cpp"
-  "src/utils/calculate1DimNdRange.sycl"
-  "src/utils/make_prefix_sum_buff.sycl"
+  "src/utils/thread_id.hpp"
   "src/sanity/contiguous_on.hpp"
   "src/sanity/ordered_on.hpp"
 )
 target_link_libraries( traccc_sycl
-  PUBLIC traccc::core detray::core vecmem::core covfie::core
-  PRIVATE traccc::device_common vecmem::sycl oneDPL )
+  PUBLIC detray::core vecmem::core covfie::core
+         traccc::core traccc::device_common
+  PRIVATE vecmem::sycl oneDPL )
 
 # Set up Thrust specifically for the traccc::sycl library.
 thrust_create_target( traccc::sycl_thrust

@@ -13,8 +13,8 @@
 #include <vecmem/memory/unique_ptr.hpp>
 
 #include "../../sycl/src/utils/barrier.hpp"
+#include "../../sycl/src/utils/thread_id.hpp"
 #include "traccc/device/sort.hpp"
-#include "traccc/sycl/utils/thread_id.hpp"
 
 TEST(SYCLSort, BlockOddEvenSort) {
     vecmem::sycl::shared_memory_resource mr;
@@ -36,8 +36,8 @@ TEST(SYCLSort, BlockOddEvenSort) {
         .submit([&, keys = arr.get()](::sycl::handler &h) {
             h.parallel_for<class BlockOddEvenSortKernel>(
                 test_range, [=](::sycl::nd_item<1> item) {
-                    traccc::sycl::thread_id1 thread_id(item);
-                    traccc::sycl::barrier barrier(item);
+                    const traccc::sycl::details::thread_id thread_id{item};
+                    const traccc::sycl::details::barrier barrier{item};
                     traccc::device::blockOddEvenSort(thread_id, barrier, keys,
                                                      n, std::less<uint32_t>());
                 });
