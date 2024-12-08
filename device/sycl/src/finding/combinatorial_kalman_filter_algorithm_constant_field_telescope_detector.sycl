@@ -1,0 +1,60 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2024 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Local include(s).
+#include "../utils/get_queue.hpp"
+#include "find_tracks.hpp"
+#include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
+
+// Detray include(s).
+#include <detray/detectors/bfield.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
+
+namespace traccc::sycl {
+namespace kernels::ckf_cfield_teldet {
+
+struct make_barcode_sequence;
+struct apply_interaction;
+struct find_tracks;
+struct fill_sort_keys;
+struct propagate_to_next_surface;
+struct build_tracks;
+struct prune_tracks;
+
+struct kernels {
+    using make_barcode_sequence_kernel_type = make_barcode_sequence;
+    using apply_interaction_kernel_type = apply_interaction;
+    using find_tracks_kernel_type = find_tracks;
+    using fill_sort_keys_kernel_type = fill_sort_keys;
+    using propagate_to_next_surface_kernel_type = propagate_to_next_surface;
+    using build_tracks_kernel_type = build_tracks;
+    using prune_tracks_kernel_type = prune_tracks;
+};  // namespace kernels
+
+}  // namespace kernels::ckf_cfield_teldet
+
+combinatorial_kalman_filter_algorithm::output_type
+combinatorial_kalman_filter_algorithm::operator()(
+    const telescope_detector::view& det,
+    const detray::bfield::const_field_t::view_t& field,
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds) const {
+
+    // Perform the track finding using the templated implementation.
+    return details::find_tracks<
+        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+                           telescope_detector::device::algebra_type,
+                           detray::constrained_step<>>,
+        detray::navigator<const telescope_detector::device>,
+        kernels::ckf_cfield_teldet::kernels>(det, field, measurements, seeds,
+                                             m_config, m_mr, m_copy,
+                                             details::get_queue(m_queue));
+}
+
+}  // namespace traccc::sycl

@@ -29,8 +29,7 @@ __global__ void find_tracks(const finding_config cfg,
     cuda::barrier barrier;
     cuda::thread_id1 thread_id;
 
-    device::find_tracks<cuda::thread_id1, cuda::barrier, detector_t,
-                        finding_config>(
+    device::find_tracks<detector_t>(
         thread_id, barrier, cfg, payload,
         {shared_num_candidates, shared_candidates, shared_candidates_size});
 }
