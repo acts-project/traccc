@@ -9,7 +9,7 @@
 #pragma once
 
 // Detray include(s).
-#include "detray/plugins/algebra/vc_array_definitions.hpp"
+#include "detray/plugins/algebra/vc_aos_definitions.hpp"
 
 // Algebra Plugins include(s).
 #include <algebra/vc_vc.hpp>
@@ -38,8 +38,5 @@ using dmap = std::map<key_type, value_type>;
 
 template <class... types>
 using dtuple = std::tuple<types...>;
-
-namespace getter = algebra::getter;
-namespace vector = algebra::vector;
 
 }  // namespace traccc

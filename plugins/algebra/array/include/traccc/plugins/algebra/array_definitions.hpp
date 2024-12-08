@@ -42,7 +42,8 @@ using dmap = std::map<key_type, value_type>;
 template <class... types>
 using dtuple = std::tuple<types...>;
 
-namespace getter = algebra::getter;
-namespace vector = algebra::vector;
+using algebra::cmath::operator*;
+using algebra::cmath::operator-;
+using algebra::cmath::operator+;
 
 }  // namespace traccc

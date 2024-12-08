@@ -86,22 +86,22 @@ seed_to_bound_vector(const spacepoint_collection_t& sp_collection,
     scalar B = uv2[1] - A * uv2[0];
 
     // Radius (with a sign)
-    scalar R = -getter::perp(vector2{1.f, A}) / (2.f * B);
+    scalar R = -vector::perp(vector2{1.f, A}) / (2.f * B);
     // The (1/tanTheta) of momentum in the new frame
     scalar invTanTheta =
-        local2[2] / (2.f * R * math::asin(getter::perp(local2) / (2.f * R)));
+        local2[2] / (2.f * R * math::asin(vector::perp(local2) / (2.f * R)));
 
     // The momentum direction in the new frame (the center of the circle
     // has the coordinate (-1.*A/(2*B), 1./(2*B)))
     vector3 transDirection =
-        vector3({1.f, A, scalar(getter::perp(vector2{1.f, A})) * invTanTheta});
+        vector3({1.f, A, scalar(vector::perp(vector2{1.f, A})) * invTanTheta});
     // Transform it back to the original frame
     vector3 direction =
         transform3::rotate(trans._data, vector::normalize(transDirection));
 
     // The estimated phi and theta
-    getter::element(params, e_bound_phi, 0) = getter::phi(direction);
-    getter::element(params, e_bound_theta, 0) = getter::theta(direction);
+    getter::element(params, e_bound_phi, 0) = vector::phi(direction);
+    getter::element(params, e_bound_theta, 0) = vector::theta(direction);
 
     // The measured loc0 and loc1
     const auto& meas_for_spB = spB.meas;
@@ -110,10 +110,10 @@ seed_to_bound_vector(const spacepoint_collection_t& sp_collection,
 
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)
-    scalar qOverPt = 1.f / (R * getter::norm(bfield));
+    scalar qOverPt = 1.f / (R * vector::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
     getter::element(params, e_bound_qoverp, 0) =
-        qOverPt / getter::perp(vector2{1.f, invTanTheta});
+        qOverPt / vector::perp(vector2{1.f, invTanTheta});
 
     // Make sure the time is a finite value
     assert(std::isfinite(getter::element(params, e_bound_time, 0)));
