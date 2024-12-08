@@ -8,10 +8,6 @@
 
 #pragma once
 
-// Project include(s).
-#include "../utils/get_queue.hpp"
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
 // VecMem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 #include <vecmem/memory/memory_resource.hpp>
@@ -103,15 +99,12 @@ template <typename CONTAINER, std::semiregular P, typename VIEW>
 requires std::regular_invocable<P,
                                 decltype(std::declval<CONTAINER>().at(0))> bool
 is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
-                 vecmem::copy& copy, queue_wrapper& queue_wrapper,
-                 const VIEW& view) {
+                 vecmem::copy& copy, ::sycl::queue& queue, const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int local_size = 512;
     constexpr int local_size_2d = 32;
-
-    ::sycl::queue& queue = details::get_queue(queue_wrapper);
 
     // Grab the number of elements in our vector.
     const typename VIEW::size_type n = copy.get_size(view);

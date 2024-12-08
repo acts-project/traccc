@@ -67,7 +67,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<details::index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
     vecmem::data::vector_view<details::index_t> adjv_backup_view,
-    vecmem::device_atomic_ref<uint32_t> backup_mutex, barrier_t& barrier,
+    vecmem::device_atomic_ref<uint32_t> backup_mutex, const barrier_t& barrier,
     measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links);
 

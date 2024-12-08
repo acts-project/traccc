@@ -57,8 +57,9 @@ TRACCC_DEVICE void swap(T& a, T& b) {
  */
 template <concepts::thread_id1 T, concepts::barrier B, std::movable K,
           std::strict_weak_order<K, K> C>
-TRACCC_DEVICE void blockOddEvenSort(T& thread_id, B& barrier, K* keys,
-                                    uint32_t num_keys, C&& comparison) {
+TRACCC_DEVICE void blockOddEvenSort(const T& thread_id, const B& barrier,
+                                    K* keys, uint32_t num_keys,
+                                    C&& comparison) {
     bool sorted;
 
     do {

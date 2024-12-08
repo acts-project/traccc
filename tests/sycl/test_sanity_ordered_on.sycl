@@ -13,7 +13,6 @@
 
 // traccc includes
 #include "../../device/sycl/src/sanity/ordered_on.hpp"
-#include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -32,7 +31,6 @@ struct int_leq_relation {
 class SYCLSanityOrderedOn : public testing::Test {
     protected:
     ::sycl::queue queue;
-    traccc::sycl::queue_wrapper queue_wrapper{&queue};
     vecmem::sycl::device_memory_resource mr{&queue};
     vecmem::sycl::async_copy copy{&queue};
 };
@@ -49,7 +47,7 @@ TEST_F(SYCLSanityOrderedOn, TrueConsecutiveNoRepeatsLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_TRUE(traccc::sycl::is_ordered_on<vecmem::device_vector<const int>>(
-        int_leq_relation(), mr, copy, queue_wrapper, device_view));
+        int_leq_relation(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityOrderedOn, TrueConsecutiveNoRepeatsLt) {
@@ -64,7 +62,7 @@ TEST_F(SYCLSanityOrderedOn, TrueConsecutiveNoRepeatsLt) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_TRUE(traccc::sycl::is_ordered_on<vecmem::device_vector<const int>>(
-        int_lt_relation(), mr, copy, queue_wrapper, device_view));
+        int_lt_relation(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityOrderedOn, TrueConsecutiveRepeatsLeq) {
@@ -81,7 +79,7 @@ TEST_F(SYCLSanityOrderedOn, TrueConsecutiveRepeatsLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_TRUE(traccc::sycl::is_ordered_on<vecmem::device_vector<const int>>(
-        int_leq_relation(), mr, copy, queue_wrapper, device_view));
+        int_leq_relation(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityOrderedOn, FalseConsecutiveRepeatLt) {
@@ -98,7 +96,7 @@ TEST_F(SYCLSanityOrderedOn, FalseConsecutiveRepeatLt) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_FALSE(traccc::sycl::is_ordered_on<vecmem::device_vector<const int>>(
-        int_lt_relation(), mr, copy, queue_wrapper, device_view));
+        int_lt_relation(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityOrderedOn, TrueConsecutivePathologicalFirstLeq) {
@@ -117,7 +115,7 @@ TEST_F(SYCLSanityOrderedOn, TrueConsecutivePathologicalFirstLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_FALSE(traccc::sycl::is_ordered_on<vecmem::device_vector<const int>>(
-        int_leq_relation(), mr, copy, queue_wrapper, device_view));
+        int_leq_relation(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityOrderedOn, TrueConsecutivePathologicalLastLeq) {
@@ -136,5 +134,5 @@ TEST_F(SYCLSanityOrderedOn, TrueConsecutivePathologicalLastLeq) {
     auto device_view = vecmem::get_data(device_data);
 
     ASSERT_FALSE(traccc::sycl::is_ordered_on<vecmem::device_vector<const int>>(
-        int_leq_relation(), mr, copy, queue_wrapper, device_view));
+        int_leq_relation(), mr, copy, queue, device_view));
 }
