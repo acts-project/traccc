@@ -125,7 +125,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
     fit_cfg.use_backward_filter = true;
     fit_cfg.n_iterations = 1;
-    fit_cfg.covariance_inflation_factor = 1e3;
+    fit_cfg.covariance_inflation_factor = 1e3f;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
     // Iterate over events

@@ -153,7 +153,11 @@ struct kalman_actor : detray::actor {
             else {
                 res = sf.template visit_mask<two_filters_smoother<algebra_t>>(
                     trk_state, propagation._stepping.bound_params());
-
+                if (actor_state.m_it_rev ==
+                    actor_state.m_track_states.rbegin()) {
+                    trk_state.smoothed() = trk_state.filtered();
+                    trk_state.smoothed_chi2() = trk_state.filtered_chi2();
+                }
                 /*
                 if (actor_state.m_it_rev ==
                     actor_state.m_track_states.rbegin()) {

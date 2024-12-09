@@ -290,10 +290,11 @@ class kalman_fitter {
                 m_cfg.propagation.stepping.path_limit);
 
             // Two filters (forward & backward) method
-            typename propagator_type::state propagation(last.smoothed(), m_field,
-                                                        m_detector);
+            typename propagator_type::state propagation(last.smoothed(),
+                                                        m_field, m_detector);
 
-            inflate_covariance(propagation._stepping.bound_params(), 1e3f);
+            inflate_covariance(propagation._stepping.bound_params(),
+                               m_cfg.covariance_inflation_factor);
 
             propagation._navigation.set_volume(
                 last.smoothed().surface_link().volume());
