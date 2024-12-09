@@ -36,25 +36,27 @@ struct two_filters_smoother {
     TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        bound_track_parameters& bound_params) const {
 
         using shape_type = typename mask_group_t::value_type::shape;
 
         const auto D = trk_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
         if (D == 1u) {
-            return update<1u, shape_type>(trk_state, bound_params);
+            return smoothe<1u, shape_type>(trk_state, bound_params);
         } else if (D == 2u) {
-            return update<2u, shape_type>(trk_state, bound_params);
+            return smoothe<2u, shape_type>(trk_state, bound_params);
         }
 
         return false;
     }
 
+    // Reference: The Optimun Linear Smoother as a Combination of Two Optimum
+    // Linear Filters
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE inline bool update(
+    TRACCC_HOST_DEVICE inline bool smoothe(
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        bound_track_parameters& bound_params) const {
 
         assert(trk_state.filtered().surface_link() ==
                bound_params.surface_link());
@@ -116,6 +118,29 @@ struct two_filters_smoother {
             matrix_operator().inverse(R_smt) * residual_smt;
 
         trk_state.smoothed_chi2() = matrix_operator().element(chi2_smt, 0, 0);
+
+        /*************************************
+         *  Set backward filtered parameter
+         *************************************/
+
+        const matrix_type<e_bound_size, e_bound_size> I66 =
+            matrix_operator().template identity<e_bound_size, e_bound_size>();
+
+        const matrix_type<D, D> M =
+            H * predicted_cov * matrix_operator().transpose(H) + V;
+
+        // Kalman gain matrix
+        const matrix_type<6, D> K = predicted_cov *
+                                    matrix_operator().transpose(H) *
+                                    matrix_operator().inverse(M);
+
+        // Calculate the filtered track parameters
+        const matrix_type<6, 1> filtered_vec =
+            predicted_vec + K * (meas_local - H * predicted_vec);
+        const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
+
+        bound_params.set_vector(filtered_vec);
+        bound_params.set_covariance(filtered_cov);
 
         return true;
     }

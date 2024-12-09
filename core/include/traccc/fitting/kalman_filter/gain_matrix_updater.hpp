@@ -40,7 +40,7 @@ struct gain_matrix_updater {
     TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        bound_track_parameters& bound_params) const {
 
         using shape_type = typename mask_group_t::value_type::shape;
 
@@ -58,7 +58,7 @@ struct gain_matrix_updater {
     template <size_type D, typename shape_t>
     TRACCC_HOST_DEVICE inline bool update(
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        bound_track_parameters& bound_params) const {
 
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
@@ -138,6 +138,9 @@ struct gain_matrix_updater {
 
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered());
+
+        // Update the propagation flow
+        bound_params = trk_state.filtered();
 
         return true;
     }

@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -127,7 +128,7 @@ struct kalman_actor : detray::actor {
                 std::cout << "Nav" << std::endl;
                 std::cout << navigation.barcode() << std::endl;
                 std::cout << "State" << std::endl;
-                std::cout << trk_state.surface_link() << std::endl;                
+                std::cout << trk_state.surface_link() << std::endl;
                 actor_state.n_holes++;
                 return;
             }
@@ -138,9 +139,27 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            const bool res =
-                sf.template visit_mask<gain_matrix_updater<algebra_t>>(
+            bool res = false;
+
+            // Forward filter
+            if (!actor_state.backward_mode) {
+                res = sf.template visit_mask<gain_matrix_updater<algebra_t>>(
                     trk_state, propagation._stepping.bound_params());
+
+                // Set full jacobian
+                trk_state.jacobian() = stepping.full_jacobian();
+            }
+            // Backward filter for smoothing
+            else {
+                if (actor_state.m_it_rev ==
+                    actor_state.m_track_states.rbegin()) {
+                    res = true;
+                } else {
+                    res =
+                        sf.template visit_mask<two_filters_smoother<algebra_t>>(
+                            trk_state, propagation._stepping.bound_params());
+                }
+            }
 
             // Abort if the Kalman update fails
             if (!res) {
@@ -148,15 +167,9 @@ struct kalman_actor : detray::actor {
                 return;
             }
 
-            // Update the propagation flow
-            stepping.bound_params() = trk_state.filtered();
-
-            // Set full jacobian
-            trk_state.jacobian() = stepping.full_jacobian();
-
-            // Change the charge of hypothesized particles when the sign of qop
-            // is changed (This rarely happens when qop is set with a poor seed
-            // resolution)
+            // Change the charge of hypothesized particles when the sign of
+            // qop is changed (This rarely happens when qop is set with a
+            // poor seed resolution)
             propagation.set_particle(detail::correct_particle_hypothesis(
                 stepping.particle_hypothesis(),
                 propagation._stepping.bound_params()));

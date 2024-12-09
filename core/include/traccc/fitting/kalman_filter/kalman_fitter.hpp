@@ -66,11 +66,11 @@ class kalman_fitter {
     using fit_actor = traccc::kalman_actor<algebra_type, vector_type>;
     using resetter = detray::parameter_resetter<algebra_type>;
 
-    // Forward Propagator type
     using actor_chain_type =
         detray::actor_chain<detray::dtuple, aborter, transporter, interactor,
                             fit_actor, resetter, kalman_step_aborter>;
 
+    // Propagator type
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_chain_type>;
 
@@ -281,20 +281,19 @@ class kalman_fitter {
                     *(it + 1), propagation._stepping.bound_params());
             }
             */
-            
+
+            // Propagator
+            propagator_type propagator(m_cfg.propagation);
+
             // Set path limit
             fitter_state.m_aborter_state.set_path_limit(
                 m_cfg.propagation.stepping.path_limit);
 
-            // Seed param for backward seed = last state of forward filter
-            auto bw_seed_params =
-                fitter_state.m_fit_actor_state.m_track_states.back().filtered();
-
             // Two filters (forward & backward) method
-            typename propagator_type::state propagation(bw_seed_params, m_field,
+            typename propagator_type::state propagation(last.smoothed(), m_field,
                                                         m_detector);
             propagation._navigation.set_volume(
-                bw_seed_params.surface_link().volume());
+                last.smoothed().surface_link().volume());
 
             propagation._navigation.set_direction(
                 detray::navigation::direction::e_backward);
