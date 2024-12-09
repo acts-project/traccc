@@ -151,6 +151,10 @@ struct kalman_actor : detray::actor {
             }
             // Backward filter for smoothing
             else {
+                res = sf.template visit_mask<two_filters_smoother<algebra_t>>(
+                    trk_state, propagation._stepping.bound_params());
+
+                /*
                 if (actor_state.m_it_rev ==
                     actor_state.m_track_states.rbegin()) {
                     res = true;
@@ -159,6 +163,7 @@ struct kalman_actor : detray::actor {
                         sf.template visit_mask<two_filters_smoother<algebra_t>>(
                             trk_state, propagation._stepping.bound_params());
                 }
+                */
             }
 
             // Abort if the Kalman update fails
