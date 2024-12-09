@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -33,6 +34,7 @@ struct kalman_actor : detray::actor {
         state(vector_t<track_state_type>&& track_states)
             : m_track_states(std::move(track_states)) {
             m_it = m_track_states.begin();
+            m_it_rev = m_track_states.rbegin();
         }
 
         /// Constructor with the vector of track states
@@ -40,24 +42,42 @@ struct kalman_actor : detray::actor {
         state(const vector_t<track_state_type>& track_states)
             : m_track_states(track_states) {
             m_it = m_track_states.begin();
+            m_it_rev = m_track_states.rbegin();
         }
 
         /// @return the reference of track state pointed by the iterator
         TRACCC_HOST_DEVICE
-        track_state_type& operator()() { return *m_it; }
+        track_state_type& operator()() {
+            if (!backward_mode) {
+                return *m_it;
+            } else {
+                return *m_it_rev;
+            }
+        }
 
         /// Reset the iterator
         TRACCC_HOST_DEVICE
-        void reset() { m_it = m_track_states.begin(); }
+        void reset() {
+            m_it = m_track_states.begin();
+            m_it_rev = m_track_states.rbegin();
+        }
 
         /// Advance the iterator
         TRACCC_HOST_DEVICE
-        void next() { m_it++; }
+        void next() {
+            if (!backward_mode) {
+                m_it++;
+            } else {
+                m_it_rev++;
+            }
+        }
 
         /// @return true if the iterator reaches the end of vector
         TRACCC_HOST_DEVICE
         bool is_complete() const {
-            if (m_it == m_track_states.end()) {
+            if (!backward_mode && m_it == m_track_states.end()) {
+                return true;
+            } else if (backward_mode && m_it_rev == m_track_states.rend()) {
                 return true;
             }
             return false;
@@ -69,9 +89,15 @@ struct kalman_actor : detray::actor {
         // iterator for forward filtering
         typename vector_t<track_state_type>::iterator m_it;
 
+        // iterator for backward filtering
+        typename vector_t<track_state_type>::reverse_iterator m_it_rev;
+
         // The number of holes (The number of sensitive surfaces which do not
         // have a measurement for the track pattern)
         unsigned int n_holes{0u};
+
+        // Run back filtering for smoothing, if true
+        bool backward_mode = false;
     };
 
     /// Actor operation to perform the Kalman filtering
@@ -99,6 +125,10 @@ struct kalman_actor : detray::actor {
             // Increase the hole counts if the propagator fails to find the next
             // measurement
             if (navigation.barcode() != trk_state.surface_link()) {
+                std::cout << "Nav" << std::endl;
+                std::cout << navigation.barcode() << std::endl;
+                std::cout << "State" << std::endl;
+                std::cout << trk_state.surface_link() << std::endl;
                 actor_state.n_holes++;
                 return;
             }
@@ -109,9 +139,32 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            const bool res =
-                sf.template visit_mask<gain_matrix_updater<algebra_t>>(
+            bool res = false;
+
+            // Forward filter
+            if (!actor_state.backward_mode) {
+                res = sf.template visit_mask<gain_matrix_updater<algebra_t>>(
                     trk_state, propagation._stepping.bound_params());
+
+                // Set full jacobian
+                trk_state.jacobian() = stepping.full_jacobian();
+            }
+            // Backward filter for smoothing
+            else {
+                res = sf.template visit_mask<two_filters_smoother<algebra_t>>(
+                    trk_state, propagation._stepping.bound_params());
+
+                /*
+                if (actor_state.m_it_rev ==
+                    actor_state.m_track_states.rbegin()) {
+                    res = true;
+                } else {
+                    res =
+                        sf.template visit_mask<two_filters_smoother<algebra_t>>(
+                            trk_state, propagation._stepping.bound_params());
+                }
+                */
+            }
 
             // Abort if the Kalman update fails
             if (!res) {
@@ -119,15 +172,9 @@ struct kalman_actor : detray::actor {
                 return;
             }
 
-            // Update the propagation flow
-            stepping.bound_params() = trk_state.filtered();
-
-            // Set full jacobian
-            trk_state.jacobian() = stepping.full_jacobian();
-
-            // Change the charge of hypothesized particles when the sign of qop
-            // is changed (This rarely happens when qop is set with a poor seed
-            // resolution)
+            // Change the charge of hypothesized particles when the sign of
+            // qop is changed (This rarely happens when qop is set with a
+            // poor seed resolution)
             propagation.set_particle(detail::correct_particle_hypothesis(
                 stepping.particle_hypothesis(),
                 propagation._stepping.bound_params()));
