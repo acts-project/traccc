@@ -130,7 +130,7 @@ class kalman_fitter {
                                 state& fitter_state) {
 
         // Run the kalman filtering for a given number of iterations
-        for (std::size_t i = 0; i < m_cfg.n_max_iterations; i++) {
+        for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
 
             // Reset the iterator of kalman actor
             fitter_state.m_fit_actor_state.reset();

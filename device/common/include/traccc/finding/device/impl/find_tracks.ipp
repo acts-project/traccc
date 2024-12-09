@@ -200,7 +200,7 @@ TRACCC_DEVICE inline void find_tracks(
             // Run the Kalman update
             const bool res = sf.template visit_mask<
                 gain_matrix_updater<typename detector_t::algebra_type>>(
-                trk_state, in_par, false);
+                trk_state, in_par);
 
             // The chi2 from Kalman update should be less than chi2_max
             if (res && trk_state.filtered_chi2() < cfg.chi2_max) {

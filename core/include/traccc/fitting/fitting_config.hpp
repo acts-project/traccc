@@ -17,7 +17,7 @@ namespace traccc {
 /// Configuration struct for track fitting
 struct fitting_config {
 
-    std::size_t n_max_iterations = 1;
+    std::size_t n_iterations = 1;
 
     /// Propagation configuration
     detray::propagation::config propagation{};
