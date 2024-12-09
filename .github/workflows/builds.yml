@@ -67,25 +67,25 @@ jobs:
               run_tests: false
             build: Release
           - platform:
-              name: "ALPAKA CPU"
+              name: "ALPAKA_CPU"
               container: ghcr.io/acts-project/ubuntu2404:69
               options: --preset alpaka-fp32
               run_tests: true
             build: Release
           - platform:
-              name: "ALPAKA CUDA"
+              name: "ALPAKA_CUDA"
               container: ghcr.io/acts-project/ubuntu2404_cuda:69
               options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_CUDA_ENABLE=ON
               run_tests: false
             build: Release
           - platform:
-              name: "ALPAKA HIP"
+              name: "ALPAKA_HIP"
               container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:69
               options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_HIP_ENABLE=ON
               run_tests: false
             build: Release
           - platform:
-              name: "ALPAKA SYCL"
+              name: "ALPAKA_SYCL"
               container: ghcr.io/acts-project/ubuntu2404_oneapi:69
               options: --preset alpaka-fp32 -Dalpaka_ACC_CPU_B_SEQ_T_THREADS_ENABLE=OFF -Dalpaka_ACC_SYCL_ENABLE=ON -Dalpaka_SYCL_ONEAPI_GPU=ON -Dalpaka_SYCL_ONEAPI_GPU_DEVICES=spir64
               run_tests: false
