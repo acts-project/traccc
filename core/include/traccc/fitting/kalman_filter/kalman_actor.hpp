@@ -140,8 +140,7 @@ struct kalman_actor : detray::actor {
 
             const bool res =
                 sf.template visit_mask<gain_matrix_updater<algebra_t>>(
-                    trk_state, propagation._stepping.bound_params(),
-                    actor_state.backward_mode);
+                    trk_state, propagation._stepping.bound_params());
 
             // Abort if the Kalman update fails
             if (!res) {
