@@ -79,7 +79,7 @@ jobs:
               run_tests: false
             build: Release
           - platform:
-              name: "ALPAKA_HIP"
+              name: "ALPAKA_HIP_SYCL"
               container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:69
               options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_HIP_ENABLE=ON
               run_tests: false
