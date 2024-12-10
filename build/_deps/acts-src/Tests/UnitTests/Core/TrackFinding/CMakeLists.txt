@@ -1,2 +1,0 @@
-add_unittest(CombinatorialKalmanFilter CombinatorialKalmanFilterTests.cpp)
-add_unittest(TrackSelector TrackSelectorTests.cpp)

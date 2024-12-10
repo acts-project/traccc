@@ -1,3 +1,0 @@
-/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/CMakeFiles/detray-populate.dir
-/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/CMakeFiles/edit_cache.dir
-/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/CMakeFiles/rebuild_cache.dir

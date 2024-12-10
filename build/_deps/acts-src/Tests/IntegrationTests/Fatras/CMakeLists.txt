@@ -1,3 +1,0 @@
-set(integrationtest_extra_libraries ActsFatras)
-
-add_integrationtest(FatrasSimulation FatrasSimulationTests.cpp)

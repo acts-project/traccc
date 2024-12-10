@@ -1,2 +1,0 @@
-set(unittest_extra_libraries ActsPluginCovfie)
-add_unittest(CovfieFieldConversion CovfieFieldConversionTest.cpp)

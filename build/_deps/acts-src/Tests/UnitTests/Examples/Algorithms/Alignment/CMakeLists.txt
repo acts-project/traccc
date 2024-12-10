@@ -1,2 +1,0 @@
-set(unittest_extra_libraries ActsExamplesAlignment)
-add_unittest(AlignmentGrouping AlignmentGroupingTests.cpp)

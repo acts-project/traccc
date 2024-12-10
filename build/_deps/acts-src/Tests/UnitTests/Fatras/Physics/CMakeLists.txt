@@ -1,6 +1,0 @@
-set(unittest_extra_libraries ActsFatras)
-
-add_unittest(FatrasBetheBloch BetheBlochTests.cpp)
-add_unittest(FatrasBetheHeitler BetheHeitlerTests.cpp)
-add_unittest(FatrasScattering ScatteringTests.cpp)
-add_unittest(FatrasPhotonConversion PhotonConversionTests.cpp)

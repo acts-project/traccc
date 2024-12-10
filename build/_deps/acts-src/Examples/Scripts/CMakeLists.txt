@@ -1,2 +1,0 @@
-add_subdirectory(MaterialMapping)
-add_subdirectory(TrackingPerformance)
