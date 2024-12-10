@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
+#include "../utils/calculate1DimNdRange.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"

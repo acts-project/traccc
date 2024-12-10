@@ -27,7 +27,6 @@ struct int_identity_projection {
 class SYCLSanityContiguousOn : public testing::Test {
     protected:
     ::sycl::queue queue;
-    traccc::sycl::queue_wrapper queue_wrapper{&queue};
     vecmem::sycl::device_memory_resource mr{&queue};
     vecmem::sycl::async_copy copy{&queue};
 };
@@ -47,7 +46,7 @@ TEST_F(SYCLSanityContiguousOn, TrueOrdered) {
 
     ASSERT_TRUE(
         traccc::sycl::is_contiguous_on<vecmem::device_vector<const int>>(
-            int_identity_projection(), mr, copy, queue_wrapper, device_view));
+            int_identity_projection(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityContiguousOn, TrueRandom) {
@@ -65,7 +64,7 @@ TEST_F(SYCLSanityContiguousOn, TrueRandom) {
 
     ASSERT_TRUE(
         traccc::sycl::is_contiguous_on<vecmem::device_vector<const int>>(
-            int_identity_projection(), mr, copy, queue_wrapper, device_view));
+            int_identity_projection(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityContiguousOn, FalseOrdered) {
@@ -87,7 +86,7 @@ TEST_F(SYCLSanityContiguousOn, FalseOrdered) {
 
     ASSERT_FALSE(
         traccc::sycl::is_contiguous_on<vecmem::device_vector<const int>>(
-            int_identity_projection(), mr, copy, queue_wrapper, device_view));
+            int_identity_projection(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityContiguousOn, FalseOrderedPathologicalFirst) {
@@ -107,7 +106,7 @@ TEST_F(SYCLSanityContiguousOn, FalseOrderedPathologicalFirst) {
 
     ASSERT_FALSE(
         traccc::sycl::is_contiguous_on<vecmem::device_vector<const int>>(
-            int_identity_projection(), mr, copy, queue_wrapper, device_view));
+            int_identity_projection(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityContiguousOn, TrueOrderedPathologicalFirst) {
@@ -127,7 +126,7 @@ TEST_F(SYCLSanityContiguousOn, TrueOrderedPathologicalFirst) {
 
     ASSERT_TRUE(
         traccc::sycl::is_contiguous_on<vecmem::device_vector<const int>>(
-            int_identity_projection(), mr, copy, queue_wrapper, device_view));
+            int_identity_projection(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityContiguousOn, FalseOrderedPathologicalLast) {
@@ -147,7 +146,7 @@ TEST_F(SYCLSanityContiguousOn, FalseOrderedPathologicalLast) {
 
     ASSERT_FALSE(
         traccc::sycl::is_contiguous_on<vecmem::device_vector<const int>>(
-            int_identity_projection(), mr, copy, queue_wrapper, device_view));
+            int_identity_projection(), mr, copy, queue, device_view));
 }
 
 TEST_F(SYCLSanityContiguousOn, FalseRandom) {
@@ -165,5 +164,5 @@ TEST_F(SYCLSanityContiguousOn, FalseRandom) {
 
     ASSERT_FALSE(
         traccc::sycl::is_contiguous_on<vecmem::device_vector<const int>>(
-            int_identity_projection(), mr, copy, queue_wrapper, device_view));
+            int_identity_projection(), mr, copy, queue, device_view));
 }

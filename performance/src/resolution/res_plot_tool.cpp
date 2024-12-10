@@ -100,7 +100,7 @@ void res_plot_tool::fill(res_plot_cache& cache,
                          const particle& ptc) const {
 
     // Find index of eta and pT for resolution histogram
-    const scalar eta = getter::eta(ptc.momentum);
+    const scalar eta = vector::eta(ptc.momentum);
     const scalar pT = std::hypot(ptc.momentum[0], ptc.momentum[1]);
 
     // Avoid unused variable warnings when building the code without ROOT.

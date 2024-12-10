@@ -33,6 +33,6 @@ endif()
 
 # Make use of algebra::vc_aos, if it is available.
 if( ALGEBRA_PLUGINS_INCLUDE_VC )
-  add_subdirectory( vc )
+  add_subdirectory( vc_aos )
   target_link_libraries( traccc_algebra INTERFACE traccc::vc_aos )
 endif()
