@@ -1,0 +1,53 @@
+# VecMem project, part of the ACTS project (R&D line)
+#
+# (c) 2023-2024 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+# Name for this "action".
+name: GitHub Pages
+
+# Perform the deployment on every push to the main branch, or
+# on explicit requests.
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Job building and deploying the Doxygen documentation for the project
+  # to GitHub Pages.
+  build-and-deploy:
+    if: github.repository == 'acts-project/vecmem'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Build Doxygen
+        run: |
+          sudo apt-get install -y cmake doxygen
+          cmake -DVECMEM_BUILD_DOCS=TRUE -S ${{ github.workspace }} -B build
+          cmake --build build --target vecmem_docs
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'build/html'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

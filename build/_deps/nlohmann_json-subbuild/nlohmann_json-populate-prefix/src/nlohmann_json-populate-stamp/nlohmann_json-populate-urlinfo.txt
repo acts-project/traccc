@@ -1,0 +1,12 @@
+# This is a generated file and its contents are an internal implementation detail.
+# The download step will be re-executed if anything in this file changes.
+# No other meaning or use of this file is supported.
+
+method=url
+command=/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/download-nlohmann_json-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/verify-nlohmann_json-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/extract-nlohmann_json-populate.cmake
+source_dir=/home/slobod/Documents/Work/traccc/build/_deps/nlohmann_json-src
+work_dir=/home/slobod/Documents/Work/traccc/build/_deps
+url(s)=https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
+hash=SHA1=2074caa675f8097d9b03c0f4976ffc3410170937
+no_extract=
+

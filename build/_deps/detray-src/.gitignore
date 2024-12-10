@@ -1,0 +1,22 @@
+# data files
+/data/*.csv
+/data/*.cvf
+/data/*.json
+
+# local working directories
+/bin
+/build
+/run
+/out
+
+# python files
+**/__pycache__
+
+# root files
+**/*.d
+**/*.so
+**/*C_ACLiC*
+**/thread_*
+**/merged/
+**/*.err
+**/*.log

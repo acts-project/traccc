@@ -1,0 +1,130 @@
+/* VecMem project, part of the ACTS project (R&D line)
+ *
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
+// Local include(s).
+#include "../common/jagged_soa_container.hpp"
+#include "../common/jagged_soa_container_helpers.hpp"
+#include "../common/simple_soa_container.hpp"
+#include "../common/simple_soa_container_helpers.hpp"
+#include "../common/soa_device_tests.hpp"
+
+// Project include(s).
+#include "vecmem/memory/sycl/device_memory_resource.hpp"
+#include "vecmem/memory/sycl/host_memory_resource.hpp"
+#include "vecmem/memory/sycl/shared_memory_resource.hpp"
+#include "vecmem/utils/sycl/copy.hpp"
+
+// GoogleTest include(s).
+#include <gtest/gtest.h>
+
+/// SYCL queue to use in the tests.
+static ::sycl::queue queue;
+
+/// Host memory resource to use in the tests.
+static vecmem::sycl::host_memory_resource sycl_host_mr{&queue};
+/// Device memory resource to use in the tests.
+static vecmem::sycl::device_memory_resource sycl_device_mr{&queue};
+/// Shared memory resource to use in the tests.
+static vecmem::sycl::shared_memory_resource sycl_shared_mr{&queue};
+
+/// Synchronous device copy object to use in the tests.
+static vecmem::sycl::copy sycl_copy{&queue};
+
+/// Fill a simple SoA container with some data.
+bool syclSimpleFill(vecmem::testing::simple_soa_container::view view) {
+
+    queue
+        .submit([&view](::sycl::handler& h) {
+            h.parallel_for<class edm_simple_fill>(
+                ::sycl::range<1>{view.capacity()}, [view](::sycl::id<1> id) {
+                    vecmem::testing::simple_soa_container::device device{view};
+                    vecmem::testing::fill(id[0], device);
+                });
+        })
+        .wait_and_throw();
+    return true;
+}
+
+/// Fill a jagged SoA container with some data.
+bool syclJaggedFill(vecmem::testing::jagged_soa_container::view view) {
+
+    // Skip test if FP64 instructions are not available on the device.
+    if (queue.get_device().has(::sycl::aspect::fp64) == false) {
+        return false;
+    }
+
+    queue
+        .submit([&view](::sycl::handler& h) {
+            h.parallel_for<class edm_jagged_fill>(
+                ::sycl::range<1>{view.capacity()}, [view](::sycl::id<1> id) {
+                    vecmem::testing::jagged_soa_container::device device{view};
+                    vecmem::testing::fill(id[0], device);
+                });
+        })
+        .wait_and_throw();
+    return true;
+}
+
+/// Modify data in a simple SoA container.
+bool syclSimpleModify(vecmem::testing::simple_soa_container::view view) {
+
+    queue
+        .submit([&view](::sycl::handler& h) {
+            h.parallel_for<class edm_simple_modify>(
+                ::sycl::range<1>{view.capacity()}, [view](::sycl::id<1> id) {
+                    vecmem::testing::simple_soa_container::device device{view};
+                    vecmem::testing::modify(id[0], device);
+                });
+        })
+        .wait_and_throw();
+    return true;
+}
+
+/// Modify data in a jagged SoA container.
+bool syclJaggedModify(vecmem::testing::jagged_soa_container::view view) {
+
+    // Skip test if FP64 instructions are not available on the device.
+    if (queue.get_device().has(::sycl::aspect::fp64) == false) {
+        return false;
+    }
+
+    queue
+        .submit([&view](::sycl::handler& h) {
+            h.parallel_for<class edm_jagged_modify>(
+                ::sycl::range<1>{view.capacity()}, [view](::sycl::id<1> id) {
+                    vecmem::testing::jagged_soa_container::device device{view};
+                    vecmem::testing::modify(id[0], device);
+                });
+        })
+        .wait_and_throw();
+    return true;
+}
+
+/// Pointer to the function filling a simple SoA container on a SYCL device.
+static void* syclSimpleFillPtr = reinterpret_cast<void*>(&syclSimpleFill);
+/// Pointer to the function modifying a simple SoA container on a SYCL device.
+static void* syclSimpleModifyPtr = reinterpret_cast<void*>(&syclSimpleModify);
+
+/// Pointer to the function filling a jagged SoA container on a SYCL device.
+static void* syclJaggedFillPtr = reinterpret_cast<void*>(&syclJaggedFill);
+/// Pointer to the function modifying a jagged SoA container on a SYCL device.
+static void* syclJaggedModifyPtr = reinterpret_cast<void*>(&syclJaggedModify);
+
+// Instantiate the test suites.
+INSTANTIATE_TEST_SUITE_P(sycl_soa_device_tests_simple, soa_device_tests_simple,
+                         testing::Values(std::tie(sycl_host_mr, sycl_device_mr,
+                                                  sycl_shared_mr, sycl_copy,
+                                                  syclSimpleFillPtr,
+                                                  syclSimpleModifyPtr)));
+INSTANTIATE_TEST_SUITE_P(sycl_soa_device_tests_jagged, soa_device_tests_jagged,
+                         testing::Values(std::tie(sycl_host_mr, sycl_device_mr,
+                                                  sycl_shared_mr, sycl_copy,
+                                                  syclJaggedFillPtr,
+                                                  syclJaggedModifyPtr)));

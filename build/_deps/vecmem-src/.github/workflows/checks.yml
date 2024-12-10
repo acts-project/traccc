@@ -1,0 +1,28 @@
+# VecMem project, part of the ACTS project (R&D line)
+#
+# (c) 2021-2024 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+# Name for this "action".
+name: Checks
+
+# Perform the builds on every push and pull request.
+on: [ push, pull_request ]
+
+# All the different "check" jobs.
+jobs:
+
+  # Check the formatting of the code using clang-format.
+  format:
+    runs-on: ubuntu-latest
+    container: ghcr.io/acts-project/format10:v11
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check
+        run: .github/check_format.sh .
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: changed
+          path: changed

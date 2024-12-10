@@ -1,0 +1,24 @@
+# Detray library, part of the ACTS project (R&D line)
+#
+# (c) 2024 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+name: Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  detray_benchmark_job:
+    if: github.repository == 'acts-project/detray'
+    runs-on: ubuntu-latest
+    steps:
+      - run: >
+          curl -X POST --fail
+          -F token=${{ secrets.DETRAY_BENCHMARK_TRIGGER_TOKEN }}
+          -F ref=master
+          --form variables[MERGE_TIME]="$(date '+%Y-%m-%d_%H:%M:%S')"
+          --form variables[SOURCE_SHA]="${{ github.sha }}"
+          https://gitlab.cern.ch/api/v4/projects/190570/trigger/pipeline

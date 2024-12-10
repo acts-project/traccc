@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/CMakeFiles/detray-populate"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/CMakeFiles/detray-populate.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/CMakeFiles/detray-populate-complete.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-build.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-configure.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-download.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-install.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-patch.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-test.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/detray-subbuild/detray-populate-prefix/src/detray-populate-stamp/detray-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"detray-populate"
+		],
+		"name" : "detray-populate"
+	}
+}

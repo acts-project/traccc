@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+title: "Covfie: A Compositional Vector Field Library"
+type: software
+authors:
+  - affiliation: "CERN, University of Amsterdam"
+    family-names: "Swatman"
+    given-names: "Stephen Nicholas"
+license: MPL-2.0
+repository-code: "https://github.com/acts-project/covfie"
+identifiers:
+  - description: "The official covfie paper."
+    type: doi
+    value: "10.1145/3578244.3583723"
+  - description: "The artifact associated with the covfie paper."
+    type: doi
+    value: "10.5281/zenodo.7540593"
+preferred-citation:
+  title: "Systematically Exploring High-Performance Representations of Vector Fields Through Compile-Time Composition"
+  type: conference-paper
+  authors:
+    - family-names: "Swatman"
+      given-names: "Stephen Nicholas"
+    - family-names: "Varbanescu"
+      given-names: "Ana-Lucia"
+    - family-names: "Pimentel"
+      given-names: "Andy"
+    - family-names: "Salzburger"
+      given-names: "Andreas"
+    - family-names: "Krasznahorkay"
+      given-names: "Attila"
+  doi: "10.1145/3578244.3583723"
+  collection-doi: "10.1145/3578244"
+  collection-title: "Proceedings of the 2023 ACM/SPEC International Conference on Performance Engineering"
+  collection-type: proceedings
+  isbn: "9798400700682"
+  publisher:
+    name: "Association for Computing Machinery"
+    address: "New York, NY, USA"
+  conference:
+    name: "ICPE '23: ACM/SPEC International Conference on Performance Engineering"
+    city: "Coimbra"
+    country: "Portugal"
+    date-start: 2023-04-15
+    date-end: 2023-04-19
+  year: 2023
+  month: 4
+  pages: 12
+  start: 55
+  end: 66

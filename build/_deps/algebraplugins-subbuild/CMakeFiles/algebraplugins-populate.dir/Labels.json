@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/CMakeFiles/algebraplugins-populate"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/CMakeFiles/algebraplugins-populate.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/CMakeFiles/algebraplugins-populate-complete.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-build.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-configure.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-download.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-install.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-patch.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-test.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/algebraplugins-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"algebraplugins-populate"
+		],
+		"name" : "algebraplugins-populate"
+	}
+}

@@ -24,7 +24,7 @@ struct clustering_config {
      * set this too low (which will reduce occupancy due to available thread
      * slots) or too high (which may not be supported on a device).
      */
-    unsigned int threads_per_partition;
+    unsigned int threads_per_partition{256};
 
     /**
      * @brief The maximum number of cells per thread.
@@ -34,7 +34,7 @@ struct clustering_config {
      * occupancy. If this is too low, scratch space will need to be used which
      * may slow the algorithm down.
      */
-    unsigned int max_cells_per_thread;
+    unsigned int max_cells_per_thread{16};
 
     /**
      * @brief The desired number of cells per thread.
@@ -43,7 +43,7 @@ struct clustering_config {
      * Decreasing this may decrease occupancy. Increasing this increases the
      * probability that scratch space will need to be used.
      */
-    unsigned int target_cells_per_thread;
+    unsigned int target_cells_per_thread{8};
 
     /**
      * @brief The upscaling factor for the scratch space.
@@ -52,7 +52,7 @@ struct clustering_config {
      * of times larger than the maximum partition size determined by
      * `threads_per_partition` and `max_cells_per_thread`
      */
-    unsigned int backup_size_multiplier;
+    unsigned int backup_size_multiplier{256};
 
     /**
      * @brief The maximum number of cells per partition.

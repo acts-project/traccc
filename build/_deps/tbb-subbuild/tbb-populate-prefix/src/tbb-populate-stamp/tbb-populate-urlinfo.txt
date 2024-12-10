@@ -1,0 +1,12 @@
+# This is a generated file and its contents are an internal implementation detail.
+# The download step will be re-executed if anything in this file changes.
+# No other meaning or use of this file is supported.
+
+method=url
+command=/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/download-tbb-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/verify-tbb-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/extract-tbb-populate.cmake
+source_dir=/home/slobod/Documents/Work/traccc/build/_deps/tbb-src
+work_dir=/home/slobod/Documents/Work/traccc/build/_deps
+url(s)=https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2022.0.0.tar.gz
+hash=MD5=78ec44cecf3cd78c4984e61f1bb93134
+no_extract=
+

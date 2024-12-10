@@ -1,0 +1,81 @@
+{
+   "version" : 3,
+   "configurePresets": [
+      {
+         "name" : "base",
+         "displayName" : "Base Configuration",
+         "warnings": {
+            "deprecated": true
+         },
+         "cacheVariables": {
+            "CMAKE_BUILD_TYPE"                 : "RelWithDebInfo",
+            "ALGEBRA_PLUGINS_BUILD_TESTING"    : "TRUE",
+            "ALGEBRA_PLUGINS_BUILD_BENCHMARKS" : "TRUE",
+            "ALGEBRA_PLUGINS_FAIL_ON_WARNINGS" : "TRUE",
+            "ALGEBRA_PLUGINS_USE_SYSTEM_LIBS"  : "FALSE"
+         }
+      },
+      {
+         "name" : "vecmem",
+         "displayName" : "VecMem Enabled Configuration",
+         "inherits" : [ "base" ],
+         "cacheVariables": {
+            "ALGEBRA_PLUGINS_SETUP_VECMEM"   : "TRUE",
+            "ALGEBRA_PLUGINS_INCLUDE_VECMEM" : "TRUE"
+         }
+      },
+      {
+         "name" : "eigen",
+         "displayName" : "Eigen Enabled Configuration",
+         "inherits" : [ "base" ],
+         "cacheVariables": {
+            "ALGEBRA_PLUGINS_SETUP_EIGEN3"  : "TRUE",
+            "ALGEBRA_PLUGINS_INCLUDE_EIGEN" : "TRUE"
+         }
+      },
+      {
+         "name" : "vc",
+         "displayName" : "Vc Enabled Configuration",
+         "inherits" : [ "base" ],
+         "cacheVariables": {
+            "ALGEBRA_PLUGINS_SETUP_VC"   : "TRUE",
+            "ALGEBRA_PLUGINS_INCLUDE_VC" : "TRUE"
+         }
+      },
+      {
+         "name" : "fastor",
+         "displayName" : "Fastor Enabled Configuration",
+         "inherits" : [ "base" ],
+         "cacheVariables": {
+            "ALGEBRA_PLUGINS_SETUP_FASTOR"   : "TRUE",
+            "ALGEBRA_PLUGINS_INCLUDE_FASTOR" : "TRUE"
+         }
+      },
+      {
+         "name" : "default-x86-64",
+         "displayName" : "Default Developer Configuration for x86_64",
+         "inherits" : [ "vecmem", "eigen", "vc", "fastor" ]
+      },
+      {
+         "name" : "default-aarch64",
+         "displayName" : "Default Developer Configuration for ARM64",
+         "inherits" : [ "vecmem", "eigen", "vc" ]
+      },
+      {
+         "name" : "cuda",
+         "displayName" : "CUDA Developer Configuration",
+         "inherits" : [ "vecmem", "eigen" ],
+         "cacheVariables" : {
+            "ALGEBRA_PLUGINS_TEST_CUDA" : "TRUE"
+         }
+      },
+      {
+         "name" : "sycl",
+         "displayName" : "SYCL Developer Configuration",
+         "inherits" : [ "vecmem", "eigen" ],
+         "cacheVariables" : {
+            "ALGEBRA_PLUGINS_TEST_SYCL" : "TRUE"
+         }
+      }
+   ]
+}

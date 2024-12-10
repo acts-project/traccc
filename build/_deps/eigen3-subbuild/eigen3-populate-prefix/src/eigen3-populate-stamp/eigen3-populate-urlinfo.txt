@@ -1,0 +1,12 @@
+# This is a generated file and its contents are an internal implementation detail.
+# The download step will be re-executed if anything in this file changes.
+# No other meaning or use of this file is supported.
+
+method=url
+command=/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/eigen3-subbuild/eigen3-populate-prefix/src/eigen3-populate-stamp/download-eigen3-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/eigen3-subbuild/eigen3-populate-prefix/src/eigen3-populate-stamp/verify-eigen3-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/eigen3-subbuild/eigen3-populate-prefix/src/eigen3-populate-stamp/extract-eigen3-populate.cmake
+source_dir=/home/slobod/Documents/Work/traccc/build/_deps/eigen3-src
+work_dir=/home/slobod/Documents/Work/traccc/build/_deps
+url(s)=https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.bz2
+hash=MD5=132dde48fe2b563211675626d29f1707
+no_extract=
+

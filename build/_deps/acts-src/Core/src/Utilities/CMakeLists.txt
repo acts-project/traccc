@@ -1,0 +1,11 @@
+target_sources(
+    ActsCore
+    PRIVATE
+        AnnealingUtility.cpp
+        Logger.cpp
+        SpacePointUtility.cpp
+        TrackHelpers.cpp
+        BinningType.cpp
+        Intersection.cpp
+        GraphViz.cpp
+)

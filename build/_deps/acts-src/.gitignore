@@ -1,0 +1,37 @@
+installed
+*~*
+._*
+#cmt
+cmt/*.sh
+cmt/Make*
+cmt/install*
+cmt/*.csh
+=======
+# temporary Athena files
+# ======================
+InstallArea
+WorkArea
+genConf
+x86_64-slc6-gcc48-opt
+x86_64-slc6-gcc49-opt
+.*
+build*
+.asetup.save
+
+#json output
+*.json
+#root output
+*.root
+#csv output
+*.csv
+*.pyc
+/cmake_cmd
+/cleanup.sh
+
+# dont ignore hidden configs
+!.clang-format
+!.github/**
+!.gitignore
+!.gitlab-ci.yml
+!.clang-tidy
+!.oclint

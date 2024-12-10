@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/CMakeFiles/tbb-populate"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/CMakeFiles/tbb-populate.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/CMakeFiles/tbb-populate-complete.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-build.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-configure.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-download.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-install.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-patch.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-test.rule"
+		},
+		{
+			"file" : "/home/slobod/Documents/Work/traccc/build/_deps/tbb-subbuild/tbb-populate-prefix/src/tbb-populate-stamp/tbb-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"tbb-populate"
+		],
+		"name" : "tbb-populate"
+	}
+}

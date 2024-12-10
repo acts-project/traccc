@@ -1,0 +1,127 @@
+/* VecMem project, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Local include(s).
+#include "get_queue.hpp"
+#include "opaque_queue.hpp"
+#include "vecmem/utils/debug.hpp"
+#include "vecmem/utils/sycl/queue_wrapper.hpp"
+
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
+namespace vecmem::sycl {
+
+queue_wrapper::queue_wrapper()
+    : m_queue(nullptr),
+      m_managedQueue(std::make_unique<details::opaque_queue>()) {
+
+    m_queue = m_managedQueue.get();
+    VECMEM_DEBUG_MSG(1,
+                     "Created an \"owning wrapper\" around a queue on "
+                     "device: %s",
+                     details::get_queue(*this)
+                         .get_device()
+                         .get_info<::sycl::info::device::name>()
+                         .c_str());
+}
+
+queue_wrapper::queue_wrapper(void* queue) : m_queue(queue), m_managedQueue() {
+
+    VECMEM_DEBUG_MSG(3,
+                     "Created a \"view wrapper\" around a queue on "
+                     "device: %s",
+                     details::get_queue(*this)
+                         .get_device()
+                         .get_info<::sycl::info::device::name>()
+                         .c_str());
+}
+
+queue_wrapper::queue_wrapper(const queue_wrapper& parent)
+    : m_queue(nullptr), m_managedQueue() {
+
+    // Check whether the parent owns its own queue or not.
+    if (parent.m_managedQueue) {
+        // If so, make a copy of it, and own that copy in this object as well.
+        m_managedQueue =
+            std::make_unique<details::opaque_queue>(*(parent.m_managedQueue));
+        m_queue = m_managedQueue.get();
+    } else {
+        // If not, then let's just point at the same queue that somebody else
+        // owns.
+        m_queue = parent.m_queue;
+    }
+}
+
+queue_wrapper::queue_wrapper(queue_wrapper&& parent)
+    : m_queue(nullptr), m_managedQueue(std::move(parent.m_managedQueue)) {
+
+    // Set the bare pointer.
+    if (m_managedQueue) {
+        m_queue = m_managedQueue.get();
+    } else {
+        m_queue = parent.m_queue;
+    }
+}
+
+queue_wrapper::~queue_wrapper() {}
+
+queue_wrapper& queue_wrapper::operator=(const queue_wrapper& rhs) {
+
+    // Avoid self-assignment.
+    if (this == &rhs) {
+        return *this;
+    }
+
+    // Check whether the copied object owns its own queue or not.
+    if (rhs.m_managedQueue) {
+        // If so, make a copy of it, and own that copy in this object as well.
+        m_managedQueue =
+            std::make_unique<details::opaque_queue>(*(rhs.m_managedQueue));
+        m_queue = m_managedQueue.get();
+    } else {
+        // If not, then let's just point at the same queue that somebody else
+        // owns.
+        m_queue = rhs.m_queue;
+    }
+
+    // Return this object.
+    return *this;
+}
+
+queue_wrapper& queue_wrapper::operator=(queue_wrapper&& rhs) {
+
+    // Avoid self-assignment.
+    if (this == &rhs) {
+        return *this;
+    }
+
+    // Move the managed queue object.
+    m_managedQueue = std::move(rhs.m_managedQueue);
+
+    // Set the bare pointer.
+    if (m_managedQueue) {
+        m_queue = m_managedQueue.get();
+    } else {
+        m_queue = rhs.m_queue;
+    }
+
+    // Return this object.
+    return *this;
+}
+
+void* queue_wrapper::queue() {
+
+    return m_queue;
+}
+
+const void* queue_wrapper::queue() const {
+
+    return m_queue;
+}
+
+}  // namespace vecmem::sycl

@@ -1,0 +1,12 @@
+# This is a generated file and its contents are an internal implementation detail.
+# The download step will be re-executed if anything in this file changes.
+# No other meaning or use of this file is supported.
+
+method=url
+command=/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/download-algebraplugins-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/verify-algebraplugins-populate.cmake;COMMAND;/usr/bin/cmake;-P;/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-subbuild/algebraplugins-populate-prefix/src/algebraplugins-populate-stamp/extract-algebraplugins-populate.cmake
+source_dir=/home/slobod/Documents/Work/traccc/build/_deps/algebraplugins-src
+work_dir=/home/slobod/Documents/Work/traccc/build/_deps
+url(s)=https://github.com/krasznaa/algebra-plugins/archive/refs/tags/v0.25.1.tar.gz
+hash=MD5=fa75a55330ad37ec812842fd7a07eb15
+no_extract=
+

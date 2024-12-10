@@ -1,0 +1,705 @@
+/* VecMem project, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
+// VecMem include(s).
+#include "vecmem/containers/array.hpp"
+#include "vecmem/containers/data/jagged_vector_buffer.hpp"
+#include "vecmem/containers/device_array.hpp"
+#include "vecmem/containers/device_vector.hpp"
+#include "vecmem/containers/jagged_device_vector.hpp"
+#include "vecmem/containers/jagged_vector.hpp"
+#include "vecmem/containers/vector.hpp"
+#include "vecmem/memory/contiguous_memory_resource.hpp"
+#include "vecmem/memory/sycl/device_memory_resource.hpp"
+#include "vecmem/memory/sycl/host_memory_resource.hpp"
+#include "vecmem/memory/sycl/shared_memory_resource.hpp"
+#include "vecmem/utils/sycl/async_copy.hpp"
+#include "vecmem/utils/sycl/copy.hpp"
+
+// GoogleTest include(s).
+#include <gtest/gtest.h>
+
+// System include(s).
+#include <cassert>
+
+/// Test fixture for the on-device vecmem jagged container tests
+class sycl_jagged_containers_test : public testing::Test {
+
+public:
+    /// Constructor, setting up the input data for the tests.
+    sycl_jagged_containers_test()
+        : m_queue(),
+          m_mem(&m_queue),
+          m_vec({vecmem::vector<int>({1, 2, 3, 4}, &m_mem),
+                 vecmem::vector<int>({5, 6}, &m_mem),
+                 vecmem::vector<int>({7, 8, 9, 10}, &m_mem),
+                 vecmem::vector<int>({11}, &m_mem), vecmem::vector<int>(&m_mem),
+                 vecmem::vector<int>({12, 13, 14, 15, 16}, &m_mem)},
+                &m_mem),
+          m_constants(m_mem) {
+
+        m_constants[0] = 2;
+        m_constants[1] = 1;
+    }
+
+protected:
+    // SYCL queue used in the tests
+    ::sycl::queue m_queue;
+    /// Shared (managed) memory resource
+    vecmem::sycl::shared_memory_resource m_mem;
+    /// The base vector to perform tests with
+    vecmem::jagged_vector<int> m_vec;
+    /// An array to use in the tests
+    vecmem::array<int, 2> m_constants;
+};
+
+/// Functor performing a linear transformation on jagged vectors
+class LinearTransformKernel {
+
+public:
+    /// Constructor with the data objects that the kernel will operate on
+    LinearTransformKernel(vecmem::data::vector_view<const int> constants,
+                          vecmem::data::jagged_vector_view<const int> input,
+                          vecmem::data::jagged_vector_view<int> output)
+        : m_constants(constants), m_input(input), m_output(output) {
+
+        // A little sanity check.
+        assert(m_input.size() == m_output.size());
+    }
+
+    /// Operator executing the functor in a single thread
+    void operator()(::sycl::id<1> id) const {
+
+        // Check if anything needs to be done.
+        const std::size_t i = id[0];
+        if (i >= m_input.size()) {
+            return;
+        }
+
+        // Create the helper containers.
+        const vecmem::device_array<const int, 2> constants(m_constants);
+        const vecmem::jagged_device_vector<const int> input(m_input);
+        vecmem::jagged_device_vector<int> output(m_output);
+
+        // A little sanity check.
+        assert(input.at(i).size() == output.at(i).size());
+
+        // Perform the requested linear transformation on all elements of a
+        // given "internal vector".
+        for (vecmem::device_vector<const int>::size_type j = 0;
+             j < input[i].size(); ++j) {
+            output[i][j] = input[i][j] * constants[0] + constants[1];
+        }
+    }
+
+private:
+    /// Constants used in the "linear" transformation
+    vecmem::data::vector_view<const int> m_constants;
+    /// Input data used in the transformation
+    vecmem::data::jagged_vector_view<const int> m_input;
+    /// The output data of the tranformation
+    vecmem::data::jagged_vector_view<int> m_output;
+
+};  // class LinearTransformKernel
+
+/// Functor performing a summation of the jagged vector's elements
+class SummationKernel {
+
+public:
+    /// Constructor with the jagged vector to operate on
+    SummationKernel(vecmem::data::jagged_vector_view<int> data)
+        : m_data(data) {}
+
+    /// Operator executing the functor in a single thread
+    void operator()(::sycl::id<1> id) const {
+
+        // Check if anything needs to be done.
+        const std::size_t i = id[0];
+        if (i >= m_data.size()) {
+            return;
+        }
+
+        // Create the vector object.
+        vecmem::jagged_device_vector<int> data(m_data);
+
+        // Exercise the jagged vector iterators in a bit of an elaborate
+        // operation.
+        for (auto itr1 = data.rbegin(); itr1 != data.rend(); ++itr1) {
+            if ((data[i].size() > 0) && (itr1->size() > 1)) {
+                // Iterate over all inner vectors, skipping the first elements.
+                // Since those are being updated at the same time, by other
+                // threads.
+                for (auto itr2 = itr1->rbegin(); itr2 != (itr1->rend() - 1);
+                     ++itr2) {
+                    data[i].front() += *itr2;
+                }
+            }
+        }
+    }
+
+private:
+    /// The data used in the summation
+    vecmem::data::jagged_vector_view<int> m_data;
+
+};  // class SummationKernel
+
+/// Functor filling jagged vectors to their capacity
+class FillKernel {
+
+public:
+    /// Constructor with the jagged vector view to operate on
+    FillKernel(vecmem::data::jagged_vector_view<int> view) : m_view(view) {}
+
+    /// Operator implementing the functor
+    void operator()(::sycl::id<1> id) const {
+
+        // Check if anything needs to be done.
+        const std::size_t i = id[0];
+        if (i >= m_view.size()) {
+            return;
+        }
+
+        // Create a device vector on top of the view.
+        vecmem::jagged_device_vector<int> vec(m_view);
+
+        // Fill the vectors to their capacity.
+        while (vec[i].size() < vec[i].capacity()) {
+            vec[i].push_back(1);
+        }
+    }
+
+private:
+    /// The jagged vector view to operate on
+    vecmem::data::jagged_vector_view<int> m_view;
+
+};  // class FillKernel
+
+/// Test a "linear" transformation using the host (managed) memory resource
+TEST_F(sycl_jagged_containers_test, mutate_in_kernel) {
+
+    // Create the view/data objects of the jagged vector outside of the
+    // submission.
+    auto const_data = vecmem::get_data(m_constants);
+    auto vec_data = vecmem::get_data(m_vec);
+
+    // Run the linear transformation.
+    m_queue
+        .submit([&const_data, &vec_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            LinearTransformKernel kernel(const_data, vec_data, vec_data);
+            // Execute this kernel.
+            h.parallel_for<LinearTransformKernel>(
+                ::sycl::range<1>(vec_data.size()), kernel);
+        })
+        .wait_and_throw();
+    // Run the summation.
+    m_queue
+        .submit([&vec_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            SummationKernel kernel(vec_data);
+            // Execute this kernel.
+            h.parallel_for<SummationKernel>(::sycl::range<1>(vec_data.size()),
+                                            kernel);
+        })
+        .wait_and_throw();
+
+    // Check the results.
+    EXPECT_EQ(m_vec.at(0).at(0), 214);
+    EXPECT_EQ(m_vec.at(0).at(1), 5);
+    EXPECT_EQ(m_vec.at(0).at(2), 7);
+    EXPECT_EQ(m_vec.at(0).at(3), 9);
+    EXPECT_EQ(m_vec.at(1).at(0), 222);
+    EXPECT_EQ(m_vec.at(1).at(1), 13);
+    EXPECT_EQ(m_vec.at(2).at(0), 226);
+    EXPECT_EQ(m_vec.at(2).at(1), 17);
+    EXPECT_EQ(m_vec.at(2).at(2), 19);
+    EXPECT_EQ(m_vec.at(2).at(3), 21);
+    EXPECT_EQ(m_vec.at(3).at(0), 234);
+    EXPECT_EQ(m_vec.at(5).at(0), 236);
+    EXPECT_EQ(m_vec.at(5).at(1), 27);
+    EXPECT_EQ(m_vec.at(5).at(2), 29);
+    EXPECT_EQ(m_vec.at(5).at(3), 31);
+    EXPECT_EQ(m_vec.at(5).at(4), 33);
+}
+
+/// Test a "linear" transformation while hand-managing the memory copies
+TEST_F(sycl_jagged_containers_test, set_in_kernel) {
+
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Create the view/data objects of the jagged vector outside of the
+    // submission.
+    auto const_data = vecmem::get_data(m_constants);
+    auto input_data = vecmem::get_data(m_vec);
+
+    // Create the output data on the host.
+    vecmem::sycl::host_memory_resource host_resource(&m_queue);
+    vecmem::jagged_vector<int> output(&host_resource);
+    output = m_vec;  // Just to have it be set up with the correct sizes...
+    auto output_data_host = vecmem::get_data(output);
+
+    // Create the output data on the device.
+    vecmem::sycl::device_memory_resource device_resource(&m_queue);
+    vecmem::data::jagged_vector_buffer<int> output_data_device(
+        output_data_host, device_resource, &host_resource);
+    copy.setup(output_data_device)->wait();
+
+    // Run the linear transformation.
+    m_queue
+        .submit([&const_data, &input_data,
+                 &output_data_device](::sycl::handler& h) {
+            // Create the kernel functor.
+            LinearTransformKernel kernel(const_data, input_data,
+                                         output_data_device);
+            // Execute this kernel.
+            h.parallel_for<LinearTransformKernel>(
+                ::sycl::range<1>(input_data.size()), kernel);
+        })
+        .wait_and_throw();
+    // Run the summation.
+    m_queue
+        .submit([&output_data_device](::sycl::handler& h) {
+            // Create the kernel functor.
+            SummationKernel kernel(output_data_device);
+            // Execute this kernel.
+            h.parallel_for<SummationKernel>(
+                ::sycl::range<1>(output_data_device.size()), kernel);
+        })
+        .wait_and_throw();
+
+    // Copy the data back to the host.
+    copy(output_data_device, output_data_host,
+         vecmem::copy::type::device_to_host)
+        ->wait();
+
+    // Check the results.
+    EXPECT_EQ(output[0][0], 214);
+    EXPECT_EQ(output[0][1], 5);
+    EXPECT_EQ(output[0][2], 7);
+    EXPECT_EQ(output[0][3], 9);
+    EXPECT_EQ(output[1][0], 222);
+    EXPECT_EQ(output[1][1], 13);
+    EXPECT_EQ(output[2][0], 226);
+    EXPECT_EQ(output[2][1], 17);
+    EXPECT_EQ(output[2][2], 19);
+    EXPECT_EQ(output[2][3], 21);
+    EXPECT_EQ(output[3][0], 234);
+    EXPECT_EQ(output[5][0], 236);
+    EXPECT_EQ(output[5][1], 27);
+    EXPECT_EQ(output[5][2], 29);
+    EXPECT_EQ(output[5][3], 31);
+    EXPECT_EQ(output[5][4], 33);
+}
+
+/// Test a "linear" transformation while hand-managing the memory copies
+TEST_F(sycl_jagged_containers_test, set_in_contiguous_kernel) {
+
+    // Helper object for performing memory copies.
+    vecmem::sycl::async_copy copy(&m_queue);
+
+    // Make the input data contiguous in memory.
+    vecmem::sycl::host_memory_resource host_resource(&m_queue);
+    vecmem::contiguous_memory_resource cont_resource(host_resource, 16384);
+    vecmem::jagged_vector<int> input(&cont_resource);
+    input = m_vec;
+
+    // Create the view/data objects of the jagged vector outside of the
+    // submission.
+    auto const_data = vecmem::get_data(m_constants);
+    auto input_data = vecmem::get_data(input);
+
+    // Create the output data on the host, in contiguous memory.
+    vecmem::jagged_vector<int> output(&cont_resource);
+    output = m_vec;  // Just to have it be set up with the correct sizes...
+    auto output_data_host = vecmem::get_data(output);
+
+    // Create the output data on the device.
+    vecmem::sycl::device_memory_resource device_resource(&m_queue);
+    vecmem::data::jagged_vector_buffer<int> output_data_device(
+        output_data_host, device_resource, &m_mem);
+    copy.setup(output_data_device)->wait();
+
+    // Run the linear transformation.
+    m_queue
+        .submit([&const_data, &input_data,
+                 &output_data_device](::sycl::handler& h) {
+            // Create the kernel functor.
+            LinearTransformKernel kernel(const_data, input_data,
+                                         output_data_device);
+            // Execute this kernel.
+            h.parallel_for<LinearTransformKernel>(
+                ::sycl::range<1>(input_data.size()), kernel);
+        })
+        .wait_and_throw();
+    // Run the summation.
+    m_queue
+        .submit([&output_data_device](::sycl::handler& h) {
+            // Create the kernel functor.
+            SummationKernel kernel(output_data_device);
+            // Execute this kernel.
+            h.parallel_for<SummationKernel>(
+                ::sycl::range<1>(output_data_device.size()), kernel);
+        })
+        .wait_and_throw();
+
+    // Copy the data back to the host.
+    copy(output_data_device, output_data_host,
+         vecmem::copy::type::device_to_host)
+        ->wait();
+
+    // Check the results.
+    EXPECT_EQ(output[0][0], 214);
+    EXPECT_EQ(output[0][1], 5);
+    EXPECT_EQ(output[0][2], 7);
+    EXPECT_EQ(output[0][3], 9);
+    EXPECT_EQ(output[1][0], 222);
+    EXPECT_EQ(output[1][1], 13);
+    EXPECT_EQ(output[2][0], 226);
+    EXPECT_EQ(output[2][1], 17);
+    EXPECT_EQ(output[2][2], 19);
+    EXPECT_EQ(output[2][3], 21);
+    EXPECT_EQ(output[3][0], 234);
+    EXPECT_EQ(output[5][0], 236);
+    EXPECT_EQ(output[5][1], 27);
+    EXPECT_EQ(output[5][2], 29);
+    EXPECT_EQ(output[5][3], 31);
+    EXPECT_EQ(output[5][4], 33);
+}
+
+/// Test filling a resizable jagged vector
+TEST_F(sycl_jagged_containers_test, filter) {
+
+    // Helper object for performing memory copies.
+    vecmem::sycl::async_copy copy(&m_queue);
+
+    // Create the output data on the device.
+    vecmem::sycl::device_memory_resource device_resource(&m_queue);
+    vecmem::data::jagged_vector_buffer<int> output_data_device(
+        {10, 10, 10, 10, 10, 10}, device_resource, &m_mem,
+        vecmem::data::buffer_type::resizable);
+    copy.setup(output_data_device)->wait();
+
+    // Create the view/data objects of the jagged vector outside of the
+    // submission.
+    auto input_data = vecmem::get_data(m_vec);
+
+    // Run the filtering.
+    m_queue
+        .submit([&input_data, &output_data_device](::sycl::handler& h) {
+            h.parallel_for<class FilterKernel>(
+                ::sycl::range<2>(input_data.size(), 5),
+                [input = vecmem::get_data(input_data),
+                 output =
+                     vecmem::get_data(output_data_device)](::sycl::item<2> id) {
+                    // Skip invalid indices.
+                    if (id[0] >= input.size()) {
+                        return;
+                    }
+                    if (id[1] >= input.ptr()[id[0]].size()) {
+                        return;
+                    }
+
+                    // Set up the vector objects.
+                    const vecmem::jagged_device_vector<const int> inputvec(
+                        input);
+                    vecmem::jagged_device_vector<int> outputvec(output);
+
+                    // Keep just the odd elements.
+                    const int value = inputvec[static_cast<
+                        vecmem::jagged_device_vector<const int>::size_type>(
+                        id[0])][static_cast<vecmem::device_vector<const int>::
+                                                size_type>(id[1])];
+                    if ((value % 2) != 0) {
+                        outputvec.at(id[0]).push_back(value);
+                    }
+                });
+        })
+        .wait_and_throw();
+
+    // Copy the filtered output back into the host's memory.
+    vecmem::sycl::host_memory_resource host_resource(&m_queue);
+    vecmem::jagged_vector<int> output(&host_resource);
+    copy(output_data_device, output)->wait();
+
+    // Check the output. Note that the order of elements in the "inner vectors"
+    // is not fixed. And for the single-element and empty vectors I just decided
+    // to use the same formalism simply for symmetry...
+    EXPECT_EQ(output.size(),
+              static_cast<vecmem::jagged_vector<int>::size_type>(6));
+    EXPECT_EQ(std::set<int>(output[0].begin(), output[0].end()),
+              std::set<int>({1, 3}));
+    EXPECT_EQ(std::set<int>(output[1].begin(), output[1].end()),
+              std::set<int>({5}));
+    EXPECT_EQ(std::set<int>(output[2].begin(), output[2].end()),
+              std::set<int>({7, 9}));
+    EXPECT_EQ(std::set<int>(output[3].begin(), output[3].end()),
+              std::set<int>({11}));
+    EXPECT_EQ(std::set<int>(output[4].begin(), output[4].end()),
+              std::set<int>({}));
+    EXPECT_EQ(std::set<int>(output[5].begin(), output[5].end()),
+              std::set<int>({13, 15}));
+}
+
+/// Test filling a resizable jagged vector
+TEST_F(sycl_jagged_containers_test, zero_capacity) {
+
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Dedicated device memory resource.
+    vecmem::sycl::device_memory_resource device_resource(&m_queue);
+
+    // Create the jagged vector buffer in managed memory.
+    vecmem::data::jagged_vector_buffer<int> managed_data(
+        {0, 1, 200, 1, 100, 2}, m_mem, nullptr,
+        vecmem::data::buffer_type::resizable);
+    copy.setup(managed_data)->wait();
+
+    // Run the vector filling.
+    m_queue
+        .submit([&managed_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            FillKernel kernel(managed_data);
+            // Execute this kernel.
+            h.parallel_for<FillKernel>(::sycl::range<1>(managed_data.size()),
+                                       kernel);
+        })
+        .wait_and_throw();
+
+    // Get the data into a host vector.
+    vecmem::jagged_vector<int> host_vector(&m_mem);
+    copy(managed_data, host_vector)->wait();
+
+    // Check the contents of the vector.
+    EXPECT_EQ(host_vector.size(), 6u);
+    EXPECT_EQ(host_vector.at(0).size(), 0u);
+    EXPECT_EQ(host_vector.at(1).size(), 1u);
+    EXPECT_EQ(host_vector.at(2).size(), 200u);
+    EXPECT_EQ(host_vector.at(3).size(), 1u);
+    EXPECT_EQ(host_vector.at(4).size(), 100u);
+    EXPECT_EQ(host_vector.at(5).size(), 2u);
+
+    // Create the jagged vector buffer in device memory.
+    vecmem::data::jagged_vector_buffer<int> device_data(
+        {0, 1, 200, 1, 100, 2}, device_resource, &m_mem,
+        vecmem::data::buffer_type::resizable);
+    copy.setup(device_data)->wait();
+
+    // Run the vector filling.
+    m_queue
+        .submit([&device_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            FillKernel kernel(device_data);
+            // Execute this kernel.
+            h.parallel_for<FillKernel>(::sycl::range<1>(device_data.size()),
+                                       kernel);
+        })
+        .wait_and_throw();
+
+    // Get the data into the host vector.
+    copy(device_data, host_vector)->wait();
+
+    // Check the contents of the vector.
+    EXPECT_EQ(host_vector.size(), 6u);
+    EXPECT_EQ(host_vector.at(0).size(), 0u);
+    EXPECT_EQ(host_vector.at(1).size(), 1u);
+    EXPECT_EQ(host_vector.at(2).size(), 200u);
+    EXPECT_EQ(host_vector.at(3).size(), 1u);
+    EXPECT_EQ(host_vector.at(4).size(), 100u);
+    EXPECT_EQ(host_vector.at(5).size(), 2u);
+}
+
+TEST_F(sycl_jagged_containers_test, empty) {
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Dedicated device memory resource.
+    vecmem::sycl::device_memory_resource device_resource;
+
+    // Create a resizable buffer for a jagged vector.
+    vecmem::data::jagged_vector_buffer<int> output_data(
+        {}, device_resource, &m_mem, vecmem::data::buffer_type::resizable);
+    copy.setup(output_data)->wait();
+
+    // Copy the filtered output back into a "host object".
+    vecmem::jagged_vector<int> output(&m_mem);
+    copy(output_data, output)->wait();
+
+    // Check the output.
+    EXPECT_EQ(output.size(), 0);
+}
+
+TEST_F(sycl_jagged_containers_test, empty_fixed) {
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Dedicated device memory resource.
+    vecmem::sycl::device_memory_resource device_resource;
+
+    // Create a resizable buffer for a jagged vector.
+    vecmem::data::jagged_vector_buffer<int> output_data(
+        {}, device_resource, &m_mem, vecmem::data::buffer_type::fixed_size);
+    copy.setup(output_data)->wait();
+
+    // Copy the filtered output back into a "host object".
+    vecmem::jagged_vector<int> output(&m_mem);
+    copy(output_data, output)->wait();
+
+    // Check the output.
+    EXPECT_EQ(output.size(), 0);
+}
+
+TEST_F(sycl_jagged_containers_test, sizeless) {
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Dedicated device memory resource.
+    vecmem::sycl::device_memory_resource device_resource;
+
+    // Create a resizable buffer for a jagged vector.
+    vecmem::data::jagged_vector_buffer<int> output_data(
+        std::vector<std::size_t>(3, 0), device_resource, &m_mem,
+        vecmem::data::buffer_type::resizable);
+    copy.setup(output_data)->wait();
+
+    // Run the vector filling.
+    m_queue
+        .submit([&output_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            FillKernel kernel(output_data);
+            // Execute this kernel.
+            h.parallel_for<FillKernel>(::sycl::range<1>(output_data.size()),
+                                       kernel);
+        })
+        .wait_and_throw();
+
+    // Copy the filtered output back into a "host object".
+    vecmem::jagged_vector<int> output(&m_mem);
+    copy(output_data, output)->wait();
+
+    // Check the output.
+    EXPECT_EQ(output.size(), 3);
+    EXPECT_EQ(output[0].size(), 0);
+    EXPECT_EQ(output[1].size(), 0);
+    EXPECT_EQ(output[2].size(), 0);
+}
+
+TEST_F(sycl_jagged_containers_test, sizeless_fixed) {
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Dedicated device memory resource.
+    vecmem::sycl::device_memory_resource device_resource;
+
+    // Create a resizable buffer for a jagged vector.
+    vecmem::data::jagged_vector_buffer<int> output_data(
+        std::vector<std::size_t>(3, 0), device_resource, &m_mem,
+        vecmem::data::buffer_type::fixed_size);
+    copy.setup(output_data)->wait();
+
+    // Run the vector filling.
+    m_queue
+        .submit([&output_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            FillKernel kernel(output_data);
+            // Execute this kernel.
+            h.parallel_for<FillKernel>(::sycl::range<1>(output_data.size()),
+                                       kernel);
+        })
+        .wait_and_throw();
+
+    // Copy the filtered output back into a "host object".
+    vecmem::jagged_vector<int> output(&m_mem);
+    copy(output_data, output)->wait();
+
+    // Check the output.
+    EXPECT_EQ(output.size(), 3);
+    EXPECT_EQ(output[0].size(), 0);
+    EXPECT_EQ(output[1].size(), 0);
+    EXPECT_EQ(output[2].size(), 0);
+}
+
+TEST_F(sycl_jagged_containers_test, partially_sizeless) {
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Dedicated device memory resource.
+    vecmem::sycl::device_memory_resource device_resource;
+
+    // Create a resizable buffer for a jagged vector.
+    vecmem::data::jagged_vector_buffer<int> output_data(
+        {10, 0, 10, 0, 10, 0}, device_resource, &m_mem,
+        vecmem::data::buffer_type::resizable);
+    copy.setup(output_data)->wait();
+
+    // Run the vector filling.
+    m_queue
+        .submit([&output_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            FillKernel kernel(output_data);
+            // Execute this kernel.
+            h.parallel_for<FillKernel>(::sycl::range<1>(output_data.size()),
+                                       kernel);
+        })
+        .wait_and_throw();
+
+    // Copy the filtered output back into a "host object".
+    vecmem::jagged_vector<int> output(&m_mem);
+    copy(output_data, output)->wait();
+
+    // Check the output.
+    EXPECT_EQ(output.size(), 6);
+    EXPECT_EQ(output[0].size(), 10);
+    EXPECT_EQ(output[1].size(), 0);
+    EXPECT_EQ(output[2].size(), 10);
+    EXPECT_EQ(output[3].size(), 0);
+    EXPECT_EQ(output[4].size(), 10);
+    EXPECT_EQ(output[5].size(), 0);
+}
+
+TEST_F(sycl_jagged_containers_test, partially_sizeless_fixed) {
+    // Helper object for performing memory copies.
+    vecmem::sycl::copy copy(&m_queue);
+
+    // Dedicated device memory resource.
+    vecmem::sycl::device_memory_resource device_resource;
+
+    // Create a fixed-size buffer for a jagged vector.
+    vecmem::data::jagged_vector_buffer<int> output_data(
+        {10, 0, 10, 0, 10, 0}, device_resource, &m_mem,
+        vecmem::data::buffer_type::fixed_size);
+    copy.setup(output_data)->wait();
+    copy.memset(output_data, 0)->wait();
+
+    // Run the vector filling.
+    m_queue
+        .submit([&output_data](::sycl::handler& h) {
+            // Create the kernel functor.
+            FillKernel kernel(output_data);
+            // Execute this kernel.
+            h.parallel_for<FillKernel>(::sycl::range<1>(output_data.size()),
+                                       kernel);
+        })
+        .wait_and_throw();
+
+    // Copy the filtered output back into a "host object".
+    vecmem::jagged_vector<int> output(&m_mem);
+    copy(output_data, output)->wait();
+
+    // Check the output.
+    EXPECT_EQ(output.size(), 6);
+    EXPECT_EQ(output[0].size(), 10);
+    EXPECT_EQ(output[1].size(), 0);
+    EXPECT_EQ(output[2].size(), 10);
+    EXPECT_EQ(output[3].size(), 0);
+    EXPECT_EQ(output[4].size(), 10);
+    EXPECT_EQ(output[5].size(), 0);
+}

@@ -1,0 +1,14 @@
+breathe
+myst-parser
+sphinx
+sphinx_rtd_theme
+docutils
+rich
+toml
+typer
+pydantic
+jinja2
+gidgethub
+aiohttp
+python-dotenv
+fsspec

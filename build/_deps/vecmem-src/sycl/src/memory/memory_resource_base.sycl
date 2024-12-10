@@ -1,0 +1,45 @@
+/* VecMem project, part of the ACTS project (R&D line)
+ *
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Local include(s).
+#include "../utils/sycl/get_queue.hpp"
+#include "vecmem/memory/sycl/details/memory_resource_base.hpp"
+#include "vecmem/utils/debug.hpp"
+
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
+namespace vecmem::sycl::details {
+
+memory_resource_base::memory_resource_base(const queue_wrapper& queue)
+    : m_queue(queue) {}
+
+memory_resource_base::~memory_resource_base() = default;
+
+void memory_resource_base::do_deallocate(void* ptr, std::size_t, std::size_t) {
+
+    if (ptr == nullptr) {
+        return;
+    }
+
+    // Free the memory.
+    VECMEM_DEBUG_MSG(2, "De-allocating memory at %p", ptr);
+    ::sycl::free(ptr, get_queue(m_queue));
+}
+
+bool memory_resource_base::do_is_equal(
+    const memory_resource& other) const noexcept {
+
+    // Try to cast the other object to this exact type.
+    const memory_resource_base* p =
+        dynamic_cast<const memory_resource_base*>(&other);
+
+    // The two are equal if they have equal queues.
+    return ((p != nullptr) && (get_queue(p->m_queue) == get_queue(m_queue)));
+}
+
+}  // namespace vecmem::sycl::details

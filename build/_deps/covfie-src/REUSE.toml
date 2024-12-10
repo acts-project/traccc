@@ -1,0 +1,25 @@
+version = 1
+
+SPDX-PackageName = "covfie, a part of the ACTS project"
+
+[[annotations]]
+path = [
+        "docs/**",
+        "README.md",
+        "extra/layers/README.md"
+]
+SPDX-FileCopyrightText = "2022 CERN"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = [
+        "CITATION.cff",
+        ".clang-format",
+        ".gersemirc",
+        ".gitignore",
+        ".pre-commit-config.yaml",
+        ".readthedocs.yml",
+        ".github/workflows/**.yml",
+]
+SPDX-FileCopyrightText = "2022 CERN"
+SPDX-License-Identifier = "CC0-1.0"

@@ -1,0 +1,29 @@
+BasedOnStyle: Google
+Language: Cpp
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+PointerAlignment: Left
+ColumnLimit: 80
+CommentPragmas: '[@\\].*'
+IncludeCategories:
+  # This is a bugfix/compatibility header that must come first
+  - Regex: '^(<|")Acts/Utilities/detail/ReferenceWrapperAnyCompat.hpp'
+    Priority: -2
+  # boost/test is special and must be included at the top
+  - Regex: '^(<|")boost/test/.*'
+    Priority: -1
+  # Acts headers before system headers to ensure that they include what they use
+  - Regex: '^(<|")Acts.*'
+    Priority: 1
+  - Regex: '^(<|")ActsExamples/.*'
+    Priority: 1
+  # standard library includes: '<...>' without any '/' or '.' in the path
+  - Regex:    '^<[^/.]*>'
+    Priority: 2
+  # other system includes: '<...>' without further conditions
+  - Regex:    '^<.*>'
+    Priority: 3
+  # all headers not explicitly listed will be assigned to the last group

@@ -1,0 +1,118 @@
+# Algebra plugins library, part of the ACTS project (R&D line)
+#
+# (c) 2021-2023 CERN for the benefit of the ACTS project
+#
+# Mozilla Public License Version 2.0
+
+name: Builds
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+
+# All the different build/test jobs.
+jobs:
+
+  # Native build jobs.
+  native:
+
+    # The different build modes to test.
+    strategy:
+      matrix:
+        BUILD_TYPE: ["Release", "Debug"]
+        PLATFORM:
+          - OS: "ubuntu-latest"
+            GENERATOR: "Unix Makefiles"
+          - OS: "macos-latest"
+            GENERATOR: "Xcode"
+          - OS: "windows-latest"
+            GENERATOR: "Visual Studio 17 2022"
+
+    # The system to run on.
+    runs-on: ${{ matrix.PLATFORM.OS }}
+
+    # The build/test steps to execute.
+    steps:
+    # Use a standard checkout of the code.
+    - uses: actions/checkout@v2
+    # Run the CMake configuration.
+    - name: Configure
+      run: cmake --preset default-x86-64
+                 -DALGEBRA_PLUGINS_INCLUDE_FASTOR=${{ (matrix.PLATFORM.OS == 'macos-latest') && 'OFF' || 'ON' }}
+                 -S ${{ github.workspace }} -B build
+                 -G "${{ matrix.PLATFORM.GENERATOR }}"
+    # Perform the build.
+    - name: Build
+      run: cmake --build build --config ${{ matrix.BUILD_TYPE }}
+    # Run the unit test(s).
+    - name: Test
+      run: |
+        cd build
+        ctest --output-on-failure -C ${{ matrix.BUILD_TYPE }}
+
+  # Containerised build jobs.
+  container:
+
+    # The different build modes to test.
+    strategy:
+      matrix:
+        BUILD_TYPE: ["Release", "Debug"]
+        PLATFORM:
+          - NAME: "HOST"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004:v43"
+            OPTIONS: --preset eigen -DALGEBRA_PLUGINS_USE_SYSTEM_EIGEN3=TRUE
+          - NAME: "HOST"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004:v43"
+            OPTIONS: --preset eigen
+          - NAME: "HOST"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004:v43"
+            OPTIONS: -DALGEBRA_PLUGINS_INCLUDE_SMATRIX=TRUE
+          - NAME: "HOST"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004:v43"
+            OPTIONS: --preset vc
+          - NAME: "HOST"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004:v43"
+            OPTIONS: --preset vecmem
+          - NAME: "HOST"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004:v43"
+            OPTIONS: --preset fastor
+          - NAME: "CUDA"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004_cuda:v43"
+            OPTIONS: --preset cuda
+          - NAME: "SYCL"
+            CONTAINER: "ghcr.io/acts-project/ubuntu2004_oneapi:v43"
+            OPTIONS: --preset sycl
+
+    # The system to run on.
+    runs-on: ubuntu-latest
+    container: ${{ matrix.PLATFORM.CONTAINER }}
+
+    # Use BASH as the shell from the image.
+    defaults:
+      run:
+        shell: bash
+
+    # The build/test steps to execute.
+    steps:
+    # Use a standard checkout of the code.
+    - uses: actions/checkout@v2
+    # Run the CMake configuration.
+    - name: Configure
+      run: |
+        source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.PLATFORM.NAME }}
+        cmake ${{ matrix.PLATFORM.OPTIONS }} -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }} -S ${GITHUB_WORKSPACE} -B build
+    # Perform the build.
+    - name: Build
+      run: |
+        source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.PLATFORM.NAME }}
+        cmake --build build
+    # Run the unit test(s).
+    - name: Test
+      if: "matrix.PLATFORM.NAME != 'CUDA'"
+      run: |
+        cd build
+        source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.PLATFORM.NAME }}
+        ctest --output-on-failure
