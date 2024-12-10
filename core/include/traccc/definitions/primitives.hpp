@@ -14,7 +14,7 @@
 #elif ALGEBRA_PLUGINS_INCLUDE_SMATRIX
 #include "traccc/plugins/algebra/smatrix_definitions.hpp"
 #elif ALGEBRA_PLUGINS_INCLUDE_VC
-#include "traccc/plugins/algebra/vc_definitions.hpp"
+#include "traccc/plugins/algebra/vc_aos_definitions.hpp"
 #elif ALGEBRA_PLUGINS_INCLUDE_VECMEM
 #include "traccc/plugins/algebra/vecmem_definitions.hpp"
 #endif
@@ -40,7 +40,9 @@ using point3 = detray::dpoint3D<default_algebra>;
 using vector3 = detray::dvector3D<default_algebra>;
 using variance3 = point3;
 using transform3 = detray::dtransform3D<default_algebra>;
-template <std::size_t ROW, std::size_t COL>
-using matrix = detray::dmatrix<default_algebra, ROW, COL>;
+
+namespace getter = detray::getter;
+namespace vector = detray::vector;
+namespace matrix = detray::matrix;
 
 }  // namespace traccc

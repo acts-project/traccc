@@ -237,7 +237,6 @@ if( TRACCC_SETUP_ALPAKA )
    # Default options for the Alpaka build.
    set( alpaka_ACC_CPU_B_SEQ_T_THREADS_ENABLE TRUE CACHE BOOL
       "Enable the serial backend of Alpaka" )
-
    if( TRACCC_USE_SYSTEM_ALPAKA )
       find_package( alpaka REQUIRED )
    else()

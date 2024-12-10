@@ -120,7 +120,7 @@ inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
     if (spPhi > config.phiMax || spPhi < config.phiMin) {
         return detray::detail::invalid_value<size_t>();
     }
-    size_t r_index = static_cast<size_t>(getter::perp(
+    size_t r_index = static_cast<size_t>(vector::perp(
         vector2{sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]}));
 
     if (r_index < config.get_num_rbins()) {

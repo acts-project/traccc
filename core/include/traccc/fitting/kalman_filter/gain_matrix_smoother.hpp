@@ -21,10 +21,11 @@ struct gain_matrix_smoother {
 
     // Type declarations
     using scalar_type = detray::dscalar<algebra_t>;
-    using matrix_operator = detray::dmatrix_operator<algebra_t>;
     using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
+    using bound_vector_type = detray::bound_vector<algebra_t>;
+    using bound_matrix_type = detray::bound_matrix<algebra_t>;
 
     /// Gain matrix smoother operation
     ///
@@ -69,44 +70,38 @@ struct gain_matrix_smoother {
         const auto& cur_filtered = cur_state.filtered();
 
         // Next track state parameters
-        const matrix_type<e_bound_size, e_bound_size>& next_jacobian =
-            next_state.jacobian();
-        const matrix_type<e_bound_size, 1>& next_smoothed_vec =
-            next_smoothed.vector();
-        const matrix_type<e_bound_size, e_bound_size>& next_smoothed_cov =
-            next_smoothed.covariance();
-        const matrix_type<e_bound_size, 1>& next_predicted_vec =
-            next_predicted.vector();
-        const matrix_type<e_bound_size, e_bound_size>& next_predicted_cov =
+        const bound_matrix_type& next_jacobian = next_state.jacobian();
+        const bound_vector_type& next_smoothed_vec = next_smoothed.vector();
+        const bound_matrix_type& next_smoothed_cov = next_smoothed.covariance();
+        const bound_vector_type& next_predicted_vec = next_predicted.vector();
+        const bound_matrix_type& next_predicted_cov =
             next_predicted.covariance();
 
         // Current track state parameters
-        const matrix_type<e_bound_size, 1>& cur_filtered_vec =
-            cur_filtered.vector();
-        const matrix_type<e_bound_size, e_bound_size>& cur_filtered_cov =
-            cur_filtered.covariance();
+        const bound_vector_type& cur_filtered_vec = cur_filtered.vector();
+        const bound_matrix_type& cur_filtered_cov = cur_filtered.covariance();
 
         // Regularization matrix for numerical stability
-        static constexpr scalar_type epsilon = 1e-13f;
-        const matrix_type<e_bound_size, e_bound_size> regularization =
-            matrix_operator().template identity<e_bound_size, e_bound_size>() *
-            epsilon;
-        const matrix_type<e_bound_size, e_bound_size>
-            regularized_predicted_cov = next_predicted_cov + regularization;
+        constexpr scalar_type epsilon = 1e-13f;
+        const auto regularization =
+            matrix::identity<bound_matrix_type>() * epsilon;
+        const bound_matrix_type regularized_predicted_cov =
+            next_predicted_cov + regularization;
 
         // Calculate smoothed parameter for current state
-        const matrix_type<e_bound_size, e_bound_size> A =
-            cur_filtered_cov * matrix_operator().transpose(next_jacobian) *
-            matrix_operator().inverse(regularized_predicted_cov);
+        const bound_matrix_type A = cur_filtered_cov *
+                                    matrix::transpose(next_jacobian) *
+                                    matrix::inverse(regularized_predicted_cov);
 
-        const matrix_type<e_bound_size, 1> smt_vec =
+        const bound_vector_type smt_vec =
             cur_filtered_vec + A * (next_smoothed_vec - next_predicted_vec);
-        const matrix_type<e_bound_size, e_bound_size> smt_cov =
-            cur_filtered_cov + A * (next_smoothed_cov - next_predicted_cov) *
-                                   matrix_operator().transpose(A);
+        const bound_matrix_type smt_cov =
+            cur_filtered_cov +
+            A * (next_smoothed_cov - next_predicted_cov) * matrix::transpose(A);
 
         cur_state.smoothed().set_vector(smt_vec);
         cur_state.smoothed().set_covariance(smt_cov);
+
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(cur_state.smoothed());
 
@@ -127,12 +122,11 @@ struct gain_matrix_smoother {
         const matrix_type<D, D>& V =
             cur_state.template measurement_covariance<D>();
         const matrix_type<D, 1> residual = meas_local - H * smt_vec;
-        const matrix_type<D, D> R =
-            V - H * smt_cov * matrix_operator().transpose(H);
-        const matrix_type<1, 1> chi2 = matrix_operator().transpose(residual) *
-                                       matrix_operator().inverse(R) * residual;
+        const matrix_type<D, D> R = V - H * smt_cov * matrix::transpose(H);
+        const matrix_type<1, 1> chi2 =
+            matrix::transpose(residual) * matrix::inverse(R) * residual;
 
-        cur_state.smoothed_chi2() = matrix_operator().element(chi2, 0, 0);
+        cur_state.smoothed_chi2() = getter::element(chi2, 0, 0);
 
         return;
     }

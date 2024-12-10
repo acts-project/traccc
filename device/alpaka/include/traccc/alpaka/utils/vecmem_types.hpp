@@ -24,6 +24,7 @@
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/memory/sycl/host_memory_resource.hpp>
+#include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
 
 #else
@@ -52,7 +53,7 @@ class copy;
 namespace sycl {
 class host_memory_resource;
 class device_memory_resource;
-class managed_memory_resource;
+class shared_memory_resource;
 class copy;
 }  // namespace sycl
 }  // namespace vecmem
@@ -84,20 +85,21 @@ template <>
 struct host_device_types<::alpaka::TagCpuSycl> {
     using device_memory_resource = ::vecmem::sycl::device_memory_resource;
     using host_memory_resource = ::vecmem::sycl::host_memory_resource;
-    using managed_memory_resource = ::vecmem::sycl::host_memory_resource;
+    using managed_memory_resource = ::vecmem::sycl::shared_memory_resource;
     using device_copy = ::vecmem::sycl::copy;
 };
 template <>
 struct host_device_types<::alpaka::TagFpgaSyclIntel> {
     using device_memory_resource = ::vecmem::sycl::device_memory_resource;
     using host_memory_resource = ::vecmem::sycl::host_memory_resource;
-    using managed_memory_resource = ::vecmem::sycl::host_memory_resource;
+    using managed_memory_resource = ::vecmem::sycl::shared_memory_resource;
     using device_copy = ::vecmem::sycl::copy;
 };
 template <>
 struct host_device_types<::alpaka::TagGpuSyclIntel> {
     using device_memory_resource = ::vecmem::sycl::device_memory_resource;
     using host_memory_resource = ::vecmem::sycl::host_memory_resource;
+    using managed_memory_resource = ::vecmem::sycl::shared_memory_resource;
     using device_copy = ::vecmem::sycl::copy;
 };
 }  // namespace traccc::alpaka::vecmem

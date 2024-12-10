@@ -1,14 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // SYCL library include(s).
+#include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
-#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/estimate_track_params.hpp"
@@ -54,8 +54,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
     unsigned int localSize = 64;
 
     // 1 dim ND Range for the kernel
-    auto trackParamsNdRange =
-        traccc::sycl::calculate1DimNdRange(seeds_size, localSize);
+    const auto trackParamsNdRange =
+        details::calculate1DimNdRange(seeds_size, localSize);
 
     details::get_queue(m_queue)
         .submit([&](::sycl::handler& h) {

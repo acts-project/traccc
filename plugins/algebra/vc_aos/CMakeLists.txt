@@ -6,8 +6,8 @@
 
 # Set up the "build" of the traccc::vc_aos library.
 traccc_add_library( traccc_vc_aos vc_aos TYPE INTERFACE
-  "include/traccc/plugins/algebra/vc_definitions.hpp" )
+  "include/traccc/plugins/algebra/vc_aos_definitions.hpp" )
 target_link_libraries( traccc_vc_aos
-  INTERFACE algebra::vc_cmath detray::algebra_vc_aos vecmem::core )
+  INTERFACE algebra::vc_aos detray::algebra_vc_aos vecmem::core )
 target_compile_definitions( traccc_vc_aos
   INTERFACE TRACCC_CUSTOM_SCALARTYPE=${TRACCC_CUSTOM_SCALARTYPE} )

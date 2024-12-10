@@ -30,7 +30,6 @@ namespace traccc {
 template <typename detector_t>
 struct seed_generator {
     using algebra_type = typename detector_t::algebra_type;
-    using matrix_operator = detray::dmatrix_operator<algebra_type>;
     using cxt_t = typename detector_t::geometry_context;
 
     /// Constructor with detector
@@ -58,9 +57,7 @@ struct seed_generator {
 
         const cxt_t ctx{};
         auto bound_vec = sf.free_to_bound_vector(ctx, free_param);
-
-        auto bound_cov =
-            matrix_operator().template zero<e_bound_size, e_bound_size>();
+        auto bound_cov = matrix::zero<detray::bound_matrix<algebra_type>>();
 
         bound_track_parameters bound_param{surface_link, bound_vec, bound_cov};
 
@@ -82,7 +79,7 @@ struct seed_generator {
             bound_param[i] = std::normal_distribution<scalar>(
                 bound_param[i], m_stddevs[i])(m_generator);
 
-            matrix_operator().element(bound_param.covariance(), i, i) =
+            getter::element(bound_param.covariance(), i, i) =
                 m_stddevs[i] * m_stddevs[i];
         }
 

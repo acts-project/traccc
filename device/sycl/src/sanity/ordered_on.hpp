@@ -92,13 +92,11 @@ template <typename CONTAINER, std::semiregular R, typename VIEW>
 requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
                                 decltype(std::declval<CONTAINER>().at(0))> bool
 is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
-              queue_wrapper& queue_wrapper, const VIEW& view) {
+              ::sycl::queue& queue, const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int block_size = 512;
-
-    ::sycl::queue& queue = details::get_queue(queue_wrapper);
 
     // Grab the number of elements in our container.
     const typename VIEW::size_type n = copy.get_size(view);

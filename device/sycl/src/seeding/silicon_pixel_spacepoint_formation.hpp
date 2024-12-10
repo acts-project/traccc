@@ -8,8 +8,8 @@
 #pragma once
 
 // Local include(s).
+#include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
-#include "traccc/sycl/utils/calculate1DimNdRange.hpp"
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"

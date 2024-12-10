@@ -10,7 +10,7 @@
 // Sycl include(s).
 #include <sycl/sycl.hpp>
 
-namespace traccc::sycl {
+namespace traccc::sycl::details {
 
 /// Function that calculates 1 dim nd range for sycl kernel execution
 ///
@@ -21,4 +21,4 @@ namespace traccc::sycl {
 ::sycl::nd_range<1> calculate1DimNdRange(const std::size_t globalSize,
                                          const std::size_t localSize);
 
-}  // namespace traccc::sycl
+}  // namespace traccc::sycl::details
