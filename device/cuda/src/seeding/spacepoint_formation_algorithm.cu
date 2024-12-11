@@ -60,7 +60,7 @@ spacepoint_formation_algorithm<detector_t>::operator()(
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Launch parameters for the kernel.
-    const unsigned int blockSize = 1024;
+    const unsigned int blockSize = 256;
     const unsigned int nBlocks = (num_measurements + blockSize - 1) / blockSize;
 
     // Launch the spacepoint formation kernel.
