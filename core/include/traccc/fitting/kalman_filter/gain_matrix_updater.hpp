@@ -34,13 +34,14 @@ struct gain_matrix_updater {
     /// @param index mask index of surface
     /// @param trk_state track state of the surface
     /// @param bound_params bound parameter
+    /// @param backward_mode backward propagation for smoothing
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
     TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        bound_track_parameters& bound_params) const {
 
         using shape_type = typename mask_group_t::value_type::shape;
 
@@ -63,7 +64,7 @@ struct gain_matrix_updater {
     template <size_type D, typename shape_t>
     TRACCC_HOST_DEVICE inline bool update(
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        bound_track_parameters& bound_params) const {
 
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
@@ -138,6 +139,31 @@ struct gain_matrix_updater {
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered());
 
+        // Update the propagation flow
+        bound_params = trk_state.filtered();
+
+        /*
+        //std::cout << "Covariance" << std::endl;
+        std::cout << getter::element(filtered_cov, 0, 0) << ", "
+                  << getter::element(filtered_cov, 1, 1) << ", "
+                  << getter::element(filtered_cov, 2, 2) << ", "
+                  << getter::element(filtered_cov, 3, 3) << ", "
+                  << getter::element(filtered_cov, 4, 4) << ", " << std::endl;
+        */
+        // std::cout << "Vector" << std::endl;
+        /*        
+        //std::cout << meas.local[0] << ", " << meas.local[1] << ", ";
+        std::cout << getter::element(filtered_vec, 0, 0) << ", "
+                  << getter::element(filtered_vec, 1, 0) << ", "
+                  << getter::element(filtered_vec, 2, 0) << ", "
+                  << getter::element(filtered_vec, 3, 0) << ", "
+                  << getter::element(filtered_vec, 4, 0) << ", ";  //
+        std::cout << getter::element(predicted_vec, 0, 0) << ", "
+                  << getter::element(predicted_vec, 1, 0) << ", "
+                  << getter::element(predicted_vec, 2, 0) << ", "
+                  << getter::element(predicted_vec, 3, 0) << ", "
+                  << getter::element(predicted_vec, 4, 0) << ", " << std::endl;
+        */
         return true;
     }
 };

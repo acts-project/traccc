@@ -12,11 +12,13 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
+#include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -67,9 +69,16 @@ class kalman_fitter {
         detray::actor_chain<detray::dtuple, aborter, transporter, interactor,
                             fit_actor, resetter, kalman_step_aborter>;
 
+    using backward_actor_chain_type =
+        detray::actor_chain<detray::dtuple, aborter, transporter, fit_actor,
+                            interactor, resetter, kalman_step_aborter>;
+
     // Propagator type
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_chain_type>;
+
+    using backward_propagator_type =
+        detray::propagator<stepper_t, navigator_t, backward_actor_chain_type>;
 
     /// Constructor with a detector
     ///
@@ -104,6 +113,14 @@ class kalman_fitter {
                                m_resetter_state, m_step_aborter_state);
         }
 
+        /// @return the actor chain state
+        TRACCC_HOST_DEVICE
+        typename backward_actor_chain_type::state backward_actor_state() {
+            return detray::tie(m_aborter_state, m_transporter_state,
+                               m_fit_actor_state, m_interactor_state,
+                               m_resetter_state, m_step_aborter_state);
+        }
+
         /// Individual actor states
         typename aborter::state m_aborter_state{};
         typename transporter::state m_transporter_state{};
@@ -132,17 +149,15 @@ class kalman_fitter {
             // Reset the iterator of kalman actor
             fitter_state.m_fit_actor_state.reset();
 
-            if (i == 0) {
-                filter(seed_params, fitter_state);
-            }
-            // From the second iteration, seed parameter is the smoothed track
-            // parameter at the first surface
-            else {
-                const auto& new_seed_params =
-                    fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
+            auto seed_params_cpy =
+                (i == 0) ? seed_params
+                         : fitter_state.m_fit_actor_state.m_track_states[0]
+                               .smoothed();
 
-                filter(new_seed_params, fitter_state);
-            }
+            inflate_covariance(seed_params_cpy,
+                               m_cfg.covariance_inflation_factor);
+
+            filter(seed_params_cpy, fitter_state);
         }
     }
 
@@ -178,11 +193,14 @@ class kalman_fitter {
             .template set_constraint<detray::step::constraint::e_accuracy>(
                 m_cfg.propagation.stepping.step_constraint);
 
+        // Reset fitter statistics
+        fitter_state.m_fit_res.reset_statistics();
+
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());
 
         // Run smoothing
-        smooth(fitter_state);
+        smooth(fitter_state, seed_params.covariance());
 
         // Update track fitting qualities
         update_statistics(fitter_state);
@@ -194,14 +212,11 @@ class kalman_fitter {
     /// track and vertex fitting", R.Frühwirth, NIM A.
     ///
     /// @param fitter_state the state of kalman fitter
-    TRACCC_HOST_DEVICE
-    void smooth(state& fitter_state) {
+    TRACCC_HOST_DEVICE void smooth(state& fitter_state,
+                                   const bound_covariance& /*cov*/) {
+
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
-        // The smoothing algorithm requires the following:
-        // (1) the filtered track parameter of the current surface
-        // (2) the smoothed track parameter of the next surface
-        //
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
@@ -210,14 +225,48 @@ class kalman_fitter {
         last.smoothed().set_covariance(last.filtered().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
 
-        for (typename vector_type<track_state<algebra_type>>::reverse_iterator
-                 it = track_states.rbegin() + 1;
-             it != track_states.rend(); ++it) {
+        if (m_cfg.use_backward_filter) {
 
-            // Run kalman smoother
-            const detray::tracking_surface sf{m_detector, it->surface_link()};
-            sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
-                *it, *(it - 1));
+            // Propagator
+            backward_propagator_type propagator(m_cfg.propagation);
+
+            // Set path limit
+            fitter_state.m_aborter_state.set_path_limit(
+                m_cfg.propagation.stepping.path_limit);
+
+            // Two filters (forward & backward) method
+            typename backward_propagator_type::state propagation(
+                last.smoothed(), m_field, m_detector);
+
+            inflate_covariance(propagation._stepping.bound_params(),
+                               m_cfg.covariance_inflation_factor);
+
+            propagation._navigation.set_volume(
+                last.smoothed().surface_link().volume());
+
+            propagation._navigation.set_direction(
+                detray::navigation::direction::e_backward);
+            fitter_state.m_fit_actor_state.backward_mode = true;
+
+            propagator.propagate(propagation,
+                                 fitter_state.backward_actor_state());
+
+            // Reset the backward mode to false
+            fitter_state.m_fit_actor_state.backward_mode = false;
+
+        } else {
+
+            for (typename vector_type<
+                     track_state<algebra_type>>::reverse_iterator it =
+                     track_states.rbegin() + 1;
+                 it != track_states.rend(); ++it) {
+
+                // Run kalman smoother
+                const detray::tracking_surface sf{m_detector,
+                                                  it->surface_link()};
+                sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
+                    *it, *(it - 1));
+            }
         }
     }
 
@@ -239,6 +288,10 @@ class kalman_fitter {
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
         fit_res.ndf = fit_res.ndf - 5.f;
+
+        // P-value
+        // fit_res.pval = chisquared_cdf_c<scalar_type>(fit_res.chi2,
+        // fit_res.ndf);
 
         // The number of holes
         fit_res.n_holes = fitter_state.m_fit_actor_state.n_holes;
