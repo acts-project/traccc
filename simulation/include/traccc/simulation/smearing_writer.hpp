@@ -26,6 +26,10 @@
 #include <dfe/dfe_io_dsv.hpp>
 #include <dfe/dfe_namedtuple.hpp>
 
+// System include(s).
+#include <filesystem>
+#include <string>
+
 namespace traccc {
 
 template <typename smearer_t>
@@ -47,16 +51,23 @@ struct smearing_writer : detray::actor {
     struct state {
         state(std::size_t event_id, config&& writer_cfg,
               const std::string directory)
-            : m_particle_writer(directory +
-                                traccc::io::get_event_filename(
-                                    event_id, "-particles_initial.csv")),
-              m_hit_writer(directory + traccc::io::get_event_filename(
-                                           event_id, "-hits.csv")),
-              m_meas_writer(directory + traccc::io::get_event_filename(
-                                            event_id, "-measurements.csv")),
+            : m_particle_writer((std::filesystem::path{directory} /
+                                 traccc::io::get_event_filename(
+                                     event_id, "-particles_initial.csv"))
+                                    .native()),
+              m_hit_writer(
+                  (std::filesystem::path{directory} /
+                   traccc::io::get_event_filename(event_id, "-hits.csv"))
+                      .native()),
+              m_meas_writer((std::filesystem::path{directory} /
+                             traccc::io::get_event_filename(
+                                 event_id, "-measurements.csv"))
+                                .native()),
               m_measurement_hit_id_writer(
-                  directory + traccc::io::get_event_filename(
-                                  event_id, "-measurement-simhit-map.csv")),
+                  (std::filesystem::path{directory} /
+                   traccc::io::get_event_filename(
+                       event_id, "-measurement-simhit-map.csv"))
+                      .native()),
               m_meas_smearer(writer_cfg.smearer) {}
 
         uint64_t particle_id = 0u;

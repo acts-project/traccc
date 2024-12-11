@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,7 +18,7 @@ namespace traccc::device {
 
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
-    std::size_t globalIndex, const finding_config& cfg,
+    unsigned int globalIndex, const finding_config& cfg,
     const apply_interaction_payload<detector_t>& payload) {
 
     // Type definitions
@@ -30,7 +30,7 @@ TRACCC_DEVICE inline void apply_interaction(
 
     // in param
     bound_track_parameters_collection_types::device params(payload.params_view);
-    vecmem::device_vector<const unsigned int> params_liveness(
+    vecmem::device_vector<const char> params_liveness(
         payload.params_liveness_view);
 
     if (globalIndex >= payload.n_params) {
@@ -39,7 +39,7 @@ TRACCC_DEVICE inline void apply_interaction(
 
     auto& bound_param = params.at(globalIndex);
 
-    if (params_liveness.at(globalIndex) != 0u) {
+    if (params_liveness.at(globalIndex) != 0) {
         // Get surface corresponding to bound params
         const detray::tracking_surface sf{det, bound_param.surface_link()};
         const typename detector_t::geometry_context ctx{};
