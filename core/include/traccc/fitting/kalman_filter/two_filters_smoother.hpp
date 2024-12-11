@@ -73,11 +73,11 @@ struct two_filters_smoother {
             trk_state.template measurement_local<D>();
 
         // Predicted vector of bound track parameters
-        const matrix_type<e_bound_size, 1>& predicted_vec =
+        const matrix_type<e_bound_size, 1> predicted_vec =
             bound_params.vector();
 
         // Predicted covaraince of bound track parameters
-        const matrix_type<e_bound_size, e_bound_size>& predicted_cov =
+        const matrix_type<e_bound_size, e_bound_size> predicted_cov =
             bound_params.covariance();
 
         const matrix_type<e_bound_size, e_bound_size> predicted_cov_inv =

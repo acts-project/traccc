@@ -70,9 +70,16 @@ class kalman_fitter {
         detray::actor_chain<detray::dtuple, aborter, transporter, interactor,
                             fit_actor, resetter, kalman_step_aborter>;
 
+    using backward_actor_chain_type =
+        detray::actor_chain<detray::dtuple, aborter, transporter, fit_actor,
+                            interactor, resetter, kalman_step_aborter>;
+
     // Propagator type
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_chain_type>;
+
+    using backward_propagator_type =
+        detray::propagator<stepper_t, navigator_t, backward_actor_chain_type>;
 
     /// Constructor with a detector
     ///
@@ -107,6 +114,14 @@ class kalman_fitter {
                                m_resetter_state, m_step_aborter_state);
         }
 
+        /// @return the actor chain state
+        TRACCC_HOST_DEVICE
+        typename backward_actor_chain_type::state backward_actor_state() {
+            return detray::tie(m_aborter_state, m_transporter_state,
+                               m_fit_actor_state, m_interactor_state,
+                               m_resetter_state, m_step_aborter_state);
+        }
+
         /// Individual actor states
         typename aborter::state m_aborter_state{};
         typename transporter::state m_transporter_state{};
@@ -135,27 +150,15 @@ class kalman_fitter {
             // Reset the iterator of kalman actor
             fitter_state.m_fit_actor_state.reset();
 
-            if (i == 0) {
-                // filter(seed_params, fitter_state);
-                auto new_seed_params = seed_params;
-                /*
-                inflate_covariance(new_seed_params,
-                                   m_cfg.covariance_inflation_factor);
-                */
-                filter(new_seed_params, fitter_state);
-            }
-            // From the second iteration, seed parameter is the smoothed track
-            // parameter at the first surface
-            else {
-                auto new_seed_params =
-                    fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
+            auto seed_params_cpy =
+                (i == 0) ? seed_params
+                         : fitter_state.m_fit_actor_state.m_track_states[0]
+                               .smoothed();
+                               
+            inflate_covariance(seed_params_cpy,
+                               m_cfg.covariance_inflation_factor);
 
-                // new_seed_params.set_covariance(seed_params.covariance());
-                inflate_covariance(new_seed_params,
-                                   m_cfg.covariance_inflation_factor);
-
-                filter(new_seed_params, fitter_state);
-            }
+            filter(seed_params_cpy, fitter_state);
         }
     }
 
@@ -224,74 +227,17 @@ class kalman_fitter {
         last.smoothed_chi2() = last.filtered_chi2();
 
         if (m_cfg.use_backward_filter) {
-            /*
-            // Create propagator
-            backward_propagator_type propagator(m_cfg.propagation);
-
-            for (typename vector_type<
-                     track_state<algebra_type>>::reverse_iterator it =
-                     track_states.rbegin();
-                 it != track_states.rend() - 1; ++it) {
-
-                // Get surface corresponding to bound params
-                const detray::tracking_surface sf{m_detector,
-                                                  it->surface_link()};
-
-                const typename detector_type::geometry_context ctx{};
-
-                auto bound_params = it->smoothed();
-                // inflate_covariance(bound_params, m_cfg.)
-
-                // Apply material interaction
-                typename interactor::state interactor_state;
-                interactor{}.update(
-                    ctx,
-                    detail::correct_particle_hypothesis(m_cfg.ptc_hypothesis,
-                                                        bound_params),
-                    bound_params, interactor_state,
-                    static_cast<int>(detray::navigation::direction::e_backward),
-                    sf);
-
-                // Two filters (forward & backward) method
-                typename backward_propagator_type::state propagation(
-                    bound_params, m_field, m_detector);
-                propagation._navigation.set_volume(it->surface_link().volume());
-
-                propagation._navigation.set_direction(
-                    detray::navigation::direction::e_backward);
-
-                typename aborter::state path_abrt_state;
-                typename transporter::state trp_state;
-                surface_id_aborter::state id_abrt_state{
-                    (it + 1)->surface_link()};
-                typename interactor::state int_state;
-                typename interaction_register<interactor>::state reg_state{
-                    int_state};
-                typename resetter::state rst_state;
-
-                propagator.propagate(
-                    propagation,
-                    detray::tie(path_abrt_state, trp_state, id_abrt_state,
-                                reg_state, int_state, rst_state));
-
-                const detray::tracking_surface sf_next{
-                    m_detector, (it + 1)->surface_link()};
-
-                sf_next.template visit_mask<two_filters_smoother<algebra_type>>(
-                    *(it + 1), propagation._stepping.bound_params());
-            }
-            */
 
             // Propagator
-            propagator_type propagator(m_cfg.propagation);
+            backward_propagator_type propagator(m_cfg.propagation);
 
             // Set path limit
             fitter_state.m_aborter_state.set_path_limit(
                 m_cfg.propagation.stepping.path_limit);
 
             // Two filters (forward & backward) method
-            typename propagator_type::state propagation(last.smoothed(),
-                                                        m_field, m_detector);
+            typename backward_propagator_type::state propagation(
+                last.smoothed(), m_field, m_detector);
 
             inflate_covariance(propagation._stepping.bound_params(),
                                m_cfg.covariance_inflation_factor);
@@ -303,27 +249,13 @@ class kalman_fitter {
                 detray::navigation::direction::e_backward);
             fitter_state.m_fit_actor_state.backward_mode = true;
 
-            propagator.propagate(propagation, fitter_state());
+            propagator.propagate(propagation,
+                                 fitter_state.backward_actor_state());
 
             // Reset the backward mode to false
             fitter_state.m_fit_actor_state.backward_mode = false;
 
         } else {
-            /*
-            auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
-
-            // The Rauch-Tung-Striebel(RTS) smoother requires the following:
-            // (1) the filtered track parameter of the current surface
-            // (2) the smoothed track parameter of the next surface
-            //
-            // Since the smoothed track parameter of the last surface can be
-            // considered to be the filtered one, we can reversly iterate the
-            // algorithm to obtain the smoothed parameter of other surfaces
-            auto& last = track_states.back();
-            last.smoothed().set_parameter_vector(last.filtered());
-            last.smoothed().set_covariance(last.filtered().covariance());
-            last.smoothed_chi2() = last.filtered_chi2();
-            */
 
             for (typename vector_type<
                      track_state<algebra_type>>::reverse_iterator it =
