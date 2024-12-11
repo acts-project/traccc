@@ -125,10 +125,6 @@ struct kalman_actor : detray::actor {
             // Increase the hole counts if the propagator fails to find the next
             // measurement
             if (navigation.barcode() != trk_state.surface_link()) {
-                std::cout << "Nav" << std::endl;
-                std::cout << navigation.barcode() << std::endl;
-                std::cout << "State" << std::endl;
-                std::cout << trk_state.surface_link() << std::endl;
                 actor_state.n_holes++;
                 return;
             }
@@ -153,11 +149,6 @@ struct kalman_actor : detray::actor {
             else {
                 res = sf.template visit_mask<two_filters_smoother<algebra_t>>(
                     trk_state, propagation._stepping.bound_params());
-                if (actor_state.m_it_rev ==
-                    actor_state.m_track_states.rbegin()) {
-                    trk_state.smoothed() = trk_state.filtered();
-                    trk_state.smoothed_chi2() = trk_state.filtered_chi2();
-                }
             }
 
             // Abort if the Kalman update fails

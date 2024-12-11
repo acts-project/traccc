@@ -142,6 +142,28 @@ struct gain_matrix_updater {
         // Update the propagation flow
         bound_params = trk_state.filtered();
 
+        /*
+        //std::cout << "Covariance" << std::endl;
+        std::cout << getter::element(filtered_cov, 0, 0) << ", "
+                  << getter::element(filtered_cov, 1, 1) << ", "
+                  << getter::element(filtered_cov, 2, 2) << ", "
+                  << getter::element(filtered_cov, 3, 3) << ", "
+                  << getter::element(filtered_cov, 4, 4) << ", " << std::endl;
+        */
+        // std::cout << "Vector" << std::endl;
+        /*        
+        //std::cout << meas.local[0] << ", " << meas.local[1] << ", ";
+        std::cout << getter::element(filtered_vec, 0, 0) << ", "
+                  << getter::element(filtered_vec, 1, 0) << ", "
+                  << getter::element(filtered_vec, 2, 0) << ", "
+                  << getter::element(filtered_vec, 3, 0) << ", "
+                  << getter::element(filtered_vec, 4, 0) << ", ";  //
+        std::cout << getter::element(predicted_vec, 0, 0) << ", "
+                  << getter::element(predicted_vec, 1, 0) << ", "
+                  << getter::element(predicted_vec, 2, 0) << ", "
+                  << getter::element(predicted_vec, 3, 0) << ", "
+                  << getter::element(predicted_vec, 4, 0) << ", " << std::endl;
+        */
         return true;
     }
 };
