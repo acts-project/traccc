@@ -19,6 +19,7 @@
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
+#include "test_queue.hpp"
 #include "tests/ckf_toy_detector_test.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
@@ -54,12 +55,14 @@ TEST_P(CkfToyDetectorTests, Run) {
      * Build a toy detector
      *****************************/
 
+    // SYCL queue.
+    sycl::test_queue queue;
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::sycl::queue_wrapper queue;
-    vecmem::sycl::device_memory_resource device_mr{queue};
+    vecmem::sycl::device_memory_resource device_mr{queue.queue().queue()};
     traccc::memory_resource mr{device_mr, &host_mr};
-    vecmem::sycl::shared_memory_resource shared_mr{queue};
+    vecmem::sycl::shared_memory_resource shared_mr{queue.queue().queue()};
 
     // Path to the working directory.
     const std::filesystem::path path = std::filesystem::current_path() / name;
@@ -118,7 +121,7 @@ TEST_P(CkfToyDetectorTests, Run) {
      *****************************/
 
     // Copy objects
-    vecmem::sycl::async_copy copy{queue};
+    vecmem::sycl::async_copy copy{queue.queue().queue()};
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
