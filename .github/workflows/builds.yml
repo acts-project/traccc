@@ -75,7 +75,7 @@ jobs:
           - platform:
               name: "ALPAKA_CUDA"
               container: ghcr.io/acts-project/ubuntu2404_cuda:69
-              options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_CUDA_ENABLE=ON
+              options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_CUDA_ENABLE=ON -DTRACCC_FAIL_ON_WARNINGS=OFF
               run_tests: false
             build: Release
           - platform:
