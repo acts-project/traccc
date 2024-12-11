@@ -119,6 +119,7 @@ track_candidate_container_types::buffer find_tracks(
                              measurements.ptr() + n_measurements,
                              uniques.begin(), uniques.begin() + n_modules,
                              upper_bounds.begin(), measurement_sort_comp());
+    queue.wait_and_throw();
 
     /*****************************************************************
      * Kernel1: Create barcode sequence
@@ -242,7 +243,7 @@ track_candidate_container_types::buffer find_tracks(
                     shared_num_candidates(nFindTracksThreads, h);
                 vecmem::sycl::local_accessor<
                     std::pair<unsigned int, unsigned int>>
-                    shared_candidates(nFindTracksThreads, h);
+                    shared_candidates(2 * nFindTracksThreads, h);
                 vecmem::sycl::local_accessor<unsigned int>
                     shared_candidates_size(1, h);
 
@@ -331,13 +332,10 @@ track_candidate_container_types::buffer find_tracks(
                     keys_buffer);
                 vecmem::device_vector<unsigned int> param_ids_device(
                     param_ids_buffer);
-                auto zipped_first = oneapi::dpl::make_zip_iterator(
-                    keys_device.begin(), param_ids_device.begin());
-                oneapi::dpl::sort(
-                    policy, zipped_first, zipped_first + keys_device.size(),
-                    [](auto lhs, auto rhs) {
-                        return std::get<0>(lhs) < std::get<0>(rhs);
-                    });
+                oneapi::dpl::sort_by_key(policy, keys_device.begin(),
+                                         keys_device.end(),
+                                         param_ids_device.begin());
+                queue.wait_and_throw();
             }
 
             /*****************************************************************
@@ -415,6 +413,7 @@ track_candidate_container_types::buffer find_tracks(
         oneapi::dpl::copy(policy, in.begin(),
                           in.begin() + n_candidates_per_step[it], out.begin());
     }
+    queue.wait_and_throw();
 
     /*****************************************************************
      * Kernel6: Build tracks
