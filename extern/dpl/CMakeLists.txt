@@ -13,7 +13,7 @@ message( STATUS "Building oneDPL as part of the TRACCC project" )
 
 # Declare where to get DPL from.
 set( TRACCC_DPL_SOURCE
-   "URL;https://github.com/oneapi-src/oneDPL/archive/refs/tags/oneDPL-2022.6.0-rc1.tar.gz;URL_MD5;f52a2ed5c9e4cdb3c65c2465b50abecf"
+   "URL;https://github.com/oneapi-src/oneDPL/archive/refs/tags/oneDPL-2022.7.1-release.tar.gz;URL_MD5;21d45dc27ba3133bfb282ec7383177f4"
    CACHE STRING "Source for DPL, when built as part of this project" )
 mark_as_advanced( TRACCC_DPL_SOURCE )
 FetchContent_Declare( DPL SYSTEM ${TRACCC_DPL_SOURCE} )
