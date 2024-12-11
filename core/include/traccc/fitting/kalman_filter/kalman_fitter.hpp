@@ -13,7 +13,6 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
-#include "traccc/fitting/actors/surface_id_aborter.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
@@ -154,7 +153,7 @@ class kalman_fitter {
                 (i == 0) ? seed_params
                          : fitter_state.m_fit_actor_state.m_track_states[0]
                                .smoothed();
-                               
+
             inflate_covariance(seed_params_cpy,
                                m_cfg.covariance_inflation_factor);
 
