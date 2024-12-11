@@ -9,7 +9,7 @@ include( traccc-alpaka-functions )
 include( traccc-compiler-options-cpp )
 
 set(PUBLIC_LIBRARIES traccc::core traccc::device_common vecmem::core covfie::core)
-set(PRIVATE_LIBRARIES alpaka::alpaka traccc::Thrust)
+set(PRIVATE_LIBRARIES alpaka::alpaka)
 
 traccc_enable_language_alpaka()
 
@@ -45,5 +45,12 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/seeding/seeding_algorithm.cpp"
   "src/seeding/track_params_estimation.cpp"
 )
+# Set up Thrust specifically for the traccc::alpaka library.
+if(alpaka_ACC_GPU_CUDA_ENABLE)
+thrust_create_target( traccc::cuda_thrust
+  HOST CPP
+  DEVICE CUDA )
+  list(APPEND PRIVATE_LIBRARIES traccc::cuda_thrust)
+endif()
 
 target_link_libraries(traccc_alpaka PUBLIC ${PUBLIC_LIBRARIES} PRIVATE ${PRIVATE_LIBRARIES})
