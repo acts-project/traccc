@@ -15,8 +15,13 @@ message( STATUS "Building Alpaka as part of the TRACCC project" )
 set( TRACCC_ALPAKA_SOURCE
    "URL;https://github.com/alpaka-group/alpaka/archive/refs/tags/1.2.0.tar.gz;URL_MD5;0e2dcf4ddf7987532835d7b2b3680843"
    CACHE STRING "Source for Alpaka, when built as part of this project" )
-mark_as_advanced( TRACCC_ALPAKA_SOURCE )
-FetchContent_Declare( Alpaka SYSTEM ${TRACCC_ALPAKA_SOURCE} )
+#Patch for alpaka printf macro
+set( TRACCC_ALPAKA_PATCH
+   "PATCH_COMMAND;patch;-p1;<;${CMAKE_CURRENT_SOURCE_DIR}/alpaka-1.2.0.patch"
+   CACHE STRING "Patch for alpaka, when built as part of this project" )
+
+mark_as_advanced( TRACCC_ALPAKA_SOURCE TRACCC_ALPAKA_PATCH )
+FetchContent_Declare( Alpaka SYSTEM ${TRACCC_ALPAKA_SOURCE} ${TRACCC_ALPAKA_PATCH})
 
 # Turn off build testing.
 set( BUILD_TESTING FALSE )

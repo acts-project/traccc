@@ -1,0 +1,48 @@
+Only in alpaka-1.2.0-orig: .clang-format
+Only in alpaka-1.2.0-orig: .dockerignore
+Only in alpaka-1.2.0-orig: .git
+Only in alpaka-1.2.0-orig: .github
+Only in alpaka-1.2.0-orig: .gitignore
+Only in alpaka-1.2.0-orig: .gitlab-ci.yml
+diff -ur alpaka-1.2.0-orig/include/alpaka/core/Sycl.hpp alpaka-1.2.0-fixed/include/alpaka/core/Sycl.hpp
+--- alpaka-1.2.0-orig/include/alpaka/core/Sycl.hpp	2024-12-09 18:48:17.584316863 +0100
++++ alpaka-1.2.0-fixed/include/alpaka/core/Sycl.hpp	2024-12-10 17:18:28.416146705 +0100
+@@ -24,35 +24,6 @@
+ 
+ #    include <sycl/sycl.hpp>
+ 
+-// if SYCL is enabled with the AMD backend the printf will be killed because of missing compiler support
+-#    ifdef __AMDGCN__
+-#        define printf(...)
+-#    else
+-
+-#        ifdef __SYCL_DEVICE_ONLY__
+-using AlpakaFormat = char const* [[clang::opencl_constant]];
+-#        else
+-using AlpakaFormat = char const*;
+-#        endif
+-
+-#        if BOOST_COMP_CLANG
+-#            pragma clang diagnostic push
+-#            pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+-#        endif
+-
+-#        define printf(FORMAT, ...)                                                                                   \
+-            do                                                                                                        \
+-            {                                                                                                         \
+-                static auto const format = AlpakaFormat{FORMAT};                                                      \
+-                sycl::ext::oneapi::experimental::printf(format, ##__VA_ARGS__);                                       \
+-            } while(false)
+-
+-#        if BOOST_COMP_CLANG
+-#            pragma clang diagnostic pop
+-#        endif
+-
+-#    endif
+-
+ // SYCL vector types trait specializations.
+ namespace alpaka
+ {
+Only in alpaka-1.2.0-orig: .pre-commit-config.yaml
+Only in alpaka-1.2.0-orig: .readthedocs.yml
+Only in alpaka-1.2.0-orig: .zenodo.json
