@@ -25,10 +25,10 @@
 
 namespace traccc::device {
 
-template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t,
-          typename detector_t, typename config_t>
+template <typename detector_t, concepts::thread_id1 thread_id_t,
+          concepts::barrier barrier_t>
 TRACCC_DEVICE inline void find_tracks(
-    thread_id_t& thread_id, barrier_t& barrier, const config_t cfg,
+    thread_id_t& thread_id, barrier_t& barrier, const finding_config& cfg,
     const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
 
@@ -53,13 +53,13 @@ TRACCC_DEVICE inline void find_tracks(
         payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
         payload.in_params_view);
-    vecmem::device_vector<const unsigned int> in_params_liveness(
+    vecmem::device_vector<const char> in_params_liveness(
         payload.in_params_liveness_view);
     vecmem::device_vector<const candidate_link> prev_links(
         payload.prev_links_view);
     bound_track_parameters_collection_types::device out_params(
         payload.out_params_view);
-    vecmem::device_vector<unsigned int> out_params_liveness(
+    vecmem::device_vector<char> out_params_liveness(
         payload.out_params_liveness_view);
     vecmem::device_vector<candidate_link> links(payload.links_view);
     vecmem::device_atomic_ref<unsigned int,
@@ -94,7 +94,7 @@ TRACCC_DEVICE inline void find_tracks(
     unsigned int num_meas = 0;
 
     if (in_param_id < payload.n_in_params &&
-        in_params_liveness.at(in_param_id) > 0u) {
+        in_params_liveness.at(in_param_id) != 0) {
         /*
          * Get the barcode of this thread's parameters, then find the first
          * measurement that matches it.
@@ -116,7 +116,10 @@ TRACCC_DEVICE inline void find_tracks(
          * this thread.
          */
         else {
-            const auto bcd_id = std::distance(barcodes.begin(), lo);
+            const vecmem::device_vector<const unsigned int>::size_type bcd_id =
+                static_cast<
+                    vecmem::device_vector<const unsigned int>::size_type>(
+                    std::distance(barcodes.begin(), lo));
 
             init_meas = lo == barcodes.begin() ? 0u : upper_bounds[bcd_id - 1];
             num_meas = upper_bounds[bcd_id] - init_meas;
@@ -185,7 +188,7 @@ TRACCC_DEVICE inline void find_tracks(
             const unsigned int owner_global_thread_id =
                 owner_local_thread_id +
                 thread_id.getBlockDimX() * thread_id.getBlockIdX();
-            assert(in_params_liveness.at(owner_global_thread_id) != 0u);
+            assert(in_params_liveness.at(owner_global_thread_id) != 0);
             const bound_track_parameters& in_par =
                 in_params.at(owner_global_thread_id);
             const unsigned int meas_idx =
@@ -236,7 +239,7 @@ TRACCC_DEVICE inline void find_tracks(
                         .fetch_add(1u);
 
                     out_params.at(l_pos) = trk_state.filtered();
-                    out_params_liveness.at(l_pos) = 1u;
+                    out_params_liveness.at(l_pos) = 1;
                 }
             }
         }
@@ -268,7 +271,7 @@ TRACCC_DEVICE inline void find_tracks(
      * match any measurements.
      */
     if (in_param_id < payload.n_in_params &&
-        in_params_liveness.at(in_param_id) > 0u &&
+        in_params_liveness.at(in_param_id) != 0 &&
         shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] ==
             0u) {
         // Add measurement candidates to link
@@ -292,7 +295,7 @@ TRACCC_DEVICE inline void find_tracks(
             }
 
             out_params.at(l_pos) = in_params.at(in_param_id);
-            out_params_liveness.at(l_pos) = 1u;
+            out_params_liveness.at(l_pos) = 1;
         }
     }
 }

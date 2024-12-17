@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2024 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -30,7 +30,7 @@ struct make_barcode_sequence_payload {
 /// @param[in] globalIndex   The index of the current thread
 /// @param[inout] payload      The function call payload
 TRACCC_DEVICE inline void make_barcode_sequence(
-    std::size_t globalIndex, const make_barcode_sequence_payload& payload);
+    unsigned int globalIndex, const make_barcode_sequence_payload& payload);
 }  // namespace traccc::device
 
 #include "./impl/make_barcode_sequence.ipp"
