@@ -69,9 +69,9 @@ int simulate(const traccc::opts::generation& generation_opts,
     }
 
     // B field value and its type
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
     const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Set material and thickness
     detray::material<scalar> mat;
@@ -84,10 +84,10 @@ int simulate(const traccc::opts::generation& generation_opts,
     const scalar thickness = telescope_opts.thickness;
 
     // Use rectangle surfaces
-    detray::mask<detray::rectangle2D> rectangle{0u, telescope_opts.half_length,
-                                                telescope_opts.half_length};
+    detray::mask<detray::rectangle2D, traccc::default_algebra> rectangle{
+        0u, telescope_opts.half_length, telescope_opts.half_length};
 
-    detray::tel_det_config<> tel_cfg{rectangle};
+    detray::tel_det_config tel_cfg{rectangle};
     tel_cfg.positions(plane_positions);
     tel_cfg.module_material(mat);
     tel_cfg.mat_thickness(thickness);

@@ -18,14 +18,17 @@ namespace traccc::host {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const telescope_detector::host& det,
-    const detray::bfield::const_field_t::view_t& field,
+    const detray::bfield::const_field_t<
+        traccc::telescope_detector::host::scalar_type>::view_t& field,
     const track_candidate_container_types::const_view& track_candidates) const {
+
+    using scalar_type = traccc::telescope_detector::host::scalar_type;
 
     // Create the fitter object.
     kalman_fitter<
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            traccc::telescope_detector::host::algebra_type,
-                           detray::constrained_step<>>,
+                           detray::constrained_step<scalar_type>>,
         detray::navigator<const traccc::telescope_detector::host>>
         fitter{det, field, m_config};
 

@@ -74,11 +74,13 @@ class KalmanFittingToyDetectorTests
     virtual void SetUp() override {
         vecmem::host_memory_resource host_mr;
 
-        detray::toy_det_config toy_cfg{};
+        detray::toy_det_config<scalar> toy_cfg{};
         toy_cfg.n_brl_layers(n_barrels).n_edc_layers(n_endcaps).do_check(false);
 
         // Create the toy geometry
-        auto [det, name_map] = detray::build_toy_detector(host_mr, toy_cfg);
+        auto [det, name_map] =
+            detray::build_toy_detector<traccc::default_algebra>(host_mr,
+                                                                toy_cfg);
 
         // Write detector file
         auto writer_cfg = detray::io::detector_writer_config{}

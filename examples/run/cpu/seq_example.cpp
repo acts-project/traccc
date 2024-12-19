@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// core
+#include "traccc/geometry/detector.hpp"
+
 // io
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -40,7 +43,6 @@
 #include "traccc/options/track_seeding.hpp"
 
 // Detray include(s).
-#include "detray/core/detector.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/navigation/navigator.hpp"
@@ -107,8 +109,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const detray::bfield::const_field_t field =
-        detray::bfield::create_const_field(field_vec);
+    const detray::bfield::const_field_t<traccc::scalar> field =
+        detray::bfield::create_const_field<traccc::scalar>(field_vec);
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);

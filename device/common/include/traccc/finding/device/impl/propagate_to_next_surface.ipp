@@ -9,7 +9,6 @@
 
 // Project include(s).
 #include "detray/core/detail/tuple_container.hpp"
-#include "detray/propagator/constrained_step.hpp"
 #include "detray/utils/tuple.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"

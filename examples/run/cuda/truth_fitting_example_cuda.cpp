@@ -31,8 +31,6 @@
 #include "traccc/utils/seed_generator.hpp"
 
 // detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/navigation/navigator.hpp"
@@ -75,10 +73,11 @@ int main(int argc, char* argv[]) {
     using host_detector_type = traccc::default_detector::host;
     using device_detector_type = traccc::default_detector::device;
 
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using scalar_type = device_detector_type::scalar_type;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
-                           detray::constrained_step<>>;
+                           detray::constrained_step<scalar_type>>;
     using device_navigator_type = detray::navigator<const device_detector_type>;
     using device_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
@@ -105,7 +104,7 @@ int main(int argc, char* argv[]) {
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

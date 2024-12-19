@@ -17,7 +17,7 @@ namespace traccc::io::obj {
 void write_track_candidates(
     std::string_view filename,
     track_candidate_container_types::const_view tracks_view,
-    const detray::detector<>& detector) {
+    const traccc::default_detector::host& detector) {
 
     // Open the output file.
     std::ofstream file{filename.data()};

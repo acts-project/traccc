@@ -20,15 +20,18 @@ namespace traccc::host {
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
     const default_detector::host& det,
-    const detray::bfield::const_field_t::view_t& field,
+    const detray::bfield::const_field_t<
+        default_detector::host::scalar_type>::view_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
+    using scalar_type = default_detector::host::scalar_type;
+
     // Perform the track finding using the templated implementation.
     return details::find_tracks<
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            default_detector::host::algebra_type,
-                           detray::constrained_step<>>,
+                           detray::constrained_step<scalar_type>>,
         detray::navigator<const default_detector::host>>(
         det, field, measurements, seeds, m_config);
 }

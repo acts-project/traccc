@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Project include(s)
+#include "traccc/geometry/detector.hpp"
+
 // Command line option include(s).
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"

@@ -20,6 +20,7 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -41,7 +42,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Detray include(s).
-#include "detray/core/detector.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/navigation/navigator.hpp"
@@ -123,15 +123,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
     uint64_t n_fitted_tracks_cuda = 0;
 
     // Type definitions
+    using scalar_type = traccc::default_detector::host::scalar_type;
     using host_spacepoint_formation_algorithm =
         traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     using device_spacepoint_formation_algorithm =
         traccc::cuda::spacepoint_formation_algorithm<
             traccc::default_detector::device>;
     using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            traccc::default_detector::host::algebra_type,
-                           detray::constrained_step<>>;
+                           detray::constrained_step<scalar_type>>;
     using device_navigator_type =
         detray::navigator<const traccc::default_detector::device>;
 
@@ -156,8 +157,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const detray::bfield::const_field_t field =
-        detray::bfield::create_const_field(field_vec);
+    const detray::bfield::const_field_t<traccc::scalar> field =
+        detray::bfield::create_const_field<traccc::scalar>(field_vec);
 
     traccc::host::clusterization_algorithm ca(host_mr);
     host_spacepoint_formation_algorithm sf(host_mr);
