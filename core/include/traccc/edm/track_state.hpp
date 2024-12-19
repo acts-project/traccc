@@ -37,6 +37,14 @@ struct fitting_result {
     // The number of holes (The number of sensitive surfaces which do not have a
     // measurement for the track pattern)
     unsigned int n_holes{0u};
+
+    /// Reset the statistics
+    TRACCC_HOST_DEVICE
+    void reset_statistics() {
+        ndf = 0.f;
+        chi2 = 0.f;
+        n_holes = 0u;
+    }
 };
 
 /// Fitting result per measurement
@@ -160,6 +168,14 @@ struct track_state {
     TRACCC_HOST_DEVICE
     inline const scalar_type& filtered_chi2() const { return m_filtered_chi2; }
 
+    /// @return the non-const chi square of backward filter
+    TRACCC_HOST_DEVICE
+    inline scalar_type& backward_chi2() { return m_backward_chi2; }
+
+    /// @return the const chi square of backward filter
+    TRACCC_HOST_DEVICE
+    inline scalar_type backward_chi2() const { return m_backward_chi2; }
+
     /// @return the non-const filtered parameter
     TRACCC_HOST_DEVICE
     inline bound_track_parameters_type& filtered() { return m_filtered; }
@@ -200,6 +216,7 @@ struct track_state {
     bound_track_parameters_type m_filtered;
     scalar_type m_smoothed_chi2 = 0.f;
     bound_track_parameters_type m_smoothed;
+    scalar_type m_backward_chi2 = 0.f;
 };
 
 /// Declare all track_state collection types
