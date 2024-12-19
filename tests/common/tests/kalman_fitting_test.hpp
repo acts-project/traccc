@@ -64,6 +64,12 @@ class KalmanFittingTests : public testing::Test {
     void pull_value_tests(std::string_view file_name,
                           const std::vector<std::string>& hist_names) const;
 
+    /// Verify that P value distribtions follow the uniform
+    ///
+    /// @param file_name The name of the file holding the distributions
+    ///
+    void p_value_tests(std::string_view file_name) const;
+
     /// Validadte the NDF
     ///
     /// @param host_det Detector object

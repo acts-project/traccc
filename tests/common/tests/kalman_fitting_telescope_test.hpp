@@ -63,11 +63,11 @@ class KalmanFittingTelescopeTests
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.03f * detray::unit<scalar>::mm,
-        0.03f * detray::unit<scalar>::mm,
+        0.1f * detray::unit<scalar>::mm,
+        0.1f * detray::unit<scalar>::mm,
         0.017f,
         0.017f,
-        0.001f / detray::unit<scalar>::GeV,
+        0.05f / detray::unit<scalar>::GeV,
         1.f * detray::unit<scalar>::ns};
 
     void consistency_tests(const track_state_collection_types::host&

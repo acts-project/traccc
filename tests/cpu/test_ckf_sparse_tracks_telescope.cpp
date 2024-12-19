@@ -111,6 +111,9 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         -100.f * unit<float>::um;
     sim.get_config().propagation.navigation.max_mask_tolerance =
         1.f * unit<float>::mm;
+    sim.get_config().propagation.stepping.rk_error_tol =
+        1e-8f * unit<float>::mm;
+
     sim.run();
 
     /*****************************
@@ -123,9 +126,10 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     // Finding algorithm configuration
     typename traccc::finding_config cfg;
     cfg.ptc_hypothesis = ptc;
-    cfg.chi2_max = 30.f;
+    cfg.chi2_max = 200.f;
     cfg.propagation.navigation.overstep_tolerance = -100.f * unit<float>::um;
     cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
+    cfg.propagation.stepping.rk_error_tol = 1e-8f * unit<float>::mm;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
@@ -136,6 +140,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     fit_cfg.propagation.navigation.overstep_tolerance =
         -100.f * unit<float>::um;
     fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
+    fit_cfg.propagation.stepping.rk_error_tol = 1e-8f * unit<float>::mm;
+    fit_cfg.use_backward_filter = true;
     traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
 
     // Iterate over events
@@ -198,6 +204,12 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     pull_value_tests(fit_writer_cfg.file_path, pull_names);
 
     /********************
+     * P-value test
+     ********************/
+
+    p_value_tests(fit_writer_cfg.file_path);
+
+    /********************
      * Success rate test
      ********************/
 
@@ -211,44 +223,44 @@ INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation0, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 1, 5000,
-        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation1, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 2500,
-        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation2, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 4, 1250,
-        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation3, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500,
-        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     CkfSparseTrackTelescopeValidation4, CkfSparseTrackTelescopeTests,
     ::testing::Values(std::make_tuple(
         "telescope_decade_tracks_random_charge",
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 200.f, 200.f},
+        std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500, true,
-        20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));

@@ -108,6 +108,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
         -100.f * unit<float>::um;
     sim.get_config().propagation.navigation.max_mask_tolerance =
         1.f * unit<float>::mm;
+    sim.get_config().propagation.stepping.rk_error_tol =
+        1e-8f * unit<float>::mm;
     sim.run();
 
     /***************
@@ -123,6 +125,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     fit_cfg.propagation.navigation.overstep_tolerance =
         -100.f * unit<float>::um;
     fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
+    fit_cfg.propagation.stepping.rk_error_tol = 1e-8f * unit<float>::mm;
+    fit_cfg.use_backward_filter = true;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
     // Iterate over events
@@ -174,6 +178,12 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     pull_value_tests(fit_writer_cfg.file_path, pull_names);
 
     /********************
+     * P-value test
+     ********************/
+
+    p_value_tests(fit_writer_cfg.file_path);
+
+    /********************
      * Success rate test
      ********************/
 
@@ -189,8 +199,8 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::muon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
-        vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        detray::muon<scalar>(), 100, 100, false, 20.f, 20u, 20.f,
+        vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
@@ -199,7 +209,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
@@ -208,7 +218,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false, 20.f, 9u, 20.f, vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation3, KalmanFittingTelescopeTests,
@@ -218,7 +228,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
         detray::antimuon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
-        vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        vector3{0, 0, 2 * detray::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation4, KalmanFittingTelescopeTests,
@@ -228,14 +238,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
         detray::antimuon<scalar>(), 100, 100, true, 20.f, 9u, 20.f,
-        vector3{2 * detray::unit<scalar>::T, 0, 0})));
-
-INSTANTIATE_TEST_SUITE_P(
-    KalmanFitTelescopeValidation5, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple(
-        "telescope_1_GeV_0_phi_muon_z_Bfield",
-        std::array<scalar, 3u>{0.f, 0.f, 0.f},
-        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
-        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::muon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
         vector3{0, 0, 2 * detray::unit<scalar>::T})));
