@@ -23,6 +23,8 @@
 #include <map>
 #include <tuple>
 
+#define ALGEBRA_PLUGIN detray::smatrix
+
 namespace traccc {
 
 using scalar = TRACCC_CUSTOM_SCALARTYPE;

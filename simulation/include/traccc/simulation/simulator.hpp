@@ -52,9 +52,9 @@ struct simulator {
                             detray::parameter_resetter<algebra_type>, writer_t>;
 
     using navigator_type = detray::navigator<detector_t>;
-    using stepper_type =
-        detray::rk_stepper<typename bfield_type::view_t, algebra_type,
-                           detray::constrained_step<>>;
+    using stepper_type = detray::rk_stepper<
+        typename bfield_type::view_t, algebra_type,
+        detray::constrained_step<detray::dscalar<algebra_type>>>;
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 

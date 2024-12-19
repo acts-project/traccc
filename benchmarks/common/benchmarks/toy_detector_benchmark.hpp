@@ -9,6 +9,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/fitting_config.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -17,11 +18,8 @@
 #include "traccc/simulation/smearing_writer.hpp"
 
 // Detray include(s).
-#include "detray/core/detector.hpp"
 #include "detray/definitions/units.hpp"
 #include "detray/detectors/bfield.hpp"
-#include "detray/geometry/mask.hpp"
-#include "detray/geometry/shapes/rectangle2D.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/io/frontend/detector_writer.hpp"
 #include "detray/navigation/detail/ray.hpp"
@@ -68,11 +66,12 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     static inline const std::string sim_dir = "toy_detector_benchmark/";
 
     // Detector type
-    using detector_type = detray::detector<detray::toy_metadata>;
+    using detector_type = traccc::toy_detector::host;
+    using scalar_type = detector_type::scalar_type;
 
     // B field value and its type
     // @TODO: Set B field as argument
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
 
     static constexpr traccc::vector3 B{0, 0,
                                        2 * detray::unit<traccc::scalar>::T};
@@ -89,10 +88,11 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         // Build the detector
         auto [det, name_map] =
-            detray::build_toy_detector(host_mr, get_toy_config());
+            detray::build_toy_detector<traccc::default_algebra>(
+                host_mr, get_toy_config());
 
         // B field
-        auto field = detray::bfield::create_const_field(B);
+        auto field = detray::bfield::create_const_field<scalar_type>(B);
 
         // Origin of particles
         using generator_type =
@@ -143,10 +143,10 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         detray::io::write_detector(det, name_map, writer_cfg);
     }
 
-    detray::toy_det_config get_toy_config() const {
+    detray::toy_det_config<traccc::scalar> get_toy_config() const {
 
         // Create the toy geometry
-        detray::toy_det_config toy_cfg{};
+        detray::toy_det_config<traccc::scalar> toy_cfg{};
         toy_cfg.n_brl_layers(4u).n_edc_layers(7u).do_check(false);
 
         // @TODO: Increase the material budget again

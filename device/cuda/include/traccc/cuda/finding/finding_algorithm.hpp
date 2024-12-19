@@ -60,11 +60,10 @@ class finding_algorithm
     using interactor = detray::pointwise_material_interactor<algebra_type>;
 
     /// Actor chain for propagate to the next surface and its propagator type
-    using actor_type =
-        detray::actor_chain<detray::dtuple, detray::pathlimit_aborter,
-                            detray::parameter_transporter<algebra_type>,
-                            interaction_register<interactor>, interactor,
-                            ckf_aborter>;
+    using actor_type = detray::actor_chain<
+        detray::dtuple, detray::pathlimit_aborter<scalar_type>,
+        detray::parameter_transporter<algebra_type>,
+        interaction_register<interactor>, interactor, ckf_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;

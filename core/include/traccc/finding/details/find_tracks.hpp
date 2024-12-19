@@ -65,12 +65,13 @@ track_candidate_container_types::host find_tracks(
      *****************************************************************/
 
     using algebra_type = typename navigator_t::detector_type::algebra_type;
+    using scalar_type = detray::dscalar<algebra_type>;
 
     using transporter_type = detray::parameter_transporter<algebra_type>;
     using interactor_type = detray::pointwise_material_interactor<algebra_type>;
 
     using actor_type = detray::actor_chain<
-        detray::tuple, detray::pathlimit_aborter, transporter_type,
+        detray::tuple, detray::pathlimit_aborter<scalar_type>, transporter_type,
         interaction_register<interactor_type>, interactor_type, ckf_aborter>;
 
     using propagator_type =
@@ -304,7 +305,7 @@ track_candidate_container_types::host find_tracks(
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     config.propagation.stepping.step_constraint);
 
-            detray::pathlimit_aborter::state s0;
+            typename detray::pathlimit_aborter<scalar_type>::state s0;
             typename detray::parameter_transporter<algebra_type>::state s1;
             typename interactor_type::state s3;
             typename interaction_register<interactor_type>::state s2{s3};

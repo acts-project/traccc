@@ -11,6 +11,7 @@
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -26,7 +27,6 @@
 
 // Detray include(s).
 #include "detray/core/detector.hpp"
-#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/navigation/navigator.hpp"
@@ -67,7 +67,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
