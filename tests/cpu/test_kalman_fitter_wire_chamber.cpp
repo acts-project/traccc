@@ -124,6 +124,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
     fit_cfg.ptc_hypothesis = ptc;
+    fit_cfg.covariance_inflation_factor = 1.f;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
     // Iterate over events

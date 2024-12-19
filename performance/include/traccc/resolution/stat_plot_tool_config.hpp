@@ -24,7 +24,7 @@ struct stat_plot_tool_config {
         {"ndf", plot_helpers::binning("ndf", 35, -5.f, 30.f)},
         {"chi2", plot_helpers::binning("chi2", 100, 0.f, 50.f)},
         {"reduced_chi2", plot_helpers::binning("chi2/ndf", 100, 0.f, 10.f)},
-        {"pval", plot_helpers::binning("pval", 100, 0.f, 1.f)},
+        {"pval", plot_helpers::binning("pval", 50, 0.f, 1.f)},
         {"chi2_local", plot_helpers::binning("chi2", 100, 0.f, 10.f)}};
 };
 

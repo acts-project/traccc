@@ -30,7 +30,8 @@ struct statistics_updater {
     TRACCC_HOST_DEVICE inline void operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         fitting_result<algebra_t>& fit_res,
-        const track_state<algebra_t>& trk_state) {
+        const track_state<algebra_t>& trk_state,
+        const bool use_backward_filter) {
 
         if (!trk_state.is_hole) {
 
@@ -41,7 +42,11 @@ struct statistics_updater {
             fit_res.ndf += static_cast<scalar_type>(D);
 
             // total_chi2 = total_chi2 + chi2
-            fit_res.chi2 += trk_state.smoothed_chi2();
+            if (use_backward_filter) {
+                fit_res.chi2 += trk_state.backward_chi2();
+            } else {
+                fit_res.chi2 += trk_state.filtered_chi2();
+            }
         }
     }
 };
