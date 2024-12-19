@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/generation.hpp"
 #include "traccc/options/output_data.hpp"
@@ -48,21 +49,22 @@ int simulate(const traccc::opts::generation& generation_opts,
      *****************************/
 
     // Detector type
-    using detector_type = detray::detector<>;
+    using detector_type = traccc::default_detector::host;
 
     // B field value and its type
     // @TODO: Set B field as argument
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
     const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Set Configuration
-    detray::wire_chamber_config wire_chamber_cfg{};
+    detray::wire_chamber_config<scalar> wire_chamber_cfg{};
     wire_chamber_cfg.n_layers(20u);
 
     // Create the toy geometry
     const auto [det, name_map] =
-        detray::build_wire_chamber(host_mr, wire_chamber_cfg);
+        detray::build_wire_chamber<detector_type::algebra_type>(
+            host_mr, wire_chamber_cfg);
 
     /***************************
      * Generate simulation data

@@ -18,6 +18,9 @@
 #include <map>
 #include <tuple>
 
+// vecmem plugin does not exist in detray yet
+#define ALGEBRA_PLUGIN detray::array
+
 namespace traccc {
 
 using scalar = TRACCC_CUSTOM_SCALARTYPE;

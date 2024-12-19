@@ -33,11 +33,13 @@ namespace traccc::sycl {
 class kalman_fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
           const default_detector::view&,
-          const detray::bfield::const_field_t::view_t&,
+          const detray::bfield::const_field_t<
+              default_detector::device::scalar_type>::view_t&,
           const track_candidate_container_types::const_view&)>,
       public algorithm<track_state_container_types::buffer(
           const telescope_detector::view&,
-          const detray::bfield::const_field_t::view_t&,
+          const detray::bfield::const_field_t<
+              telescope_detector::device::scalar_type>::view_t&,
           const track_candidate_container_types::const_view&)> {
 
     public:
@@ -62,10 +64,12 @@ class kalman_fitting_algorithm
     ///
     /// @return A container of the fitted track states
     ///
-    output_type operator()(const default_detector::view& det,
-                           const detray::bfield::const_field_t::view_t& field,
-                           const track_candidate_container_types::const_view&
-                               track_candidates) const override;
+    output_type operator()(
+        const default_detector::view& det,
+        const detray::bfield::const_field_t<
+            default_detector::device::scalar_type>::view_t& field,
+        const track_candidate_container_types::const_view& track_candidates)
+        const override;
 
     /// Execute the algorithm
     ///
@@ -75,10 +79,12 @@ class kalman_fitting_algorithm
     ///
     /// @return A container of the fitted track states
     ///
-    output_type operator()(const telescope_detector::view& det,
-                           const detray::bfield::const_field_t::view_t& field,
-                           const track_candidate_container_types::const_view&
-                               track_candidates) const override;
+    output_type operator()(
+        const telescope_detector::view& det,
+        const detray::bfield::const_field_t<
+            telescope_detector::device::scalar_type>::view_t& field,
+        const track_candidate_container_types::const_view& track_candidates)
+        const override;
 
     private:
     /// Algorithm configuration

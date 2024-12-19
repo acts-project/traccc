@@ -8,11 +8,11 @@
 // Local include(s).
 #include "traccc/io/read_geometry.hpp"
 
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/utils.hpp"
 
 // Detray include(s).
-#include <detray/core/detector.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 
 // VecMem include(s).
@@ -41,7 +41,8 @@ read_json_geometry(std::string_view filename) {
         detray::io::detector_reader_config reader_cfg{};
         reader_cfg.add_file(std::string{filename});
         auto [detector, _] =
-            detray::io::read_detector<detray::detector<>>(host_mr, reader_cfg);
+            detray::io::read_detector<traccc::default_detector::host>(
+                host_mr, reader_cfg);
 
         // Construct an "old style geometry" from the detector object.
         surface_transforms = traccc::io::alt_read_geometry(detector);

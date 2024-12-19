@@ -7,8 +7,12 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+
 // Detray include(s).
 #include <detray/core/detector.hpp>
+#include <detray/detectors/default_metadata.hpp>
 #include <detray/detectors/telescope_metadata.hpp>
 #include <detray/detectors/toy_metadata.hpp>
 
@@ -38,12 +42,14 @@ struct detector {
 };  // struct default_detector
 
 /// Default detector (also used for ODD)
-using default_detector = detector<detray::default_metadata>;
+using default_detector =
+    detector<detray::default_metadata<traccc::default_algebra>>;
 
 /// Telescope detector
-using telescope_detector = detector<detray::telescope_metadata<> >;
+using telescope_detector = detector<
+    detray::telescope_metadata<traccc::default_algebra, detray::rectangle2D>>;
 
 /// Toy detector
-using toy_detector = detector<detray::toy_metadata>;
+using toy_detector = detector<detray::toy_metadata<traccc::default_algebra>>;
 
 }  // namespace traccc

@@ -60,11 +60,13 @@ class full_chain_algorithm
     /// (Device) Detector type used during track finding and fitting
     using device_detector_type = traccc::default_detector::device;
 
+    using scalar_type = device_detector_type::scalar_type;
+
     /// Stepper type used by the track finding and fitting algorithms
     using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            device_detector_type::algebra_type,
-                           detray::constrained_step<>>;
+                           detray::constrained_step<scalar_type>>;
     /// Navigator type used by the track finding and fitting algorithms
     using navigator_type = detray::navigator<const device_detector_type>;
     /// Spacepoint formation algorithm type
@@ -133,7 +135,7 @@ class full_chain_algorithm
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
-    detray::bfield::const_field_t m_field;
+    detray::bfield::const_field_t<traccc::scalar> m_field;
 
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>

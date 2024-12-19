@@ -37,10 +37,10 @@ constexpr scalar tol{1e-7f};
 
 TEST(traccc_simulation, simulation) {
 
-    const detray::mask<detray::line<false>> ln{
+    const detray::mask<detray::line<false>, traccc::default_algebra> ln{
         0u, 10.f * detray::unit<scalar>::mm, 50.f * detray::unit<scalar>::mm};
 
-    const detray::mask<detray::rectangle2D> re{
+    const detray::mask<detray::rectangle2D, traccc::default_algebra> re{
         0u, 10.f * detray::unit<scalar>::mm, 10.f * detray::unit<scalar>::mm};
 
     detray::bound_track_parameters<traccc::default_algebra> bound_params{};
@@ -70,13 +70,14 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
     vecmem::host_memory_resource host_mr;
 
     // Create B field
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
     const vector3 B{0.f, 0.f, 2.f * detray::unit<scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Create geometry
-    detray::toy_det_config toy_cfg{};
-    const auto [detector, names] = detray::build_toy_detector(host_mr, toy_cfg);
+    detray::toy_det_config<scalar> toy_cfg{};
+    const auto [detector, names] =
+        detray::build_toy_detector<traccc::default_algebra>(host_mr, toy_cfg);
 
     using geo_cxt_t = typename decltype(detector)::geometry_context;
     const geo_cxt_t ctx{};
@@ -210,8 +211,9 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     // energy (or non-relativistic) particle due to the large scattering
     const scalar thickness = 0.005f * detray::unit<scalar>::cm;
 
-    detray::tel_det_config<detray::rectangle2D> tel_cfg{
-        1000.f * detray::unit<scalar>::mm, 1000.f * detray::unit<scalar>::mm};
+    detray::tel_det_config<traccc::default_algebra, detray::rectangle2D>
+        tel_cfg{1000.f * detray::unit<scalar>::mm,
+                1000.f * detray::unit<scalar>::mm};
     tel_cfg.positions(positions).mat_thickness(thickness);
 
     const auto [detector, names] =
@@ -222,9 +224,9 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     std::filesystem::create_directory(directory);
 
     // Field
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
     const vector3 B{0.f, 0.f, 2.f * detray::unit<scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Momentum
     const scalar mom = std::get<1>(GetParam());

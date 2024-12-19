@@ -9,9 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/track_candidate.hpp"
-
-// Detray include(s).
-#include "detray/core/detector.hpp"
+#include "traccc/geometry/detector.hpp"
 
 // System include(s).
 #include <string_view>
@@ -26,6 +24,6 @@ namespace traccc::io::obj {
 ///
 void write_track_candidates(std::string_view filename,
                             track_candidate_container_types::const_view tracks,
-                            const detray::detector<>& detector);
+                            const traccc::default_detector::host& detector);
 
 }  // namespace traccc::io::obj

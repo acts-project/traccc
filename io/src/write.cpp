@@ -116,7 +116,7 @@ void write(std::size_t event, std::string_view directory,
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            track_candidate_container_types::const_view tracks,
-           const detray::detector<>& detector) {
+           const traccc::default_detector::host& detector) {
 
     switch (format) {
         case data_format::obj:

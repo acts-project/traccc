@@ -21,7 +21,6 @@
 #include "traccc/utils/algorithm.hpp"
 
 // Detray include(s).
-#include "detray/core/detector.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -60,10 +59,11 @@ class full_chain_algorithm
     using device_detector_type = traccc::default_detector::device;
 
     /// Stepper type used by the track finding and fitting algorithms
+    using scalar_type = device_detector_type::scalar_type;
     using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            device_detector_type::algebra_type,
-                           detray::constrained_step<>>;
+                           detray::constrained_step<scalar_type>>;
     /// Navigator type used by the track finding and fitting algorithms
     using navigator_type = detray::navigator<const device_detector_type>;
     /// Spacepoint formation algorithm type

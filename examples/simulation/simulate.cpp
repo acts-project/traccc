@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/generation.hpp"
@@ -19,8 +20,6 @@
 #include "traccc/simulation/smearing_writer.hpp"
 
 // Detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/navigation/navigator.hpp"
@@ -52,7 +51,7 @@ int main(int argc, char* argv[]) {
         argv};
 
     /// Type declarations
-    using host_detector_type = detray::detector<>;
+    using host_detector_type = traccc::default_detector::host;
     using uniform_gen_t =
         detray::detail::random_numbers<scalar,
                                        std::uniform_real_distribution<scalar>>;
@@ -62,9 +61,10 @@ int main(int argc, char* argv[]) {
 
     // B field value and its type
     // @TODO: Set B field as argument
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using b_field_t =
+        covfie::field<detray::bfield::const_bknd_t<traccc::scalar>>;
     const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/generation.hpp"
 #include "traccc/options/output_data.hpp"
@@ -48,20 +49,21 @@ int simulate(const traccc::opts::generation& generation_opts,
      *****************************/
 
     // Detector type
-    using detector_type = detray::detector<detray::toy_metadata>;
+    using detector_type = traccc::toy_detector::host;
 
     // B field value and its type
     // @TODO: Set B field as argument
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t>;
+    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
     const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
-    auto field = detray::bfield::create_const_field(B);
+    auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Create the toy geometry
-    detray::toy_det_config toy_cfg{};
+    detray::toy_det_config<scalar> toy_cfg{};
     toy_cfg.n_brl_layers(4u).n_edc_layers(7u);
     // @TODO: Increase the material budget again
     toy_cfg.module_mat_thickness(0.11f * detray::unit<scalar>::mm);
-    const auto [det, name_map] = detray::build_toy_detector(host_mr, toy_cfg);
+    const auto [det, name_map] =
+        detray::build_toy_detector<traccc::default_algebra>(host_mr, toy_cfg);
 
     /***************************
      * Generate simulation data

@@ -20,6 +20,7 @@
 
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"

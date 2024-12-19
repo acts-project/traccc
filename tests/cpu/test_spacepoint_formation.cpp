@@ -29,7 +29,7 @@ TEST(spacepoint_formation, cpu) {
     vecmem::host_memory_resource host_mr;
 
     // Use rectangle surfaces
-    detray::mask<detray::rectangle2D> rectangle{
+    detray::mask<detray::rectangle2D, traccc::default_algebra> rectangle{
         0u, 10000.f * detray::unit<scalar>::mm,
         10000.f * detray::unit<scalar>::mm};
 
@@ -40,7 +40,7 @@ TEST(spacepoint_formation, cpu) {
     std::vector<scalar> plane_positions = {20.f,  40.f,  60.f,  80.f, 100.f,
                                            120.f, 140.f, 160.f, 180.f};
 
-    detray::tel_det_config<> tel_cfg{rectangle};
+    detray::tel_det_config tel_cfg{rectangle};
     tel_cfg.positions(plane_positions);
     tel_cfg.pilot_track(traj);
 

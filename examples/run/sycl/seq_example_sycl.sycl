@@ -8,6 +8,9 @@
 // SYCL include(s)
 #include <sycl/sycl.hpp>
 
+// core
+#include "traccc/geometry/detector.hpp"
+
 // io
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -44,9 +47,6 @@
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
-
-// Detray include(s).
-#include "detray/core/detector_metadata.hpp"
 
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>

@@ -13,9 +13,9 @@
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/geometry/detector.hpp"
 
 // detray include(s).
-#include "detray/core/detector_metadata.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/propagator/rk_stepper.hpp"
 
@@ -126,11 +126,12 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 }
 
 // Explicit template instantiation
-using default_detector_type =
-    detray::detector<detray::default_metadata, detray::device_container_types>;
-using default_stepper_type =
-    detray::rk_stepper<covfie::field<detray::bfield::const_bknd_t>::view_t,
-                       default_algebra, detray::constrained_step<>>;
+using default_detector_type = traccc::default_detector::device;
+using default_stepper_type = detray::rk_stepper<
+    covfie::field<detray::bfield::const_bknd_t<
+        default_detector_type::scalar_type>>::view_t,
+    default_detector_type::algebra_type,
+    detray::constrained_step<default_detector_type::scalar_type>>;
 using default_navigator_type = detray::navigator<const default_detector_type>;
 using default_fitter_type =
     kalman_fitter<default_stepper_type, default_navigator_type>;
