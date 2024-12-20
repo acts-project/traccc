@@ -43,7 +43,7 @@ struct find_tracks_payload {
      * @brief View object to the vector of boolean-like integers describing the
      * liveness of each parameter
      */
-    vecmem::data::vector_view<const unsigned int> in_params_liveness_view;
+    vecmem::data::vector_view<const char> in_params_liveness_view;
 
     /**
      * @brief The total number of input parameters
@@ -84,7 +84,7 @@ struct find_tracks_payload {
     /**
      * @brief View object to the output track parameter liveness vector
      */
-    vecmem::data::vector_view<unsigned int> out_params_liveness_view;
+    vecmem::data::vector_view<char> out_params_liveness_view;
 
     /**
      * @brief View object to the output candidate links
@@ -129,10 +129,10 @@ struct find_tracks_shared_payload {
 /// @param[in] cfg                Track finding config object
 /// @param[inout] payload         The global memory payload
 /// @param[inout] shared_payload  The shared memory payload
-template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t,
-          typename detector_t, typename config_t>
+template <typename detector_t, concepts::thread_id1 thread_id_t,
+          concepts::barrier barrier_t>
 TRACCC_DEVICE inline void find_tracks(
-    thread_id_t& thread_id, barrier_t& barrier, const config_t cfg,
+    thread_id_t& thread_id, barrier_t& barrier, const finding_config& cfg,
     const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload);
 }  // namespace traccc::device
