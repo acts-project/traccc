@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,27 +8,18 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/concepts/barrier.hpp"
-#include "traccc/device/concepts/thread_id.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_parameters.hpp"
-#include "traccc/edm/track_state.hpp"
-#include "traccc/finding/candidate_link.hpp"
-#include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 
-// Thrust include(s)
+// Thrust include(s).
 #include <thrust/binary_search.h>
 #include <thrust/execution_policy.h>
 
 namespace traccc::device {
 
-template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t,
-          typename detector_t, typename config_t>
+template <typename detector_t, concepts::thread_id1 thread_id_t,
+          concepts::barrier barrier_t>
 TRACCC_DEVICE inline void find_tracks(
-    thread_id_t& thread_id, barrier_t& barrier, const config_t cfg,
+    thread_id_t& thread_id, barrier_t& barrier, const finding_config& cfg,
     const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
 
