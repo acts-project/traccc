@@ -58,6 +58,11 @@ TEST_P(CkfToyDetectorTests, Run) {
     // SYCL queue.
     sycl::test_queue queue;
 
+    // Only run this test on NVIDIA and AMD backends.
+    if (!(queue.is_cuda() || queue.is_hip())) {
+        GTEST_SKIP();
+    }
+
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     vecmem::sycl::device_memory_resource device_mr{queue.queue().queue()};

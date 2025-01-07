@@ -28,6 +28,15 @@ class test_queue {
     /// Get the SYCL queue
     queue_wrapper queue();
 
+    /// Check if it's an OpenCL queue
+    bool is_opencl() const;
+    /// Check if it's a Level-0 queue
+    bool is_level0() const;
+    /// Check if it's a CUDA queue
+    bool is_cuda() const;
+    /// Check if it's a HIP queue
+    bool is_hip() const;
+
     private:
     /// Internal data type
     struct impl;

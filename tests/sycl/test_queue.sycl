@@ -36,4 +36,41 @@ queue_wrapper test_queue::queue() {
     return {&(m_impl->m_queue)};
 }
 
+bool test_queue::is_opencl() const {
+
+#if SYCL_BACKEND_OPENCL
+    return (m_impl->m_queue.get_backend() == ::sycl::backend::opencl);
+#else
+    return false;
+#endif
+}
+
+bool test_queue::is_level0() const {
+
+#if SYCL_EXT_ONEAPI_BACKEND_LEVEL_ZERO
+    return (m_impl->m_queue.get_backend() ==
+            ::sycl::backend::ext_oneapi_level_zero);
+#else
+    return false;
+#endif
+}
+
+bool test_queue::is_cuda() const {
+
+#if SYCL_EXT_ONEAPI_BACKEND_CUDA
+    return (m_impl->m_queue.get_backend() == ::sycl::backend::ext_oneapi_cuda);
+#else
+    return false;
+#endif
+}
+
+bool test_queue::is_hip() const {
+
+#if SYCL_EXT_ONEAPI_BACKEND_HIP
+    return (m_impl->m_queue.get_backend() == ::sycl::backend::ext_oneapi_hip);
+#else
+    return false;
+#endif
+}
+
 }  // namespace traccc::sycl
