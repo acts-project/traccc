@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,8 +29,7 @@ __global__ void find_tracks(const finding_config cfg,
     cuda::barrier barrier;
     cuda::thread_id1 thread_id;
 
-    device::find_tracks<cuda::thread_id1, cuda::barrier, detector_t,
-                        finding_config>(
+    device::find_tracks<detector_t>(
         thread_id, barrier, cfg, payload,
         {shared_num_candidates, shared_candidates, shared_candidates_size});
 }

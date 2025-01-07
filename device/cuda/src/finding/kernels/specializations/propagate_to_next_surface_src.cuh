@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,10 +18,8 @@ __global__ void propagate_to_next_surface(
     const finding_config cfg,
     device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
-
-    device::propagate_to_next_surface<propagator_t, bfield_t, finding_config>(
-        gid, cfg, payload);
+    device::propagate_to_next_surface<propagator_t, bfield_t>(
+        threadIdx.x + blockIdx.x * blockDim.x, cfg, payload);
 }
 
 }  // namespace traccc::cuda::kernels
