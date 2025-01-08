@@ -10,7 +10,7 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
-    const globalIndex_t globalIndex, const fill_sort_keys_payload& payload) {
+    const global_index_t globalIndex, const fill_sort_keys_payload& payload) {
 
     const bound_track_parameters_collection_types::const_device params(
         payload.params_view);

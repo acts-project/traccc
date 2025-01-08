@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/globalIndex.hpp"
+#include "traccc/device/global_index.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
@@ -44,7 +44,7 @@ struct fill_sort_keys_payload {
 /// @param[inout] payload      The function call payload
 ///
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
-    globalIndex_t globalIndex, const fill_sort_keys_payload& payload);
+    global_index_t globalIndex, const fill_sort_keys_payload& payload);
 
 }  // namespace traccc::device
 

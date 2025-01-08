@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/globalIndex.hpp"
+#include "traccc/device/global_index.hpp"
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
@@ -42,7 +42,7 @@ struct make_barcode_sequence_payload {
 /// @param[inout] payload      The function call payload
 ///
 TRACCC_DEVICE inline void make_barcode_sequence(
-    globalIndex_t globalIndex, const make_barcode_sequence_payload& payload);
+    global_index_t globalIndex, const make_barcode_sequence_payload& payload);
 
 }  // namespace traccc::device
 

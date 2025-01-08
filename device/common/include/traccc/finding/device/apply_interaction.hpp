@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/globalIndex.hpp"
+#include "traccc/device/global_index.hpp"
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
@@ -54,7 +54,7 @@ struct apply_interaction_payload {
 ///
 template <typename detector_t>
 TRACCC_DEVICE inline void apply_interaction(
-    globalIndex_t globalIndex, const finding_config& cfg,
+    global_index_t globalIndex, const finding_config& cfg,
     const apply_interaction_payload<detector_t>& payload);
 
 }  // namespace traccc::device

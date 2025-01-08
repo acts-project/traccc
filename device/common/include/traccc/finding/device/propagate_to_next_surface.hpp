@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/globalIndex.hpp"
+#include "traccc/device/global_index.hpp"
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
@@ -90,7 +90,7 @@ struct propagate_to_next_surface_payload {
 ///
 template <typename propagator_t, typename bfield_t>
 TRACCC_DEVICE inline void propagate_to_next_surface(
-    globalIndex_t globalIndex, const finding_config& cfg,
+    global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
 
 }  // namespace traccc::device

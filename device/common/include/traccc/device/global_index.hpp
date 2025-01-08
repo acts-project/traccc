@@ -11,6 +11,6 @@
 namespace traccc::device {
 
 /// Type for passing "global indices" to device functions
-using globalIndex_t = unsigned int;
+using global_index_t = unsigned int;
 
 }  // namespace traccc::device

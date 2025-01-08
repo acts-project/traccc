@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/globalIndex.hpp"
+#include "traccc/device/global_index.hpp"
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
@@ -42,7 +42,7 @@ struct prune_tracks_payload {
 /// @param[in] globalIndex         The index of the current thread
 /// @param[inout] payload      The function call payload
 ///
-TRACCC_DEVICE inline void prune_tracks(globalIndex_t globalIndex,
+TRACCC_DEVICE inline void prune_tracks(global_index_t globalIndex,
                                        const prune_tracks_payload& payload);
 
 }  // namespace traccc::device

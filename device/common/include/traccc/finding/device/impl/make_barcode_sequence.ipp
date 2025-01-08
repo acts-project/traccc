@@ -10,7 +10,7 @@
 namespace traccc::device {
 
 TRACCC_DEVICE inline void make_barcode_sequence(
-    const globalIndex_t globalIndex,
+    const global_index_t globalIndex,
     const make_barcode_sequence_payload& payload) {
 
     const measurement_collection_types::const_device uniques(
