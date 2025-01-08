@@ -1,18 +1,18 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Project include(s).
+// Local include(s).
+#include "traccc/device/global_index.hpp"
 #include "traccc/edm/device/sort_key.hpp"
-#include "traccc/edm/track_candidate.hpp"
 
-// System include(s).
-#include <cstddef>
+// Project include(s).
+#include "traccc/edm/track_candidate.hpp"
 
 namespace traccc::device {
 
@@ -24,7 +24,7 @@ namespace traccc::device {
 /// @param[out] ids_view     The param ids
 ///
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
-    std::size_t globalIndex,
+    global_index_t globalIndex,
     const track_candidate_container_types::const_view& track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view);

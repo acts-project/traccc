@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,7 +17,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void count_triplets(
-    const std::size_t globalIndex, const seedfinder_config& config,
+    const global_index_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const doublet_counter_collection_types::const_view& dc_view,
     const device_doublet_collection_types::const_view& mid_bot_doublet_view,
@@ -34,8 +34,7 @@ inline void count_triplets(
     }
 
     // Get current mid bottom doublet
-    const device_doublet mid_bot =
-        mid_bot_doublet_device.at(static_cast<unsigned int>(globalIndex));
+    const device_doublet mid_bot = mid_bot_doublet_device.at(globalIndex);
 
     // Create device copy of input parameters
     const device_doublet_collection_types::const_device mid_top_doublet_device(

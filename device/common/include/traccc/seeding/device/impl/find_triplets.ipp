@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,7 +17,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void find_triplets(
-    const std::size_t globalIndex, const seedfinder_config& config,
+    const global_index_t globalIndex, const seedfinder_config& config,
     const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
     const doublet_counter_collection_types::const_view& dc_view,
     const device_doublet_collection_types::const_view& mid_top_doublet_view,
@@ -42,8 +42,7 @@ inline void find_triplets(
         spM_tc_view);
 
     // Get the current work item information
-    const triplet_counter mid_bot_counter =
-        triplet_counts.at(static_cast<unsigned int>(globalIndex));
+    const triplet_counter mid_bot_counter = triplet_counts.at(globalIndex);
     const triplet_counter_spM spM_counter =
         triplet_counts_spM.at(mid_bot_counter.spM_counter_link);
     const doublet_counter doublet_count =
@@ -107,7 +106,7 @@ inline void find_triplets(
 
             // Add triplet to jagged vector
             triplets.at(posTriplets++) = device_triplet(
-                {spT_loc, static_cast<unsigned int>(globalIndex), curvature,
+                {spT_loc, globalIndex, curvature,
                  -impact_parameter * filter_config.impactWeightFactor,
                  lb.Zo()});
         }

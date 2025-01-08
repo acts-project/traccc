@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,12 +10,12 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
-    std::size_t globalIndex,
+    const global_index_t globalIndex,
     const track_candidate_container_types::const_view& track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view) {
 
-    track_candidate_container_types::const_device track_candidates(
+    const track_candidate_container_types::const_device track_candidates(
         track_candidates_view);
 
     // Keys
@@ -29,12 +29,9 @@ TRACCC_HOST_DEVICE inline void fill_sort_keys(
     }
 
     // Key = The number of measurements
-    keys_device.at(static_cast<unsigned int>(globalIndex)) =
-        static_cast<traccc::scalar>(
-            track_candidates.at(static_cast<unsigned int>(globalIndex))
-                .items.size());
-    ids_device.at(static_cast<unsigned int>(globalIndex)) =
-        static_cast<unsigned int>(globalIndex);
+    keys_device.at(globalIndex) = static_cast<traccc::scalar>(
+        track_candidates.at(globalIndex).items.size());
+    ids_device.at(globalIndex) = globalIndex;
 }
 
 }  // namespace traccc::device

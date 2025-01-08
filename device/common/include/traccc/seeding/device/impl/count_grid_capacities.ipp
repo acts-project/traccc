@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,7 +17,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void count_grid_capacities(
-    const std::size_t globalIndex, const seedfinder_config& config,
+    const global_index_t globalIndex, const seedfinder_config& config,
     const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
     const spacepoint_collection_types::const_view& spacepoints_view,
     vecmem::data::vector_view<unsigned int> grid_capacities_view) {
@@ -28,8 +28,7 @@ inline void count_grid_capacities(
     if (globalIndex >= spacepoints.size()) {
         return;
     }
-    const spacepoint sp =
-        spacepoints.at(static_cast<unsigned int>(globalIndex));
+    const spacepoint sp = spacepoints.at(globalIndex);
 
     /// Check out if the spacepoint can be used for seeding.
     if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {

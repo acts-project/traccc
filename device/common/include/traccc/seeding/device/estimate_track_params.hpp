@@ -1,11 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
+
+// Local include(s).
+#include "traccc/device/global_index.hpp"
 
 // Project include(s).
 #include "traccc/edm/seed.hpp"
@@ -25,7 +28,7 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 inline void estimate_track_params(
-    const std::size_t globalIndex,
+    global_index_t globalIndex,
     const spacepoint_collection_types::const_view& spacepoints_view,
     const seed_collection_types::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev,

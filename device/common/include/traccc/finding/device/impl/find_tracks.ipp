@@ -19,8 +19,8 @@ namespace traccc::device {
 template <typename detector_t, concepts::thread_id1 thread_id_t,
           concepts::barrier barrier_t>
 TRACCC_DEVICE inline void find_tracks(
-    thread_id_t& thread_id, barrier_t& barrier, const finding_config& cfg,
-    const find_tracks_payload<detector_t>& payload,
+    const thread_id_t& thread_id, const barrier_t& barrier,
+    const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
 
     /*

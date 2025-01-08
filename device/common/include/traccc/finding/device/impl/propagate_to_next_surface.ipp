@@ -11,7 +11,8 @@
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
-#include "detray/utils/tuple.hpp"
+#include "detray/propagator/constrained_step.hpp"
+#include "detray/utils/tuple_helpers.hpp"
 
 namespace traccc::device {
 

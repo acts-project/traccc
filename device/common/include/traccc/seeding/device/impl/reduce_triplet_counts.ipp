@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,7 +14,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void reduce_triplet_counts(
-    const std::size_t globalIndex,
+    const global_index_t globalIndex,
     const doublet_counter_collection_types::const_view& dc_view,
     triplet_counter_spM_collection_types::view spM_tc_view,
     unsigned int& num_triplets) {
@@ -33,8 +33,7 @@ inline void reduce_triplet_counts(
     assert(doublet_counts.size() == spM_counts.size());
 
     // Get triplet counter for this middle spacepoint
-    triplet_counter_spM& this_spM_counter =
-        spM_counts.at(static_cast<unsigned int>(globalIndex));
+    triplet_counter_spM& this_spM_counter = spM_counts.at(globalIndex);
 
     // Check if anything needs to be done.
     if (this_spM_counter.m_nTriplets == 0) {
@@ -42,8 +41,7 @@ inline void reduce_triplet_counts(
     }
 
     // Fill the middle spacepoint information of the spM triplet counter
-    this_spM_counter.spM =
-        doublet_counts.at(static_cast<unsigned int>(globalIndex)).m_spM;
+    this_spM_counter.spM = doublet_counts.at(globalIndex).m_spM;
 
     // Increment total number of triplets and claim position for this middle
     // spacepoint's triplets
