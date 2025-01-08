@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2024 CERN for the benefit of the ACTS project
+# (c) 2022-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -15,6 +15,7 @@ stages:
     - git clone $CLONE_URL src
     - git -C src checkout $HEAD_SHA
     - source ./src/.github/ci_setup.sh ${TRACCC_BUILD_TYPE}
+    - export CTEST_PARALLEL_LEVEL=2
 
 # Build job template.
 .build_template: &build_job
