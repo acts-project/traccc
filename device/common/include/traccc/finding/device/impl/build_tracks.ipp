@@ -1,37 +1,29 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Project include(s).
-#include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate.hpp"
-#include "traccc/edm/track_parameters.hpp"
-#include "traccc/finding/candidate_link.hpp"
-
 namespace traccc::device {
 
-template <typename config_t>
-TRACCC_DEVICE inline void build_tracks(std::size_t globalIndex,
-                                       const config_t cfg,
+TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
+                                       const finding_config& cfg,
                                        const build_tracks_payload& payload) {
 
-    measurement_collection_types::const_device measurements(
+    const measurement_collection_types::const_device measurements(
         payload.measurements_view);
 
-    bound_track_parameters_collection_types::const_device seeds(
+    const bound_track_parameters_collection_types::const_device seeds(
         payload.seeds_view);
 
-    vecmem::jagged_device_vector<const candidate_link> links(
+    const vecmem::jagged_device_vector<const candidate_link> links(
         payload.links_view);
 
-    vecmem::device_vector<const typename candidate_link::link_index_type> tips(
-        payload.tips_view);
+    const vecmem::device_vector<const typename candidate_link::link_index_type>
+        tips(payload.tips_view);
 
     track_candidate_container_types::device track_candidates(
         payload.track_candidates_view);

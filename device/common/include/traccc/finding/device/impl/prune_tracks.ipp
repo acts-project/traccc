@@ -1,25 +1,20 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Project include(s).
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate.hpp"
-
 namespace traccc::device {
 
-TRACCC_DEVICE inline void prune_tracks(std::size_t globalIndex,
+TRACCC_DEVICE inline void prune_tracks(const global_index_t globalIndex,
                                        const prune_tracks_payload& payload) {
 
-    track_candidate_container_types::const_device track_candidates(
+    const track_candidate_container_types::const_device track_candidates(
         payload.track_candidates_view);
-    vecmem::device_vector<const unsigned int> valid_indices(
+    const vecmem::device_vector<const unsigned int> valid_indices(
         payload.valid_indices_view);
     track_candidate_container_types::device prune_candidates(
         payload.prune_candidates_view);

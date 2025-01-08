@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,12 +14,18 @@
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
-#include "traccc/edm/track_state.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
-#include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+
+// VecMem include(s).
+#include <vecmem/containers/data/vector_view.hpp>
+
+// System include(s).
+#include <utility>
 
 namespace traccc::device {
+
+/// (Global Event Data) Payload for the @c traccc::device::find_tracks function
 template <typename detector_t>
 struct find_tracks_payload {
     /**
@@ -48,7 +54,7 @@ struct find_tracks_payload {
     /**
      * @brief The total number of input parameters
      */
-    const unsigned int n_in_params;
+    unsigned int n_in_params;
 
     /**
      * @brief View object to the vector of barcodes for each measurement
@@ -69,12 +75,12 @@ struct find_tracks_payload {
     /**
      * @brief The current step identifier
      */
-    const unsigned int step;
+    unsigned int step;
 
     /**
      * @brief The maximum number of new tracks to find
      */
-    const unsigned int n_max_candidates;
+    unsigned int n_max_candidates;
 
     /**
      * @brief View object to the output track parameter vector
@@ -98,6 +104,7 @@ struct find_tracks_payload {
     unsigned int* n_total_candidates;
 };
 
+/// (Shared Event Data) Payload for the @c traccc::device::find_tracks function
 struct find_tracks_shared_payload {
     /**
      * @brief Shared-memory vector with the number of measurements found per
@@ -129,12 +136,15 @@ struct find_tracks_shared_payload {
 /// @param[in] cfg                Track finding config object
 /// @param[inout] payload         The global memory payload
 /// @param[inout] shared_payload  The shared memory payload
-template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t,
-          typename detector_t, typename config_t>
+///
+template <typename detector_t, concepts::thread_id1 thread_id_t,
+          concepts::barrier barrier_t>
 TRACCC_DEVICE inline void find_tracks(
-    thread_id_t& thread_id, barrier_t& barrier, const config_t cfg,
+    thread_id_t& thread_id, barrier_t& barrier, const finding_config& cfg,
     const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload);
+
 }  // namespace traccc::device
 
+// Include the implementation.
 #include "./impl/find_tracks.ipp"

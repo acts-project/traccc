@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,21 +8,16 @@
 #pragma once
 
 // Project include(s).
-#include "detray/core/detail/tuple_container.hpp"
-#include "detray/propagator/constrained_step.hpp"
-#include "detray/utils/tuple.hpp"
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_parameters.hpp"
-#include "traccc/finding/candidate_link.hpp"
 #include "traccc/utils/particle.hpp"
+
+// Detray include(s).
+#include "detray/utils/tuple.hpp"
 
 namespace traccc::device {
 
-template <typename propagator_t, typename bfield_t, typename config_t>
+template <typename propagator_t, typename bfield_t>
 TRACCC_DEVICE inline void propagate_to_next_surface(
-    std::size_t globalIndex, const config_t cfg,
+    const global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
 
     if (globalIndex >= payload.n_in_params) {
