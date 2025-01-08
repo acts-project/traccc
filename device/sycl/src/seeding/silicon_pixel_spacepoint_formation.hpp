@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,6 +10,7 @@
 // Local include(s).
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/global_index.hpp"
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
@@ -69,7 +70,7 @@ spacepoint_collection_types::buffer silicon_pixel_spacepoint_formation(
                              spacepoints_view = vecmem::get_data(result)](
                                 ::sycl::nd_item<1> item) {
                     device::form_spacepoints<detector_t>(
-                        item.get_global_linear_id(), det_view,
+                        details::global_index(item), det_view,
                         measurements_view, n_measurements, spacepoints_view);
                 });
         })
