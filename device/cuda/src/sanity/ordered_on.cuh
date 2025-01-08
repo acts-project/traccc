@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,6 +10,7 @@
 
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 
@@ -31,7 +32,8 @@ template <typename CONTAINER, std::semiregular R, typename VIEW>
 requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
                                 decltype(std::declval<CONTAINER>().at(0))>
     __global__ void is_ordered_on_kernel(R relation, VIEW _in, bool* out) {
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    const device::global_index_t tid = details::global_index1();
 
     const CONTAINER in(_in);
 

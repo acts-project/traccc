@@ -1,12 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
@@ -33,8 +34,8 @@ __global__ void fill_sort_keys(
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view) {
 
-    device::fill_sort_keys(threadIdx.x + blockIdx.x * blockDim.x,
-                           track_candidates_view, keys_view, ids_view);
+    device::fill_sort_keys(details::global_index1(), track_candidates_view,
+                           keys_view, ids_view);
 }
 
 template <typename fitter_t, typename detector_view_t>
@@ -45,10 +46,9 @@ __global__ void fit(
     vecmem::data::vector_view<const unsigned int> param_ids_view,
     track_state_container_types::view track_states_view) {
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
-
-    device::fit<fitter_t>(gid, det_data, field_data, cfg, track_candidates_view,
-                          param_ids_view, track_states_view);
+    device::fit<fitter_t>(details::global_index1(), det_data, field_data, cfg,
+                          track_candidates_view, param_ids_view,
+                          track_states_view);
 }
 
 }  // namespace kernels

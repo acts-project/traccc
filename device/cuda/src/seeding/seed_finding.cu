@@ -1,12 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/seed_finding.hpp"
 
@@ -44,9 +45,8 @@ __global__ void count_doublets(
     device::doublet_counter_collection_types::view doublet_counter,
     unsigned int& nMidBot, unsigned int& nMidTop) {
 
-    device::count_doublets(threadIdx.x + blockIdx.x * blockDim.x, config,
-                           sp_grid, sp_prefix_sum, doublet_counter, nMidBot,
-                           nMidTop);
+    device::count_doublets(details::global_index1(), config, sp_grid,
+                           sp_prefix_sum, doublet_counter, nMidBot, nMidTop);
 }
 
 /// CUDA kernel for running @c traccc::device::find_doublets
@@ -56,8 +56,8 @@ __global__ void find_doublets(
     device::device_doublet_collection_types::view mb_doublets,
     device::device_doublet_collection_types::view mt_doublets) {
 
-    device::find_doublets(threadIdx.x + blockIdx.x * blockDim.x, config,
-                          sp_grid, doublet_counter, mb_doublets, mt_doublets);
+    device::find_doublets(details::global_index1(), config, sp_grid,
+                          doublet_counter, mb_doublets, mt_doublets);
 }
 
 /// CUDA kernel for running @c traccc::device::count_triplets
@@ -69,8 +69,8 @@ __global__ void count_triplets(
     device::triplet_counter_spM_collection_types::view spM_counter,
     device::triplet_counter_collection_types::view midBot_counter) {
 
-    device::count_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
-                           sp_grid, doublet_counter, mb_doublets, mt_doublets,
+    device::count_triplets(details::global_index1(), config, sp_grid,
+                           doublet_counter, mb_doublets, mt_doublets,
                            spM_counter, midBot_counter);
 }
 
@@ -80,8 +80,8 @@ __global__ void reduce_triplet_counts(
     device::triplet_counter_spM_collection_types::view spM_counter,
     unsigned int& num_triplets) {
 
-    device::reduce_triplet_counts(threadIdx.x + blockIdx.x * blockDim.x,
-                                  doublet_counter, spM_counter, num_triplets);
+    device::reduce_triplet_counts(details::global_index1(), doublet_counter,
+                                  spM_counter, num_triplets);
 }
 
 /// CUDA kernel for running @c traccc::device::find_triplets
@@ -94,9 +94,9 @@ __global__ void find_triplets(
     device::triplet_counter_collection_types::const_view midBot_tc,
     device::device_triplet_collection_types::view triplet_view) {
 
-    device::find_triplets(threadIdx.x + blockIdx.x * blockDim.x, config,
-                          filter_config, sp_grid, doublet_counter, mt_doublets,
-                          spM_tc, midBot_tc, triplet_view);
+    device::find_triplets(details::global_index1(), config, filter_config,
+                          sp_grid, doublet_counter, mt_doublets, spM_tc,
+                          midBot_tc, triplet_view);
 }
 
 /// CUDA kernel for running @c traccc::device::update_triplet_weights
@@ -112,9 +112,9 @@ __global__ void update_triplet_weights(
     // Each thread uses compatSeedLimit elements of the array
     scalar* dataPos = &data[threadIdx.x * filter_config.compatSeedLimit];
 
-    device::update_triplet_weights(threadIdx.x + blockIdx.x * blockDim.x,
-                                   filter_config, sp_grid, spM_tc, midBot_tc,
-                                   dataPos, triplet_view);
+    device::update_triplet_weights(details::global_index1(), filter_config,
+                                   sp_grid, spM_tc, midBot_tc, dataPos,
+                                   triplet_view);
 }
 
 /// CUDA kernel for running @c traccc::device::select_seeds
@@ -133,7 +133,7 @@ __global__ void select_seeds(
     // Each thread uses max_triplets_per_spM elements of the array
     triplet* dataPos = &data2[threadIdx.x * filter_config.max_triplets_per_spM];
 
-    device::select_seeds(threadIdx.x + blockIdx.x * blockDim.x, filter_config,
+    device::select_seeds(details::global_index1(), filter_config,
                          spacepoints_view, internal_sp_view, spM_tc, midBot_tc,
                          triplet_view, dataPos, seed_view);
 }

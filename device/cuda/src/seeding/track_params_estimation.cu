@@ -1,12 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 
@@ -26,9 +27,8 @@ __global__ void estimate_track_params(
     const std::array<traccc::scalar, traccc::e_bound_size> stddev,
     bound_track_parameters_collection_types::view params_view) {
 
-    device::estimate_track_params(threadIdx.x + blockIdx.x * blockDim.x,
-                                  spacepoints_view, seed_view, bfield, stddev,
-                                  params_view);
+    device::estimate_track_params(details::global_index1(), spacepoints_view,
+                                  seed_view, bfield, stddev, params_view);
 }
 }  // namespace kernels
 

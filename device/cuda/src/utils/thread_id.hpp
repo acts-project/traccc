@@ -9,38 +9,35 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 
 namespace traccc::cuda::details {
 
 /// A CUDA thread identifier type
 struct thread_id1 {
-    TRACCC_DEVICE thread_id1() {}
+    __device__ thread_id1() {}
 
-    inline unsigned int TRACCC_DEVICE getLocalThreadId() const {
+    inline unsigned int __device__ getLocalThreadId() const {
         return threadIdx.x;
     }
 
-    inline unsigned int TRACCC_DEVICE getLocalThreadIdX() const {
+    inline unsigned int __device__ getLocalThreadIdX() const {
         return threadIdx.x;
     }
 
-    inline unsigned int TRACCC_DEVICE getGlobalThreadId() const {
+    inline unsigned int __device__ getGlobalThreadId() const {
         return threadIdx.x + blockIdx.x * blockDim.x;
     }
 
-    inline unsigned int TRACCC_DEVICE getGlobalThreadIdX() const {
+    inline unsigned int __device__ getGlobalThreadIdX() const {
         return threadIdx.x + blockIdx.x * blockDim.x;
     }
 
-    inline unsigned int TRACCC_DEVICE getBlockIdX() const { return blockIdx.x; }
+    inline unsigned int __device__ getBlockIdX() const { return blockIdx.x; }
 
-    inline unsigned int TRACCC_DEVICE getBlockDimX() const {
-        return blockDim.x;
-    }
+    inline unsigned int __device__ getBlockDimX() const { return blockDim.x; }
 
-    inline unsigned int TRACCC_DEVICE getGridDimX() const { return gridDim.x; }
+    inline unsigned int __device__ getGridDimX() const { return gridDim.x; }
 
 };  // struct thread_id1
 
