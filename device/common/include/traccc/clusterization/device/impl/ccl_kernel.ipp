@@ -254,8 +254,7 @@ TRACCC_DEVICE inline void ccl_kernel(
      */
     if (thread_id.getLocalThreadIdX() == 0) {
         unsigned int start =
-            static_cast<unsigned int>(thread_id.getBlockIdX()) *
-            cfg.target_partition_size();
+            thread_id.getBlockIdX() * cfg.target_partition_size();
         assert(start < num_cells);
         unsigned int end =
             std::min(num_cells, start + cfg.target_partition_size());

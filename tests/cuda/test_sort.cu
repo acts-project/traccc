@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,11 +12,11 @@
 #include <vecmem/memory/unique_ptr.hpp>
 
 #include "../../cuda/src/utils/barrier.hpp"
-#include "traccc/cuda/utils/thread_id.hpp"
+#include "../../cuda/src/utils/thread_id.hpp"
 #include "traccc/device/sort.hpp"
 
 __global__ void testBlockSortKernel(uint32_t *keys, uint32_t n_keys) {
-    traccc::cuda::thread_id1 thread_id;
+    traccc::cuda::details::thread_id1 thread_id;
     traccc::cuda::barrier barrier;
     traccc::device::blockOddEvenSort(thread_id, barrier, keys, n_keys,
                                      std::less<uint32_t>());

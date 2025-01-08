@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -33,23 +33,33 @@ requires(DIMENSIONS >= 1 && DIMENSIONS <= 3) struct thread_id {
     /// @name Function(s) implementing @c traccc::device::concepts::thread_id1
     /// @{
 
-    inline auto getLocalThreadId() const {
-        return m_item.get_local_linear_id();
+    inline unsigned int getLocalThreadId() const {
+        return static_cast<unsigned int>(m_item.get_local_linear_id());
     }
 
-    inline auto getLocalThreadIdX() const { return m_item.get_local_id(0); }
-
-    inline auto getGlobalThreadId() const {
-        return m_item.get_global_linear_id();
+    inline unsigned int getLocalThreadIdX() const {
+        return static_cast<unsigned int>(m_item.get_local_id(0));
     }
 
-    inline auto getGlobalThreadIdX() const { return m_item.get_global_id(0); }
+    inline unsigned int getGlobalThreadId() const {
+        return static_cast<unsigned int>(m_item.get_global_linear_id());
+    }
 
-    inline auto getBlockIdX() const { return m_item.get_group(0); }
+    inline unsigned int getGlobalThreadIdX() const {
+        return static_cast<unsigned int>(m_item.get_global_id(0));
+    }
 
-    inline auto getBlockDimX() const { return m_item.get_local_range(0); }
+    inline unsigned int getBlockIdX() const {
+        return static_cast<unsigned int>(m_item.get_group(0));
+    }
 
-    inline auto getGridDimX() const { return m_item.get_global_range(0); }
+    inline unsigned int getBlockDimX() const {
+        return static_cast<unsigned int>(m_item.get_local_range(0));
+    }
+
+    inline unsigned int getGridDimX() const {
+        return static_cast<unsigned int>(m_item.get_global_range(0));
+    }
 
     /// @}
 
