@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -35,7 +35,7 @@ struct measurement_smearer {
                         const scalar_type stddev_local1)
         : stddev({stddev_local0, stddev_local1}) {}
 
-    measurement_smearer(measurement_smearer& smearer)
+    measurement_smearer(const measurement_smearer& smearer)
         : stddev(smearer.stddev), generator(smearer.generator) {}
 
     void set_seed(const uint_fast64_t sd) { generator.seed(sd); }
