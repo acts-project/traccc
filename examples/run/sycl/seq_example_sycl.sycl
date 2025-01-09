@@ -1,6 +1,6 @@
 /* TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,10 +16,14 @@
 
 // algorithms
 #include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
+#include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
@@ -37,6 +41,8 @@
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
 
 // Detray include(s).
@@ -74,6 +80,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::clusterization& clusterization_opts,
             const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::track_finding& finding_opts,
+            const traccc::opts::track_propagation& propagation_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
@@ -129,32 +137,46 @@ int seq_run(const traccc::opts::detector& detector_opts,
     uint64_t n_spacepoints_sycl = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_sycl = 0;
-
-    // Type definitions
-    using host_spacepoint_formation_algorithm =
-        traccc::host::silicon_pixel_spacepoint_formation_algorithm;
-    using device_spacepoint_formation_algorithm =
-        traccc::sycl::silicon_pixel_spacepoint_formation_algorithm;
+    uint64_t n_found_tracks = 0;
+    uint64_t n_found_tracks_sycl = 0;
 
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
+    const detray::bfield::const_field_t field =
+        detray::bfield::create_const_field(field_vec);
+
+    // Algorithm configuration(s).
+    detray::propagation::config propagation_config(propagation_opts);
+
+    traccc::finding_config finding_cfg(finding_opts);
+    finding_cfg.propagation = propagation_config;
 
     // Algorithms.
     traccc::host::clusterization_algorithm ca(host_mr);
-    host_spacepoint_formation_algorithm sf(host_mr);
+    traccc::host::silicon_pixel_spacepoint_formation_algorithm sf(host_mr);
     traccc::seeding_algorithm sa(seeding_opts.seedfinder,
                                  {seeding_opts.seedfinder},
                                  seeding_opts.seedfilter, host_mr);
     traccc::track_params_estimation tp(host_mr);
+    traccc::host::combinatorial_kalman_filter_algorithm finding_alg{
+        finding_cfg};
 
     traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, queue,
                                                    clusterization_opts);
-    device_spacepoint_formation_algorithm sf_sycl(mr, copy, queue);
+    traccc::sycl::measurement_sorting_algorithm ms_sycl(copy, queue);
+    traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sf_sycl(mr, copy,
+                                                                       queue);
     traccc::sycl::seeding_algorithm sa_sycl(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, mr, copy, &q);
     traccc::sycl::track_params_estimation tp_sycl(mr, copy, &q);
+    traccc::sycl::combinatorial_kalman_filter_algorithm finding_alg_sycl{
+        finding_cfg, mr, copy, queue};
+
+    traccc::device::container_d2h_copy_alg<
+        traccc::track_candidate_container_types>
+        copy_track_candidates{mr, copy};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -169,18 +191,24 @@ int seq_run(const traccc::opts::detector& detector_opts,
         // Instantiate host containers/collections
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event;
-        host_spacepoint_formation_algorithm::output_type spacepoints_per_event;
+        traccc::host::silicon_pixel_spacepoint_formation_algorithm::output_type
+            spacepoints_per_event;
         traccc::seeding_algorithm::output_type seeds;
         traccc::track_params_estimation::output_type params;
+        traccc::host::combinatorial_kalman_filter_algorithm::output_type
+            track_candidates;
 
-        // Instantiate cuda containers/collections
-        traccc::measurement_collection_types::buffer measurements_sycl_buffer(
+        // Instantiate SYCL containers/collections
+        traccc::sycl::clusterization_algorithm::output_type
+            measurements_sycl_buffer(0, *mr.host);
+        traccc::sycl::silicon_pixel_spacepoint_formation_algorithm::output_type
+            spacepoints_sycl_buffer(0, *mr.host);
+        traccc::sycl::seeding_algorithm::output_type seeds_sycl_buffer(
             0, *mr.host);
-        traccc::spacepoint_collection_types::buffer spacepoints_sycl_buffer(
+        traccc::sycl::track_params_estimation::output_type params_sycl_buffer(
             0, *mr.host);
-        traccc::seed_collection_types::buffer seeds_sycl_buffer(0, *mr.host);
-        traccc::bound_track_parameters_collection_types::buffer
-            params_sycl_buffer(0, *mr.host);
+        traccc::sycl::combinatorial_kalman_filter_algorithm::output_type
+            track_candidates_sycl_buffer;
 
         {
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -212,6 +240,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 // Reconstruct it into spacepoints on the device.
                 measurements_sycl_buffer =
                     ca_sycl(cells_buffer, device_det_descr);
+                ms_sycl(measurements_sycl_buffer);
                 q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 
@@ -276,6 +305,26 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                                  elapsedTimes);
                     params = tp(spacepoints_per_event, seeds, field_vec);
                 }  // stop measuring track params cpu timer
+
+                // SYCL
+                {
+                    traccc::performance::timer timer{"Track finding (sycl)",
+                                                     elapsedTimes};
+                    track_candidates_sycl_buffer = finding_alg_sycl(
+                        device_detector_view, field, measurements_sycl_buffer,
+                        params_sycl_buffer);
+                    q.wait_and_throw();
+                }
+
+                // CPU
+                if (accelerator_opts.compare_with_cpu) {
+                    traccc::performance::timer timer{"Track finding  (cpu)",
+                                                     elapsedTimes};
+                    track_candidates =
+                        finding_alg(host_detector, field,
+                                    vecmem::get_data(measurements_per_event),
+                                    vecmem::get_data(params));
+                }
             }
         }  // stop measuring wall time
 
@@ -283,17 +332,29 @@ int seq_run(const traccc::opts::detector& detector_opts,
           compare cpu and sycl result
           ----------------------------------*/
 
+        traccc::measurement_collection_types::host measurements_per_event_sycl;
         traccc::spacepoint_collection_types::host spacepoints_per_event_sycl;
         traccc::seed_collection_types::host seeds_sycl;
         traccc::bound_track_parameters_collection_types::host params_sycl;
+
+        copy(measurements_sycl_buffer, measurements_per_event_sycl)->wait();
         copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl)->wait();
         copy(seeds_sycl_buffer, seeds_sycl)->wait();
         copy(params_sycl_buffer, params_sycl)->wait();
+        auto track_candidates_sycl =
+            copy_track_candidates(track_candidates_sycl_buffer);
+        q.wait_and_throw();
 
         if (accelerator_opts.compare_with_cpu) {
 
             // Show which event we are currently presenting the results for.
             std::cout << "===>>> Event " << event << " <<<===" << std::endl;
+
+            // Compare the measurements made on the host and on the device.
+            traccc::collection_comparator<traccc::measurement>
+                compare_measurements{"measurements"};
+            compare_measurements(vecmem::get_data(measurements_per_event),
+                                 vecmem::get_data(measurements_per_event_sycl));
 
             // Compare the spacepoints made on the host and on the device.
             traccc::collection_comparator<traccc::spacepoint>
@@ -314,6 +375,35 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_sycl));
+
+            // Compare tracks found on the host and on the device.
+            traccc::collection_comparator<
+                traccc::track_candidate_container_types::host::header_type>
+                compare_track_candidates{"track candidates (header)"};
+            compare_track_candidates(
+                vecmem::get_data(track_candidates.get_headers()),
+                vecmem::get_data(track_candidates_sycl.get_headers()));
+
+            unsigned int n_matches = 0;
+            for (unsigned int i = 0; i < track_candidates.size(); i++) {
+                auto iso = traccc::details::is_same_object(
+                    track_candidates.at(i).items);
+
+                for (unsigned int j = 0; j < track_candidates_sycl.size();
+                     j++) {
+                    if (iso(track_candidates_sycl.at(j).items)) {
+                        n_matches++;
+                        break;
+                    }
+                }
+            }
+
+            std::cout << "  Track candidates (item) matching rate: "
+                      << 100. * static_cast<double>(n_matches) /
+                             static_cast<double>(
+                                 std::max(track_candidates.size(),
+                                          track_candidates_sycl.size()))
+                      << "%" << std::endl;
         }
 
         /// Statistics
@@ -322,6 +412,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         n_spacepoints_sycl += spacepoints_per_event_sycl.size();
         n_seeds_sycl += seeds_sycl.size();
         n_seeds += seeds.size();
+        n_found_tracks += track_candidates.size();
+        n_found_tracks_sycl += track_candidates_sycl.size();
 
         if (performance_opts.run) {
 
@@ -351,6 +443,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     std::cout << "- created  (cpu) " << n_seeds << " seeds" << std::endl;
     std::cout << "- created (sycl) " << n_seeds_sycl << " seeds" << std::endl;
+    std::cout << "- found (cpu)    " << n_found_tracks << " tracks"
+              << std::endl;
+    std::cout << "- found (sycl)   " << n_found_tracks_sycl << " tracks"
+              << std::endl;
     std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
 
     return 0;
@@ -365,16 +461,19 @@ int main(int argc, char* argv[]) {
     traccc::opts::input_data input_opts;
     traccc::opts::clusterization clusterization_opts;
     traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_finding finding_opts;
+    traccc::opts::track_propagation propagation_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using SYCL",
         {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         performance_opts, accelerator_opts},
+         finding_opts, propagation_opts, performance_opts, accelerator_opts},
         argc,
         argv};
 
     // Run the application.
     return seq_run(detector_opts, input_opts, clusterization_opts, seeding_opts,
-                   performance_opts, accelerator_opts);
+                   finding_opts, propagation_opts, performance_opts,
+                   accelerator_opts);
 }
