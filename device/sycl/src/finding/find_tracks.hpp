@@ -51,6 +51,18 @@
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {
+namespace kernels {
+struct make_barcode_sequence {};
+template <typename T>
+struct apply_interaction {};
+template <typename T>
+struct find_tracks {};
+struct fill_sort_keys {};
+template <typename T>
+struct propagate_to_next_surface {};
+struct build_tracks {};
+struct prune_tracks {};
+}  // namespace kernels
 
 /// Templated implementation of the track finding algorithm.
 ///
@@ -60,7 +72,7 @@ namespace traccc::sycl::details {
 ///
 /// @tparam stepper_t The stepper type used for the track propagation
 /// @tparam navigator_t The navigator type used for the track navigation
-/// @tparam kernels_t Structure with unique "kernel structures"
+/// @tparam kernel_t Structure to generate unique kernel names with
 ///
 /// @param det               A view of the detector object
 /// @param field             The magnetic field object
@@ -74,7 +86,7 @@ namespace traccc::sycl::details {
 ///
 /// @return A buffer of the found track candidates
 ///
-template <typename stepper_t, typename navigator_t, typename kernels_t>
+template <typename stepper_t, typename navigator_t, typename kernel_t>
 track_candidate_container_types::buffer find_tracks(
     const typename navigator_t::detector_type::view_type& det,
     const typename stepper_t::magnetic_field_type& field,
@@ -132,8 +144,7 @@ track_candidate_container_types::buffer find_tracks(
 
     queue
         .submit([&](::sycl::handler& h) {
-            h.parallel_for<
-                typename kernels_t::make_barcode_sequence_kernel_type>(
+            h.parallel_for<kernels::make_barcode_sequence>(
                 calculate1DimNdRange(n_modules, 64),
                 [uniques_view = vecmem::get_data(uniques_buffer),
                  barcodes_view = vecmem::get_data(barcodes_buffer)](
@@ -187,8 +198,7 @@ track_candidate_container_types::buffer find_tracks(
 
         queue
             .submit([&](::sycl::handler& h) {
-                h.parallel_for<
-                    typename kernels_t::apply_interaction_kernel_type>(
+                h.parallel_for<kernels::apply_interaction<kernel_t>>(
                     calculate1DimNdRange(n_in_params, 64),
                     [config, det, n_in_params,
                      in_params = vecmem::get_data(in_params_buffer),
@@ -249,7 +259,7 @@ track_candidate_container_types::buffer find_tracks(
                     shared_candidates_size(1, h);
 
                 // Launch the kernel.
-                h.parallel_for<typename kernels_t::find_tracks_kernel_type>(
+                h.parallel_for<kernels::find_tracks<kernel_t>>(
                     calculate1DimNdRange(n_in_params, nFindTracksThreads),
                     [config, det, measurements,
                      in_params = vecmem::get_data(in_params_buffer),
@@ -313,8 +323,7 @@ track_candidate_container_types::buffer find_tracks(
 
                 queue
                     .submit([&](::sycl::handler& h) {
-                        h.parallel_for<
-                            typename kernels_t::fill_sort_keys_kernel_type>(
+                        h.parallel_for<kernels::fill_sort_keys>(
                             calculate1DimNdRange(n_candidates, 256),
                             [in_params = vecmem::get_data(in_params_buffer),
                              keys = vecmem::get_data(keys_buffer),
@@ -362,8 +371,8 @@ track_candidate_container_types::buffer find_tracks(
             // surface.
             queue
                 .submit([&](::sycl::handler& h) {
-                    h.parallel_for<typename kernels_t::
-                                       propagate_to_next_surface_kernel_type>(
+                    h.parallel_for<
+                        kernels::propagate_to_next_surface<kernel_t>>(
                         calculate1DimNdRange(n_candidates, 64),
                         [config, det, field,
                          in_params = vecmem::get_data(in_params_buffer),
@@ -446,7 +455,7 @@ track_candidate_container_types::buffer find_tracks(
 
         queue
             .submit([&](::sycl::handler& h) {
-                h.parallel_for<typename kernels_t::build_tracks_kernel_type>(
+                h.parallel_for<kernels::build_tracks>(
                     calculate1DimNdRange(n_tips_total, 64),
                     [config, measurements, seeds,
                      links = vecmem::get_data(links_buffer),
@@ -483,7 +492,7 @@ track_candidate_container_types::buffer find_tracks(
 
         queue
             .submit([&](::sycl::handler& h) {
-                h.parallel_for<typename kernels_t::prune_tracks_kernel_type>(
+                h.parallel_for<kernels::prune_tracks>(
                     calculate1DimNdRange(n_valid_tracks, 64),
                     [track_candidates,
                      valid_indices = vecmem::get_data(valid_indices_buffer),
