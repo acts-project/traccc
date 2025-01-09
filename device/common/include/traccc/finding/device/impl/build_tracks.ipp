@@ -65,12 +65,9 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
 
-    unsigned int i = 0;
-
     // Reversely iterate to fill the track candidates
     for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
          it++) {
-        i++;
 
         while (L.meas_idx > n_meas &&
                L.previous.first !=
