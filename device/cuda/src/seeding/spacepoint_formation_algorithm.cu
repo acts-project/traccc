@@ -1,12 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 
@@ -24,9 +25,9 @@ __global__ void __launch_bounds__(1024, 1)
                      const unsigned int measurement_count,
                      spacepoint_collection_types::view spacepoints_view) {
 
-    device::form_spacepoints<detector_t>(threadIdx.x + blockIdx.x * blockDim.x,
-                                         det_view, measurements_view,
-                                         measurement_count, spacepoints_view);
+    device::form_spacepoints<detector_t>(details::global_index1(), det_view,
+                                         measurements_view, measurement_count,
+                                         spacepoints_view);
 }
 
 }  // namespace kernels

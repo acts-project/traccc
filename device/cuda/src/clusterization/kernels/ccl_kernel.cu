@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,11 +10,11 @@
 #include "../../sanity/ordered_on.cuh"
 #include "../../utils/barrier.hpp"
 #include "../../utils/cuda_error_handling.hpp"
+#include "../../utils/thread_id.hpp"
 #include "../../utils/utils.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
-#include "traccc/cuda/utils/thread_id.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
@@ -54,7 +54,7 @@ __global__ void ccl_kernel(
         static_cast<vector_size_t>(cfg.max_partition_size()),
         shared_v + cfg.max_partition_size()};
     traccc::cuda::barrier barry_r;
-    const cuda::thread_id1 thread_id;
+    const details::thread_id1 thread_id;
 
     device::ccl_kernel(cfg, thread_id, cells_view, det_descr_view,
                        partition_start, partition_end, outi, f_view, gf_view,

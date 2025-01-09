@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -254,8 +254,7 @@ TRACCC_DEVICE inline void ccl_kernel(
      */
     if (thread_id.getLocalThreadIdX() == 0) {
         unsigned int start =
-            static_cast<unsigned int>(thread_id.getBlockIdX()) *
-            cfg.target_partition_size();
+            thread_id.getBlockIdX() * cfg.target_partition_size();
         assert(start < num_cells);
         unsigned int end =
             std::min(num_cells, start + cfg.target_partition_size());

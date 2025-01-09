@@ -1,12 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/spacepoint_binning.hpp"
 
@@ -28,9 +29,8 @@ __global__ void count_grid_capacities(
     spacepoint_collection_types::const_view spacepoints,
     vecmem::data::vector_view<unsigned int> grid_capacities) {
 
-    device::count_grid_capacities(threadIdx.x + blockIdx.x * blockDim.x, config,
-                                  phi_axis, z_axis, spacepoints,
-                                  grid_capacities);
+    device::count_grid_capacities(details::global_index1(), config, phi_axis,
+                                  z_axis, spacepoints, grid_capacities);
 }
 
 /// CUDA kernel for running @c traccc::device::populate_grid
@@ -38,8 +38,7 @@ __global__ void populate_grid(
     seedfinder_config config,
     spacepoint_collection_types::const_view spacepoints, sp_grid_view grid) {
 
-    device::populate_grid(threadIdx.x + blockIdx.x * blockDim.x, config,
-                          spacepoints, grid);
+    device::populate_grid(details::global_index1(), config, spacepoints, grid);
 }
 
 }  // namespace kernels

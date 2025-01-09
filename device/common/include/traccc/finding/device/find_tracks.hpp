@@ -7,11 +7,13 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/device/concepts/barrier.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
+
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/concepts/barrier.hpp"
-#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
@@ -140,8 +142,8 @@ struct find_tracks_shared_payload {
 template <typename detector_t, concepts::thread_id1 thread_id_t,
           concepts::barrier barrier_t>
 TRACCC_DEVICE inline void find_tracks(
-    thread_id_t& thread_id, barrier_t& barrier, const finding_config& cfg,
-    const find_tracks_payload<detector_t>& payload,
+    const thread_id_t& thread_id, const barrier_t& barrier,
+    const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload);
 
 }  // namespace traccc::device

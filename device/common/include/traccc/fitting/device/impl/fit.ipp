@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,7 +11,7 @@ namespace traccc::device {
 
 template <typename fitter_t>
 TRACCC_HOST_DEVICE inline void fit(
-    std::size_t globalIndex,
+    const global_index_t globalIndex,
     typename fitter_t::detector_type::view_type det_data,
     const typename fitter_t::bfield_type field_data,
     const typename fitter_t::config_type cfg,
@@ -34,8 +34,7 @@ TRACCC_HOST_DEVICE inline void fit(
         return;
     }
 
-    const unsigned int param_id =
-        param_ids.at(static_cast<unsigned int>(globalIndex));
+    const unsigned int param_id = param_ids.at(globalIndex);
 
     // Track candidates per track
     const auto& track_candidates_per_track =

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2023 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -20,7 +20,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE
 inline void find_doublets(
-    const std::size_t globalIndex, const seedfinder_config& config,
+    const global_index_t globalIndex, const seedfinder_config& config,
     const sp_grid_const_view& sp_view,
     const doublet_counter_collection_types::const_view& dc_view,
     device_doublet_collection_types::view mb_doublets_view,
@@ -34,8 +34,7 @@ inline void find_doublets(
     }
 
     // Get the middle spacepoint that we need to be looking at.
-    const doublet_counter middle_sp_counter =
-        doublet_counts.at(static_cast<unsigned int>(globalIndex));
+    const doublet_counter middle_sp_counter = doublet_counts.at(globalIndex);
 
     // Set up the device containers.
     const const_sp_grid_device sp_grid(sp_view);
@@ -113,9 +112,8 @@ inline void find_doublets(
                     // Add it as a candidate to the middle-bottom container.
                     const unsigned int pos = mid_bot_start_idx + mid_bot_idx++;
                     assert(pos < mb_doublets.size());
-                    mb_doublets.at(pos) = {
-                        {other_bin_idx, other_sp_idx},
-                        static_cast<unsigned int>(globalIndex)};
+                    mb_doublets.at(pos) = {{other_bin_idx, other_sp_idx},
+                                           globalIndex};
                 }
                 // Check if this spacepoint is a compatible "top" spacepoint to
                 // the thread's "middle" spacepoint.
@@ -126,9 +124,8 @@ inline void find_doublets(
                     // Add it as a candidate to the middle-top container.
                     const unsigned int pos = mid_top_start_idx + mid_top_idx++;
                     assert(pos < mt_doublets.size());
-                    mt_doublets.at(pos) = {
-                        {other_bin_idx, other_sp_idx},
-                        static_cast<unsigned int>(globalIndex)};
+                    mt_doublets.at(pos) = {{other_bin_idx, other_sp_idx},
+                                           globalIndex};
                 }
             }
         }

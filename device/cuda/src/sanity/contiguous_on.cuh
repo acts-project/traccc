@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,6 +10,7 @@
 
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 
@@ -38,7 +39,7 @@ requires std::regular_invocable<P, decltype(std::declval<CONTAINER>().at(0))>
     __global__ void is_contiguous_on_compress_adjacent(
         P projection, VIEW _in, vecmem::data::vector_view<S> out_view) {
 
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    const device::global_index_t tid = details::global_index1();
 
     const CONTAINER in(_in);
     vecmem::device_vector<S> out(out_view);
@@ -60,8 +61,8 @@ template <std::equality_comparable T>
 __global__ void is_contiguous_on_all_unique(
     vecmem::data::vector_view<T> in_view, bool* out) {
 
-    int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
-    int tid_y = threadIdx.y + blockIdx.y * blockDim.y;
+    const device::global_index_t tid_x = threadIdx.x + blockIdx.x * blockDim.x;
+    const device::global_index_t tid_y = threadIdx.y + blockIdx.y * blockDim.y;
 
     const vecmem::device_vector<T> in(in_view);
 

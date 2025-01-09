@@ -1,15 +1,18 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-#include "traccc/edm/track_parameters.hpp"
+// Local include(s).
+#include "../../../utils/global_index.hpp"
+#include "../apply_interaction.cuh"
+
+// Project include(s).
 #include "traccc/finding/device/apply_interaction.hpp"
-#include "traccc/geometry/detector.hpp"
 
 namespace traccc::cuda::kernels {
 
@@ -18,8 +21,8 @@ __global__ void apply_interaction(
     const finding_config cfg,
     device::apply_interaction_payload<detector_t> payload) {
 
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
-
-    device::apply_interaction<detector_t>(gid, cfg, payload);
+    device::apply_interaction<detector_t>(details::global_index1(), cfg,
+                                          payload);
 }
+
 }  // namespace traccc::cuda::kernels

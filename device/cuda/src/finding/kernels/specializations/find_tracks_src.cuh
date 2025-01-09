@@ -7,12 +7,15 @@
 
 #pragma once
 
-#include "../../../utils/barrier.hpp"
-#include "../propagate_to_next_surface.cuh"
-#include "traccc/cuda/utils/thread_id.hpp"
-#include "traccc/edm/track_parameters.hpp"
+// Project include(s).
 #include "traccc/finding/device/find_tracks.hpp"
-#include "traccc/geometry/detector.hpp"
+
+// Local include(s).
+#include "../../../utils/barrier.hpp"
+#include "../../../utils/thread_id.hpp"
+
+// System include(s).
+#include <utility>
 
 namespace traccc::cuda::kernels {
 
@@ -27,7 +30,7 @@ __global__ void find_tracks(const finding_config cfg,
             &shared_num_candidates[blockDim.x]);
 
     cuda::barrier barrier;
-    cuda::thread_id1 thread_id;
+    details::thread_id1 thread_id;
 
     device::find_tracks<detector_t>(
         thread_id, barrier, cfg, payload,
