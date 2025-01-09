@@ -61,8 +61,8 @@ template <std::equality_comparable T>
 __global__ void is_contiguous_on_all_unique(
     vecmem::data::vector_view<T> in_view, bool* out) {
 
-    const unsigned int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
-    const unsigned int tid_y = threadIdx.y + blockIdx.y * blockDim.y;
+    const device::global_index_t tid_x = threadIdx.x + blockIdx.x * blockDim.x;
+    const device::global_index_t tid_y = threadIdx.y + blockIdx.y * blockDim.y;
 
     const vecmem::device_vector<T> in(in_view);
 

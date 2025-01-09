@@ -25,34 +25,37 @@ template <typename Acc>
 struct thread_id1 {
     TRACCC_HOST_DEVICE explicit thread_id1(const Acc& acc) : m_acc(acc) {}
 
-    auto inline TRACCC_HOST_DEVICE getLocalThreadId() const {
-        return ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(m_acc)[0u];
+    unsigned int inline TRACCC_HOST_DEVICE getLocalThreadId() const {
+        return static_cast<unsigned int>(
+            ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(m_acc)[0u]);
     }
 
-    auto inline TRACCC_HOST_DEVICE getLocalThreadIdX() const {
+    unsigned int inline TRACCC_HOST_DEVICE getLocalThreadIdX() const {
         return getLocalThreadId();
     }
 
-    auto inline TRACCC_HOST_DEVICE getGlobalThreadId() const {
+    unsigned int inline TRACCC_HOST_DEVICE getGlobalThreadId() const {
         return getLocalThreadId() + getBlockIdX() * getBlockDimX();
     }
 
-    auto inline TRACCC_HOST_DEVICE getGlobalThreadIdX() const {
+    unsigned int inline TRACCC_HOST_DEVICE getGlobalThreadIdX() const {
         return getLocalThreadId() + getBlockIdX() * getBlockDimX();
     }
 
-    auto inline TRACCC_HOST_DEVICE getBlockIdX() const {
-        return ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(m_acc)[0u];
+    unsigned int inline TRACCC_HOST_DEVICE getBlockIdX() const {
+        return static_cast<unsigned int>(
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(m_acc)[0u]);
     }
 
-    auto inline TRACCC_HOST_DEVICE getBlockDimX() const {
-        return ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(
-            m_acc)[0u];
+    unsigned int inline TRACCC_HOST_DEVICE getBlockDimX() const {
+        return static_cast<unsigned int>(
+            ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(
+                m_acc)[0u]);
     }
 
-    auto inline TRACCC_HOST_DEVICE getGridDimX() const {
-        return ::alpaka::getWorkDiv<::alpaka::Grid, ::alpaka::Blocks>(
-            m_acc)[0u];
+    unsigned int inline TRACCC_HOST_DEVICE getGridDimX() const {
+        return static_cast<unsigned int>(
+            ::alpaka::getWorkDiv<::alpaka::Grid, ::alpaka::Blocks>(m_acc)[0u]);
     }
 
     private:
