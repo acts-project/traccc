@@ -1,0 +1,76 @@
+/**
+ * traccc library, part of the ACTS project (R&D line)
+ *
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Local include(s).
+#include "test_queue.hpp"
+
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
+// System include(s).
+#include <iostream>
+
+namespace traccc::sycl {
+
+struct test_queue::impl {
+    ::sycl::queue m_queue;
+};
+
+test_queue::test_queue() : m_impl(std::make_unique<impl>()) {
+
+    // Print the device name
+    std::cout
+        << "Created test queue on device: "
+        << m_impl->m_queue.get_device().get_info<::sycl::info::device::name>()
+        << std::endl;
+}
+
+test_queue::~test_queue() = default;
+
+queue_wrapper test_queue::queue() {
+    return {&(m_impl->m_queue)};
+}
+
+bool test_queue::is_opencl() const {
+
+#if SYCL_BACKEND_OPENCL
+    return (m_impl->m_queue.get_backend() == ::sycl::backend::opencl);
+#else
+    return false;
+#endif
+}
+
+bool test_queue::is_level0() const {
+
+#if SYCL_EXT_ONEAPI_BACKEND_LEVEL_ZERO
+    return (m_impl->m_queue.get_backend() ==
+            ::sycl::backend::ext_oneapi_level_zero);
+#else
+    return false;
+#endif
+}
+
+bool test_queue::is_cuda() const {
+
+#if SYCL_EXT_ONEAPI_BACKEND_CUDA
+    return (m_impl->m_queue.get_backend() == ::sycl::backend::ext_oneapi_cuda);
+#else
+    return false;
+#endif
+}
+
+bool test_queue::is_hip() const {
+
+#if SYCL_EXT_ONEAPI_BACKEND_HIP
+    return (m_impl->m_queue.get_backend() == ::sycl::backend::ext_oneapi_hip);
+#else
+    return false;
+#endif
+}
+
+}  // namespace traccc::sycl
