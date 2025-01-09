@@ -231,7 +231,6 @@ track_candidate_container_types::buffer find_tracks(
         vecmem::data::vector_buffer<unsigned int> updated_liveness_buffer(
             n_in_params * config.max_num_branches_per_surface, mr.main);
         copy.setup(updated_liveness_buffer)->wait();
-        copy.memset(updated_liveness_buffer, 0)->wait();
 
         // Create the link map
         link_map[step] = {n_in_params * config.max_num_branches_per_surface,
