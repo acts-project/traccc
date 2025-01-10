@@ -107,7 +107,10 @@ TRACCC_DEVICE inline void find_tracks(
          * this thread.
          */
         else {
-            const auto bcd_id = std::distance(barcodes.begin(), lo);
+            const vecmem::device_vector<const unsigned int>::size_type bcd_id =
+                static_cast<
+                    vecmem::device_vector<const unsigned int>::size_type>(
+                    std::distance(barcodes.begin(), lo));
 
             init_meas = lo == barcodes.begin() ? 0u : upper_bounds[bcd_id - 1];
             num_meas = upper_bounds[bcd_id] - init_meas;

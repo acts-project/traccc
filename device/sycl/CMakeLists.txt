@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -30,6 +30,12 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/seeding/seeding_algorithm.cpp"
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.sycl"
+  # Track finding algorithm(s).
+  "include/traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
+  "src/finding/combinatorial_kalman_filter_algorithm.cpp"
+  "src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.sycl"
+  "src/finding/combinatorial_kalman_filter_algorithm_constant_field_telescope_detector.sycl"
+  "src/finding/find_tracks.hpp"
   # Track fitting algorithm(s).
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
