@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,11 +9,12 @@
 
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
+#include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
@@ -72,7 +73,7 @@ class full_chain_algorithm
     using clustering_algorithm = clusterization_algorithm;
     /// Track finding algorithm type
     using finding_algorithm =
-        traccc::host::combinatorial_kalman_filter_algorithm;
+        traccc::sycl::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
 
@@ -126,6 +127,11 @@ class full_chain_algorithm
     /// Memory copy object
     mutable vecmem::sycl::async_copy m_copy;
 
+    /// Constant B field for the (seed) track parameter estimation
+    traccc::vector3 m_field_vec;
+    /// Constant B field for the track finding and fitting
+    detray::bfield::const_field_t m_field;
+
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>
         m_det_descr;
@@ -140,20 +146,38 @@ class full_chain_algorithm
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
+
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
+    /// Measurement sorting algorithm
+    measurement_sorting_algorithm m_measurement_sorting;
     /// Spacepoint formation algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm
     track_params_estimation m_track_parameter_estimation;
+    /// Track finding algorithm
+    finding_algorithm m_finding;
 
-    /// Configs
+    /// @}
+
+    /// @}
+
+    /// @name Algorithm configurations
+    /// @{
+
+    /// Configuration for clustering
     clustering_config m_clustering_config;
+    /// Configuration for the seed finding
     seedfinder_config m_finder_config;
+    /// Configuration for the spacepoint grid formation
     spacepoint_grid_config m_grid_config;
+    /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+
+    /// Configuration for the track finding
+    finding_algorithm::config_type m_finding_config;
 
     /// @}
 

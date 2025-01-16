@@ -54,7 +54,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
-    const finding_algorithm::config_type&,
+    const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type&,
     const silicon_detector_description::host& det_descr,
     host_detector_type* detector)
@@ -64,6 +64,8 @@ full_chain_algorithm::full_chain_algorithm(
       m_device_mr{&(m_data->m_queue)},
       m_cached_device_mr{m_device_mr},
       m_copy{&(m_data->m_queue)},
+      m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
+      m_field{detray::bfield::create_const_field(m_field_vec)},
       m_det_descr(det_descr),
       m_device_det_descr{
           static_cast<silicon_detector_description::buffer::size_type>(
@@ -73,6 +75,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_device_detector{},
       m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                        m_copy, m_data->m_queue_wrapper, clustering_config},
+      m_measurement_sorting(m_copy, m_data->m_queue_wrapper),
       m_spacepoint_formation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
           m_data->m_queue_wrapper},
@@ -85,10 +88,14 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_parameter_estimation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
           m_data->m_queue_wrapper},
+      m_finding{finding_config,
+                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
+                m_data->m_queue_wrapper},
       m_clustering_config(clustering_config),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
-      m_filter_config(filter_config) {
+      m_filter_config(filter_config),
+      m_finding_config(finding_config) {
 
     // Tell the user what device is being used.
     std::cout
@@ -112,6 +119,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_device_mr{&(m_data->m_queue)},
       m_cached_device_mr{m_device_mr},
       m_copy{&(m_data->m_queue)},
+      m_field_vec{parent.m_field_vec},
+      m_field{parent.m_field},
       m_det_descr(parent.m_det_descr),
       m_device_det_descr{
           static_cast<silicon_detector_description::buffer::size_type>(
@@ -122,6 +131,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                        m_copy, m_data->m_queue_wrapper,
                        parent.m_clustering_config},
+      m_measurement_sorting(m_copy, m_data->m_queue_wrapper),
       m_spacepoint_formation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
           m_data->m_queue_wrapper},
@@ -134,10 +144,14 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_track_parameter_estimation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
           m_data->m_queue_wrapper},
+      m_finding{parent.m_finding_config,
+                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
+                m_data->m_queue_wrapper},
       m_clustering_config(parent.m_clustering_config),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
-      m_filter_config(parent.m_filter_config) {
+      m_filter_config(parent.m_filter_config),
+      m_finding_config(parent.m_finding_config) {
 
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
@@ -161,21 +175,27 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     // Execute the algorithms.
     const clusterization_algorithm::output_type measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
+    m_measurement_sorting(measurements);
 
     // If we have a Detray detector, run the seeding, track
     // finding and fitting.
     if (m_detector != nullptr) {
 
+        // Run the seed-finding.
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector_view, measurements);
         const track_params_estimation::output_type track_params =
             m_track_parameter_estimation(spacepoints, m_seeding(spacepoints),
                                          {0.f, 0.f, m_finder_config.bFieldInZ});
 
+        // Run the track finding.
+        const finding_algorithm::output_type track_candidates = m_finding(
+            m_device_detector_view, m_field, measurements, track_params);
+
         // Get the final data back to the host.
         bound_track_parameters_collection_types::host result(
             &(m_host_mr.get()));
-        m_copy(track_params, result)->wait();
+        m_copy(track_candidates.headers, result)->wait();
 
         // Return the host container.
         return result;

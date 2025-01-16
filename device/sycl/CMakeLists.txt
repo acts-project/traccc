@@ -16,6 +16,8 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Clusterization algorithm(s).
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.sycl"
+  "include/traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
+  "src/clusterization/measurement_sorting_algorithm.sycl"
   # Seeding algorithm(s).
   "include/traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
