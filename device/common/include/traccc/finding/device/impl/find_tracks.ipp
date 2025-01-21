@@ -7,6 +7,17 @@
 
 #pragma once
 
+// HACK: Fix for intel/llvm#15544
+// As of Intel LLVM 2025.0, enabling an AMD SYCL target inadvertently sets the
+// `__CUDA_ARCH__` preprocessor definition which breaks all sorts of internal
+// logic in Thrust. Thus, we very selectively undefine the `__CUDA_ARCH__`
+// definition when we are are compiling SYCL code using the Intel LLVM
+// compiler. This can be removed when intel/llvm#15443 makes it into a OneAPI
+// release.
+#if defined(__INTEL_LLVM_COMPILER) && defined(SYCL_LANGUAGE_VERSION)
+#undef __CUDA_ARCH__
+#endif
+
 // Project include(s).
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 
