@@ -17,6 +17,10 @@ traccc_add_library( traccc_kokkos kokkos TYPE SHARED
   "src/seeding/spacepoint_binning.cpp"
 )
 
+thrust_create_target (traccc::kokkos_thrust
+  HOST CPP
+  DEVICE CPP )
+
 target_link_libraries( traccc_kokkos 
-  PUBLIC traccc::core vecmem::core Kokkos::kokkos
+  PUBLIC traccc::core vecmem::core Kokkos::kokkos traccc::kokkos_thrust
   PRIVATE traccc::device_common )

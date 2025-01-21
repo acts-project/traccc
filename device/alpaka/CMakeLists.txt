@@ -50,7 +50,13 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
 thrust_create_target( traccc::cuda_thrust
   HOST CPP
   DEVICE CUDA )
+  target_link_libraries(traccc::cuda_thrust INTERFACE CUDA::cudart)
   list(APPEND PRIVATE_LIBRARIES traccc::cuda_thrust)
+else()
+thrust_create_target (traccc::alpaka_thrust
+  HOST CPP
+  DEVICE CPP )
+  list(APPEND PRIVATE_LIBRARIES traccc::alpaka_thrust)
 endif()
 
 target_link_libraries(traccc_alpaka PUBLIC ${PUBLIC_LIBRARIES} PRIVATE ${PRIVATE_LIBRARIES})
