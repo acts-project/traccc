@@ -103,8 +103,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::io::read_detector(
             host_detector, host_mr, detector_opts.detector_file,
             detector_opts.material_file, detector_opts.grid_file);
-        device_detector = detray::get_buffer(detray::get_data(host_detector),
-                                             device_mr, copy);
+        device_detector = detray::get_buffer(host_detector, device_mr, copy);
         stream.synchronize();
         device_detector_view = detray::get_data(device_detector);
     }

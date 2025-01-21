@@ -123,8 +123,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::io::read_detector(
             host_detector, host_mr, detector_opts.detector_file,
             detector_opts.material_file, detector_opts.grid_file);
-        device_detector = detray::get_buffer(detray::get_data(host_detector),
-                                             device_mr, copy);
+        device_detector = detray::get_buffer(host_detector, device_mr, copy);
         q.wait_and_throw();
         device_detector_view = detray::get_data(device_detector);
     }
@@ -141,10 +140,11 @@ int seq_run(const traccc::opts::detector& detector_opts,
     uint64_t n_found_tracks_sycl = 0;
 
     // Constant B field for the track finding and fitting
+    using scalar_type = traccc::default_detector::host::scalar_type;
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const detray::bfield::const_field_t field =
-        detray::bfield::create_const_field(field_vec);
+    const detray::bfield::const_field_t<scalar_type> field =
+        detray::bfield::create_const_field<scalar_type>(field_vec);
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);

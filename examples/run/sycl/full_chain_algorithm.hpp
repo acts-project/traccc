@@ -130,7 +130,7 @@ class full_chain_algorithm
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
-    detray::bfield::const_field_t m_field;
+    detray::bfield::const_field_t<scalar_type> m_field;
 
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>

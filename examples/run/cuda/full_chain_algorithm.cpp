@@ -88,8 +88,8 @@ full_chain_algorithm::full_chain_algorithm(
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
     if (m_detector != nullptr) {
-        m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
-                                               m_device_mr, m_copy);
+        m_device_detector =
+            detray::get_buffer(*m_detector, m_device_mr, m_copy);
         m_device_detector_view = detray::get_data(m_device_detector);
     }
 }
@@ -135,8 +135,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
     if (m_detector != nullptr) {
-        m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
-                                               m_device_mr, m_copy);
+        m_device_detector =
+            detray::get_buffer(*m_detector, m_device_mr, m_copy);
         m_device_detector_view = detray::get_data(m_device_detector);
     }
 }

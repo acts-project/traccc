@@ -79,7 +79,8 @@ TEST_P(CkfToyDetectorTests, Run) {
         (path / "toy_detector_homogeneous_material.json").native(),
         (path / "toy_detector_surface_grids.json").native());
 
-    auto field = detray::bfield::create_const_field(B);
+    auto field =
+        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
 
     // Detector view object
     auto det_view = detray::get_data(host_det);
