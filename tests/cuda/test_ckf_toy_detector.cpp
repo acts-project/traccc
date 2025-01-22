@@ -70,7 +70,8 @@ TEST_P(CkfToyDetectorTests, Run) {
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
-    auto field = detray::bfield::create_const_field(B);
+    auto field =
+        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
 
     // Detector view object
     auto det_view = detray::get_data(host_det);

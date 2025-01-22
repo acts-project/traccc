@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/kokkos/seeding/spacepoint_binning.hpp"

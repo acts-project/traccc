@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/geometry/detector.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"

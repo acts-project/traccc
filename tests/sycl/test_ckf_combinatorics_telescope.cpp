@@ -83,7 +83,9 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         (path / "telescope_detector_geometry.json").native(),
         (path / "telescope_detector_homogeneous_material.json").native(), "");
 
-    auto field = detray::bfield::create_const_field(std::get<13>(GetParam()));
+    auto field =
+        detray::bfield::create_const_field<host_detector_type::scalar_type>(
+            std::get<13>(GetParam()));
 
     // Detector view object
     auto det_view = detray::get_data(host_det);

@@ -43,10 +43,9 @@
 BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
 
     // Type declarations
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t,
-                           typename detector_type::algebra_type,
-                           detray::constrained_step<>>;
+    using rk_stepper_type = detray::rk_stepper<
+        b_field_t::view_t, typename detector_type::algebra_type,
+        detray::constrained_step<typename detector_type::scalar_type>>;
     using host_detector_type = traccc::default_detector::host;
     using device_detector_type = traccc::default_detector::device;
     using device_navigator_type = detray::navigator<const device_detector_type>;
@@ -73,7 +72,8 @@ BENCHMARK_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    auto field = detray::bfield::create_const_field(B);
+    auto field =
+        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
 
     // Algorithms
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,

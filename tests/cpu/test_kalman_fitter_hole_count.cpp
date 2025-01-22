@@ -69,7 +69,9 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
 
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
-    auto field = detray::bfield::create_const_field(std::get<13>(GetParam()));
+    auto field =
+        detray::bfield::create_const_field<host_detector_type::scalar_type>(
+            std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data

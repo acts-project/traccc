@@ -58,7 +58,7 @@ class kalman_fitter {
     using bfield_type = typename stepper_t::magnetic_field_type;
 
     // Actor types
-    using aborter = detray::pathlimit_aborter;
+    using aborter = detray::pathlimit_aborter<scalar_type>;
     using transporter = detray::parameter_transporter<algebra_type>;
     using interactor = detray::pointwise_material_interactor<algebra_type>;
     using fit_actor = traccc::kalman_actor<algebra_type, vector_type>;

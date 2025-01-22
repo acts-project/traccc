@@ -12,12 +12,10 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/digitization_config.hpp"
-
-// Detray include(s).
-#include "detray/core/detector.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -86,7 +84,7 @@ void write(std::size_t event, std::string_view directory,
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            track_candidate_container_types::const_view tracks,
-           const detray::detector<>& detector);
+           const traccc::default_detector::host& detector);
 
 /// Write a digitization configuration to a file
 ///

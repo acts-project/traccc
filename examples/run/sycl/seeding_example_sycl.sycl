@@ -8,6 +8,9 @@
 // SYCL include(s)
 #include <sycl/sycl.hpp>
 
+// core
+#include "traccc/geometry/detector.hpp"
+
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -33,8 +36,6 @@
 #include "traccc/options/track_seeding.hpp"
 
 // Detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/core/detector_metadata.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
@@ -94,8 +95,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::io::read_detector(
             host_det, host_mr, detector_opts.detector_file,
             detector_opts.material_file, detector_opts.grid_file);
-        device_det =
-            detray::get_buffer(detray::get_data(host_det), device_mr, copy);
+        device_det = detray::get_buffer(host_det, device_mr, copy);
         q.wait_and_throw();
         device_det_view = detray::get_data(device_det);
     }

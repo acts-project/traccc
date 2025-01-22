@@ -27,14 +27,17 @@ struct fit_tracks_constant_field_default_detector;
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const default_detector::view& det,
-    const detray::bfield::const_field_t::view_t& field,
+    const detray::bfield::const_field_t<
+        default_detector::device::scalar_type>::view_t& field,
     const track_candidate_container_types::const_view& track_candidates) const {
+
+    using scalar_type = default_detector::device::scalar_type;
 
     // Construct the fitter type.
     using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t::view_t,
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            default_detector::device::algebra_type,
-                           detray::constrained_step<>>;
+                           detray::constrained_step<scalar_type>>;
     using navigator_type = detray::navigator<const default_detector::device>;
     using fitter_type = kalman_fitter<stepper_type, navigator_type>;
 

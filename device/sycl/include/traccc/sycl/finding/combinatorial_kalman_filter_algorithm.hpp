@@ -34,12 +34,14 @@ namespace traccc::sycl {
 class combinatorial_kalman_filter_algorithm
     : public algorithm<track_candidate_container_types::buffer(
           const default_detector::view&,
-          const detray::bfield::const_field_t::view_t&,
+          const detray::bfield::const_field_t<
+              default_detector::device::scalar_type>::view_t&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public algorithm<track_candidate_container_types::buffer(
           const telescope_detector::view&,
-          const detray::bfield::const_field_t::view_t&,
+          const detray::bfield::const_field_t<
+              telescope_detector::device::scalar_type>::view_t&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)> {
 
@@ -66,7 +68,8 @@ class combinatorial_kalman_filter_algorithm
     ///
     output_type operator()(
         const default_detector::view& det,
-        const detray::bfield::const_field_t::view_t& field,
+        const detray::bfield::const_field_t<
+            default_detector::device::scalar_type>::view_t& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;
@@ -83,7 +86,8 @@ class combinatorial_kalman_filter_algorithm
     ///
     output_type operator()(
         const telescope_detector::view& det,
-        const detray::bfield::const_field_t::view_t& field,
+        const detray::bfield::const_field_t<
+            telescope_detector::device::scalar_type>::view_t& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;

@@ -356,10 +356,13 @@ track_candidate_container_types::buffer find_tracks(
             /// Actor types
             using algebra_type =
                 typename navigator_t::detector_type::algebra_type;
+            using scalar_type =
+                typename navigator_t::detector_type::scalar_type;
             using interactor_type =
                 detray::pointwise_material_interactor<algebra_type>;
             using actor_type =
-                detray::actor_chain<detray::dtuple, detray::pathlimit_aborter,
+                detray::actor_chain<detray::dtuple,
+                                    detray::pathlimit_aborter<scalar_type>,
                                     detray::parameter_transporter<algebra_type>,
                                     interaction_register<interactor_type>,
                                     interactor_type, ckf_aborter>;

@@ -20,7 +20,8 @@ full_chain_algorithm::full_chain_algorithm(
     const silicon_detector_description::host& det_descr,
     detector_type* detector)
     : m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(detray::bfield::create_const_field(m_field_vec)),
+      m_field(detray::bfield::create_const_field<
+              typename detector_type::scalar_type>(m_field_vec)),
       m_det_descr(det_descr),
       m_detector(detector),
       m_clusterization(mr),
