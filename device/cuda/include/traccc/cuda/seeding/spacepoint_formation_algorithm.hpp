@@ -14,6 +14,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
@@ -33,15 +34,17 @@ template <typename detector_t>
 class spacepoint_formation_algorithm
     : public algorithm<spacepoint_collection_types::buffer(
           const typename detector_t::view_type&,
-          const measurement_collection_types::const_view&)> {
+          const measurement_collection_types::const_view&)>,
+      public logging_mixin {
 
     public:
     /// Constructor for spacepoint_formation
     ///
     /// @param mr is the memory resource
     ///
-    spacepoint_formation_algorithm(const traccc::memory_resource& mr,
-                                   vecmem::copy& copy, stream& str);
+    spacepoint_formation_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the space point formation, based on one single
     /// module
@@ -63,7 +66,6 @@ class spacepoint_formation_algorithm
     std::reference_wrapper<vecmem::copy> m_copy;
     /// The CUDA stream to use
     std::reference_wrapper<stream> m_stream;
-
 };  // class spacepoint_formation_algorithm
 
 }  // namespace traccc::cuda

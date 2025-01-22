@@ -13,7 +13,10 @@ namespace traccc::sycl {
 silicon_pixel_spacepoint_formation_algorithm::
     silicon_pixel_spacepoint_formation_algorithm(
         const traccc::memory_resource& mr, vecmem::copy& copy,
-        queue_wrapper queue)
-    : m_mr(mr), m_copy(copy), m_queue(queue) {}
+        queue_wrapper queue, std::unique_ptr<const Logger> logger)
+    : logging_mixin(std::move(logger)),
+      m_mr(mr),
+      m_copy(copy),
+      m_queue(queue) {}
 
 }  // namespace traccc::sycl

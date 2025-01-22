@@ -17,6 +17,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
@@ -38,7 +39,8 @@ namespace traccc::sycl {
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::buffer(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)> {
+          const silicon_detector_description::const_view&)>,
+      public logging_mixin {
 
     public:
     /// Configuration type
@@ -52,9 +54,10 @@ class clusterization_algorithm
     /// @param queue is a wrapper for the for the sycl queue for kernel
     ///              invocation
     /// @param config the clustering configuration
-    clusterization_algorithm(const traccc::memory_resource& mr,
-                             vecmem::copy& copy, queue_wrapper& queue,
-                             const config_type& config);
+    clusterization_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper& queue, const config_type& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for clusterization algorithm
     ///
@@ -82,6 +85,5 @@ class clusterization_algorithm
     vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
     vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
     vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
-
 };  // class clusterization_algorithm
 }  // namespace traccc::sycl
