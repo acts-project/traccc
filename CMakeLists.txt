@@ -176,8 +176,6 @@ if( TRACCC_SETUP_THRUST )
       add_subdirectory( extern/cccl )
    endif()
 endif()
-add_library( traccc::Thrust INTERFACE IMPORTED )
-target_link_libraries( traccc::Thrust INTERFACE Thrust::Thrust )
 
 # Set up rocThrust.
 option( TRACCC_SETUP_ROCTHRUST

@@ -49,8 +49,41 @@ using prefix_sum_buffer_t = prefix_sum_buffer;
 /// the view elements, and the total summation of the size vector
 ///
 TRACCC_HOST
-prefix_sum_buffer_t make_prefix_sum_buffer(
+inline prefix_sum_buffer_t make_prefix_sum_buffer(
     const std::vector<prefix_sum_size_t>& sizes, vecmem::copy& copy,
-    const traccc::memory_resource& mr);
+    const traccc::memory_resource& mr) {
 
+    if (sizes.size() == 0) {
+        return prefix_sum_buffer_t{
+            vecmem::data::vector_view<prefix_sum_size_t>{},
+            std::variant<vecmem::vector<prefix_sum_size_t>,
+                         vecmem::data::vector_buffer<prefix_sum_size_t>>{},
+            prefix_sum_size_t{0}};
+    }
+
+    // Create vector with summation of sizes
+    vecmem::vector<prefix_sum_size_t> sizes_sum(sizes.size(),
+                                                mr.host ? mr.host : &(mr.main));
+    std::partial_sum(sizes.begin(), sizes.end(), sizes_sum.begin(),
+                     std::plus<prefix_sum_size_t>());
+    const prefix_sum_size_t totalSize = sizes_sum.back();
+
+    if (mr.host != nullptr) {
+        // Create buffer and view objects
+        vecmem::data::vector_buffer<prefix_sum_size_t> sizes_sum_buff(
+            static_cast<unsigned int>(sizes_sum.size()), mr.main);
+        copy.setup(sizes_sum_buff)->ignore();
+        (copy)(vecmem::get_data(sizes_sum), sizes_sum_buff)->wait();
+        vecmem::data::vector_view<prefix_sum_size_t> sizes_sum_view(
+            sizes_sum_buff);
+
+        return {sizes_sum_view, std::move(sizes_sum_buff), totalSize};
+    } else {
+        // Create view object
+        vecmem::data::vector_view<prefix_sum_size_t> sizes_sum_view =
+            vecmem::get_data(sizes_sum);
+
+        return {sizes_sum_view, std::move(sizes_sum), totalSize};
+    }
+}
 }  // namespace traccc::device

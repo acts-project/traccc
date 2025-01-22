@@ -54,12 +54,6 @@ if( TRACCC_BUILD_EXAMPLES )
    endif()
 endif()
 
-# Set up the traccc::Thrust target.
-if ( NOT TARGET traccc::Thrust )
-   add_library( traccc::Thrust INTERFACE IMPORTED )
-   target_link_libraries( traccc::Thrust INTERFACE Thrust::Thrust )
-endif()
-
 # Include the file listing all the imported targets and options.
 include( "${traccc_CMAKE_DIR}/traccc-config-targets.cmake" )
 
