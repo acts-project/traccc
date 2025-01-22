@@ -13,6 +13,7 @@
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/utils/logging.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -37,6 +38,7 @@ namespace traccc::io {
 ///
 void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                 std::string_view directory,
+                std::unique_ptr<const Logger> logger,
                 const silicon_detector_description::host* dd = nullptr,
                 data_format format = data_format::csv, bool deduplicate = true,
                 bool use_acts_geometry_id = true);
@@ -55,7 +57,7 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
 ///                                  "Detray geometry ID"
 ///
 void read_cells(edm::silicon_cell_collection::host& cells,
-                std::string_view filename,
+                std::string_view filename, std::unique_ptr<const Logger> logger,
                 const silicon_detector_description::host* dd = nullptr,
                 data_format format = data_format::csv, bool deduplicate = true,
                 bool use_acts_geometry_id = true);

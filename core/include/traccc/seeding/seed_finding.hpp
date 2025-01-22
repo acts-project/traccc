@@ -30,8 +30,10 @@ class seed_finding
     /// @param find_config is seed finder configuration parameters
     /// @param filter_config is the seed filter configuration
     ///
-    seed_finding(const seedfinder_config& find_config,
-                 const seedfilter_config& filter_config);
+    seed_finding(
+        const seedfinder_config& find_config,
+        const seedfilter_config& filter_config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
     ///
@@ -53,6 +55,14 @@ class seed_finding
     /// Algorithm performing the seed selection
     seed_filtering m_seed_filtering;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class seed_finding
 
 }  // namespace traccc

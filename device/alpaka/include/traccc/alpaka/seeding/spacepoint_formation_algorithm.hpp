@@ -37,8 +37,9 @@ class spacepoint_formation_algorithm
     ///
     /// @param mr is the memory resource
     ///
-    spacepoint_formation_algorithm(const traccc::memory_resource& mr,
-                                   vecmem::copy& copy);
+    spacepoint_formation_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the space point formation, based on one single
     /// module
@@ -58,6 +59,15 @@ class spacepoint_formation_algorithm
     traccc::memory_resource m_mr;
     /// The copy object to use
     std::reference_wrapper<vecmem::copy> m_copy;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class spacepoint_formation_algorithm
 
 }  // namespace traccc::alpaka

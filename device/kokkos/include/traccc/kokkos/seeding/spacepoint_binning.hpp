@@ -30,9 +30,11 @@ class spacepoint_binning
 
     public:
     /// Constructor for the algorithm
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       const traccc::memory_resource& mr);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config,
+        const traccc::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a a view of spacepoints
     output_type operator()(const spacepoint_collection_types::const_view&
@@ -45,6 +47,14 @@ class spacepoint_binning
     traccc::memory_resource m_mr;
     std::unique_ptr<vecmem::copy> m_copy;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class spacepoint_binning
 
 }  // namespace traccc::kokkos

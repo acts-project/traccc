@@ -43,10 +43,10 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
-    seed_finding(const seedfinder_config& config,
-                 const seedfilter_config& filter_config,
-                 const traccc::memory_resource& mr, vecmem::copy& copy,
-                 stream& str);
+    seed_finding(
+        const seedfinder_config& config, const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
     ///
@@ -70,6 +70,15 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
 
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::cuda

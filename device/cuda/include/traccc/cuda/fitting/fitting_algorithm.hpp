@@ -43,8 +43,10 @@ class fitting_algorithm
     /// @param mr   The memory resource to use
     /// @param copy Copy object
     /// @param str  Cuda stream object
-    fitting_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
-                      vecmem::copy& copy, stream& str);
+    fitting_algorithm(
+        const config_type& cfg, const traccc::memory_resource& mr,
+        vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(
@@ -64,6 +66,15 @@ class fitting_algorithm
     stream& m_stream;
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::cuda

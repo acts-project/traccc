@@ -10,8 +10,9 @@
 
 namespace traccc::host {
 
-kalman_fitting_algorithm::kalman_fitting_algorithm(const config_type& config,
-                                                   vecmem::memory_resource& mr)
-    : m_config{config}, m_mr{mr} {}
+kalman_fitting_algorithm::kalman_fitting_algorithm(
+    const config_type& config, vecmem::memory_resource& mr,
+    std::unique_ptr<const Logger> logger)
+    : m_config{config}, m_mr{mr}, m_logger(std::move(logger)) {}
 
 }  // namespace traccc::host

@@ -13,6 +13,7 @@
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/utils/logging.hpp"
 
 namespace traccc {
 
@@ -21,7 +22,9 @@ class seed_filtering {
 
     public:
     /// Constructor with the seed filter configuration
-    seed_filtering(const seedfilter_config& config);
+    seed_filtering(
+        const seedfilter_config& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed filtering
     ///
@@ -40,6 +43,14 @@ class seed_filtering {
     /// Seed filter configuration
     seedfilter_config m_filter_config;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class seed_filtering
 
 }  // namespace traccc

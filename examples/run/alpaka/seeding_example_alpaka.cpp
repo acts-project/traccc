@@ -61,7 +61,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts,
-            const traccc::opts::accelerator& accelerator_opts) {
+            const traccc::opts::accelerator& accelerator_opts,
+            [[maybe_unused]] std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     using Dim = ::alpaka::DimInt<1>;
     using Idx = uint32_t;
@@ -124,18 +126,22 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Seeding algorithms
-    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
-                                 {seeding_opts.seedfinder},
-                                 seeding_opts.seedfilter, host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    traccc::seeding_algorithm sa(
+        seeding_opts.seedfinder, {seeding_opts.seedfinder},
+        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::track_params_estimation tp(host_mr,
+                                       logger().clone("HostTrackParEstAlg"));
 
     // Alpaka Algorithms
-    traccc::alpaka::seeding_algorithm sa_alpaka{seeding_opts.seedfinder,
-                                                {seeding_opts.seedfinder},
-                                                seeding_opts.seedfilter,
-                                                mr,
-                                                copy};
-    traccc::alpaka::track_params_estimation tp_alpaka{mr, copy};
+    traccc::alpaka::seeding_algorithm sa_alpaka{
+        seeding_opts.seedfinder,
+        {seeding_opts.seedfinder},
+        seeding_opts.seedfilter,
+        mr,
+        copy,
+        logger().clone("AlpakaSeedingAlg")};
+    traccc::alpaka::track_params_estimation tp_alpaka{
+        mr, copy, logger().clone("AlpakaTrackParEstAlg")};
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -308,6 +314,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleSeedingAlpaka", traccc::logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -322,9 +330,11 @@ int main(int argc, char* argv[]) {
         {detector_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, performance_opts, accelerator_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts, input_opts,
-                   detector_opts, performance_opts, accelerator_opts);
+                   detector_opts, performance_opts, accelerator_opts,
+                   logger->clone());
 }

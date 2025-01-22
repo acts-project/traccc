@@ -17,8 +17,9 @@ namespace traccc::device {
 
 template <typename CONTAINER_TYPES>
 container_d2h_copy_alg<CONTAINER_TYPES>::container_d2h_copy_alg(
-    const memory_resource& mr, vecmem::copy& deviceCopy)
-    : m_mr(mr), m_deviceCopy(deviceCopy) {}
+    const memory_resource& mr, vecmem::copy& deviceCopy,
+    std::unique_ptr<const Logger> logger)
+    : m_mr(mr), m_deviceCopy(deviceCopy), m_logger(std::move(logger)) {}
 
 template <typename CONTAINER_TYPES>
 typename container_d2h_copy_alg<CONTAINER_TYPES>::output_type

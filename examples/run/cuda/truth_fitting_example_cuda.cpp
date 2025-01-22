@@ -55,6 +55,9 @@ using namespace traccc;
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> ilogger = traccc::getDefaultLogger(
+        "TracccExampleTruthFittingCuda", traccc::logging::Level::INFO);
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -67,7 +70,8 @@ int main(int argc, char* argv[]) {
         {detector_opts, input_opts, propagation_opts, performance_opts,
          accelerator_opts},
         argc,
-        argv};
+        argv,
+        logger().cloneWithSuffix("Options")};
 
     /// Type declarations
     using host_detector_type = traccc::default_detector::host;
@@ -136,10 +140,11 @@ int main(int argc, char* argv[]) {
 
     traccc::device::container_h2d_copy_alg<
         traccc::track_candidate_container_types>
-        track_candidate_h2d{mr, async_copy};
+        track_candidate_h2d{mr, async_copy,
+                            logger().clone("TrackCandidateH2DCopyAlg")};
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, async_copy};
+        track_state_d2h{mr, async_copy, logger().clone("TrackStateD2HCopyAlg")};
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
@@ -154,9 +159,10 @@ int main(int argc, char* argv[]) {
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_opts;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm host_fitting(
+        fit_cfg, host_mr, logger().clone("HostFittingAlg"));
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
-        fit_cfg, mr, async_copy, stream);
+        fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
 
     // Seed generator
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);

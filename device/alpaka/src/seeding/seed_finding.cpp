@@ -179,11 +179,13 @@ struct SelectSeedsKernel {
 seed_finding::seed_finding(const seedfinder_config& config,
                            const seedfilter_config& filter_config,
                            const traccc::memory_resource& mr,
-                           vecmem::copy& copy)
+                           vecmem::copy& copy,
+                           std::unique_ptr<const Logger> logger)
     : m_seedfinder_config(config),
       m_seedfilter_config(filter_config),
       m_mr(mr),
-      m_copy(copy) {}
+      m_copy(copy),
+      m_logger(std::move(logger)) {}
 
 seed_finding::output_type seed_finding::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,

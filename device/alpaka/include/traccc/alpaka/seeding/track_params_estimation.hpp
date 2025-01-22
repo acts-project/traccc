@@ -29,8 +29,9 @@ struct track_params_estimation
     /// @param mr is the memory resource
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
-    track_params_estimation(const traccc::memory_resource& mr,
-                            vecmem::copy& copy);
+    track_params_estimation(
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for track_params_estimation
     ///
@@ -59,6 +60,15 @@ struct track_params_estimation
     traccc::memory_resource m_mr;
     /// Copy object used by the algorithm
     vecmem::copy& m_copy;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::alpaka

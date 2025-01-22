@@ -13,8 +13,9 @@
 
 namespace traccc {
 
-track_params_estimation::track_params_estimation(vecmem::memory_resource& mr)
-    : m_mr(mr) {}
+track_params_estimation::track_params_estimation(
+    vecmem::memory_resource& mr, std::unique_ptr<const Logger> logger)
+    : m_mr(mr), m_logger(std::move(logger)) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::host& spacepoints,

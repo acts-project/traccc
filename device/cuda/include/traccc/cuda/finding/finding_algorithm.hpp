@@ -75,8 +75,10 @@ class finding_algorithm
     /// @param mr   The memory resource to use
     /// @param copy Copy object
     /// @param str  Cuda stream object
-    finding_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
-                      vecmem::copy& copy, stream& str);
+    finding_algorithm(
+        const config_type& cfg, const traccc::memory_resource& mr,
+        vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Get config object (const access)
     const finding_config& get_config() const { return m_cfg; }
@@ -103,6 +105,15 @@ class finding_algorithm
     stream& m_stream;
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::cuda

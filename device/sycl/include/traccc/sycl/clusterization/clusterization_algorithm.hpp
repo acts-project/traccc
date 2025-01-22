@@ -52,9 +52,10 @@ class clusterization_algorithm
     /// @param queue is a wrapper for the for the sycl queue for kernel
     ///              invocation
     /// @param config the clustering configuration
-    clusterization_algorithm(const traccc::memory_resource& mr,
-                             vecmem::copy& copy, queue_wrapper& queue,
-                             const config_type& config);
+    clusterization_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper& queue, const config_type& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for clusterization algorithm
     ///
@@ -83,5 +84,13 @@ class clusterization_algorithm
     vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
     vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class clusterization_algorithm
 }  // namespace traccc::sycl

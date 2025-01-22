@@ -31,8 +31,9 @@ struct EstimateTrackParamsKernel {
 };
 
 track_params_estimation::track_params_estimation(
-    const traccc::memory_resource& mr, vecmem::copy& copy)
-    : m_mr(mr), m_copy(copy) {}
+    const traccc::memory_resource& mr, vecmem::copy& copy,
+    std::unique_ptr<const Logger> logger)
+    : m_mr(mr), m_copy(copy), m_logger(std::move(logger)) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,

@@ -92,7 +92,8 @@ class full_chain_algorithm
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         host_detector_type* detector = nullptr);
+                         host_detector_type* detector,
+                         std::unique_ptr<const traccc::Logger> logger);
 
     /// Copy constructor
     ///
@@ -181,6 +182,14 @@ class full_chain_algorithm
 
     /// @}
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const traccc::Logger> m_logger;
+
+    /// traccc::Logger access method
+    const traccc::Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class full_chain_algorithm
 
 }  // namespace traccc::sycl

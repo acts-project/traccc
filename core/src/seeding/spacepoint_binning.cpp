@@ -17,11 +17,12 @@ namespace traccc {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    vecmem::memory_resource& mr)
+    vecmem::memory_resource& mr, std::unique_ptr<const Logger> logger)
     : m_config(config),
       m_grid_config(grid_config),
       m_axes(get_axes(grid_config, mr)),
-      m_mr(mr) {}
+      m_mr(mr),
+      m_logger(std::move(logger)) {}
 
 spacepoint_binning::output_type spacepoint_binning::operator()(
     const spacepoint_collection_types::host& sp_collection) const {

@@ -35,7 +35,9 @@ class track_params_estimation
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
-    track_params_estimation(vecmem::memory_resource& mr);
+    track_params_estimation(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for track_params_esitmation
     ///
@@ -61,6 +63,14 @@ class track_params_estimation
     /// The memory resource to use in the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class track_params_estimation
 
 }  // namespace traccc

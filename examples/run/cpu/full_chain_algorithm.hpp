@@ -77,7 +77,8 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         detector_type* detector = nullptr);
+                         detector_type* detector,
+                         std::unique_ptr<const traccc::Logger> logger);
 
     /// Reconstruct track parameters in the entire detector
     ///
@@ -135,6 +136,14 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
 
     /// @}
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const traccc::Logger> m_logger;
+
+    /// traccc::Logger access method
+    const traccc::Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class full_chain_algorithm
 
 }  // namespace traccc

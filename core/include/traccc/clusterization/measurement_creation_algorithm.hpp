@@ -39,7 +39,9 @@ class measurement_creation_algorithm
     ///
     /// @param mr The memory resource to use in the algorithm
     ///
-    measurement_creation_algorithm(vecmem::memory_resource &mr);
+    measurement_creation_algorithm(
+        vecmem::memory_resource &mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the connected component, based on one single
     /// module
@@ -57,6 +59,15 @@ class measurement_creation_algorithm
     private:
     /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger &logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 
 };  // class measurement_creation_algorithm
 

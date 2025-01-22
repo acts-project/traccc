@@ -54,9 +54,10 @@ class clusterization_algorithm
     /// @param config The clustering configuration
     /// partition
     ///
-    clusterization_algorithm(const traccc::memory_resource& mr,
-                             vecmem::copy& copy, stream& str,
-                             const config_type& config);
+    clusterization_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        const config_type& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for clusterization algorithm
     ///
@@ -84,6 +85,15 @@ class clusterization_algorithm
     vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
     vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
     vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::cuda

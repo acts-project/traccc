@@ -9,6 +9,7 @@
 #include "read_cells.hpp"
 
 #include "traccc/io/csv/make_cell_reader.hpp"
+#include "traccc/utils/logging.hpp"
 
 // System include(s).
 #include <algorithm>
@@ -36,7 +37,9 @@ struct cell_order {
 };  // struct cell_order
 
 std::map<std::uint64_t, std::vector<traccc::io::csv::cell> >
-read_deduplicated_cells(std::string_view filename) {
+read_deduplicated_cells(std::string_view filename,
+                        std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Temporary storage for all the cells and modules.
     std::map<std::uint64_t,
@@ -60,8 +63,7 @@ read_deduplicated_cells(std::string_view filename) {
         }
     }
     if (nduplicates > 0) {
-        std::cout << "WARNING: @traccc::io::csv::read_cells: " << nduplicates
-                  << " duplicate cells found in " << filename << std::endl;
+        TRACCC_WARNING(nduplicates << " duplicate cells found in " << filename);
     }
 
     // Create and fill the result container. With summed activation values.
@@ -111,6 +113,7 @@ namespace traccc::io::csv {
 
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
+                std::unique_ptr<const Logger> ilogger,
                 const silicon_detector_description::host* dd, bool deduplicate,
                 bool use_acts_geometry_id) {
 
@@ -118,8 +121,9 @@ void read_cells(edm::silicon_cell_collection::host& cells,
     cells.resize(0u);
 
     // Get the cells and modules into an intermediate format.
-    auto cellsMap = (deduplicate ? read_deduplicated_cells(filename)
-                                 : read_all_cells(filename));
+    auto cellsMap =
+        (deduplicate ? read_deduplicated_cells(filename, ilogger->clone())
+                     : read_all_cells(filename));
 
     // If there is a detector description object, build a map of geometry IDs
     // to indices inside the detector description.

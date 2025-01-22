@@ -40,7 +40,9 @@ class measurement_sorting_algorithm
     /// @param copy The copy object to use in the algorithm
     /// @param queue Wrapper for the for the SYCL queue for kernel invocation
     ///
-    measurement_sorting_algorithm(vecmem::copy& copy, queue_wrapper& queue);
+    measurement_sorting_algorithm(
+        vecmem::copy& copy, queue_wrapper& queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator performing the sorting on a container
     ///
@@ -55,6 +57,14 @@ class measurement_sorting_algorithm
     /// The SYCL queue to use
     std::reference_wrapper<queue_wrapper> m_queue;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::sycl

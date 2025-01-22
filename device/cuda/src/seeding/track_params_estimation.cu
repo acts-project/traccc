@@ -33,11 +33,13 @@ __global__ void estimate_track_params(
 }  // namespace kernels
 
 track_params_estimation::track_params_estimation(
-    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str)
+    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+    std::unique_ptr<const Logger> logger)
     : m_mr(mr),
       m_copy(copy),
       m_stream(str),
-      m_warp_size(details::get_warp_size(str.device())) {}
+      m_warp_size(details::get_warp_size(str.device())),
+      m_logger(std::move(logger)) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,

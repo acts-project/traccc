@@ -43,6 +43,10 @@ namespace po = boost::program_options;
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> ilogger = traccc::getDefaultLogger(
+        "TracccExampleTruthFitting", traccc::logging::Level::INFO);
+
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -53,7 +57,8 @@ int main(int argc, char* argv[]) {
         "Truth Track Fitting on the Host",
         {detector_opts, input_opts, propagation_opts, performance_opts},
         argc,
-        argv};
+        argv,
+        logger().cloneWithSuffix("Options")};
 
     /// Type declarations
     using host_detector_type = traccc::default_detector::host;
@@ -106,7 +111,8 @@ int main(int argc, char* argv[]) {
     traccc::fitting_config fit_cfg;
     fit_cfg.propagation = propagation_opts;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm host_fitting(
+        fit_cfg, host_mr, logger().clone("FittingAlg"));
 
     // Seed generator
     traccc::seed_generator<host_detector_type> sg(host_det, stddevs);

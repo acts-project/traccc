@@ -42,7 +42,9 @@ class silicon_pixel_spacepoint_formation_algorithm
     ///
     /// @param mr is the memory resource
     ///
-    silicon_pixel_spacepoint_formation_algorithm(vecmem::memory_resource& mr);
+    silicon_pixel_spacepoint_formation_algorithm(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Construct spacepoints from 2D silicon pixel measurements
     ///
@@ -70,6 +72,14 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// Memory resource to use for the output container
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class silicon_pixel_spacepoint_formation_algorithm
 
 }  // namespace traccc::host
