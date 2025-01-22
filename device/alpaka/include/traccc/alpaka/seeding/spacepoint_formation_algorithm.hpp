@@ -12,6 +12,7 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -30,15 +31,17 @@ template <typename detector_t>
 class spacepoint_formation_algorithm
     : public algorithm<spacepoint_collection_types::buffer(
           const typename detector_t::view_type&,
-          const measurement_collection_types::const_view&)> {
+          const measurement_collection_types::const_view&)>,
+      public messaging {
 
     public:
     /// Constructor for spacepoint_formation
     ///
     /// @param mr is the memory resource
     ///
-    spacepoint_formation_algorithm(const traccc::memory_resource& mr,
-                                   vecmem::copy& copy);
+    spacepoint_formation_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the space point formation, based on one single
     /// module

@@ -12,6 +12,7 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -29,13 +30,16 @@ class track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::host(
           const spacepoint_collection_types::host&,
           const seed_collection_types::host&, const vector3&,
-          const std::array<traccc::scalar, traccc::e_bound_size>&)> {
+          const std::array<traccc::scalar, traccc::e_bound_size>&)>,
+      public messaging {
 
     public:
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
-    track_params_estimation(vecmem::memory_resource& mr);
+    track_params_estimation(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for track_params_esitmation
     ///
@@ -60,7 +64,6 @@ class track_params_estimation
     private:
     /// The memory resource to use in the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
 };  // class track_params_estimation
 
 }  // namespace traccc

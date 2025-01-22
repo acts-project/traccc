@@ -10,6 +10,7 @@
 // Library include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -26,7 +27,8 @@ namespace traccc::host {
 ///
 class measurement_sorting_algorithm
     : public algorithm<measurement_collection_types::view(
-          const measurement_collection_types::view&)> {
+          const measurement_collection_types::view&)>,
+      public messaging {
 
     public:
     /// Callable operator performing the sorting on a container
@@ -35,7 +37,6 @@ class measurement_sorting_algorithm
     ///
     output_type operator()(const measurement_collection_types::view&
                                measurements_view) const override;
-
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::host

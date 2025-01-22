@@ -27,8 +27,9 @@ namespace traccc::cuda {
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
-    const config_type& config)
-    : m_mr(mr),
+    const config_type& config, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_mr(mr),
       m_copy(copy),
       m_stream(str),
       m_config(config),

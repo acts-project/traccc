@@ -51,7 +51,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
-            const traccc::opts::performance& performance_opts) {
+            const traccc::opts::performance& performance_opts,
+            std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -99,13 +101,15 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     cfg.propagation = propagation_config;
 
     // Finding algorithm object
-    traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding(
+        cfg, logger().clone("FindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm host_fitting(
+        fit_cfg, host_mr, logger().clone("FittingAlg"));
 
     // Seed generator
     traccc::seed_generator<traccc::default_detector::host> sg(detector,
@@ -183,6 +187,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleTruthFinding", traccc::Logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -196,9 +202,10 @@ int main(int argc, char* argv[]) {
         {detector_opts, input_opts, finding_opts, propagation_opts,
          fitting_opts, performance_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(finding_opts, propagation_opts, fitting_opts, input_opts,
-                   detector_opts, performance_opts);
+                   detector_opts, performance_opts, logger->clone());
 }

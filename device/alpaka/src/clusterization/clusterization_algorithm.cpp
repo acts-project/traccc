@@ -72,8 +72,9 @@ struct ZeroMutexKernel {
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy,
-    const config_type& config)
-    : m_config(config),
+    const config_type& config, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_config(config),
       m_mr(mr),
       m_copy(copy),
       m_f_backup(m_config.backup_size(), m_mr.main),

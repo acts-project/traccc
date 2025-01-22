@@ -37,8 +37,9 @@ struct FormSpacepointsKernel {
 
 template <typename detector_t>
 spacepoint_formation_algorithm<detector_t>::spacepoint_formation_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy)
-    : m_mr(mr), m_copy(copy) {}
+    const traccc::memory_resource& mr, vecmem::copy& copy,
+    std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_mr(mr), m_copy(copy) {}
 
 template <typename detector_t>
 spacepoint_collection_types::buffer

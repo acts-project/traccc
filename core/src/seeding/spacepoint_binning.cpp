@@ -17,8 +17,9 @@ namespace traccc {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    vecmem::memory_resource& mr)
-    : m_config(config),
+    vecmem::memory_resource& mr, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_config(config),
       m_grid_config(grid_config),
       m_axes(get_axes(grid_config, mr)),
       m_mr(mr) {}

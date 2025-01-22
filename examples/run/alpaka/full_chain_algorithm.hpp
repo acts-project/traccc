@@ -16,6 +16,7 @@
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -44,7 +45,8 @@ namespace traccc::alpaka {
 class full_chain_algorithm
     : public algorithm<bound_track_parameters_collection_types::host(
           const cell_collection_types::host&,
-          const cell_module_collection_types::host&)> {
+          const cell_module_collection_types::host&)>,
+      public messaging {
 
     public:
     /// Algorithm constructor

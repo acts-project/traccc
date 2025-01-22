@@ -14,6 +14,7 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -26,7 +27,8 @@ namespace traccc::alpaka {
 /// Seed finding for alpaka
 class seed_finding : public algorithm<seed_collection_types::buffer(
                          const spacepoint_collection_types::const_view&,
-                         const sp_grid_const_view&)> {
+                         const sp_grid_const_view&)>,
+                     public messaging {
 
     public:
     /// Constructor for the alpaka seed finding
@@ -37,9 +39,10 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     /// @param mr vecmem memory resource
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
-    seed_finding(const seedfinder_config& config,
-                 const seedfilter_config& filter_config,
-                 const traccc::memory_resource& mr, vecmem::copy& copy);
+    seed_finding(
+        const seedfinder_config& config, const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
     ///

@@ -33,8 +33,9 @@ class ccl_kernel;
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper& queue,
-    const config_type& config)
-    : m_mr(mr),
+    const config_type& config, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_mr(mr),
       m_queue(queue),
       m_copy(copy),
       m_config(config),

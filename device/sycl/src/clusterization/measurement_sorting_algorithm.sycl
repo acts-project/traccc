@@ -27,8 +27,9 @@
 namespace traccc::sycl {
 
 measurement_sorting_algorithm::measurement_sorting_algorithm(
-    vecmem::copy& copy, queue_wrapper& queue)
-    : m_copy{copy}, m_queue{queue} {}
+    vecmem::copy& copy, queue_wrapper& queue,
+    std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_copy{copy}, m_queue{queue} {}
 
 measurement_sorting_algorithm::output_type
 measurement_sorting_algorithm::operator()(

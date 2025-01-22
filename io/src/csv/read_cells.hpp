@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/utils/logging.hpp"
 
 // System include(s).
 #include <string_view>
@@ -28,6 +29,7 @@ namespace traccc::io::csv {
 ///
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
+                std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
                 const silicon_detector_description::host* dd = nullptr,
                 bool deduplicate = true, bool use_acts_geometry_id = true);
 

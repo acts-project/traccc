@@ -116,7 +116,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp" )
 target_link_libraries( traccc_core
   PUBLIC Eigen3::Eigen vecmem::core detray::core detray::detectors
-         traccc::algebra )
+         traccc::algebra ActsCore )
 
 # Prevent Eigen from getting confused when building code for a
 # CUDA or HIP backend with SYCL.

@@ -17,6 +17,7 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
 #include <detray/detectors/bfield.hpp>
@@ -40,7 +41,8 @@ class kalman_fitting_algorithm
           const telescope_detector::view&,
           const detray::bfield::const_field_t<
               telescope_detector::device::scalar_type>::view_t&,
-          const track_candidate_container_types::const_view&)> {
+          const track_candidate_container_types::const_view&)>,
+      public messaging {
 
     public:
     /// Configuration type
@@ -54,7 +56,8 @@ class kalman_fitting_algorithm
     ///
     kalman_fitting_algorithm(const config_type& config,
                              const traccc::memory_resource& mr,
-                             vecmem::copy& copy, queue_wrapper queue);
+                             vecmem::copy& copy, queue_wrapper queue,
+                             std::unique_ptr<const Logger> logger);
 
     /// Execute the algorithm
     ///

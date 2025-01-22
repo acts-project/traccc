@@ -15,6 +15,7 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -31,7 +32,8 @@ namespace traccc::cuda {
 ///
 class seed_finding : public algorithm<seed_collection_types::buffer(
                          const spacepoint_collection_types::const_view&,
-                         const sp_grid_const_view&)> {
+                         const sp_grid_const_view&)>,
+                     public messaging {
 
     public:
     /// Constructor for the cuda seed finding
@@ -43,10 +45,10 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
-    seed_finding(const seedfinder_config& config,
-                 const seedfilter_config& filter_config,
-                 const traccc::memory_resource& mr, vecmem::copy& copy,
-                 stream& str);
+    seed_finding(
+        const seedfinder_config& config, const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
     ///

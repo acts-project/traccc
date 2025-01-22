@@ -14,8 +14,9 @@
 
 namespace traccc::alpaka {
 
-measurement_sorting_algorithm::measurement_sorting_algorithm(vecmem::copy& copy)
-    : m_copy{copy} {}
+measurement_sorting_algorithm::measurement_sorting_algorithm(
+    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_copy{copy} {}
 
 measurement_sorting_algorithm::output_type
 measurement_sorting_algorithm::operator()(

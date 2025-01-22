@@ -70,7 +70,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts,
-            const traccc::opts::accelerator& accelerator_opts) {
+            const traccc::opts::accelerator& accelerator_opts,
+            std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     /// Type declarations
     using scalar_t = traccc::default_detector::host::scalar_type;
@@ -141,16 +143,18 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
-        track_candidate_d2h{mr, copy};
+        track_candidate_d2h{mr, copy,
+                            logger().clone("TrackCandidateD2HCopyAlg")};
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
+        track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
 
     // Seeding algorithm
-    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
-                                 {seeding_opts.seedfinder},
-                                 seeding_opts.seedfilter, host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    traccc::seeding_algorithm sa(
+        seeding_opts.seedfinder, {seeding_opts.seedfinder},
+        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::track_params_estimation tp(host_mr,
+                                       logger().clone("HostTrackParEstAlg"));
 
     traccc::cuda::stream stream;
 
@@ -161,8 +165,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                             seeding_opts.seedfilter,
                                             mr,
                                             async_copy,
-                                            stream};
-    traccc::cuda::track_params_estimation tp_cuda{mr, async_copy, stream};
+                                            stream,
+                                            logger().clone("CudaSeedingAlg")};
+    traccc::cuda::track_params_estimation tp_cuda{
+        mr, async_copy, stream, logger().clone("CudaTrackParEstAlg")};
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);
@@ -172,17 +178,20 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.propagation = propagation_config;
 
     // Finding algorithm object
-    traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding(
+        cfg, logger().clone("HostFindingAlg"));
     traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, async_copy, stream);
+        device_finding(cfg, mr, async_copy, stream,
+                       logger().clone("CudaFindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm host_fitting(
+        fit_cfg, host_mr, logger().clone("HostFittingAlg"));
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
-        fit_cfg, mr, async_copy, stream);
+        fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -463,6 +472,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleSeedingCuda", traccc::Logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -478,10 +489,11 @@ int main(int argc, char* argv[]) {
         {detector_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, fitting_opts, performance_opts, accelerator_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
                    input_opts, detector_opts, performance_opts,
-                   accelerator_opts);
+                   accelerator_opts, logger->clone());
 }

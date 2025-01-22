@@ -13,6 +13,7 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -24,15 +25,17 @@
 namespace traccc::alpaka {
 
 /// Spacepoing binning executed on an Alpaka accelerator
-class spacepoint_binning
-    : public algorithm<sp_grid_buffer(
-          const spacepoint_collection_types::const_view&)> {
+class spacepoint_binning : public algorithm<sp_grid_buffer(
+                               const spacepoint_collection_types::const_view&)>,
+                           public messaging {
 
     public:
     /// Constructor for the algorithm
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       const traccc::memory_resource& mr, vecmem::copy& copy);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a view of spacepoints
     output_type operator()(const spacepoint_collection_types::const_view&
@@ -44,7 +47,6 @@ class spacepoint_binning
     std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;
     traccc::memory_resource m_mr;
     vecmem::copy& m_copy;
-
 };  // class spacepoint_binning
 
 }  // namespace traccc::alpaka

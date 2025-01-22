@@ -143,8 +143,10 @@ __global__ void select_seeds(
 seed_finding::seed_finding(const seedfinder_config& config,
                            const seedfilter_config& filter_config,
                            const traccc::memory_resource& mr,
-                           vecmem::copy& copy, stream& str)
-    : m_seedfinder_config(config),
+                           vecmem::copy& copy, stream& str,
+                           std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_seedfinder_config(config),
       m_seedfilter_config(filter_config),
       m_mr(mr),
       m_copy(copy),

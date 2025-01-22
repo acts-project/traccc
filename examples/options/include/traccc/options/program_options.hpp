@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/options/details/interface.hpp"
+#include "traccc/utils/logging.hpp"
 
 // Boost include(s).
 #include <boost/program_options.hpp>
@@ -28,7 +29,9 @@ class program_options {
     program_options(
         std::string_view description,
         const std::vector<std::reference_wrapper<interface> >& options,
-        int argc, char* argv[]);
+        int argc, char* argv[],
+        std::unique_ptr<const traccc::Logger> ilogger =
+            traccc::getDummyLogger().clone());
 
     private:
     /// Description of all program options

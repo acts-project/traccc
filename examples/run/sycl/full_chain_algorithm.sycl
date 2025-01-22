@@ -57,8 +57,9 @@ full_chain_algorithm::full_chain_algorithm(
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type&,
     const silicon_detector_description::host& det_descr,
-    host_detector_type* detector)
-    : m_data(std::make_unique<details::full_chain_algorithm_data>(
+    host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
+    : messaging(logger->clone()),
+      m_data(std::make_unique<details::full_chain_algorithm_data>(
           ::handle_async_error)),
       m_host_mr(host_mr),
       m_device_mr{&(m_data->m_queue)},
@@ -76,23 +77,26 @@ full_chain_algorithm::full_chain_algorithm(
       m_detector(detector),
       m_device_detector{},
       m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
-                       m_copy, m_data->m_queue_wrapper, clustering_config},
-      m_measurement_sorting(m_copy, m_data->m_queue_wrapper),
+                       m_copy, m_data->m_queue_wrapper, clustering_config,
+                       logger->clone("ClusteringAlg")},
+      m_measurement_sorting(m_copy, m_data->m_queue_wrapper,
+                            logger->clone("MeasSortingAlg")),
       m_spacepoint_formation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper},
+          m_data->m_queue_wrapper, logger->clone("SpFormationAlg")},
       m_seeding{finder_config,
                 grid_config,
                 filter_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                 m_copy,
-                m_data->m_queue_wrapper},
+                m_data->m_queue_wrapper,
+                logger->clone("SeedingAlg")},
       m_track_parameter_estimation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper},
+          m_data->m_queue_wrapper, logger->clone("TrackParEstAlg")},
       m_finding{finding_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper},
+                m_data->m_queue_wrapper, logger->clone("TrackFindingAlg")},
       m_clustering_config(clustering_config),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
@@ -115,7 +119,8 @@ full_chain_algorithm::full_chain_algorithm(
 }
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
-    : m_data(std::make_unique<details::full_chain_algorithm_data>(
+    : messaging(parent.logger().clone()),
+      m_data(std::make_unique<details::full_chain_algorithm_data>(
           ::handle_async_error)),
       m_host_mr(parent.m_host_mr),
       m_device_mr{&(m_data->m_queue)},
@@ -132,23 +137,26 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_device_detector{},
       m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                        m_copy, m_data->m_queue_wrapper,
-                       parent.m_clustering_config},
-      m_measurement_sorting(m_copy, m_data->m_queue_wrapper),
+                       parent.m_clustering_config,
+                       parent.logger().clone("ClusteringAlg")},
+      m_measurement_sorting(m_copy, m_data->m_queue_wrapper,
+                            parent.logger().clone("MeasSortingAlg")),
       m_spacepoint_formation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper},
+          m_data->m_queue_wrapper, parent.logger().clone("SpFormationAlg")},
       m_seeding{parent.m_finder_config,
                 parent.m_grid_config,
                 parent.m_filter_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                 m_copy,
-                m_data->m_queue_wrapper},
+                m_data->m_queue_wrapper,
+                parent.logger().clone("SeedingAlg")},
       m_track_parameter_estimation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper},
+          m_data->m_queue_wrapper, parent.logger().clone("TrackParEstAlg")},
       m_finding{parent.m_finding_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper},
+                m_data->m_queue_wrapper, parent.logger().clone("FindingAlg")},
       m_clustering_config(parent.m_clustering_config),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),

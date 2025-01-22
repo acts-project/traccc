@@ -11,11 +11,13 @@
 namespace traccc {
 
 seed_finding::seed_finding(const seedfinder_config& finder_config,
-                           const seedfilter_config& filter_config)
-    : m_midBot_finding(finder_config),
-      m_midTop_finding(finder_config),
-      m_triplet_finding(finder_config),
-      m_seed_filtering(filter_config) {}
+                           const seedfilter_config& filter_config,
+                           std::unique_ptr<const Logger> logger)
+    : messaging(logger->clone()),
+      m_midBot_finding(finder_config, logger->cloneWithSuffix("MidBotAlg")),
+      m_midTop_finding(finder_config, logger->cloneWithSuffix("MidTopAlg")),
+      m_triplet_finding(finder_config, logger->cloneWithSuffix("TripletAlg")),
+      m_seed_filtering(filter_config, logger->cloneWithSuffix("FilterAlg")) {}
 
 seed_finding::output_type seed_finding::operator()(
     const spacepoint_collection_types::host& sp_collection,

@@ -13,6 +13,7 @@
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -32,14 +33,17 @@ class measurement_creation_algorithm
     : public algorithm<measurement_collection_types::host(
           const edm::silicon_cell_collection::const_view &,
           const edm::silicon_cluster_collection::const_view &,
-          const silicon_detector_description::const_view &)> {
+          const silicon_detector_description::const_view &)>,
+      public messaging {
 
     public:
     /// Measurement_creation algorithm constructor
     ///
     /// @param mr The memory resource to use in the algorithm
     ///
-    measurement_creation_algorithm(vecmem::memory_resource &mr);
+    measurement_creation_algorithm(
+        vecmem::memory_resource &mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the connected component, based on one single
     /// module
@@ -57,7 +61,6 @@ class measurement_creation_algorithm
     private:
     /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
 };  // class measurement_creation_algorithm
 
 }  // namespace traccc::host
