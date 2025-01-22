@@ -9,9 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-
-// Thrust include(s).
-#include <thrust/pair.h>
+#include "traccc/utils/pair.hpp"
 
 namespace traccc {
 
@@ -20,7 +18,7 @@ namespace traccc {
 struct candidate_link {
 
     // Type of index
-    using link_index_type = thrust::pair<unsigned int, unsigned int>;
+    using link_index_type = traccc::pair<unsigned int, unsigned int>;
 
     // Index of link from the previous step
     link_index_type previous;
