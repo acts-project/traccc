@@ -13,10 +13,12 @@ add_library( traccc_tests_common STATIC
     "common/tests/cca_test.hpp"
     "common/tests/ckf_telescope_test.hpp"
     "common/tests/data_test.hpp"
+    "common/tests/kalman_fitting_momentum_resolution_test.hpp"
     "common/tests/kalman_fitting_test.hpp"
     "common/tests/kalman_fitting_telescope_test.hpp"
     "common/tests/kalman_fitting_toy_detector_test.hpp"
     "common/tests/kalman_fitting_wire_chamber_test.hpp"
+    "common/tests/kalman_fitting_momentum_resolution_test.cpp"
     "common/tests/kalman_fitting_test.cpp" )
 target_include_directories( traccc_tests_common
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
