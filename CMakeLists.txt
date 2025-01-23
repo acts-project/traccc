@@ -205,7 +205,22 @@ option( TRACCC_USE_SYSTEM_DPL
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_SETUP_DPL )
    if( TRACCC_USE_SYSTEM_DPL )
-      find_package( DPL REQUIRED )
+      # OneDPL determines whether SYCL is supported by asking the C++ compiler
+      # rather than the SYCL compiler, as a dedicated SYCL compiler is a non-
+      # standard traccc idea. To override the default behaviour (i.e. OneDPL
+      # testing the C++ compiler and finding that it does _not_ support SYCL)
+      # we simply override the support flags. This is fragile, as the flags
+      # are internal to OneDPL, but it's the best we can do. Note thr flag was
+      # renamed in https://github.com/uxlfoundation/oneDPL/pull/1949.
+      set(_sycl_support ON)
+      set(SYCL_SUPPORT ON)
+      find_package( oneDPL REQUIRED )
+      # OneDPL attaches the `-fsycl` flag to the C++ compiler, which causes
+      # it to incorrectly trigger some preprocessor definitions, thereby
+      # loading SYCL-specific header files which do not exist for e.g. a
+      # generic clang installation. Therefore, we have to manually wipe the
+      # compile flags that OneDPL sets.
+      set_target_properties(oneDPL PROPERTIES INTERFACE_COMPILE_OPTIONS "")
    else()
       add_subdirectory( extern/dpl )
    endif()
@@ -220,6 +235,12 @@ option( TRACCC_USE_SYSTEM_KOKKOS
 if( TRACCC_SETUP_KOKKOS )
    if( TRACCC_USE_SYSTEM_KOKKOS )
       find_package( Kokkos REQUIRED )
+      # Kokkos likes to determine the host architecture at installation time
+      # and propagate the corresponding `-march` flag through the CMake
+      # configuration which cases compiler errors when we use e.g. ICPX which
+      # dislikes it when you set two different microarchitectures (traccc sets
+      # a generic x86 target).
+      set_target_properties(Kokkos::kokkoscore PROPERTIES INTERFACE_COMPILE_OPTIONS "")
    else()
       add_subdirectory( extern/kokkos )
    endif()
