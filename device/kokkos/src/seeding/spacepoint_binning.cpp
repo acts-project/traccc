@@ -57,9 +57,10 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
                 Kokkos::TeamThreadRange(team_member, num_threads),
                 [&](const int& thr) {
                     device::count_grid_capacities(
-                        static_cast<std::size_t>(team_member.league_rank() *
-                                                     team_member.team_size() +
-                                                 thr),
+                        static_cast<device::global_index_t>(
+                            team_member.league_rank() *
+                                team_member.team_size() +
+                            thr),
                         config, axes.first, axes.second, spacepoints_view,
                         grid_capacities_view);
                 });
