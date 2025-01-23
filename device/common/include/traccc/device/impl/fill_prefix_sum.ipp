@@ -28,7 +28,7 @@ inline void fill_prefix_sum(
     const prefix_sum_size_t current =
         sizes[static_cast<unsigned int>(globalIndex)];
     for (prefix_sum_size_t i = 0; i < current - previous; ++i) {
-        result.at(previous + i) = {globalIndex, i};
+        result.at(previous + i) = {static_cast<unsigned int>(globalIndex), i};
     }
 }
 
