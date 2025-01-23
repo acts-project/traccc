@@ -48,4 +48,5 @@ target_link_libraries( traccc_options
       Boost::program_options
       traccc::io
       traccc::performance
+      traccc::utils
 )

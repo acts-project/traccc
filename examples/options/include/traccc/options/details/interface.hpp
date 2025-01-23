@@ -7,11 +7,14 @@
 
 #pragma once
 
+#include "traccc/examples/utils/printable.hpp"
+
 // Boost include(s).
 #include <boost/program_options.hpp>
 
 // System include(s).
 #include <iosfwd>
+#include <memory>
 #include <string>
 #include <string_view>
 
@@ -35,20 +38,13 @@ class interface {
     ///
     virtual void read(const boost::program_options::variables_map& vm);
 
-    /// Helper for printing the options to an output stream
-    ///
-    /// @param out The output stream to print to
-    /// @return The output stream
-    ///
-    std::ostream& print(std::ostream& out) const;
+    /// Helper for turning an interface into a printable set of options.
+    virtual std::unique_ptr<configuration_printable> as_printable() const = 0;
 
     /// Get the description of this program option group
     const boost::program_options::options_description& options() const;
 
     protected:
-    /// Print the specific options of the derived class
-    virtual std::ostream& print_impl(std::ostream& out) const;
-
     /// (Boost) Description of this program option group
     boost::program_options::options_description m_desc;
 
@@ -57,8 +53,4 @@ class interface {
     std::string m_description;
 
 };  // class interface
-
-/// Printout helper for @c traccc::opts::interface and types derived from it
-std::ostream& operator<<(std::ostream& out, const interface& opt);
-
 }  // namespace traccc::opts

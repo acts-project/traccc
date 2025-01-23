@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/options/output_data.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <iostream>
 #include <stdexcept>
@@ -53,11 +55,19 @@ void output_data::read(const boost::program_options::variables_map& vm) {
     }
 }
 
-std::ostream& output_data::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> output_data::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Output data options");
 
-    out << "  Output data format: " << format << "\n"
-        << "  Output directory  : " << directory;
-    return out;
+    std::stringstream format_ss;
+    format_ss << format;
+    dynamic_cast<configuration_category&>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Output data format",
+                                                format_ss.str()));
+    dynamic_cast<configuration_category&>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Output directory", directory));
+
+    return cat;
 }
 
 }  // namespace traccc::opts

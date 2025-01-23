@@ -40,10 +40,7 @@ class detector : public interface {
     /// Constructor
     detector();
 
-    private:
-    /// Print the specific options of this class
-    std::ostream& print_impl(std::ostream& out) const override;
-
+    std::unique_ptr<configuration_printable> as_printable() const override;
 };  // struct detector
 
 }  // namespace traccc::opts

@@ -8,6 +8,8 @@
 // Project include(s).
 #include "traccc/options/detector.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <iostream>
 
@@ -37,15 +39,27 @@ detector::detector() : interface("Detector Options") {
         "Digitization file");
 }
 
-std::ostream& detector::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> detector::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Detector options");
 
-    out << "  Detector file       : " << detector_file << "\n"
-        << "  Material file       : " << material_file << "\n"
-        << "  Surface grid file   : " << grid_file << "\n"
-        << "  Use detray::detector: " << (use_detray_detector ? "yes" : "no")
-        << "\n"
-        << "  Digitization file   : " << digitization_file;
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Detector file",
+                                                detector_file));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Material file",
+                                                material_file));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Surface grid file",
+                                                grid_file));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Use detray detector", use_detray_detector ? "yes" : "no"));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Digitization file",
+                                                digitization_file));
+
+    return cat;
 }
 
 }  // namespace traccc::opts

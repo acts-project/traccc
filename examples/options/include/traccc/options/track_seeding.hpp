@@ -33,6 +33,7 @@ class track_seeding : public interface {
     /// Constructor
     track_seeding();
 
+    std::unique_ptr<configuration_printable> as_printable() const override;
 };  // struct track_seeding
 
 }  // namespace traccc::opts

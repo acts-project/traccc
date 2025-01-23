@@ -8,6 +8,8 @@
 // Library include(s).
 #include "traccc/options/throughput.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <iostream>
 
@@ -31,12 +33,21 @@ throughput::throughput() : interface("Throughput Measurement Options") {
         "File where result logs will be printed (in append mode).");
 }
 
-std::ostream& throughput::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> throughput::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>(
+            "Throughput measurement options");
 
-    out << "  Cold run event(s) : " << cold_run_events << "\n"
-        << "  Processed event(s): " << processed_events << "\n"
-        << "  Log file          : " << log_file;
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Cold run events", std::to_string(cold_run_events)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Processed events", std::to_string(processed_events)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Log file", log_file));
+
+    return cat;
 }
 
 }  // namespace traccc::opts

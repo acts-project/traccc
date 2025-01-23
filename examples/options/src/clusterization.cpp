@@ -9,6 +9,7 @@
 #include "traccc/options/clusterization.hpp"
 
 #include "traccc/clusterization/clusterization_algorithm.hpp"
+#include "traccc/examples/utils/printable.hpp"
 
 // System include(s).
 #include <iostream>
@@ -50,12 +51,25 @@ clusterization::operator host::clusterization_algorithm::config_type() const {
     return {};
 }
 
-std::ostream& clusterization::print_impl(std::ostream& out) const {
-    out << "  Threads per partition:      " << threads_per_partition << "\n";
-    out << "  Target cells per thread:    " << target_cells_per_thread << "\n";
-    out << "  Max cells per thread:       " << max_cells_per_thread << "\n";
-    out << "  Scratch space size mult.:   " << backup_size_multiplier;
-    return out;
-}
+std::unique_ptr<configuration_printable> clusterization::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Clustering options");
 
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Threads per partition", std::to_string(threads_per_partition)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Target cells per thread",
+            std::to_string(target_cells_per_thread)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Max cells per thread", std::to_string(max_cells_per_thread)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Scratch space multiplier",
+            std::to_string(backup_size_multiplier)));
+
+    return cat;
+}
 }  // namespace traccc::opts

@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/options/track_resolution.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <iostream>
 
@@ -24,10 +26,16 @@ track_resolution::track_resolution()
                          "Perform track ambiguity resolution");
 }
 
-std::ostream& track_resolution::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> track_resolution::as_printable()
+    const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>(
+            "Ambiguity resolution options");
 
-    out << "  Run ambiguity resolution : " << (run ? "yes" : "no");
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Run ambiguity resolution",
+                                                run ? "yes" : "no"));
+
+    return cat;
 }
-
 }  // namespace traccc::opts

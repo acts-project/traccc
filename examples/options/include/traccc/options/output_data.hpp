@@ -45,10 +45,7 @@ class output_data : public interface {
     ///
     void read(const boost::program_options::variables_map& vm) override;
 
-    private:
-    /// Print the specific options of this class
-    std::ostream& print_impl(std::ostream& out) const override;
-
+    std::unique_ptr<configuration_printable> as_printable() const override;
 };  // class output_data
 
 }  // namespace traccc::opts
