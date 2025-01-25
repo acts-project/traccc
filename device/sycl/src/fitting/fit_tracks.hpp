@@ -24,8 +24,17 @@
 #include <vecmem/utils/copy.hpp>
 
 // oneDPL include(s).
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
+#pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"
+#pragma clang diagnostic ignored "-Wsign-compare"
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
+#pragma clang diagnostic pop
 
 // SYCL include(s).
 #include <sycl/sycl.hpp>
