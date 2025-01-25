@@ -27,10 +27,7 @@ class accelerator : public interface {
     /// Constructor
     accelerator();
 
-    private:
-    /// Print the specific options of this class
-    std::ostream& print_impl(std::ostream& out) const override;
-
+    std::unique_ptr<configuration_printable> as_printable() const override;
 };  // struct accelerator
 
 }  // namespace traccc::opts

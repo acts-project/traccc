@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/options/generation.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/ranges.hpp"
 
@@ -59,7 +60,7 @@ generation::generation() : interface("Particle Generation Options") {
                          "PDG number for the particle type");
 }
 
-void generation::read(const po::variables_map& vm) {
+void generation::read(const po::variables_map &vm) {
 
     vertex *= detray::unit<float>::mm;
     vertex_stddev *= detray::unit<float>::mm;
@@ -81,23 +82,50 @@ void generation::read(const po::variables_map& vm) {
     ptc_type = detail::particle_from_pdg_number<traccc::scalar>(pdg_number);
 }
 
-std::ostream& generation::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> generation::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Particle generation options");
 
-    out << "  Number of events to generate   : " << events << "\n"
-        << "  Number of particles to generate: " << gen_nparticles << "\n"
-        << "  Vertex                         : "
-        << vertex / detray::unit<float>::mm << " mm\n"
-        << "  Vertex standard deviation      : "
-        << vertex_stddev / detray::unit<float>::mm << " mm\n"
-        << "  Momentum range                 : "
-        << mom_range / detray::unit<float>::GeV << " GeV\n"
-        << "  Phi range                      : "
-        << phi_range / detray::unit<float>::degree << " deg\n"
-        << "  Eta range                      : " << eta_range << "\n"
-        << "  Theta range                    : "
-        << theta_range / detray::unit<float>::degree << " deg\n"
-        << "  PDG Number                     : " << pdg_number;
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Number of events",
+                                                std::to_string(events)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Number of particles", std::to_string(gen_nparticles)));
+    std::stringstream vertex_ss;
+    vertex_ss << vertex / detray::unit<float>::mm << " mm";
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Vertex", vertex_ss.str()));
+    std::stringstream vertex_dev_ss;
+    vertex_dev_ss << vertex_stddev / detray::unit<float>::mm << " mm";
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Vertex standard deviation",
+                                                vertex_dev_ss.str()));
+    std::stringstream mom_range_ss;
+    mom_range_ss << mom_range / detray::unit<float>::GeV << " GeV";
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Momentum range",
+                                                mom_range_ss.str()));
+    std::stringstream phi_range_ss;
+    phi_range_ss << phi_range / detray::unit<float>::degree << " deg";
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Phi range",
+                                                phi_range_ss.str()));
+    std::stringstream eta_range_ss;
+    eta_range_ss << eta_range;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Eta range",
+                                                eta_range_ss.str()));
+    std::stringstream theta_range_ss;
+    theta_range_ss << theta_range / detray::unit<float>::degree << " deg";
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Theta range",
+                                                theta_range_ss.str()));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("PGD number",
+                                                std::to_string(pdg_number)));
+
+    return cat;
 }
 
 }  // namespace traccc::opts

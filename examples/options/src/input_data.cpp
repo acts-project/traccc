@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/options/input_data.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <iostream>
 #include <stdexcept>
@@ -20,7 +22,7 @@ namespace po = boost::program_options;
 /// Type alias for the data format enumeration
 using data_format_type = std::string;
 /// Name of the data format option
-static const char* data_format_option = "input-data-format";
+static const char *data_format_option = "input-data-format";
 
 input_data::input_data() : interface("Input Data Options") {
 
@@ -41,7 +43,7 @@ input_data::input_data() : interface("Input Data Options") {
                          "Number of input events to skip");
 }
 
-void input_data::read(const po::variables_map& vm) {
+void input_data::read(const po::variables_map &vm) {
 
     // Decode the input data format.
     if (vm.count(data_format_option)) {
@@ -59,15 +61,28 @@ void input_data::read(const po::variables_map& vm) {
     }
 }
 
-std::ostream& input_data::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> input_data::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Input data options");
 
-    out << "  Use ACTS geometry source      : "
-        << (use_acts_geom_source ? "yes" : "no") << "\n"
-        << "  Input data format             : " << format << "\n"
-        << "  Input directory               : " << directory << "\n"
-        << "  Number of input events        : " << events << "\n"
-        << "  Number of input events to skip: " << skip;
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Use ACTS geometry source", use_acts_geom_source ? "yes" : "no"));
+    std::stringstream format_ss;
+    format_ss << format;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Input data format",
+                                                format_ss.str()));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Input directory", directory));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Number of input events",
+                                                std::to_string(events)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Number of skipped events",
+                                                std::to_string(skip)));
+
+    return cat;
 }
 
 }  // namespace traccc::opts

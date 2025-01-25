@@ -27,10 +27,7 @@ class track_resolution : public interface {
     /// Constructor
     track_resolution();
 
-    private:
-    /// Print the specific options of this class
-    std::ostream& print_impl(std::ostream& out) const override;
-
+    std::unique_ptr<configuration_printable> as_printable() const override;
 };  // class track_resolution
 
 }  // namespace traccc::opts

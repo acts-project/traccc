@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/options/program_options.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <cstdlib>
 #include <iostream>
@@ -55,9 +57,15 @@ program_options::program_options(
 
     // Tell the user what's happening.
     std::cout << "\nRunning " << description << "\n\n";
+
+    configuration_list cl;
+
     for (const auto& opt : options) {
-        std::cout << opt << "\n";
+        cl.add_child(opt.get().as_printable());
     }
+
+    cl.print();
+
     std::cout << std::endl;
 }
 

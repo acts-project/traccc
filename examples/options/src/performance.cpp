@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/options/performance.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <iostream>
 
@@ -20,10 +22,15 @@ performance::performance() : interface("Performance Measurement Options") {
                          "Run performance checks");
 }
 
-std::ostream& performance::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> performance::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>(
+            "Performance measurement options");
 
-    out << "  Run performance checks: " << (run ? "yes" : "no");
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Run performance checks",
+                                                run ? "yes" : "no"));
+
+    return cat;
 }
-
 }  // namespace traccc::opts

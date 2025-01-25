@@ -8,8 +8,15 @@
 // Local include(s).
 #include "traccc/options/track_seeding.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 namespace traccc::opts {
 
 track_seeding::track_seeding() : interface("Track Seeding Options") {}
 
+std::unique_ptr<configuration_printable> track_seeding::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Track seeding options");
+    return cat;
+}
 }  // namespace traccc::opts

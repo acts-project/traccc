@@ -31,6 +31,8 @@ class track_finding : public interface, public config_provider<finding_config> {
     /// Configuration conversion operators
     operator finding_config() const override;
 
+    std::unique_ptr<configuration_printable> as_printable() const override;
+
     private:
     /// @name Options
     /// @{
@@ -55,10 +57,6 @@ class track_finding : public interface, public config_provider<finding_config> {
     /// PDG number for particle hypothesis (Default: muon)
     int pdg_number = 13;
     /// @}
-
-    /// Print the specific options of this class
-    std::ostream& print_impl(std::ostream& out) const override;
-
 };  // class track_finding
 
 }  // namespace traccc::opts

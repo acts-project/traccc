@@ -29,6 +29,8 @@ class clusterization
     operator clustering_config() const override;
     operator host::clusterization_algorithm::config_type() const override;
 
+    std::unique_ptr<configuration_printable> as_printable() const override;
+
     private:
     /// @name Options
     /// @{
@@ -38,10 +40,6 @@ class clusterization
     unsigned int target_cells_per_thread;
     unsigned int backup_size_multiplier;
     /// @}
-
-    /// Print the specific options of this class
-    std::ostream& print_impl(std::ostream& out) const override;
-
 };  // class clusterization
 
 }  // namespace traccc::opts

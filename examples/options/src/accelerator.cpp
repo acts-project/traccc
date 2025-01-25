@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/options/accelerator.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // System include(s).
 #include <iostream>
 
@@ -20,10 +22,15 @@ accelerator::accelerator() : interface("Accelerator Options") {
                          "Compare accelerator output with that of the CPU");
 }
 
-std::ostream& accelerator::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> accelerator::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Accelerator options");
 
-    out << "  Compare with CPU results: " << (compare_with_cpu ? "yes" : "no");
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Compare with CPU output", compare_with_cpu ? "yes" : "no"));
+
+    return cat;
 }
 
 }  // namespace traccc::opts

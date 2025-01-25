@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/options/track_finding.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
 #include "traccc/utils/particle.hpp"
 
 // System include(s).
@@ -84,23 +85,45 @@ track_finding::operator finding_config() const {
     return out;
 }
 
-std::ostream& track_finding::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> track_finding::as_printable() const {
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Track finding options");
 
-    out << "  Max number of branches per seed: " << max_num_branches_per_seed
-        << "\n"
-        << "  Max number of branches per surface: "
-        << max_num_branches_per_surface << "\n"
-        << "  Track candidates range   : " << track_candidates_range << "\n"
-        << "  Minimum step length for the next surface: "
-        << min_step_length_for_next_surface << " [mm] \n"
-        << "  Maximum step counts for the next surface: "
-        << max_step_counts_for_next_surface << "\n"
-        << "  Maximum Chi2             : " << chi2_max << "\n"
-        << "  Maximum branches per step: " << nmax_per_seed << "\n"
-        << "  Maximum number of skipped steps per candidates: "
-        << max_num_skipping_per_cand << "\n"
-        << "  PDG Number: " << pdg_number;
-    return out;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Max branches per seed",
+            std::to_string(max_num_branches_per_seed)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Max branches at surface",
+            std::to_string(max_num_branches_per_surface)));
+    std::stringstream candidate_ss;
+    candidate_ss << track_candidates_range;
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Track candidate range",
+                                                candidate_ss.str()));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Min step length to next surface",
+            std::to_string(min_step_length_for_next_surface) + " mm"));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Max step count to next surface",
+            std::to_string(max_step_counts_for_next_surface)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Max Chi2",
+                                                std::to_string(chi2_max)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("Max branches per step",
+                                                std::to_string(nmax_per_seed)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Max holes per candidate",
+            std::to_string(max_num_skipping_per_cand)));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>("PDG number",
+                                                std::to_string(pdg_number)));
+
+    return cat;
 }
-
 }  // namespace traccc::opts

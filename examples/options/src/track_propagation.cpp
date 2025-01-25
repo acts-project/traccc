@@ -8,6 +8,8 @@
 // Project include(s).
 #include "traccc/options/track_propagation.hpp"
 
+#include "traccc/examples/utils/printable.hpp"
+
 // Detray include(s).
 #include <detray/definitions/units.hpp>
 
@@ -48,7 +50,7 @@ track_propagation::track_propagation()
         "The Runge-Kutta stepper tolerance");
 }
 
-void track_propagation::read(const po::variables_map&) {
+void track_propagation::read(const po::variables_map &) {
 
     config.stepping.step_constraint *= detray::unit<float>::mm;
     config.navigation.overstep_tolerance *= detray::unit<float>::um;
@@ -61,11 +63,115 @@ track_propagation::operator detray::propagation::config() const {
     return config;
 }
 
-std::ostream& track_propagation::print_impl(std::ostream& out) const {
+std::unique_ptr<configuration_printable> track_propagation::as_printable()
+    const {
+    std::unique_ptr<configuration_printable> cat_nav =
+        std::make_unique<configuration_category>("Navigation");
 
-    out << config;
+    dynamic_cast<configuration_category &>(*cat_nav).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Min mask tolerance",
+            std::to_string(config.navigation.min_mask_tolerance /
+                           detray::unit<float>::mm) +
+                " mm"));
+    dynamic_cast<configuration_category &>(*cat_nav).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Max mask tolerance",
+            std::to_string(config.navigation.max_mask_tolerance /
+                           detray::unit<float>::mm) +
+                " mm"));
+    dynamic_cast<configuration_category &>(*cat_nav).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Mask tolerance scalar",
+            std::to_string(config.navigation.mask_tolerance_scalor)));
+    dynamic_cast<configuration_category &>(*cat_nav).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Path tolerance", std::to_string(config.navigation.path_tolerance /
+                                             detray::unit<float>::um) +
+                                  " um"));
+    dynamic_cast<configuration_category &>(*cat_nav).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Overstep tolerance",
+            std::to_string(config.navigation.overstep_tolerance /
+                           detray::unit<float>::um) +
+                " um"));
+    dynamic_cast<configuration_category &>(*cat_nav).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Search window",
+            std::to_string(config.navigation.search_window[0]) + " x " +
+                std::to_string(config.navigation.search_window[1])));
 
-    return out;
+    std::unique_ptr<configuration_printable> cat_tsp =
+        std::make_unique<configuration_category>("Transport");
+
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Min step size", std::to_string(config.stepping.min_stepsize /
+                                            detray::unit<float>::mm) +
+                                 " mm"));
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Runge-Kutta tolerance",
+            std::to_string(config.stepping.rk_error_tol /
+                           detray::unit<float>::mm) +
+                " mm"));
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Max step updates",
+            std::to_string(config.stepping.max_rk_updates)));
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Step size constraint",
+            std::to_string(config.stepping.step_constraint /
+                           detray::unit<float>::mm) +
+                " mm"));
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Path limit", std::to_string(config.stepping.path_limit /
+                                         detray::unit<float>::m) +
+                              " m"));
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Min step size", std::to_string(config.stepping.min_stepsize /
+                                            detray::unit<float>::mm) +
+                                 " mm"));
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Enable Bethe energy loss",
+            config.stepping.use_mean_loss ? "yes" : "no"));
+    dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Enable covariance transport",
+            config.stepping.do_covariance_transport ? "yes" : "no"));
+
+    if (config.stepping.do_covariance_transport) {
+        std::unique_ptr<configuration_printable> cat_cov =
+            std::make_unique<configuration_category>("Covariance transport");
+
+        dynamic_cast<configuration_category &>(*cat_cov).add_child(
+            std::make_unique<configuration_kv_pair>(
+                "Enable energy loss gradient",
+                config.stepping.use_eloss_gradient ? "yes" : "no"));
+        dynamic_cast<configuration_category &>(*cat_cov).add_child(
+            std::make_unique<configuration_kv_pair>(
+                "Enable B-field gradient",
+                config.stepping.use_field_gradient ? "yes" : "no"));
+
+        dynamic_cast<configuration_category &>(*cat_tsp).add_child(
+            std::move(cat_cov));
+    }
+
+    std::unique_ptr<configuration_printable> cat_geo =
+        std::make_unique<configuration_category>("Geometry context");
+
+    std::unique_ptr<configuration_printable> cat =
+        std::make_unique<configuration_category>("Track propagation options");
+
+    dynamic_cast<configuration_category &>(*cat).add_child(std::move(cat_nav));
+    dynamic_cast<configuration_category &>(*cat).add_child(std::move(cat_tsp));
+    dynamic_cast<configuration_category &>(*cat).add_child(std::move(cat_geo));
+
+    return cat;
 }
 
 }  // namespace traccc::opts
