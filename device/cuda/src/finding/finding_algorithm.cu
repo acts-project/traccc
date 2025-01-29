@@ -357,7 +357,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     vecmem::data::vector_buffer<unsigned int> valid_indices_buffer(n_tips_total,
                                                                    m_mr.main);
 
-    unsigned int n_valid_tracks;
+    unsigned int n_valid_tracks = 0;
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
