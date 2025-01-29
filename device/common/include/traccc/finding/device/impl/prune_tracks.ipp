@@ -19,6 +19,8 @@ TRACCC_DEVICE inline void prune_tracks(const global_index_t globalIndex,
     track_candidate_container_types::device prune_candidates(
         payload.prune_candidates_view);
 
+    assert(valid_indices.size() == prune_candidates.size());
+
     if (globalIndex >= prune_candidates.size()) {
         return;
     }
