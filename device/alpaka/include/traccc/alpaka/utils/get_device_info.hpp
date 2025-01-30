@@ -11,20 +11,19 @@
 
 namespace traccc::alpaka {
 
-
-//Get alpaka tag for current device
+// Get alpaka tag for current device
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-    using AccTag = ::alpaka::TagGpuCudaRt;
+using AccTag = ::alpaka::TagGpuCudaRt;
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    using AccTag = ::alpaka::TagGpuHipRt;
+using AccTag = ::alpaka::TagGpuHipRt;
 #elif defined(ALPAKA_ACC_CPU_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_CPU)
-    using AccTag = ::alpaka::TagCpuSycl;
+using AccTag = ::alpaka::TagCpuSycl;
 #elif defined(ALPAKA_ACC_GPU_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_GPU)
-    using AccTag = ::alpaka::TagGpuSyclIntel;
+using AccTag = ::alpaka::TagGpuSyclIntel;
 #elif defined(ALPAKA_ACC_FPGA_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_FPGA)
-    using AccTag = ::alpaka::TagFpgaSyclIntel;
+using AccTag = ::alpaka::TagFpgaSyclIntel;
 #else
-    using AccTag = ::alpaka::TagCpuSerial;
+using AccTag = ::alpaka::TagCpuSerial;
 #endif
 
 /// Function that prints the current device information to the console.

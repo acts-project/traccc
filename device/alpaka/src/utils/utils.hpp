@@ -25,19 +25,19 @@ using Dim = ::alpaka::DimInt<1>;
 using Idx = uint32_t;
 using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
-//Get alpaka accelerator
+// Get alpaka accelerator
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-    using Acc = ::alpaka::AccGpuCudaRt<Dim, Idx>;
+using Acc = ::alpaka::AccGpuCudaRt<Dim, Idx>;
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    using Acc = ::alpaka::AccGpuHipRt<Dim, Idx>;
+using Acc = ::alpaka::AccGpuHipRt<Dim, Idx>;
 #elif defined(ALPAKA_ACC_CPU_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_CPU)
-    using Acc = ::alpaka::AccCpuSycl<Dim, Idx>;
+using Acc = ::alpaka::AccCpuSycl<Dim, Idx>;
 #elif defined(ALPAKA_ACC_GPU_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_GPU)
-    using Acc = ::alpaka::AccGpuSyclIntel<Dim, Idx>;
+using Acc = ::alpaka::AccGpuSyclIntel<Dim, Idx>;
 #elif defined(ALPAKA_ACC_FPGA_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_FPGA)
-    using Acc = ::alpaka::AccFpgaSyclIntel<Dim, Idx>;
+using Acc = ::alpaka::AccFpgaSyclIntel<Dim, Idx>;
 #else
-    using Acc = ::alpaka::AccCpuSerial<Dim, Idx>;
+using Acc = ::alpaka::AccCpuSerial<Dim, Idx>;
 #endif
 
 using Host = ::alpaka::DevCpu;
@@ -45,12 +45,13 @@ using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
 template <typename TAcc>
 consteval std::size_t getWarpSize() {
-  if constexpr(::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt, ::alpaka::TagGpuHipRt, ::alpaka::TagGpuSyclIntel>) {
-    return 32;
-  }
-  else {
-    return 4;
-  }
+    if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt,
+                                           ::alpaka::TagGpuHipRt,
+                                           ::alpaka::TagGpuSyclIntel>) {
+        return 32;
+    } else {
+        return 4;
+    }
 }
 
 template <typename TAcc>

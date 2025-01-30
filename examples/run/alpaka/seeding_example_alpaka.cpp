@@ -67,10 +67,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     vecmem::sycl::queue_wrapper qw{&q};
     traccc::alpaka::vecmem::device_copy copy(qw);
     traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
-    traccc::alpaka::vecmem::device_memory_resource
-        device_mr(qw);
-    traccc::alpaka::vecmem::managed_memory_resource
-        mng_mr(qw);
+    traccc::alpaka::vecmem::device_memory_resource device_mr(qw);
+    traccc::alpaka::vecmem::managed_memory_resource mng_mr(qw);
     traccc::memory_resource mr{device_mr, &host_mr};
 #else
     traccc::alpaka::vecmem::device_copy copy;
