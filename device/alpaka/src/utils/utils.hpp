@@ -8,7 +8,6 @@
 #pragma once
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/ExampleDefaultAcc.hpp>
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <vecmem/utils/cuda/copy.hpp>
@@ -26,16 +25,33 @@ using Dim = ::alpaka::DimInt<1>;
 using Idx = uint32_t;
 using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
-using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
+//Get alpaka accelerator
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
+    using Acc = ::alpaka::AccGpuCudaRt<Dim, Idx>;
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    using Acc = ::alpaka::AccGpuHipRt<Dim, Idx>;
+#elif defined(ALPAKA_ACC_CPU_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_CPU)
+    using Acc = ::alpaka::AccCpuSycl<Dim, Idx>;
+#elif defined(ALPAKA_ACC_GPU_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_GPU)
+    using Acc = ::alpaka::AccGpuSyclIntel<Dim, Idx>;
+#elif defined(ALPAKA_ACC_FPGA_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_FPGA)
+    using Acc = ::alpaka::AccFpgaSyclIntel<Dim, Idx>;
+#else
+    using Acc = ::alpaka::AccCpuSerial<Dim, Idx>;
+#endif
+
 using Host = ::alpaka::DevCpu;
 using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
-static constexpr std::size_t warpSize =
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    32;
-#else
-    4;
-#endif
+template <typename TAcc>
+consteval std::size_t getWarpSize() {
+  if constexpr(::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt, ::alpaka::TagGpuHipRt, ::alpaka::TagGpuSyclIntel>) {
+    return 32;
+  }
+  else {
+    return 4;
+  }
+}
 
 template <typename TAcc>
 inline WorkDiv makeWorkDiv(Idx blocks, Idx threadsOrElements) {

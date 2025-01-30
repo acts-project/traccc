@@ -27,6 +27,7 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Utility definitions.
   "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
+  "src/utils/get_device_info.cpp"
   # Seed finding code.
   "include/traccc/alpaka/seeding/spacepoint_binning.hpp"
   "include/traccc/alpaka/seeding/seed_finding.hpp"

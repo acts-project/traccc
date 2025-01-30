@@ -7,8 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include <alpaka/alpaka.hpp>
-#include <alpaka/example/ExampleDefaultAcc.hpp>
 #include <functional>
 #include <vecmem/memory/host_memory_resource.hpp>
 
@@ -31,30 +29,16 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
-        using namespace alpaka;
-        using Dim = DimInt<1>;
-        using Idx = uint32_t;
-
-        using Acc = ExampleDefaultAcc<Dim, Idx>;
 #ifdef ALPAKA_ACC_SYCL_ENABLED
         ::sycl::queue q;
         vecmem::sycl::queue_wrapper qw{&q};
-        traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::host_memory_resource
-            host_mr(qw);
-        traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::device_copy copy(qw);
-        traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
-            device_mr;
+        traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
+        traccc::alpaka::vecmem::device_copy copy(qw);
+        traccc::alpaka::vecmem::device_memory_resource device_mr;
 #else
-        traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
-        traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
-        traccc::alpaka::vecmem::host_device_types<
-            alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
-            device_mr;
+        traccc::alpaka::vecmem::host_memory_resource host_mr;
+        traccc::alpaka::vecmem::device_copy copy;
+        traccc::alpaka::vecmem::device_memory_resource device_mr;
 #endif
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);

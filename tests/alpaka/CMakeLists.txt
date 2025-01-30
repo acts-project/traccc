@@ -6,7 +6,6 @@
 
 set(TRACCC_ALPAKA_TEST_SOURCES
   alpaka_basic.cpp
-  test_cca.cpp
 )
 
 
@@ -26,6 +25,7 @@ endif()
 
 traccc_add_test( alpaka
    ${TRACCC_ALPAKA_TEST_SOURCES}
+   test_cca.cpp
    LINK_LIBRARIES
    GTest::gtest_main
    traccc_tests_common

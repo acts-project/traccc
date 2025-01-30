@@ -32,7 +32,8 @@
 #include <vecmem/utils/copy.hpp>
 #endif
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/acc/Tag.hpp>
+#include "traccc/alpaka/utils/get_device_info.hpp"
 
 // Forward declarations so we can compile the types below
 namespace vecmem {
@@ -102,4 +103,10 @@ struct host_device_types<::alpaka::TagGpuSyclIntel> {
     using managed_memory_resource = ::vecmem::sycl::shared_memory_resource;
     using device_copy = ::vecmem::sycl::copy;
 };
+
+using device_memory_resource = typename host_device_types<AccTag>::device_memory_resource;
+using host_memory_resource = typename host_device_types<AccTag>::host_memory_resource;
+using managed_memory_resource = typename host_device_types<AccTag>::managed_memory_resource;
+using device_copy = typename host_device_types<AccTag>::device_copy;
+
 }  // namespace traccc::alpaka::vecmem
