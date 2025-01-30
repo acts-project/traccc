@@ -139,17 +139,13 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
 #ifdef ALPAKA_ACC_SYCL_ENABLED
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem::host_device_types<
-        alpaka::trait::AccToTag<Acc>::type>::device_copy vm_copy(qw);
+    traccc::alpaka::vecmem::device_copy vm_copy(qw);
 #else
-    traccc::alpaka::vecmem::host_device_types<
-        alpaka::trait::AccToTag<Acc>::type>::device_copy vm_copy;
+    traccc::alpaka::vecmem::device_copy vm_copy;
 #endif
 
-    traccc::alpaka::vecmem::host_device_types<
-        alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::host_device_types<
-        alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr;
+    traccc::alpaka::vecmem::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::device_memory_resource device_mr;
 
     vecmem::vector<float> host_vector{n, &host_mr};
 
