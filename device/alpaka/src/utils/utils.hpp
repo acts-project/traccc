@@ -9,23 +9,13 @@
 
 #include <alpaka/alpaka.hpp>
 
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#include <vecmem/utils/cuda/copy.hpp>
-#endif
-
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-#include <vecmem/utils/hip/copy.hpp>
-#endif
-
-#include <vecmem/utils/copy.hpp>
-
 namespace traccc::alpaka {
 
 using Dim = ::alpaka::DimInt<1>;
 using Idx = uint32_t;
 using WorkDiv = ::alpaka::WorkDivMembers<Dim, Idx>;
 
-// Get alpaka accelerator
+// Get alpaka accelerator - based on alpaka/examples/ExampleDefaultAcc.hpp
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
 using Acc = ::alpaka::AccGpuCudaRt<Dim, Idx>;
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
@@ -36,8 +26,10 @@ using Acc = ::alpaka::AccCpuSycl<Dim, Idx>;
 using Acc = ::alpaka::AccGpuSyclIntel<Dim, Idx>;
 #elif defined(ALPAKA_ACC_FPGA_SYCL_ENABLED) && defined(ALPAKA_SYCL_ONEAPI_FPGA)
 using Acc = ::alpaka::AccFpgaSyclIntel<Dim, Idx>;
+#elif defined(ALPAKA_ACC_CPU_B_SEQ_T_THREADS_ENABLED)
+using Acc = ::alpaka::AccCpuThreads<Dim, Idx>;
 #else
-using Acc = ::alpaka::AccCpuSerial<Dim, Idx>;
+#error "No supported backend selected." //we definitely want to fail the build if no matching accelerator is found
 #endif
 
 using Host = ::alpaka::DevCpu;

@@ -13,6 +13,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 
 namespace traccc::alpaka {
 
@@ -30,7 +31,7 @@ struct track_params_estimation
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     track_params_estimation(const traccc::memory_resource& mr,
-                            vecmem::copy& copy);
+                            traccc::alpaka::vecmem::device_copy& copy);
 
     /// Callable operator for track_params_estimation
     ///
@@ -58,7 +59,7 @@ struct track_params_estimation
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// Copy object used by the algorithm
-    vecmem::copy& m_copy;
+    vecmem::device_copy& m_copy;
 };
 
 }  // namespace traccc::alpaka
