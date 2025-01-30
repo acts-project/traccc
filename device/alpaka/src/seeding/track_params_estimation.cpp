@@ -11,6 +11,7 @@
 // Project include(s).
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/device/estimate_track_params.hpp"
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 
 namespace traccc::alpaka {
 
@@ -31,7 +32,7 @@ struct EstimateTrackParamsKernel {
 };
 
 track_params_estimation::track_params_estimation(
-    const traccc::memory_resource& mr, vecmem::copy& copy)
+    const traccc::memory_resource& mr, traccc::alpaka::vecmem::device_copy& copy)
     : m_mr(mr), m_copy(copy) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
@@ -63,7 +64,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // Run the kernel
     ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{},
                         spacepoints_view, seeds_view, bfield, stddev,
-                        vecmem::get_data(params_buffer));
+                        ::vecmem::get_data(params_buffer));
     ::alpaka::wait(queue);
 
     return params_buffer;
