@@ -190,7 +190,11 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     tbb::task_group group;
 
     // Seed the random number generator.
-    std::srand(static_cast<unsigned int>(std::time(0)));
+    if (throughput_opts.random_seed == 0u) {
+        std::srand(static_cast<unsigned int>(std::time(0)));
+    } else {
+        std::srand(throughput_opts.random_seed);
+    }
 
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
@@ -215,7 +219,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
 
             // Choose which event to process.
             const std::size_t event =
-                static_cast<std::size_t>(std::rand()) % input_opts.events;
+                (throughput_opts.deterministic_event_order
+                     ? i
+                     : static_cast<std::size_t>(std::rand())) %
+                input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
@@ -253,7 +260,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
 
             // Choose which event to process.
             const std::size_t event =
-                static_cast<std::size_t>(std::rand()) % input_opts.events;
+                (throughput_opts.deterministic_event_order
+                     ? i
+                     : static_cast<std::size_t>(std::rand())) %
+                input_opts.events;
 
             // Launch the processing of the event.
             arena.execute([&, event]() {
