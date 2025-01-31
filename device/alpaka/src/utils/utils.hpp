@@ -21,13 +21,13 @@ using Acc = ::alpaka::AccGpuCudaRt<Dim, Idx>;
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 using Acc = ::alpaka::AccGpuHipRt<Dim, Idx>;
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
-#    if defined(ALPAKA_SYCL_ONEAPI_CPU)
-    using Acc = ::alpaka::AccCpuSycl<Dim, Idx>;
-#    elif defined(ALPAKA_SYCL_ONEAPI_FPGA)
-    using Acc = ::alpaka::AccFpgaSyclIntel<Dim, Idx>;
-#    elif defined(ALPAKA_SYCL_ONEAPI_GPU)
-    using Acc = ::alpaka::AccGpuSyclIntel<Dim, Idx>;
-#    endif
+#if defined(ALPAKA_SYCL_ONEAPI_CPU)
+using Acc = ::alpaka::AccCpuSycl<Dim, Idx>;
+#elif defined(ALPAKA_SYCL_ONEAPI_FPGA)
+using Acc = ::alpaka::AccFpgaSyclIntel<Dim, Idx>;
+#elif defined(ALPAKA_SYCL_ONEAPI_GPU)
+using Acc = ::alpaka::AccGpuSyclIntel<Dim, Idx>;
+#endif
 #elif defined(ALPAKA_ACC_CPU_B_SEQ_T_THREADS_ENABLED)
 using Acc = ::alpaka::AccCpuThreads<Dim, Idx>;
 #else
