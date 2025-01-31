@@ -32,7 +32,7 @@ add_library( traccc_examples_sycl OBJECT
    "full_chain_algorithm.sycl" )
 target_link_libraries( traccc_examples_sycl
    PUBLIC vecmem::core vecmem::sycl detray::core detray::detectors
-          traccc::core traccc::device_common traccc::sycl )
+          traccc::core traccc::device_common traccc::sycl traccc::utils )
 
 traccc_add_executable( throughput_st_sycl "throughput_st.cpp"
    LINK_LIBRARIES indicators::indicators vecmem::core vecmem::sycl

@@ -8,6 +8,8 @@
 // Local include(s).
 #include "full_chain_algorithm.hpp"
 
+#include "traccc/examples/utils/caching_memory_resource.hpp"
+
 // CUDA include(s).
 #include <cuda_runtime_api.h>
 
@@ -36,12 +38,13 @@ full_chain_algorithm::full_chain_algorithm(
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
-    host_detector_type* detector)
+    std::size_t device_caching_threshold, host_detector_type* detector)
     : m_host_mr(host_mr),
       m_stream(),
       m_device_mr(),
-      m_cached_device_mr(
-          std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
+      m_device_caching_threshold(device_caching_threshold),
+      m_cached_device_mr(traccc::make_caching_memory_resource(
+          m_device_mr, m_device_caching_threshold)),
       m_copy(m_stream.cudaStream()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(
@@ -99,8 +102,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     : m_host_mr(parent.m_host_mr),
       m_stream(),
       m_device_mr(),
-      m_cached_device_mr(
-          std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
+      m_device_caching_threshold(parent.m_device_caching_threshold),
+      m_cached_device_mr(traccc::make_caching_memory_resource(
+          m_device_mr, m_device_caching_threshold)),
       m_copy(m_stream.cudaStream()),
       m_field_vec(parent.m_field_vec),
       m_field(parent.m_field),

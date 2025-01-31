@@ -27,7 +27,6 @@
 #include "detray/propagator/rk_stepper.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
@@ -92,6 +91,7 @@ class full_chain_algorithm
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
+                         std::size_t device_caching_threshold,
                          host_detector_type* detector = nullptr);
 
     /// Copy constructor
@@ -123,7 +123,8 @@ class full_chain_algorithm
     /// Device memory resource
     vecmem::sycl::device_memory_resource m_device_mr;
     /// Device caching memory resource
-    mutable vecmem::binary_page_memory_resource m_cached_device_mr;
+    std::size_t m_device_caching_threshold;
+    std::unique_ptr<vecmem::memory_resource> m_cached_device_mr;
     /// Memory copy object
     mutable vecmem::sycl::async_copy m_copy;
 

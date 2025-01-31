@@ -11,6 +11,8 @@
 #include "traccc/geometry/detector.hpp"
 
 // Command line option include(s).
+#include "traccc/examples/utils/caching_memory_resource.hpp"
+#include "traccc/options/allocation_caching.hpp"
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
@@ -31,9 +33,6 @@
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
-
-// VecMem include(s).
-#include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // TBB include(s).
 #if defined(__clang__)
@@ -80,10 +79,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     opts::track_propagation propagation_opts;
     opts::throughput throughput_opts;
     opts::threading threading_opts;
+    opts::allocation_caching allocation_caching_opts;
     opts::program_options program_opts{
         description,
         {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, throughput_opts, threading_opts},
+         finding_opts, propagation_opts, throughput_opts, threading_opts,
+         allocation_caching_opts},
         argc,
         argv};
 
@@ -136,14 +137,13 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
 
     // Set up cached memory resources on top of the host memory resource
     // separately for each CPU thread.
-    std::vector<std::unique_ptr<vecmem::binary_page_memory_resource> >
-        cached_host_mrs;
+    std::vector<std::unique_ptr<vecmem::memory_resource> > cached_host_mrs;
     if (use_host_caching) {
         cached_host_mrs.reserve(threading_opts.threads + 1);
         for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
-            cached_host_mrs.push_back(
-                std::make_unique<vecmem::binary_page_memory_resource>(
-                    uncached_host_mr));
+            cached_host_mrs.push_back(traccc::make_caching_memory_resource(
+                uncached_host_mr,
+                allocation_caching_opts.m_host_caching_threshold));
         }
     }
 
@@ -178,6 +178,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              finding_cfg,
              fitting_cfg,
              det_descr,
+             allocation_caching_opts.m_device_caching_threshold,
              (detector_opts.use_detray_detector ? &detector : nullptr)});
     }
 

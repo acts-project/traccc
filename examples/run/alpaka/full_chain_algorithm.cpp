@@ -8,6 +8,8 @@
 // Local include(s).
 #include "full_chain_algorithm.hpp"
 
+#include "traccc/examples/utils/caching_memory_resource.hpp"
+
 // Alpaka include(s).
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
@@ -23,15 +25,17 @@ full_chain_algorithm::full_chain_algorithm(
     const unsigned short target_cells_per_partition,
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
-    const seedfilter_config& filter_config)
+    const seedfilter_config& filter_config,
+    std::size_t device_caching_threshold)
     : m_host_mr(host_mr),
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
       m_device_mr(),
 #else
       m_device_mr(host_mr),
 #endif
-      m_cached_device_mr(
-          std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
+      m_device_caching_threshold(device_caching_threshold),
+      m_cached_device_mr(traccc::make_caching_memory_resource(
+          m_device_mr, m_device_caching_threshold)),
       m_target_cells_per_partition(target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_target_cells_per_partition),
@@ -63,8 +67,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_device_mr(parent.m_host_mr),
 #endif
       m_copy(),
-      m_cached_device_mr(
-          std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
+      m_cached_device_mr(traccc::make_caching_memory_resource(m_device_mr)),
       m_target_cells_per_partition(parent.m_target_cells_per_partition),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr}, m_copy,
                        m_target_cells_per_partition),

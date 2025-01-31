@@ -33,7 +33,6 @@
 
 // VecMem include(s).
 #include <vecmem/containers/vector.hpp>
-#include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
@@ -97,6 +96,7 @@ class full_chain_algorithm
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
+                         std::size_t device_caching_threshold,
                          host_detector_type* detector);
 
     /// Copy constructor
@@ -128,7 +128,9 @@ class full_chain_algorithm
     /// Device memory resource
     vecmem::cuda::device_memory_resource m_device_mr;
     /// Device caching memory resource
-    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
+    std::size_t m_device_caching_threshold;
+    std::unique_ptr<vecmem::memory_resource> m_cached_device_mr;
+
     /// (Asynchronous) Memory copy object
     mutable vecmem::cuda::async_copy m_copy;
 

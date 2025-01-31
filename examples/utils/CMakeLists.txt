@@ -6,4 +6,7 @@
 
 traccc_add_library( traccc_utils utils TYPE SHARED
   "src/printable.cpp"
+  "src/caching_memory_resource.cpp"
 )
+
+target_link_libraries(traccc_utils PUBLIC vecmem::core)
