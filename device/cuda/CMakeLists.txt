@@ -113,7 +113,7 @@ thrust_create_target( traccc::cuda_thrust
   HOST CPP
   DEVICE CUDA )
 target_link_libraries( traccc::cuda_thrust INTERFACE CUDA::cudart )
-target_link_libraries( traccc_cuda PUBLIC traccc::cuda_thrust )
+target_link_libraries( traccc_cuda PRIVATE traccc::cuda_thrust )
 
 # For CUDA 11 turn on separable compilation. This is necessary for using
 # Thrust 2.1.0.

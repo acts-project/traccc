@@ -30,9 +30,6 @@
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
-// Thrust Library
-#include <thrust/pair.h>
-
 namespace traccc::cuda {
 
 /// Track Finding algorithm for a set of tracks
