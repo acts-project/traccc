@@ -129,7 +129,11 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         (detector_opts.use_detray_detector ? &detector : nullptr));
 
     // Seed the random number generator.
-    std::srand(static_cast<unsigned int>(std::time(0)));
+    if (throughput_opts.random_seed == 0) {
+        std::srand(static_cast<unsigned int>(std::time(0)));
+    } else {
+        std::srand(throughput_opts.random_seed);
+    }
 
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
@@ -154,7 +158,10 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
             // Choose which event to process.
             const std::size_t event =
-                static_cast<std::size_t>(std::rand()) % input_opts.events;
+                (throughput_opts.deterministic_event_order
+                     ? i
+                     : static_cast<std::size_t>(std::rand())) %
+                input_opts.events;
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();
@@ -182,7 +189,10 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
             // Choose which event to process.
             const std::size_t event =
-                static_cast<std::size_t>(std::rand()) % input_opts.events;
+                (throughput_opts.deterministic_event_order
+                     ? i
+                     : static_cast<std::size_t>(std::rand())) %
+                input_opts.events;
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();
