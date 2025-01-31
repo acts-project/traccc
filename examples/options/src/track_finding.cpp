@@ -20,69 +20,67 @@ namespace traccc::opts {
 namespace po = boost::program_options;
 
 track_finding::track_finding() : interface("Track Finding Options") {
+    m_pdg_number = m_config.ptc_hypothesis.pdg_num();
+    m_track_candidates_range[0] = m_config.min_track_candidates_per_track;
+    m_track_candidates_range[1] = m_config.max_track_candidates_per_track;
 
-    m_desc.add_options()("max-num-branches-per-seed",
-                         po::value(&max_num_branches_per_seed)
-                             ->default_value(max_num_branches_per_seed),
-                         "Max number of branches per seed");
-    m_desc.add_options()("max-num-branches-per-surface",
-                         po::value(&max_num_branches_per_surface)
-                             ->default_value(max_num_branches_per_surface),
-                         "Max number of branches per surface");
+    m_desc.add_options()(
+        "max-num-branches-per-seed",
+        po::value(&m_config.max_num_branches_per_seed)
+            ->default_value(m_config.max_num_branches_per_seed),
+        "Max number of branches per seed");
+    m_desc.add_options()(
+        "max-num-branches-per-surface",
+        po::value(&m_config.max_num_branches_per_surface)
+            ->default_value(m_config.max_num_branches_per_surface),
+        "Max number of branches per surface");
     m_desc.add_options()("track-candidates-range",
-                         po::value(&track_candidates_range)
+                         po::value(&m_track_candidates_range)
                              ->value_name("MIN:MAX")
-                             ->default_value(track_candidates_range),
+                             ->default_value(m_track_candidates_range),
                          "Range of track candidates number");
     m_desc.add_options()(
         "min-step-length-for-next-surface",
-        po::value(&min_step_length_for_next_surface)
-            ->default_value(min_step_length_for_next_surface),
+        po::value(&m_config.min_step_length_for_next_surface)
+            ->default_value(m_config.min_step_length_for_next_surface),
         "Minimum step length that track should make to reach the next surface. "
         "This should be set higher than the overstep tolerance not to make it "
         "stay on the same surface");
     m_desc.add_options()(
         "max-step-counts-for-next-surface",
-        po::value<unsigned int>(&max_step_counts_for_next_surface)
-            ->default_value(max_step_counts_for_next_surface),
+        po::value<unsigned int>(&m_config.max_step_counts_for_next_surface)
+            ->default_value(m_config.max_step_counts_for_next_surface),
         "Maximum step counts that track can make to reach the next surface");
     m_desc.add_options()(
-        "chi2-max", po::value(&chi2_max)->default_value(chi2_max),
+        "chi2-max",
+        po::value(&m_config.chi2_max)->default_value(m_config.chi2_max),
         "Maximum Chi suqare that measurements can be included in the track");
     m_desc.add_options()(
         "nmax-per-seed",
-        po::value<unsigned int>(&nmax_per_seed)->default_value(nmax_per_seed),
+        po::value<unsigned int>(&m_config.max_num_branches_per_seed)
+            ->default_value(m_config.max_num_branches_per_seed),
         "Maximum number of branches which each initial seed can have at a "
         "step.");
     m_desc.add_options()(
         "max-num-skipping-per-cand",
-        po::value<unsigned int>(&max_num_skipping_per_cand)
-            ->default_value(max_num_skipping_per_cand),
+        po::value<unsigned int>(&m_config.max_num_skipping_per_cand)
+            ->default_value(m_config.max_num_skipping_per_cand),
         "Maximum allowed number of skipped steps per candidate");
     m_desc.add_options()(
-        "max-num-skipping-per-cand",
-        po::value<unsigned int>(&max_num_skipping_per_cand)
-            ->default_value(max_num_skipping_per_cand),
-        "Maximum allowed number of skipped steps per candidate");
-    m_desc.add_options()("particle-hypothesis",
-                         po::value<int>(&pdg_number)->default_value(pdg_number),
-                         "PDG number for the particle hypothesis");
+        "particle-hypothesis",
+        po::value<int>(&m_pdg_number)->default_value(m_pdg_number),
+        "PDG number for the particle hypothesis");
 }
 
 track_finding::operator finding_config() const {
-    finding_config out;
-    out.max_num_branches_per_seed = max_num_branches_per_seed;
-    out.max_num_branches_per_surface = max_num_branches_per_surface;
-    out.min_track_candidates_per_track = track_candidates_range[0];
-    out.max_track_candidates_per_track = track_candidates_range[1];
-    out.min_step_length_for_next_surface = min_step_length_for_next_surface;
-    out.max_step_counts_for_next_surface = max_step_counts_for_next_surface;
-    out.chi2_max = chi2_max;
-    out.max_num_branches_per_seed = nmax_per_seed;
-    out.max_num_skipping_per_cand = max_num_skipping_per_cand;
+    finding_config out = m_config;
+
+    out.min_track_candidates_per_track = m_track_candidates_range[0];
+    out.max_track_candidates_per_track = m_track_candidates_range[1];
     out.ptc_hypothesis =
-        detail::particle_from_pdg_number<traccc::scalar>(pdg_number);
-    return out;
+        detail::particle_from_pdg_number<traccc::scalar>(m_pdg_number);
+
+    return m_config;
 }
 
 std::unique_ptr<configuration_printable> track_finding::as_printable() const {
@@ -92,37 +90,38 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>(
             "Max branches per seed",
-            std::to_string(max_num_branches_per_seed)));
+            std::to_string(m_config.max_num_branches_per_seed)));
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>(
             "Max branches at surface",
-            std::to_string(max_num_branches_per_surface)));
+            std::to_string(m_config.max_num_branches_per_surface)));
     std::stringstream candidate_ss;
-    candidate_ss << track_candidates_range;
+    candidate_ss << m_track_candidates_range;
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>("Track candidate range",
                                                 candidate_ss.str()));
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>(
             "Min step length to next surface",
-            std::to_string(min_step_length_for_next_surface) + " mm"));
+            std::to_string(m_config.min_step_length_for_next_surface) + " mm"));
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>(
             "Max step count to next surface",
-            std::to_string(max_step_counts_for_next_surface)));
+            std::to_string(m_config.max_step_counts_for_next_surface)));
     dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Max Chi2",
-                                                std::to_string(chi2_max)));
+        std::make_unique<configuration_kv_pair>(
+            "Max Chi2", std::to_string(m_config.chi2_max)));
     dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Max branches per step",
-                                                std::to_string(nmax_per_seed)));
+        std::make_unique<configuration_kv_pair>(
+            "Max branches per step",
+            std::to_string(m_config.max_num_branches_per_seed)));
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>(
             "Max holes per candidate",
-            std::to_string(max_num_skipping_per_cand)));
+            std::to_string(m_config.max_num_skipping_per_cand)));
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>("PDG number",
-                                                std::to_string(pdg_number)));
+                                                std::to_string(m_pdg_number)));
 
     return cat;
 }

@@ -32,14 +32,8 @@ class clusterization
     std::unique_ptr<configuration_printable> as_printable() const override;
 
     private:
-    /// @name Options
-    /// @{
-    /// The number of cells to merge in a partition
-    unsigned int threads_per_partition;
-    unsigned int max_cells_per_thread;
-    unsigned int target_cells_per_thread;
-    unsigned int backup_size_multiplier;
-    /// @}
+    /// Internal configuration object
+    clustering_config m_config;
 };  // class clusterization
 
 }  // namespace traccc::opts
