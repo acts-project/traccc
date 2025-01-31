@@ -59,7 +59,7 @@ struct track_params_estimation
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// Copy object used by the algorithm
-    vecmem::device_copy& m_copy;
+    ::vecmem::copy& m_copy;
 };
 
 }  // namespace traccc::alpaka
