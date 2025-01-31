@@ -17,13 +17,13 @@ using AccTag = ::alpaka::TagGpuCudaRt;
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 using AccTag = ::alpaka::TagGpuHipRt;
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
-#    if defined(ALPAKA_SYCL_ONEAPI_CPU)
-    using AccTag = ::alpaka::TagCpuSycl;
-#    elif defined(ALPAKA_SYCL_ONEAPI_FPGA)
-    using AccTag = ::alpaka::TagFpgaSyclIntel;
-#    elif defined(ALPAKA_SYCL_ONEAPI_GPU)
-    using AccTag = ::alpaka::TagGpuSyclIntel;
-#    endif
+#if defined(ALPAKA_SYCL_ONEAPI_CPU)
+using AccTag = ::alpaka::TagCpuSycl;
+#elif defined(ALPAKA_SYCL_ONEAPI_FPGA)
+using AccTag = ::alpaka::TagFpgaSyclIntel;
+#elif defined(ALPAKA_SYCL_ONEAPI_GPU)
+using AccTag = ::alpaka::TagGpuSyclIntel;
+#endif
 #elif defined(ALPAKA_ACC_CPU_B_SEQ_T_THREADS_ENABLED)
 using AccTag = ::alpaka::TagCpuThreads;
 #endif
