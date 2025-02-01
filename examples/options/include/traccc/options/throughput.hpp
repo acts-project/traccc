@@ -29,6 +29,11 @@ class throughput : public interface {
     /// them in the performance measurements
     std::size_t cold_run_events = 10;
 
+    /// Enable or disable the randomization of event processing
+    bool deterministic_event_order = false;
+    /// Set the random event processing seed
+    unsigned int random_seed = 0;
+
     /// Output log file
     std::string log_file;
 

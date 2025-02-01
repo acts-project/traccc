@@ -28,6 +28,13 @@ throughput::throughput() : interface("Throughput Measurement Options") {
         "cold-run-events",
         po::value(&cold_run_events)->default_value(cold_run_events),
         "Number of events to run 'cold'");
+    m_desc.add_options()("deterministic",
+                         po::bool_switch(&deterministic_event_order)
+                             ->default_value(deterministic_event_order),
+                         "Process events in deterministic order");
+    m_desc.add_options()("random-seed",
+                         po::value(&random_seed)->default_value(random_seed),
+                         "Seed for event randomization (0 to use time)");
     m_desc.add_options()(
         "log-file", po::value(&log_file),
         "File where result logs will be printed (in append mode).");
@@ -46,6 +53,14 @@ std::unique_ptr<configuration_printable> throughput::as_printable() const {
             "Processed events", std::to_string(processed_events)));
     dynamic_cast<configuration_category &>(*cat).add_child(
         std::make_unique<configuration_kv_pair>("Log file", log_file));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Deterministic ordering",
+            deterministic_event_order ? "yes" : "no"));
+    dynamic_cast<configuration_category &>(*cat).add_child(
+        std::make_unique<configuration_kv_pair>(
+            "Random seed",
+            random_seed == 0 ? "time-based" : std::to_string(random_seed)));
 
     return cat;
 }

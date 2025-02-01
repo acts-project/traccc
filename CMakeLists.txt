@@ -1,12 +1,12 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
 # Set up the project.
-cmake_minimum_required( VERSION 3.22 )
-project( traccc VERSION 0.17.0 LANGUAGES CXX )
+cmake_minimum_required( VERSION 3.25 )
+project( traccc VERSION 0.19.0 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 20 CACHE STRING "The (host) C++ standard to use" )
