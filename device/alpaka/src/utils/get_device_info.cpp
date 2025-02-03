@@ -11,16 +11,13 @@
 // Project include(s).
 #include "traccc/alpaka/utils/get_device_info.hpp"
 
-// System include(s).
-#include <iostream>
-
 namespace traccc::alpaka {
 
-void get_device_info() {
+std::string get_device_info() {
     int device = 0;
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
-    std::cout << "Using Alpaka device: " << ::alpaka::getName(devAcc)
-              << " [id: " << device << "] " << std::endl;
+    return std::string("Using Alpaka device: " + ::alpaka::getName(devAcc) +
+                       " [id: " + std::to_string(device) + "] ");
 }
 
 }  // namespace traccc::alpaka

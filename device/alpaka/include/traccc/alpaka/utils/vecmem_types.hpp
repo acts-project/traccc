@@ -32,9 +32,7 @@
 #include <vecmem/utils/copy.hpp>
 #endif
 
-#include <alpaka/acc/Tag.hpp>
-
-#include "traccc/alpaka/utils/get_device_info.hpp"
+#include "traccc/alpaka/utils/device_tag.hpp"
 
 // Forward declarations so we can compile the types below
 namespace vecmem {
