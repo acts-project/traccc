@@ -170,7 +170,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream,
                                                    clusterization_opts);
-    traccc::cuda::measurement_sorting_algorithm ms_cuda(copy, stream);
+    traccc::cuda::measurement_sorting_algorithm ms_cuda(mr, copy, stream);
     device_spacepoint_formation_algorithm sf_cuda(mr, copy, stream);
     traccc::cuda::seeding_algorithm sa_cuda(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
