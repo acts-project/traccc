@@ -34,29 +34,11 @@ class track_finding : public interface, public config_provider<finding_config> {
     std::unique_ptr<configuration_printable> as_printable() const override;
 
     private:
-    /// @name Options
-    /// @{
-    /// Max number of branches per seed
-    unsigned int max_num_branches_per_seed = 10;
-    /// Max number of branches per surface
-    unsigned int max_num_branches_per_surface = 10;
-    /// Number of track candidates per seed
-    opts::value_array<unsigned int, 2> track_candidates_range{3, 100};
-    /// Minimum step length that track should make to reach the next surface. It
-    /// should be set higher than the overstep tolerance not to make it stay on
-    /// the same surface
-    float min_step_length_for_next_surface = 0.5f * detray::unit<float>::mm;
-    /// Maximum step counts that track can make to reach the next surface
-    unsigned int max_step_counts_for_next_surface = 100;
-    /// Maximum chi2 for a measurement to be included in the track
-    float chi2_max = 10.f;
-    /// Maximum number of branches which each initial seed can have at a step
-    unsigned int nmax_per_seed = 10;
-    /// Maximum allowed number of skipped steps per candidate
-    unsigned int max_num_skipping_per_cand = 3;
-    /// PDG number for particle hypothesis (Default: muon)
-    int pdg_number = 13;
-    /// @}
+    /// The internal configuration
+    finding_config m_config;
+    /// Additional variables which we cannot simply store in the config
+    opts::value_array<unsigned int, 2> m_track_candidates_range{0, 0};
+    int m_pdg_number = 0;
 };  // class track_finding
 
 }  // namespace traccc::opts
