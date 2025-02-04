@@ -29,7 +29,7 @@ class configuration_category final : public configuration_printable {
     /// Constructor
     explicit configuration_category(std::string_view name);
     /// Destructor
-    ~configuration_category() final;
+    ~configuration_category() override;
 
     /// Add a single child
     configuration_category& add_child(child_type child);
@@ -37,9 +37,9 @@ class configuration_category final : public configuration_printable {
     private:
     void print_impl(std::ostream& out, std::string_view self_prefix,
                     std::string_view child_prefix, std::size_t prefix_len,
-                    std::size_t max_key_width) const final;
+                    std::size_t max_key_width) const override;
 
-    std::size_t get_max_key_width_impl() const final;
+    std::size_t get_max_key_width_impl() const override;
 
     std::string m_name;
     children_type m_children;

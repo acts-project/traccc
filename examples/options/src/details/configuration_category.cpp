@@ -16,7 +16,7 @@
 namespace traccc::opts {
 
 configuration_category::configuration_category(std::string_view name)
-    : m_name{name}, m_children{} {}
+    : m_name{name} {}
 
 configuration_category::~configuration_category() = default;
 
