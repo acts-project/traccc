@@ -31,11 +31,3 @@ traccc_add_executable( seq_example_alpaka "seq_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
 traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
-
-#Can only do this once target is defined, so need another if here
-if(alpaka_ACC_GPU_HIP_ENABLE)
-  set_target_properties( traccc_seq_example_alpaka PROPERTIES
-     POSITION_INDEPENDENT_CODE TRUE )
-  set_target_properties( traccc_seeding_example_alpaka PROPERTIES
-     POSITION_INDEPENDENT_CODE TRUE )
-endif()
