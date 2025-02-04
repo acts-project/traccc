@@ -9,10 +9,7 @@
 #pragma once
 
 // Detray include(s).
-#include <detray/definitions/detail/algebra.hpp>
-
-// Algebra Plugins include(s).
-#include <algebra/array_cmath.hpp>
+#include <detray/plugins/algebra/array_definitions.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>
