@@ -54,11 +54,11 @@ is_contiguous_on(P&& projection, const CONTAINER& in) {
     // Compress adjacent elements
     for (std::size_t i = 0; i < n; ++i) {
         if (i == 0) {
-            iout[iout_size++] =
-                projection(in.at(static_cast<CONTAINER::size_type>(i)));
+            iout[iout_size++] = projection(
+                in.at(static_cast<typename CONTAINER::size_type>(i)));
         } else {
-            projection_t v =
-                projection(in.at(static_cast<CONTAINER::size_type>(i)));
+            projection_t v = projection(
+                in.at(static_cast<typename CONTAINER::size_type>(i)));
 
             if (v != iout[iout_size - 1]) {
                 iout[iout_size++] = v;
