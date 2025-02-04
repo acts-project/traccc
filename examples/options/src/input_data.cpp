@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,10 +8,12 @@
 // Local include(s).
 #include "traccc/options/input_data.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 
 // System include(s).
-#include <iostream>
+#include <format>
+#include <sstream>
 #include <stdexcept>
 
 namespace traccc::opts {
@@ -62,27 +64,23 @@ void input_data::read(const po::variables_map &vm) {
 }
 
 std::unique_ptr<configuration_printable> input_data::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Input data options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Use ACTS geometry source", use_acts_geom_source ? "yes" : "no"));
-    std::stringstream format_ss;
+    auto result = std::make_unique<configuration_category>(m_description);
+
+    result->add_child(std::make_unique<configuration_value>(
+        "Use ACTS geometry source", std::format("{}", use_acts_geom_source)));
+    std::ostringstream format_ss;
     format_ss << format;
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Input data format",
-                                                format_ss.str()));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Input directory", directory));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of input events",
-                                                std::to_string(events)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of skipped events",
-                                                std::to_string(skip)));
+    result->add_child(std::make_unique<configuration_value>("Input data format",
+                                                            format_ss.str()));
+    result->add_child(
+        std::make_unique<configuration_value>("Input directory", directory));
+    result->add_child(std::make_unique<configuration_value>(
+        "Number of input events", std::to_string(events)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Number of skipped events", std::to_string(skip)));
 
-    return cat;
+    return result;
 }
 
 }  // namespace traccc::opts

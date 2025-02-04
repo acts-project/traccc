@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,10 +8,11 @@
 // Local include(s).
 #include "traccc/options/track_resolution.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 
 // System include(s).
-#include <iostream>
+#include <format>
 
 namespace traccc::opts {
 
@@ -28,14 +29,12 @@ track_resolution::track_resolution()
 
 std::unique_ptr<configuration_printable> track_resolution::as_printable()
     const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>(
-            "Ambiguity resolution options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Run ambiguity resolution",
-                                                run ? "yes" : "no"));
+    auto result = std::make_unique<configuration_category>(m_description);
 
-    return cat;
+    result->add_child(std::make_unique<configuration_value>(
+        "Run ambiguity resolution", std::format("{}", run)));
+
+    return result;
 }
 }  // namespace traccc::opts

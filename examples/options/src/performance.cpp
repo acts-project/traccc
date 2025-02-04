@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,10 +8,11 @@
 // Local include(s).
 #include "traccc/options/performance.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 
 // System include(s).
-#include <iostream>
+#include <format>
 
 namespace traccc::opts {
 
@@ -23,14 +24,12 @@ performance::performance() : interface("Performance Measurement Options") {
 }
 
 std::unique_ptr<configuration_printable> performance::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>(
-            "Performance measurement options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Run performance checks",
-                                                run ? "yes" : "no"));
+    auto result = std::make_unique<configuration_category>(m_description);
 
-    return cat;
+    result->add_child(std::make_unique<configuration_value>(
+        "Run performance checks", std::format("{}", run)));
+
+    return result;
 }
 }  // namespace traccc::opts

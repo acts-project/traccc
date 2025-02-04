@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,12 +8,16 @@
 // Project include(s).
 #include "traccc/options/generation.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Detray include(s).
 #include "detray/definitions/units.hpp"
+
+// System include(s).
+#include <sstream>
 
 namespace traccc::opts {
 
@@ -83,49 +87,41 @@ void generation::read(const po::variables_map &vm) {
 }
 
 std::unique_ptr<configuration_printable> generation::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Particle generation options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of events",
-                                                std::to_string(events)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Number of particles", std::to_string(gen_nparticles)));
-    std::stringstream vertex_ss;
+    auto result = std::make_unique<configuration_category>(m_description);
+
+    result->add_child(std::make_unique<configuration_value>(
+        "Number of events", std::to_string(events)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Number of particles", std::to_string(gen_nparticles)));
+    std::ostringstream vertex_ss;
     vertex_ss << vertex / detray::unit<float>::mm << " mm";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Vertex", vertex_ss.str()));
-    std::stringstream vertex_dev_ss;
+    result->add_child(
+        std::make_unique<configuration_value>("Vertex", vertex_ss.str()));
+    std::ostringstream vertex_dev_ss;
     vertex_dev_ss << vertex_stddev / detray::unit<float>::mm << " mm";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Vertex standard deviation",
-                                                vertex_dev_ss.str()));
-    std::stringstream mom_range_ss;
+    result->add_child(std::make_unique<configuration_value>(
+        "Vertex standard deviation", vertex_dev_ss.str()));
+    std::ostringstream mom_range_ss;
     mom_range_ss << mom_range / detray::unit<float>::GeV << " GeV";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Momentum range",
-                                                mom_range_ss.str()));
-    std::stringstream phi_range_ss;
+    result->add_child(std::make_unique<configuration_value>(
+        "Momentum range", mom_range_ss.str()));
+    std::ostringstream phi_range_ss;
     phi_range_ss << phi_range / detray::unit<float>::degree << " deg";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Phi range",
-                                                phi_range_ss.str()));
-    std::stringstream eta_range_ss;
+    result->add_child(
+        std::make_unique<configuration_value>("Phi range", phi_range_ss.str()));
+    std::ostringstream eta_range_ss;
     eta_range_ss << eta_range;
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Eta range",
-                                                eta_range_ss.str()));
-    std::stringstream theta_range_ss;
+    result->add_child(
+        std::make_unique<configuration_value>("Eta range", eta_range_ss.str()));
+    std::ostringstream theta_range_ss;
     theta_range_ss << theta_range / detray::unit<float>::degree << " deg";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Theta range",
-                                                theta_range_ss.str()));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("PGD number",
-                                                std::to_string(pdg_number)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Theta range", theta_range_ss.str()));
+    result->add_child(std::make_unique<configuration_value>(
+        "PGD number", std::to_string(pdg_number)));
 
-    return cat;
+    return result;
 }
 
 }  // namespace traccc::opts

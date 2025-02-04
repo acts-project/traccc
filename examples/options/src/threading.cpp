@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,10 +8,10 @@
 // Local include(s).
 #include "traccc/options/threading.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 
 // System include(s).
-#include <iostream>
 #include <stdexcept>
 
 namespace traccc::opts {
@@ -32,14 +32,13 @@ void threading::read(const boost::program_options::variables_map &) {
 }
 
 std::unique_ptr<configuration_printable> threading::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Multithreading options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of CPU thread",
-                                                std::to_string(threads)));
+    auto result = std::make_unique<configuration_category>(m_description);
 
-    return cat;
+    result->add_child(std::make_unique<configuration_value>(
+        "Number of CPU thread", std::to_string(threads)));
+
+    return result;
 }
 
 }  // namespace traccc::opts

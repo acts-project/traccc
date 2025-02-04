@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,11 +8,9 @@
 // Local include(s).
 #include "traccc/options/clusterization.hpp"
 
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
-#include "traccc/examples/utils/printable.hpp"
-
-// System include(s).
-#include <iostream>
 
 namespace traccc::opts {
 
@@ -49,26 +47,21 @@ clusterization::operator host::clusterization_algorithm::config_type() const {
 }
 
 std::unique_ptr<configuration_printable> clusterization::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Clustering options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Threads per partition",
-            std::to_string(m_config.threads_per_partition)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Target cells per thread",
-            std::to_string(m_config.target_cells_per_thread)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Max cells per thread",
-            std::to_string(m_config.max_cells_per_thread)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Scratch space multiplier",
-            std::to_string(m_config.backup_size_multiplier)));
+    auto result = std::make_unique<configuration_category>(m_description);
 
-    return cat;
+    result->add_child(std::make_unique<configuration_value>(
+        "Threads per partition",
+        std::to_string(m_config.threads_per_partition)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Target cells per thread",
+        std::to_string(m_config.target_cells_per_thread)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Max cells per thread", std::to_string(m_config.max_cells_per_thread)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Scratch space multiplier",
+        std::to_string(m_config.backup_size_multiplier)));
+
+    return result;
 }
 }  // namespace traccc::opts

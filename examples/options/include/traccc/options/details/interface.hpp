@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include "traccc/examples/utils/printable.hpp"
+// Local include(s).
+#include "traccc/options/details/configuration_printable.hpp"
 
 // Boost include(s).
 #include <boost/program_options.hpp>
@@ -48,7 +49,6 @@ class interface {
     /// (Boost) Description of this program option group
     boost::program_options::options_description m_desc;
 
-    private:
     /// (String) Description of this program option group
     std::string m_description;
 

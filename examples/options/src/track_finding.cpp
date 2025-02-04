@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,11 +8,12 @@
 // Project include(s).
 #include "traccc/options/track_finding.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 #include "traccc/utils/particle.hpp"
 
 // System include(s).
-#include <iostream>
+#include <sstream>
 
 namespace traccc::opts {
 
@@ -84,45 +85,36 @@ track_finding::operator finding_config() const {
 }
 
 std::unique_ptr<configuration_printable> track_finding::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Track finding options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Max branches per seed",
-            std::to_string(m_config.max_num_branches_per_seed)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Max branches at surface",
-            std::to_string(m_config.max_num_branches_per_surface)));
-    std::stringstream candidate_ss;
+    auto result = std::make_unique<configuration_category>(m_description);
+
+    result->add_child(std::make_unique<configuration_value>(
+        "Max branches per seed",
+        std::to_string(m_config.max_num_branches_per_seed)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Max branches at surface",
+        std::to_string(m_config.max_num_branches_per_surface)));
+    std::ostringstream candidate_ss;
     candidate_ss << m_track_candidates_range;
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Track candidate range",
-                                                candidate_ss.str()));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Min step length to next surface",
-            std::to_string(m_config.min_step_length_for_next_surface) + " mm"));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Max step count to next surface",
-            std::to_string(m_config.max_step_counts_for_next_surface)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Max Chi2", std::to_string(m_config.chi2_max)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Max branches per step",
-            std::to_string(m_config.max_num_branches_per_seed)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Max holes per candidate",
-            std::to_string(m_config.max_num_skipping_per_cand)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("PDG number",
-                                                std::to_string(m_pdg_number)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Track candidate range", candidate_ss.str()));
+    result->add_child(std::make_unique<configuration_value>(
+        "Min step length to next surface",
+        std::to_string(m_config.min_step_length_for_next_surface) + " mm"));
+    result->add_child(std::make_unique<configuration_value>(
+        "Max step count to next surface",
+        std::to_string(m_config.max_step_counts_for_next_surface)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Max Chi2", std::to_string(m_config.chi2_max)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Max branches per step",
+        std::to_string(m_config.max_num_branches_per_seed)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Max holes per candidate",
+        std::to_string(m_config.max_num_skipping_per_cand)));
+    result->add_child(std::make_unique<configuration_value>(
+        "PDG number", std::to_string(m_pdg_number)));
 
-    return cat;
+    return result;
 }
 }  // namespace traccc::opts
