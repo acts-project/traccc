@@ -1,12 +1,13 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2024 CERN for the benefit of the ACTS project
+# (c) 2022-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
 # Set up the "build" of the traccc::option library.
 traccc_add_library( traccc_options options TYPE SHARED
   # header files
+  "include/traccc/options/details/configuration_printable.hpp"
   "include/traccc/options/details/interface.hpp"
   "include/traccc/options/details/value_array.hpp"
   "include/traccc/options/details/value_array.ipp"
@@ -26,6 +27,13 @@ traccc_add_library( traccc_options options TYPE SHARED
   "include/traccc/options/track_resolution.hpp"
   "include/traccc/options/track_seeding.hpp"
   # source files
+  "src/details/configuration_category.hpp"
+  "src/details/configuration_category.cpp"
+  "src/details/configuration_list.hpp"
+  "src/details/configuration_list.cpp"
+  "src/details/configuration_printable.cpp"
+  "src/details/configuration_value.hpp"
+  "src/details/configuration_value.cpp"
   "src/details/interface.cpp"
   "src/accelerator.cpp"
   "src/clusterization.cpp"
@@ -48,5 +56,4 @@ target_link_libraries( traccc_options
       Boost::program_options
       traccc::io
       traccc::performance
-      traccc::utils
 )
