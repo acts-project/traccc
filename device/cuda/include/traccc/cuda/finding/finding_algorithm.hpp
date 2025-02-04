@@ -19,11 +19,7 @@
 #include "traccc/utils/memory_resource.hpp"
 
 // detray include(s).
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/actors/pointwise_material_interactor.hpp>
+#include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
 // VecMem include(s).
@@ -57,10 +53,11 @@ class finding_algorithm
     using interactor = detray::pointwise_material_interactor<algebra_type>;
 
     /// Actor chain for propagate to the next surface and its propagator type
-    using actor_type = detray::actor_chain<
-        detray::dtuple, detray::pathlimit_aborter<scalar_type>,
-        detray::parameter_transporter<algebra_type>,
-        interaction_register<interactor>, interactor, ckf_aborter>;
+    using actor_type =
+        detray::actor_chain<detray::pathlimit_aborter<scalar_type>,
+                            detray::parameter_transporter<algebra_type>,
+                            interaction_register<interactor>, interactor,
+                            ckf_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;

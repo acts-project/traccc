@@ -46,8 +46,7 @@ struct simulator {
     using bfield_type = bfield_t;
 
     using actor_chain_type =
-        detray::actor_chain<detray::dtuple,
-                            detray::parameter_transporter<algebra_type>,
+        detray::actor_chain<detray::parameter_transporter<algebra_type>,
                             detray::random_scatterer<algebra_type>,
                             detray::parameter_resetter<algebra_type>, writer_t>;
 

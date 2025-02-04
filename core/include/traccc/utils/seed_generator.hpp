@@ -13,12 +13,7 @@
 // detray include(s).
 #include <detray/geometry/barcode.hpp>
 #include <detray/geometry/tracking_surface.hpp>
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/actors/pointwise_material_interactor.hpp>
-#include <detray/propagator/base_actor.hpp>
+#include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
 // System include(s).
@@ -76,8 +71,10 @@ struct seed_generator {
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 
-            bound_param[i] = std::normal_distribution<scalar>(
-                bound_param[i], m_stddevs[i])(m_generator);
+            if (m_stddevs[i] != scalar{0}) {
+                bound_param[i] = std::normal_distribution<scalar>(
+                    bound_param[i], m_stddevs[i])(m_generator);
+            }
 
             getter::element(bound_param.covariance(), i, i) =
                 m_stddevs[i] * m_stddevs[i];

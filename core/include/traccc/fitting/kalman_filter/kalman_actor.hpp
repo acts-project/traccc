@@ -17,29 +17,24 @@
 // detray include(s).
 #include <detray/propagator/base_actor.hpp>
 
+// vecmem include(s)
+#include <vecmem/containers/device_vector.hpp>
+
 namespace traccc {
 
 /// Detray actor for Kalman filtering
-template <typename algebra_t, template <typename...> class vector_t>
+template <typename algebra_t>
 struct kalman_actor : detray::actor {
 
     // Type declarations
-    using track_state_type = track_state<algebra_t>;
+    using track_state_coll = vecmem::device_vector<track_state<algebra_t>>;
 
     // Actor state
     struct state {
 
         /// Constructor with the vector of track states
         TRACCC_HOST_DEVICE
-        state(vector_t<track_state_type>&& track_states)
-            : m_track_states(std::move(track_states)) {
-            m_it = m_track_states.begin();
-            m_it_rev = m_track_states.rbegin();
-        }
-
-        /// Constructor with the vector of track states
-        TRACCC_HOST_DEVICE
-        state(const vector_t<track_state_type>& track_states)
+        explicit state(track_state_coll track_states)
             : m_track_states(track_states) {
             m_it = m_track_states.begin();
             m_it_rev = m_track_states.rbegin();
@@ -47,7 +42,7 @@ struct kalman_actor : detray::actor {
 
         /// @return the reference of track state pointed by the iterator
         TRACCC_HOST_DEVICE
-        track_state_type& operator()() {
+        typename track_state_coll::value_type& operator()() {
             if (!backward_mode) {
                 return *m_it;
             } else {
@@ -84,13 +79,13 @@ struct kalman_actor : detray::actor {
         }
 
         // vector of track states
-        vector_t<track_state_type> m_track_states;
+        track_state_coll m_track_states;
 
         // iterator for forward filtering
-        typename vector_t<track_state_type>::iterator m_it;
+        typename track_state_coll::iterator m_it;
 
         // iterator for backward filtering
-        typename vector_t<track_state_type>::reverse_iterator m_it_rev;
+        typename track_state_coll::reverse_iterator m_it_rev;
 
         // The number of holes (The number of sensitive surfaces which do not
         // have a measurement for the track pattern)

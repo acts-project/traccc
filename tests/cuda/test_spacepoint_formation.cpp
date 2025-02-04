@@ -12,8 +12,8 @@
 #include "traccc/geometry/detector.hpp"
 
 // Detray include(s).
-#include <detray/navigation/detail/ray.hpp>
 #include <detray/test/utils/detectors/build_telescope_detector.hpp>
+#include <detray/tracks/ray.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
