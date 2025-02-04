@@ -21,11 +21,7 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
-#include "detray/propagator/actor_chain.hpp"
-#include "detray/propagator/actors/aborters.hpp"
-#include "detray/propagator/actors/parameter_resetter.hpp"
-#include "detray/propagator/actors/parameter_transporter.hpp"
-#include "detray/propagator/actors/pointwise_material_interactor.hpp"
+#include "detray/propagator/actors.hpp"
 #include "detray/propagator/propagator.hpp"
 
 // System include(s).
@@ -65,12 +61,12 @@ class kalman_fitter {
     using resetter = detray::parameter_resetter<algebra_type>;
 
     using actor_chain_type =
-        detray::actor_chain<detray::dtuple, aborter, transporter, interactor,
-                            fit_actor, resetter, kalman_step_aborter>;
+        detray::actor_chain<aborter, transporter, interactor, fit_actor,
+                            resetter, kalman_step_aborter>;
 
     using backward_actor_chain_type =
-        detray::actor_chain<detray::dtuple, aborter, transporter, fit_actor,
-                            interactor, resetter, kalman_step_aborter>;
+        detray::actor_chain<aborter, transporter, fit_actor, interactor,
+                            resetter, kalman_step_aborter>;
 
     // Propagator type
     using propagator_type =
