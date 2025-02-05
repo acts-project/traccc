@@ -27,7 +27,7 @@ struct fitting_config {
         detray::muon<traccc::scalar>();
 
     /// Smoothing with backward filter
-    bool use_backward_filter = false;
+    bool use_backward_filter = true;
     traccc::scalar covariance_inflation_factor = 1e3f;
 };
 
