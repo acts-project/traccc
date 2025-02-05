@@ -18,6 +18,7 @@
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/utils/vecmem_types.hpp"
+#include "traccc/alpaka/utils/vecmem_getter.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
@@ -32,14 +33,17 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
 #ifdef ALPAKA_ACC_SYCL_ENABLED
         ::sycl::queue q;
         vecmem::sycl::queue_wrapper qw{&q};
-        traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
+        //traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
         traccc::alpaka::vecmem::device_copy copy(qw);
         traccc::alpaka::vecmem::device_memory_resource device_mr;
 #else
-        traccc::alpaka::vecmem::host_memory_resource host_mr;
+        //traccc::alpaka::vecmem::host_memory_resource host_mr;
         traccc::alpaka::vecmem::device_copy copy;
         traccc::alpaka::vecmem::device_memory_resource device_mr;
 #endif
+
+        vecmem::host_memory_resource host_mr;
+        traccc::alpaka::vecmem::get_host_memory_resource<traccc::alpaka::AccTag>(host_mr);
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
