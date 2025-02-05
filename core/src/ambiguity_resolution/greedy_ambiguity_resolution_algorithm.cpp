@@ -15,6 +15,7 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 
