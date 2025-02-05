@@ -72,8 +72,10 @@ struct seed_generator {
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 
-            bound_param[i] = std::normal_distribution<scalar>(
-                bound_param[i], m_stddevs[i])(m_generator);
+            if (m_stddevs[i] != 0.f) {
+                bound_param[i] = std::normal_distribution<scalar>(
+                    bound_param[i], m_stddevs[i])(m_generator);
+            }
 
             getter::element(bound_param.covariance(), i, i) =
                 m_stddevs[i] * m_stddevs[i];
