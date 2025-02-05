@@ -69,7 +69,7 @@ struct host_device_types {
 };
 template <>
 struct host_device_types<::alpaka::TagGpuCudaRt> {
-    using device_memory_resource = ::vecmem::cuda::host_memory_resource;
+    using device_memory_resource = ::vecmem::cuda::device_memory_resource;
     using host_memory_resource = ::vecmem::cuda::host_memory_resource;
     using managed_memory_resource = ::vecmem::cuda::managed_memory_resource;
     using device_copy = ::vecmem::cuda::copy;
