@@ -49,6 +49,7 @@
 
 // System include(s).
 #include <cassert>
+#include <memory_resource>
 #include <vector>
 
 namespace traccc::cuda {
@@ -77,6 +78,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // Copy setup
     m_copy.setup(seeds_buffer)->ignore();
 
+    // The Thrust policy to use.
+    auto thrust_policy =
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(m_mr.main)))
+            .on(stream);
+
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
@@ -97,11 +103,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         measurement_collection_types::device uniques(uniques_buffer);
 
-        measurement* uniques_end = thrust::unique_copy(
-            thrust::cuda::par(std::pmr::polymorphic_allocator(&(m_mr.main)))
-                .on(stream),
-            measurements.ptr(), measurements.ptr() + n_measurements,
-            uniques.begin(), measurement_equal_comp());
+        measurement* uniques_end =
+            thrust::unique_copy(thrust_policy, measurements.ptr(),
+                                measurements.ptr() + n_measurements,
+                                uniques.begin(), measurement_equal_comp());
+        m_stream.synchronize();
         n_modules = static_cast<unsigned int>(uniques_end - uniques.begin());
     }
 
@@ -115,12 +121,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         measurement_collection_types::device uniques(uniques_buffer);
 
-        thrust::upper_bound(
-            thrust::cuda::par(std::pmr::polymorphic_allocator(&(m_mr.main)))
-                .on(stream),
-            measurements.ptr(), measurements.ptr() + n_measurements,
-            uniques.begin(), uniques.begin() + n_modules, upper_bounds.begin(),
-            measurement_sort_comp());
+        thrust::upper_bound(thrust_policy, measurements.ptr(),
+                            measurements.ptr() + n_measurements,
+                            uniques.begin(), uniques.begin() + n_modules,
+                            upper_bounds.begin(), measurement_sort_comp());
     }
 
     /*****************************************************************
@@ -285,12 +289,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     keys_buffer);
                 vecmem::device_vector<unsigned int> param_ids_device(
                     param_ids_buffer);
-                thrust::sort_by_key(
-                    thrust::cuda::par(
-                        std::pmr::polymorphic_allocator(&(m_mr.main)))
-                        .on(stream),
-                    keys_device.begin(), keys_device.end(),
-                    param_ids_device.begin());
+                thrust::sort_by_key(thrust_policy, keys_device.begin(),
+                                    keys_device.end(),
+                                    param_ids_device.begin());
 
                 m_stream.synchronize();
             }
@@ -338,10 +339,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         vecmem::device_vector<candidate_link> out(
             *(links_buffer.host_ptr() + it));
 
-        thrust::copy(
-            thrust::cuda::par(std::pmr::polymorphic_allocator(&(m_mr.main)))
-                .on(stream),
-            in.begin(), in.begin() + n_candidates_per_step[it], out.begin());
+        thrust::copy(thrust_policy, in.begin(),
+                     in.begin() + n_candidates_per_step[it], out.begin());
     }
 
     /*****************************************************************

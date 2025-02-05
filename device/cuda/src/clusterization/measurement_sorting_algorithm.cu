@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,6 +11,9 @@
 
 // Thrust include(s).
 #include <thrust/sort.h>
+
+// System include(s).
+#include <memory_resource>
 
 namespace traccc::cuda {
 
@@ -33,7 +36,7 @@ measurement_sorting_algorithm::operator()(
 
     // Sort the measurements in place
     thrust::sort(
-        thrust::cuda::par(std::pmr::polymorphic_allocator(&(m_mr.main)))
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(m_mr.main)))
             .on(stream),
         measurements_view.ptr(), measurements_view.ptr() + n_measurements,
         measurement_sort_comp());
