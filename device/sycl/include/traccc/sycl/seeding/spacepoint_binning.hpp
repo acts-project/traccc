@@ -34,10 +34,12 @@ class spacepoint_binning
 
     public:
     /// Constructor for the algorithm
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       const traccc::memory_resource& mr, vecmem::copy& copy,
-                       queue_wrapper queue);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a a view of spacepoints
     sp_grid_buffer operator()(const spacepoint_collection_types::const_view&
@@ -51,6 +53,14 @@ class spacepoint_binning
     mutable queue_wrapper m_queue;
     vecmem::copy& m_copy;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class spacepoint_binning
 
 }  // namespace traccc::sycl

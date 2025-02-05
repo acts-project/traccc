@@ -38,11 +38,13 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     ///             and host memory blocks
     /// @param queue The SYCL queue to work with
     ///
-    seeding_algorithm(const seedfinder_config& finder_config,
-                      const spacepoint_grid_config& grid_config,
-                      const seedfilter_config& filter_config,
-                      const traccc::memory_resource& mr, vecmem::copy& copy,
-                      const queue_wrapper& queue);
+    seeding_algorithm(
+        const seedfinder_config& finder_config,
+        const spacepoint_grid_config& grid_config,
+        const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const queue_wrapper& queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Operator executing the algorithm.
     ///
@@ -58,6 +60,14 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     /// Sub-algorithm performing the seed finding
     seed_finding m_seed_finding;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class seeding_algorithm
 
 }  // namespace traccc::sycl

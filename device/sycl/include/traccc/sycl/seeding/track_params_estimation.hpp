@@ -42,8 +42,10 @@ struct track_params_estimation
     ///             and host memory blocks
     /// @param queue    is a wrapper for the sycl queue for kernel
     /// invocation
-    track_params_estimation(const traccc::memory_resource& mr,
-                            vecmem::copy& copy, queue_wrapper queue);
+    track_params_estimation(
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for track_params_esitmation
     ///
@@ -71,6 +73,15 @@ struct track_params_estimation
     traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;
     vecmem::copy& m_copy;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::sycl

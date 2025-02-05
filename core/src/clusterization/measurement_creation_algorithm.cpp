@@ -17,8 +17,8 @@
 namespace traccc::host {
 
 measurement_creation_algorithm::measurement_creation_algorithm(
-    vecmem::memory_resource &mr)
-    : m_mr(mr) {}
+    vecmem::memory_resource &mr, std::unique_ptr<const Logger> logger)
+    : m_mr(mr), m_logger(std::move(logger)) {}
 
 measurement_creation_algorithm::output_type
 measurement_creation_algorithm::operator()(

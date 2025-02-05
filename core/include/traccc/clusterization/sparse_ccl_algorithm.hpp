@@ -34,7 +34,9 @@ class sparse_ccl_algorithm
     ///
     /// @param mr is the memory resource
     ///
-    sparse_ccl_algorithm(vecmem::memory_resource& mr);
+    sparse_ccl_algorithm(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// @name Operator(s) to use in host code
     /// @{
@@ -54,6 +56,14 @@ class sparse_ccl_algorithm
     /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class sparse_ccl_algorithm
 
 }  // namespace traccc::host

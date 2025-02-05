@@ -391,6 +391,21 @@ option( TRACCC_ENABLE_NVTX_PROFILING
 # option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
 set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the build")
 
+# Set up either the ACTS or traccc logger.
+if(TRACCC_SETUP_ACTS OR TARGET ActsCore)
+   set(TRACCC_USE_ACTS_LOGGER_DEFAULT ON)
+else()
+   set(TRACCC_USE_ACTS_LOGGER_DEFAULT OFF)
+endif()
+
+option(TRACCC_USE_ACTS_LOGGER "Use Acts's logger" ${TRACCC_USE_ACTS_LOGGER_DEFAULT})
+
+if(TRACCC_USE_ACTS_LOGGER)
+   message(STATUS "Building traccc with the ACTS logger")
+else()
+   message(STATUS "Building traccc with the built-in logger")
+endif()
+
 # Build the traccc code.
 add_subdirectory( core )
 add_subdirectory( device/common )

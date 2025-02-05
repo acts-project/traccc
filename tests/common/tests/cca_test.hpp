@@ -156,7 +156,8 @@ class ConnectedComponentAnalysisTests
         }
 
         traccc::edm::silicon_cell_collection::host cells{mr};
-        traccc::io::read_cells(cells, file_hits, &dd);
+        traccc::io::read_cells(cells, file_hits,
+                               traccc::getDummyLogger().clone(), &dd);
 
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result = f(cells, dd);

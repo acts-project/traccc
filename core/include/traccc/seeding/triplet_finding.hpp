@@ -25,7 +25,10 @@ struct triplet_finding : public algorithm<triplet_collection_types::host(
     ///
     /// @param seedfinder_config is the configuration parameters
     /// @param isp_container is the internal spacepoint container
-    triplet_finding(const seedfinder_config& config) : m_config(config) {}
+    triplet_finding(
+        const seedfinder_config& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
+        : m_config(config), m_logger(std::move(logger)) {}
 
     /// Callable operator for triplet finding per middle-bottom doublet
     ///
@@ -166,6 +169,15 @@ struct triplet_finding : public algorithm<triplet_collection_types::host(
     private:
     seedfinder_config m_config;
     seedfilter_config m_filter_config;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc

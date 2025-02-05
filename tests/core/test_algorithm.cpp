@@ -18,11 +18,19 @@
 class double_int : public traccc::algorithm<int(const int &)> {
     public:
     virtual int operator()(const int &i) const override { return 2 * i; }
+
+    const traccc::Logger &logger() const override {
+        return traccc::getDummyLogger();
+    }
 };
 
 class double_int_affine : public traccc::algorithm<int(int &&)> {
     public:
     virtual int operator()(int &&i) const override { return 2 * i; }
+
+    const traccc::Logger &logger() const override {
+        return traccc::getDummyLogger();
+    }
 };
 
 class double_string_affine
@@ -30,6 +38,10 @@ class double_string_affine
     public:
     virtual std::string operator()(std::string &&i) const override {
         return i + i;
+    }
+
+    const traccc::Logger &logger() const override {
+        return traccc::getDummyLogger();
     }
 };
 
@@ -39,12 +51,20 @@ class double_string_regular
     virtual std::string operator()(const std::string &i) const override {
         return i + i;
     }
+
+    const traccc::Logger &logger() const override {
+        return traccc::getDummyLogger();
+    }
 };
 
 class add : public traccc::algorithm<int(const int &, const int &)> {
     public:
     virtual int operator()(const int &i, const int &j) const override {
         return i + j;
+    }
+
+    const traccc::Logger &logger() const override {
+        return traccc::getDummyLogger();
     }
 };
 

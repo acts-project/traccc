@@ -36,6 +36,14 @@ class measurement_sorting_algorithm
     output_type operator()(const measurement_collection_types::view&
                                measurements_view) const override;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::host

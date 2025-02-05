@@ -55,6 +55,12 @@ jobs:
               run_tests: false
             build: Release
           - platform:
+              name: CUDA
+              container: ghcr.io/acts-project/ubuntu2404_cuda:69
+              options: --preset cuda-fp64 -DTRACCC_USE_ACTS_LOGGER=OFF
+              run_tests: false
+            build: Release
+          - platform:
               name: "SYCL NVIDIA"
               container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:69
               options: --preset sycl-fp32

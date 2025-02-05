@@ -12,8 +12,9 @@
 
 namespace traccc {
 
-seed_filtering::seed_filtering(const seedfilter_config& config)
-    : m_filter_config(config) {}
+seed_filtering::seed_filtering(const seedfilter_config& config,
+                               std::unique_ptr<const Logger> logger)
+    : m_filter_config(config), m_logger(std::move(logger)) {}
 
 void seed_filtering::operator()(
     const spacepoint_collection_types::host& sp_collection, const sp_grid& g2,

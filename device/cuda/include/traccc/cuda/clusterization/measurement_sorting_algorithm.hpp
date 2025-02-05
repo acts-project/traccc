@@ -41,8 +41,9 @@ class measurement_sorting_algorithm
     /// @param copy The copy object to use in the algorithm
     /// @param str The CUDA stream to schedule the measurement sorting in
     ///
-    measurement_sorting_algorithm(const traccc::memory_resource& mr,
-                                  vecmem::copy& copy, stream& str);
+    measurement_sorting_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator performing the sorting on a container
     ///
@@ -59,6 +60,14 @@ class measurement_sorting_algorithm
     /// CUDA stream used by the algorithm
     std::reference_wrapper<stream> m_stream;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::cuda

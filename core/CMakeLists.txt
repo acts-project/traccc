@@ -44,6 +44,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/utils/memory_resource.hpp"
   "include/traccc/utils/seed_generator.hpp"
   "include/traccc/utils/subspace.hpp"
+  "src/utils/logging.cpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/details/sparse_ccl.hpp"
   "include/traccc/clusterization/impl/sparse_ccl.ipp"
@@ -117,6 +118,11 @@ traccc_add_library( traccc_core core TYPE SHARED
 target_link_libraries( traccc_core
   PUBLIC Eigen3::Eigen vecmem::core detray::core detray::detectors
          traccc::algebra )
+
+if(TRACCC_USE_ACTS_LOGGER)
+  target_link_libraries(traccc_core PUBLIC ActsCore)
+  target_compile_definitions(traccc_core PUBLIC TRACCC_USE_ACTS_LOGGER)
+endif()
 
 # Prevent Eigen from getting confused when building code for a
 # CUDA or HIP backend with SYCL.

@@ -57,12 +57,13 @@ __global__ void fit(
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
-    vecmem::copy& copy, stream& str)
+    vecmem::copy& copy, stream& str, std::unique_ptr<const Logger> logger)
     : m_cfg(cfg),
       m_mr(mr),
       m_copy(copy),
       m_stream(str),
-      m_warp_size(details::get_warp_size(str.device())) {}
+      m_warp_size(details::get_warp_size(str.device())),
+      m_logger(std::move(logger)) {}
 
 template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(

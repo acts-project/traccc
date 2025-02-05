@@ -43,10 +43,11 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     ///             and host memory blocks
     /// @param queue    is a wrapper for the sycl queue for kernel
     /// invocation
-    seed_finding(const seedfinder_config& config,
-                 const seedfilter_config& filter_config,
-                 const traccc::memory_resource& mr, vecmem::copy& copy,
-                 queue_wrapper queue);
+    seed_finding(
+        const seedfinder_config& config, const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
     ///
@@ -65,6 +66,15 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;
     vecmem::copy& m_copy;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::sycl

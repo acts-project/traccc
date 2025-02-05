@@ -40,7 +40,9 @@ class container_d2h_copy_alg
         const typename CONTAINER_TYPES::const_view&)>::output_type;
 
     /// Constructor with the needed resources
-    container_d2h_copy_alg(const memory_resource& mr, vecmem::copy& deviceCopy);
+    container_d2h_copy_alg(
+        const memory_resource& mr, vecmem::copy& deviceCopy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the copy to the host
     virtual output_type operator()(input_type input) const override;
@@ -53,6 +55,14 @@ class container_d2h_copy_alg
     /// The H->H copy object to use
     vecmem::copy m_hostCopy;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class container_d2h_copy_alg
 
 }  // namespace traccc::device

@@ -46,7 +46,8 @@ class silicon_pixel_spacepoint_formation_algorithm
     ///
     silicon_pixel_spacepoint_formation_algorithm(
         const traccc::memory_resource& mr, vecmem::copy& copy,
-        queue_wrapper queue);
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Construct spacepoints from 2D silicon pixel measurements
     ///
@@ -77,6 +78,15 @@ class silicon_pixel_spacepoint_formation_algorithm
     std::reference_wrapper<vecmem::copy> m_copy;
     /// SYCL queue object
     mutable queue_wrapper m_queue;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::sycl

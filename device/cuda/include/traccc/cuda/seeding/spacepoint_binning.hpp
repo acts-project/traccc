@@ -35,10 +35,11 @@ class spacepoint_binning
 
     public:
     /// Constructor for the algorithm
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       const traccc::memory_resource& mr, vecmem::copy& copy,
-                       stream& str);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a a view of spacepoints
     sp_grid_buffer operator()(const spacepoint_collection_types::const_view&
@@ -57,6 +58,15 @@ class spacepoint_binning
 
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 
 };  // class spacepoint_binning
 

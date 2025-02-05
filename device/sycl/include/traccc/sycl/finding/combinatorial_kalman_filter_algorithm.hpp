@@ -54,7 +54,8 @@ class combinatorial_kalman_filter_algorithm
     /// Constructor with the algorithm's configuration
     explicit combinatorial_kalman_filter_algorithm(
         const config_type& config, const traccc::memory_resource& mr,
-        vecmem::copy& copy, queue_wrapper queue);
+        vecmem::copy& copy, queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
     ///
@@ -102,6 +103,14 @@ class combinatorial_kalman_filter_algorithm
     /// Queue wrapper
     mutable queue_wrapper m_queue;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class combinatorial_kalman_filter_algorithm
 
 }  // namespace traccc::sycl

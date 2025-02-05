@@ -25,6 +25,7 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging.hpp"
 
 // Greedy ambiguity resolution adapted from ACTS code
 
@@ -110,8 +111,10 @@ class greedy_ambiguity_resolution_algorithm
     /// @param cfg  Configuration object
     // greedy_ambiguity_resolution_algorithm(const config_type& cfg) :
     // _config(cfg) {}
-    greedy_ambiguity_resolution_algorithm(const config_t cfg = {})
-        : _config{cfg} {}
+    greedy_ambiguity_resolution_algorithm(
+        const config_t cfg,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
+        : _config{cfg}, m_logger{std::move(logger)} {}
 
     /// Run the algorithm
     ///
@@ -156,6 +159,10 @@ class greedy_ambiguity_resolution_algorithm
         state_t& final_state) const;
 
     config_t _config;
+
+    std::unique_ptr<const Logger> m_logger;
+
+    const Logger& logger() const override { return *m_logger; }
 };
 
 }  // namespace traccc

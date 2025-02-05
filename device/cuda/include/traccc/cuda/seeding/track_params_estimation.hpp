@@ -38,8 +38,9 @@ struct track_params_estimation
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
-    track_params_estimation(const traccc::memory_resource& mr,
-                            vecmem::copy& copy, stream& str);
+    track_params_estimation(
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for track_params_estimation
     ///
@@ -72,6 +73,15 @@ struct track_params_estimation
 
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc::cuda

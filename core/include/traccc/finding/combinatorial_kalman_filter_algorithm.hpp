@@ -46,7 +46,9 @@ class combinatorial_kalman_filter_algorithm
     using output_type = track_candidate_container_types::host;
 
     /// Constructor with the algorithm's configuration
-    explicit combinatorial_kalman_filter_algorithm(const config_type& config);
+    explicit combinatorial_kalman_filter_algorithm(
+        const config_type& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
     ///
@@ -88,6 +90,14 @@ class combinatorial_kalman_filter_algorithm
     /// Algorithm configuration
     config_type m_config;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class combinatorial_kalman_filter_algorithm
 
 }  // namespace traccc::host

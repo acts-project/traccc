@@ -72,7 +72,7 @@ struct ZeroMutexKernel {
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy,
-    const config_type& config)
+    const config_type& config, std::unique_ptr<const Logger> logger)
     : m_config(config),
       m_mr(mr),
       m_copy(copy),
@@ -80,7 +80,8 @@ clusterization_algorithm::clusterization_algorithm(
       m_gf_backup(m_config.backup_size(), m_mr.main),
       m_adjc_backup(m_config.backup_size(), m_mr.main),
       m_adjv_backup(m_config.backup_size() * 8, m_mr.main),
-      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {}
+      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)),
+      m_logger(std::move(logger)) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,

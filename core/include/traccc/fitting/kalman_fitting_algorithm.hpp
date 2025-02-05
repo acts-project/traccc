@@ -48,8 +48,9 @@ class kalman_fitting_algorithm
     ///
     /// @param config The configuration object
     ///
-    explicit kalman_fitting_algorithm(const config_type& config,
-                                      vecmem::memory_resource& mr);
+    explicit kalman_fitting_algorithm(
+        const config_type& config, vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
     ///
@@ -87,6 +88,14 @@ class kalman_fitting_algorithm
     /// Memory resource to use in the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class kalman_fitting_algorithm
 
 }  // namespace traccc::host

@@ -40,7 +40,9 @@ class container_h2d_copy_alg {
     typedef typename CONTAINER_TYPES::buffer output_type;
 
     /// Constructor with the needed resources
-    container_h2d_copy_alg(const memory_resource& mr, vecmem::copy& deviceCopy);
+    container_h2d_copy_alg(
+        const memory_resource& mr, vecmem::copy& deviceCopy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing a simple copy to the device
     output_type operator()(input_type input) const;
@@ -64,6 +66,14 @@ class container_h2d_copy_alg {
     /// The H->H copy object to use
     vecmem::copy m_hostCopy;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class container_h2d_copy_alg
 
 }  // namespace traccc::device

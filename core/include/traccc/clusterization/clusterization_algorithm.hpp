@@ -41,7 +41,9 @@ class clusterization_algorithm
     ///
     /// @param mr The memory resource to use for the result objects
     ///
-    clusterization_algorithm(vecmem::memory_resource& mr);
+    clusterization_algorithm(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Construct measurements for each detector module
     ///
@@ -68,6 +70,14 @@ class clusterization_algorithm
     /// Reference to the host-accessible memory resource
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class clusterization_algorithm
 
 }  // namespace traccc::host

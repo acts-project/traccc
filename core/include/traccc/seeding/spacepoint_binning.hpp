@@ -29,9 +29,10 @@ class spacepoint_binning
     /// @param grid_config is for spacepoint grid parameter
     /// @param mr is the vecmem memory resource
     ///
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       vecmem::memory_resource& mr);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config, vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Operator executing the algorithm
     ///
@@ -46,6 +47,15 @@ class spacepoint_binning
     spacepoint_grid_config m_grid_config;
     std::pair<output_type::axis_p0_type, output_type::axis_p1_type> m_axes;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc

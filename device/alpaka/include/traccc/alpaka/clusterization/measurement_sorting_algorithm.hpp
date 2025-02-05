@@ -36,7 +36,9 @@ class measurement_sorting_algorithm
     ///
     /// @param copy The copy object to use in the algorithm
     ///
-    measurement_sorting_algorithm(vecmem::copy& copy);
+    measurement_sorting_algorithm(
+        vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator performing the sorting on a container
     ///
@@ -49,6 +51,14 @@ class measurement_sorting_algorithm
     /// Copy object to use in the algorithm
     std::reference_wrapper<vecmem::copy> m_copy;
 
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::alpaka

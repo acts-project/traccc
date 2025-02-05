@@ -32,7 +32,10 @@ struct doublet_finding
     ///
     /// @param seedfinder_config is the configuration parameters
     /// @param isp_container is the internal spacepoint container
-    doublet_finding(const seedfinder_config& config) : m_config(config) {}
+    doublet_finding(
+        const seedfinder_config& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
+        : m_config(config), m_logger(std::move(logger)) {}
 
     /// Callable operator for doublet finding per middle spacepoint
     ///
@@ -99,6 +102,15 @@ struct doublet_finding
 
     private:
     seedfinder_config m_config;
+
+    /// Algorithm-specific logger object
+    std::unique_ptr<const Logger> m_logger;
+
+    /// Logger access method
+    const Logger& logger() const override {
+        assert(m_logger.get() != nullptr);
+        return *m_logger;
+    }
 };
 
 }  // namespace traccc
