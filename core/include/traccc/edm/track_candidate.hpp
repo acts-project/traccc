@@ -16,6 +16,26 @@
 
 namespace traccc {
 
+/// Finding result per track
+template <typename algebra_t>
+struct finding_result {
+    using scalar_type = detray::dscalar<algebra_t>;
+
+    /// Seed track parameter
+    detray::bound_track_parameters<algebra_t> seed_params;
+
+    /// Number of degree of freedoms of fitted track
+    scalar_type ndf{0};
+
+    /// Chi square of fitted track
+    scalar_type chi2{0};
+
+    // The number of holes (The number of sensitive surfaces which do not have a
+    // measurement for the track pattern)
+    unsigned int n_holes{0u};
+};
+
+
 /// Track candidate is the measurement
 using track_candidate = measurement;
 
@@ -23,6 +43,6 @@ using track_candidate = measurement;
 using track_candidate_collection_types = collection_types<track_candidate>;
 /// Declare a track candidates container type
 using track_candidate_container_types =
-    container_types<bound_track_parameters, track_candidate>;
+    container_types<finding_result<default_algebra>, track_candidate>;
 
 }  // namespace traccc
