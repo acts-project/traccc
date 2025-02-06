@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,13 +8,15 @@
 // Project include(s).
 #include "traccc/options/telescope_detector.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_category.hpp"
+#include "details/configuration_value.hpp"
 
 // Detray include(s).
 #include "detray/definitions/units.hpp"
 
 // System include(s).
-#include <iostream>
+#include <format>
+#include <sstream>
 
 namespace traccc::opts {
 
@@ -57,38 +59,30 @@ void telescope_detector::read(const po::variables_map &) {
 
 std::unique_ptr<configuration_printable> telescope_detector::as_printable()
     const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Telescope detector options");
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Empty material",
-                                                empty_material ? "yes" : "no"));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of planes",
-                                                std::to_string(n_planes)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Slab thickness",
-            std::to_string(thickness / detray::unit<float>::mm) + " mm"));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Spacing",
-            std::to_string(spacing / detray::unit<float>::mm) + " mm"));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Smearing",
-            std::to_string(thickness / detray::unit<float>::um) + " um"));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Half length",
-            std::to_string(half_length / detray::unit<float>::mm) + " mm"));
+    auto result = std::make_unique<configuration_category>(m_description);
+
+    result->add_child(std::make_unique<configuration_value>(
+        "Empty material", std::format("{}", empty_material)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Number of planes", std::to_string(n_planes)));
+    result->add_child(std::make_unique<configuration_value>(
+        "Slab thickness",
+        std::to_string(thickness / detray::unit<float>::mm) + " mm"));
+    result->add_child(std::make_unique<configuration_value>(
+        "Spacing", std::to_string(spacing / detray::unit<float>::mm) + " mm"));
+    result->add_child(std::make_unique<configuration_value>(
+        "Smearing",
+        std::to_string(thickness / detray::unit<float>::um) + " um"));
+    result->add_child(std::make_unique<configuration_value>(
+        "Half length",
+        std::to_string(half_length / detray::unit<float>::mm) + " mm"));
     std::stringstream align_ss;
     align_ss << align_vector;
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Alignment axis",
-                                                align_ss.str()));
+    result->add_child(std::make_unique<configuration_value>("Alignment axis",
+                                                            align_ss.str()));
 
-    return cat;
+    return result;
 }
 
 }  // namespace traccc::opts

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,7 +8,7 @@
 // Local include(s).
 #include "traccc/options/program_options.hpp"
 
-#include "traccc/examples/utils/printable.hpp"
+#include "details/configuration_list.hpp"
 
 // System include(s).
 #include <cstdlib>
@@ -56,7 +56,7 @@ program_options::program_options(
     }
 
     // Tell the user what's happening.
-    std::cout << "\nRunning " << description << "\n\n";
+    std::cout << "\nRunning " << description << ", with options:\n\n";
 
     configuration_list cl;
 
@@ -64,9 +64,7 @@ program_options::program_options(
         cl.add_child(opt.get().as_printable());
     }
 
-    cl.print();
-
-    std::cout << std::endl;
+    std::cout << cl.str() << std::endl;
 }
 
 }  // namespace traccc::opts
