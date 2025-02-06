@@ -266,11 +266,12 @@ track_candidate_container_types::host find_tracks(
             if (n_branches == 0) {
 
                 // Put an invalid link with max item id
-                links[step].push_back({{previous_step, in_param_id},
-                                       std::numeric_limits<unsigned int>::max(),
-                                       orig_param_id,
-                                       skip_counter + 1,
-                                       0.f});
+                links[step].push_back(
+                    {{previous_step, in_param_id},
+                     std::numeric_limits<unsigned int>::max(),
+                     orig_param_id,
+                     skip_counter + 1,
+                     std::numeric_limits<traccc::scalar>::max()});
 
                 updated_params.push_back(in_param);
                 n_branches++;
@@ -415,6 +416,10 @@ track_candidate_container_types::host find_tracks(
 
             auto& cand = *it;
             cand = measurements.at(L.meas_idx);
+
+            // Sanity check on chi2 
+            assert(L.chi2 != std::numeric_limits<traccc::scalar>::max());
+            assert(L.chi2 >= 0.f);
 
             ndf_sum += static_cast<scalar>(cand.meas_dim);
             chi2_sum += L.chi2;

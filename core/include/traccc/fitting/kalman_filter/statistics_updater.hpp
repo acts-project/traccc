@@ -38,7 +38,7 @@ struct statistics_updater {
             // Measurement dimension
             const unsigned int D = trk_state.get_measurement().meas_dim;
 
-            // Track summary
+            // Track quality
             auto& trk_quality = fit_res.trk_quality;
 
             // NDoF = NDoF + number of coordinates per measurement
