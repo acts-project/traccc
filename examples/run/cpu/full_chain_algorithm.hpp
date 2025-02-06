@@ -77,6 +77,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
+                         std::size_t /*device_caching_threshold*/,
                          detector_type* detector = nullptr);
 
     /// Reconstruct track parameters in the entire detector
