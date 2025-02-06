@@ -35,7 +35,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Detray include(s).
-#include "alpaka/example/ExampleDefaultAcc.hpp"
 #include "detray/core/detector.hpp"
 #include "detray/detectors/bfield.hpp"
 #include "detray/io/frontend/detector_reader.hpp"
@@ -63,33 +62,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts) {
 
-    using Dim = ::alpaka::DimInt<1>;
-    using Idx = uint32_t;
-
-    using Acc = ::alpaka::ExampleDefaultAcc<Dim, Idx>;
 #ifdef ALPAKA_ACC_SYCL_ENABLED
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy(qw);
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr(qw);
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::device_memory_resource
-        device_mr(qw);
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource
-        mng_mr(qw);
+    traccc::alpaka::vecmem::device_copy copy(qw);
+    traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
+    traccc::alpaka::vecmem::device_memory_resource device_mr(qw);
+    traccc::alpaka::vecmem::managed_memory_resource mng_mr(qw);
     traccc::memory_resource mr{device_mr, &host_mr};
 #else
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::device_copy copy;
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::device_memory_resource device_mr;
-    traccc::alpaka::vecmem::host_device_types<
-        ::alpaka::trait::AccToTag<Acc>::type>::managed_memory_resource mng_mr;
+    traccc::alpaka::vecmem::device_copy copy;
+    traccc::alpaka::vecmem::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::device_memory_resource device_mr;
+    traccc::alpaka::vecmem::managed_memory_resource mng_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 #endif
 

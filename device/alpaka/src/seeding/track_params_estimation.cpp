@@ -63,7 +63,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // Run the kernel
     ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{},
                         spacepoints_view, seeds_view, bfield, stddev,
-                        vecmem::get_data(params_buffer));
+                        ::vecmem::get_data(params_buffer));
     ::alpaka::wait(queue);
 
     return params_buffer;

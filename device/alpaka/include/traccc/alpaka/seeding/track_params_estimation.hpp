@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s)
+#include <vecmem/utils/copy.hpp>
+
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -58,7 +60,7 @@ struct track_params_estimation
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// Copy object used by the algorithm
-    vecmem::copy& m_copy;
+    ::vecmem::copy& m_copy;
 };
 
 }  // namespace traccc::alpaka
