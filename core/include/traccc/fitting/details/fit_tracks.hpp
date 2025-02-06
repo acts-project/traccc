@@ -61,7 +61,7 @@ track_state_container_types::host fit_tracks(
         typename fitter_t::state fitter_state(std::move(input_states));
 
         // Run the fitter.
-        fitter.fit(track_candidates.get_headers()[i], fitter_state);
+        fitter.fit(track_candidates.get_headers()[i].seed_params, fitter_state);
 
         // Save the results into the output container.
         result.push_back(

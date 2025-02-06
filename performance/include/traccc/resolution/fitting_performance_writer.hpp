@@ -100,7 +100,7 @@ class fitting_performance_writer {
         truth_param.set_qop(ptc.charge / vector::norm(global_mom));
 
         // For the moment, only fill with the first measurements
-        if (fit_res.ndf > 0 && !trk_state.is_hole) {
+        if (fit_res.trk_quality.ndf > 0 && !trk_state.is_hole) {
             write_res(truth_param, trk_state.smoothed(), ptc);
         }
         write_stat(fit_res, track_states_per_track);

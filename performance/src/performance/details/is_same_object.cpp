@@ -149,7 +149,8 @@ bool is_same_object<fitting_result<traccc::default_algebra>>::operator()(
 
     return (is_same_object<bound_track_parameters>(m_ref.get().fit_params,
                                                    m_unc)(obj.fit_params) &&
-            is_same_scalar(obj.ndf, m_ref.get().ndf, m_unc));
+            is_same_scalar(obj.trk_quality.ndf, m_ref.get().trk_quality.ndf,
+                           m_unc));
 }
 
 /// @}
