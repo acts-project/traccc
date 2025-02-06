@@ -21,12 +21,13 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
-#include "detray/propagator/actor_chain.hpp"
-#include "detray/propagator/actors/aborters.hpp"
-#include "detray/propagator/actors/parameter_resetter.hpp"
-#include "detray/propagator/actors/parameter_transporter.hpp"
-#include "detray/propagator/actors/pointwise_material_interactor.hpp"
-#include "detray/propagator/propagator.hpp"
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/actors.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/utils/ranges.hpp>
+
+// vecmem include(s)
+#include <vecmem/containers/device_vector.hpp>
 
 // System include(s).
 #include <limits>
@@ -47,10 +48,6 @@ class kalman_fitter {
     // scalar type
     using scalar_type = detray::dscalar<algebra_type>;
 
-    // vector type
-    template <typename T>
-    using vector_type = typename detector_type::template vector_type<T>;
-
     /// Configuration type
     using config_type = fitting_config;
 
@@ -61,16 +58,16 @@ class kalman_fitter {
     using aborter = detray::pathlimit_aborter<scalar_type>;
     using transporter = detray::parameter_transporter<algebra_type>;
     using interactor = detray::pointwise_material_interactor<algebra_type>;
-    using fit_actor = traccc::kalman_actor<algebra_type, vector_type>;
+    using fit_actor = traccc::kalman_actor<algebra_type>;
     using resetter = detray::parameter_resetter<algebra_type>;
 
     using actor_chain_type =
-        detray::actor_chain<detray::dtuple, aborter, transporter, interactor,
-                            fit_actor, resetter, kalman_step_aborter>;
+        detray::actor_chain<aborter, transporter, interactor, fit_actor,
+                            resetter, kalman_step_aborter>;
 
     using backward_actor_chain_type =
-        detray::actor_chain<detray::dtuple, aborter, transporter, fit_actor,
-                            interactor, resetter, kalman_step_aborter>;
+        detray::actor_chain<aborter, transporter, fit_actor, interactor,
+                            resetter, kalman_step_aborter>;
 
     // Propagator type
     using propagator_type =
@@ -88,21 +85,37 @@ class kalman_fitter {
         : m_detector(det), m_field(field), m_cfg(cfg) {}
 
     /// Kalman fitter state
-    struct state {
+    struct state : detray::ranges::view_interface<state> {
+        using rev_it_t =
+            typename vecmem::device_vector<track_state<algebra_type>>::iterator;
 
         /// State constructor
         ///
         /// @param track_states the vector of track states
         TRACCC_HOST_DEVICE
-        state(vector_type<track_state<algebra_type>>&& track_states)
-            : m_fit_actor_state(std::move(track_states)) {}
-
-        /// State constructor
-        ///
-        /// @param track_states the vector of track states
-        TRACCC_HOST_DEVICE
-        state(const vector_type<track_state<algebra_type>>& track_states)
+        explicit state(
+            vecmem::data::vector_view<track_state<algebra_type>> track_states)
             : m_fit_actor_state(track_states) {}
+
+        /// State constructor
+        ///
+        /// @param track_states the vector of track states
+        TRACCC_HOST_DEVICE
+        explicit state(
+            vecmem::device_vector<track_state<algebra_type>>& track_states)
+            : m_fit_actor_state(track_states) {}
+
+        /// Get track state range iterators
+        /// @{
+        TRACCC_HOST_DEVICE
+        auto begin() const { return m_fit_actor_state.begin(); }
+        TRACCC_HOST_DEVICE
+        auto end() const { return m_fit_actor_state.end(); }
+        TRACCC_HOST_DEVICE
+        rev_it_t rbegin() const { return {m_fit_actor_state.begin() - 1}; }
+        TRACCC_HOST_DEVICE
+        rev_it_t rend() const { return {m_fit_actor_state.end() - 1}; }
+        /// @}
 
         /// @return the actor chain state
         TRACCC_HOST_DEVICE
@@ -145,13 +158,11 @@ class kalman_fitter {
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
 
-            // Reset the iterator of kalman actor
-            fitter_state.m_fit_actor_state.reset();
+            // Reset the iterator of kalman actor (forward filtering)
+            fitter_state.m_fit_actor_state.reset(fit_actor::e_forward);
 
             auto seed_params_cpy =
-                (i == 0) ? seed_params
-                         : fitter_state.m_fit_actor_state.m_track_states[0]
-                               .smoothed();
+                (i == 0) ? seed_params : fitter_state[0].smoothed();
 
             inflate_covariance(seed_params_cpy,
                                m_cfg.covariance_inflation_factor);
@@ -212,16 +223,15 @@ class kalman_fitter {
     ///
     /// @param fitter_state the state of kalman fitter
     TRACCC_HOST_DEVICE void smooth(state& fitter_state) {
-
-        auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
-
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
-        auto& last = track_states.back();
+        auto& last = fitter_state.back();
         last.smoothed().set_parameter_vector(last.filtered());
         last.smoothed().set_covariance(last.filtered().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
+
+        fitter_state.m_fit_actor_state.reset(m_cfg.use_backward_filter);
 
         if (m_cfg.use_backward_filter) {
             // Backward propagator for the two-filters method
@@ -242,20 +252,13 @@ class kalman_fitter {
 
             propagation._navigation.set_direction(
                 detray::navigation::direction::e_backward);
-            fitter_state.m_fit_actor_state.backward_mode = true;
 
             propagator.propagate(propagation,
                                  fitter_state.backward_actor_state());
-
-            // Reset the backward mode to false
-            fitter_state.m_fit_actor_state.backward_mode = false;
-
         } else {
             // Run the Rauch–Tung–Striebel (RTS) smoother
-            for (typename vector_type<
-                     track_state<algebra_type>>::reverse_iterator it =
-                     track_states.rbegin() + 1;
-                 it != track_states.rend(); ++it) {
+            for (auto it = fitter_state.rbegin() + 1; it != fitter_state.rend();
+                 ++it) {
 
                 const detray::tracking_surface sf{m_detector,
                                                   it->surface_link()};
@@ -268,12 +271,11 @@ class kalman_fitter {
     TRACCC_HOST_DEVICE
     void update_statistics(state& fitter_state) {
         auto& fit_res = fitter_state.m_fit_res;
-        auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
         // Fit parameter = smoothed track parameter at the first surface
-        fit_res.fit_params = track_states[0].smoothed();
+        fit_res.fit_params = fitter_state[0].smoothed();
 
-        for (const auto& trk_state : track_states) {
+        for (const auto& trk_state : fitter_state) {
 
             const detray::tracking_surface sf{m_detector,
                                               trk_state.surface_link()};

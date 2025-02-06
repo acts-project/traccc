@@ -45,9 +45,12 @@ struct measurement_smearer {
     std::mt19937_64 generator{rd()};
 
     std::array<scalar_type, 2> get_offset() {
-        return {
-            std::normal_distribution<scalar_type>(0.f, stddev[0])(generator),
-            std::normal_distribution<scalar_type>(0.f, stddev[1])(generator)};
+        return {stddev[0] == 0.f ? 0.f
+                                 : std::normal_distribution<scalar_type>(
+                                       0.f, stddev[0])(generator),
+                stddev[1] == 0.f ? 0.f
+                                 : std::normal_distribution<scalar_type>(
+                                       0.f, stddev[1])(generator)};
     }
 
     template <typename mask_t>

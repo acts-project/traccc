@@ -58,15 +58,14 @@ track_state_container_types::host fit_tracks(
         }
 
         // Make a fitter state
-        typename fitter_t::state fitter_state(std::move(input_states));
+        typename fitter_t::state fitter_state(vecmem::get_data(input_states));
 
         // Run the fitter.
         fitter.fit(track_candidates.get_headers()[i], fitter_state);
 
         // Save the results into the output container.
-        result.push_back(
-            std::move(fitter_state.m_fit_res),
-            std::move(fitter_state.m_fit_actor_state.m_track_states));
+        result.push_back(std::move(fitter_state.m_fit_res),
+                         std::move(input_states));
     }
 
     // Return the fitted track states.
