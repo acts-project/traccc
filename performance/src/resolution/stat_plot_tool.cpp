@@ -59,8 +59,8 @@ void stat_plot_tool::fill(
     (void)fit_res;
 
 #ifdef TRACCC_HAVE_ROOT
-    const auto& ndf = fit_res.ndf;
-    const auto& chi2 = fit_res.chi2;
+    const auto& ndf = fit_res.trk_quality.ndf;
+    const auto& chi2 = fit_res.trk_quality.chi2;
     cache.ndf_hist->Fill(ndf);
     cache.chi2_hist->Fill(chi2);
     cache.reduced_chi2_hist->Fill(chi2 / ndf);

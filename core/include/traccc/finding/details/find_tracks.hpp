@@ -244,14 +244,17 @@ track_candidate_container_types::host find_tracks(
                     sf.template visit_mask<gain_matrix_updater<algebra_type>>(
                         trk_state, in_param);
 
+                const traccc::scalar chi2 = trk_state.filtered_chi2();
+
                 // The chi2 from Kalman update should be less than chi2_max
-                if (res && trk_state.filtered_chi2() < config.chi2_max) {
+                if (res && chi2 < config.chi2_max) {
                     n_branches++;
 
                     links[step].push_back({{previous_step, in_param_id},
                                            item_id,
                                            orig_param_id,
-                                           skip_counter});
+                                           skip_counter,
+                                           chi2});
                     updated_params.push_back(trk_state.filtered());
                 }
             }
@@ -266,7 +269,8 @@ track_candidate_container_types::host find_tracks(
                 links[step].push_back({{previous_step, in_param_id},
                                        std::numeric_limits<unsigned int>::max(),
                                        orig_param_id,
-                                       skip_counter + 1});
+                                       skip_counter + 1,
+                                       0.f});
 
                 updated_params.push_back(in_param);
                 n_branches++;
@@ -389,6 +393,10 @@ track_candidate_container_types::host find_tracks(
         vecmem::vector<track_candidate> cands_per_track;
         cands_per_track.resize(n_cands);
 
+        // Track summary variables
+        scalar ndf_sum = 0.f;
+        scalar chi2_sum = 0.f;
+
         // Reversely iterate to fill the track candidates
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
              it++) {
@@ -408,6 +416,9 @@ track_candidate_container_types::host find_tracks(
             auto& cand = *it;
             cand = measurements.at(L.meas_idx);
 
+            ndf_sum += static_cast<scalar>(cand.meas_dim);
+            chi2_sum += L.chi2;
+
             // Break the loop if the iterator is at the first candidate and
             // fill the seed
             if (it == cands_per_track.rend() - 1) {
@@ -415,7 +426,10 @@ track_candidate_container_types::host find_tracks(
                 auto cand_seed = seeds.at(L.previous.second);
 
                 // Add seed and track candidates to the output container
-                output_candidates.push_back(cand_seed, cands_per_track);
+                output_candidates.push_back(
+                    finding_result{cand_seed, track_quality{ndf_sum, chi2_sum,
+                                                            L.n_skipped}},
+                    cands_per_track);
                 break;
             }
 
