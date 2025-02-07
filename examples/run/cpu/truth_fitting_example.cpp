@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,6 +16,7 @@
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -48,10 +49,12 @@ int main(int argc, char* argv[]) {
     traccc::opts::detector detector_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_propagation propagation_opts;
+    traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::program_options program_opts{
         "Truth Track Fitting on the Host",
-        {detector_opts, input_opts, propagation_opts, performance_opts},
+        {detector_opts, input_opts, propagation_opts, fitting_opts,
+         performance_opts},
         argc,
         argv};
 
@@ -103,7 +106,7 @@ int main(int argc, char* argv[]) {
         1.f * detray::unit<scalar>::ns};
 
     // Fitting algorithm object
-    traccc::fitting_config fit_cfg;
+    traccc::fitting_config fit_cfg(fitting_opts);
     fit_cfg.propagation = propagation_opts;
 
     traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
