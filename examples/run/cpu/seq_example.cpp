@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -38,6 +38,7 @@
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
@@ -67,6 +68,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
             const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
+            const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::track_resolution& resolution_opts,
             const traccc::opts::performance& performance_opts) {
 
@@ -118,7 +120,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     finding_algorithm::config_type finding_cfg(finding_opts);
     finding_cfg.propagation = propagation_config;
 
-    fitting_algorithm::config_type fitting_cfg;
+    fitting_algorithm::config_type fitting_cfg(fitting_opts);
     fitting_cfg.propagation = propagation_config;
 
     // Algorithms
@@ -351,6 +353,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_seeding seeding_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
+    traccc::opts::track_fitting fitting_opts;
     traccc::opts::track_resolution resolution_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::program_options program_opts{
@@ -363,6 +366,6 @@ int main(int argc, char* argv[]) {
 
     // Run the application.
     return seq_run(input_opts, output_opts, detector_opts, clusterization_opts,
-                   seeding_opts, finding_opts, propagation_opts,
+                   seeding_opts, finding_opts, propagation_opts, fitting_opts,
                    resolution_opts, performance_opts);
 }

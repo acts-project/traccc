@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -48,7 +48,6 @@ class interface {
     /// (Boost) Description of this program option group
     boost::program_options::options_description m_desc;
 
-    private:
     /// (String) Description of this program option group
     std::string m_description;
 

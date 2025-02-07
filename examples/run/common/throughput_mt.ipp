@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,6 +18,7 @@
 #include "traccc/options/threading.hpp"
 #include "traccc/options/throughput.hpp"
 #include "traccc/options/track_finding.hpp"
+#include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
 
@@ -78,12 +79,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     opts::track_seeding seeding_opts;
     opts::track_finding finding_opts;
     opts::track_propagation propagation_opts;
+    opts::track_fitting fitting_opts;
     opts::throughput throughput_opts;
     opts::threading threading_opts;
     opts::program_options program_opts{
         description,
         {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, throughput_opts, threading_opts},
+         finding_opts, propagation_opts, fitting_opts, throughput_opts,
+         threading_opts},
         argc,
         argv};
 
@@ -156,7 +159,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         finding_opts);
     finding_cfg.propagation = propagation_config;
 
-    typename FULL_CHAIN_ALG::fitting_algorithm::config_type fitting_cfg;
+    typename FULL_CHAIN_ALG::fitting_algorithm::config_type fitting_cfg(
+        fitting_opts);
     fitting_cfg.propagation = propagation_config;
 
     // Set up the full-chain algorithm(s). One for each thread.

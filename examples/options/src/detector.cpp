@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,7 +11,7 @@
 #include "traccc/examples/utils/printable.hpp"
 
 // System include(s).
-#include <iostream>
+#include <format>
 
 namespace traccc::opts {
 
@@ -30,9 +30,10 @@ detector::detector() : interface("Detector Options") {
     m_desc.add_options()("grid-file",
                          po::value(&grid_file)->default_value(grid_file),
                          "Surface grid file");
-    m_desc.add_options()("use-detray-detector",
-                         po::bool_switch(&use_detray_detector),
-                         "Use detray::detector for the geometry handling");
+    m_desc.add_options()(
+        "use-detray-detector",
+        po::value(&use_detray_detector)->default_value(use_detray_detector),
+        "Use detray::detector for the geometry handling");
     m_desc.add_options()(
         "digitization-file",
         po::value(&digitization_file)->default_value(digitization_file),
@@ -40,24 +41,18 @@ detector::detector() : interface("Detector Options") {
 }
 
 std::unique_ptr<configuration_printable> detector::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Detector options");
+    auto cat = std::make_unique<configuration_category>(m_description);
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Detector file",
-                                                detector_file));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Material file",
-                                                material_file));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Surface grid file",
-                                                grid_file));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Use detray detector", use_detray_detector ? "yes" : "no"));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Digitization file",
-                                                digitization_file));
+    cat->add_child(std::make_unique<configuration_kv_pair>("Detector file",
+                                                           detector_file));
+    cat->add_child(std::make_unique<configuration_kv_pair>("Material file",
+                                                           material_file));
+    cat->add_child(std::make_unique<configuration_kv_pair>("Surface grid file",
+                                                           grid_file));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Use detray detector", std::format("{}", use_detray_detector)));
+    cat->add_child(std::make_unique<configuration_kv_pair>("Digitization file",
+                                                           digitization_file));
 
     return cat;
 }

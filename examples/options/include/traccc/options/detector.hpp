@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,17 +23,20 @@ class detector : public interface {
     /// @{
 
     /// The file containing the detector description
-    std::string detector_file = "tml_detector/trackml-detector.csv";
+    std::string detector_file =
+        "geometries/odd/odd-detray_geometry_detray.json";
     /// The file containing the material description
-    std::string material_file;
+    std::string material_file =
+        "geometries/odd/odd-detray_material_detray.json";
     /// The file containing the surface grid description
-    std::string grid_file;
+    std::string grid_file =
+        "geometries/odd/odd-detray_surface_grids_detray.json";
     /// Use detray::detector for the geometry handling
-    bool use_detray_detector = false;
+    bool use_detray_detector = true;
 
     /// The digitization configuration file
     std::string digitization_file =
-        "tml_detector/default-geometric-config-generic.json";
+        "geometries/odd/odd-digi-geometric-config.json";
 
     /// @}
 

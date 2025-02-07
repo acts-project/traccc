@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,7 +11,7 @@
 #include "traccc/examples/utils/printable.hpp"
 
 // System include(s).
-#include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 namespace traccc::opts {
@@ -56,15 +56,13 @@ void output_data::read(const boost::program_options::variables_map& vm) {
 }
 
 std::unique_ptr<configuration_printable> output_data::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Output data options");
+    auto cat = std::make_unique<configuration_category>(m_description);
 
-    std::stringstream format_ss;
+    std::ostringstream format_ss;
     format_ss << format;
-    dynamic_cast<configuration_category&>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Output data format",
-                                                format_ss.str()));
-    dynamic_cast<configuration_category&>(*cat).add_child(
+    cat->add_child(std::make_unique<configuration_kv_pair>("Output data format",
+                                                           format_ss.str()));
+    cat->add_child(
         std::make_unique<configuration_kv_pair>("Output directory", directory));
 
     return cat;
