@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,6 +14,9 @@
 
 // Detray include(s).
 #include "detray/definitions/units.hpp"
+
+// System include(s).
+#include <sstream>
 
 namespace traccc::opts {
 
@@ -56,7 +59,7 @@ generation::generation() : interface("Particle Generation Options") {
                              ->default_value(theta_range),
                          "Range of theta in degree");
     m_desc.add_options()("particle-type",
-                         po::value<int>(&pdg_number)->default_value(pdg_number),
+                         po::value(&pdg_number)->default_value(pdg_number),
                          "PDG number for the particle type");
 }
 
@@ -83,47 +86,38 @@ void generation::read(const po::variables_map &vm) {
 }
 
 std::unique_ptr<configuration_printable> generation::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Particle generation options");
+    auto cat = std::make_unique<configuration_category>(m_description);
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of events",
-                                                std::to_string(events)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Number of particles", std::to_string(gen_nparticles)));
-    std::stringstream vertex_ss;
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Number of events", std::to_string(events)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Number of particles", std::to_string(gen_nparticles)));
+    std::ostringstream vertex_ss;
     vertex_ss << vertex / detray::unit<float>::mm << " mm";
-    dynamic_cast<configuration_category &>(*cat).add_child(
+    cat->add_child(
         std::make_unique<configuration_kv_pair>("Vertex", vertex_ss.str()));
-    std::stringstream vertex_dev_ss;
+    std::ostringstream vertex_dev_ss;
     vertex_dev_ss << vertex_stddev / detray::unit<float>::mm << " mm";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Vertex standard deviation",
-                                                vertex_dev_ss.str()));
-    std::stringstream mom_range_ss;
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Vertex standard deviation", vertex_dev_ss.str()));
+    std::ostringstream mom_range_ss;
     mom_range_ss << mom_range / detray::unit<float>::GeV << " GeV";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Momentum range",
-                                                mom_range_ss.str()));
-    std::stringstream phi_range_ss;
+    cat->add_child(std::make_unique<configuration_kv_pair>("Momentum range",
+                                                           mom_range_ss.str()));
+    std::ostringstream phi_range_ss;
     phi_range_ss << phi_range / detray::unit<float>::degree << " deg";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Phi range",
-                                                phi_range_ss.str()));
-    std::stringstream eta_range_ss;
+    cat->add_child(std::make_unique<configuration_kv_pair>("Phi range",
+                                                           phi_range_ss.str()));
+    std::ostringstream eta_range_ss;
     eta_range_ss << eta_range;
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Eta range",
-                                                eta_range_ss.str()));
-    std::stringstream theta_range_ss;
+    cat->add_child(std::make_unique<configuration_kv_pair>("Eta range",
+                                                           eta_range_ss.str()));
+    std::ostringstream theta_range_ss;
     theta_range_ss << theta_range / detray::unit<float>::degree << " deg";
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Theta range",
-                                                theta_range_ss.str()));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("PGD number",
-                                                std::to_string(pdg_number)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Theta range", theta_range_ss.str()));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "PGD number", std::to_string(pdg_number)));
 
     return cat;
 }
