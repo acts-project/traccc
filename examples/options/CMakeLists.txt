@@ -28,6 +28,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   # source files
   "src/details/interface.cpp"
   "src/accelerator.cpp"
+  "src/allocation_caching.cpp"
   "src/clusterization.cpp"
   "src/detector.cpp"
   "src/generation.cpp"

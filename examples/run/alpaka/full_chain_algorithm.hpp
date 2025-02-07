@@ -28,7 +28,6 @@
 #include <vecmem/utils/hip/copy.hpp>
 #endif
 
-#include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
@@ -58,7 +57,8 @@ class full_chain_algorithm
                          const unsigned short target_cells_per_partiton,
                          const seedfinder_config& finder_config,
                          const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config);
+                         const seedfilter_config& filter_config,
+                         const std::size_t device_caching_threshold);
 
     /// Copy constructor
     ///
@@ -102,7 +102,8 @@ class full_chain_algorithm
     vecmem::copy m_copy;
 #endif
     /// Device caching memory resource
-    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
+    std::size_t m_device_caching_threshold;
+    std::unique_ptr<vecmem::memory_resource> m_cached_device_mr;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

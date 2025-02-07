@@ -18,7 +18,7 @@ full_chain_algorithm::full_chain_algorithm(
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
-    detector_type* detector)
+    std::size_t /*device_caching_threshold*/, detector_type* detector)
     : m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(detray::bfield::create_const_field<
               typename detector_type::scalar_type>(m_field_vec)),

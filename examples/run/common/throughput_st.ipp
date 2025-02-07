@@ -11,6 +11,8 @@
 #include "traccc/geometry/detector.hpp"
 
 // Command line option include(s).
+#include "traccc/examples/utils/caching_memory_resource.hpp"
+#include "traccc/options/allocation_caching.hpp"
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
@@ -30,9 +32,6 @@
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
-
-// VecMem include(s).
-#include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // Indicators include(s).
 #include <indicators/progress_bar.hpp>
@@ -57,10 +56,12 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     opts::track_finding finding_opts;
     opts::track_propagation propagation_opts;
     opts::throughput throughput_opts;
+    opts::allocation_caching allocation_caching_opts;
     opts::program_options program_opts{
         description,
         {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, throughput_opts},
+         finding_opts, propagation_opts, throughput_opts,
+         allocation_caching_opts},
         argc,
         argv};
 
@@ -69,8 +70,9 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Memory resource to use in the test.
     HOST_MR uncached_host_mr;
-    std::unique_ptr<vecmem::binary_page_memory_resource> cached_host_mr =
-        std::make_unique<vecmem::binary_page_memory_resource>(uncached_host_mr);
+    std::unique_ptr<vecmem::memory_resource> cached_host_mr =
+        traccc::make_caching_memory_resource(
+            uncached_host_mr, allocation_caching_opts.m_host_caching_threshold);
 
     // Construct the detector description object.
     traccc::silicon_detector_description::host det_descr{uncached_host_mr};
@@ -126,6 +128,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
         spacepoint_grid_config{seeding_opts.seedfinder},
         seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr,
+        allocation_caching_opts.m_device_caching_threshold,
         (detector_opts.use_detray_detector ? &detector : nullptr));
 
     // Seed the random number generator.
