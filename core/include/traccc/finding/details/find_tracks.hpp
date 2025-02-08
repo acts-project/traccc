@@ -139,6 +139,10 @@ track_candidate_container_types::host find_tracks(
     // Copy seed to input parameters
     std::vector<bound_track_parameters> in_params(seeds.size());
     std::copy(seeds.begin(), seeds.end(), in_params.begin());
+
+    // Inflate the covariance
+    covariance_inflator cov_inf(config.covariance_inflation_factor);
+    std::for_each(in_params.begin(), in_params.end(), cov_inf);
     std::vector<unsigned int> n_trks_per_seed(seeds.size());
 
     std::vector<bound_track_parameters> out_params;

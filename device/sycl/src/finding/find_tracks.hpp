@@ -172,6 +172,17 @@ track_candidate_container_types::buffer find_tracks(
                                                                      mr.main);
     copy.setup(in_params_buffer)->wait();
     copy(seeds, in_params_buffer, vecmem::copy::type::device_to_device)->wait();
+
+    // Inflate the covariance
+    bound_track_parameters_collection_types::device in_params_device(
+        in_params_buffer);
+    oneapi::dpl::for_each(
+        policy, in_params_device.begin(), in_params_device.end(),
+        [config](bound_track_parameters& params) {
+            covariance_inflator cov_inf(config.covariance_inflation_factor);
+            cov_inf(params);
+        });
+
     vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_seeds,
                                                                     mr.main);
     copy.setup(param_liveness_buffer)->wait();

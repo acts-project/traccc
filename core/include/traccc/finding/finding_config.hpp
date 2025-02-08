@@ -48,6 +48,9 @@ struct finding_config {
     /// Particle hypothesis
     detray::pdg_particle<traccc::scalar> ptc_hypothesis =
         detray::muon<traccc::scalar>();
+
+    /// Covariance inflation
+    traccc::scalar covariance_inflation_factor = 1e3f;
 };
 
 }  // namespace traccc

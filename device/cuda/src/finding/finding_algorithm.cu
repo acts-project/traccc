@@ -154,6 +154,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     m_copy.setup(in_params_buffer)->ignore();
     m_copy(vecmem::get_data(seeds_buffer), vecmem::get_data(in_params_buffer))
         ->ignore();
+
+    // Inflate the covariance
+    bound_track_parameters_collection_types::device in_params_device(
+        in_params_buffer);
+    covariance_inflator cov_inf(m_cfg.covariance_inflation_factor);
+    thrust::for_each(thrust_policy, in_params_device.begin(),
+                     in_params_device.end(), cov_inf);
+
     vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_seeds,
                                                                     m_mr.main);
     m_copy.setup(param_liveness_buffer)->ignore();

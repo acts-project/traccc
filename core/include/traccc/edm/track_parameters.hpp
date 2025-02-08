@@ -48,20 +48,25 @@ inline void wrap_phi(bound_track_parameters& param) {
     param.set_phi(phi);
 }
 
-/// Covariance inflation used for track fitting
-TRACCC_HOST_DEVICE
-inline void inflate_covariance(bound_track_parameters& param,
-                               const traccc::scalar inf_fac) {
-    auto& cov = param.covariance();
-    for (unsigned int i = 0; i < e_bound_size; i++) {
-        for (unsigned int j = 0; j < e_bound_size; j++) {
-            if (i == j) {
-                getter::element(cov, i, i) *= inf_fac;
-            } else {
-                getter::element(cov, i, j) = 0.f;
+/// Struct for covariance inflation
+struct covariance_inflator {
+
+    traccc::scalar inf_fac{1.f};
+
+    /// Covariance inflation used for track fitting
+    TRACCC_HOST_DEVICE
+    inline void operator()(bound_track_parameters& param) {
+        auto& cov = param.covariance();
+        for (unsigned int i = 0; i < e_bound_size; i++) {
+            for (unsigned int j = 0; j < e_bound_size; j++) {
+                if (i == j) {
+                    getter::element(cov, i, i) *= inf_fac;
+                } else {
+                    getter::element(cov, i, j) = 0.f;
+                }
             }
         }
     }
-}
+};
 
 }  // namespace traccc
