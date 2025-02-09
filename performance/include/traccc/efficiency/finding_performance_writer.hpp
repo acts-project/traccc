@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/resolution/stat_plot_tool_config.hpp"
 #include "traccc/utils/helpers.hpp"
 
 // Project include(s).
@@ -57,6 +58,8 @@ class finding_performance_writer {
         scalar r_max = 200.f * traccc::unit<scalar>::mm;
         scalar matching_ratio = 0.5f;
         bool double_matching = true;
+
+        stat_plot_tool_config stat_config;
     };
 
     /// Construct from configuration and log level.

@@ -44,6 +44,8 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/performance/details/is_same_scalar.cpp"
    "include/traccc/performance/details/is_same_object.hpp"
    "include/traccc/performance/impl/is_same_object.ipp"
+   "include/traccc/performance/impl/is_same_finding_result.ipp"
+   "include/traccc/performance/impl/is_same_fitting_result.ipp"
    "include/traccc/performance/impl/is_same_seed.ipp"
    "include/traccc/performance/impl/is_same_measurement.ipp"
    "include/traccc/performance/impl/is_same_spacepoint.ipp"

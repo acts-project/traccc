@@ -164,7 +164,8 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).header);
+            seeds.push_back(
+                truth_track_candidates.at(i_trk).header.seed_params);
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
@@ -214,11 +215,15 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Make sure that the outputs from cpu and cuda CKF are equivalent
         unsigned int n_matches = 0u;
         for (unsigned int i = 0u; i < track_candidates.size(); i++) {
-            auto iso =
+            auto iso_header =
+                traccc::details::is_same_object(track_candidates.at(i).header);
+
+            auto iso_items =
                 traccc::details::is_same_object(track_candidates.at(i).items);
 
             for (unsigned int j = 0u; j < track_candidates_cuda.size(); j++) {
-                if (iso(track_candidates_cuda.at(j).items)) {
+                if (iso_header(track_candidates_cuda.at(j).header) &&
+                    iso_items(track_candidates_cuda.at(j).items)) {
                     n_matches++;
                     break;
                 }

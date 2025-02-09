@@ -41,7 +41,7 @@ TRACCC_HOST_DEVICE inline void fit(
         track_candidates.at(param_id).items;
 
     // Seed parameter
-    const auto& seed_param = track_candidates.at(param_id).header;
+    const auto& seed_param = track_candidates.at(param_id).header.seed_params;
 
     // Track states per track
     auto track_states_per_track = track_states.at(param_id).items;

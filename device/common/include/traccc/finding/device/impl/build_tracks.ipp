@@ -36,7 +36,8 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     }
 
     const auto tip = tips.at(globalIndex);
-    auto& seed = track_candidates[globalIndex].header;
+    auto& seed = track_candidates[globalIndex].header.seed_params;
+    auto& trk_quality = track_candidates[globalIndex].header.trk_quality;
     auto cands_per_track = track_candidates[globalIndex].items;
 
     // Get the link corresponding to tip
@@ -65,6 +66,10 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
 
+    // Track summary variables
+    scalar ndf_sum = 0.f;
+    scalar chi2_sum = 0.f;
+
     // Reversely iterate to fill the track candidates
     for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
          it++) {
@@ -85,10 +90,20 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
         auto& cand = *it;
         cand = {measurements.at(L.meas_idx)};
 
+        // Sanity check on chi2
+        assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
+        assert(L.chi2 >= 0.f);
+
+        ndf_sum += static_cast<scalar>(cand.meas_dim);
+        chi2_sum += L.chi2;
+
         // Break the loop if the iterator is at the first candidate and fill the
-        // seed
+        // seed and track quality
         if (it == cands_per_track.rend() - 1) {
             seed = seeds.at(L.previous.second);
+            trk_quality.ndf = ndf_sum - 5.f;
+            trk_quality.chi2 = chi2_sum;
+            trk_quality.n_holes = L.n_skipped;
             break;
         }
 

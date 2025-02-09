@@ -182,7 +182,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
         const std::size_t n_tracks = truth_track_candidates.size();
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).header);
+            seeds.push_back(
+                truth_track_candidates.at(i_trk).header.seed_params);
         }
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{

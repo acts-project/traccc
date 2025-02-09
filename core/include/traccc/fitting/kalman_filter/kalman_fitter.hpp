@@ -193,7 +193,7 @@ class kalman_fitter {
                 m_cfg.propagation.stepping.step_constraint);
 
         // Reset fitter statistics
-        fitter_state.m_fit_res.reset_statistics();
+        fitter_state.m_fit_res.trk_quality.reset_quality();
 
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());
@@ -281,11 +281,14 @@ class kalman_fitter {
                 fit_res, trk_state, m_cfg.use_backward_filter);
         }
 
+        // Track quality
+        auto& trk_quality = fit_res.trk_quality;
+
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
-        fit_res.ndf = fit_res.ndf - 5.f;
+        trk_quality.ndf = trk_quality.ndf - 5.f;
 
         // The number of holes
-        fit_res.n_holes = fitter_state.m_fit_actor_state.n_holes;
+        trk_quality.n_holes = fitter_state.m_fit_actor_state.n_holes;
     }
 
     private:

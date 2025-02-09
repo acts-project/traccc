@@ -67,11 +67,18 @@ class KalmanFittingTests : public testing::Test {
     ///
     void p_value_tests(std::string_view file_name) const;
 
-    /// Validadte the NDF
+    /// Validadte the NDF for track finding output
     ///
-    /// @param host_det Detector object
-    /// @param fit_res Fitting statistics result of a track
+    /// @param find_res Finding result of a track
     /// @param track_candidates_per_track Track candidates of a track
+    ///
+    void ndf_tests(const finding_result& find_res,
+                   const track_candidate_collection_types::host&
+                       track_candidates_per_track);
+
+    /// Validadte the NDF for track fitting output
+    ///
+    /// @param fit_res Fitting statistics result of a track
     /// @param track_states_per_track Track states of a track
     ///
     void ndf_tests(
