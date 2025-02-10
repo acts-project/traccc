@@ -134,6 +134,22 @@ void KalmanFittingTests::p_value_tests([
 }
 
 void KalmanFittingTests::ndf_tests(
+    const finding_result& find_res,
+    const track_candidate_collection_types::host& track_candidates_per_track) {
+
+    scalar dim_sum = 0;
+
+    for (const auto& cand : track_candidates_per_track) {
+        dim_sum += static_cast<scalar>(cand.meas_dim);
+    }
+
+    // Check if the number of degree of freedoms is equal to (the sum of
+    // measurement dimensions - 5)
+    ASSERT_FLOAT_EQ(static_cast<float>(find_res.trk_quality.ndf),
+                    static_cast<float>(dim_sum) - 5.f);
+}
+
+void KalmanFittingTests::ndf_tests(
     const fitting_result<traccc::default_algebra>& fit_res,
     const track_state_collection_types::host& track_states_per_track) {
 
@@ -151,7 +167,7 @@ void KalmanFittingTests::ndf_tests(
 
     // Check if the number of degree of freedoms is equal to (the sum of
     // measurement dimensions - 5)
-    ASSERT_FLOAT_EQ(static_cast<float>(fit_res.ndf),
+    ASSERT_FLOAT_EQ(static_cast<float>(fit_res.trk_quality.ndf),
                     static_cast<float>(dim_sum) - 5.f);
 
     // The number of track states is supposed to be eqaul to the number

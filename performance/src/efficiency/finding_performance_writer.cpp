@@ -8,6 +8,7 @@
 // Local include(s).
 #include "traccc/efficiency/finding_performance_writer.hpp"
 
+#include "../resolution/stat_plot_tool.hpp"
 #include "duplication_plot_tool.hpp"
 #include "eff_plot_tool.hpp"
 #include "fake_tracks_plot_tool.hpp"
@@ -33,7 +34,8 @@ struct finding_performance_writer_data {
         const finding_performance_writer::config& cfg)
         : m_eff_plot_tool({cfg.var_binning}),
           m_duplication_plot_tool({cfg.var_binning}),
-          m_fake_tracks_plot_tool({cfg.var_binning}) {}
+          m_fake_tracks_plot_tool({cfg.var_binning}),
+          m_stat_plot_tool(cfg.stat_config) {}
 
     /// Plot tool for efficiency
     eff_plot_tool m_eff_plot_tool;
@@ -51,6 +53,10 @@ struct finding_performance_writer_data {
         m_measurement_particle_map;
     std::map<std::uint64_t, particle> m_particle_map;
 
+    /// Plot tool for statistics
+    stat_plot_tool m_stat_plot_tool;
+    stat_plot_tool::stat_plot_cache m_stat_plot_cache;
+
 };  // struct finding_performance_writer_data
 
 }  // namespace details
@@ -65,6 +71,7 @@ finding_performance_writer::finding_performance_writer(const config& cfg)
                                          m_data->m_duplication_plot_cache);
     m_data->m_fake_tracks_plot_tool.book(m_cfg.algorithm_name,
                                          m_data->m_fake_tracks_plot_cache);
+    m_data->m_stat_plot_tool.book(m_data->m_stat_plot_cache);
 }
 
 finding_performance_writer::~finding_performance_writer() {}
@@ -250,6 +257,20 @@ void finding_performance_writer::write_common(
 void finding_performance_writer::write(
     const track_candidate_container_types::const_view& track_candidates_view,
     const event_data& evt_data) {
+
+    // Iterate over the tracks.
+    track_candidate_container_types::const_device track_candidates(
+        track_candidates_view);
+
+    const unsigned int n_tracks = track_candidates.size();
+
+    for (unsigned int i = 0; i < n_tracks; i++) {
+
+        // Fill stat plot
+        m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache,
+                                      track_candidates.at(i).header);
+    }
+
     std::vector<std::vector<measurement>> tracks =
         prepare_data(track_candidates_view);
     write_common(tracks, evt_data);
@@ -284,6 +305,7 @@ void finding_performance_writer::finalize() {
     m_data->m_eff_plot_tool.write(m_data->m_eff_plot_cache);
     m_data->m_duplication_plot_tool.write(m_data->m_duplication_plot_cache);
     m_data->m_fake_tracks_plot_tool.write(m_data->m_fake_tracks_plot_cache);
+    m_data->m_stat_plot_tool.write(m_data->m_stat_plot_cache);
 }
 
 }  // namespace traccc
