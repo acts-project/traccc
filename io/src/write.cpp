@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,7 @@
 #include "traccc/io/write.hpp"
 
 #include "csv/write_cells.hpp"
+#include "csv/write_track_parameters.hpp"
 #include "json/write_digitization_config.hpp"
 #include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
@@ -70,6 +71,24 @@ void write(std::size_t event, std::string_view directory,
                                        event, "-spacepoints.obj")))
                                       .native()),
                 spacepoints);
+            break;
+        default:
+            throw std::invalid_argument("Unsupported data format");
+    }
+}
+
+void write(std::size_t event, std::string_view directory,
+           traccc::data_format format,
+           bound_track_parameters_collection_types::const_view track_params) {
+
+    switch (format) {
+        case data_format::csv:
+            csv::write_track_parameters(
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-trackparams.csv")))
+                                      .native()),
+                track_params);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

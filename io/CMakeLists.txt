@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -61,6 +61,8 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/csv/read_cells.cpp"
   "src/csv/write_cells.hpp"
   "src/csv/write_cells.cpp"
+  "src/csv/write_track_parameters.hpp"
+  "src/csv/write_track_parameters.cpp"
   "src/csv/read_spacepoints.hpp"
   "src/csv/read_spacepoints.cpp"
   "src/csv/make_measurement_reader.cpp"

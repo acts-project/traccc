@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/data_format.hpp"
@@ -72,6 +73,17 @@ void write(std::size_t event, std::string_view directory,
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format, seed_collection_types::const_view seeds,
            spacepoint_collection_types::const_view spacepoints);
+
+/// Function for track parameter writing
+///
+/// @param event is the event index
+/// @param directory is the directory for the output seed file
+/// @param format is the data format (obj only right now) of output file
+/// @param track_params is the track parameter collection to write
+///
+void write(std::size_t event, std::string_view directory,
+           traccc::data_format format,
+           bound_track_parameters_collection_types::const_view track_params);
 
 /// Function for track candidate writing
 ///
