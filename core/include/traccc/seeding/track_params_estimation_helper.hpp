@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -43,7 +43,7 @@ inline TRACCC_HOST_DEVICE bound_vector
 seed_to_bound_vector(const spacepoint_collection_t& sp_collection,
                      const seed& seed, const vector3& bfield) {
 
-    bound_vector params;
+    bound_vector params = matrix::zero<bound_vector>();
 
     const auto& spB =
         sp_collection.at(static_cast<unsigned int>(seed.spB_link));
