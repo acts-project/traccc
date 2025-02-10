@@ -69,6 +69,11 @@ track_finding::track_finding() : interface("Track Finding Options") {
     m_desc.add_options()("particle-hypothesis",
                          po::value(&m_pdg_number)->default_value(m_pdg_number),
                          "PDG number for the particle hypothesis");
+    m_desc.add_options()(
+        "find-covariance-inflation-factor",
+        po::value(&m_config.covariance_inflation_factor)
+            ->default_value(m_config.covariance_inflation_factor),
+        "Covariance inflation factor for the track finding");
 }
 
 track_finding::operator finding_config() const {
@@ -111,6 +116,9 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
         std::to_string(m_config.max_num_skipping_per_cand)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "PDG number", std::to_string(m_pdg_number)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Covariance inflation factor",
+        std::to_string(m_config.covariance_inflation_factor)));
 
     return cat;
 }

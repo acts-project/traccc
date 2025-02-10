@@ -153,8 +153,8 @@ class kalman_fitter {
                          : fitter_state.m_fit_actor_state.m_track_states[0]
                                .smoothed();
 
-            inflate_covariance(seed_params_cpy,
-                               m_cfg.covariance_inflation_factor);
+            covariance_inflator cov_inf(m_cfg.covariance_inflation_factor);
+            cov_inf(seed_params_cpy);
 
             filter(seed_params_cpy, fitter_state);
         }
@@ -234,8 +234,8 @@ class kalman_fitter {
             typename backward_propagator_type::state propagation(
                 last.smoothed(), m_field, m_detector);
 
-            inflate_covariance(propagation._stepping.bound_params(),
-                               m_cfg.covariance_inflation_factor);
+            covariance_inflator cov_inf(m_cfg.covariance_inflation_factor);
+            cov_inf(propagation._stepping.bound_params());
 
             propagation._navigation.set_volume(
                 last.smoothed().surface_link().volume());
