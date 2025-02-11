@@ -22,12 +22,10 @@
 #include <vecmem/utils/sycl/queue_wrapper.hpp>
 #endif
 
+#include <alpaka/acc/Tag.hpp>
 #include <memory>
-
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
-
-#include <alpaka/acc/Tag.hpp>
 
 #include "traccc/alpaka/utils/device_tag.hpp"
 
@@ -42,7 +40,8 @@ inline std::shared_ptr<::vecmem::memory_resource> get_device_memory_resource() {
 }
 
 template <typename TTag>
-inline std::shared_ptr<::vecmem::memory_resource> get_managed_memory_resource() {
+inline std::shared_ptr<::vecmem::memory_resource>
+get_managed_memory_resource() {
     return std::make_shared<::vecmem::host_memory_resource>();
 }
 
@@ -73,7 +72,8 @@ get_managed_memory_resource<::alpaka::TagGpuCudaRt>() {
 }
 
 template <>
-inline std::shared_ptr<::vecmem::copy> get_device_copy<::alpaka::TagGpuCudaRt>() {
+inline std::shared_ptr<::vecmem::copy>
+get_device_copy<::alpaka::TagGpuCudaRt>() {
     return std::static_pointer_cast<::vecmem::copy>(
         std::make_shared<::vecmem::cuda::copy>());
 }
@@ -99,7 +99,8 @@ get_managed_memory_resource<::alpaka::TagGpuHipRt>() {
 }
 
 template <>
-inline std::shared_ptr<::vecmem::copy> get_device_copy<::alpaka::TagGpuHipRt>() {
+inline std::shared_ptr<::vecmem::copy>
+get_device_copy<::alpaka::TagGpuHipRt>() {
     return static_pointer_cast<::vecmem::copy>(
         std::make_shared<::vecmem::hip::copy>());
 }
