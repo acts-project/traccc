@@ -41,8 +41,8 @@
 #include "detray/navigation/navigator.hpp"
 #include "detray/propagator/propagator.hpp"
 #include "detray/propagator/rk_stepper.hpp"
-#include "traccc/alpaka/utils/vecmem_types.hpp"
 #include "traccc/alpaka/utils/vecmem_getter.hpp"
+#include "traccc/alpaka/utils/vecmem_types.hpp"
 #ifdef ALPAKA_ACC_SYCL_ENABLED
 #include <sycl/sycl.hpp>
 #include <vecmem/utils/sycl/queue_wrapper.hpp>
@@ -67,17 +67,18 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
     traccc::alpaka::vecmem::device_copy copy(qw);
-    //traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
+    traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
     traccc::alpaka::vecmem::device_memory_resource device_mr(qw);
     traccc::alpaka::vecmem::managed_memory_resource mng_mr(qw);
 #else
     traccc::alpaka::vecmem::device_copy copy;
-    //traccc::alpaka::vecmem::host_memory_resource host_mr;
+    traccc::alpaka::vecmem::host_memory_resource host_mr;
     traccc::alpaka::vecmem::device_memory_resource device_mr;
     traccc::alpaka::vecmem::managed_memory_resource mng_mr;
 #endif
-    vecmem::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::get_host_memory_resource<traccc::alpaka::AccTag>(host_mr);
+    // vecmem::host_memory_resource host_mr;
+    // traccc::alpaka::vecmem::get_host_memory_resource<traccc::alpaka::AccTag>(
+    //    host_mr);
 
     traccc::memory_resource mr{device_mr, &host_mr};
 
