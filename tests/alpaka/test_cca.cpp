@@ -30,7 +30,6 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             traccc::alpaka::AccTag>();
         auto copy =
             traccc::alpaka::vecmem::get_device_copy<traccc::alpaka::AccTag>();
-
         traccc::alpaka::clusterization_algorithm cc({*device_mr}, *copy, cfg);
 
         traccc::silicon_detector_description::buffer dd_buffer{

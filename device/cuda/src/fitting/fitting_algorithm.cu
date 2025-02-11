@@ -23,6 +23,7 @@
 #include <thrust/sort.h>
 
 // System include(s).
+#include <memory_resource>
 #include <vector>
 
 namespace traccc::cuda {
@@ -110,8 +111,11 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
         vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
 
-        thrust::sort_by_key(thrust::cuda::par.on(stream), keys_device.begin(),
-                            keys_device.end(), param_ids_device.begin());
+        thrust::sort_by_key(thrust::cuda::par_nosync(
+                                std::pmr::polymorphic_allocator(&m_mr.main))
+                                .on(stream),
+                            keys_device.begin(), keys_device.end(),
+                            param_ids_device.begin());
 
         // Run the track fitting
         kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(

@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2024 CERN for the benefit of the ACTS project
+# (c) 2022-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -22,6 +22,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "include/traccc/options/threading.hpp"
   "include/traccc/options/throughput.hpp"
   "include/traccc/options/track_finding.hpp"
+  "include/traccc/options/track_fitting.hpp"
   "include/traccc/options/track_propagation.hpp"
   "include/traccc/options/track_resolution.hpp"
   "include/traccc/options/track_seeding.hpp"
@@ -39,6 +40,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/threading.cpp"
   "src/throughput.cpp"
   "src/track_finding.cpp"
+  "src/track_fitting.cpp"
   "src/track_propagation.cpp"
   "src/track_resolution.cpp"
   "src/track_seeding.cpp"

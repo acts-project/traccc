@@ -102,11 +102,12 @@ void KalmanFittingMomentumResolutionTests::momentum_resolution_tests([
 
     // Check if the standard deviation of the qopT residuals is within the
     // theoretically expected range.
-    EXPECT_NEAR(fit_par[2], expected_sigma_qopT, expected_sigma_qopT * 0.05f)
+    EXPECT_NEAR(fit_par[2], expected_sigma_qopT, expected_sigma_qopT * 0.025f)
         << " Residual qopT sigma value error";
 
 #else
-    std::cout << "Pull value tests not performed without ROOT" << std::endl;
+    std::cout << "Momentum resolution tests not performed without ROOT"
+              << std::endl;
 #endif  // TRACCC_HAVE_ROOT
 
     return;

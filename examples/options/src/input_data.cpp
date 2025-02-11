@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,7 +11,8 @@
 #include "traccc/examples/utils/printable.hpp"
 
 // System include(s).
-#include <iostream>
+#include <format>
+#include <sstream>
 #include <stdexcept>
 
 namespace traccc::opts {
@@ -28,7 +29,7 @@ input_data::input_data() : interface("Input Data Options") {
 
     m_desc.add_options()(
         "use-acts-geom-source",
-        po::bool_switch(&use_acts_geom_source)->default_value(false),
+        po::value(&use_acts_geom_source)->default_value(use_acts_geom_source),
         "Use acts geometry source");
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
@@ -62,25 +63,20 @@ void input_data::read(const po::variables_map &vm) {
 }
 
 std::unique_ptr<configuration_printable> input_data::as_printable() const {
-    std::unique_ptr<configuration_printable> cat =
-        std::make_unique<configuration_category>("Input data options");
+    auto cat = std::make_unique<configuration_category>(m_description);
 
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>(
-            "Use ACTS geometry source", use_acts_geom_source ? "yes" : "no"));
-    std::stringstream format_ss;
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Use ACTS geometry source", std::format("{}", use_acts_geom_source)));
+    std::ostringstream format_ss;
     format_ss << format;
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Input data format",
-                                                format_ss.str()));
-    dynamic_cast<configuration_category &>(*cat).add_child(
+    cat->add_child(std::make_unique<configuration_kv_pair>("Input data format",
+                                                           format_ss.str()));
+    cat->add_child(
         std::make_unique<configuration_kv_pair>("Input directory", directory));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of input events",
-                                                std::to_string(events)));
-    dynamic_cast<configuration_category &>(*cat).add_child(
-        std::make_unique<configuration_kv_pair>("Number of skipped events",
-                                                std::to_string(skip)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Number of input events", std::to_string(events)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Number of skipped events", std::to_string(skip)));
 
     return cat;
 }

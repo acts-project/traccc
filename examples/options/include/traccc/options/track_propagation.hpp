@@ -40,7 +40,7 @@ class track_propagation : public interface,
     /// @name Options
     /// @{
     /// Propagation configuration object
-    detray::propagation::config config;
+    detray::propagation::config m_config;
     /// @}
 
     /// Search window (helper variable)

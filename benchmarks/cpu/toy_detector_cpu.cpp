@@ -62,7 +62,7 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     for (auto _ : state) {
 
 // Iterate over events
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
         for (unsigned int i_evt = 0; i_evt < n_events; i_evt++) {
 
             auto& spacepoints_per_event = spacepoints[i_evt];
