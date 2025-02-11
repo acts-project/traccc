@@ -31,29 +31,33 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             result;
 
 #ifdef ALPAKA_ACC_SYCL_ENABLED
-        ::sycl::queue q;
-        vecmem::sycl::queue_wrapper qw{&q};
+        //::sycl::queue q;
+        //vecmem::sycl::queue_wrapper qw{&q};
         //traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
-        traccc::alpaka::vecmem::device_copy copy(qw);
-        traccc::alpaka::vecmem::device_memory_resource device_mr;
+        //traccc::alpaka::vecmem::device_copy copy(qw);
+        //traccc::alpaka::vecmem::device_memory_resource device_mr;
 #else
         //traccc::alpaka::vecmem::host_memory_resource host_mr;
-        traccc::alpaka::vecmem::device_copy copy;
-        traccc::alpaka::vecmem::device_memory_resource device_mr;
+        //traccc::alpaka::vecmem::device_copy copy;
+        //traccc::alpaka::vecmem::device_memory_resource device_mr;
 #endif
 
-        vecmem::host_memory_resource host_mr;
-        traccc::alpaka::vecmem::get_host_memory_resource<traccc::alpaka::AccTag>(host_mr);
+        //auto host_mr = traccc::alpaka::vecmem::get_host_memory_resource<traccc::alpaka::AccTag>();
+        auto device_mr = traccc::alpaka::vecmem::get_device_memory_resource<traccc::alpaka::AccTag>();
+        auto host_mr = traccc::alpaka::vecmem::get_host_memory_resource<traccc::alpaka::AccTag>();
+        auto copy = traccc::alpaka::vecmem::get_device_copy<traccc::alpaka::AccTag>();
+        //vecmem::memory_resource device_mr;
+        //traccc::alpaka::vecmem::get_device_memory_resource<traccc::alpaka::AccTag>(device_mr);
 
-        traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
+        traccc::alpaka::clusterization_algorithm cc({*device_mr}, *copy, cfg);
 
         traccc::silicon_detector_description::buffer dd_buffer{
             static_cast<
                 traccc::silicon_detector_description::buffer::size_type>(
                 dd.size()),
-            device_mr};
-        copy.setup(dd_buffer)->ignore();
-        copy(vecmem::get_data(dd), dd_buffer,
+            *device_mr};
+        copy->setup(dd_buffer)->ignore();
+        (*copy)(vecmem::get_data(dd), dd_buffer,
              vecmem::copy::type::host_to_device)
             ->ignore();
 
@@ -61,13 +65,13 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             static_cast<
                 traccc::edm::silicon_cell_collection::buffer::size_type>(
                 cells.size()),
-            device_mr};
-        copy.setup(cells_buffer)->wait();
-        copy(vecmem::get_data(cells), cells_buffer)->wait();
+            *device_mr};
+        copy->setup(cells_buffer)->wait();
+        (*copy)(vecmem::get_data(cells), cells_buffer)->wait();
 
         auto measurements_buffer = cc(cells_buffer, dd_buffer);
-        traccc::measurement_collection_types::host measurements{&host_mr};
-        copy(measurements_buffer, measurements)->wait();
+        traccc::measurement_collection_types::host measurements{host_mr.get()};
+        (*copy)(measurements_buffer, measurements)->wait();
 
         for (std::size_t i = 0; i < measurements.size(); i++) {
             result[measurements.at(i).surface_link.value()].push_back(
