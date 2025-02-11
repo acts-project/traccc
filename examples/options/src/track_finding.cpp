@@ -52,6 +52,10 @@ track_finding::track_finding() : interface("Track Finding Options") {
             ->default_value(m_config.max_step_counts_for_next_surface),
         "Maximum step counts that track can make to reach the next surface");
     m_desc.add_options()(
+        "dist-max",
+        po::value(&m_config.dist_max)->default_value(m_config.dist_max),
+        "Maximum distance that measurements can be included in the track");
+    m_desc.add_options()(
         "chi2-max",
         po::value(&m_config.chi2_max)->default_value(m_config.chi2_max),
         "Maximum Chi suqare that measurements can be included in the track");
@@ -101,6 +105,8 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Max step count to next surface",
         std::to_string(m_config.max_step_counts_for_next_surface)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Max distance", std::to_string(m_config.dist_max)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Max Chi2", std::to_string(m_config.chi2_max)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
