@@ -98,7 +98,7 @@ get_managed_memory_resource<::alpaka::TagGpuCudaRt>() {
 template <>
 std::shared_ptr<::vecmem::copy> get_device_copy<::alpaka::TagGpuCudaRt>() {
     return static_pointer_cast<::vecmem::copy>(
-        std::make_shared<::vecmem::copy>(::vecmem::cuda::copy()));
+        std::make_shared<::vecmem::cuda::copy>());
 }
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 template <>
@@ -124,7 +124,7 @@ get_managed_memory_resource<::alpaka::TagGpuHipRt>() {
 template <>
 std::shared_ptr<::vecmem::copy> get_device_copy<::alpaka::TagGpuHipRt>() {
     return static_pointer_cast<::vecmem::copy>(
-        std::make_shared<::vecmem::copy>(::vecmem::hip::copy()));
+        std::make_shared<::vecmem::hip::copy>());
 }
 
 #elif defined(ALPAKA_ACC_GPU_SYCL_ENABLED)
@@ -151,7 +151,7 @@ get_managed_memory_resource<::alpaka::TagGenericSycl>() {
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
     return std::static_pointer_cast<::vecmem::memory_resource>(
-        std::make_shared<::vecmem::sycl::managed_memory_resource>(qw));
+        std::make_shared<::vecmem::sycl::shared_memory_resource>(qw));
 }
 
 template <>
@@ -159,7 +159,7 @@ std::shared_ptr<::vecmem::copy> get_device_copy<::alpaka::TagGenericSycl>() {
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
     return static_pointer_cast<::vecmem::copy>(
-        std::make_shared<::vecmem::copy>(::vecmem::sycl::copy(qw)));
+        std::make_shared<::vecmem::sycl::copy>());
 }
 #endif
 

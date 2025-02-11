@@ -15,7 +15,8 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-#include "traccc/alpaka/utils/vecmem_types.hpp"
+#include "traccc/alpaka/utils/device_tag.hpp"
+#include "traccc/alpaka/utils/vecmem_getter.hpp"
 
 #ifdef ALPAKA_ACC_SYCL_ENABLED
 #include <sycl/sycl.hpp>
@@ -136,22 +137,18 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     using WorkDiv = WorkDivMembers<Dim, Idx>;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-    ::sycl::queue q;
-    vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem::device_copy vm_copy(qw);
-#else
-    traccc::alpaka::vecmem::device_copy vm_copy;
-#endif
+    auto host_mr = traccc::alpaka::vecmem::get_host_memory_resource<
+        traccc::alpaka::AccTag>();
+    auto device_mr = traccc::alpaka::vecmem::get_device_memory_resource<
+        traccc::alpaka::AccTag>();
+    auto vm_copy =
+        traccc::alpaka::vecmem::get_device_copy<traccc::alpaka::AccTag>();
 
-    traccc::alpaka::vecmem::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::device_memory_resource device_mr;
-
-    vecmem::vector<float> host_vector{n, &host_mr};
+    vecmem::vector<float> host_vector{n, host_mr.get()};
 
     auto host_buffer = vecmem::get_data(host_vector);
-    auto device_buffer = vm_copy.to(vecmem::get_data(host_vector), device_mr,
-                                    vecmem::copy::type::host_to_device);
+    auto device_buffer = vm_copy->to(vecmem::get_data(host_vector), *device_mr,
+                                     vecmem::copy::type::host_to_device);
     auto data_dev_vec_buf = vecmem::get_data(device_buffer);
 
     std::cout << "Using alpaka accelerator: " << alpaka::getAccName<Acc>()
@@ -164,7 +161,7 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
 
     alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{}, data_dev_vec_buf);
 
-    vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
+    (*vm_copy)(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
         ->wait();
 
     for (uint32_t i = 0u; i < n; i++) {

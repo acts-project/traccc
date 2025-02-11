@@ -10,15 +10,9 @@
 #include <functional>
 #include <vecmem/memory/host_memory_resource.hpp>
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
-#include <vecmem/utils/sycl/queue_wrapper.hpp>
-#endif
-
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/utils/vecmem_getter.hpp"
-#include "traccc/alpaka/utils/vecmem_types.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
@@ -30,28 +24,12 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-        //::sycl::queue q;
-        // vecmem::sycl::queue_wrapper qw{&q};
-        // traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
-        // traccc::alpaka::vecmem::device_copy copy(qw);
-        // traccc::alpaka::vecmem::device_memory_resource device_mr;
-#else
-        // traccc::alpaka::vecmem::host_memory_resource host_mr;
-        // traccc::alpaka::vecmem::device_copy copy;
-        // traccc::alpaka::vecmem::device_memory_resource device_mr;
-#endif
-
-        // auto host_mr =
-        // traccc::alpaka::vecmem::get_host_memory_resource<traccc::alpaka::AccTag>();
-        auto device_mr = traccc::alpaka::vecmem::get_device_memory_resource<
-            traccc::alpaka::AccTag>();
         auto host_mr = traccc::alpaka::vecmem::get_host_memory_resource<
+            traccc::alpaka::AccTag>();
+        auto device_mr = traccc::alpaka::vecmem::get_device_memory_resource<
             traccc::alpaka::AccTag>();
         auto copy =
             traccc::alpaka::vecmem::get_device_copy<traccc::alpaka::AccTag>();
-        // vecmem::memory_resource device_mr;
-        // traccc::alpaka::vecmem::get_device_memory_resource<traccc::alpaka::AccTag>(device_mr);
 
         traccc::alpaka::clusterization_algorithm cc({*device_mr}, *copy, cfg);
 
