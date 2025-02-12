@@ -41,7 +41,8 @@ particle_from_pdg_number(const int pdg_num) {
             return detray::pion_minus<scalar_t>();
     }
 
-    return detray::muon<scalar_t>();
+    // TODO: Replace with `detray::invalid` in the future
+    return detray::pdg_particle<scalar_t>(0, 0.f, 0.f);
 }
 
 // Apply the charge operator to return the antimatter
@@ -66,7 +67,8 @@ TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t> charge_conjugation(
             return detray::pion_plus<scalar_t>();
     }
 
-    return detray::muon<scalar_t>();
+    // TODO: Replace with `detray::invalid` in the future
+    return detray::pdg_particle<scalar_t>(0, 0.f, 0.f);
 }
 
 // Return the consistent particle type based on the particle hypothesis and the
