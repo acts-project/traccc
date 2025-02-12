@@ -230,15 +230,18 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         m_ptc_to_meas_map[ptc].push_back(meas);
 
         if (!include_silicon_cells) {
-            auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
-            if (insert_return.second == false) {
-                throw std::runtime_error(
-                    "The new measurement should not exist in the "
-                    "measurement-to-particle map");
+            decltype(m_meas_to_ptc_map)::iterator it =
+                m_meas_to_ptc_map.find(meas);
+
+            if (it != m_meas_to_ptc_map.end()) {
+                // TODO: Put some logging here when that's ready
+            } else {
+                bool new_entry;
+                std::tie(it, new_entry) = m_meas_to_ptc_map.insert({meas, {}});
+                assert(new_entry);
             }
-            // Each measurement is created by a single particle unless we use
-            // the clusterization results
-            (*(insert_return.first)).second[ptc] = 1u;
+
+            (*it).second[ptc] = 1u;
         }
     }
 }
