@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 
 namespace traccc::details {
 
@@ -19,14 +19,16 @@ namespace traccc::details {
 /// @param[in]  measurement The input measurement
 TRACCC_HOST_DEVICE inline bool is_valid_measurement(const measurement& meas);
 
-/// Function helping with filling/setting up a spacepoint object
+/// Fill a spacepoint object with the information from a measurement
 ///
+/// @param[out] sp          The spacepoint to fill
 /// @param[in]  det         The tracking geometry
 /// @param[in]  measurement The measurement to create the spacepoint out of
 ///
-template <typename detector_t>
-TRACCC_HOST_DEVICE inline spacepoint create_spacepoint(const detector_t& det,
-                                                       const measurement& meas);
+template <typename soa_t, typename detector_t>
+TRACCC_HOST_DEVICE inline void fill_pixel_spacepoint(edm::spacepoint<soa_t>& sp,
+                                                     const detector_t& det,
+                                                     const measurement& meas);
 
 }  // namespace traccc::details
 

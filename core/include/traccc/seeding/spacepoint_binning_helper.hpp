@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,8 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/math.hpp"
-#include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/singlet.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
@@ -111,23 +110,21 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
     return {m_phi_axis, m_z_axis};
 }
 
-inline TRACCC_HOST_DEVICE size_t is_valid_sp(const seedfinder_config& config,
-                                             const spacepoint& sp) {
+template <typename T>
+inline TRACCC_HOST_DEVICE bool is_valid_sp(const seedfinder_config& config,
+                                           const edm::spacepoint<T>& sp) {
+
     if (sp.z() > config.zMax || sp.z() < config.zMin) {
-        return detray::detail::invalid_value<size_t>();
+        return false;
     }
     scalar spPhi = algebra::math::atan2(sp.y(), sp.x());
     if (spPhi > config.phiMax || spPhi < config.phiMin) {
-        return detray::detail::invalid_value<size_t>();
-    }
-    size_t r_index = static_cast<size_t>(vector::perp(
-        vector2{sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]}));
-
-    if (r_index < config.get_num_rbins()) {
-        return r_index;
+        return false;
     }
 
-    return detray::detail::invalid_value<size_t>();
+    return (static_cast<size_t>(vector::perp(vector2{
+                sp.x() - config.beamPos[0], sp.y() - config.beamPos[1]})) <
+            config.get_num_rbins());
 }
 
 }  // namespace traccc

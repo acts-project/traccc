@@ -9,8 +9,8 @@
 
 // Library include(s).
 #include "traccc/definitions/math.hpp"
-#include "traccc/edm/seed.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/seed_collection.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
 // System include(s).
@@ -35,27 +35,25 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// helper functions (for both cpu and gpu) to calculate bound track parameter
 /// at the bottom spacepoint
 ///
+/// @param measurements is the measurement collection
+/// @param spacepoints is the spacepoint collection
 /// @param seed is the input seed
 /// @param bfield is the magnetic field
-/// @param mass is the mass of particle
-template <typename spacepoint_collection_t>
+///
+template <typename T>
 inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
-    const spacepoint_collection_t& sp_collection, const seed& seed,
-    const vector3& bfield) {
+    const measurement_collection_types::const_device& measurements,
+    const edm::spacepoint_collection::const_device& spacepoints,
+    const edm::seed<T>& seed, const vector3& bfield) {
 
     bound_vector<> params = matrix::zero<bound_vector<>>();
 
-    const auto& spB =
-        sp_collection.at(static_cast<unsigned int>(seed.spB_link));
-    const auto& spM =
-        sp_collection.at(static_cast<unsigned int>(seed.spM_link));
-    const auto& spT =
-        sp_collection.at(static_cast<unsigned int>(seed.spT_link));
+    const auto spB = spacepoints.at(seed.bottom_index());
+    const auto spM = spacepoints.at(seed.middle_index());
+    const auto spT = spacepoints.at(seed.top_index());
 
-    darray<vector3, 3> sp_global_positions;
-    sp_global_positions[0] = spB.global;
-    sp_global_positions[1] = spM.global;
-    sp_global_positions[2] = spT.global;
+    darray<vector3, 3> sp_global_positions{spB.global(), spM.global(),
+                                           spT.global()};
 
     // Define a new coordinate frame with its origin at the bottom space
     // point, z axis long the magnetic field direction and y axis
@@ -104,7 +102,7 @@ inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
     getter::element(params, e_bound_theta, 0) = vector::theta(direction);
 
     // The measured loc0 and loc1
-    const auto& meas_for_spB = spB.meas;
+    const auto& meas_for_spB = measurements.at(spB.measurement_index());
     getter::element(params, e_bound_loc0, 0) = meas_for_spB.local[0];
     getter::element(params, e_bound_loc1, 0) = meas_for_spB.local[1];
 
