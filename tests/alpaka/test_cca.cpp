@@ -23,49 +23,56 @@ namespace {
 
 // template <TAccTag>
 cca_function_t get_f_with(traccc::clustering_config cfg) {
-    return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
-                 const traccc::silicon_detector_description::host& dd) {
-        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
-            result;
+    return
+        [cfg](const traccc::edm::silicon_cell_collection::host& cells,
+              const traccc::silicon_detector_description::host& dd)
 
-        traccc::alpaka::queue queue;
-        traccc::alpaka::vecmem_objects vo(queue);
+            -> std::pair<
+                std::map<traccc::geometry_id,
+                         vecmem::vector<traccc::measurement>>,
+                std::optional<traccc::edm::silicon_cluster_collection::host>> {
+            std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
+                result;
 
-        vecmem::memory_resource& host_mr = vo.host_mr();
-        vecmem::memory_resource& device_mr = vo.device_mr();
-        vecmem::copy& copy = vo.copy();
+            traccc::alpaka::queue queue;
+            traccc::alpaka::vecmem_objects vo(queue);
 
-        traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
+            vecmem::memory_resource& host_mr = vo.host_mr();
+            vecmem::memory_resource& device_mr = vo.device_mr();
+            vecmem::copy& copy = vo.copy();
 
-        traccc::silicon_detector_description::buffer dd_buffer{
-            static_cast<
-                traccc::silicon_detector_description::buffer::size_type>(
-                dd.size()),
-            device_mr};
-        copy.setup(dd_buffer)->ignore();
-        copy(vecmem::get_data(dd), dd_buffer,
-             vecmem::copy::type::host_to_device)
-            ->ignore();
+            traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
-        traccc::edm::silicon_cell_collection::buffer cells_buffer{
-            static_cast<
-                traccc::edm::silicon_cell_collection::buffer::size_type>(
-                cells.size()),
-            device_mr};
-        copy.setup(cells_buffer)->wait();
-        copy(vecmem::get_data(cells), cells_buffer)->wait();
+            traccc::silicon_detector_description::buffer dd_buffer{
+                static_cast<
+                    traccc::silicon_detector_description::buffer::size_type>(
+                    dd.size()),
+                device_mr};
+            copy.setup(dd_buffer)->ignore();
+            copy(vecmem::get_data(dd), dd_buffer,
+                 vecmem::copy::type::host_to_device)
+                ->ignore();
 
-        auto measurements_buffer = cc(cells_buffer, dd_buffer);
-        traccc::measurement_collection_types::host measurements{&host_mr};
-        copy(measurements_buffer, measurements)->wait();
+            traccc::edm::silicon_cell_collection::buffer cells_buffer{
+                static_cast<
+                    traccc::edm::silicon_cell_collection::buffer::size_type>(
+                    cells.size()),
+                device_mr};
+            copy.setup(cells_buffer)->wait();
+            copy(vecmem::get_data(cells), cells_buffer)->wait();
 
-        for (std::size_t i = 0; i < measurements.size(); i++) {
-            result[measurements.at(i).surface_link.value()].push_back(
-                measurements.at(i));
-        }
+            auto measurements_buffer = cc(cells_buffer, dd_buffer);
+            traccc::measurement_collection_types::host measurements{&host_mr};
+            copy(measurements_buffer, measurements)->wait();
 
-        return result;
-    };
+            for (std::size_t i = 0; i < measurements.size(); i++) {
+                result[measurements.at(i).surface_link.value()].push_back(
+                    measurements.at(i));
+            }
+
+            // TODO: Output a real disjoint set here.
+            return {result, std::nullopt};
+        };
 }
 }  // namespace
 

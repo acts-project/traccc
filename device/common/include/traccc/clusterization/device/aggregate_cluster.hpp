@@ -30,6 +30,12 @@ namespace traccc::device {
 /// @param[in] end       partition end point this cell belongs to
 /// @param[in] cid       current cell id
 /// @param[out] out      cluster to fill
+/// @param[out] disjoint_set_ptr Pointer to an array of unsigned integers of
+///                      length $|cells|$ to which an integer is written
+///                      identifying the measurement index to which each cell
+///                      belongs.
+/// @param[out] cluster_size Optional integer which is filled with the size of
+///                      the measurement that is created.
 ///
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
@@ -38,7 +44,9 @@ inline void aggregate_cluster(
     const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, unsigned int start,
     unsigned int end, unsigned short cid, measurement& out,
-    vecmem::data::vector_view<unsigned int> cell_links, unsigned int link);
+    vecmem::data::vector_view<unsigned int> cell_links, unsigned int link,
+    unsigned int* disjoint_set_ptr,
+    std::optional<std::reference_wrapper<unsigned int>> cluster_size);
 
 }  // namespace traccc::device
 

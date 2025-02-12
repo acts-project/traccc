@@ -51,6 +51,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/clusterization/measurement_sorting_algorithm.cu"
   "src/clusterization/kernels/ccl_kernel.cu"
   "src/clusterization/kernels/ccl_kernel.cuh"
+  "src/clusterization/kernels/reify_cluster_data.cu"
   # Finding
   "include/traccc/cuda/finding/finding_algorithm.hpp"
   "src/finding/finding_algorithm.cu"
