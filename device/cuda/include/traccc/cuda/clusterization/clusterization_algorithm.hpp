@@ -13,8 +13,10 @@
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
+#include "traccc/clusterization/device/tags.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -26,6 +28,7 @@
 
 // System include(s).
 #include <functional>
+#include <optional>
 
 namespace traccc::cuda {
 
@@ -41,6 +44,16 @@ class clusterization_algorithm
     : public algorithm<measurement_collection_types::buffer(
           const edm::silicon_cell_collection::const_view&,
           const silicon_detector_description::const_view&)>,
+      public algorithm<measurement_collection_types::buffer(
+          const edm::silicon_cell_collection::const_view&,
+          const silicon_detector_description::const_view&,
+          device::clustering_discard_disjoint_set&&)>,
+      public algorithm<
+          std::pair<measurement_collection_types::buffer,
+                    traccc::edm::silicon_cluster_collection::buffer>(
+              const edm::silicon_cell_collection::const_view&,
+              const silicon_detector_description::const_view&,
+              device::clustering_keep_disjoint_set&&)>,
       public messaging {
 
     public:
@@ -67,12 +80,31 @@ class clusterization_algorithm
     /// @param det_descr The detector description
     /// @return a measurement collection (buffer)
     ///
-    output_type operator()(
+    /// @{
+    measurement_collection_types::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
         const silicon_detector_description::const_view& det_descr)
         const override;
 
+    measurement_collection_types::buffer operator()(
+        const edm::silicon_cell_collection::const_view& cells,
+        const silicon_detector_description::const_view& det_descr,
+        device::clustering_discard_disjoint_set&&) const override;
+
+    std::pair<measurement_collection_types::buffer,
+              traccc::edm::silicon_cluster_collection::buffer>
+    operator()(const edm::silicon_cell_collection::const_view& cells,
+               const silicon_detector_description::const_view& det_descr,
+               device::clustering_keep_disjoint_set&&) const override;
+    /// @}
+
     private:
+    std::pair<measurement_collection_types::buffer,
+              std::optional<traccc::edm::silicon_cluster_collection::buffer>>
+    execute_impl(const edm::silicon_cell_collection::const_view& cells,
+                 const silicon_detector_description::const_view& det_descr,
+                 bool keep_disjoint_set) const;
+
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use

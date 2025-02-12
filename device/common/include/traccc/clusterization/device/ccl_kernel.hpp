@@ -49,6 +49,13 @@ namespace traccc::device {
 ///     matrix fragment storage
 /// @param backup_mutex mutex lock to mediate control over the backup global
 ///     memory data structures.
+/// @param[out] disjoint_set_ptr Pointer to array of unsigned integers of
+///     length $|cells|$ to which an integer is written identifying the
+///     measurement index to which each cell belongs.
+/// @param[out] cluster_size_ptr Pointer to an array of unsigned integers of
+///     length $|cells|$; the first $N$ elements - where $N$ is the number of
+///     output measurements - will have their value set to the size of the
+///     corresponding measurement.
 /// @param barrier  A generic object for block-wide synchronisation
 /// @param[out] measurements_view collection of measurements
 /// @param[out] cell_links    collection of links to measurements each cell is
@@ -66,7 +73,9 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<details::index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
     vecmem::data::vector_view<details::index_t> adjv_backup_view,
-    vecmem::device_atomic_ref<uint32_t> backup_mutex, const barrier_t& barrier,
+    vecmem::device_atomic_ref<uint32_t> backup_mutex,
+    unsigned int* disjoint_set_ptr, unsigned int* cluster_size_ptr,
+    const barrier_t& barrier,
     measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links);
 

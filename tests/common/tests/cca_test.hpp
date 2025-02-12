@@ -12,7 +12,9 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/read_cells.hpp"
 
 // Test include(s).
@@ -36,10 +38,11 @@
 #include <sstream>
 #include <string>
 
-using cca_function_t = std::function<
-    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>(
-        const traccc::edm::silicon_cell_collection::host &,
-        const traccc::silicon_detector_description::host &)>;
+using cca_function_t = std::function<std::pair<
+    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>,
+    std::optional<traccc::edm::silicon_cluster_collection::host>>(
+    const traccc::edm::silicon_cell_collection::host &,
+    const traccc::silicon_detector_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
     traccc::clustering_config rv;
@@ -159,8 +162,7 @@ class ConnectedComponentAnalysisTests
         traccc::io::read_cells(cells, file_hits,
                                traccc::getDummyLogger().clone(), &dd);
 
-        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
-            result = f(cells, dd);
+        auto [result, cluster_data] = f(cells, dd);
 
         std::size_t total_truth = 0, total_found = 0;
 
@@ -201,5 +203,17 @@ class ConnectedComponentAnalysisTests
         }
 
         EXPECT_EQ(total_truth, total_found);
+
+        if (cluster_data.has_value()) {
+            ASSERT_EQ(cluster_data->size(), total_found);
+
+            std::size_t total_cluster_size = 0;
+
+            for (std::size_t i = 0; i < cluster_data->size(); ++i) {
+                total_cluster_size += cluster_data->cell_indices().at(i).size();
+            }
+
+            ASSERT_EQ(cells.size(), total_cluster_size);
+        }
     }
 };

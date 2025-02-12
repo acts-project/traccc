@@ -23,5 +23,6 @@ __global__ void ccl_kernel(
     vecmem::data::vector_view<device::details::index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
     vecmem::data::vector_view<device::details::index_t> adjv_backup_view,
-    unsigned int* backup_mutex_ptr);
+    unsigned int* backup_mutex_ptr, unsigned int* disjoint_set_ptr,
+    unsigned int* cluster_size_ptr);
 }
