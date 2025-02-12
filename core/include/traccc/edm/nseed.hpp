@@ -1,15 +1,15 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-#include <traccc/edm/container.hpp>
-#include <traccc/edm/seed.hpp>
-#include <traccc/edm/spacepoint.hpp>
+// Local include(s).
+#include <traccc/edm/seed_collection.hpp>
+#include <traccc/edm/spacepoint_collection.hpp>
 
 namespace traccc {
 /**
@@ -30,15 +30,16 @@ struct nseed {
     /*
      * Should be the same as the three-seed type.
      */
-    using link_type = spacepoint_collection_types::host::size_type;
+    using link_type = edm::spacepoint_collection::host::size_type;
 
     /**
      * @brief Construct a new n-seed object from a 3-seed object.
      *
      * @param s A 3-seed.
      */
-    nseed(const seed& s)
-        : _size(3), _sps({s.spB_link, s.spM_link, s.spT_link}) {}
+    template <typename T>
+    nseed(const edm::seed<T>& s)
+        : _size(3), _sps({s.bottom_index(), s.middle_index(), s.top_index()}) {}
 
     /**
      * @brief Get the size of the seed.

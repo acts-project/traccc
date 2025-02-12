@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,7 +9,7 @@
 
 // Local include(s).
 #include "traccc/definitions/math.hpp"
-#include "traccc/edm/internal_spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/lin_circle.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
@@ -31,25 +31,27 @@ struct triplet_finding_helper {
     /// @param impact_parameter is impact parameter of triplet
     ///
     /// @return boolean value for compatibility
+    template <typename T>
     static inline TRACCC_HOST_DEVICE bool isCompatible(
-        const internal_spacepoint<spacepoint>& spM, const lin_circle& lb,
+        const edm::spacepoint<T>& spM, const lin_circle& lb,
         const lin_circle& lt, const seedfinder_config& config,
         const scalar& iSinTheta2, const scalar& scatteringInRegion2,
         scalar& curvature, scalar& impact_parameter);
 };
 
+template <typename T>
 bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
-    const internal_spacepoint<spacepoint>& spM, const lin_circle& lb,
-    const lin_circle& lt, const seedfinder_config& config,
-    const scalar& iSinTheta2, const scalar& scatteringInRegion2,
-    scalar& curvature, scalar& impact_parameter) {
+    const edm::spacepoint<T>& spM, const lin_circle& lb, const lin_circle& lt,
+    const seedfinder_config& config, const scalar& iSinTheta2,
+    const scalar& scatteringInRegion2, scalar& curvature,
+    scalar& impact_parameter) {
 
     // add errors of spB-spM and spM-spT pairs and add the correlation term
     // for errors on spM
     scalar error2 = lt.Er() + lb.Er() +
                     static_cast<scalar>(2.f) *
-                        (lb.cotTheta() * lt.cotTheta() * spM.varianceR() +
-                         spM.varianceZ()) *
+                        (lb.cotTheta() * lt.cotTheta() * spM.radius_variance() +
+                         spM.z_variance()) *
                         lb.iDeltaR() * lt.iDeltaR();
 
     scalar deltaCotTheta = lb.cotTheta() - lt.cotTheta();

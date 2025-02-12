@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,21 +8,19 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // System include(s).
 #include <functional>
+#include <utility>
 
-namespace traccc {
+namespace traccc::host::details {
 
-/// spacepoint binning
-class spacepoint_binning
-    : public algorithm<sp_grid(const spacepoint_collection_types::host&)>,
-      public messaging {
+/// Spacepoint Binning for the seeding algorithm
+class spacepoint_binning : public messaging {
 
     public:
     /// Constructor for the spacepoint binning
@@ -38,17 +36,25 @@ class spacepoint_binning
 
     /// Operator executing the algorithm
     ///
-    /// @param sp_collection All of the spacepoints of the event
+    /// @param spacepoints All of the spacepoints of the event
     /// @return The spacepoints arranged in a Phi-Z grid
     ///
-    output_type operator()(
-        const spacepoint_collection_types::host& sp_collection) const override;
+    traccc::details::spacepoint_grid_types::host operator()(
+        const edm::spacepoint_collection::const_view& spacepoints) const;
 
     private:
+    /// @name Tool configuration
+    /// @{
     seedfinder_config m_config;
     spacepoint_grid_config m_grid_config;
-    std::pair<output_type::axis_p0_type, output_type::axis_p1_type> m_axes;
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
-};
+    std::pair<traccc::details::spacepoint_grid_types::host::axis_p0_type,
+              traccc::details::spacepoint_grid_types::host::axis_p1_type>
+        m_axes;
+    /// @}
 
-}  // namespace traccc
+    /// Memory resource to use
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
+
+};  // class spacepoint_binning
+
+}  // namespace traccc::host::details

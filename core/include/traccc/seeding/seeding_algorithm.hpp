@@ -1,33 +1,40 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Library include(s).
-#include "traccc/edm/seed.hpp"
-#include "traccc/edm/spacepoint.hpp"
-#include "traccc/seeding/seed_finding.hpp"
-#include "traccc/seeding/spacepoint_binning.hpp"
+// Local include(s).
+#include "traccc/edm/seed_collection.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
+#include "traccc/seeding/detail/seed_finding.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/seeding/detail/spacepoint_binning.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-namespace traccc {
+// System include(s).
+#include <memory>
+
+namespace traccc::host {
 
 /// Main algorithm for performing the track seeding on the CPU
-class seeding_algorithm : public algorithm<seed_collection_types::host(
-                              const spacepoint_collection_types::host&)>,
+class seeding_algorithm : public algorithm<edm::seed_collection::host(
+                              const edm::spacepoint_collection::const_view&)>,
                           public messaging {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
+    /// @param finder_config The configuration for the seed finder
+    /// @param grid_config The configuration for the spacepoint grid
+    /// @param filter_config The configuration for the seed filter
     /// @param mr The memory resource to use
     ///
     seeding_algorithm(
@@ -38,17 +45,18 @@ class seeding_algorithm : public algorithm<seed_collection_types::host(
 
     /// Operator executing the algorithm.
     ///
-    /// @param spacepoint All spacepoints in the event
+    /// @param spacepoints All spacepoints in the event
     /// @return The track seeds reconstructed from the spacepoints
     ///
-    output_type operator()(
-        const spacepoint_collection_types::host& spacepoints) const override;
+    output_type operator()(const edm::spacepoint_collection::const_view&
+                               spacepoints) const override;
 
     private:
-    /// Sub-algorithm performing the spacepoint binning
-    spacepoint_binning m_spacepoint_binning;
-    /// Sub-algorithm performing the seed finding
-    seed_finding m_seed_finding;
+    /// Tool performing the spacepoint binning
+    details::spacepoint_binning m_binning;
+    /// Tool performing the seed finding
+    details::seed_finding m_finding;
+
 };  // class seeding_algorithm
 
-}  // namespace traccc
+}  // namespace traccc::host
