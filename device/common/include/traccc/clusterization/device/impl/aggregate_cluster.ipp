@@ -18,8 +18,8 @@ inline void aggregate_cluster(
     const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, const unsigned int start,
     const unsigned int end, const unsigned short cid, measurement& out,
-    vecmem::data::vector_view<unsigned int> cell_links,
-    const unsigned int link) {
+    vecmem::data::vector_view<unsigned int> cell_links, const unsigned int link,
+    unsigned int* cluster_size_ptr) {
     vecmem::device_vector<unsigned int> cell_links_device(cell_links);
 
     /*
@@ -57,6 +57,7 @@ inline void aggregate_cluster(
     const unsigned int module_idx = cells.module_index().at(cid + start);
     const auto module_descr = det_descr.at(module_idx);
     const auto partition_size = static_cast<unsigned short>(end - start);
+    unsigned int cluster_size = 0;
 
     bool first_processed = false;
 
@@ -114,6 +115,8 @@ inline void aggregate_cluster(
             }
 
             cell_links_device.at(pos) = link;
+
+            cluster_size++;
         }
 
         /*
@@ -122,6 +125,10 @@ inline void aggregate_cluster(
          */
         if (cell.channel1() > maxChannel1 + 1) {
             break;
+        }
+
+        if (cluster_size_ptr != nullptr) {
+            *cluster_size_ptr = cluster_size;
         }
     }
 

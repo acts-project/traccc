@@ -163,7 +163,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     m_copy(vecmem::get_data(cells), cells_buffer)->ignore();
 
     // Run the clusterization (asynchronously).
-    const clusterization_algorithm::output_type measurements =
+    const measurement_collection_types::buffer measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
     m_measurement_sorting(measurements);
 
