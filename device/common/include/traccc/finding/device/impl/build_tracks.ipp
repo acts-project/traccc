@@ -65,11 +65,13 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
 
+    bool success = true;
+
     // Reversely iterate to fill the track candidates
     for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
          it++) {
 
-        while (L.meas_idx > n_meas &&
+        while (L.meas_idx >= n_meas &&
                L.previous.first !=
                    std::numeric_limits<
                        candidate_link::link_index_type::first_type>::max()) {
@@ -78,26 +80,27 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
         }
 
         // Break if the measurement is still invalid
-        if (L.meas_idx > measurements.size()) {
+        if (L.meas_idx >= measurements.size()) {
+            success = false;
             break;
         }
 
-        auto& cand = *it;
-        cand = {measurements.at(L.meas_idx)};
+        *it = {measurements.at(L.meas_idx)};
 
         // Break the loop if the iterator is at the first candidate and fill the
         // seed
         if (it == cands_per_track.rend() - 1) {
             seed = seeds.at(L.previous.second);
-            break;
+        } else {
+            L = links[L.previous.first][L.previous.second];
         }
-
-        L = links[L.previous.first][L.previous.second];
     }
+
+    // NOTE: We may at some point want to assert that `success` is true
 
     // Criteria for valid tracks
     if (n_cands >= cfg.min_track_candidates_per_track &&
-        n_cands <= cfg.max_track_candidates_per_track) {
+        n_cands <= cfg.max_track_candidates_per_track && success) {
 
         vecmem::device_atomic_ref<unsigned int> num_valid_tracks(
             *payload.n_valid_tracks);
