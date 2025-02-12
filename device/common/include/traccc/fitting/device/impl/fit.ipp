@@ -53,7 +53,10 @@ TRACCC_HOST_DEVICE inline void fit(
     typename fitter_t::state fitter_state(track_states_per_track);
 
     // Run fitting
-    fitter.fit(seed_param, fitter_state);
+    bool success = fitter.fit(seed_param, fitter_state);
+
+    // TODO: Process fit failures more elegantly
+    assert(success);
 
     // Get the final fitting information
     track_states.at(param_id).header = fitter_state.m_fit_res;
