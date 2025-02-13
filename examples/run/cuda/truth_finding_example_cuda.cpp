@@ -101,7 +101,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // B field value and its type
     // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
     auto field = detray::bfield::create_const_field<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.
@@ -133,12 +133,12 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Standard deviations for seed track parameters
     static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
-        {1e-4f * detray::unit<traccc::scalar>::mm,
-         1e-4f * detray::unit<traccc::scalar>::mm,
+        {1e-4f * traccc::unit<traccc::scalar>::mm,
+         1e-4f * traccc::unit<traccc::scalar>::mm,
          1e-3f,
          1e-3f,
-         1e-4f / detray::unit<traccc::scalar>::GeV,
-         1e-4f * detray::unit<traccc::scalar>::ns};
+         1e-4f / traccc::unit<traccc::scalar>::GeV,
+         1e-4f * traccc::unit<traccc::scalar>::ns};
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);

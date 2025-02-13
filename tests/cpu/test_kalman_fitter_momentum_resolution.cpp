@@ -229,27 +229,27 @@ INSTANTIATE_TEST_SUITE_P(
             "mom_resolution_1_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
             std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
             detray::muon<scalar>(), 100, 100, false, 20.f, 20u, 50.f,
-            vector3{0, 0, 2 * detray::unit<scalar>::T},
+            vector3{0, 0, 2 * traccc::unit<scalar>::T},
             detray::vacuum<scalar>(),
-            std::array<scalar, 2u>{50.f * detray::unit<scalar>::um,
-                                   50.f * detray::unit<scalar>::um}),
+            std::array<scalar, 2u>{50.f * traccc::unit<scalar>::um,
+                                   50.f * traccc::unit<scalar>::um}),
         std::make_tuple(
             "mom_resolution_10_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
             std::array<scalar, 3u>{0.f, 0.f, 0.f}, 10.f, 0.f, 0.f,
             detray::muon<scalar>(), 100, 100, false, 20.f, 20u, 50.f,
-            vector3{0, 0, 2 * detray::unit<scalar>::T},
+            vector3{0, 0, 2 * traccc::unit<scalar>::T},
             detray::vacuum<scalar>(),
-            std::array<scalar, 2u>{50.f * detray::unit<scalar>::um,
-                                   50.f * detray::unit<scalar>::um}),
+            std::array<scalar, 2u>{50.f * traccc::unit<scalar>::um,
+                                   50.f * traccc::unit<scalar>::um}),
         std::make_tuple("mom_resolution_100_GeV_muon",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 100.f, 0.f, 0.f,
                         detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
-                        50.f, vector3{0, 0, 2 * detray::unit<scalar>::T},
+                        50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{
-                            50.f * detray::unit<scalar>::um,
-                            50.f * detray::unit<scalar>::um})));
+                            50.f * traccc::unit<scalar>::um,
+                            50.f * traccc::unit<scalar>::um})));
 
 // Muon with 1 GeV/c and different smearing parameters, no materials
 INSTANTIATE_TEST_SUITE_P(
@@ -260,26 +260,26 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
                         detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
-                        50.f, vector3{0, 0, 2 * detray::unit<scalar>::T},
+                        50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{
-                            50.f * detray::unit<scalar>::um,
-                            100.f * detray::unit<scalar>::um}),
+                            50.f * traccc::unit<scalar>::um,
+                            100.f * traccc::unit<scalar>::um}),
         std::make_tuple("mom_resolution_1_GeV_muon_100_50_smearing",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
                         detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
-                        50.f, vector3{0, 0, 2 * detray::unit<scalar>::T},
+                        50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{
-                            100.f * detray::unit<scalar>::um,
-                            50.f * detray::unit<scalar>::um}),
+                            100.f * traccc::unit<scalar>::um,
+                            50.f * traccc::unit<scalar>::um}),
         std::make_tuple("mom_resolution_1_GeV_muon_100_100_smearing",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
                         detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
-                        50.f, vector3{0, 0, 2 * detray::unit<scalar>::T},
+                        50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{
-                            100.f * detray::unit<scalar>::um,
-                            100.f * detray::unit<scalar>::um})));
+                            100.f * traccc::unit<scalar>::um,
+                            100.f * traccc::unit<scalar>::um})));
