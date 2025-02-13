@@ -9,7 +9,7 @@
 #include "traccc/io/csv/make_measurement_edm.hpp"
 
 // Detray include(s).
-#include "detray/geometry/barcode.hpp"
+#include <detray/geometry/barcode.hpp>
 
 namespace traccc::io::csv {
 

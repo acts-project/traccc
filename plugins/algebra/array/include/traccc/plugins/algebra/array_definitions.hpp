@@ -9,7 +9,7 @@
 #pragma once
 
 // Detray include(s).
-#include "detray/definitions/detail/algebra.hpp"
+#include <detray/definitions/detail/algebra.hpp>
 
 // Algebra Plugins include(s).
 #include <algebra/array_cmath.hpp>

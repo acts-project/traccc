@@ -13,7 +13,7 @@
 #include "traccc/utils/ranges.hpp"
 
 // Detray include(s).
-#include "detray/definitions/units.hpp"
+#include <detray/definitions/units.hpp>
 
 // System include(s).
 #include <sstream>

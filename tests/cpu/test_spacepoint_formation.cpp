@@ -11,9 +11,9 @@
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 // Detray include(s).
-#include "detray/geometry/shapes/rectangle2D.hpp"
-#include "detray/navigation/detail/ray.hpp"
-#include "detray/test/utils/detectors/build_telescope_detector.hpp"
+#include <detray/geometry/shapes/rectangle2D.hpp>
+#include <detray/navigation/detail/ray.hpp>
+#include <detray/test/utils/detectors/build_telescope_detector.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

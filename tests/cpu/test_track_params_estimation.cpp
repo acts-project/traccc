@@ -12,7 +12,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Detray include(s).
-#include "detray/navigation/detail/helix.hpp"
+#include <detray/navigation/detail/helix.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

@@ -12,9 +12,6 @@
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 
-// Detray include(s).
-#include "detray/geometry/barcode.hpp"
-
 // System include(s).
 #include <algorithm>
 #include <map>

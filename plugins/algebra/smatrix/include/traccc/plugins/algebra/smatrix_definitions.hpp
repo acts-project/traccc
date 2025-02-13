@@ -9,7 +9,7 @@
 #pragma once
 
 // Detray include(s).
-#include "detray/plugins/algebra/smatrix_definitions.hpp"
+#include <detray/plugins/algebra/smatrix_definitions.hpp>
 
 // Algebra Plugins include(s).
 #include <algebra/smatrix_smatrix.hpp>
