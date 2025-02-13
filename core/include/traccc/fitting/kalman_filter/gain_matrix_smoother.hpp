@@ -40,7 +40,7 @@ struct gain_matrix_smoother {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE inline void operator()(
+    TRACCC_HOST_DEVICE [[nodiscard]] inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& cur_state,
         const track_state<algebra_t>& next_state) {
@@ -50,14 +50,16 @@ struct gain_matrix_smoother {
         const auto D = cur_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
         if (D == 1u) {
-            smoothe<1u, shape_type>(cur_state, next_state);
+            return smoothe<1u, shape_type>(cur_state, next_state);
         } else if (D == 2u) {
-            smoothe<2u, shape_type>(cur_state, next_state);
+            return smoothe<2u, shape_type>(cur_state, next_state);
         }
+
+        return false;
     }
 
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE inline void smoothe(
+    TRACCC_HOST_DEVICE [[nodiscard]] inline bool smoothe(
         track_state<algebra_t>& cur_state,
         const track_state<algebra_t>& next_state) const {
         const auto meas = cur_state.get_measurement();
@@ -102,6 +104,14 @@ struct gain_matrix_smoother {
         cur_state.smoothed().set_vector(smt_vec);
         cur_state.smoothed().set_covariance(smt_cov);
 
+        // Return false if track is parallel to z-axis or phi is not finite
+        const scalar theta = cur_state.smoothed().theta();
+        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi ||
+            !std::isfinite(cur_state.smoothed().phi()) ||
+            std::abs(cur_state.smoothed().qop()) == 0.f) {
+            return false;
+        }
+
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(cur_state.smoothed());
 
@@ -128,7 +138,7 @@ struct gain_matrix_smoother {
 
         cur_state.smoothed_chi2() = getter::element(chi2, 0, 0);
 
-        return;
+        return true;
     }
 };
 

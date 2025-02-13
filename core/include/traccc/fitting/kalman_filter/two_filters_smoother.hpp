@@ -32,7 +32,7 @@ struct two_filters_smoother {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE inline bool operator()(
+    TRACCC_HOST_DEVICE [[nodiscard]] inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
@@ -53,7 +53,7 @@ struct two_filters_smoother {
     // Reference: The Optimun Linear Smoother as a Combination of Two Optimum
     // Linear Filters
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE inline bool smoothe(
+    TRACCC_HOST_DEVICE [[nodiscard]] inline bool smoothe(
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
 
