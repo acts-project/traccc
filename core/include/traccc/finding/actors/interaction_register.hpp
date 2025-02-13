@@ -11,8 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 
 // Detray include(s).
-#include "detray/propagator/base_actor.hpp"
-#include "detray/propagator/base_stepper.hpp"
+#include <detray/propagator/base_actor.hpp>
 
 namespace traccc {
 

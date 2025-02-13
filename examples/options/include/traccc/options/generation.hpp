@@ -14,7 +14,7 @@
 #include "traccc/utils/ranges.hpp"
 
 // detray include(s).
-#include "detray/definitions/pdg_particle.hpp"
+#include <detray/definitions/pdg_particle.hpp>
 
 // System include(s).
 #include <cstddef>

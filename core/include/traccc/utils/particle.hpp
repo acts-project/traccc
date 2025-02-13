@@ -13,7 +13,7 @@
 #include "traccc/edm/track_parameters.hpp"
 
 // detray include(s).
-#include "detray/definitions/pdg_particle.hpp"
+#include <detray/definitions/pdg_particle.hpp>
 
 // System include(s).
 #include <stdexcept>

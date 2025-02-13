@@ -13,9 +13,6 @@
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
-// detray include(s).
-#include "detray/definitions/units.hpp"
-
 // System include(s).
 #include <limits>
 

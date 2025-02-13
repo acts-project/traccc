@@ -17,7 +17,7 @@
 #include "traccc/utils/subspace.hpp"
 
 // Detray include(s).
-#include "detray/geometry/barcode.hpp"
+#include <detray/geometry/barcode.hpp>
 
 // System include(s).
 #include <limits>

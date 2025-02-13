@@ -15,7 +15,7 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
-#include "detray/propagator/base_actor.hpp"
+#include <detray/propagator/base_actor.hpp>
 
 namespace traccc {
 

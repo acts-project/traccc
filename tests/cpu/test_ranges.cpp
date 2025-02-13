@@ -10,7 +10,7 @@
 #include "traccc/utils/ranges.hpp"
 
 // Detray include(s).
-#include "detray/definitions/units.hpp"
+#include <detray/definitions/units.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>

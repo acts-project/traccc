@@ -16,8 +16,8 @@
 #include "traccc/geometry/detector.hpp"
 
 // detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/propagator/rk_stepper.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/propagator/rk_stepper.hpp>
 
 // Thrust include(s).
 #include <thrust/sort.h>
