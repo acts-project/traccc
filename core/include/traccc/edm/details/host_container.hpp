@@ -138,11 +138,8 @@ class host_container : public container_base<header_t, item_t, vecmem::vector,
      */
     template <typename h_prime, typename v_prime>
     TRACCC_HOST void push_back(h_prime&& new_header, v_prime&& new_items) {
-        this->m_headers.push_back(
-            std::forward<typename base_type::header_type>(new_header));
-        this->m_items.push_back(
-            std::forward<typename base_type::item_vector::value_type>(
-                new_items));
+        this->m_headers.push_back(std::forward<h_prime>(new_header));
+        this->m_items.push_back(std::forward<v_prime>(new_items));
     }
 
     /**

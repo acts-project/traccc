@@ -16,8 +16,8 @@ nseed_performance_writer::nseed_performance_writer(
     const std::string& prefix, std::unique_ptr<track_filter>&& filter,
     std::unique_ptr<track_matcher>&& matcher)
     : _prefix(prefix),
-      _filter(std::forward<std::unique_ptr<track_filter>>(filter)),
-      _matcher(std::forward<std::unique_ptr<track_matcher>>(matcher)) {}
+      _filter(std::move(filter)),
+      _matcher(std::move(matcher)) {}
 
 void nseed_performance_writer::initialize() {
     output_seed_file.open(_prefix + "seeds.csv");
