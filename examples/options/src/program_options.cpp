@@ -19,8 +19,10 @@ namespace traccc::opts {
 program_options::program_options(
     std::string_view description,
     const std::vector<std::reference_wrapper<interface> >& options, int argc,
-    char* argv[])
+    char* argv[], std::unique_ptr<const traccc::Logger> ilogger)
     : m_desc(std::string{description}) {
+
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Add all of the option groups.
     for (const interface& opt : options) {
@@ -44,9 +46,8 @@ program_options::program_options(
     try {
         boost::program_options::notify(vm);
     } catch (const std::exception& ex) {
-        std::cerr << "Couldn't interpret command line options because of:\n\n"
-                  << ex.what() << "\n\n"
-                  << m_desc << std::endl;
+        TRACCC_FATAL("Couldn't interpret command line options because of: "
+                     << ex.what() << "; " << m_desc);
         std::exit(1);
     }
 
@@ -56,7 +57,7 @@ program_options::program_options(
     }
 
     // Tell the user what's happening.
-    std::cout << "\nRunning " << description << "\n\n";
+    TRACCC_INFO("Running " << description);
 
     configuration_list cl;
 

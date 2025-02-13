@@ -71,6 +71,9 @@ namespace traccc {
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_mt(std::string_view description, int argc, char* argv[],
                   bool use_host_caching) {
+    std::unique_ptr<const traccc::Logger> ilogger = traccc::getDefaultLogger(
+        "ThroughputExample", traccc::Logging::Level::INFO);
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Program options.
     opts::detector detector_opts;
@@ -88,7 +91,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
          finding_opts, propagation_opts, fitting_opts, throughput_opts,
          threading_opts},
         argc,
-        argv};
+        argv,
+        logger().cloneWithSuffix("Options")};
 
     // Set up the timing info holder.
     performance::timing_info times;
@@ -130,8 +134,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                      event != event_range.end(); ++event) {
                     static constexpr bool DEDUPLICATE = true;
                     io::read_cells(input.at(event - input_opts.skip), event,
-                                   input_opts.directory, &det_descr,
-                                   input_opts.format, DEDUPLICATE,
+                                   input_opts.directory, logger().clone(),
+                                   &det_descr, input_opts.format, DEDUPLICATE,
                                    input_opts.use_acts_geom_source);
                 }
             });
@@ -182,7 +186,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              finding_cfg,
              fitting_cfg,
              det_descr,
-             (detector_opts.use_detray_detector ? &detector : nullptr)});
+             (detector_opts.use_detray_detector ? &detector : nullptr),
+             logger().clone()});
     }
 
     // Set up the TBB arena and thread group. From here on out TBB is only
@@ -291,17 +296,15 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     cached_host_mrs.clear();
 
     // Print some results.
-    std::cout << "Reconstructed track parameters: " << rec_track_params.load()
-              << std::endl;
-    std::cout << "Time totals:" << std::endl;
-    std::cout << times << std::endl;
-    std::cout << "Throughput:" << std::endl;
-    std::cout << performance::throughput{throughput_opts.cold_run_events, times,
-                                         "Warm-up processing"}
-              << "\n"
-              << performance::throughput{throughput_opts.processed_events,
-                                         times, "Event processing"}
-              << std::endl;
+    TRACCC_INFO("Reconstructed track parameters: " << rec_track_params.load());
+    TRACCC_INFO("Time totals: " << times);
+
+    performance::throughput throughput_wu{throughput_opts.cold_run_events,
+                                          times, "Warm-up processing"};
+    performance::throughput throughput_pr{throughput_opts.processed_events,
+                                          times, "Event processing"};
+
+    TRACCC_INFO("Throughput:" << throughput_wu << "\n" << throughput_pr);
 
     // Print results to log file
     if (throughput_opts.log_file != "\0") {

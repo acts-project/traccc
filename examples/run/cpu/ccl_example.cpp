@@ -90,24 +90,29 @@ void run_on_event(traccc::host::sparse_ccl_algorithm& cc,
 }
 
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> ilogger = traccc::getDefaultLogger(
+        "TracccExampleCcl", traccc::Logging::Level::INFO);
+
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
+
     if (argc < 2) {
-        std::cout << "Not enough arguments, minimum requirement: " << std::endl;
-        std::cout << argv[0] << " <event_file>" << std::endl;
+        TRACCC_FATAL("Not enough arguments, minimum requirement: "
+                     << argv[0] << " <event_file>");
         return -1;
     }
 
     std::string event_file = std::string(argv[1]);
 
-    std::cout << "Running " << argv[0] << " on " << event_file << std::endl;
+    TRACCC_INFO("Running " << argv[0] << " on " << event_file);
 
     vecmem::host_memory_resource mem;
 
-    traccc::host::sparse_ccl_algorithm cc(mem);
+    traccc::host::sparse_ccl_algorithm cc(mem, logger().clone("SparseCclAlg"));
 
     auto time_read_start = std::chrono::high_resolution_clock::now();
 
     traccc::edm::silicon_cell_collection::host data(mem);
-    traccc::io::read_cells(data, event_file);
+    traccc::io::read_cells(data, event_file, logger().clone());
 
     auto time_read_end = std::chrono::high_resolution_clock::now();
 

@@ -13,15 +13,19 @@
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
+#include "traccc/utils/logging.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 
 namespace traccc {
 
 /// Seed filtering to filter out the bad triplets
-class seed_filtering {
+class seed_filtering : public logging_mixin {
 
     public:
     /// Constructor with the seed filter configuration
-    seed_filtering(const seedfilter_config& config);
+    seed_filtering(
+        const seedfilter_config& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed filtering
     ///
@@ -39,7 +43,6 @@ class seed_filtering {
     private:
     /// Seed filter configuration
     seedfilter_config m_filter_config;
-
 };  // class seed_filtering
 
 }  // namespace traccc

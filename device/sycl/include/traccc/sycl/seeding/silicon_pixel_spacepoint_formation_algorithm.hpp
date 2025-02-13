@@ -13,6 +13,7 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
@@ -34,7 +35,8 @@ class silicon_pixel_spacepoint_formation_algorithm
           const measurement_collection_types::const_view&)>,
       public algorithm<spacepoint_collection_types::buffer(
           const telescope_detector::view&,
-          const measurement_collection_types::const_view&)> {
+          const measurement_collection_types::const_view&)>,
+      public logging_mixin {
 
     public:
     /// Output type
@@ -46,7 +48,8 @@ class silicon_pixel_spacepoint_formation_algorithm
     ///
     silicon_pixel_spacepoint_formation_algorithm(
         const traccc::memory_resource& mr, vecmem::copy& copy,
-        queue_wrapper queue);
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Construct spacepoints from 2D silicon pixel measurements
     ///

@@ -66,15 +66,22 @@
 #include <memory>
 
 // Simple asynchronous handler function
-auto handle_async_error = [](::sycl::exception_list elist) {
-    for (auto& e : elist) {
-        try {
-            std::rethrow_exception(e);
-        } catch (::sycl::exception& e) {
-            std::cout << "ASYNC EXCEPTION!!\n";
-            std::cout << e.what() << "\n";
+class handle_async_error {
+    public:
+    handle_async_error(const traccc::Logger& l) : logger(l) {}
+
+    auto operator()(::sycl::exception_list elist) {
+        for (auto& e : elist) {
+            try {
+                std::rethrow_exception(e);
+            } catch (::sycl::exception& e) {
+                TRACCC_ERROR("Asynchronous exception: " << e.what());
+            }
         }
     }
+
+    private:
+    const traccc::Logger& logger;
 };
 
 int seq_run(const traccc::opts::detector& detector_opts,
@@ -85,13 +92,15 @@ int seq_run(const traccc::opts::detector& detector_opts,
             const traccc::opts::track_propagation& propagation_opts,
             const traccc::opts::track_fitting& /*fitting_opts*/,
             const traccc::opts::performance& performance_opts,
-            const traccc::opts::accelerator& accelerator_opts) {
+            const traccc::opts::accelerator& accelerator_opts,
+            std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Creating SYCL queue object
-    ::sycl::queue q(handle_async_error);
+    ::sycl::queue q(handle_async_error{logger()});
     traccc::sycl::queue_wrapper queue{&q};
-    std::cout << "Running on device: "
-              << q.get_device().get_info<::sycl::info::device::name>() << "\n";
+    TRACCC_INFO("Running on device: "
+                << q.get_device().get_info<::sycl::info::device::name>());
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -155,30 +164,38 @@ int seq_run(const traccc::opts::detector& detector_opts,
     finding_cfg.propagation = propagation_config;
 
     // Algorithms.
-    traccc::host::clusterization_algorithm ca(host_mr);
-    traccc::host::silicon_pixel_spacepoint_formation_algorithm sf(host_mr);
-    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
-                                 {seeding_opts.seedfinder},
-                                 seeding_opts.seedfilter, host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    traccc::host::clusterization_algorithm ca(
+        host_mr, logger().clone("HostClusteringAlg"));
+    traccc::host::silicon_pixel_spacepoint_formation_algorithm sf(
+        host_mr, logger().clone("HostSpFormationAlg"));
+    traccc::seeding_algorithm sa(
+        seeding_opts.seedfinder, {seeding_opts.seedfinder},
+        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::track_params_estimation tp(host_mr,
+                                       logger().clone("HostTrackParEstAlg"));
     traccc::host::combinatorial_kalman_filter_algorithm finding_alg{
-        finding_cfg};
+        finding_cfg, logger().clone("HostFindingAlg")};
 
-    traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, queue,
-                                                   clusterization_opts);
-    traccc::sycl::measurement_sorting_algorithm ms_sycl(copy, queue);
-    traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sf_sycl(mr, copy,
-                                                                       queue);
+    traccc::sycl::clusterization_algorithm ca_sycl(
+        mr, copy, queue, clusterization_opts,
+        logger().clone("SyclClusteringAlg"));
+    traccc::sycl::measurement_sorting_algorithm ms_sycl(
+        copy, queue, logger().clone("SyclMeasSortingAlg"));
+    traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sf_sycl(
+        mr, copy, queue, logger().clone("SyclSpFormationAlg"));
     traccc::sycl::seeding_algorithm sa_sycl(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, mr, copy, &q);
-    traccc::sycl::track_params_estimation tp_sycl(mr, copy, &q);
+        seeding_opts.seedfilter, mr, copy, &q,
+        logger().clone("SyclSeedingAlg"));
+    traccc::sycl::track_params_estimation tp_sycl(
+        mr, copy, &q, logger().clone("SyclTrackParEstAlg"));
     traccc::sycl::combinatorial_kalman_filter_algorithm finding_alg_sycl{
-        finding_cfg, mr, copy, queue};
+        finding_cfg, mr, copy, queue, logger().clone("SyclFindingAlg")};
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
-        copy_track_candidates{mr, copy};
+        copy_track_candidates{mr, copy,
+                              logger().clone("TrackCandidateD2HCopyAlg")};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -189,7 +206,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Loop over events
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
-
         // Instantiate host containers/collections
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event;
@@ -222,10 +238,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
                 static constexpr bool DEDUPLICATE = true;
-                traccc::io::read_cells(cells_per_event, event,
-                                       input_opts.directory, &host_det_descr,
-                                       input_opts.format, DEDUPLICATE,
-                                       input_opts.use_acts_geom_source);
+                traccc::io::read_cells(
+                    cells_per_event, event, input_opts.directory,
+                    logger().clone(), &host_det_descr, input_opts.format,
+                    DEDUPLICATE, input_opts.use_acts_geom_source);
             }  // stop measuring file reading timer
 
             n_cells += cells_per_event.size();
@@ -350,7 +366,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         if (accelerator_opts.compare_with_cpu) {
 
             // Show which event we are currently presenting the results for.
-            std::cout << "===>>> Event " << event << " <<<===" << std::endl;
+            TRACCC_INFO("===>>> Event " << event << " <<<===");
 
             // Compare the measurements made on the host and on the device.
             traccc::collection_comparator<traccc::measurement>
@@ -400,12 +416,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 }
             }
 
-            std::cout << "  Track candidates (item) matching rate: "
-                      << 100. * static_cast<double>(n_matches) /
-                             static_cast<double>(
-                                 std::max(track_candidates.size(),
-                                          track_candidates_sycl.size()))
-                      << "%" << std::endl;
+            TRACCC_INFO("  Track candidates (item) matching rate: "
+                        << 100. * static_cast<double>(n_matches) /
+                               static_cast<double>(
+                                   std::max(track_candidates.size(),
+                                            track_candidates_sycl.size()))
+                        << "%");
         }
 
         /// Statistics
@@ -434,22 +450,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
         sd_performance_writer.finalize();
     }
 
-    std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_cells << " cells" << std::endl;
-    std::cout << "- created (cpu)  " << n_measurements << " measurements"
-              << std::endl;
-    std::cout << "- created (cpu)  " << n_spacepoints << " spacepoints"
-              << std::endl;
-    std::cout << "- created (sycl) " << n_spacepoints_sycl
-              << " spacepoints     " << std::endl;
+    TRACCC_INFO("==> Statistics ... ");
+    TRACCC_INFO("- read    " << n_cells << " cells");
+    TRACCC_INFO("- created (cpu)  " << n_measurements << " measurements");
+    TRACCC_INFO("- created (cpu)  " << n_spacepoints << " spacepoints");
+    TRACCC_INFO("- created (sycl) " << n_spacepoints_sycl
+                                    << " spacepoints     ");
 
-    std::cout << "- created  (cpu) " << n_seeds << " seeds" << std::endl;
-    std::cout << "- created (sycl) " << n_seeds_sycl << " seeds" << std::endl;
-    std::cout << "- found (cpu)    " << n_found_tracks << " tracks"
-              << std::endl;
-    std::cout << "- found (sycl)   " << n_found_tracks_sycl << " tracks"
-              << std::endl;
-    std::cout << "==>Elapsed times...\n" << elapsedTimes << std::endl;
+    TRACCC_INFO("- created  (cpu) " << n_seeds << " seeds");
+    TRACCC_INFO("- created (sycl) " << n_seeds_sycl << " seeds");
+    TRACCC_INFO("- found (cpu)    " << n_found_tracks << " tracks");
+    TRACCC_INFO("- found (sycl)   " << n_found_tracks_sycl << " tracks");
+    TRACCC_INFO("==>Elapsed times...\n" << elapsedTimes);
 
     return 0;
 }
@@ -457,6 +469,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleSeqSycl", traccc::Logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -474,10 +488,11 @@ int main(int argc, char* argv[]) {
          finding_opts, propagation_opts, fitting_opts, performance_opts,
          accelerator_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(detector_opts, input_opts, clusterization_opts, seeding_opts,
                    finding_opts, propagation_opts, fitting_opts,
-                   performance_opts, accelerator_opts);
+                   performance_opts, accelerator_opts, logger->clone());
 }

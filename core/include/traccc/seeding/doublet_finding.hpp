@@ -14,6 +14,7 @@
 #include "traccc/seeding/detail/spacepoint_type.hpp"
 #include "traccc/seeding/doublet_finding_helper.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 
 namespace traccc {
 
@@ -23,7 +24,8 @@ template <details::spacepoint_type otherSpType>
 struct doublet_finding
     : public algorithm<std::pair<doublet_collection_types::host,
                                  lin_circle_collection_types::host>(
-          const sp_grid&, const sp_location&)> {
+          const sp_grid&, const sp_location&)>,
+      public logging_mixin {
 
     static_assert(otherSpType == details::spacepoint_type::bottom ||
                   otherSpType == details::spacepoint_type::top);
@@ -32,7 +34,10 @@ struct doublet_finding
     ///
     /// @param seedfinder_config is the configuration parameters
     /// @param isp_container is the internal spacepoint container
-    doublet_finding(const seedfinder_config& config) : m_config(config) {}
+    doublet_finding(
+        const seedfinder_config& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
+        : logging_mixin(std::move(logger)), m_config(config) {}
 
     /// Callable operator for doublet finding per middle spacepoint
     ///
