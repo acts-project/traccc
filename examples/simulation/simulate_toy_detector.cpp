@@ -54,14 +54,14 @@ int simulate(const traccc::opts::generation& generation_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
-    const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
+    const vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
     auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Create the toy geometry
     detray::toy_det_config<scalar> toy_cfg{};
     toy_cfg.n_brl_layers(4u).n_edc_layers(7u);
     // @TODO: Increase the material budget again
-    toy_cfg.module_mat_thickness(0.11f * detray::unit<scalar>::mm);
+    toy_cfg.module_mat_thickness(0.11f * traccc::unit<scalar>::mm);
     const auto [det, name_map] =
         detray::build_toy_detector<traccc::default_algebra>(host_mr, toy_cfg);
 
@@ -88,7 +88,7 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // Smearing value for measurements
     traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
-        50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
+        50 * traccc::unit<scalar>::um, 50 * traccc::unit<scalar>::um);
 
     // Type declarations
     using writer_type = traccc::smearing_writer<

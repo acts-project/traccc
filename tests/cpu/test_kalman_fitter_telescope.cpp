@@ -202,7 +202,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
         detray::muon<scalar>(), 100, 100, false, 20.f, 20u, 20.f,
-        vector3{0, 0, 2 * detray::unit<scalar>::T})));
+        vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
@@ -211,7 +211,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
@@ -220,7 +220,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
         std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
-        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * detray::unit<scalar>::T})));
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation3, KalmanFittingTelescopeTests,
@@ -230,7 +230,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
         detray::antimuon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
-        vector3{0, 0, 2 * detray::unit<scalar>::T})));
+        vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitTelescopeValidation4, KalmanFittingTelescopeTests,
@@ -240,4 +240,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
         detray::antimuon<scalar>(), 100, 100, true, 20.f, 9u, 20.f,
-        vector3{0, 0, 2 * detray::unit<scalar>::T})));
+        vector3{0, 0, 2 * traccc::unit<scalar>::T})));

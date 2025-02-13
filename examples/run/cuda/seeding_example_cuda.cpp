@@ -124,7 +124,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // B field value and its type
     // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
     auto field = detray::bfield::create_const_field<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.

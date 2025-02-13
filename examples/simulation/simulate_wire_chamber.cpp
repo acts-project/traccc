@@ -54,7 +54,7 @@ int simulate(const traccc::opts::generation& generation_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
-    const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
+    const vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
     auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Set Configuration
@@ -90,7 +90,7 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // Smearing value for measurements
     traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
-        50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
+        50 * traccc::unit<scalar>::um, 50 * traccc::unit<scalar>::um);
 
     // Type declarations
     using writer_type = traccc::smearing_writer<
