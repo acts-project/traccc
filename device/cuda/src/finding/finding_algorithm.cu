@@ -27,17 +27,17 @@
 #include "traccc/utils/projections.hpp"
 
 // detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/navigation/navigator.hpp"
-#include "detray/propagator/rk_stepper.hpp"
-#include "vecmem/containers/data/vector_view.hpp"
-#include "vecmem/memory/unique_ptr.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
+#include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/jagged_device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
+#include <vecmem/memory/unique_ptr.hpp>
 
 // Thrust include(s).
 #include <thrust/copy.h>

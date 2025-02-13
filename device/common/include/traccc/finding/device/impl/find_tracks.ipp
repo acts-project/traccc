@@ -21,6 +21,9 @@
 // Project include(s).
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 
+// Detray include(s)
+#include <detray/geometry/tracking_surface.hpp>
+
 // Thrust include(s).
 #include <thrust/binary_search.h>
 #include <thrust/execution_policy.h>

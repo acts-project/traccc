@@ -7,18 +7,21 @@
 
 #pragma once
 
-#include "detray/detectors/bfield.hpp"
-#include "detray/propagator/actor_chain.hpp"
-#include "detray/propagator/actors/aborters.hpp"
-#include "detray/propagator/actors/parameter_resetter.hpp"
-#include "detray/propagator/actors/parameter_transporter.hpp"
-#include "detray/propagator/actors/pointwise_material_interactor.hpp"
-#include "detray/propagator/propagator.hpp"
-#include "detray/propagator/rk_stepper.hpp"
+// Project include(s)
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/geometry/detector.hpp"
+
+// Detray include(s)
+#include <detray/detectors/bfield.hpp>
+#include <detray/propagator/actor_chain.hpp>
+#include <detray/propagator/actors/aborters.hpp>
+#include <detray/propagator/actors/parameter_resetter.hpp>
+#include <detray/propagator/actors/parameter_transporter.hpp>
+#include <detray/propagator/actors/pointwise_material_interactor.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
 
 namespace traccc::cuda::kernels {
 

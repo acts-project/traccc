@@ -11,9 +11,6 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
-// Detray include(s).
-#include "detray/geometry/barcode.hpp"
-
 namespace traccc {
 
 /// Track candidate is the measurement

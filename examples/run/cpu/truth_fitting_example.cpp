@@ -22,12 +22,12 @@
 #include "traccc/utils/seed_generator.hpp"
 
 // Detray include(s).
-#include "detray/core/detector.hpp"
-#include "detray/detectors/bfield.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
-#include "detray/navigation/navigator.hpp"
-#include "detray/propagator/propagator.hpp"
-#include "detray/propagator/rk_stepper.hpp"
+#include <detray/core/detector.hpp>
+#include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_reader.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

@@ -12,8 +12,8 @@
 #include "traccc/definitions/primitives.hpp"
 
 // detray include(s).
-#include "detray/definitions/pdg_particle.hpp"
-#include "detray/propagator/propagation_config.hpp"
+#include <detray/definitions/pdg_particle.hpp>
+#include <detray/propagator/propagation_config.hpp>
 
 namespace traccc {
 

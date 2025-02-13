@@ -12,6 +12,9 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
 
+// Detray inlcude(s)
+#include <detray/geometry/shapes/line.hpp>
+
 namespace traccc {
 
 /// Type unrolling functor to smooth the track parameters after the Kalman
