@@ -21,6 +21,9 @@
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
 
+// Local include(s)
+#include "optimization_warning.hpp"
+
 // I/O include(s).
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -65,6 +68,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
          finding_opts, propagation_opts, fitting_opts, throughput_opts},
         argc,
         argv};
+
+    TRACCC_OPTIMIZATION_WARNING();
 
     // Set up the timing info holder.
     performance::timing_info times;
@@ -210,6 +215,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     // Print some results.
     std::cout << "Reconstructed track parameters: " << rec_track_params
               << std::endl;
+    TRACCC_OPTIMIZATION_WARNING();
     std::cout << "Time totals:" << std::endl;
     std::cout << times << std::endl;
     std::cout << "Throughput:" << std::endl;
@@ -219,6 +225,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
               << performance::throughput{throughput_opts.processed_events,
                                          times, "Event processing"}
               << std::endl;
+    TRACCC_OPTIMIZATION_WARNING();
 
     // Return gracefully.
     return 0;
