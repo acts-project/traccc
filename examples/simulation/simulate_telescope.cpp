@@ -70,7 +70,7 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // B field value and its type
     using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
-    const vector3 B{0, 0, 2 * detray::unit<scalar>::T};
+    const vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
     auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Set material and thickness

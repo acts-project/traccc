@@ -38,10 +38,10 @@ constexpr scalar tol{1e-7f};
 TEST(traccc_simulation, simulation) {
 
     const detray::mask<detray::line<false>, traccc::default_algebra> ln{
-        0u, 10.f * detray::unit<scalar>::mm, 50.f * detray::unit<scalar>::mm};
+        0u, 10.f * traccc::unit<scalar>::mm, 50.f * traccc::unit<scalar>::mm};
 
     const detray::mask<detray::rectangle2D, traccc::default_algebra> re{
-        0u, 10.f * detray::unit<scalar>::mm, 10.f * detray::unit<scalar>::mm};
+        0u, 10.f * traccc::unit<scalar>::mm, 10.f * traccc::unit<scalar>::mm};
 
     detray::bound_track_parameters<traccc::default_algebra> bound_params{};
     bound_params.set_bound_local({1.f, 2.f});
@@ -71,7 +71,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
 
     // Create B field
     using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
-    const vector3 B{0.f, 0.f, 2.f * detray::unit<scalar>::T};
+    const vector3 B{0.f, 0.f, 2.f * traccc::unit<scalar>::T};
     auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Create geometry
@@ -95,12 +95,12 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
     gen_cfg.n_tracks(n_tracks);
     gen_cfg.origin(ori);
     // @TODO The simulator sometimes gets stuck for lower momentum
-    gen_cfg.p_tot(5.f * detray::unit<scalar>::GeV);
+    gen_cfg.p_tot(5.f * traccc::unit<scalar>::GeV);
     generator_type generator(gen_cfg);
 
     // Create smearer
     measurement_smearer<traccc::default_algebra> smearer(
-        67.f * detray::unit<scalar>::um, 170.f * detray::unit<scalar>::um);
+        67.f * traccc::unit<scalar>::um, 170.f * traccc::unit<scalar>::um);
 
     std::size_t n_events{10u};
 
@@ -209,11 +209,11 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
     // A thickness larger than 0.1 cm will flip the track direction of low
     // energy (or non-relativistic) particle due to the large scattering
-    const scalar thickness = 0.005f * detray::unit<scalar>::cm;
+    const scalar thickness = 0.005f * traccc::unit<scalar>::cm;
 
     detray::tel_det_config<traccc::default_algebra, detray::rectangle2D>
-        tel_cfg{1000.f * detray::unit<scalar>::mm,
-                1000.f * detray::unit<scalar>::mm};
+        tel_cfg{1000.f * traccc::unit<scalar>::mm,
+                1000.f * traccc::unit<scalar>::mm};
     tel_cfg.positions(positions).mat_thickness(thickness);
 
     const auto [detector, names] =
@@ -225,7 +225,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
     // Field
     using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
-    const vector3 B{0.f, 0.f, 2.f * detray::unit<scalar>::T};
+    const vector3 B{0.f, 0.f, 2.f * traccc::unit<scalar>::T};
     auto field = detray::bfield::create_const_field<scalar>(B);
 
     // Momentum
@@ -253,7 +253,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
     // Create smearer
     measurement_smearer<traccc::default_algebra> smearer(
-        50.f * detray::unit<scalar>::um, 50.f * detray::unit<scalar>::um);
+        50.f * traccc::unit<scalar>::um, 50.f * traccc::unit<scalar>::um);
 
     std::size_t n_events{1000u};
 
@@ -299,31 +299,31 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 INSTANTIATE_TEST_SUITE_P(
     Simulation, TelescopeDetectorSimulation,
     ::testing::Values(
-        std::make_tuple("0", 0.1f * detray::unit<scalar>::GeV, 0.01f, -1.f),
-        std::make_tuple("1", 1.f * detray::unit<scalar>::GeV, 0.01f, -1.f),
-        std::make_tuple("2", 10.f * detray::unit<scalar>::GeV, 0.01f, -1.f),
-        std::make_tuple("3", 100.f * detray::unit<scalar>::GeV, 0.01f, -1.f),
-        std::make_tuple("4", 0.1f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f, 1.f),
-        std::make_tuple("5", 1.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f, 1.f),
-        std::make_tuple("6", 10.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f, 1.f),
-        std::make_tuple("7", 100.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 12.f, 1.f),
-        std::make_tuple("8", 0.1f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f, -1.f),
-        std::make_tuple("9", 1.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f, -1.f),
-        std::make_tuple("10", 10.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f, -1.f),
-        std::make_tuple("11", 100.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 8.f, -1.f),
-        std::make_tuple("12", 0.1f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f, 1.f),
-        std::make_tuple("13", 1.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f, 1.f),
-        std::make_tuple("14", 10.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f, 1.f),
-        std::make_tuple("15", 100.f * detray::unit<scalar>::GeV,
-                        detray::constant<scalar>::pi / 6.f, 1.f)));
+        std::make_tuple("0", 0.1f * traccc::unit<scalar>::GeV, 0.01f, -1.f),
+        std::make_tuple("1", 1.f * traccc::unit<scalar>::GeV, 0.01f, -1.f),
+        std::make_tuple("2", 10.f * traccc::unit<scalar>::GeV, 0.01f, -1.f),
+        std::make_tuple("3", 100.f * traccc::unit<scalar>::GeV, 0.01f, -1.f),
+        std::make_tuple("4", 0.1f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 12.f, 1.f),
+        std::make_tuple("5", 1.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 12.f, 1.f),
+        std::make_tuple("6", 10.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 12.f, 1.f),
+        std::make_tuple("7", 100.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 12.f, 1.f),
+        std::make_tuple("8", 0.1f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 8.f, -1.f),
+        std::make_tuple("9", 1.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 8.f, -1.f),
+        std::make_tuple("10", 10.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 8.f, -1.f),
+        std::make_tuple("11", 100.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 8.f, -1.f),
+        std::make_tuple("12", 0.1f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 6.f, 1.f),
+        std::make_tuple("13", 1.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 6.f, 1.f),
+        std::make_tuple("14", 10.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 6.f, 1.f),
+        std::make_tuple("15", 100.f * traccc::unit<scalar>::GeV,
+                        traccc::constant<scalar>::pi / 6.f, 1.f)));

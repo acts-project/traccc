@@ -107,7 +107,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     // Set constrained step size to 1 mm
     sim.get_config().propagation.stepping.step_constraint = step_constraint;
     sim.get_config().propagation.navigation.min_mask_tolerance =
-        25.f * detray::unit<float>::um;
+        25.f * traccc::unit<float>::um;
     sim.get_config().propagation.navigation.search_window = search_window;
 
     sim.run();
@@ -190,8 +190,8 @@ INSTANTIATE_TEST_SUITE_P(
         "wire_2_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{2.f, 2.f},
         std::array<scalar, 2u>{-1.f, 1.f},
-        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                               detray::constant<scalar>::pi},
+        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                               traccc::constant<scalar>::pi},
         detray::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
@@ -201,8 +201,8 @@ INSTANTIATE_TEST_SUITE_P(
         "wire_10_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
-        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                               detray::constant<scalar>::pi},
+        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                               traccc::constant<scalar>::pi},
         detray::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
@@ -213,8 +213,8 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f},
         std::array<scalar, 2u>{-0.4f, 0.4f},
-        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                               detray::constant<scalar>::pi},
+        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                               traccc::constant<scalar>::pi},
         detray::muon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -223,8 +223,8 @@ INSTANTIATE_TEST_SUITE_P(
         "wire_2_GeV_anti_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{2.f, 2.f},
         std::array<scalar, 2u>{-1.f, 1.f},
-        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                               detray::constant<scalar>::pi},
+        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                               traccc::constant<scalar>::pi},
         detray::antimuon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -233,6 +233,6 @@ INSTANTIATE_TEST_SUITE_P(
         "wire_2_GeV_random_charge", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{2.f, 2.f},
         std::array<scalar, 2u>{-1.f, 1.f},
-        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                               detray::constant<scalar>::pi},
+        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                               traccc::constant<scalar>::pi},
         detray::antimuon<scalar>(), 100, 100, true)));

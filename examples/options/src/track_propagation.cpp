@@ -8,10 +8,8 @@
 // Project include(s).
 #include "traccc/options/track_propagation.hpp"
 
+#include "traccc/definitions/common.hpp"
 #include "traccc/examples/utils/printable.hpp"
-
-// Detray include(s).
-#include <detray/definitions/units.hpp>
 
 // System include(s).
 #include <format>
@@ -63,10 +61,10 @@ track_propagation::track_propagation()
 
 void track_propagation::read(const po::variables_map &) {
 
-    m_config.stepping.step_constraint *= detray::unit<float>::mm;
-    m_config.navigation.overstep_tolerance *= detray::unit<float>::um;
-    m_config.navigation.min_mask_tolerance *= detray::unit<float>::mm;
-    m_config.navigation.max_mask_tolerance *= detray::unit<float>::mm;
+    m_config.stepping.step_constraint *= traccc::unit<float>::mm;
+    m_config.navigation.overstep_tolerance *= traccc::unit<float>::um;
+    m_config.navigation.min_mask_tolerance *= traccc::unit<float>::mm;
+    m_config.navigation.max_mask_tolerance *= traccc::unit<float>::mm;
     m_config.navigation.search_window = m_search_window;
 }
 
@@ -81,24 +79,24 @@ std::unique_ptr<configuration_printable> track_propagation::as_printable()
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Min mask tolerance",
         std::to_string(m_config.navigation.min_mask_tolerance /
-                       detray::unit<float>::mm) +
+                       traccc::unit<float>::mm) +
             " mm"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Max mask tolerance",
         std::to_string(m_config.navigation.max_mask_tolerance /
-                       detray::unit<float>::mm) +
+                       traccc::unit<float>::mm) +
             " mm"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Mask tolerance scalar",
         std::to_string(m_config.navigation.mask_tolerance_scalor)));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Path tolerance", std::to_string(m_config.navigation.path_tolerance /
-                                         detray::unit<float>::um) +
+                                         traccc::unit<float>::um) +
                               " um"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Overstep tolerance",
         std::to_string(m_config.navigation.overstep_tolerance /
-                       detray::unit<float>::um) +
+                       traccc::unit<float>::um) +
             " um"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Search window",
@@ -109,26 +107,26 @@ std::unique_ptr<configuration_printable> track_propagation::as_printable()
 
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Min step size", std::to_string(m_config.stepping.min_stepsize /
-                                        detray::unit<float>::mm) +
+                                        traccc::unit<float>::mm) +
                              " mm"));
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Runge-Kutta tolerance", std::to_string(m_config.stepping.rk_error_tol /
-                                                detray::unit<float>::mm) +
+                                                traccc::unit<float>::mm) +
                                      " mm"));
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Max step updates", std::to_string(m_config.stepping.max_rk_updates)));
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Step size constraint",
         std::to_string(m_config.stepping.step_constraint /
-                       detray::unit<float>::mm) +
+                       traccc::unit<float>::mm) +
             " mm"));
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Path limit",
-        std::to_string(m_config.stepping.path_limit / detray::unit<float>::m) +
+        std::to_string(m_config.stepping.path_limit / traccc::unit<float>::m) +
             " m"));
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Min step size", std::to_string(m_config.stepping.min_stepsize /
-                                        detray::unit<float>::mm) +
+                                        traccc::unit<float>::mm) +
                              " mm"));
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Enable Bethe energy loss",
