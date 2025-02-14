@@ -16,6 +16,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 
@@ -28,6 +29,7 @@ namespace traccc::device {
 ///
 /// @param[in] globalIndex          The index of the current thread
 /// @param[in] config               Seedfinder configuration
+/// @param[in] spacepoints          All spacepoints in the event
 /// @param[in] sp_view              The spacepoint grid to count triplets on
 /// @param[in] dc_view              Collection of doublet counters
 /// @param[in] mid_bot_doublet_view Collection storing the midBot doublets
@@ -40,7 +42,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void count_triplets(
     global_index_t globalIndex, const seedfinder_config& config,
-    const sp_grid_const_view& sp_view,
+    const edm::spacepoint_collection::const_view& spacepoints,
+    const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const doublet_counter_collection_types::const_view& dc_view,
     const device_doublet_collection_types::const_view& mid_bot_doublet_view,
     const device_doublet_collection_types::const_view& mid_top_doublet_view,

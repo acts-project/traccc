@@ -110,11 +110,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Seeding algorithm
-    traccc::seeding_algorithm sa(
+    traccc::host::seeding_algorithm sa(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, host_mr, logger().clone("SeedingAlg"));
-    traccc::track_params_estimation tp(host_mr,
-                                       logger().clone("TrackParEstAlg"));
+    traccc::host::track_params_estimation tp(host_mr,
+                                             logger().clone("TrackParEstAlg"));
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);
@@ -143,40 +143,36 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the hits from the relevant event file
-        traccc::spacepoint_collection_types::host spacepoints_per_event{
+        traccc::measurement_collection_types::host measurements_per_event{
             &host_mr};
+        traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
         traccc::io::read_spacepoints(
-            spacepoints_per_event, event, input_opts.directory,
+            spacepoints_per_event, measurements_per_event, event,
+            input_opts.directory,
             (input_opts.use_acts_geom_source ? &detector : nullptr),
             input_opts.format);
+        n_measurements += measurements_per_event.size();
         n_spacepoints += spacepoints_per_event.size();
 
         /*----------------
              Seeding
           ---------------*/
 
-        auto seeds = sa(spacepoints_per_event);
+        auto seeds = sa(vecmem::get_data(spacepoints_per_event));
 
         /*----------------------------
            Track Parameter Estimation
           ----------------------------*/
 
-        auto params = tp(spacepoints_per_event, seeds,
-                         {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+        auto params =
+            tp(vecmem::get_data(measurements_per_event),
+               vecmem::get_data(spacepoints_per_event), vecmem::get_data(seeds),
+               {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
 
         // Run CKF and KF if we are using a detray geometry
         traccc::track_candidate_container_types::host track_candidates;
         traccc::track_state_container_types::host track_states;
         traccc::track_state_container_types::host track_states_ar;
-
-        // Read measurements
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
-        traccc::io::read_measurements(
-            measurements_per_event, event, input_opts.directory,
-            (input_opts.use_acts_geom_source ? &detector : nullptr),
-            input_opts.format);
-        n_measurements += measurements_per_event.size();
 
         /*------------------------
            Track Finding with CKF
@@ -221,9 +217,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                         input_opts.use_acts_geom_source,
                                         &detector, input_opts.format, false);
 
-            sd_performance_writer.write(vecmem::get_data(seeds),
-                                        vecmem::get_data(spacepoints_per_event),
-                                        evt_data);
+            sd_performance_writer.write(
+                vecmem::get_data(seeds),
+                vecmem::get_data(spacepoints_per_event),
+                vecmem::get_data(measurements_per_event), evt_data);
 
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_data);

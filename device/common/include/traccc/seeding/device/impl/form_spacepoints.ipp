@@ -20,7 +20,7 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     const global_index_t globalIndex, typename detector_t::view_type det_view,
     const measurement_collection_types::const_view& measurements_view,
     unsigned int measurement_count,
-    spacepoint_collection_types::view spacepoints_view) {
+    edm::spacepoint_collection::view spacepoints_view) {
 
     // Check if anything needs to be done
     if (globalIndex >= measurement_count) {
@@ -34,13 +34,17 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     const measurement_collection_types::const_device measurements(
         measurements_view);
     assert(measurements.size() == measurement_count);
-    spacepoint_collection_types::device spacepoints(spacepoints_view);
+    edm::spacepoint_collection::device spacepoints(spacepoints_view);
 
     const auto& meas = measurements.at(globalIndex);
 
     // Fill the spacepoint using the common function.
     if (details::is_valid_measurement(meas)) {
-        spacepoints.push_back(details::create_spacepoint(det, meas));
+        const edm::spacepoint_collection::device::size_type i =
+            spacepoints.push_back_default();
+        auto sp = spacepoints.at(i);
+        traccc::details::fill_pixel_spacepoint(sp, det, meas);
+        sp.measurement_index() = globalIndex;
     }
 }
 

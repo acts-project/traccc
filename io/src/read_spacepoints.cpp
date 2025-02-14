@@ -17,7 +17,8 @@
 
 namespace traccc::io {
 
-void read_spacepoints(spacepoint_collection_types::host& spacepoints,
+void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
+                      measurement_collection_types::host& measurements,
                       std::size_t event, std::string_view directory,
                       const traccc::default_detector::host* detector,
                       data_format format) {
@@ -25,7 +26,7 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
     switch (format) {
         case data_format::csv: {
             read_spacepoints(
-                spacepoints,
+                spacepoints, measurements,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-hits.csv")))
@@ -42,11 +43,17 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
             break;
         }
         case data_format::binary: {
-            details::read_binary_collection<spacepoint_collection_types::host>(
+            details::read_binary_soa(
                 spacepoints,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-hits.dat")))
+                                      .native()));
+            details::read_binary_collection<measurement_collection_types::host>(
+                measurements,
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.dat")))
                                       .native()));
             break;
         }
@@ -55,7 +62,8 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
     }
 }
 
-void read_spacepoints(spacepoint_collection_types::host& spacepoints,
+void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
+                      measurement_collection_types::host& measurements,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
@@ -64,9 +72,9 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
 
     switch (format) {
         case data_format::csv:
-            return csv::read_spacepoints(spacepoints, hit_filename,
-                                         meas_filename, meas_hit_map_filename,
-                                         detector);
+            return csv::read_spacepoints(spacepoints, measurements,
+                                         hit_filename, meas_filename,
+                                         meas_hit_map_filename, detector);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

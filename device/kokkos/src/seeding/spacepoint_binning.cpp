@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
-#include "traccc/kokkos/seeding/spacepoint_binning.hpp"
+#include "traccc/kokkos/seeding/details/spacepoint_binning.hpp"
 
 #include "traccc/kokkos/utils/definitions.hpp"
 
@@ -17,7 +17,7 @@
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-namespace traccc::kokkos {
+namespace traccc::kokkos::details {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
@@ -30,7 +30,7 @@ spacepoint_binning::spacepoint_binning(
 }
 
 spacepoint_binning::output_type spacepoint_binning::operator()(
-    const spacepoint_collection_types::const_view& spacepoints_view) const {
+    const edm::spacepoint_collection::const_view& spacepoints_view) const {
 
     // Get the spacepoint sizes from the view
     auto sp_size = m_copy->get_size(spacepoints_view);
@@ -75,13 +75,13 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     (*m_copy)(grid_capacities_buff, grid_capacities_host)->wait();
 
     // Create the grid buffer.
-    sp_grid_buffer grid_buffer(
+    traccc::details::spacepoint_grid_types::buffer grid_buffer(
         m_axes.first, m_axes.second,
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable);
     m_copy->setup(grid_buffer._buffer)->wait();
-    sp_grid_view grid_view = grid_buffer;
+    traccc::details::spacepoint_grid_types::view grid_view = grid_buffer;
 
     // Populate the grid.
     Kokkos::parallel_for(
@@ -102,4 +102,4 @@ spacepoint_binning::output_type spacepoint_binning::operator()(
     return grid_buffer;
 }
 
-}  // namespace traccc::kokkos
+}  // namespace traccc::kokkos::details

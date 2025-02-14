@@ -15,33 +15,33 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void populate_grid(
     const global_index_t globalIndex, const seedfinder_config& config,
-    const spacepoint_collection_types::const_view& spacepoints_view,
-    sp_grid_view grid_view) {
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    details::spacepoint_grid_types::view grid_view) {
 
     // Check if anything needs to be done.
-    const spacepoint_collection_types::const_device spacepoints(
+    const edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
     if (globalIndex >= spacepoints.size()) {
         return;
     }
-    const spacepoint sp = spacepoints.at(globalIndex);
+    const auto sp = spacepoints.at(globalIndex);
 
     /// Check out if the spacepoint can be used for seeding.
-    if (is_valid_sp(config, sp) != detray::detail::invalid_value<size_t>()) {
+    if (is_valid_sp(config, sp)) {
 
         // Set up the spacepoint grid object(s).
-        sp_grid_device grid(grid_view);
-        const sp_grid_device::axis_p0_type& phi_axis = grid.axis_p0();
-        const sp_grid_device::axis_p1_type& z_axis = grid.axis_p1();
+        details::spacepoint_grid_types::device grid(grid_view);
+        const details::spacepoint_grid_types::device::axis_p0_type& phi_axis =
+            grid.axis_p0();
+        const details::spacepoint_grid_types::device::axis_p1_type& z_axis =
+            grid.axis_p1();
 
         // Find the grid bin that the spacepoint belongs to.
-        const internal_spacepoint<spacepoint> isp(sp, globalIndex,
-                                                  config.beamPos);
         const unsigned int bin_index =
-            phi_axis.bin(isp.phi()) + phi_axis.bins() * z_axis.bin(isp.z());
+            phi_axis.bin(sp.phi()) + phi_axis.bins() * z_axis.bin(sp.z());
 
-        // Add the spacepoint to the grid.
-        grid.bin(bin_index).push_back(std::move(isp));
+        // Add the spacepoint's index to the grid.
+        grid.bin(bin_index).push_back(globalIndex);
     }
 }
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,7 +14,7 @@
 #include <set>
 #include <traccc/edm/measurement.hpp>
 #include <traccc/edm/nseed.hpp>
-#include <traccc/edm/spacepoint.hpp>
+#include <traccc/edm/spacepoint_collection.hpp>
 #include <traccc/efficiency/track_filter.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
 #include <traccc/utils/event_data.hpp>
@@ -34,6 +34,7 @@ class nseed_performance_writer {
     void initialize();
     void finalize();
 
+    /*
     template <typename SeedIt, typename SpIt>
     void register_event(std::size_t ev, const SeedIt sb, const SeedIt se,
                         const SpIt pb, const event_data& em) {
@@ -93,6 +94,7 @@ class nseed_performance_writer {
                             pT);
         }
     }
+    */
 
     std::string generate_report_str() const;
 

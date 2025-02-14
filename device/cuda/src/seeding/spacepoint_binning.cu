@@ -9,7 +9,7 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
-#include "traccc/cuda/seeding/spacepoint_binning.hpp"
+#include "traccc/cuda/seeding/details/spacepoint_binning.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/count_grid_capacities.hpp"
@@ -24,9 +24,10 @@ namespace kernels {
 
 /// CUDA kernel for running @c traccc::device::count_grid_capacities
 __global__ void count_grid_capacities(
-    seedfinder_config config, sp_grid::axis_p0_type phi_axis,
-    sp_grid::axis_p1_type z_axis,
-    spacepoint_collection_types::const_view spacepoints,
+    seedfinder_config config,
+    traccc::details::spacepoint_grid_types::host::axis_p0_type phi_axis,
+    traccc::details::spacepoint_grid_types::host::axis_p1_type z_axis,
+    edm::spacepoint_collection::const_view spacepoints,
     vecmem::data::vector_view<unsigned int> grid_capacities) {
 
     device::count_grid_capacities(details::global_index1(), config, phi_axis,
@@ -36,13 +37,15 @@ __global__ void count_grid_capacities(
 /// CUDA kernel for running @c traccc::device::populate_grid
 __global__ void populate_grid(
     seedfinder_config config,
-    spacepoint_collection_types::const_view spacepoints, sp_grid_view grid) {
+    edm::spacepoint_collection::const_view spacepoints,
+    traccc::details::spacepoint_grid_types::view grid) {
 
     device::populate_grid(details::global_index1(), config, spacepoints, grid);
 }
 
 }  // namespace kernels
 
+namespace details {
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
@@ -55,8 +58,8 @@ spacepoint_binning::spacepoint_binning(
       m_stream(str),
       m_warp_size(details::get_warp_size(str.device())) {}
 
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_collection_types::const_view& spacepoints_view) const {
+traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
+    const edm::spacepoint_collection::const_view& spacepoints_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -94,7 +97,7 @@ sp_grid_buffer spacepoint_binning::operator()(
     m_copy(grid_capacities_buff, grid_capacities_host)->wait();
 
     // Create the grid buffer.
-    sp_grid_buffer grid_buffer(
+    traccc::details::spacepoint_grid_types::buffer grid_buffer(
         m_axes.first, m_axes.second,
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
@@ -110,4 +113,5 @@ sp_grid_buffer spacepoint_binning::operator()(
     return grid_buffer;
 }
 
+}  // namespace details
 }  // namespace traccc::cuda

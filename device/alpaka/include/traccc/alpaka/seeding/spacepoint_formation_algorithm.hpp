@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -29,7 +29,7 @@ namespace traccc::alpaka {
 ///
 template <typename detector_t>
 class spacepoint_formation_algorithm
-    : public algorithm<spacepoint_collection_types::buffer(
+    : public algorithm<edm::spacepoint_collection::buffer(
           const typename detector_t::view_type&,
           const measurement_collection_types::const_view&)>,
       public messaging {
@@ -51,7 +51,7 @@ class spacepoint_formation_algorithm
     /// @return A spacepoint container, with one spacepoint for every
     ///         measurement
     ///
-    spacepoint_collection_types::buffer operator()(
+    edm::spacepoint_collection::buffer operator()(
         const typename detector_t::view_type& det_view,
         const measurement_collection_types::const_view& measurements_view)
         const override;
