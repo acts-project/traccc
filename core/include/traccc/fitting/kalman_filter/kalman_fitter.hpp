@@ -21,12 +21,11 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/actors/pointwise_material_interactor.hpp>
+#include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
+
+// vecmem include(s)
+#include <vecmem/containers/device_vector.hpp>
 
 // System include(s).
 #include <limits>
@@ -47,10 +46,6 @@ class kalman_fitter {
     // scalar type
     using scalar_type = detray::dscalar<algebra_type>;
 
-    // vector type
-    template <typename T>
-    using vector_type = typename detector_type::template vector_type<T>;
-
     /// Configuration type
     using config_type = fitting_config;
 
@@ -61,16 +56,16 @@ class kalman_fitter {
     using aborter = detray::pathlimit_aborter<scalar_type>;
     using transporter = detray::parameter_transporter<algebra_type>;
     using interactor = detray::pointwise_material_interactor<algebra_type>;
-    using fit_actor = traccc::kalman_actor<algebra_type, vector_type>;
+    using fit_actor = traccc::kalman_actor<algebra_type>;
     using resetter = detray::parameter_resetter<algebra_type>;
 
     using actor_chain_type =
-        detray::actor_chain<detray::dtuple, aborter, transporter, interactor,
-                            fit_actor, resetter, kalman_step_aborter>;
+        detray::actor_chain<aborter, transporter, interactor, fit_actor,
+                            resetter, kalman_step_aborter>;
 
     using backward_actor_chain_type =
-        detray::actor_chain<detray::dtuple, aborter, transporter, fit_actor,
-                            interactor, resetter, kalman_step_aborter>;
+        detray::actor_chain<aborter, transporter, fit_actor, interactor,
+                            resetter, kalman_step_aborter>;
 
     // Propagator type
     using propagator_type =
@@ -94,14 +89,18 @@ class kalman_fitter {
         ///
         /// @param track_states the vector of track states
         TRACCC_HOST_DEVICE
-        state(vector_type<track_state<algebra_type>>&& track_states)
-            : m_fit_actor_state(std::move(track_states)) {}
+        explicit state(
+            vecmem::data::vector_view<track_state<algebra_type>> track_states)
+            : m_fit_actor_state(
+                  vecmem::device_vector<track_state<algebra_type>>(
+                      track_states)) {}
 
         /// State constructor
         ///
         /// @param track_states the vector of track states
         TRACCC_HOST_DEVICE
-        state(const vector_type<track_state<algebra_type>>& track_states)
+        explicit state(const vecmem::device_vector<track_state<algebra_type>>&
+                           track_states)
             : m_fit_actor_state(track_states) {}
 
         /// @return the actor chain state
@@ -260,7 +259,7 @@ class kalman_fitter {
 
         } else {
             // Run the Rauch–Tung–Striebel (RTS) smoother
-            for (typename vector_type<
+            for (typename vecmem::device_vector<
                      track_state<algebra_type>>::reverse_iterator it =
                      track_states.rbegin() + 1;
                  it != track_states.rend(); ++it) {

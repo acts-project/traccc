@@ -19,6 +19,9 @@
 #include "traccc/plugins/algebra/vecmem_definitions.hpp"
 #endif
 
+// Detray include(s)
+#include <detray/definitions/algebra.hpp>
+
 // System include(s)
 #include <cstdint>
 
