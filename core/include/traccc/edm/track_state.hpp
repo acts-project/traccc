@@ -25,6 +25,9 @@ template <typename algebra_t>
 struct fitting_result {
     using scalar_type = detray::dscalar<algebra_t>;
 
+    /// Does fitting succeed
+    bool is_success = false;
+
     /// Fitted track parameter
     detray::bound_track_parameters<algebra_t> fit_params;
 
@@ -206,6 +209,7 @@ struct track_state {
 
     public:
     bool is_hole{true};
+    bool is_smoothed{false};
 
     private:
     detray::geometry::barcode m_surface_link;
@@ -227,5 +231,20 @@ using track_state_collection_types =
 using track_state_container_types =
     container_types<fitting_result<default_algebra>,
                     track_state<default_algebra>>;
+
+inline std::size_t count_fitted_tracks(
+    const track_state_container_types::host& track_states) {
+
+    const std::size_t n_tracks = track_states.size();
+    std::size_t n_fitted_tracks = 0u;
+
+    for (std::size_t i = 0; i < n_tracks; i++) {
+        if (track_states.at(i).header.is_success) {
+            n_fitted_tracks++;
+        }
+    }
+
+    return n_fitted_tracks;
+}
 
 }  // namespace traccc

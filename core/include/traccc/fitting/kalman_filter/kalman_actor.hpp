@@ -135,6 +135,9 @@ struct kalman_actor : detray::actor {
             if (!actor_state.backward_mode) {
                 trk_state.is_hole = false;
             }
+            else {
+                trk_state.is_smoothed = true;
+            }
 
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
