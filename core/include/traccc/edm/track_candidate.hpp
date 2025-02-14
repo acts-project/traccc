@@ -20,6 +20,6 @@ using track_candidate = measurement;
 using track_candidate_collection_types = collection_types<track_candidate>;
 /// Declare a track candidates container type
 using track_candidate_container_types =
-    container_types<bound_track_parameters, track_candidate>;
+    container_types<bound_track_parameters<>, track_candidate>;
 
 }  // namespace traccc

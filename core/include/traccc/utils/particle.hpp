@@ -77,7 +77,7 @@ template <typename scalar_t>
 TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t>
 correct_particle_hypothesis(
     const detray::pdg_particle<scalar_t>& ptc_hypothesis,
-    const bound_track_parameters& params) {
+    const bound_track_parameters<>& params) {
 
     if (ptc_hypothesis.charge() * params.qop() > 0.f) {
         return ptc_hypothesis;
@@ -90,7 +90,7 @@ template <typename scalar_t>
 TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t>
 correct_particle_hypothesis(
     const detray::pdg_particle<scalar_t>& ptc_hypothesis,
-    const free_track_parameters& params) {
+    const free_track_parameters<>& params) {
 
     if (ptc_hypothesis.charge() * params.qop() > 0.f) {
         return ptc_hypothesis;

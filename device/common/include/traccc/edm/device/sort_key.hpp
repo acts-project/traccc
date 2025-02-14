@@ -16,8 +16,9 @@ namespace traccc::device {
 
 using sort_key = traccc::scalar;
 
-TRACCC_HOST_DEVICE
-inline sort_key get_sort_key(const bound_track_parameters& params) {
+template <detray::concepts::algebra algebra_t>
+TRACCC_HOST_DEVICE inline sort_key get_sort_key(
+    const bound_track_parameters<algebra_t>& params) {
     // key = |theta - pi/2|
     return math::fabs(params.theta() - constant<traccc::scalar>::pi_2);
 }

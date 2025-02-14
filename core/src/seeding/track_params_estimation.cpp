@@ -25,7 +25,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
     output_type result(num_seeds, &m_mr.get());
 
     for (seed_collection_types::host::size_type i = 0; i < num_seeds; ++i) {
-        bound_track_parameters track_params;
+        bound_track_parameters<> track_params;
         track_params.set_vector(
             seed_to_bound_vector(spacepoints, seeds[i], bfield));
 
