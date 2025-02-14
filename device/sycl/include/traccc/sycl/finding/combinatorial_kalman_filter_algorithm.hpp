@@ -17,6 +17,7 @@
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // Detray include(s).
@@ -43,7 +44,8 @@ class combinatorial_kalman_filter_algorithm
           const detray::bfield::const_field_t<
               telescope_detector::device::scalar_type>::view_t&,
           const measurement_collection_types::const_view&,
-          const bound_track_parameters_collection_types::const_view&)> {
+          const bound_track_parameters_collection_types::const_view&)>,
+      public logging_mixin {
 
     public:
     /// Configuration type
@@ -54,7 +56,8 @@ class combinatorial_kalman_filter_algorithm
     /// Constructor with the algorithm's configuration
     explicit combinatorial_kalman_filter_algorithm(
         const config_type& config, const traccc::memory_resource& mr,
-        vecmem::copy& copy, queue_wrapper queue);
+        vecmem::copy& copy, queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
     ///
@@ -101,7 +104,6 @@ class combinatorial_kalman_filter_algorithm
     std::reference_wrapper<vecmem::copy> m_copy;
     /// Queue wrapper
     mutable queue_wrapper m_queue;
-
 };  // class combinatorial_kalman_filter_algorithm
 
 }  // namespace traccc::sycl

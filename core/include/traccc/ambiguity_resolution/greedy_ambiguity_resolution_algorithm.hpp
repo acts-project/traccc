@@ -25,6 +25,8 @@
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 
 // Greedy ambiguity resolution adapted from ACTS code
 
@@ -45,7 +47,8 @@ namespace traccc {
 ///  4) Back to square 1.
 class greedy_ambiguity_resolution_algorithm
     : public algorithm<track_state_container_types::host(
-          const typename track_state_container_types::host&)> {
+          const typename track_state_container_types::host&)>,
+      public logging_mixin {
 
     public:
     struct config_t {
@@ -110,8 +113,10 @@ class greedy_ambiguity_resolution_algorithm
     /// @param cfg  Configuration object
     // greedy_ambiguity_resolution_algorithm(const config_type& cfg) :
     // _config(cfg) {}
-    greedy_ambiguity_resolution_algorithm(const config_t cfg = {})
-        : _config{cfg} {}
+    greedy_ambiguity_resolution_algorithm(
+        const config_t cfg,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
+        : logging_mixin(std::move(logger)), _config{cfg} {}
 
     /// Run the algorithm
     ///

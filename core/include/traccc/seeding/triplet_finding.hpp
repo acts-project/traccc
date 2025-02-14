@@ -12,6 +12,7 @@
 #include "traccc/seeding/detail/triplet.hpp"
 #include "traccc/seeding/triplet_finding_helper.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 
 namespace traccc {
 
@@ -20,12 +21,16 @@ namespace traccc {
 struct triplet_finding : public algorithm<triplet_collection_types::host(
                              const sp_grid&, const doublet&, const lin_circle&,
                              const doublet_collection_types::host&,
-                             const lin_circle_collection_types::host&)> {
+                             const lin_circle_collection_types::host&)>,
+                         public logging_mixin {
     /// Constructor for the triplet finding
     ///
     /// @param seedfinder_config is the configuration parameters
     /// @param isp_container is the internal spacepoint container
-    triplet_finding(const seedfinder_config& config) : m_config(config) {}
+    triplet_finding(
+        const seedfinder_config& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
+        : logging_mixin(std::move(logger)), m_config(config) {}
 
     /// Callable operator for triplet finding per middle-bottom doublet
     ///

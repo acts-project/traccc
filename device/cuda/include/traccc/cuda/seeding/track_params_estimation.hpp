@@ -13,6 +13,7 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/logging_mixin.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
@@ -29,7 +30,8 @@ struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const spacepoint_collection_types::const_view&,
           const seed_collection_types::const_view&, const vector3&,
-          const std::array<traccc::scalar, traccc::e_bound_size>&)> {
+          const std::array<traccc::scalar, traccc::e_bound_size>&)>,
+      public logging_mixin {
 
     public:
     /// Constructor for track_params_estimation
@@ -38,8 +40,9 @@ struct track_params_estimation
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
-    track_params_estimation(const traccc::memory_resource& mr,
-                            vecmem::copy& copy, stream& str);
+    track_params_estimation(
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for track_params_estimation
     ///

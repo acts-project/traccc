@@ -44,7 +44,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts,
-            const traccc::opts::accelerator& accelerator_opts) {
+            const traccc::opts::accelerator& accelerator_opts,
+            std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -57,10 +59,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.material_file,
                               detector_opts.grid_file);
 
-    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
-                                 {seeding_opts.seedfinder},
-                                 seeding_opts.seedfilter, host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    traccc::seeding_algorithm sa(
+        seeding_opts.seedfinder, {seeding_opts.seedfinder},
+        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::track_params_estimation tp(host_mr,
+                                       logger().clone("HostTrackParEstAlg"));
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -69,7 +72,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // KOKKOS Spacepoint Binning
     traccc::kokkos::spacepoint_binning m_spacepoint_binning(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder}, mr);
+        seeding_opts.seedfinder, {seeding_opts.seedfinder}, mr,
+        logger().clone("KokkosBinningAlg"));
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -159,6 +163,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleSeqKokkos", traccc::Logging::Level::INFO);
 
     // Initialise both Kokkos.
     Kokkos::initialize(argc, argv);
@@ -177,12 +183,13 @@ int main(int argc, char* argv[]) {
         {detector_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, fitting_opts, performance_opts, accelerator_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    const int ret =
-        seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
-                input_opts, detector_opts, performance_opts, accelerator_opts);
+    const int ret = seq_run(
+        seeding_opts, finding_opts, propagation_opts, fitting_opts, input_opts,
+        detector_opts, performance_opts, accelerator_opts, logger->clone());
 
     // Finalise Kokkos.
     Kokkos::finalize();

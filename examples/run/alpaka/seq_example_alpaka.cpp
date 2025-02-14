@@ -51,7 +51,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
             const traccc::opts::clusterization& clusterization_opts,
             const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
-            const traccc::opts::accelerator& accelerator_opts) {
+            const traccc::opts::accelerator& accelerator_opts,
+            std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Output stats
     uint64_t n_cells = 0;
@@ -113,21 +115,27 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::alpaka::spacepoint_formation_algorithm<
             traccc::default_detector::device>;
 
-    traccc::host::clusterization_algorithm ca(host_mr);
-    host_spacepoint_formation_algorithm sf(host_mr);
-    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
-                                 {seeding_opts.seedfinder},
-                                 seeding_opts.seedfilter, host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    traccc::host::clusterization_algorithm ca(
+        host_mr, logger().clone("HostClusteringAlg"));
+    host_spacepoint_formation_algorithm sf(
+        host_mr, logger().clone("HostSpFormationAlg"));
+    traccc::seeding_algorithm sa(
+        seeding_opts.seedfinder, {seeding_opts.seedfinder},
+        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::track_params_estimation tp(host_mr,
+                                       logger().clone("HostTrackParEstAlg"));
 
-    traccc::alpaka::clusterization_algorithm ca_alpaka(mr, copy,
-                                                       clusterization_opts);
-    traccc::alpaka::measurement_sorting_algorithm ms_alpaka(copy);
-    device_spacepoint_formation_algorithm sf_alpaka(mr, copy);
+    traccc::alpaka::clusterization_algorithm ca_alpaka(
+        mr, copy, clusterization_opts, logger().clone("AlpakaClusteringAlg"));
+    traccc::alpaka::measurement_sorting_algorithm ms_alpaka(
+        copy, logger().clone("AlpakaMeasSortingAlg"));
+    device_spacepoint_formation_algorithm sf_alpaka(
+        mr, copy, logger().clone("AlpakaSpFormationAlg"));
     traccc::alpaka::seeding_algorithm sa_alpaka(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, mr, copy);
-    traccc::alpaka::track_params_estimation tp_alpaka(mr, copy);
+        seeding_opts.seedfilter, mr, copy, logger().clone("AlpakaSeedingAlg"));
+    traccc::alpaka::track_params_estimation tp_alpaka(
+        mr, copy, logger().clone("AlpakaTrackParEstAlg"));
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -165,10 +173,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                              elapsedTimes);
                 // Read the cells from the relevant event file into host memory.
                 static constexpr bool DEDUPLICATE = true;
-                traccc::io::read_cells(cells_per_event, event,
-                                       input_opts.directory, &host_det_descr,
-                                       input_opts.format, DEDUPLICATE,
-                                       input_opts.use_acts_geom_source);
+                traccc::io::read_cells(
+                    cells_per_event, event, input_opts.directory,
+                    logger().clone(), &host_det_descr, input_opts.format,
+                    DEDUPLICATE, input_opts.use_acts_geom_source);
             }  // stop measuring file reading timer
 
             n_cells += cells_per_event.size();
@@ -329,6 +337,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleSeqAlpaka", traccc::Logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -342,9 +352,10 @@ int main(int argc, char* argv[]) {
         {detector_opts, input_opts, clusterization_opts, seeding_opts,
          performance_opts, accelerator_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(detector_opts, input_opts, clusterization_opts, seeding_opts,
-                   performance_opts, accelerator_opts);
+                   performance_opts, accelerator_opts, logger->clone());
 }
