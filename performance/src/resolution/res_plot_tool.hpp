@@ -57,8 +57,9 @@ class res_plot_tool {
     /// @param cache the cache for resolution plots
     /// @param truth_param truth track parameter
     /// @param fit_param fitted track parameter
-    void fill(res_plot_cache& cache, const bound_track_parameters& truth_param,
-              const bound_track_parameters& fit_param,
+    void fill(res_plot_cache& cache,
+              const bound_track_parameters<>& truth_param,
+              const bound_track_parameters<>& fit_param,
               const particle& ptc) const;
 
     /// @brief write the resolution plots into ROOT

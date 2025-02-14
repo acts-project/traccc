@@ -58,6 +58,9 @@ class fitting_performance_writer {
                const fitting_result<traccc::default_algebra>& fit_res,
                const detector_t& det, event_data& evt_data) {
 
+        static_assert(std::same_as<typename detector_t::algebra_type,
+                                   traccc::default_algebra>);
+
         std::map<measurement, std::map<particle, std::size_t>> meas_to_ptc_map;
         std::map<measurement, std::pair<point3, point3>> meas_to_param_map;
 
@@ -91,7 +94,7 @@ class fitting_performance_writer {
             sf.global_to_bound(ctx, global_pos, vector::normalize(global_mom));
 
         // Return value
-        bound_track_parameters truth_param{};
+        bound_track_parameters<> truth_param{};
         truth_param.set_bound_local(truth_bound);
         truth_param.set_phi(vector::phi(global_mom));
         truth_param.set_theta(vector::theta(global_mom));
@@ -111,8 +114,8 @@ class fitting_performance_writer {
 
     private:
     /// Non-templated part of the @c write(...) function
-    void write_res(const bound_track_parameters& truth_param,
-                   const bound_track_parameters& fit_param,
+    void write_res(const bound_track_parameters<>& truth_param,
+                   const bound_track_parameters<>& fit_param,
                    const particle& ptc);
 
     /// Non-templated part of the @c write(...) function

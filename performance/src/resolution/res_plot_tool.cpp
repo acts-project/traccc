@@ -95,8 +95,8 @@ void res_plot_tool::book(res_plot_cache& cache) const {
 }
 
 void res_plot_tool::fill(res_plot_cache& cache,
-                         const bound_track_parameters& truth_param,
-                         const bound_track_parameters& fit_param,
+                         const bound_track_parameters<>& truth_param,
+                         const bound_track_parameters<>& fit_param,
                          const particle& ptc) const {
 
     // Find index of eta and pT for resolution histogram

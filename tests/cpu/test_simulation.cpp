@@ -43,7 +43,7 @@ TEST(traccc_simulation, simulation) {
     const detray::mask<detray::rectangle2D, traccc::default_algebra> re{
         0u, 10.f * traccc::unit<scalar>::mm, 10.f * traccc::unit<scalar>::mm};
 
-    detray::bound_track_parameters<traccc::default_algebra> bound_params{};
+    traccc::bound_track_parameters<traccc::default_algebra> bound_params{};
     bound_params.set_bound_local({1.f, 2.f});
 
     measurement_smearer<traccc::default_algebra> smearer(0.f, 0.f);
@@ -87,7 +87,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
         detray::detail::random_numbers<scalar,
                                        std::uniform_real_distribution<scalar>>;
     using generator_type =
-        detray::random_track_generator<traccc::free_track_parameters,
+        detray::random_track_generator<traccc::free_track_parameters<>,
                                        uniform_gen_t>;
     generator_type::configuration gen_cfg{};
     constexpr unsigned int n_tracks{2500u};
@@ -241,7 +241,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
 
     // Track generator
     using generator_type =
-        detray::uniform_track_generator<traccc::free_track_parameters>;
+        detray::uniform_track_generator<traccc::free_track_parameters<>>;
     generator_type::configuration gen_cfg{};
     gen_cfg.theta_steps(theta_steps);
     gen_cfg.phi_steps(phi_steps);

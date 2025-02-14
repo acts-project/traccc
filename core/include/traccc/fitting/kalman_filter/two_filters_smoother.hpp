@@ -35,7 +35,7 @@ struct two_filters_smoother {
     TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        bound_track_parameters& bound_params) const {
+        bound_track_parameters<algebra_t>& bound_params) const {
 
         using shape_type = typename mask_group_t::value_type::shape;
 
@@ -55,7 +55,7 @@ struct two_filters_smoother {
     template <size_type D, typename shape_t>
     TRACCC_HOST_DEVICE inline bool smoothe(
         track_state<algebra_t>& trk_state,
-        bound_track_parameters& bound_params) const {
+        bound_track_parameters<algebra_t>& bound_params) const {
 
         assert(trk_state.filtered().surface_link() ==
                bound_params.surface_link());
