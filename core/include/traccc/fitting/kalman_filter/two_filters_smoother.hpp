@@ -165,6 +165,7 @@ struct two_filters_smoother {
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(bound_params);
 
+        trk_state.is_smoothed = true;
         return true;
     }
 };
