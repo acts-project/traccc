@@ -27,8 +27,8 @@ struct gain_matrix_smoother {
     using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
-    using bound_vector_type = detray::bound_vector<algebra_t>;
-    using bound_matrix_type = detray::bound_matrix<algebra_t>;
+    using bound_vector_type = traccc::bound_vector<algebra_t>;
+    using bound_matrix_type = traccc::bound_matrix<algebra_t>;
 
     /// Gain matrix smoother operation
     ///

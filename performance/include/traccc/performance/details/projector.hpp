@@ -56,11 +56,11 @@ struct projector<traccc::seed> {
     }
 };
 
-template <>
-struct projector<traccc::bound_track_parameters> {
+template <detray::concepts::algebra algebra_t>
+struct projector<traccc::bound_track_parameters<algebra_t>> {
     static constexpr bool exists = true;
 
-    float operator()(const traccc::bound_track_parameters& i) {
+    float operator()(const traccc::bound_track_parameters<algebra_t>& i) {
         return static_cast<float>(i.phi());
     }
 };

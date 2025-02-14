@@ -15,19 +15,19 @@ namespace traccc::details {
 /// @c traccc::is_same_object specialisation for
 /// @c traccc::bound_track_parameters
 template <>
-class is_same_object<bound_track_parameters> {
+class is_same_object<bound_track_parameters<>> {
 
     public:
     /// Constructor with a reference object, and an allowed uncertainty
-    is_same_object(const bound_track_parameters& ref,
+    is_same_object(const bound_track_parameters<>& ref,
                    scalar unc = float_epsilon);
 
     /// Specialised implementation for @c traccc::bound_track_parameters
-    bool operator()(const bound_track_parameters& obj) const;
+    bool operator()(const bound_track_parameters<>& obj) const;
 
     private:
     /// The reference object
-    std::reference_wrapper<const bound_track_parameters> m_ref;
+    std::reference_wrapper<const bound_track_parameters<>> m_ref;
     /// The uncertainty
     scalar m_unc;
 

@@ -26,7 +26,7 @@ struct fitting_result {
     using scalar_type = detray::dscalar<algebra_t>;
 
     /// Fitted track parameter
-    detray::bound_track_parameters<algebra_t> fit_params;
+    traccc::bound_track_parameters<algebra_t> fit_params;
 
     /// Track quality
     traccc::track_quality trk_quality;
@@ -40,8 +40,8 @@ struct track_state {
     using size_type = detray::dsize_type<algebra_t>;
 
     using bound_track_parameters_type =
-        detray::bound_track_parameters<algebra_t>;
-    using bound_matrix = detray::bound_matrix<algebra_t>;
+        traccc::bound_track_parameters<algebra_t>;
+    using bound_matrix_type = traccc::bound_matrix<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
@@ -139,11 +139,11 @@ struct track_state {
 
     /// @return the non-const transport jacobian
     TRACCC_HOST_DEVICE
-    inline bound_matrix& jacobian() { return m_jacobian; }
+    inline bound_matrix_type& jacobian() { return m_jacobian; }
 
     /// @return the const transport jacobian
     TRACCC_HOST_DEVICE
-    inline const bound_matrix& jacobian() const { return m_jacobian; }
+    inline const bound_matrix_type& jacobian() const { return m_jacobian; }
 
     /// @return the non-const chi square of filtered parameter
     TRACCC_HOST_DEVICE
@@ -195,7 +195,7 @@ struct track_state {
     private:
     detray::geometry::barcode m_surface_link;
     measurement m_measurement;
-    bound_matrix m_jacobian = matrix::zero<bound_matrix>();
+    bound_matrix_type m_jacobian = matrix::zero<bound_matrix_type>();
     bound_track_parameters_type m_predicted;
     scalar_type m_filtered_chi2 = 0.f;
     bound_track_parameters_type m_filtered;

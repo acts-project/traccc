@@ -81,7 +81,7 @@ struct smearing_writer : detray::actor {
         void set_seed(const uint_fast64_t sd) { m_meas_smearer.set_seed(sd); }
 
         void write_particle(
-            const detray::free_track_parameters<algebra_type>& track,
+            const traccc::free_track_parameters<algebra_type>& track,
             const detray::pdg_particle<scalar_type>& ptc_type) {
             io::csv::particle particle;
             const auto pos = track.pos();
@@ -107,7 +107,7 @@ struct smearing_writer : detray::actor {
         template <typename mask_group_t, typename index_t>
         inline void operator()(
             const mask_group_t& mask_group, const index_t& index,
-            const detray::bound_track_parameters<algebra_type>& bound_params,
+            const traccc::bound_track_parameters<algebra_type>& bound_params,
             smearer_t& smearer, io::csv::measurement& iomeas) const {
 
             const auto& mask = mask_group[index];

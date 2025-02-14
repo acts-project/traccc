@@ -73,8 +73,8 @@ void fitting_performance_writer::finalize() {
 }
 
 void fitting_performance_writer::write_res(
-    const bound_track_parameters& truth_param,
-    const bound_track_parameters& fit_param, const particle& ptc) {
+    const bound_track_parameters<>& truth_param,
+    const bound_track_parameters<>& fit_param, const particle& ptc) {
 
     m_data->m_res_plot_tool.fill(m_data->m_res_plot_cache, truth_param,
                                  fit_param, ptc);
