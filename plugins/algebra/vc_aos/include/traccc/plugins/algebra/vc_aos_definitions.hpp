@@ -9,7 +9,7 @@
 #pragma once
 
 // Detray include(s).
-#include "detray/plugins/algebra/vc_aos_definitions.hpp"
+#include <detray/plugins/algebra/vc_aos_definitions.hpp>
 
 // Algebra Plugins include(s).
 #include <algebra/vc_vc.hpp>

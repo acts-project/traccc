@@ -19,14 +19,14 @@
 #include "traccc/simulation/smearing_writer.hpp"
 
 // detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/geometry/mask.hpp"
-#include "detray/geometry/shapes/rectangle2D.hpp"
-#include "detray/io/frontend/detector_writer.hpp"
-#include "detray/materials/material.hpp"
-#include "detray/navigation/detail/ray.hpp"
-#include "detray/test/utils/detectors/build_telescope_detector.hpp"
-#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/geometry/mask.hpp>
+#include <detray/geometry/shapes/rectangle2D.hpp>
+#include <detray/io/frontend/detector_writer.hpp>
+#include <detray/materials/material.hpp>
+#include <detray/navigation/detail/ray.hpp>
+#include <detray/test/utils/detectors/build_telescope_detector.hpp>
+#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

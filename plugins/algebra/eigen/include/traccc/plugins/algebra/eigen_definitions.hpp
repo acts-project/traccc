@@ -9,7 +9,7 @@
 #pragma once
 
 // Detray include(s).
-#include "detray/plugins/algebra/eigen_definitions.hpp"
+#include <detray/plugins/algebra/eigen_definitions.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>

@@ -11,9 +11,9 @@
 #include "kalman_fitting_test.hpp"
 
 // Detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/io/frontend/detector_writer.hpp"
-#include "detray/test/utils/detectors/build_wire_chamber.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_writer.hpp>
+#include <detray/test/utils/detectors/build_wire_chamber.hpp>
 
 // System include(s)
 #include <array>
