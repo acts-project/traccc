@@ -58,6 +58,17 @@ class fitting_performance_writer {
                const fitting_result<traccc::default_algebra>& fit_res,
                const detector_t& det, event_data& evt_data) {
 
+        if (!fit_res.is_success) {
+            return;
+        }
+
+        // Get the first smoothed track state
+        const auto& trk_state = *std::find_if(
+            track_states_per_track.begin(), track_states_per_track.end(),
+            [](const auto& st) { return st.is_smoothed; });
+        assert(!trk_state.is_hole);
+        assert(trk_state.is_smoothed);
+
         std::map<measurement, std::map<particle, std::size_t>> meas_to_ptc_map;
         std::map<measurement, std::pair<point3, point3>> meas_to_param_map;
 
@@ -69,8 +80,6 @@ class fitting_performance_writer {
             meas_to_param_map = evt_data.m_meas_to_param_map;
         }
 
-        // Get the track state at the first surface
-        const auto& trk_state = track_states_per_track[0];
         const measurement meas = trk_state.get_measurement();
 
         // Find the contributing particle
@@ -103,7 +112,9 @@ class fitting_performance_writer {
         if (fit_res.ndf > 0 && !trk_state.is_hole) {
             write_res(truth_param, trk_state.smoothed(), ptc);
         }
-        write_stat(fit_res, track_states_per_track);
+        if (fit_res.is_success) {
+            write_stat(fit_res, track_states_per_track);
+        }
     }
 
     /// Writing caches into the file

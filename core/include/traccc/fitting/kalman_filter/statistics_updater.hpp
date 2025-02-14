@@ -38,13 +38,15 @@ struct statistics_updater {
             // Measurement dimension
             const unsigned int D = trk_state.get_measurement().meas_dim;
 
-            // NDoF = NDoF + number of coordinates per measurement
-            fit_res.ndf += static_cast<scalar_type>(D);
-
-            // total_chi2 = total_chi2 + chi2
             if (use_backward_filter) {
-                fit_res.chi2 += trk_state.backward_chi2();
+                if (trk_state.is_smoothed) {
+                    // NDoF = NDoF + number of coordinates per measurement
+                    fit_res.ndf += static_cast<scalar_type>(D);
+                    fit_res.chi2 += trk_state.backward_chi2();
+                }
             } else {
+                // NDoF = NDoF + number of coordinates per measurement
+                fit_res.ndf += static_cast<scalar_type>(D);
                 fit_res.chi2 += trk_state.filtered_chi2();
             }
         }
