@@ -24,8 +24,8 @@
 #include "traccc/utils/ranges.hpp"
 
 // Detray include(s).
-#include "detray/propagator/propagator.hpp"
-#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include <detray/propagator/propagator.hpp>
+#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -239,24 +239,24 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 2u>{1.f, 100.f},
                         std::array<scalar, 2u>{-4.f, 4.f},
-                        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                                               detray::constant<scalar>::pi},
+                        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                                               traccc::constant<scalar>::pi},
                         detray::muon<scalar>(), 1, 1, false),
         std::make_tuple("toy_n_particles_10000",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 2u>{1.f, 100.f},
                         std::array<scalar, 2u>{-4.f, 4.f},
-                        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                                               detray::constant<scalar>::pi},
+                        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                                               traccc::constant<scalar>::pi},
                         detray::muon<scalar>(), 10000, 1, false),
         std::make_tuple("toy_n_particles_10000_random_charge",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 2u>{1.f, 100.f},
                         std::array<scalar, 2u>{-4.f, 4.f},
-                        std::array<scalar, 2u>{-detray::constant<scalar>::pi,
-                                               detray::constant<scalar>::pi},
+                        std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
+                                               traccc::constant<scalar>::pi},
                         detray::muon<scalar>(), 10000, 1, true)));
 
 }  // namespace traccc

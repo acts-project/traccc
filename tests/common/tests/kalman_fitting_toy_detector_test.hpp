@@ -11,9 +11,9 @@
 #include "kalman_fitting_test.hpp"
 
 // Detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/io/frontend/detector_writer.hpp"
-#include "detray/test/utils/detectors/build_toy_detector.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_writer.hpp>
+#include <detray/test/utils/detectors/build_toy_detector.hpp>
 
 // System include(s)
 #include <array>
@@ -49,26 +49,26 @@ class KalmanFittingToyDetectorTests
     static constexpr inline unsigned int n_endcaps{7u};
 
     /// B field value and its type
-    static constexpr vector3 B{0, 0, 2 * detray::unit<scalar>::T};
+    static constexpr vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
 
     /// Step constraint
-    static const inline scalar step_constraint = 1.f * detray::unit<scalar>::mm;
+    static const inline scalar step_constraint = 1.f * traccc::unit<scalar>::mm;
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
-        50.f * detray::unit<scalar>::um, 50.f * detray::unit<scalar>::um};
+        50.f * traccc::unit<scalar>::um, 50.f * traccc::unit<scalar>::um};
 
     // Grid search window
     static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.01f * detray::unit<scalar>::mm,
-        0.01f * detray::unit<scalar>::mm,
+        0.01f * traccc::unit<scalar>::mm,
+        0.01f * traccc::unit<scalar>::mm,
         0.001f,
         0.001f,
-        0.001f / detray::unit<scalar>::GeV,
-        0.01f * detray::unit<scalar>::ns};
+        0.001f / traccc::unit<scalar>::GeV,
+        0.01f * traccc::unit<scalar>::ns};
 
     protected:
     virtual void SetUp() override {

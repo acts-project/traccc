@@ -8,10 +8,8 @@
 // Project include(s).
 #include "traccc/options/telescope_detector.hpp"
 
+#include "traccc/definitions/common.hpp"
 #include "traccc/examples/utils/printable.hpp"
-
-// Detray include(s).
-#include "detray/definitions/units.hpp"
 
 // System include(s).
 #include <sstream>
@@ -49,10 +47,10 @@ telescope_detector::telescope_detector()
 
 void telescope_detector::read(const po::variables_map &) {
 
-    thickness *= detray::unit<float>::mm;
-    spacing *= detray::unit<float>::mm;
-    smearing *= detray::unit<float>::um;
-    half_length *= detray::unit<float>::mm;
+    thickness *= traccc::unit<float>::mm;
+    spacing *= traccc::unit<float>::mm;
+    smearing *= traccc::unit<float>::um;
+    half_length *= traccc::unit<float>::mm;
 }
 
 std::unique_ptr<configuration_printable> telescope_detector::as_printable()
@@ -65,15 +63,15 @@ std::unique_ptr<configuration_printable> telescope_detector::as_printable()
         "Number of planes", std::to_string(n_planes)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Slab thickness",
-        std::to_string(thickness / detray::unit<float>::mm) + " mm"));
+        std::to_string(thickness / traccc::unit<float>::mm) + " mm"));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Spacing", std::to_string(spacing / detray::unit<float>::mm) + " mm"));
+        "Spacing", std::to_string(spacing / traccc::unit<float>::mm) + " mm"));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Smearing",
-        std::to_string(thickness / detray::unit<float>::um) + " um"));
+        std::to_string(thickness / traccc::unit<float>::um) + " um"));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Half length",
-        std::to_string(half_length / detray::unit<float>::mm) + " mm"));
+        std::to_string(half_length / traccc::unit<float>::mm) + " mm"));
     std::ostringstream align_ss;
     align_ss << align_vector;
     cat->add_child(std::make_unique<configuration_kv_pair>("Alignment axis",

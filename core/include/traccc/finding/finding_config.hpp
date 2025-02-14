@@ -8,12 +8,12 @@
 #pragma once
 
 // traccc include(s).
+#include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 
 // detray include(s).
-#include "detray/definitions/pdg_particle.hpp"
-#include "detray/definitions/units.hpp"
-#include "detray/propagator/propagation_config.hpp"
+#include <detray/definitions/pdg_particle.hpp>
+#include <detray/propagator/propagation_config.hpp>
 
 namespace traccc {
 
@@ -35,7 +35,7 @@ struct finding_config {
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
-    float min_step_length_for_next_surface = 0.5f * detray::unit<float>::mm;
+    float min_step_length_for_next_surface = 0.5f * traccc::unit<float>::mm;
     /// Maximum step counts that track can make to reach the next surface
     unsigned int max_step_counts_for_next_surface = 100;
 

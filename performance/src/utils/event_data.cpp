@@ -21,7 +21,7 @@
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
-#include "detray/io/frontend/detector_reader.hpp"
+#include <detray/io/frontend/detector_reader.hpp>
 
 // System include(s).
 #include <filesystem>

@@ -11,9 +11,9 @@
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 // Detray include(s).
-#include "detray/geometry/shapes/rectangle2D.hpp"
-#include "detray/navigation/detail/ray.hpp"
-#include "detray/test/utils/detectors/build_telescope_detector.hpp"
+#include <detray/geometry/shapes/rectangle2D.hpp>
+#include <detray/navigation/detail/ray.hpp>
+#include <detray/test/utils/detectors/build_telescope_detector.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -30,8 +30,8 @@ TEST(spacepoint_formation, cpu) {
 
     // Use rectangle surfaces
     detray::mask<detray::rectangle2D, traccc::default_algebra> rectangle{
-        0u, 10000.f * detray::unit<scalar>::mm,
-        10000.f * detray::unit<scalar>::mm};
+        0u, 10000.f * traccc::unit<scalar>::mm,
+        10000.f * traccc::unit<scalar>::mm};
 
     // Plane alignment direction (aligned to x-axis)
     detray::detail::ray<traccc::default_algebra> traj{

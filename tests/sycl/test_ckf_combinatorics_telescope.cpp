@@ -22,8 +22,8 @@
 #include "traccc/utils/ranges.hpp"
 
 // detray include(s).
-#include "detray/propagator/propagator.hpp"
-#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include <detray/propagator/propagator.hpp>
+#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -239,7 +239,7 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         detray::muon<scalar>(), 2, 1, false, 20.f, 9u, 20.f,
-                        vector3{2 * detray::unit<scalar>::T, 0, 0}),
+                        vector3{2 * traccc::unit<scalar>::T, 0, 0}),
         std::make_tuple("telescope_combinatorics_trio",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -247,6 +247,6 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         detray::muon<scalar>(), 3, 1, false, 20.f, 9u, 20.f,
-                        vector3{2 * detray::unit<scalar>::T, 0, 0})));
+                        vector3{2 * traccc::unit<scalar>::T, 0, 0})));
 
 }  // namespace traccc

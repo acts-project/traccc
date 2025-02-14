@@ -11,11 +11,11 @@
 #include "kalman_fitting_test.hpp"
 
 // Detray include(s).
-#include "detray/geometry/mask.hpp"
-#include "detray/geometry/shapes/rectangle2D.hpp"
-#include "detray/io/frontend/detector_writer.hpp"
-#include "detray/navigation/detail/ray.hpp"
-#include "detray/test/utils/detectors/build_telescope_detector.hpp"
+#include <detray/geometry/mask.hpp>
+#include <detray/geometry/shapes/rectangle2D.hpp>
+#include <detray/io/frontend/detector_writer.hpp>
+#include <detray/navigation/detail/ray.hpp>
+#include <detray/test/utils/detectors/build_telescope_detector.hpp>
 
 namespace traccc {
 
@@ -48,16 +48,16 @@ class KalmanFittingMomentumResolutionTests
 
     public:
     /// Plane thickness
-    static constexpr scalar thickness = 0.5f * detray::unit<scalar>::mm;
+    static constexpr scalar thickness = 0.5f * traccc::unit<scalar>::mm;
 
     /// Standard deviations for seed track parameters
     std::array<scalar, e_bound_size> stddevs = {
-        5.f * detray::unit<scalar>::mm,
-        5.f * detray::unit<scalar>::mm,
+        5.f * traccc::unit<scalar>::mm,
+        5.f * traccc::unit<scalar>::mm,
         0.05f,
         0.05f,
-        0.1f / detray::unit<scalar>::GeV,
-        1.f * detray::unit<scalar>::ns};
+        0.1f / traccc::unit<scalar>::GeV,
+        1.f * traccc::unit<scalar>::ns};
 
     void consistency_tests(
         const track_state_collection_types::host& track_states_per_track) const;

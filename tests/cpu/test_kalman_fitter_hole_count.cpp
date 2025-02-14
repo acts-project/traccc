@@ -18,8 +18,8 @@
 #include "tests/kalman_fitting_telescope_test.hpp"
 
 // detray include(s).
-#include "detray/io/frontend/detector_reader.hpp"
-#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include <detray/io/frontend/detector_reader.hpp>
+#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -184,4 +184,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
         detray::muon<scalar>(), 1, 1, false, 20.f, 20u, 20.f,
-        vector3{2 * detray::unit<scalar>::T, 0, 0})));
+        vector3{2 * traccc::unit<scalar>::T, 0, 0})));

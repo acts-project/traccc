@@ -11,9 +11,9 @@
 #include "kalman_fitting_test.hpp"
 
 // Detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/io/frontend/detector_writer.hpp"
-#include "detray/test/utils/detectors/build_wire_chamber.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_writer.hpp>
+#include <detray/test/utils/detectors/build_wire_chamber.hpp>
 
 // System include(s)
 #include <array>
@@ -46,32 +46,32 @@ class KalmanFittingWireChamberTests
     static const inline unsigned int n_wire_layers{20u};
 
     /// Half z of cylinder
-    static const inline scalar half_z{2000.f * detray::unit<scalar>::mm};
+    static const inline scalar half_z{2000.f * traccc::unit<scalar>::mm};
 
     /// B field value and its type
-    static constexpr vector3 B{0, 0, 2 * detray::unit<scalar>::T};
+    static constexpr vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
 
     /// Step constraint
-    static const inline float step_constraint = 1.f * detray::unit<float>::mm;
+    static const inline float step_constraint = 1.f * traccc::unit<float>::mm;
 
     // Set mask tolerance to a large value not to miss the surface during KF
-    static const inline scalar mask_tolerance = 75.f * detray::unit<scalar>::um;
+    static const inline scalar mask_tolerance = 75.f * traccc::unit<scalar>::um;
 
     // Grid search window
     static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
-        50.f * detray::unit<scalar>::um, 50.f * detray::unit<scalar>::um};
+        50.f * traccc::unit<scalar>::um, 50.f * traccc::unit<scalar>::um};
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.01f * detray::unit<scalar>::mm,
-        0.01f * detray::unit<scalar>::mm,
+        0.01f * traccc::unit<scalar>::mm,
+        0.01f * traccc::unit<scalar>::mm,
         0.001f,
         0.001f,
-        0.001f / detray::unit<scalar>::GeV,
-        0.01f * detray::unit<scalar>::ns};
+        0.001f / traccc::unit<scalar>::GeV,
+        0.01f * traccc::unit<scalar>::ns};
 
     void consistency_tests(const track_state_collection_types::host&
                                track_states_per_track) const {
@@ -91,7 +91,7 @@ class KalmanFittingWireChamberTests
 
         //@NOTE: 2 GeV test fails in pull check with the following setup
         // wire_chamber_cfg.mapped_material(detray::beryllium<scalar>());
-        // wire_chamber_cfg.m_thickness = 100.f * detray::unit<scalar>::um;
+        // wire_chamber_cfg.m_thickness = 100.f * traccc::unit<scalar>::um;
 
         // Create telescope detector
         auto [det, name_map] = build_wire_chamber<traccc::default_algebra>(

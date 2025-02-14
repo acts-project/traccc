@@ -9,7 +9,7 @@
 #include "res_plot_tool.hpp"
 
 // Detray include(s).
-#include "detray/test/utils/statistics.hpp"
+#include <detray/test/utils/statistics.hpp>
 
 // ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT

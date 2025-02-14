@@ -18,16 +18,15 @@
 #include "traccc/simulation/smearing_writer.hpp"
 
 // Detray include(s).
-#include "detray/definitions/units.hpp"
-#include "detray/detectors/bfield.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
-#include "detray/io/frontend/detector_writer.hpp"
-#include "detray/navigation/detail/ray.hpp"
-#include "detray/navigation/navigator.hpp"
-#include "detray/propagator/propagator.hpp"
-#include "detray/propagator/rk_stepper.hpp"
-#include "detray/test/utils/detectors/build_toy_detector.hpp"
-#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_reader.hpp>
+#include <detray/io/frontend/detector_writer.hpp>
+#include <detray/navigation/detail/ray.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
+#include <detray/test/utils/detectors/build_toy_detector.hpp>
+#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -73,7 +72,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
 
     static constexpr traccc::vector3 B{0, 0,
-                                       2 * detray::unit<traccc::scalar>::T};
+                                       2 * traccc::unit<traccc::scalar>::T};
 
     ToyDetectorBenchmark() {
 
@@ -110,8 +109,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         // Smearing value for measurements
         traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
-            50 * detray::unit<traccc::scalar>::um,
-            50 * detray::unit<traccc::scalar>::um);
+            50 * traccc::unit<traccc::scalar>::um,
+            50 * traccc::unit<traccc::scalar>::um);
 
         // Type declarations
         using writer_type = traccc::smearing_writer<
@@ -134,7 +133,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         apply_propagation_config(sim.get_config().propagation);
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
-            1.f * detray::unit<float>::mm;
+            1.f * traccc::unit<float>::mm;
 
         sim.run();
 
@@ -155,7 +154,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         toy_cfg.n_brl_layers(4u).n_edc_layers(7u).do_check(false);
 
         // @TODO: Increase the material budget again
-        toy_cfg.module_mat_thickness(0.11f * detray::unit<traccc::scalar>::mm);
+        toy_cfg.module_mat_thickness(0.11f * traccc::unit<traccc::scalar>::mm);
 
         return toy_cfg;
     }
@@ -163,9 +162,9 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
         cfg.navigation.search_window = {3, 3};
-        cfg.navigation.overstep_tolerance = -300.f * detray::unit<float>::um;
-        cfg.navigation.min_mask_tolerance = 1e-5f * detray::unit<float>::mm;
-        cfg.navigation.max_mask_tolerance = 3.f * detray::unit<float>::mm;
+        cfg.navigation.overstep_tolerance = -300.f * traccc::unit<float>::um;
+        cfg.navigation.min_mask_tolerance = 1e-5f * traccc::unit<float>::mm;
+        cfg.navigation.max_mask_tolerance = 3.f * traccc::unit<float>::mm;
         cfg.navigation.mask_tolerance_scalor = 0.05f;
     }
 

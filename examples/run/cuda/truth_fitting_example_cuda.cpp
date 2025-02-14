@@ -32,11 +32,11 @@
 #include "traccc/utils/seed_generator.hpp"
 
 // detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
-#include "detray/navigation/navigator.hpp"
-#include "detray/propagator/propagator.hpp"
-#include "detray/propagator/rk_stepper.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_reader.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
 
     // B field value and its type
     // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
     auto field = detray::bfield::create_const_field<traccc::scalar>(B);
 
     // Read the detector
@@ -145,12 +145,12 @@ int main(int argc, char* argv[]) {
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.03f * detray::unit<scalar>::mm,
-        0.03f * detray::unit<scalar>::mm,
+        0.03f * traccc::unit<scalar>::mm,
+        0.03f * traccc::unit<scalar>::mm,
         0.017f,
         0.017f,
-        0.001f / detray::unit<scalar>::GeV,
-        1.f * detray::unit<scalar>::ns};
+        0.001f / traccc::unit<scalar>::GeV,
+        1.f * traccc::unit<scalar>::ns};
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);

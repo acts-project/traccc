@@ -8,12 +8,12 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 
 // detray include(s).
-#include "detray/definitions/pdg_particle.hpp"
-#include "detray/definitions/units.hpp"
-#include "detray/propagator/propagation_config.hpp"
+#include <detray/definitions/pdg_particle.hpp>
+#include <detray/propagator/propagation_config.hpp>
 
 namespace traccc {
 

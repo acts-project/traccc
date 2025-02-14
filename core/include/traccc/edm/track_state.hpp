@@ -15,8 +15,7 @@
 #include "traccc/edm/track_candidate.hpp"
 
 // detray include(s).
-#include "detray/navigation/navigator.hpp"
-#include "detray/tracks/bound_track_parameters.hpp"
+#include <detray/tracks/bound_track_parameters.hpp>
 
 namespace traccc {
 

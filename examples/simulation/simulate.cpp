@@ -20,12 +20,12 @@
 #include "traccc/simulation/smearing_writer.hpp"
 
 // Detray include(s).
-#include "detray/detectors/bfield.hpp"
-#include "detray/io/frontend/detector_reader.hpp"
-#include "detray/navigation/navigator.hpp"
-#include "detray/propagator/propagator.hpp"
-#include "detray/propagator/rk_stepper.hpp"
-#include "detray/test/utils/simulation/event_generator/track_generators.hpp"
+#include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_reader.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
+#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
     // @TODO: Set B field as argument
     using b_field_t =
         covfie::field<detray::bfield::const_bknd_t<traccc::scalar>>;
-    const traccc::vector3 B{0, 0, 2 * detray::unit<traccc::scalar>::T};
+    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
     auto field = detray::bfield::create_const_field<traccc::scalar>(B);
 
     // Read the detector
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 
     // Smearing value for measurements
     traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
-        50 * detray::unit<scalar>::um, 50 * detray::unit<scalar>::um);
+        50 * traccc::unit<scalar>::um, 50 * traccc::unit<scalar>::um);
 
     using writer_type = traccc::smearing_writer<
         traccc::measurement_smearer<traccc::default_algebra>>;

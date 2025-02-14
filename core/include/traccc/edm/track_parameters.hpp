@@ -16,7 +16,7 @@
 #include "traccc/edm/container.hpp"
 
 // detray include(s).
-#include "detray/tracks/tracks.hpp"
+#include <detray/tracks/tracks.hpp>
 
 namespace traccc {
 
