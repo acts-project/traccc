@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -112,15 +112,11 @@ TEST_F(io, csv_read_tml_single_muon) {
         traccc::data_format::csv);
 
     // Read the hits from the relevant event file
-    traccc::spacepoint_collection_types::host spacepoints_per_event(&resource);
-    traccc::io::read_spacepoints(spacepoints_per_event, 0,
-                                 "tml_full/single_muon/");
-
-    // Read the measurements from the relevant event file
-    traccc::measurement_collection_types::host measurements_per_event(
-        &resource);
-    traccc::io::read_measurements(measurements_per_event, 0,
-                                  "tml_full/single_muon/", nullptr);
+    traccc::measurement_collection_types::host measurements_per_event{
+        &resource};
+    traccc::edm::spacepoint_collection::host spacepoints_per_event(resource);
+    traccc::io::read_spacepoints(spacepoints_per_event, measurements_per_event,
+                                 0, "tml_full/single_muon/");
 
     // Read the particles from the relevant event file
     traccc::particle_collection_types::host particles_per_event(&resource);

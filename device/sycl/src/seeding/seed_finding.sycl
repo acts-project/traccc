@@ -9,7 +9,7 @@
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/global_index.hpp"
-#include "traccc/sycl/seeding/seed_finding.hpp"
+#include "traccc/sycl/seeding/details/seed_finding.hpp"
 #include "traccc/sycl/utils/make_prefix_sum_buff.hpp"
 
 // Project include(s).
@@ -61,6 +61,8 @@ class select_seeds;
 
 }  // namespace kernels
 
+namespace details {
+
 seed_finding::seed_finding(const seedfinder_config& config,
                            const seedfilter_config& filter_config,
                            const traccc::memory_resource& mr,
@@ -73,9 +75,9 @@ seed_finding::seed_finding(const seedfinder_config& config,
       m_queue(queue),
       m_copy(copy) {}
 
-seed_finding::output_type seed_finding::operator()(
-    const spacepoint_collection_types::const_view& spacepoints_view,
-    const sp_grid_const_view& g2_view) const {
+edm::seed_collection::buffer seed_finding::operator()(
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    const traccc::details::spacepoint_grid_types::const_view& g2_view) const {
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -121,14 +123,14 @@ seed_finding::output_type seed_finding::operator()(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::count_doublets>(
                 doubletCountRange,
-                [config = m_seedfinder_config, g2_view, sp_grid_prefix_sum_view,
-                 doublet_counter_view,
+                [config = m_seedfinder_config, spacepoints_view, g2_view,
+                 sp_grid_prefix_sum_view, doublet_counter_view,
                  aux_globalCounter](::sycl::nd_item<1> item) {
-                    device::count_doublets(details::global_index(item), config,
-                                           g2_view, sp_grid_prefix_sum_view,
-                                           doublet_counter_view,
-                                           (*aux_globalCounter).m_nMidBot,
-                                           (*aux_globalCounter).m_nMidTop);
+                    device::count_doublets(
+                        details::global_index(item), config, spacepoints_view,
+                        g2_view, sp_grid_prefix_sum_view, doublet_counter_view,
+                        (*aux_globalCounter).m_nMidBot,
+                        (*aux_globalCounter).m_nMidTop);
                 });
         })
         .wait_and_throw();
@@ -170,11 +172,12 @@ seed_finding::output_type seed_finding::operator()(
         details::get_queue(m_queue).submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::find_doublets>(
                 doubletFindRange,
-                [config = m_seedfinder_config, g2_view, doublet_counter_view,
-                 mb_view, mt_view](::sycl::nd_item<1> item) {
-                    device::find_doublets(details::global_index(item), config,
-                                          g2_view, doublet_counter_view,
-                                          mb_view, mt_view);
+                [config = m_seedfinder_config, spacepoints_view, g2_view,
+                 doublet_counter_view, mb_view,
+                 mt_view](::sycl::nd_item<1> item) {
+                    device::find_doublets(
+                        details::global_index(item), config, spacepoints_view,
+                        g2_view, doublet_counter_view, mb_view, mt_view);
                 });
         });
 
@@ -207,12 +210,13 @@ seed_finding::output_type seed_finding::operator()(
         details::get_queue(m_queue).submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::count_triplets>(
                 tripletCountRange,
-                [config = m_seedfinder_config, g2_view, doublet_counter_view,
-                 mb_view, mt_view, triplet_counter_spM_view,
+                [config = m_seedfinder_config, spacepoints_view, g2_view,
+                 doublet_counter_view, mb_view, mt_view,
+                 triplet_counter_spM_view,
                  triplet_counter_midBot_view](::sycl::nd_item<1> item) {
                     device::count_triplets(
-                        details::global_index(item), config, g2_view,
-                        doublet_counter_view, mb_view, mt_view,
+                        details::global_index(item), config, spacepoints_view,
+                        g2_view, doublet_counter_view, mb_view, mt_view,
                         triplet_counter_spM_view, triplet_counter_midBot_view);
                 });
         });
@@ -266,15 +270,15 @@ seed_finding::output_type seed_finding::operator()(
             h.parallel_for<kernels::find_triplets>(
                 tripletFindRange,
                 [config = m_seedfinder_config,
-                 filter_config = m_seedfilter_config, g2_view,
+                 filter_config = m_seedfilter_config, spacepoints_view, g2_view,
                  doublet_counter_view, mt_view, triplet_counter_spM_view,
                  triplet_counter_midBot_view,
                  triplet_view](::sycl::nd_item<1> item) {
                     device::find_triplets(
                         details::global_index(item), config, filter_config,
-                        g2_view, doublet_counter_view, mt_view,
-                        triplet_counter_spM_view, triplet_counter_midBot_view,
-                        triplet_view);
+                        spacepoints_view, g2_view, doublet_counter_view,
+                        mt_view, triplet_counter_spM_view,
+                        triplet_counter_midBot_view, triplet_view);
                 });
         });
 
@@ -304,7 +308,7 @@ seed_finding::output_type seed_finding::operator()(
 
             h.parallel_for<kernels::update_triplet_weights>(
                 weightUpdatingRange,
-                [filter_config = m_seedfilter_config, g2_view,
+                [filter_config = m_seedfilter_config, spacepoints_view, g2_view,
                  triplet_counter_spM_view, triplet_counter_midBot_view,
                  local_mem, triplet_view](::sycl::nd_item<1> item) {
                     // Each thread uses compatSeedLimit elements of the array
@@ -312,18 +316,18 @@ seed_finding::output_type seed_finding::operator()(
                                                  filter_config.compatSeedLimit];
 
                     device::update_triplet_weights(
-                        details::global_index(item), filter_config, g2_view,
-                        triplet_counter_spM_view, triplet_counter_midBot_view,
-                        dataPos, triplet_view);
+                        details::global_index(item), filter_config,
+                        spacepoints_view, g2_view, triplet_counter_spM_view,
+                        triplet_counter_midBot_view, dataPos, triplet_view);
                 });
         });
 
     // Create seed buffer object and its view
-    seed_collection_types::buffer seed_buffer(
+    edm::seed_collection::buffer seed_buffer(
         globalCounter_host->m_nTriplets, m_mr.main,
         vecmem::data::buffer_type::resizable);
     m_copy.setup(seed_buffer)->wait();
-    seed_collection_types::view seed_view(seed_buffer);
+    edm::seed_collection::view seed_view(seed_buffer);
 
     // Calculate the range to run the seed selecting for
     static constexpr unsigned int seedSelectingLocalSize = 32 * 2;
@@ -372,4 +376,5 @@ seed_finding::output_type seed_finding::operator()(
     return seed_buffer;
 }
 
+}  // namespace details
 }  // namespace traccc::sycl

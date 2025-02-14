@@ -23,7 +23,7 @@ __global__ void __launch_bounds__(1024, 1)
     form_spacepoints(typename detector_t::view_type det_view,
                      measurement_collection_types::const_view measurements_view,
                      const unsigned int measurement_count,
-                     spacepoint_collection_types::view spacepoints_view) {
+                     edm::spacepoint_collection::view spacepoints_view) {
 
     device::form_spacepoints<detector_t>(details::global_index1(), det_view,
                                          measurements_view, measurement_count,
@@ -39,7 +39,7 @@ spacepoint_formation_algorithm<detector_t>::spacepoint_formation_algorithm(
     : messaging(std::move(logger)), m_mr(mr), m_copy(copy), m_stream(str) {}
 
 template <typename detector_t>
-spacepoint_collection_types::buffer
+edm::spacepoint_collection::buffer
 spacepoint_formation_algorithm<detector_t>::operator()(
     const typename detector_t::view_type& det_view,
     const measurement_collection_types::const_view& measurements_view) const {
@@ -49,7 +49,7 @@ spacepoint_formation_algorithm<detector_t>::operator()(
         m_copy.get().get_size(measurements_view);
 
     // Create the result buffer.
-    spacepoint_collection_types::buffer spacepoints(
+    edm::spacepoint_collection::buffer spacepoints(
         num_measurements, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(spacepoints)->ignore();
 

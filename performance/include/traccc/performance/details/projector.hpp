@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -35,24 +35,6 @@ struct projector<traccc::measurement> {
 
     float operator()(const traccc::measurement& i) {
         return static_cast<float>(i.local[0]);
-    }
-};
-
-template <>
-struct projector<traccc::spacepoint> {
-    static constexpr bool exists = true;
-
-    float operator()(const traccc::spacepoint& i) {
-        return static_cast<float>(i.x());
-    }
-};
-
-template <>
-struct projector<traccc::seed> {
-    static constexpr bool exists = true;
-
-    float operator()(const traccc::seed& i) {
-        return static_cast<float>(i.z_vertex);
     }
 };
 

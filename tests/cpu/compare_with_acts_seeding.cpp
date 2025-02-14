@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,8 +9,8 @@
 #include "traccc/io/read_spacepoints.hpp"
 
 // algorithms
-#include "traccc/seeding/seed_finding.hpp"
-#include "traccc/seeding/spacepoint_binning.hpp"
+#include "traccc/seeding/detail/seed_finding.hpp"
+#include "traccc/seeding/detail/spacepoint_binning.hpp"
 
 // tests
 #include "tests/atlas_cuts.hpp"
@@ -53,10 +53,11 @@ class SpacePointCollector {
     using ActsSpacePointContainer =
         Acts::SpacePointContainer<SpacePointCollector, Acts::detail::RefHolder>;
     friend ActsSpacePointContainer;
-    using ValueType = traccc::spacepoint;
+    using ValueType =
+        traccc::edm::spacepoint_collection::host::const_proxy_type;
 
     explicit SpacePointCollector(
-        traccc::spacepoint_collection_types::host& spacepoints)
+        traccc::edm::spacepoint_collection::host& spacepoints)
         : m_storage(spacepoints) {}
 
     std::size_t size_impl() const { return m_storage.get().size(); }
@@ -66,9 +67,7 @@ class SpacePointCollector {
     double varianceR_impl(std::size_t) const { return 0.; }
     double varianceZ_impl(std::size_t) const { return 0.; }
 
-    const ValueType& get_impl(std::size_t idx) const {
-        return m_storage.get()[idx];
-    }
+    auto get_impl(std::size_t idx) const { return m_storage.get()[idx]; }
 
     std::any component_impl(Acts::HashedString key, std::size_t) const {
         using namespace Acts::HashedStringLiteral;
@@ -85,7 +84,7 @@ class SpacePointCollector {
     }
 
     private:
-    std::reference_wrapper<traccc::spacepoint_collection_types::host> m_storage;
+    std::reference_wrapper<traccc::edm::spacepoint_collection::host> m_storage;
 };
 
 class CompareWithActsSeedingTests
@@ -114,20 +113,25 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc::spacepoint_grid_config grid_config(traccc_config);
 
     // Declare algorithms
-    traccc::spacepoint_binning sb(traccc_config, grid_config, host_mr);
-    traccc::seed_finding sf(traccc_config, traccc::seedfilter_config());
+    traccc::host::details::spacepoint_binning sb{traccc_config, grid_config,
+                                                 host_mr};
+    traccc::host::details::seed_finding sf{
+        traccc_config, traccc::seedfilter_config(), host_mr};
 
     // Read the hits from the relevant event file
-    traccc::spacepoint_collection_types::host spacepoints_per_event{&host_mr};
-    traccc::io::read_spacepoints(spacepoints_per_event, event, hits_dir);
+    traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
+    traccc::measurement_collection_types::host measurements_per_event{&host_mr};
+    traccc::io::read_spacepoints(spacepoints_per_event, measurements_per_event,
+                                 event, hits_dir);
 
     /*--------------------------------
       TRACCC seeding
       --------------------------------*/
 
-    auto internal_spacepoints_per_event = sb(spacepoints_per_event);
-    auto traccc_seeds =
-        sf(spacepoints_per_event, internal_spacepoints_per_event);
+    auto internal_spacepoints_per_event =
+        sb(vecmem::get_data(spacepoints_per_event));
+    auto traccc_seeds = sf(vecmem::get_data(spacepoints_per_event),
+                           internal_spacepoints_per_event);
 
     /*--------------------------------
       ACTS seeding
@@ -359,13 +363,18 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Count the number of matching seeds
     std::size_t n_matched_acts_seeds = 0u;
-    for (const auto& traccc_seed : traccc_seeds) {
+    for (traccc::edm::seed_collection::host::size_type i = 0u;
+         i < traccc_seeds.size(); ++i) {
+        const auto traccc_seed = traccc_seeds.at(i);
         // Try to find the same Acts seed.
         auto it = std::find_if(
             acts_seeds.begin(), acts_seeds.end(), [&](const auto& acts_seed) {
-                return ((traccc_seed.spB_link == acts_seed.sp()[0]->index()) &&
-                        (traccc_seed.spM_link == acts_seed.sp()[1]->index()) &&
-                        (traccc_seed.spT_link == acts_seed.sp()[2]->index()));
+                return (
+                    (traccc_seed.bottom_index() ==
+                     acts_seed.sp()[0]->index()) &&
+                    (traccc_seed.middle_index() ==
+                     acts_seed.sp()[1]->index()) &&
+                    (traccc_seed.top_index() == acts_seed.sp()[2]->index()));
             });
 
         if (it != acts_seeds.end()) {

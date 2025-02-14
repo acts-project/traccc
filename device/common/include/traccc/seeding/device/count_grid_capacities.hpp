@@ -13,7 +13,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 
@@ -41,8 +41,9 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void count_grid_capacities(
     global_index_t globalIndex, const seedfinder_config& config,
-    const sp_grid::axis_p0_type& phi_axis, const sp_grid::axis_p1_type& z_axis,
-    const spacepoint_collection_types::const_view& spacepoints,
+    const details::spacepoint_grid_types::host::axis_p0_type& phi_axis,
+    const details::spacepoint_grid_types::host::axis_p1_type& z_axis,
+    const edm::spacepoint_collection::const_view& spacepoints,
     vecmem::data::vector_view<unsigned int> grid_capacities);
 
 }  // namespace traccc::device

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 
 // Detray include(s).
@@ -77,13 +77,13 @@ TEST(CUDASpacepointFormation, cuda) {
     auto spacepoints_buffer =
         sp_formation(detray::get_data(det), vecmem::get_data(measurements));
 
-    spacepoint_collection_types::device spacepoints(spacepoints_buffer);
+    edm::spacepoint_collection::device spacepoints(spacepoints_buffer);
 
     // Check the results
     EXPECT_EQ(copy.get_size(spacepoints_buffer), 2u);
     std::set<point3> test;
-    test.insert(spacepoints[0].global);
-    test.insert(spacepoints[1].global);
+    test.insert(spacepoints[0].global());
+    test.insert(spacepoints[1].global());
 
     std::set<point3> ref;
     ref.insert({180.f, 10.f, 15.f});

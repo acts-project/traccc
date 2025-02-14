@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,8 +11,9 @@
 #include "traccc/utils/helpers.hpp"
 
 // Project include(s).
-#include "traccc/edm/seed.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/seed_collection.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/utils/event_data.hpp"
 
 // System include(s).
@@ -64,9 +65,11 @@ class seeding_performance_writer {
     /// Destructor
     ~seeding_performance_writer();
 
-    void write(const seed_collection_types::const_view& seeds_view,
-               const spacepoint_collection_types::const_view& spacepoints_view,
-               const event_data& evt_data);
+    void write(
+        const edm::seed_collection::const_view& seeds_view,
+        const edm::spacepoint_collection::const_view& spacepoints_view,
+        const measurement_collection_types::const_view& measurements_view,
+        const event_data& evt_data);
 
     void finalize();
 

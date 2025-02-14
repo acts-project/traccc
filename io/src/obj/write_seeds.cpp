@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,8 +14,8 @@
 namespace traccc::io::obj {
 
 void write_seeds(std::string_view filename,
-                 seed_collection_types::const_view seeds_view,
-                 spacepoint_collection_types::const_view spacepoints_view) {
+                 edm::seed_collection::const_view seeds_view,
+                 edm::spacepoint_collection::const_view spacepoints_view) {
 
     // Open the output file.
     std::ofstream file{filename.data()};
@@ -25,8 +25,8 @@ void write_seeds(std::string_view filename,
     }
 
     // Create device collections around the views.
-    const seed_collection_types::const_device seeds{seeds_view};
-    const spacepoint_collection_types::const_device spacepoints{
+    const edm::seed_collection::const_device seeds{seeds_view};
+    const edm::spacepoint_collection::const_device spacepoints{
         spacepoints_view};
 
     // Map associating in-memory spacepoint indices to in-file ones.
@@ -35,14 +35,14 @@ void write_seeds(std::string_view filename,
     // Helper lambda to write a spacepoint to the output file.
     auto write_spacepoint =
         [&file, &spacepoints, &spacepoint_indices](
-            spacepoint_collection_types::const_device::size_type memory_index,
+            edm::spacepoint_collection::const_device::size_type memory_index,
             std::size_t file_index) -> bool {
         // Check whether this spacepoint has already been written.
         if (spacepoint_indices.find(memory_index) != spacepoint_indices.end()) {
             return false;
         }
         // Write the spacepoint.
-        const traccc::spacepoint& sp = spacepoints[memory_index];
+        const auto sp = spacepoints[memory_index];
         file << "v " << sp.x() << " " << sp.y() << " " << sp.z() << "\n";
         // Remember the mapping.
         spacepoint_indices[memory_index] = file_index;
@@ -54,27 +54,17 @@ void write_seeds(std::string_view filename,
     // spacepoints in the output file, to be used when making the seeds.
     std::size_t file_index = 1;
     file << "# Spacepoints from which the seeds are built\n";
-    for (const seed& s : seeds) {
-        if (write_spacepoint(
-                static_cast<
-                    spacepoint_collection_types::const_device::size_type>(
-                    s.spB_link),
-                file_index)) {
-            file_index++;
+    for (edm::seed_collection::const_device::size_type i = 0; i < seeds.size();
+         ++i) {
+        const auto seed = seeds.at(i);
+        if (write_spacepoint(seed.bottom_index(), file_index)) {
+            ++file_index;
         }
-        if (write_spacepoint(
-                static_cast<
-                    spacepoint_collection_types::const_device::size_type>(
-                    s.spM_link),
-                file_index)) {
-            file_index++;
+        if (write_spacepoint(seed.middle_index(), file_index)) {
+            ++file_index;
         }
-        if (write_spacepoint(
-                static_cast<
-                    spacepoint_collection_types::const_device::size_type>(
-                    s.spT_link),
-                file_index)) {
-            file_index++;
+        if (write_spacepoint(seed.top_index(), file_index)) {
+            ++file_index;
         }
     }
 
@@ -91,10 +81,12 @@ void write_seeds(std::string_view filename,
 
     // Now build the seeds as lines connecting the spacepoint vertices.
     file << "# Seeds\n";
-    for (const seed& s : seeds) {
-        file << "l " << get_spacepoint_index(s.spB_link) << " "
-             << get_spacepoint_index(s.spM_link) << " "
-             << get_spacepoint_index(s.spT_link) << "\n";
+    for (edm::seed_collection::const_device::size_type i = 0; i < seeds.size();
+         ++i) {
+        const auto seed = seeds.at(i);
+        file << "l " << get_spacepoint_index(seed.bottom_index()) << " "
+             << get_spacepoint_index(seed.middle_index()) << " "
+             << get_spacepoint_index(seed.top_index()) << "\n";
     }
 }
 
