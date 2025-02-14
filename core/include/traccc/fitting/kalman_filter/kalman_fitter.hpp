@@ -218,7 +218,15 @@ class kalman_fitter {
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
-        auto& last = track_states.back();
+        for (auto it = track_states.rbegin(); it != track_states.rend(); ++it) {
+            if (!(*it).is_hole) {
+                fitter_state.m_fit_actor_state.m_it_rev = it;
+                break;
+            }
+            // TODO: Return false because there is no valid track state
+            // return false;
+        }
+        auto& last = *fitter_state.m_fit_actor_state.m_it_rev;
         last.smoothed().set_parameter_vector(last.filtered());
         last.smoothed().set_covariance(last.filtered().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
