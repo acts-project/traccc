@@ -145,6 +145,9 @@ struct kalman_actor : detray::actor {
                 // Update the propagation flow
                 stepping.bound_params() = trk_state.filtered();
 
+                // Set path length
+                trk_state.path_length() = propagation._stepping.path_length();
+
                 // Set full jacobian
                 trk_state.jacobian() = stepping.full_jacobian();
             } else {
@@ -171,6 +174,16 @@ struct kalman_actor : detray::actor {
 
             // Flag renavigation of the current candidate
             navigation.set_high_trust();
+        }
+
+        // Abort if the path length becomes too negative during the backward
+        // propagation
+        // TODO: Use configuration instead of hardcoded value
+        if (actor_state.backward_mode &&
+            propagation._stepping.path_length() <
+                -100.f * traccc::unit<traccc::scalar>::mm) {
+            propagation._heartbeat &= navigation.abort();
+            return;
         }
     }
 };
