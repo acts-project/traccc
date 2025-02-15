@@ -241,6 +241,10 @@ class kalman_fitter {
 
             typename backward_propagator_type::state propagation(
                 last.smoothed(), m_field, m_detector);
+            // Update path langth from the forward filter
+            assert(last.path_length() !=
+                   detray::detail::invalid_value<scalar_type>());
+            propagation._stepping.update_path_lengths(last.path_length());
 
             inflate_covariance(propagation._stepping.bound_params(),
                                m_cfg.covariance_inflation_factor);
