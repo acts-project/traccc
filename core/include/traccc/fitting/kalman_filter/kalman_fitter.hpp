@@ -139,8 +139,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE void fit(const seed_parameters_t& seed_params,
-                                state& fitter_state) {
+    TRACCC_HOST_DEVICE [[nodiscard]] bool fit(
+        const seed_parameters_t& seed_params, state& fitter_state) {
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -156,8 +156,12 @@ class kalman_fitter {
             inflate_covariance(seed_params_cpy,
                                m_cfg.covariance_inflation_factor);
 
-            filter(seed_params_cpy, fitter_state);
+            if (!filter(seed_params_cpy, fitter_state)) {
+                return false;
+            }
         }
+
+        return true;
     }
 
     /// Run the kalman fitter for an iteration
@@ -167,8 +171,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE void filter(const seed_parameters_t& seed_params,
-                                   state& fitter_state) {
+    TRACCC_HOST_DEVICE [[nodiscard]] bool filter(
+        const seed_parameters_t& seed_params, state& fitter_state) {
 
         // Create propagator
         propagator_type propagator(m_cfg.propagation);
@@ -199,10 +203,14 @@ class kalman_fitter {
         propagator.propagate(propagation, fitter_state());
 
         // Run smoothing
-        smooth(fitter_state);
+        if (!smooth(fitter_state)) {
+            return false;
+        }
 
         // Update track fitting qualities
         update_statistics(fitter_state);
+
+        return true;
     }
 
     /// Run smoothing after kalman filtering
@@ -211,7 +219,7 @@ class kalman_fitter {
     /// track and vertex fitting", R.Frühwirth, NIM A.
     ///
     /// @param fitter_state the state of kalman fitter
-    TRACCC_HOST_DEVICE void smooth(state& fitter_state) {
+    TRACCC_HOST_DEVICE [[nodiscard]] bool smooth(state& fitter_state) {
 
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
@@ -252,6 +260,10 @@ class kalman_fitter {
                 detray::navigation::direction::e_backward);
             fitter_state.m_fit_actor_state.backward_mode = true;
 
+            if (vector::theta(propagation._stepping().dir()) == 0.f) {
+                return false;
+            }
+
             propagator.propagate(propagation,
                                  fitter_state.backward_actor_state());
 
@@ -267,10 +279,14 @@ class kalman_fitter {
 
                 const detray::tracking_surface sf{m_detector,
                                                   it->surface_link()};
-                sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
-                    *it, *(it - 1));
+                if (!sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
+                        *it, *(it - 1))) {
+                    return false;
+                }
             }
         }
+
+        return true;
     }
 
     TRACCC_HOST_DEVICE

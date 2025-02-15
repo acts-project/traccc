@@ -61,12 +61,17 @@ track_state_container_types::host fit_tracks(
         typename fitter_t::state fitter_state(std::move(input_states));
 
         // Run the fitter.
-        fitter.fit(track_candidates.get_headers()[i], fitter_state);
+        bool success =
+            fitter.fit(track_candidates.get_headers()[i], fitter_state);
 
-        // Save the results into the output container.
-        result.push_back(
-            std::move(fitter_state.m_fit_res),
-            std::move(fitter_state.m_fit_actor_state.m_track_states));
+        if (success) {
+            // Save the results into the output container.
+            result.push_back(
+                std::move(fitter_state.m_fit_res),
+                std::move(fitter_state.m_fit_actor_state.m_track_states));
+        } else {
+            // TODO: Print a warning here.
+        }
     }
 
     // Return the fitted track states.

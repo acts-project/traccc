@@ -40,7 +40,7 @@ struct gain_matrix_updater {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE inline bool operator()(
+    TRACCC_HOST_DEVICE [[nodiscard]] inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
         const bound_track_parameters& bound_params) const {
@@ -64,7 +64,7 @@ struct gain_matrix_updater {
     }
 
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE inline bool update(
+    TRACCC_HOST_DEVICE [[nodiscard]] inline bool update(
         track_state<algebra_t>& trk_state,
         const bound_track_parameters& bound_params) const {
 
@@ -129,7 +129,8 @@ struct gain_matrix_updater {
         // Return false if track is parallel to z-axis or phi is not finite
         const scalar theta = bound_params.theta();
         if (theta <= 0.f || theta >= constant<traccc::scalar>::pi ||
-            !std::isfinite(bound_params.phi())) {
+            !std::isfinite(bound_params.phi()) ||
+            std::abs(bound_params.qop()) == 0.f) {
             return false;
         }
 
