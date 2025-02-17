@@ -329,9 +329,13 @@ namespace traccc {
                 return math::fabs(curvature_3D) * 45.f * math::sqrt(eff_thickness) * unit<scalar>::T / field_strength_vector[2] * (1.f + 0.038f * math::log(eff_thickness));
             };
 
-            vector3 B_field = m_field.at(t.m_hit_1[0], t.m_hit_1[1], t.m_hit_1[2]);
-            std::cout << "\tB-field " << B_field[0] << ", " << B_field[1] << ", " << B_field[2] << std::endl;
-            t.m_sigma_MS = scattering_unc((0.5f *(c_3D_1C + c_3D_2C)), t_eff, m_field.at(t.m_hit_1[0], t.m_hit_1[1], t.m_hit_1[2]));
+            const auto B_field = m_field.at(t.m_hit_1[0], t.m_hit_1[1], t.m_hit_1[2]);
+            vector3 B_vec;
+            B_vec[0u] = B_field[0u];
+            B_vec[1u] = B_field[1u];
+            B_vec[2u] = B_field[2u];
+            std::cout << "\tB-field " << B_vec[0u] << ", " << B_vec[1u] << ", " << B_vec[2u] << std::endl;
+            t.m_sigma_MS = scattering_unc((0.5f *(c_3D_1C + c_3D_2C)), t_eff, B_vec);
             std::cout << "\tsigma_MS " << t.m_sigma_MS << std::endl;
 
             
@@ -527,9 +531,8 @@ namespace traccc {
 
             // Actual number in this track
             const size_t N_triplets = m_triplets.size();
-            const size_t N_hits = m_track_states.size();
-            assert(N_hits <= max_nhits);
-            assert(N_triplets == N_hits - 2u);
+            assert(m_track_states.size() <= max_nhits);
+            assert(N_triplets == m_track_states.size() - 2u);
 
 
             // Make matrices/vectors
@@ -717,7 +720,11 @@ namespace traccc {
                 scalar bending_angle = c_3D * getter::norm(r01);
 
                 // Magnetic field at first measurement
-                vector3 B_vec = field.at(triplets[0].m_hit_0);
+                const auto B_field = field.at(triplets[0].m_hit_0[0u], triplets[0].m_hit_0[1u], triplets[0].m_hit_0[2u]);
+                vector3 B_vec;
+                B_vec[0u] = B_field[0u];
+                B_vec[1u] = B_field[1u];
+                B_vec[2u] = B_field[2u];
 
                 // Momentum - TODO: handling of magnetic field
                 // Units: B [T], p [MeV] 
@@ -767,7 +774,7 @@ namespace traccc {
 
                 scalar sum_dims = 0;
                 for (const track_state<algebra_type>& s : states) {
-                    sum_dims += s.get_measurement().meas_dim;
+                    sum_dims += static_cast<scalar>(s.get_measurement().meas_dim);
                 }
 
                 return (sum_dims - 5.f);
