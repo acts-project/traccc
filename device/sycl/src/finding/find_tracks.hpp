@@ -32,11 +32,7 @@
 #include "traccc/utils/projections.hpp"
 
 // Detray include(s).
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/actors/pointwise_material_interactor.hpp>
+#include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
 // VecMem include(s).
@@ -370,8 +366,7 @@ track_candidate_container_types::buffer find_tracks(
             using interactor_type =
                 detray::pointwise_material_interactor<algebra_type>;
             using actor_type =
-                detray::actor_chain<detray::dtuple,
-                                    detray::pathlimit_aborter<scalar_type>,
+                detray::actor_chain<detray::pathlimit_aborter<scalar_type>,
                                     detray::parameter_transporter<algebra_type>,
                                     interaction_register<interactor_type>,
                                     interactor_type, ckf_aborter>;
