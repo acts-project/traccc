@@ -15,7 +15,7 @@
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include "vecmem/utils/sycl/copy.hpp"
+#include <vecmem/utils/sycl/copy.hpp>
 
 namespace traccc::sycl {
 

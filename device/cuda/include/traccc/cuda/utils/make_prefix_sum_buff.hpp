@@ -15,7 +15,7 @@
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include "vecmem/utils/cuda/copy.hpp"
+#include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc::cuda {
 
