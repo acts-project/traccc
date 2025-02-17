@@ -5,3 +5,10 @@ repos:
       - id: clang-format
         types_or: [file]
         files: \.(cpp|hpp|ipp|cu|cuh|sycl|hip)$
+
+  - repo: local
+    hooks:
+      - id: check_quote_includes
+        name: Check includes with quotes
+        language: system
+        entry: .github/check_quote_includes.sh

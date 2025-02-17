@@ -29,7 +29,7 @@
 #include "traccc/seeding/device/update_triplet_weights.hpp"
 
 // VecMem include(s).
-#include "vecmem/utils/cuda/copy.hpp"
+#include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
 #include <algorithm>

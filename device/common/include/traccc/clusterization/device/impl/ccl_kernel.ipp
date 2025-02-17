@@ -8,6 +8,7 @@
 #pragma once
 
 #include <mutex>
+#include <vecmem/memory/device_atomic_ref.hpp>
 
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/aggregate_cluster.hpp"
@@ -18,7 +19,6 @@
 #include "traccc/device/mutex.hpp"
 #include "traccc/device/unique_lock.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "vecmem/memory/device_atomic_ref.hpp"
 
 namespace traccc::device {
 

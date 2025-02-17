@@ -8,9 +8,8 @@
 
 #pragma once
 
+#include <Acts/Seeding/IExperimentCuts.hpp>
 #include <algorithm>
-
-#include "Acts/Seeding/IExperimentCuts.hpp"
 
 namespace Acts {
 template <typename SpacePoint>

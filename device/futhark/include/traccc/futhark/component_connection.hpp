@@ -7,10 +7,11 @@
 
 #pragma once
 
+#include <vecmem/memory/memory_resource.hpp>
+
 #include "traccc/edm/cell.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
-#include "vecmem/memory/memory_resource.hpp"
 
 namespace traccc::futhark {
 struct component_connection : algorithm<measurement_container_types::host(

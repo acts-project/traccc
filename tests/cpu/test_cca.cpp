@@ -15,7 +15,7 @@
 #include "tests/cca_test.hpp"
 
 // VecMem include(s).
-#include "vecmem/memory/host_memory_resource.hpp"
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
