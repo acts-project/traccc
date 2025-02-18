@@ -19,21 +19,21 @@ template <typename detector_t>
 TRACCC_HOST_DEVICE inline void form_spacepoints(
     const global_index_t globalIndex, typename detector_t::view_type det_view,
     const measurement_collection_types::const_view& measurements_view,
-    unsigned int measurement_count,
     edm::spacepoint_collection::view spacepoints_view) {
 
+    // Set up the input container(s).
+    const measurement_collection_types::const_device measurements(
+        measurements_view);
+
     // Check if anything needs to be done
-    if (globalIndex >= measurement_count) {
+    if (globalIndex >= measurements.size()) {
         return;
     }
 
     // Create the tracking geometry
     detector_t det(det_view);
 
-    // Get device copy of input/output parameters
-    const measurement_collection_types::const_device measurements(
-        measurements_view);
-    assert(measurements.size() == measurement_count);
+    // Set up the output container(s).
     edm::spacepoint_collection::device spacepoints(spacepoints_view);
 
     const auto& meas = measurements.at(globalIndex);

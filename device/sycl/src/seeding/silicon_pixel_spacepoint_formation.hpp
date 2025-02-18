@@ -65,14 +65,13 @@ edm::spacepoint_collection::buffer silicon_pixel_spacepoint_formation(
     // Run the spacepoint formation on the device.
     queue
         .submit([&](::sycl::handler& h) {
-            h.parallel_for(
-                countRange, [det_view, measurements_view, n_measurements,
-                             spacepoints_view = vecmem::get_data(result)](
-                                ::sycl::nd_item<1> item) {
-                    device::form_spacepoints<detector_t>(
-                        details::global_index(item), det_view,
-                        measurements_view, n_measurements, spacepoints_view);
-                });
+            h.parallel_for(countRange, [det_view, measurements_view,
+                                        spacepoints_view = vecmem::get_data(
+                                            result)](::sycl::nd_item<1> item) {
+                device::form_spacepoints<detector_t>(
+                    details::global_index(item), det_view, measurements_view,
+                    spacepoints_view);
+            });
         })
         .wait_and_throw();
 

@@ -22,12 +22,10 @@ template <typename detector_t>
 __global__ void __launch_bounds__(1024, 1)
     form_spacepoints(typename detector_t::view_type det_view,
                      measurement_collection_types::const_view measurements_view,
-                     const unsigned int measurement_count,
                      edm::spacepoint_collection::view spacepoints_view) {
 
     device::form_spacepoints<detector_t>(details::global_index1(), det_view,
-                                         measurements_view, measurement_count,
-                                         spacepoints_view);
+                                         measurements_view, spacepoints_view);
 }
 
 }  // namespace kernels
@@ -67,7 +65,7 @@ spacepoint_formation_algorithm<detector_t>::operator()(
 
     // Launch the spacepoint formation kernel.
     kernels::form_spacepoints<detector_t><<<nBlocks, blockSize, 0, stream>>>(
-        det_view, measurements_view, num_measurements, spacepoints);
+        det_view, measurements_view, spacepoints);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Return the reconstructed spacepoints.

@@ -23,15 +23,13 @@ struct FormSpacepointsKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, typename detector_t::view_type det_view,
         measurement_collection_types::const_view measurements_view,
-        const unsigned int measurement_count,
         edm::spacepoint_collection::view spacepoints_view) const {
 
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
         device::form_spacepoints<detector_t>(
-            globalThreadIdx, det_view, measurements_view, measurement_count,
-            spacepoints_view);
+            globalThreadIdx, det_view, measurements_view, spacepoints_view);
     }
 };
 
@@ -59,6 +57,7 @@ spacepoint_formation_algorithm<detector_t>::operator()(
     edm::spacepoint_collection::buffer spacepoints(
         num_measurements, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(spacepoints)->ignore();
+    edm::spacepoint_collection::view spacepoints_view{spacepoints};
 
     // If there are no measurements, we can conclude here.
     if (num_measurements == 0) {
@@ -72,8 +71,7 @@ spacepoint_formation_algorithm<detector_t>::operator()(
 
     // Launch the spacepoint formation kernel.
     ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel<detector_t>{},
-                        det_view, measurements_view, num_measurements,
-                        vecmem::get_data(spacepoints));
+                        det_view, measurements_view, spacepoints_view);
     ::alpaka::wait(queue);
 
     // Return the reconstructed spacepoints.
