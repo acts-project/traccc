@@ -10,12 +10,10 @@
 // in the build setup that we get for this source file. Which needs
 // to be worked around by including <cmath> early, before one of
 // those files (don't know which...) would've been parsed by GCC.
-#include <cmath>
-
-// Local include(s).
 #include "kalman_fitting_test.hpp"
 
-// ROOT include(s).
+#include <cmath>
+
 #ifdef TRACCC_HAVE_ROOT
 #include <TF1.h>
 #include <TFile.h>
@@ -24,7 +22,6 @@
 #include <TH1.h>
 #endif  // TRACCC_HAVE_ROOT
 
-// System include(s).
 #include <iostream>
 #include <memory>
 #include <stdexcept>

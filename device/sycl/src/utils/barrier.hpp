@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/device/concepts/barrier.hpp"
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {

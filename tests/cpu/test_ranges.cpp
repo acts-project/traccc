@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/utils/ranges.hpp"
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
 using namespace traccc;

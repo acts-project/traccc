@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include "traccc/definitions/qualifiers.hpp"
+
 #include <type_traits>
 #include <utility>
-
-#include "traccc/definitions/qualifiers.hpp"
 
 namespace traccc {
 

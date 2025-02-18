@@ -5,11 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// TBB include(s).
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
-// System include(s).
 #include <iostream>
 #include <thread>
 

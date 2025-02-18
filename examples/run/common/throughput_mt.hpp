@@ -7,10 +7,8 @@
 
 #pragma once
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
 #include <string_view>
 
 namespace traccc {
@@ -33,5 +31,4 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
 
 }  // namespace traccc
 
-// Local include(s).
 #include "throughput_mt.ipp"

@@ -7,17 +7,13 @@
 
 #pragma once
 
-// Library include(s).
+#include "traccc/edm/seed.hpp"
+#include "traccc/edm/spacepoint.hpp"
 #include "traccc/sycl/seeding/seed_finding.hpp"
 #include "traccc/sycl/seeding/spacepoint_binning.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
-
-// Project include(s).
-#include "traccc/edm/seed.hpp"
-#include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/utils/copy.hpp>
 

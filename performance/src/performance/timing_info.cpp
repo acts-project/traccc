@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/performance/timing_info.hpp"
 
-// System include(s).
 #include <algorithm>
 #include <iomanip>
 #include <iostream>

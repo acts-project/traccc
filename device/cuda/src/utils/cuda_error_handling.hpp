@@ -7,7 +7,6 @@
 
 #pragma once
 
-// CUDA include(s).
 #include <cuda_runtime_api.h>
 
 /// Helper macro used for checking @c cudaError_t type return values.

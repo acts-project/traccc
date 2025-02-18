@@ -5,10 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <string>
 #include <traccc/definitions/primitives.hpp>
 #include <traccc/edm/particle.hpp>
 #include <traccc/efficiency/track_filter.hpp>
+
+#include <string>
 
 namespace traccc {
 simple_charged_eta_pt_cut::simple_charged_eta_pt_cut(scalar eta, scalar pt)

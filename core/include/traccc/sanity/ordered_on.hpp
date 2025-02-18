@@ -8,13 +8,11 @@
 
 #pragma once
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// System include
 #include <concepts>
 #include <utility>
 

@@ -6,15 +6,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/io/read_cells.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
 #include <algorithm>
 #include <chrono>
 #include <iomanip>

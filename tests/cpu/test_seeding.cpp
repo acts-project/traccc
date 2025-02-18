@@ -5,16 +5,13 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
 using namespace traccc;

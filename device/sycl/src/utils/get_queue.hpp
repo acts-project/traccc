@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {

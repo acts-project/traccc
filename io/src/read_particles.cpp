@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
-#include "traccc/io/read_particles.hpp"
-
 #include "csv/read_particles.hpp"
+
+#include "traccc/io/read_particles.hpp"
 #include "traccc/io/utils.hpp"
 
-// System include(s).
 #include <filesystem>
 
 namespace traccc::io {

@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/io/data_format.hpp"
 #include "traccc/options/details/interface.hpp"
 
-// System include(s).
 #include <string>
 #include <string_view>
 

@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/track_candidate.hpp"
 
 namespace traccc::details {

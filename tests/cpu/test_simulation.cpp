@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
@@ -13,7 +12,6 @@
 #include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/simulation/simulator.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/geometry/mask.hpp>
 #include <detray/geometry/shapes/line.hpp>
@@ -25,10 +23,8 @@
 #include <detray/test/utils/statistics.hpp>
 #include <detray/tracks/bound_track_parameters.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <filesystem>
 
 using namespace traccc;

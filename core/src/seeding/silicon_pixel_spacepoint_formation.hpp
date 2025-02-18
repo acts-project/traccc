@@ -7,12 +7,10 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/spacepoint_formation.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
 namespace traccc::host::details {

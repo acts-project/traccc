@@ -5,24 +5,21 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
+
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 
-// detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
-// Thrust include(s).
 #include <thrust/sort.h>
 
-// System include(s).
 #include <memory_resource>
 #include <vector>
 

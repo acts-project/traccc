@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
 
 #include "../utils/utils.hpp"
 
-// Project include(s).
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"

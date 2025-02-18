@@ -7,14 +7,12 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/options/details/config_provider.hpp"
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
-// System include(s).
 #include <limits>
 
 namespace traccc::opts {

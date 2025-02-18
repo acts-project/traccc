@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/track_parameters.hpp"
 
 namespace traccc::details {

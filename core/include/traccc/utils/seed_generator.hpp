@@ -7,16 +7,13 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/track_parameters.hpp"
 
-// detray include(s).
 #include <detray/geometry/barcode.hpp>
 #include <detray/geometry/tracking_surface.hpp>
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
-// System include(s).
 #include <random>
 
 namespace traccc {

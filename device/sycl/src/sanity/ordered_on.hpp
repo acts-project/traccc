@@ -8,19 +8,16 @@
 
 #pragma once
 
-// Project include(s).
 #include "../utils/get_queue.hpp"
+
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// SYCL include
 #include <sycl/sycl.hpp>
 
-// System include
 #include <concepts>
 
 namespace traccc::sycl {

@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/performance/details/is_same_scalar.hpp"
 
-// System include(s).
 #include <cmath>
 
 namespace traccc::details {

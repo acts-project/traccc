@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "stat_plot_tool.hpp"
 
-// ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT
 #include <Math/ProbFuncMathCore.h>
 #endif  // TRACCC_HAVE_ROOT

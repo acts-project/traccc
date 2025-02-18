@@ -5,16 +5,13 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/io/read_detector.hpp"
 
 #include "traccc/io/utils.hpp"
 
-// Detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/io/frontend/detector_reader_config.hpp>
 
-// System include(s).
 #include <string>
 
 namespace {

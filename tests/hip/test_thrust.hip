@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
@@ -14,14 +13,11 @@
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/hip/copy.hpp>
 
-// Thrust include(s).
+#include <gtest/gtest.h>
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
 #include <thrust/scan.h>
 #include <thrust/sort.h>
-
-// GTest include(s).
-#include <gtest/gtest.h>
 
 // This defines the local frame test suite
 

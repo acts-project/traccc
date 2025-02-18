@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/utils/helpers.hpp"
 
-// ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT
 #include <TEfficiency.h>
 #include <TH1.h>
@@ -18,7 +16,6 @@
 #include <TProfile.h>
 #endif  // TRACCC_HAVE_ROOT
 
-// System include(s).
 #include <memory>
 #include <string_view>
 

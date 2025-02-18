@@ -5,13 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "full_chain_algorithm.hpp"
 
-// CUDA include(s).
 #include <cuda_runtime_api.h>
 
-// System include(s).
 #include <iostream>
 #include <stdexcept>
 

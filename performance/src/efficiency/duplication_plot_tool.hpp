@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Local include(s).
 #include "../utils/helpers.hpp"
 
-// Project include(s).
 #include "traccc/edm/particle.hpp"
 
-// System include(s).
 #include <string_view>
 
 namespace traccc {

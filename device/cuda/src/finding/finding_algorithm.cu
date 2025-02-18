@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
@@ -18,6 +17,7 @@
 #include "./kernels/make_barcode_sequence.cuh"
 #include "./kernels/propagate_to_next_surface.cuh"
 #include "./kernels/prune_tracks.cuh"
+
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
@@ -26,12 +26,10 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/projections.hpp"
 
-// detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
@@ -39,7 +37,6 @@
 #include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
-// Thrust include(s).
 #include <thrust/copy.h>
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
@@ -47,7 +44,6 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
-// System include(s).
 #include <cassert>
 #include <memory_resource>
 #include <vector>

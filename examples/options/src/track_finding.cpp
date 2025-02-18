@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/options/track_finding.hpp"
 
 #include "traccc/examples/utils/printable.hpp"
 #include "traccc/utils/particle.hpp"
 
-// System include(s).
 #include <sstream>
 
 namespace traccc::opts {

@@ -30,14 +30,14 @@
 #include <cxxabi.h>
 #endif
 
+#include "nvtx3/nvToolsExt.h"
+
 #include <dlfcn.h>
 
 #include <cstring>
 #include <memory>
 #include <optional>
 #include <string>
-
-#include "nvtx3/nvToolsExt.h"
 
 namespace {
 uint32_t __attribute__((no_instrument_function)) djb2(const std::string &str) {

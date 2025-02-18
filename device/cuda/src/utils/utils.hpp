@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/cuda/utils/stream.hpp"
 
-// CUDA include(s).
 #include <cuda_runtime_api.h>
 
 namespace traccc::cuda::details {

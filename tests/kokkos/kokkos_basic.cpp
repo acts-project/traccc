@@ -6,13 +6,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Kokkos include(s).
 #include <Kokkos_Core.hpp>
-
-// GoogleTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <vector>
 
 /// Trivial test for a host-run parallel-for.

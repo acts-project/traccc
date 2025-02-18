@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -25,17 +24,14 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
+#include <Kokkos_Core.hpp>
+
 #include <chrono>
 #include <exception>
 #include <iomanip>
 #include <iostream>
-
-// Kokkos include(s).
-#include <Kokkos_Core.hpp>
 
 int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_finding& /*finding_opts*/,

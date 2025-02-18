@@ -7,14 +7,11 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
-// VecMem include(s).
 #include <vecmem/edm/container.hpp>
 
-// System include(s).
 #include <compare>
 #include <type_traits>
 

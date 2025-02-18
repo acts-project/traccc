@@ -6,13 +6,14 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+#include "../../device/cuda/src/utils/cuda_error_handling.hpp"
+
+#include "traccc/device/mutex.hpp"
 
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
-#include "../../device/cuda/src/utils/cuda_error_handling.hpp"
-#include "traccc/device/mutex.hpp"
+#include <gtest/gtest.h>
 
 __global__ void mutex_add_kernel(uint32_t *out, uint32_t *lock) {
     traccc::device::mutex m(*lock);

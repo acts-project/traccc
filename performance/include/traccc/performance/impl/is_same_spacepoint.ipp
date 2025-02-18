@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/spacepoint.hpp"
 
 namespace traccc::details {

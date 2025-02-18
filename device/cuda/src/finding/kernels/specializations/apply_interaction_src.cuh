@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
 #include "../../../utils/global_index.hpp"
 #include "../apply_interaction.cuh"
 
-// Project include(s).
 #include "traccc/finding/device/apply_interaction.hpp"
 
 namespace traccc::cuda::kernels {

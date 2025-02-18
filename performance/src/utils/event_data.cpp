@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/utils/event_data.hpp"
 
 #include "traccc/io/csv/make_cell_reader.hpp"
@@ -20,10 +19,8 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/utils/particle.hpp"
 
-// Detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
 
-// System include(s).
 #include <filesystem>
 
 namespace traccc {

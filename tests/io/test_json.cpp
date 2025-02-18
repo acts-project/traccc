@@ -5,15 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/io/write.hpp"
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <cstdio>
 #include <filesystem>
 #include <fstream>

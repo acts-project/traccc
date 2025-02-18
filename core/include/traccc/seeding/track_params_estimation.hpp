@@ -7,16 +7,13 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc {

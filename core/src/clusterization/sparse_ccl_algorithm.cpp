@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 
 #include "traccc/clusterization/details/sparse_ccl.hpp"
@@ -14,7 +13,6 @@
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 

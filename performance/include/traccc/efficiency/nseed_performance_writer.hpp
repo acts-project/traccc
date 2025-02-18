@@ -7,17 +7,18 @@
 
 #pragma once
 
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <set>
 #include <traccc/edm/measurement.hpp>
 #include <traccc/edm/nseed.hpp>
 #include <traccc/edm/spacepoint.hpp>
 #include <traccc/efficiency/track_filter.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
 #include <traccc/utils/event_data.hpp>
+
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <set>
 
 namespace traccc {
 class nseed_performance_writer {

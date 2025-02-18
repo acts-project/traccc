@@ -6,13 +6,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/utils/algorithm.hpp"
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <string>
 
 class double_int : public traccc::algorithm<int(const int &)> {

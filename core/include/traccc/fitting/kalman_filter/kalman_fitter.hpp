@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -20,14 +19,11 @@
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/utils/particle.hpp"
 
-// detray include(s).
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
-// vecmem include(s)
 #include <vecmem/containers/device_vector.hpp>
 
-// System include(s).
 #include <limits>
 
 namespace traccc {

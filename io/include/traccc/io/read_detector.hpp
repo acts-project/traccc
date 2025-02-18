@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/geometry/detector.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <string_view>
 
 namespace traccc::io {

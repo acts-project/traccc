@@ -5,11 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/measurement.hpp"
-
-// Local include(s).
 #include "traccc/io/csv/measurement.hpp"
 
 #pragma once

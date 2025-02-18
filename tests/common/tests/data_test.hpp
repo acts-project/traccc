@@ -8,13 +8,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/io/utils.hpp"
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <string>
 
 namespace traccc::tests {

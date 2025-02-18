@@ -6,13 +6,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/utils/particle.hpp"
 
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
 TEST(particle, particle_with_pdg_num) {

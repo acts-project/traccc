@@ -6,15 +6,17 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+#include "../../device/cuda/src/utils/cuda_error_handling.hpp"
 
-#include <mutex>
+#include "traccc/device/mutex.hpp"
+#include "traccc/device/unique_lock.hpp"
+
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
-#include "../../device/cuda/src/utils/cuda_error_handling.hpp"
-#include "traccc/device/mutex.hpp"
-#include "traccc/device/unique_lock.hpp"
+#include <gtest/gtest.h>
+
+#include <mutex>
 
 __global__ void unique_lock_add_kernel_try_lock(uint32_t *out,
                                                 uint32_t *_lock) {

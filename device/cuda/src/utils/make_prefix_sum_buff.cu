@@ -5,11 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "cuda_error_handling.hpp"
 #include "utils.hpp"
 
-// Project include(s).
 #include "traccc/cuda/utils/make_prefix_sum_buff.hpp"
 #include "traccc/device/make_prefix_sum_buffer.hpp"
 

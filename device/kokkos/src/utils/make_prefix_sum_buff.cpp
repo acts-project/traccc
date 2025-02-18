@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
-#include "traccc/kokkos/utils/definitions.hpp"
-
-// Project include(s).
-#include "traccc/device/make_prefix_sum_buffer.hpp"
 #include "traccc/kokkos/utils/make_prefix_sum_buff.hpp"
+
+#include "traccc/device/make_prefix_sum_buffer.hpp"
+#include "traccc/kokkos/utils/definitions.hpp"
 
 namespace traccc::kokkos {
 

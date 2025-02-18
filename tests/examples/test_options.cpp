@@ -6,13 +6,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/options/details/value_array.hpp"
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <sstream>
 #include <stdexcept>
 

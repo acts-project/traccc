@@ -7,12 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 
-// detray include(s).
 #include <detray/definitions/pdg_particle.hpp>
 #include <detray/detectors/bfield.hpp>
 #include <detray/navigation/navigator.hpp>
@@ -20,10 +18,8 @@
 #include <detray/propagator/rk_stepper.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <string>
 #include <string_view>
 #include <vector>

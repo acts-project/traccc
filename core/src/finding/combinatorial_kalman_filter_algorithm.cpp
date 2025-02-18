@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 
-// System include(s).
 #include <stdexcept>
 
 namespace traccc::host {

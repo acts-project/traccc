@@ -7,12 +7,10 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/options/details/config_provider.hpp"
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 
-// Detray include(s).
 #include <detray/propagator/propagation_config.hpp>
 
 namespace traccc::opts {

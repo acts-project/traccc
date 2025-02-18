@@ -7,13 +7,9 @@
 
 #pragma once
 
-// Local include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/io/data_format.hpp"
 
-// Project include(s).
-#include "traccc/definitions/primitives.hpp"
-
-// System include(s).
 #include <map>
 #include <string_view>
 

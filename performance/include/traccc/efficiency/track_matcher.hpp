@@ -7,10 +7,11 @@
 
 #pragma once
 
-#include <optional>
-#include <string>
 #include <traccc/definitions/primitives.hpp>
 #include <traccc/edm/particle.hpp>
+
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace traccc {

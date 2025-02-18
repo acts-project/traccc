@@ -5,19 +5,17 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "read_particles.hpp"
 
 #include "read_measurements.hpp"
+
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 #include "traccc/io/csv/make_particle_reader.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
 #include <algorithm>
 #include <stdexcept>
 #include <unordered_map>

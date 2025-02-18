@@ -7,7 +7,6 @@
 
 #pragma once
 
-// System include(s).
 #include <chrono>
 #include <iosfwd>
 #include <string_view>

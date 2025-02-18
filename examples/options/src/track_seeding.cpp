@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/options/track_seeding.hpp"
 
 #include "traccc/examples/utils/printable.hpp"

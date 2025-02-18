@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s)
 #include "traccc/clusterization/details/measurement_creation.hpp"
 
 namespace traccc::device {

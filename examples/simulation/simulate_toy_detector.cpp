@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -18,16 +17,13 @@
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
 
-// detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// Boost include(s).
 #include <boost/filesystem.hpp>
 
 using namespace traccc;

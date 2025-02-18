@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/seeding/seed_selecting_helper.hpp"
 
-// System include(s)
 #include <cassert>
 #include <cmath>
 

@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/finding/device/fill_sort_keys.hpp"
 
 namespace traccc::cuda::kernels {

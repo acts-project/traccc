@@ -5,12 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Test include(s).
 #include "test_queue.hpp"
 #include "tests/ckf_telescope_test.hpp"
-#include "traccc/utils/seed_generator.hpp"
 
-// Project include(s).
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -20,21 +17,18 @@
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
+#include "traccc/utils/seed_generator.hpp"
 
-// detray include(s).
 #include <detray/propagator/propagator.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <filesystem>
 #include <string>
 

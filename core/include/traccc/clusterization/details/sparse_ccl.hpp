@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 
 namespace traccc::details {

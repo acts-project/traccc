@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/io/digitization_config.hpp"
 
-// System include(s).
 #include <string_view>
 
 namespace traccc::io::json {

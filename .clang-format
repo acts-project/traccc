@@ -11,3 +11,29 @@ PointerAlignment: Left
 ColumnLimit: 80
 AccessModifierOffset: 0
 KeepEmptyLinesAtTheStartOfBlocks: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  # vecmem headers
+  - Regex: '^(<|")vecmem/.*'
+    Priority: 5000
+  # algebra headers
+  - Regex: '^(<|")algebra/.*'
+    Priority: 4000
+  # covfie headers
+  - Regex: '^(<|")covfie/.*'
+    Priority: 3000
+  # detray headers
+  - Regex: '^(<|")detray/.*'
+    Priority: 2000
+  # traccc headers
+  - Regex: '^(<|")traccc/.*'
+    Priority: 1000
+  # standard library includes: '<...>' without any '/' or '.' in the path
+  - Regex: '^<[^/\.]*>'
+    Priority: 10000
+  # other system includes: '<...>' without further conditions
+  - Regex: '^<.*>'
+    Priority: 8000
+  # local includes
+  - Regex: '^".*'
+    Priority: 500

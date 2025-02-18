@@ -7,7 +7,6 @@
 
 #pragma once
 
-// System include(s).
 #include <algorithm>
 #include <cassert>
 #include <type_traits>

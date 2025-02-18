@@ -6,7 +6,6 @@
  */
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -19,11 +18,9 @@
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/projections.hpp"
 
-// Detray include(s).
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
-// System include(s).
 #include <algorithm>
 #include <cassert>
 #include <vector>

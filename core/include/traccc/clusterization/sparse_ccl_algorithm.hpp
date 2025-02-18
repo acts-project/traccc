@@ -7,15 +7,12 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc::host {

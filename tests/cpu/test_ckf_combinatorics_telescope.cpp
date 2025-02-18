@@ -5,30 +5,24 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
+#include "tests/ckf_telescope_test.hpp"
+
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/ranges.hpp"
-
-// Test include(s).
-#include "tests/ckf_telescope_test.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
-// detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <filesystem>
 #include <string>
 

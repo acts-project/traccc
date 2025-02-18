@@ -5,18 +5,16 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/io/read_detector_description.hpp"
 
 #include "csv/read_surfaces.hpp"
+
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
 #include <sstream>
 #include <stdexcept>
 

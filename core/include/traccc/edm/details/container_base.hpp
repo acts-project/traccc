@@ -7,15 +7,12 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/details/container_element.hpp"
 #include "traccc/utils/pair.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <cassert>
 #include <stdexcept>
 #include <type_traits>

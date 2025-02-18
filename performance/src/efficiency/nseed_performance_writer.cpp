@@ -5,11 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <memory>
-#include <optional>
 #include <traccc/efficiency/nseed_performance_writer.hpp>
 #include <traccc/efficiency/track_filter.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
+
+#include <memory>
+#include <optional>
 
 namespace traccc {
 nseed_performance_writer::nseed_performance_writer(

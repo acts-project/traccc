@@ -5,7 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
+#include "tests/data_test.hpp"
+
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
@@ -17,16 +18,10 @@
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/write.hpp"
 
-// Test include(s).
-#include "tests/data_test.hpp"
-
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <filesystem>
 
 class io : public traccc::tests::data_test {};

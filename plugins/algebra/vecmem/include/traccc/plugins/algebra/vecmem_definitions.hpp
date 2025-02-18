@@ -9,11 +9,9 @@
 // Algebra Plugins include(s).
 #include <algebra/vecmem_cmath.hpp>
 
-// VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
-// System include(s).
 #include <array>
 #include <map>
 #include <tuple>

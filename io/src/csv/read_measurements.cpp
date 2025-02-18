@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "read_measurements.hpp"
 
 #include "traccc/io/csv/make_measurement_reader.hpp"
 
-// System include(s).
 #include <algorithm>
 
 namespace traccc::io::csv {

@@ -7,15 +7,12 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/details/container_base.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/jagged_device_vector.hpp>
 
-// System include(s).
 #include <cassert>
 
 namespace traccc {

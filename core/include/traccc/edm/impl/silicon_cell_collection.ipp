@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/definitions/math.hpp"
 
 namespace traccc::edm {

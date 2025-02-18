@@ -5,16 +5,13 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
-#include "traccc/cuda/seeding/track_params_estimation.hpp"
 
-// Project include(s).
+#include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/device/estimate_track_params.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc::cuda {

@@ -8,16 +8,13 @@
 
 #pragma once
 
-// VecMem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// SYCL include
 #include <sycl/sycl.hpp>
 
-// System include
 #include <concepts>
 #include <utility>
 

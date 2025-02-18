@@ -7,16 +7,11 @@
 
 #pragma once
 
-// Library include(s).
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/data_format.hpp"
 
-// Project include(s).
-#include "traccc/geometry/silicon_detector_description.hpp"
-
-// Detray include(s).
 #include <detray/geometry/barcode.hpp>
 
-// System include(s).
 #include <cstdint>
 #include <map>
 #include <string_view>

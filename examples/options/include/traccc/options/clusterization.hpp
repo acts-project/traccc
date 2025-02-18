@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/options/details/config_provider.hpp"

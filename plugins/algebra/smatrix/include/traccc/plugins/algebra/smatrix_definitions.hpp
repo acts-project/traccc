@@ -8,17 +8,14 @@
 
 #pragma once
 
-// Detray include(s).
 #include <detray/plugins/algebra/smatrix_definitions.hpp>
 
 // Algebra Plugins include(s).
 #include <algebra/smatrix_smatrix.hpp>
 
-// VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
-// System include(s).
 #include <array>
 #include <map>
 #include <tuple>

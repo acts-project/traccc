@@ -5,19 +5,16 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
 #include "duplication_plot_tool.hpp"
 #include "eff_plot_tool.hpp"
 #include "track_classification.hpp"
 
-// ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT
 #include <TFile.h>
 #endif  // TRACCC_HAVE_ROOT
 
-// System include(s).
 #include <iostream>
 #include <memory>
 #include <stdexcept>

@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/io/utils.hpp"
 
-// System include(s).
 #include <cstdlib>
 #include <filesystem>
 #include <iomanip>

@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/io/csv/cell.hpp"
 
-// DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
 
-// System include(s).
 #include <string_view>
 
 namespace traccc::io::csv {

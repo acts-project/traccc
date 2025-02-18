@@ -7,14 +7,12 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 
-// detray include(s).
 #include <detray/tracks/bound_track_parameters.hpp>
 
 namespace traccc {

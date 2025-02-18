@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 

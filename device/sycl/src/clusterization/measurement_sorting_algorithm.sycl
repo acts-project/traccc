@@ -5,11 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../utils/get_queue.hpp"
+
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 
-// oneDPL include(s).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wshadow"
 #pragma clang diagnostic ignored "-Wunused-parameter"
@@ -21,7 +20,6 @@
 #include <oneapi/dpl/execution>
 #pragma clang diagnostic pop
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl {

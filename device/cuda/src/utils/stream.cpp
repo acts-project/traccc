@@ -5,14 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/cuda/utils/stream.hpp"
 
 #include "cuda_error_handling.hpp"
 #include "opaque_stream.hpp"
 #include "utils.hpp"
 
-// CUDA include(s).
 #include <cuda_runtime_api.h>
 
 namespace traccc::cuda {

@@ -5,19 +5,17 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "tests/cca_test.hpp"
+
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
 using namespace traccc;

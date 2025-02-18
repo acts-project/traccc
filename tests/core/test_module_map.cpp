@@ -6,16 +6,13 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/module_map.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/utils.hpp"
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <map>
 #include <string>
 

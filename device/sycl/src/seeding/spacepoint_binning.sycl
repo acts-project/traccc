@@ -5,17 +5,14 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/global_index.hpp"
-#include "traccc/sycl/seeding/spacepoint_binning.hpp"
 
-// Project include(s).
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
+#include "traccc/sycl/seeding/spacepoint_binning.hpp"
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl {

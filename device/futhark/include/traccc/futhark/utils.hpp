@@ -6,10 +6,11 @@
  */
 
 #pragma once
+#include <traccc/futhark/context.hpp>
+
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <traccc/futhark/context.hpp>
 
 #define FUTHARK_ERROR_CHECK(ans) futharkAssert((ans), __FILE__, __LINE__)
 

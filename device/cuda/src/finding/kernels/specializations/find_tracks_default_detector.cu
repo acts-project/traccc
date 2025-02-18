@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "find_tracks_src.cuh"
 
-// Project include(s).
 #include "traccc/geometry/detector.hpp"
 
 namespace traccc::cuda::kernels {

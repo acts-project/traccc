@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/performance/details/is_same_angle.hpp"
 
-// System include(s).
 #include <cmath>
 #include <numbers>
 

@@ -5,11 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../../utils/global_index.hpp"
 #include "make_barcode_sequence.cuh"
 
-// Project include(s).
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 
 namespace traccc::cuda::kernels {

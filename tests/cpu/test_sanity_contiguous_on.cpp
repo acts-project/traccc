@@ -6,15 +6,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// vecmem includes
-#include <vecmem/containers/device_vector.hpp>
-#include <vecmem/containers/vector.hpp>
-
-// traccc includes
 #include <traccc/definitions/qualifiers.hpp>
 #include <traccc/sanity/contiguous_on.hpp>
 
-// GTest include(s).
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/vector.hpp>
+
 #include <gtest/gtest.h>
 
 struct int_identity_projection {

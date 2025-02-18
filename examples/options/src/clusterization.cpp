@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/options/clusterization.hpp"
 
 #include "traccc/clusterization/clusterization_algorithm.hpp"

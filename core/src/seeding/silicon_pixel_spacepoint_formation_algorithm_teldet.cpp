@@ -5,8 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "silicon_pixel_spacepoint_formation.hpp"
+
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 namespace traccc::host {

@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/definitions/hints.hpp"
@@ -19,11 +18,9 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
-// Vecmem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <cstddef>
 
 namespace traccc::device {

@@ -7,14 +7,11 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/finding/device/find_tracks.hpp"
-
-// Local include(s).
 #include "../../../utils/barrier.hpp"
 #include "../../../utils/thread_id.hpp"
 
-// System include(s).
+#include "traccc/finding/device/find_tracks.hpp"
+
 #include <utility>
 
 namespace traccc::cuda::kernels {

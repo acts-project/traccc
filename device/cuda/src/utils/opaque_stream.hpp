@@ -7,7 +7,6 @@
 
 #pragma once
 
-// CUDA include(s).
 #include <cuda_runtime_api.h>
 
 namespace traccc::cuda::details {

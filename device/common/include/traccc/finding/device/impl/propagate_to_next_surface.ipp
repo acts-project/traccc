@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/utils/particle.hpp"
 
-// Detray include(s).
 #include <detray/propagator/constrained_step.hpp>
 #include <detray/utils/tuple_helpers.hpp>
 

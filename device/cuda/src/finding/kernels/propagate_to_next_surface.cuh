@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/finding_config.hpp"
 

@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 
 #include "../utils/barrier.hpp"
 #include "../utils/utils.hpp"
 
-// Project include(s).
 #include "traccc/geometry/detector.hpp"
 #include "traccc/seeding/device/form_spacepoints.hpp"
 

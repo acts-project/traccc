@@ -7,14 +7,12 @@
 
 #pragma once
 
-// Local include(s).
 #include "../sanity/contiguous_on.hpp"
 #include "../utils/barrier.hpp"
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/thread_id.hpp"
 
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
@@ -31,15 +29,12 @@
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
 
-// Detray include(s).
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/sycl/local_accessor.hpp>
 
-// oneDPL include(s).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wshadow"
 #pragma clang diagnostic ignored "-Wunused-parameter"
@@ -52,7 +47,6 @@
 #include <oneapi/dpl/execution>
 #pragma clang diagnostic pop
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {

@@ -5,14 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "../utils/utils.hpp"
+
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 
-// Thrust include(s).
 #include <thrust/sort.h>
 
-// System include(s).
 #include <memory_resource>
 
 namespace traccc::cuda {

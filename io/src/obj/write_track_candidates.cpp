@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "write_track_candidates.hpp"
 
-// System include(s).
 #include <cassert>
 #include <fstream>
 

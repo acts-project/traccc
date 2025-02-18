@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
 #include "../../../utils/global_index.hpp"
 #include "../propagate_to_next_surface.cuh"
 
-// Project include(s).
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 
 namespace traccc::cuda::kernels {

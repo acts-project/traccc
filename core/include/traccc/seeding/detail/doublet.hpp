@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/seeding/detail/singlet.hpp"
 
-// System include(s).
 #include <variant>
 
 namespace traccc {

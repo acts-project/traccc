@@ -7,14 +7,11 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
-// Detray include(s).
 #include <detray/geometry/barcode.hpp>
 
-// VecMem include(s).
 #include <vecmem/edm/container.hpp>
 
 namespace traccc {

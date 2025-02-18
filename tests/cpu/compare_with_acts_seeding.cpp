@@ -34,10 +34,8 @@
 // VecMem
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <functional>
 #include <limits>
 

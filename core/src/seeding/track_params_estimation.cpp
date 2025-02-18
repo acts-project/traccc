@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/seeding/track_params_estimation.hpp"
 
 #include "traccc/edm/seed.hpp"

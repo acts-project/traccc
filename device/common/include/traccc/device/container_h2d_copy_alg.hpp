@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <type_traits>
 
 namespace traccc::device {

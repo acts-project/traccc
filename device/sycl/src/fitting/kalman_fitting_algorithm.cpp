@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
 
 namespace traccc::sycl {

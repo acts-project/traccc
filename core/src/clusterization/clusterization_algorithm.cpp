@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 
 namespace traccc::host {

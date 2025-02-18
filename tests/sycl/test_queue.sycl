@@ -6,13 +6,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "test_queue.hpp"
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
-// System include(s).
 #include <iostream>
 
 namespace traccc::sycl {

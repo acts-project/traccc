@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Projection include(s).
 #include "traccc/seeding/detail/seeding_config.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
 #include <string_view>
 
 namespace traccc {
@@ -36,5 +33,4 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
 }  // namespace traccc
 
-// Local include(s).
 #include "throughput_st.ipp"

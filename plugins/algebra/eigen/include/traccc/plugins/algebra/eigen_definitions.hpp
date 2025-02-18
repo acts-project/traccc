@@ -8,14 +8,11 @@
 
 #pragma once
 
-// Detray include(s).
 #include <detray/plugins/algebra/eigen_definitions.hpp>
 
-// VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
-// System include(s).
 #include <array>
 #include <map>
 #include <tuple>

@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 
-// System include(s).
 #include <variant>
 
 namespace traccc {

@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/performance/details/comparator_factory.hpp"
 
 namespace traccc::details {

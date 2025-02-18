@@ -5,11 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 //
-// Local include(s).
+#include "traccc/alpaka/seeding/track_params_estimation.hpp"
+
 #include "../utils/utils.hpp"
 
-// Project include(s).
-#include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/device/estimate_track_params.hpp"
 
 namespace traccc::alpaka {

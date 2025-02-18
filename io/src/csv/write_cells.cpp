@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "write_cells.hpp"
 
-// System include(s).
 #include <fstream>
 #include <stdexcept>
 

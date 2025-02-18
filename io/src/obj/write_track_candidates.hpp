@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/geometry/detector.hpp"
 
-// System include(s).
 #include <string_view>
 
 namespace traccc::io::obj {

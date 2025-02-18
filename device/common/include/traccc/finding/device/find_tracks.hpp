@@ -7,22 +7,17 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/concepts/barrier.hpp"
-#include "traccc/device/concepts/thread_id.hpp"
-
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/barrier.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
-// System include(s).
 #include <utility>
 
 namespace traccc::device {

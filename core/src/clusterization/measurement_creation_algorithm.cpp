@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 
 #include "traccc/clusterization/details/measurement_creation.hpp"
 #include "traccc/definitions/primitives.hpp"
 
-// System include(s).
 #include <cassert>
 
 namespace traccc::host {

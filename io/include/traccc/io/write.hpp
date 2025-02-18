@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -17,7 +16,6 @@
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/digitization_config.hpp"
 
-// System include(s).
 #include <cstddef>
 #include <string_view>
 

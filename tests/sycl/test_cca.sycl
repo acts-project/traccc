@@ -5,18 +5,20 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+#include "tests/cca_test.hpp"
 
-#include <functional>
-#include <sycl/sycl.hpp>
+#include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 
-#include "tests/cca_test.hpp"
-#include "traccc/clusterization/clustering_config.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
-#include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include <gtest/gtest.h>
+#include <sycl/sycl.hpp>
+
+#include <functional>
 
 namespace {
 

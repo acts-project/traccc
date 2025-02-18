@@ -7,14 +7,10 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/device/global_index.hpp"
-
-// Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {

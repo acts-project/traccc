@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/fitting/details/fit_tracks.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 
-// Detray include(s).
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 

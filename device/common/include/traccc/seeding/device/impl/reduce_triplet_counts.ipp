@@ -7,7 +7,6 @@
 
 #pragma once
 
-// VecMem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 
 namespace traccc::device {

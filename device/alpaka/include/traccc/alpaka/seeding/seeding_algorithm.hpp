@@ -7,16 +7,12 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/alpaka/seeding/seed_finding.hpp"
 #include "traccc/alpaka/seeding/spacepoint_binning.hpp"
-
-// Project include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
 // traccc library include(s).

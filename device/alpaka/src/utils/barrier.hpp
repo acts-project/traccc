@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Local include(s).
 #include "utils.hpp"
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
 namespace traccc::alpaka {

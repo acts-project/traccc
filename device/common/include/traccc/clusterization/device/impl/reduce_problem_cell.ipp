@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/clusterization/details/sparse_ccl.hpp"
 
-// System include(s).
 #include <cassert>
 
 namespace traccc::device {

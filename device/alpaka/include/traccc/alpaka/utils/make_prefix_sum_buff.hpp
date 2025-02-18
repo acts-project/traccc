@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/utils/memory_resource.hpp"
 

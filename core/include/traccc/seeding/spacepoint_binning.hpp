@@ -7,13 +7,11 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// System include(s).
 #include <functional>
 
 namespace traccc {

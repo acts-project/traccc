@@ -5,18 +5,15 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 
 #include "../utils/barrier.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 
-// Project include(s)
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel.hpp"
 
-// System include(s).
 #include <algorithm>
 #include <mutex>
 

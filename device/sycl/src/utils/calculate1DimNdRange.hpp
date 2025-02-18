@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Sycl include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {

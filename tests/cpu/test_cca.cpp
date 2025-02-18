@@ -5,22 +5,17 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
+#include "tests/cca_test.hpp"
+
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
-// Test include(s).
-#include "tests/cca_test.hpp"
-
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <functional>
 
 namespace {

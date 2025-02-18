@@ -5,11 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Traccc include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/io/read_measurements.hpp"
+#include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -17,7 +18,6 @@
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
@@ -28,10 +28,8 @@
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 #include <detray/tracks/ray.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// Boost include(s).
 #include <boost/filesystem.hpp>
 
 // Google Benchmark include(s).

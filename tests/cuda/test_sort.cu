@@ -6,14 +6,15 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+#include "../../cuda/src/utils/barrier.hpp"
+#include "../../cuda/src/utils/thread_id.hpp"
+
+#include "traccc/device/sort.hpp"
 
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
-#include "../../cuda/src/utils/barrier.hpp"
-#include "../../cuda/src/utils/thread_id.hpp"
-#include "traccc/device/sort.hpp"
+#include <gtest/gtest.h>
 
 __global__ void testBlockSortKernel(uint32_t *keys, uint32_t n_keys) {
     traccc::cuda::details::thread_id1 thread_id;

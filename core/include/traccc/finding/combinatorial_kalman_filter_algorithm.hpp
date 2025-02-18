@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -15,7 +14,6 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 
 namespace traccc::host {

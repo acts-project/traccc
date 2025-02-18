@@ -7,12 +7,10 @@
 
 #pragma once
 
-// SYCL include(s).
 #if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION)
 #include <sycl/sycl.hpp>
 #endif
 
-// System include(s).
 #include <cmath>
 
 namespace traccc {

@@ -7,10 +7,13 @@
 
 #pragma once
 
-// Project include(s)
 #include "traccc/geometry/detector.hpp"
 
 // Command line option include(s).
+#include "traccc/io/read_cells.hpp"
+#include "traccc/io/read_detector.hpp"
+#include "traccc/io/read_detector_description.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
@@ -21,24 +24,15 @@
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
 
-// I/O include(s).
-#include "traccc/io/read_cells.hpp"
-#include "traccc/io/read_detector.hpp"
-#include "traccc/io/read_detector_description.hpp"
-#include "traccc/io/utils.hpp"
-
 // Performance measurement include(s).
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
-// Indicators include(s).
 #include <indicators/progress_bar.hpp>
 
-// System include(s).
 #include <cstdlib>
 #include <ctime>
 #include <iostream>

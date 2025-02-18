@@ -5,14 +5,13 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
-#include "traccc/io/read_spacepoints.hpp"
-
 #include "csv/read_spacepoints.hpp"
+
 #include "read_binary.hpp"
+
+#include "traccc/io/read_spacepoints.hpp"
 #include "traccc/io/utils.hpp"
 
-// System include(s).
 #include <filesystem>
 
 namespace traccc::io {

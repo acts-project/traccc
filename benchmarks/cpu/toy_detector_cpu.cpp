@@ -15,15 +15,13 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Traccc IO include(s).
+#include "benchmarks/toy_detector_benchmark.hpp"
+
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 
-// Local include(s).
-#include "benchmarks/toy_detector_benchmark.hpp"
-
-// Detray include(s).
 #include <detray/core/detector.hpp>
 #include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
@@ -31,7 +29,6 @@
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // Google benchmark include(s).

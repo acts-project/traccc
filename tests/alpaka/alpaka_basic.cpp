@@ -6,23 +6,23 @@
  * Mozilla Public License Version 2.0
  */
 
-// Alpaka include(s).
-#include <alpaka/alpaka.hpp>
-#include <alpaka/example/ExampleDefaultAcc.hpp>
+#include "traccc/alpaka/utils/vecmem_types.hpp"
+
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-#include "traccc/alpaka/utils/vecmem_types.hpp"
+#include <alpaka/alpaka.hpp>
+#include <alpaka/example/ExampleDefaultAcc.hpp>
 
 #ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
 #include <vecmem/utils/sycl/queue_wrapper.hpp>
+
+#include <sycl/sycl.hpp>
 #endif
 
-// GoogleTest include(s).
 #include <gtest/gtest.h>
 
 #include <cstdint>

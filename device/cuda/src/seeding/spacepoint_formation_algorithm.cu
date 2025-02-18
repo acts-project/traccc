@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
-#include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 
-// Project include(s).
+#include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/seeding/device/form_spacepoints.hpp"
 

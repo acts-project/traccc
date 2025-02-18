@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/io/data_format.hpp"
@@ -15,10 +14,8 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/utils/event_data.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
 TEST(event_data, acts_odd) {

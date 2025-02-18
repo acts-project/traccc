@@ -7,14 +7,10 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/io/data_format.hpp"
-
-// Project include(s).
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/io/data_format.hpp"
 
-// System include(s).
 #include <cstddef>
 #include <string_view>
 

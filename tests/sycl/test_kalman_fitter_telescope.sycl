@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// SYCL include(s)
-#include <sycl/sycl.hpp>
+#include "tests/kalman_fitting_telescope_test.hpp"
 
-// Project include(s).
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -22,24 +20,18 @@
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
-// Test include(s).
-#include "tests/kalman_fitting_telescope_test.hpp"
-
-// detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
+#include <sycl/sycl.hpp>
 
-// System include(s).
 #include <exception>
 #include <filesystem>
 #include <string>

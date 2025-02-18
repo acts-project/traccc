@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/container.hpp"
 #include "traccc/seeding/detail/singlet.hpp"
 

@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
@@ -13,8 +12,9 @@
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/vecmem_types.hpp"
 #ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
 #include <vecmem/utils/sycl/queue_wrapper.hpp>
+
+#include <sycl/sycl.hpp>
 #endif
 
 #include "traccc/clusterization/clusterization_algorithm.hpp"
@@ -38,7 +38,6 @@
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
-// System include(s).
 #include <exception>
 #include <iomanip>
 #include <iostream>

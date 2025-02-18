@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/finding_config.hpp"
 
