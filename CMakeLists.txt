@@ -44,6 +44,10 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( traccc-functions )
 
+# Temporary setting for the traccc::scalar type, until it can be removed.
+set( TRACCC_CUSTOM_SCALARTYPE "float" CACHE STRING
+   "Scalar type to use in the TRACCC code" )
+
 # Flags controlling which parts of traccc to build.
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc" FALSE )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
