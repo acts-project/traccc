@@ -7,12 +7,9 @@
 
 #pragma once
 
-// Library include(s).
-#include "traccc/performance/details/is_same_object.hpp"
-
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/performance/details/is_same_object.hpp"
 
 namespace traccc::details {
 

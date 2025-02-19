@@ -7,16 +7,13 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/value_array.hpp"
 #include "traccc/utils/ranges.hpp"
 
-// detray include(s).
 #include <detray/definitions/pdg_particle.hpp>
 
-// System include(s).
 #include <cstddef>
 
 namespace traccc::opts {

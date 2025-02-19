@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
@@ -17,7 +16,6 @@
 #include "traccc/edm/cell.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
@@ -32,7 +30,6 @@
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <memory>
 
 namespace traccc::alpaka {

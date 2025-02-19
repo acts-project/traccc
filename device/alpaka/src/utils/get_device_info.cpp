@@ -5,11 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
-#include "utils.hpp"
-
-// Project include(s).
 #include "traccc/alpaka/utils/get_device_info.hpp"
+
+#include "utils.hpp"
 
 namespace traccc::alpaka {
 

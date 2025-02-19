@@ -5,7 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
+#include "tests/ckf_toy_detector_test.hpp"
+
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -18,24 +19,17 @@
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
-// Test include(s).
-#include "tests/ckf_toy_detector_test.hpp"
-
-// detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <filesystem>
 #include <string>
 

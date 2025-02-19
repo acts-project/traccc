@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
@@ -21,7 +20,6 @@
 #include "traccc/options/program_options.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // Boost
@@ -32,7 +30,6 @@
 #include "omp.h"
 #endif
 
-// System include(s).
 #include <chrono>
 #include <exception>
 #include <iostream>

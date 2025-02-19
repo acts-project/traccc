@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
-// Detray include(s).
 #include <detray/propagator/base_actor.hpp>
 
-// VecMem include(s).
 #include <vecmem/utils/debug.hpp>
 
 namespace traccc {

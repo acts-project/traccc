@@ -7,12 +7,10 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 
-// System include(s).
 #include <cstdint>
 
 namespace traccc {

@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include <cstddef>
-
 #include "traccc/definitions/qualifiers.hpp"
+
+#include <cstddef>
 
 namespace traccc {
 /**

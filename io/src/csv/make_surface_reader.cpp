@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/io/csv/make_surface_reader.hpp"
 
 namespace traccc::io::csv {

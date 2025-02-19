@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/seeding/seeding_algorithm.hpp"
 
 #include "traccc/seeding/detail/seeding_config.hpp"
 
-// System include(s).
 #include <cmath>
 #include <iostream>
 

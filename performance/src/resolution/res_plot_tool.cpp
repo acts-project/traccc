@@ -5,13 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "res_plot_tool.hpp"
 
-// Detray include(s).
 #include <detray/test/utils/statistics.hpp>
 
-// ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT
 #include <TF1.h>
 #include <TGraphErrors.h>

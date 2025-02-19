@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/options/details/interface.hpp"
 
 namespace traccc::opts {

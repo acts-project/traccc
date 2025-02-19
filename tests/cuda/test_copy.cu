@@ -6,18 +6,15 @@
  * Mozilla Public License Version 2.0
  */
 
-// Projection include(s).
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/container.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
-// Thrust include(s).
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
 

@@ -8,8 +8,9 @@
 
 #pragma once
 
-#include <cassert>
 #include <vecmem/memory/device_atomic_ref.hpp>
+
+#include <cassert>
 
 namespace traccc::device {
 template <typename T>

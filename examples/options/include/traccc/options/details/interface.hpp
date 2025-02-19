@@ -9,10 +9,8 @@
 
 #include "traccc/examples/utils/printable.hpp"
 
-// Boost include(s).
 #include <boost/program_options.hpp>
 
-// System include(s).
 #include <iosfwd>
 #include <memory>
 #include <string>

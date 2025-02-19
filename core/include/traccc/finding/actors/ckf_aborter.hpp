@@ -7,14 +7,11 @@
 
 #pragma once
 
-// Project include(s)
 #include "traccc/definitions/primitives.hpp"
 
-// detray include(s)
 #include <detray/definitions/detail/qualifiers.hpp>
 #include <detray/propagator/base_actor.hpp>
 
-// System include(s)
 #include <limits>
 
 namespace traccc {

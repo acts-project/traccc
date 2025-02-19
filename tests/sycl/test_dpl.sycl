@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// DPL include(s).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wshadow"
 #pragma clang diagnostic ignored "-Wunused-parameter"
@@ -19,18 +18,14 @@
 #include <oneapi/dpl/execution>
 #pragma clang diagnostic pop
 
-// SYCL include(s).
-#include <sycl/sycl.hpp>
-
-// VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
+#include <sycl/sycl.hpp>
 
 namespace {
 

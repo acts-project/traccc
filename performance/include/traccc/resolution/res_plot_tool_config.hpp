@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/utils/helpers.hpp"
 
-// System include(s).
 #include <map>
 #include <string>
 #include <vector>

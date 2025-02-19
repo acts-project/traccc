@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "opaque_stream.hpp"
 
 #include "cuda_error_handling.hpp"

@@ -7,15 +7,12 @@
 
 #pragma once
 
-// traccc include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
-// detray include(s).
 #include <detray/definitions/pdg_particle.hpp>
 
-// System include(s).
 #include <stdexcept>
 
 namespace traccc {

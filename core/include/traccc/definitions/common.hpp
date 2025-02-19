@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 
-// Detray include(s).
 #include <detray/definitions/units.hpp>
 
 namespace traccc {

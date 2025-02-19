@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/io/data_format.hpp"
 
-// System include(s).
 #include <iostream>
 
 namespace traccc {

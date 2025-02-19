@@ -7,7 +7,6 @@
 
 #pragma once
 
-// traccc include
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -15,7 +14,6 @@
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/container.hpp"
 
-// detray include(s).
 #include <detray/tracks/tracks.hpp>
 
 namespace traccc {

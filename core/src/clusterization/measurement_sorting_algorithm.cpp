@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/clusterization/measurement_sorting_algorithm.hpp"
 
-// System include(s).
 #include <algorithm>
 
 namespace traccc::host {

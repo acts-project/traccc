@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/math.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -15,7 +14,6 @@
 #include "traccc/seeding/detail/singlet.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
 namespace traccc {

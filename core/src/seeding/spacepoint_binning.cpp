@@ -5,13 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/seeding/spacepoint_binning.hpp"
-
-#include <detray/definitions/indexing.hpp>
 
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/seeding/spacepoint_binning_helper.hpp"
+
+#include <detray/definitions/indexing.hpp>
 
 namespace traccc {
 

@@ -5,18 +5,14 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
+#include "tests/cca_test.hpp"
+
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/cell.hpp"
 #include "traccc/futhark/component_connection.hpp"
 
-// Test include(s).
-#include "tests/cca_test.hpp"
-
-// GTest include(s).
 #include <gtest/gtest.h>
 
-// System include(s).
 #include <functional>
 
 namespace {

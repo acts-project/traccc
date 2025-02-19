@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -16,10 +15,8 @@
 #include "traccc/edm/container.hpp"
 #include "traccc/utils/subspace.hpp"
 
-// Detray include(s).
 #include <detray/geometry/barcode.hpp>
 
-// System include(s).
 #include <limits>
 
 namespace traccc {

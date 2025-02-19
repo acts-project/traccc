@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -15,10 +14,8 @@
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <functional>
 #include <variant>
 

@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/options/track_propagation.hpp"
 
 #include "traccc/definitions/common.hpp"
 #include "traccc/examples/utils/printable.hpp"
 
-// System include(s).
 #include <format>
 #include <limits>
 

@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/io/write.hpp"
 
 #include "csv/write_cells.hpp"
@@ -13,10 +12,10 @@
 #include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
 #include "obj/write_track_candidates.hpp"
-#include "traccc/io/utils.hpp"
 #include "write_binary.hpp"
 
-// System include(s).
+#include "traccc/io/utils.hpp"
+
 #include <filesystem>
 #include <stdexcept>
 

@@ -5,12 +5,14 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <memory>
 #include <traccc/futhark/component_connection.hpp>
 #include <traccc/futhark/utils.hpp>
 #include <traccc/futhark/wrapper.hpp>
+
 #include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+
+#include <memory>
 #include <vector>
 
 namespace traccc::futhark {

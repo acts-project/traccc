@@ -7,7 +7,6 @@
 
 #pragma once
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
 namespace traccc {

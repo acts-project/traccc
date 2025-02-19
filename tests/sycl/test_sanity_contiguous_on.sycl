@@ -6,18 +6,13 @@
  * Mozilla Public License Version 2.0
  */
 
-// vecmem includes
+#include "../../device/sycl/src/sanity/contiguous_on.hpp"
+
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 
-// traccc includes
-#include "../../device/sycl/src/sanity/contiguous_on.hpp"
-
-// GTest include(s).
 #include <gtest/gtest.h>
-
-// System include
 #include <sycl/sycl.hpp>
 
 struct int_identity_projection {

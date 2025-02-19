@@ -5,17 +5,20 @@
  * Mozilla Public License Version 2.0
  */
 
+#include <vecmem/memory/host_memory_resource.hpp>
+
 #include <gtest/gtest.h>
 
 #include <functional>
-#include <vecmem/memory/host_memory_resource.hpp>
 
 #ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
 #include <vecmem/utils/sycl/queue_wrapper.hpp>
+
+#include <sycl/sycl.hpp>
 #endif
 
 #include "tests/cca_test.hpp"
+
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/utils/vecmem_types.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"

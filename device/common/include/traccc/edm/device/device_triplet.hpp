@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/device/triplet_counter.hpp"

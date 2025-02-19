@@ -7,10 +7,7 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/device/global_index.hpp"
-
-// Project include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"

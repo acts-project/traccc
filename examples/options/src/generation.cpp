@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/options/generation.hpp"
 
 #include "traccc/definitions/common.hpp"
@@ -13,7 +12,6 @@
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/ranges.hpp"
 
-// System include(s).
 #include <sstream>
 
 namespace traccc::opts {

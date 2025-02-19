@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/global_index.hpp"
 
-// Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -20,10 +18,8 @@
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-// oneDPL include(s).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wshadow"
 #pragma clang diagnostic ignored "-Wunused-parameter"
@@ -36,7 +32,6 @@
 #include <oneapi/dpl/execution>
 #pragma clang diagnostic pop
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl {

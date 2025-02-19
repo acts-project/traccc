@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/utils/particle.hpp"
 
-// Detray include(s).
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/actors/pointwise_material_interactor.hpp>
 

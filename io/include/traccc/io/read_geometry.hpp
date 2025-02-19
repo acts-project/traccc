@@ -7,17 +7,12 @@
 
 #pragma once
 
-// Local include(s).
+#include "traccc/geometry/geometry.hpp"
 #include "traccc/io/data_format.hpp"
 
-// Project include(s).
-#include "traccc/geometry/geometry.hpp"
-
-// Detray include(s).
 #include <detray/geometry/barcode.hpp>
 #include <detray/geometry/tracking_surface.hpp>
 
-// System include(s).
 #include <cstdint>
 #include <map>
 #include <memory>

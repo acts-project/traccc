@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "kalman_fitting_test.hpp"
 
-// Detray include(s).
 #include <detray/geometry/mask.hpp>
 #include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/io/frontend/detector_writer.hpp>

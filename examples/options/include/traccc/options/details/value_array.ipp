@@ -7,7 +7,6 @@
 
 #pragma once
 
-// System include(s).
 #include <iostream>
 #include <sstream>
 #include <stdexcept>

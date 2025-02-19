@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "apply_interaction_src.cuh"
 #include "types.hpp"
 

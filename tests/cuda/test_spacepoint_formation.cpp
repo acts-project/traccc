@@ -5,23 +5,19 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/detector.hpp"
 
-// Detray include(s).
 #include <detray/test/utils/detectors/build_telescope_detector.hpp>
 #include <detray/tracks/ray.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
 using namespace traccc;

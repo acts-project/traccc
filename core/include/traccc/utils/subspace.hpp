@@ -7,12 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 
-// System include(s).
 #include <array>
 
 namespace traccc {

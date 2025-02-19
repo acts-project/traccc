@@ -5,11 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/finding/details/find_tracks.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>

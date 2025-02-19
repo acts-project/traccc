@@ -5,21 +5,18 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../sanity/contiguous_on.hpp"
 #include "../sanity/ordered_on.hpp"
 #include "../utils/barrier.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/thread_id.hpp"
+
+#include "traccc/clusterization/device/ccl_kernel.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
-// Project include(s)
-#include "traccc/clusterization/device/ccl_kernel.hpp"
-
-// Vecmem include(s).
 #include <vecmem/utils/sycl/local_accessor.hpp>
 
 namespace traccc::sycl {

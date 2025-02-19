@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
 namespace traccc::device {

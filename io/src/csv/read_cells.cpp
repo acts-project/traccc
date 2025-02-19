@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "read_cells.hpp"
 
 #include "traccc/io/csv/make_cell_reader.hpp"
 
-// System include(s).
 #include <algorithm>
 #include <cassert>
 #include <iostream>

@@ -7,7 +7,14 @@
 
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
-// System include
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_state.hpp"
+#include "traccc/utils/algorithm.hpp"
+
+#include <vecmem/containers/vector.hpp>
+
 #include <algorithm>
 #include <initializer_list>
 #include <iomanip>
@@ -18,16 +25,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-
-// VecMem include(s).
-#include <vecmem/containers/vector.hpp>
-
-// Project include(s).
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate.hpp"
-#include "traccc/edm/track_state.hpp"
-#include "traccc/utils/algorithm.hpp"
 
 // Greedy ambiguity resolution adapted from ACTS code
 

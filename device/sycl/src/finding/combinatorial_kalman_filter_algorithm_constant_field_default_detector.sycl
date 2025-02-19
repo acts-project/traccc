@@ -5,12 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../utils/get_queue.hpp"
 #include "find_tracks.hpp"
+
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>

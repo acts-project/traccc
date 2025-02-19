@@ -7,14 +7,12 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/hints.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {

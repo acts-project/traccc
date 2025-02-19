@@ -5,20 +5,16 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/io/read_geometry.hpp"
 
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/utils.hpp"
 
-// Detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
 #include <stdexcept>
 
 namespace {

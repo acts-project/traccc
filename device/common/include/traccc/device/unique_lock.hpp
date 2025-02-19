@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include <mutex>
-
 #include "traccc/definitions/qualifiers.hpp"
+
+#include <mutex>
 
 namespace traccc::device {
 /**

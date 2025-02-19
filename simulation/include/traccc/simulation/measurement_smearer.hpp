@@ -7,16 +7,13 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/io/csv/measurement.hpp"
 #include "traccc/utils/subspace.hpp"
 
-// Detray include(s).
 #include <detray/geometry/shapes/annulus2D.hpp>
 #include <detray/geometry/shapes/line.hpp>
 #include <detray/tracks/bound_track_parameters.hpp>
 
-// System include(s).
 #include <array>
 #include <random>
 #include <string>

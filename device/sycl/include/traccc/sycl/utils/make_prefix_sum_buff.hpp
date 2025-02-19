@@ -7,15 +7,12 @@
 
 #pragma once
 
-// Sycl include(s).
-#include <sycl/sycl.hpp>
-
-// Project include(s).
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/sycl/copy.hpp>
+
+#include <sycl/sycl.hpp>
 
 namespace traccc::sycl {
 

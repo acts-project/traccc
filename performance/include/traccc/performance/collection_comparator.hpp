@@ -7,15 +7,11 @@
 
 #pragma once
 
-// Library include(s).
-#include "traccc/performance/details/comparator_factory.hpp"
-
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
+#include "traccc/performance/details/comparator_factory.hpp"
 
-// System include(s).
 #include <functional>
 #include <iostream>
 #include <string>

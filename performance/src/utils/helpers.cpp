@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "helpers.hpp"
 
 namespace traccc::plot_helpers {

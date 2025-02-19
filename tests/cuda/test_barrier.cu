@@ -6,12 +6,12 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+#include "../../device/cuda/src/utils/barrier.hpp"
 
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
-#include "../../device/cuda/src/utils/barrier.hpp"
+#include <gtest/gtest.h>
 
 __global__ void testBarrierAnd(bool* out) {
     traccc::cuda::barrier bar;

@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/math.hpp"
 
-// System include(s).
 #include <cassert>
 
 namespace traccc::device {

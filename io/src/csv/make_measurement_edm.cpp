@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/io/csv/make_measurement_edm.hpp"
 
-// Detray include(s).
 #include <detray/geometry/barcode.hpp>
 
 namespace traccc::io::csv {

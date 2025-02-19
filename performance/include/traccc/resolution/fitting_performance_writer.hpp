@@ -7,17 +7,13 @@
 
 #pragma once
 
-// Library include(s).
-#include "traccc/resolution/res_plot_tool_config.hpp"
-#include "traccc/resolution/stat_plot_tool_config.hpp"
-
-// Project include(s).
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/resolution/res_plot_tool_config.hpp"
+#include "traccc/resolution/stat_plot_tool_config.hpp"
 #include "traccc/utils/event_data.hpp"
 
-// System include(s).
 #include <memory>
 
 namespace traccc {

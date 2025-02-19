@@ -7,20 +7,16 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc::host {

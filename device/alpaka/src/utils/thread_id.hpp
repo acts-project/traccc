@@ -8,14 +8,11 @@
 
 #pragma once
 
-// Local include(s).
 #include "utils.hpp"
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 
-// Alpaka include(s).
 #include <alpaka/alpaka.hpp>
 
 namespace traccc::alpaka::details {

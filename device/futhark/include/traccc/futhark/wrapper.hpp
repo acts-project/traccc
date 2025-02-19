@@ -7,12 +7,12 @@
 
 #pragma once
 
+#include <traccc/futhark/context.hpp>
 #include <traccc/futhark/entry.h>
+#include <traccc/futhark/utils.hpp>
 
 #include <cstring>
 #include <numeric>
-#include <traccc/futhark/context.hpp>
-#include <traccc/futhark/utils.hpp>
 #include <tuple>
 #include <vector>
 

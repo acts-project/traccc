@@ -8,7 +8,6 @@
 
 #pragma once
 
-// VecMem include(s).
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>

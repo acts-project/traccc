@@ -7,17 +7,12 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc::sycl {

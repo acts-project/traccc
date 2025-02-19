@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
-#include "traccc/cuda/seeding/seed_finding.hpp"
 
-// Project include(s).
+#include "traccc/cuda/seeding/seed_finding.hpp"
 #include "traccc/cuda/utils/make_prefix_sum_buff.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/device/make_prefix_sum_buffer.hpp"
@@ -28,10 +26,8 @@
 #include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
 
-// System include(s).
 #include <algorithm>
 #include <vector>
 

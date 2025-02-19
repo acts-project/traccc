@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 namespace traccc::sycl {

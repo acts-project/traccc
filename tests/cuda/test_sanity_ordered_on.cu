@@ -6,17 +6,14 @@
  * Mozilla Public License Version 2.0
  */
 
-// vecmem includes
+#include "../../device/cuda/src/sanity/ordered_on.cuh"
+
+#include <traccc/definitions/qualifiers.hpp>
+
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
-// traccc includes
-#include <traccc/definitions/qualifiers.hpp>
-
-#include "../../device/cuda/src/sanity/ordered_on.cuh"
-
-// GTest include(s).
 #include <gtest/gtest.h>
 
 struct int_lt_relation {

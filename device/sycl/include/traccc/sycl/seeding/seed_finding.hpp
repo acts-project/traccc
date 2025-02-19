@@ -8,21 +8,17 @@
 #pragma once
 
 // SYCL library include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
-// Project include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc::sycl {

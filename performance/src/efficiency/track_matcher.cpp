@@ -5,12 +5,13 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <optional>
-#include <set>
-#include <string>
 #include <traccc/definitions/primitives.hpp>
 #include <traccc/edm/particle.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
+
+#include <optional>
+#include <set>
+#include <string>
 #include <vector>
 
 namespace traccc {

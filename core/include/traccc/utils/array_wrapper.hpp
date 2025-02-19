@@ -9,10 +9,12 @@
 
 #include <traccc/definitions/qualifiers.hpp>
 #include <traccc/utils/functor.hpp>
-#include <type_traits>
-#include <utility>
+
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
+
+#include <type_traits>
+#include <utility>
 
 namespace traccc {
 /**

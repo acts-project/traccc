@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/finding/device/prune_tracks.hpp"
 
 namespace traccc::cuda::kernels {

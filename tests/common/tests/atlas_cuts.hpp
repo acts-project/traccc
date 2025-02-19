@@ -9,6 +9,7 @@
 #pragma once
 
 #include <Acts/Seeding/IExperimentCuts.hpp>
+
 #include <algorithm>
 
 namespace Acts {

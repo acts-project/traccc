@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 
 namespace traccc {

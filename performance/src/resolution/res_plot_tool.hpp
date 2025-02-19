@@ -7,15 +7,12 @@
 
 #pragma once
 
-// Library include(s).
 #include "../utils/helpers.hpp"
-#include "traccc/resolution/res_plot_tool_config.hpp"
 
-// Project include(s).
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/resolution/res_plot_tool_config.hpp"
 
-// System include(s).
 #include <map>
 #include <memory>
 #include <string>

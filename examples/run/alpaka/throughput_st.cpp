@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../common/throughput_st.hpp"
 
 #include "full_chain_algorithm.hpp"
 
-// VecMem include(s).
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)

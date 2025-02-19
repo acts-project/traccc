@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Local include(s).
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/device/global_index.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
-
-// Project include(s).
-#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 

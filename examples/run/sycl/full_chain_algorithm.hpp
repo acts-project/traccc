@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -20,19 +19,16 @@
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 
-// System include(s).
 #include <memory>
 
 namespace traccc::sycl {

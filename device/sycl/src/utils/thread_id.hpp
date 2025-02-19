@@ -8,10 +8,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/device/concepts/thread_id.hpp"
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {

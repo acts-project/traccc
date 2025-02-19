@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -13,10 +12,8 @@
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// GTest include(s).
 #include <gtest/gtest.h>
 
 TEST(algorithms, seq_single_module) {

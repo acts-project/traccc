@@ -7,15 +7,11 @@
 
 #pragma once
 
-// Library include(s).
-#include "traccc/performance/details/is_same_object.hpp"
-
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
+#include "traccc/performance/details/is_same_object.hpp"
 
-// System include(s).
 #include <algorithm>
 #include <cassert>
 #include <cmath>

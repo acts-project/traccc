@@ -5,15 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "write_digitization_config.hpp"
 
-// Acts include(s).
 #include <Acts/Plugins/Json/ActsJson.hpp>
 #include <Acts/Plugins/Json/GeometryHierarchyMapJsonConverter.hpp>
 #include <Acts/Plugins/Json/UtilitiesJsonConverter.hpp>
 
-// System include(s).
 #include <fstream>
 
 namespace traccc {

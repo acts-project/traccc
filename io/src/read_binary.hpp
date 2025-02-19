@@ -7,14 +7,12 @@
 
 #pragma once
 
-// VecMem include(s).
-#include <ios>
 #include <vecmem/edm/host.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 
-// System include(s).
 #include <cstddef>
 #include <fstream>
+#include <ios>
 #include <string_view>
 #include <type_traits>
 #include <vector>

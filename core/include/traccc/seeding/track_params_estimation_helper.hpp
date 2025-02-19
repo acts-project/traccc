@@ -7,13 +7,11 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/definitions/math.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
-// System include(s).
 #include <cmath>
 
 namespace traccc {

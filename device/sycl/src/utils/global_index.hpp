@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/device/global_index.hpp"
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {

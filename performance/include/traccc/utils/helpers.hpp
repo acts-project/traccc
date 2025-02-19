@@ -7,7 +7,6 @@
 
 #pragma once
 
-// System include(s).
 #include <string>
 #include <string_view>
 

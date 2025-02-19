@@ -6,11 +6,9 @@
  */
 #pragma once
 
-// Project include(s).
 #include "traccc/seeding/doublet_finding_helper.hpp"
 #include "traccc/seeding/triplet_finding_helper.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 
 namespace traccc::device {

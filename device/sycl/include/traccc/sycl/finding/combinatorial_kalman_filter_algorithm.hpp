@@ -8,24 +8,19 @@
 #pragma once
 
 // SYCL library include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// Detray include(s).
 #include <detray/detectors/bfield.hpp>
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc::sycl {

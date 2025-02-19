@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <cmath>
-
-// Local include(s).
 #include "kalman_fitting_momentum_resolution_test.hpp"
 
-// ROOT include(s).
+#include <cmath>
+
 #ifdef TRACCC_HAVE_ROOT
 #include <TF1.h>
 #include <TFile.h>
@@ -19,7 +17,6 @@
 #include <TH1.h>
 #endif  // TRACCC_HAVE_ROOT
 
-// System include(s).
 #include <iostream>
 #include <memory>
 #include <stdexcept>

@@ -5,11 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../../utils/global_index.hpp"
 #include "fill_sort_keys.cuh"
 
-// Project include(s).
 #include "traccc/finding/device/fill_sort_keys.hpp"
 
 namespace traccc::cuda::kernels {

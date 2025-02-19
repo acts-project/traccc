@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
-#include "traccc/io/read_digitization_config.hpp"
-
 #include "json/read_digitization_config.hpp"
+
+#include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
 
-// System include(s).
 #include <string>
 
 namespace traccc::io {

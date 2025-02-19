@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED

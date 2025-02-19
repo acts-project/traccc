@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/primitives.hpp"
 
-// Detray include(s).
 #include <detray/core/detector.hpp>
 #include <detray/detectors/default_metadata.hpp>
 #include <detray/detectors/telescope_metadata.hpp>

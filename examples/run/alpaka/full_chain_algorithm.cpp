@@ -5,14 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "full_chain_algorithm.hpp"
 
-// Alpaka include(s).
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/ExampleDefaultAcc.hpp>
 
-// System include(s).
 #include <iostream>
 #include <stdexcept>
 

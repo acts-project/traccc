@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
-// System include(s).
 #include <cmath>
 
 namespace traccc {

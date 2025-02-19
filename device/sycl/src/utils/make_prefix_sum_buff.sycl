@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/device/make_prefix_sum_buffer.hpp"
 #include "traccc/sycl/utils/make_prefix_sum_buff.hpp"
 

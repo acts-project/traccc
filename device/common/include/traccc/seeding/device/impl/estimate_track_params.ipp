@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/seeding/device/estimate_track_params.hpp"
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 

@@ -5,15 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 
 #include "../utils/utils.hpp"
 
-// Project include(s).
 #include "traccc/seeding/detail/seeding_config.hpp"
 
-// System include(s).
 #include <cmath>
 
 namespace traccc::alpaka {

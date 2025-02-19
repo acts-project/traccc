@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/performance/timer.hpp"
 
-// System include(s).
 #include <algorithm>
 
 // Nividia tool extensions library

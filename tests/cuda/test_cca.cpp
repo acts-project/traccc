@@ -5,18 +5,20 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
-
-#include <functional>
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/async_copy.hpp>
-
 #include "tests/cca_test.hpp"
+
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
+
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
+
+#include <gtest/gtest.h>
+
+#include <functional>
 
 namespace {
 

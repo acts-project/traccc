@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/performance/timing_info.hpp"
 
-// System include(s).
 #include <iosfwd>
 #include <string>
 #include <string_view>

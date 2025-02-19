@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s)
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
@@ -15,7 +14,6 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
 namespace traccc::cuda {

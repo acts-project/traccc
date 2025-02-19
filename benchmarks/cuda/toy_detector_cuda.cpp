@@ -5,7 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
+#include "benchmarks/toy_detector_benchmark.hpp"
+
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
@@ -18,10 +19,6 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 
-// Local include(s).
-#include "benchmarks/toy_detector_benchmark.hpp"
-
-// Detray include(s).
 #include <detray/core/detector.hpp>
 #include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
@@ -29,7 +26,6 @@
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
-// VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>

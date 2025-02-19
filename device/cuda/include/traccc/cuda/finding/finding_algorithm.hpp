@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -18,11 +17,9 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// detray include(s).
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 

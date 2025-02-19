@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/pair.hpp"
 

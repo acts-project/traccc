@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/definitions/math.hpp"
 #include "traccc/edm/internal_spacepoint.hpp"
 #include "traccc/seeding/detail/doublet.hpp"

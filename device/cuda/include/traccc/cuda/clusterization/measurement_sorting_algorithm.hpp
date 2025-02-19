@@ -7,18 +7,13 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/cuda/utils/stream.hpp"
-
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc::cuda {

@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -16,10 +15,8 @@
 #include "traccc/options/output_data.hpp"
 #include "traccc/options/program_options.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
-// System include(s).
 #include <cstdlib>
 
 int create_binaries(const traccc::opts::detector& detector_opts,

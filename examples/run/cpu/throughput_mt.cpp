@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../common/throughput_mt.hpp"
 
 #include "full_chain_algorithm.hpp"

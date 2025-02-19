@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/options/details/config_provider.hpp"
 #include "traccc/options/details/interface.hpp"

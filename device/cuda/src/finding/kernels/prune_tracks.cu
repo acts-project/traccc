@@ -5,11 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../../utils/global_index.hpp"
 #include "prune_tracks.cuh"
 
-// Project include(s).
 #include "traccc/finding/device/prune_tracks.hpp"
 
 namespace traccc::cuda::kernels {

@@ -5,10 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
-#include "traccc/io/details/read_surfaces.hpp"
-
 #include "../csv/read_surfaces.hpp"
+
+#include "traccc/io/details/read_surfaces.hpp"
 
 namespace traccc::io::details {
 

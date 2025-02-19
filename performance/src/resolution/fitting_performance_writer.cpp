@@ -5,18 +5,15 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
 #include "res_plot_tool.hpp"
 #include "stat_plot_tool.hpp"
 
-// ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT
 #include <TFile.h>
 #endif  // TRACCC_HAVE_ROOT
 
-// System include(s).
 #include <iostream>
 #include <memory>
 #include <stdexcept>

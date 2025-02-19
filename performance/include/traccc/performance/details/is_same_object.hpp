@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 
-// System include(s).
 #include <functional>
 
 namespace traccc::details {

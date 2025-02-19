@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/device/global_index.hpp"
 
 namespace traccc::cuda::details {

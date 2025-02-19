@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 
 namespace traccc::host {

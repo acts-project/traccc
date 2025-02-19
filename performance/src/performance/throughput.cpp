@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/performance/throughput.hpp"
 
-// System include(s).
 #include <chrono>
 #include <iomanip>
 #include <iostream>

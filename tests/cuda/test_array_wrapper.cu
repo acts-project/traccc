@@ -6,10 +6,11 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
-
 #include <traccc/utils/array_wrapper.hpp>
+
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+
+#include <gtest/gtest.h>
 
 template <template <typename> typename F>
 struct vector {

@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/options/details/interface.hpp"
 
-// Boost include(s).
 #include <boost/program_options.hpp>
 
-// System include(s).
 #include <functional>
 #include <string_view>
 #include <vector>

@@ -7,17 +7,13 @@
 
 #pragma once
 
-// Library include(s).
+#include "traccc/definitions/common.hpp"
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/container.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
 #include "traccc/performance/details/is_same_scalar.hpp"
 #include "traccc/performance/details/projector.hpp"
 
-// Project include(s).
-#include "traccc/definitions/common.hpp"
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/container.hpp"
-
-// System include(s).
 #include <algorithm>
 #include <cassert>
 #include <cmath>

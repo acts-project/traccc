@@ -7,14 +7,10 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/cuda/utils/stream.hpp"
-
-// Project include(s).
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc::cuda {

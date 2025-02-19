@@ -7,11 +7,8 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/global_index.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 

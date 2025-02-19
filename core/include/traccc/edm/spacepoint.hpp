@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -15,7 +14,6 @@
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 
-// System include(s).
 #include <cmath>
 
 namespace traccc {

@@ -7,12 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
 namespace traccc::host::details {

@@ -5,11 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <sstream>
 #include <traccc/edm/measurement.hpp>
 #include <traccc/edm/spacepoint.hpp>
 #include <traccc/futhark/spacepoint_formation.hpp>
 #include <traccc/futhark/wrapper.hpp>
+
+#include <sstream>
 
 namespace traccc::futhark {
 struct measurements_to_spacepoints_wrapper

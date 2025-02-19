@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../common/throughput_mt.hpp"
 
 #include "full_chain_algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/sycl/host_memory_resource.hpp>
 
 int main(int argc, char* argv[]) {

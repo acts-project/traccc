@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Acts include(s).
 #include <Acts/Geometry/GeometryHierarchyMap.hpp>
 #include <Acts/Utilities/BinUtility.hpp>
 

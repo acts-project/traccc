@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/options/details/interface.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 
-// System include(s).
 #include <iosfwd>
 
 namespace traccc::opts {

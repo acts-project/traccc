@@ -7,15 +7,11 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/utils/helpers.hpp"
-
-// Project include(s).
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/utils/event_data.hpp"
+#include "traccc/utils/helpers.hpp"
 
-// System include(s).
 #include <map>
 #include <memory>
 #include <string>

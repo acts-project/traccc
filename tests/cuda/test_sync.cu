@@ -6,9 +6,9 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
-
 #include "../../device/cuda/src/utils/sync.cuh"
+
+#include <gtest/gtest.h>
 
 __global__ void testWarpIndexedBallotSyncBasicKernel(uint32_t *vts,
                                                      uint32_t *vis) {

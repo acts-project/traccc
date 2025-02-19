@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "write_spacepoints.hpp"
 
-// System include(s).
 #include <fstream>
 
 namespace traccc::io::obj {

@@ -7,14 +7,11 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <functional>
 
 namespace traccc::alpaka {

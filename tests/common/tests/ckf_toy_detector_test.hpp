@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "kalman_fitting_toy_detector_test.hpp"
 
 namespace traccc {

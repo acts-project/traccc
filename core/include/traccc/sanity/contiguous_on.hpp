@@ -8,7 +8,6 @@
 
 #pragma once
 
-// System include
 #include <concepts>
 #include <memory>
 #include <unordered_set>

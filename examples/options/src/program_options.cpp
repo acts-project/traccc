@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "traccc/options/program_options.hpp"
 
 #include "traccc/examples/utils/printable.hpp"
 
-// System include(s).
 #include <cstdlib>
 #include <iostream>
 

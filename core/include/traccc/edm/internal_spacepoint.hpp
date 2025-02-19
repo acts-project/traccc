@@ -7,7 +7,6 @@
 
 #pragma once
 
-// traccc include
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/container.hpp"
 

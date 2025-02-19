@@ -6,16 +6,14 @@
  * Mozilla Public License Version 2.0
  */
 
-// vecmem includes
+#include "../../device/cuda/src/sanity/contiguous_on.cuh"
+
+#include "traccc/definitions/qualifiers.hpp"
+
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
-// traccc includes
-#include "../../device/cuda/src/sanity/contiguous_on.cuh"
-#include "traccc/definitions/qualifiers.hpp"
-
-// GTest include(s).
 #include <gtest/gtest.h>
 
 struct int_identity_projection {

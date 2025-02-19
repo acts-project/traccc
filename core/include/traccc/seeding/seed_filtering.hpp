@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"

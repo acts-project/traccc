@@ -5,17 +5,14 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
-#include "traccc/cuda/seeding/spacepoint_binning.hpp"
 
-// Project include(s).
+#include "traccc/cuda/seeding/spacepoint_binning.hpp"
 #include "traccc/seeding/device/count_grid_capacities.hpp"
 #include "traccc/seeding/device/populate_grid.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 

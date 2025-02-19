@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "cuda_error_handling.hpp"
 
-// System include(s).
 #include <iostream>
 #include <sstream>
 #include <stdexcept>

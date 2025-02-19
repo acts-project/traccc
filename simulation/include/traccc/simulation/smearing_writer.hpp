@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/io/csv/hit.hpp"
 #include "traccc/io/csv/measurement.hpp"
 #include "traccc/io/csv/measurement_hit_id.hpp"
@@ -22,11 +21,9 @@
 #include <detray/tracks/bound_track_parameters.hpp>
 #include <detray/tracks/free_track_parameters.hpp>
 
-// DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
 #include <dfe/dfe_namedtuple.hpp>
 
-// System include(s).
 #include <filesystem>
 #include <string>
 

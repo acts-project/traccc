@@ -8,7 +8,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/device/concepts/thread_id.hpp"
 
 namespace traccc::cuda::details {

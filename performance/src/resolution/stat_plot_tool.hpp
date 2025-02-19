@@ -7,12 +7,10 @@
 
 #pragma once
 
-// Library include(s).
 #include "../utils/helpers.hpp"
-#include "traccc/resolution/stat_plot_tool_config.hpp"
 
-// Project include(s).
 #include "traccc/edm/track_state.hpp"
+#include "traccc/resolution/stat_plot_tool_config.hpp"
 
 namespace traccc {
 

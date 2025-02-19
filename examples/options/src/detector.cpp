@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Project include(s).
 #include "traccc/options/detector.hpp"
 
 #include "traccc/examples/utils/printable.hpp"
 
-// System include(s).
 #include <format>
 
 namespace traccc::opts {

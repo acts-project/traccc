@@ -8,23 +8,20 @@
 
 #pragma once
 
-// Project include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
+
 #include "traccc/cuda/utils/stream.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// CUDA include
 #include <cuda_runtime.h>
 
-// System include
 #include <concepts>
 #include <utility>
 

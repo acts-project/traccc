@@ -7,17 +7,12 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/global_index.hpp"
 #include "traccc/edm/measurement.hpp"
 
-// Detray include(s).
 #include <detray/geometry/barcode.hpp>
 
-// VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {

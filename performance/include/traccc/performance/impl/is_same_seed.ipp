@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Library include(s).
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 
-// System include(s).
 #include <array>
 
 namespace traccc::details {

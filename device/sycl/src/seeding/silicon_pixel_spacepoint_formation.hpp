@@ -7,20 +7,16 @@
 
 #pragma once
 
-// Local include(s).
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/global_index.hpp"
 
-// Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/seeding/device/form_spacepoints.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
-// SYCL include(s).
 #include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {

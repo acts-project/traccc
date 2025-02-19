@@ -8,7 +8,6 @@
 
 #pragma once
 
-// System include(s).
 #include <functional>
 #include <type_traits>
 #include <utility>

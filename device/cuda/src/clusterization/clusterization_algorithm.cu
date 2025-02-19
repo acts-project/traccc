@@ -13,15 +13,16 @@
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/ccl_kernel.cuh"
+
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
-// Vecmem include(s).
-#include <cstring>
 #include <vecmem/utils/copy.hpp>
+
+#include <cstring>
 
 namespace traccc::cuda {
 

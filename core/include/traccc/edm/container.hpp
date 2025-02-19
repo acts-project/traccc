@@ -7,13 +7,11 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/details/device_container.hpp"
 #include "traccc/edm/details/host_container.hpp"
 #include "traccc/utils/type_traits.hpp"
 
-// VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_buffer.hpp>
 #include <vecmem/containers/data/jagged_vector_data.hpp>
 #include <vecmem/containers/data/jagged_vector_view.hpp>
@@ -22,7 +20,6 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 
-// System include(s).
 #include <type_traits>
 
 namespace traccc {

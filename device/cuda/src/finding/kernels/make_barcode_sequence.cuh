@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 
 namespace traccc::cuda::kernels {

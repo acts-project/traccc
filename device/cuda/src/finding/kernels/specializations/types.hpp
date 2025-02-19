@@ -7,13 +7,11 @@
 
 #pragma once
 
-// Project include(s)
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/geometry/detector.hpp"
 
-// Detray include(s)
 #include <detray/detectors/bfield.hpp>
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>

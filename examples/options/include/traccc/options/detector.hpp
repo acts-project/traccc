@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Local include(s).
 #include "traccc/options/details/interface.hpp"
 
-// System include(s).
 #include <string>
 
 namespace traccc::opts {

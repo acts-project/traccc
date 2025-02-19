@@ -7,7 +7,6 @@
 
 #pragma once
 
-// Detray include(s)
 #include <detray/definitions/track_parametrization.hpp>
 
 namespace traccc {

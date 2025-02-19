@@ -7,15 +7,12 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
-// VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
-// System include(s).
 #include <variant>
 
 namespace traccc::device {

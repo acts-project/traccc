@@ -5,10 +5,8 @@
  * Mozilla Public License Version 2.0
  */
 
-// Projection include(s).
 #include "traccc/edm/container.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // Google test include(s).

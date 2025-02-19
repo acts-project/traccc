@@ -7,13 +7,10 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/seeding/doublet_finding_helper.hpp"
 
-// VecMem include(s).
 #include <vecmem/memory/device_atomic_ref.hpp>
 
-// System include(s).
 #include <cassert>
 
 namespace traccc::device {

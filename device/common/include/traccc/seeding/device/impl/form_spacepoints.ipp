@@ -7,10 +7,8 @@
 
 #pragma once
 
-// Project include(s).
 #include "traccc/seeding/detail/spacepoint_formation.hpp"
 
-// System include(s).
 #include <cassert>
 
 namespace traccc::device {

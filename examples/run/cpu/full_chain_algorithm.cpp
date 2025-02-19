@@ -5,7 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
 #include "full_chain_algorithm.hpp"
 
 namespace traccc {

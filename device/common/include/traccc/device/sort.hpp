@@ -8,12 +8,13 @@
 
 #pragma once
 
-#include <cstdint>
-#include <vecmem/memory/device_atomic_ref.hpp>
-
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/barrier.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
+
+#include <vecmem/memory/device_atomic_ref.hpp>
+
+#include <cstdint>
 
 namespace traccc::device {
 /**

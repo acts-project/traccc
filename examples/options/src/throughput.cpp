@@ -5,12 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
 #include "traccc/options/throughput.hpp"
 
 #include "traccc/examples/utils/printable.hpp"
 
-// System include(s).
 #include <format>
 
 namespace traccc::opts {
