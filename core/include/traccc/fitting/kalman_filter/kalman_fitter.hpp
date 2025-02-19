@@ -18,6 +18,7 @@
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
+#include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -138,8 +139,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE void fit(const seed_parameters_t& seed_params,
-                                state& fitter_state) {
+    TRACCC_HOST_DEVICE [[nodiscard]] kalman_fitter_status fit(
+        const seed_parameters_t& seed_params, state& fitter_state) {
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -155,8 +156,14 @@ class kalman_fitter {
             inflate_covariance(seed_params_cpy,
                                m_cfg.covariance_inflation_factor);
 
-            filter(seed_params_cpy, fitter_state);
+            if (kalman_fitter_status res =
+                    filter(seed_params_cpy, fitter_state);
+                res != kalman_fitter_status::SUCCESS) {
+                return res;
+            }
         }
+
+        return kalman_fitter_status::SUCCESS;
     }
 
     /// Run the kalman fitter for an iteration
@@ -166,8 +173,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE void filter(const seed_parameters_t& seed_params,
-                                   state& fitter_state) {
+    TRACCC_HOST_DEVICE [[nodiscard]] kalman_fitter_status filter(
+        const seed_parameters_t& seed_params, state& fitter_state) {
 
         // Create propagator
         propagator_type propagator(m_cfg.propagation);
@@ -198,10 +205,15 @@ class kalman_fitter {
         propagator.propagate(propagation, fitter_state());
 
         // Run smoothing
-        smooth(fitter_state);
+        if (kalman_fitter_status res = smooth(fitter_state);
+            res != kalman_fitter_status::SUCCESS) {
+            return res;
+        }
 
         // Update track fitting qualities
         update_statistics(fitter_state);
+
+        return kalman_fitter_status::SUCCESS;
     }
 
     /// Run smoothing after kalman filtering
@@ -210,7 +222,8 @@ class kalman_fitter {
     /// track and vertex fitting", R.Frühwirth, NIM A.
     ///
     /// @param fitter_state the state of kalman fitter
-    TRACCC_HOST_DEVICE void smooth(state& fitter_state) {
+    TRACCC_HOST_DEVICE [[nodiscard]] kalman_fitter_status smooth(
+        state& fitter_state) {
 
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
@@ -251,6 +264,13 @@ class kalman_fitter {
                 detray::navigation::direction::e_backward);
             fitter_state.m_fit_actor_state.backward_mode = true;
 
+            const auto& dir = propagation._stepping().dir();
+            if (dir[0] == 0.f && dir[1] == 0.f) {
+                // Particle is exactly parallel to the beampipe, which we
+                // cannot represent.
+                return kalman_fitter_status::ERROR_THETA_ZERO;
+            }
+
             propagator.propagate(propagation,
                                  fitter_state.backward_actor_state());
 
@@ -266,10 +286,16 @@ class kalman_fitter {
 
                 const detray::tracking_surface sf{m_detector,
                                                   it->surface_link()};
-                sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
-                    *it, *(it - 1));
+                if (kalman_fitter_status res =
+                        sf.template visit_mask<
+                            gain_matrix_smoother<algebra_type>>(*it, *(it - 1));
+                    res != kalman_fitter_status::SUCCESS) {
+                    return res;
+                }
             }
         }
+
+        return kalman_fitter_status::SUCCESS;
     }
 
     TRACCC_HOST_DEVICE
