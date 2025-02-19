@@ -202,49 +202,55 @@ TRACCC_DEVICE inline void find_tracks(
 
             const auto& meas = measurements.at(meas_idx);
 
-            track_state<typename detector_t::algebra_type> trk_state(meas);
-            const detray::tracking_surface sf{det, in_par.surface_link()};
+            const scalar dist = vector::norm(meas.local - in_par.bound_local());
 
-            // Run the Kalman update
-            const bool res = sf.template visit_mask<
-                gain_matrix_updater<typename detector_t::algebra_type>>(
-                trk_state, in_par);
+            if (dist < cfg.dist_max) {
 
-            // The chi2 from Kalman update should be less than chi2_max
-            if (res && trk_state.filtered_chi2() < cfg.chi2_max) {
-                // Add measurement candidates to link
-                const unsigned int l_pos = num_total_candidates.fetch_add(1);
+                track_state<typename detector_t::algebra_type> trk_state(meas);
+                const detray::tracking_surface sf{det, in_par.surface_link()};
 
-                if (l_pos >= payload.n_max_candidates) {
-                    *payload.n_total_candidates = payload.n_max_candidates;
-                } else {
-                    if (payload.step == 0) {
-                        links.at(l_pos) = {
-                            {previous_step, owner_global_thread_id},
-                            meas_idx,
-                            owner_global_thread_id,
-                            0};
+                // Run the Kalman update
+                const bool res = sf.template visit_mask<
+                    gain_matrix_updater<typename detector_t::algebra_type>>(
+                    trk_state, in_par);
+
+                // The chi2 from Kalman update should be less than chi2_max
+                if (res && trk_state.filtered_chi2() < cfg.chi2_max) {
+                    // Add measurement candidates to link
+                    const unsigned int l_pos =
+                        num_total_candidates.fetch_add(1);
+
+                    if (l_pos >= payload.n_max_candidates) {
+                        *payload.n_total_candidates = payload.n_max_candidates;
                     } else {
-                        const candidate_link& prev_link =
-                            prev_links[owner_global_thread_id];
+                        if (payload.step == 0) {
+                            links.at(l_pos) = {
+                                {previous_step, owner_global_thread_id},
+                                meas_idx,
+                                owner_global_thread_id,
+                                0};
+                        } else {
+                            const candidate_link& prev_link =
+                                prev_links[owner_global_thread_id];
 
-                        links.at(l_pos) = {
-                            {previous_step, owner_global_thread_id},
-                            meas_idx,
-                            prev_link.seed_idx,
-                            prev_link.n_skipped};
+                            links.at(l_pos) = {
+                                {previous_step, owner_global_thread_id},
+                                meas_idx,
+                                prev_link.seed_idx,
+                                prev_link.n_skipped};
+                        }
+
+                        // Increase the number of candidates (or branches) per
+                        // input parameter
+                        vecmem::device_atomic_ref<
+                            unsigned int, vecmem::device_address_space::local>(
+                            shared_payload
+                                .shared_num_candidates[owner_local_thread_id])
+                            .fetch_add(1u);
+
+                        out_params.at(l_pos) = trk_state.filtered();
+                        out_params_liveness.at(l_pos) = 1u;
                     }
-
-                    // Increase the number of candidates (or branches) per input
-                    // parameter
-                    vecmem::device_atomic_ref<
-                        unsigned int, vecmem::device_address_space::local>(
-                        shared_payload
-                            .shared_num_candidates[owner_local_thread_id])
-                        .fetch_add(1u);
-
-                    out_params.at(l_pos) = trk_state.filtered();
-                    out_params_liveness.at(l_pos) = 1u;
                 }
             }
         }

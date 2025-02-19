@@ -233,22 +233,27 @@ track_candidate_container_types::host find_tracks(
 
                 const auto& meas = measurements[item_id];
 
-                track_state<algebra_type> trk_state(meas);
+                const scalar dist =
+                    vector::norm(meas.local - in_param.bound_local());
 
-                // Run the Kalman update on a copy of the track parameters
-                const bool res =
-                    sf.template visit_mask<gain_matrix_updater<algebra_type>>(
-                        trk_state, in_param);
+                if (dist < config.dist_max) {
 
-                // The chi2 from Kalman update should be less than chi2_max
-                if (res && trk_state.filtered_chi2() < config.chi2_max) {
-                    n_branches++;
+                    track_state<algebra_type> trk_state(meas);
 
-                    links[step].push_back({{previous_step, in_param_id},
-                                           item_id,
-                                           orig_param_id,
-                                           skip_counter});
-                    updated_params.push_back(trk_state.filtered());
+                    // Run the Kalman update on a copy of the track parameters
+                    const bool res = sf.template visit_mask<
+                        gain_matrix_updater<algebra_type>>(trk_state, in_param);
+
+                    // The chi2 from Kalman update should be less than chi2_max
+                    if (res && trk_state.filtered_chi2() < config.chi2_max) {
+                        n_branches++;
+
+                        links[step].push_back({{previous_step, in_param_id},
+                                               item_id,
+                                               orig_param_id,
+                                               skip_counter});
+                        updated_params.push_back(trk_state.filtered());
+                    }
                 }
             }
 
