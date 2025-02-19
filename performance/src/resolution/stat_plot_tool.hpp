@@ -54,6 +54,12 @@ class stat_plot_tool {
     /// @brief fill the cache
     ///
     /// @param cache the cache for statistics plots
+    /// @param find_res track finding result
+    void fill(stat_plot_cache& cache, const finding_result& find_res) const;
+
+    /// @brief fill the cache
+    ///
+    /// @param cache the cache for statistics plots
     /// @param fit_res fitting information that contains statistics
     void fill(stat_plot_cache& cache,
               const fitting_result<traccc::default_algebra>& fit_res) const;

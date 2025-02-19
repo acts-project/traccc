@@ -181,7 +181,7 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
 
             ndf_tests(fit_res, track_states_per_track);
 
-            ASSERT_EQ(fit_res.n_holes, 0u);
+            ASSERT_EQ(fit_res.trk_quality.n_holes, 0u);
 
             fit_performance_writer.write(track_states_per_track, fit_res,
                                          host_det, evt_data);

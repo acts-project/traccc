@@ -50,6 +50,23 @@ void stat_plot_tool::book(stat_plot_cache& cache) const {
 #endif  // TRACCC_HAVE_ROOT
 }
 
+void stat_plot_tool::fill(stat_plot_cache& cache,
+                          const finding_result& find_res) const {
+
+    // Avoid unused variable warnings when building the code without ROOT.
+    (void)cache;
+    (void)find_res;
+
+#ifdef TRACCC_HAVE_ROOT
+    const auto& ndf = find_res.trk_quality.ndf;
+    const auto& chi2 = find_res.trk_quality.chi2;
+    cache.ndf_hist->Fill(ndf);
+    cache.chi2_hist->Fill(chi2);
+    cache.reduced_chi2_hist->Fill(chi2 / ndf);
+    cache.pval_hist->Fill(ROOT::Math::chisquared_cdf_c(chi2, ndf));
+#endif  // TRACCC_HAVE_ROOT
+}
+
 void stat_plot_tool::fill(
     stat_plot_cache& cache,
     const fitting_result<traccc::default_algebra>& fit_res) const {
@@ -59,8 +76,8 @@ void stat_plot_tool::fill(
     (void)fit_res;
 
 #ifdef TRACCC_HAVE_ROOT
-    const auto& ndf = fit_res.ndf;
-    const auto& chi2 = fit_res.chi2;
+    const auto& ndf = fit_res.trk_quality.ndf;
+    const auto& chi2 = fit_res.trk_quality.chi2;
     cache.ndf_hist->Fill(ndf);
     cache.chi2_hist->Fill(chi2);
     cache.reduced_chi2_hist->Fill(chi2 / ndf);

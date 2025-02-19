@@ -70,7 +70,7 @@ struct projector<fitting_result<traccc::default_algebra>> {
     static constexpr bool exists = true;
 
     float operator()(const fitting_result<traccc::default_algebra>& i) {
-        return static_cast<float>(i.ndf);
+        return static_cast<float>(i.trk_quality.ndf);
     }
 };
 }  // namespace traccc::details

@@ -19,7 +19,11 @@
 
 // Detray include(s).
 #include <detray/detectors/bfield.hpp>
+#include <detray/io/frontend/detector_reader.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 #include <detray/tracks/ray.hpp>
@@ -38,11 +42,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     // VecMem memory resource(s)
     vecmem::host_memory_resource host_mr;
 
-    // TODO: This causes a segmentation fault
-    // static const int n_events = 100u;
-    // static const int n_tracks = 5000u;
-    static const int n_events = 50u;
-    static const int n_tracks = 10000u;
+    static const int n_events = 100u;
+    static const int n_tracks = 5000u;
 
     std::vector<traccc::spacepoint_collection_types::host> spacepoints;
     std::vector<traccc::measurement_collection_types::host> measurements;

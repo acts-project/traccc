@@ -203,7 +203,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
         }
 
         // Add this track chi2 value
-        state.track_chi2.push_back(fit_res.chi2);
+        state.track_chi2.push_back(fit_res.trk_quality.chi2);
         // Add all the (measurement_id)s of this track
         state.measurements_per_track.push_back(std::move(measurements));
         // Initially, every track is in the selected_track list. They will later
