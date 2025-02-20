@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "traccc/fitting/status_codes.hpp"
-
 namespace traccc::device {
 
 template <typename fitter_t>
@@ -43,7 +41,7 @@ TRACCC_HOST_DEVICE inline void fit(
         track_candidates.at(param_id).items;
 
     // Seed parameter
-    const auto& seed_param = track_candidates.at(param_id).header;
+    const auto& seed_param = track_candidates.at(param_id).header.seed_params;
 
     // Track states per track
     auto track_states_per_track = track_states.at(param_id).items;
@@ -55,10 +53,7 @@ TRACCC_HOST_DEVICE inline void fit(
     typename fitter_t::state fitter_state(track_states_per_track);
 
     // Run fitting
-    kalman_fitter_status fit_status = fitter.fit(seed_param, fitter_state);
-
-    // TODO: Process fit failures more elegantly
-    assert(fit_status == kalman_fitter_status::SUCCESS);
+    fitter.fit(seed_param, fitter_state);
 
     // Get the final fitting information
     track_states.at(param_id).header = fitter_state.m_fit_res;

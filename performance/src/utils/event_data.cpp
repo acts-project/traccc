@@ -329,8 +329,10 @@ track_candidate_container_types::host event_data::generate_truth_candidates(
             candidates.push_back(meas);
         }
 
-        track_candidates.push_back(std::move(seed_params),
-                                   std::move(candidates));
+        // Track quality set empty
+        track_candidates.push_back(
+            finding_result{seed_params, track_quality{0.f, 0.f, 0u}},
+            std::move(candidates));
     }
 
     return track_candidates;

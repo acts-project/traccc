@@ -11,7 +11,6 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/status_codes.hpp"
 
 // Detray inlcude(s)
 #include <detray/geometry/shapes/line.hpp>
@@ -41,7 +40,7 @@ struct gain_matrix_updater {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status operator()(
+    TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
         const bound_track_parameters& bound_params) const {
@@ -50,7 +49,7 @@ struct gain_matrix_updater {
 
         const auto D = trk_state.get_measurement().meas_dim;
         assert(D == 1u || D == 2u);
-        kalman_fitter_status result = kalman_fitter_status::ERROR_OTHER;
+        bool result = false;
         switch (D) {
             case 1u:
                 result = update<1u, shape_type>(trk_state, bound_params);
@@ -65,7 +64,7 @@ struct gain_matrix_updater {
     }
 
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status update(
+    TRACCC_HOST_DEVICE inline bool update(
         track_state<algebra_t>& trk_state,
         const bound_track_parameters& bound_params) const {
 
@@ -129,17 +128,9 @@ struct gain_matrix_updater {
 
         // Return false if track is parallel to z-axis or phi is not finite
         const scalar theta = bound_params.theta();
-
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
-        }
-
-        if (!std::isfinite(bound_params.phi())) {
-            return kalman_fitter_status::ERROR_INVERSION;
-        }
-
-        if (std::abs(bound_params.qop()) == 0.f) {
-            return kalman_fitter_status::ERROR_QOP_ZERO;
+        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi ||
+            !std::isfinite(bound_params.phi())) {
+            return false;
         }
 
         // Set the track state parameters
@@ -150,7 +141,7 @@ struct gain_matrix_updater {
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered());
 
-        return kalman_fitter_status::SUCCESS;
+        return true;
     }
 };
 
