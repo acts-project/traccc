@@ -4,10 +4,6 @@
 #
 # Mozilla Public License Version 2.0
 
-# Temporary setting for the traccc::scalar type, until it can be removed.
-set( TRACCC_CUSTOM_SCALARTYPE "float" CACHE STRING
-   "Scalar type to use in the TRACCC code" )
-
 # Declare the traccc::algebra library.
 traccc_add_library( traccc_algebra algebra TYPE INTERFACE )
 
