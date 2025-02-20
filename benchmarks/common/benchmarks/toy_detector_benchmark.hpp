@@ -38,11 +38,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     // VecMem memory resource(s)
     vecmem::host_memory_resource host_mr;
 
-    // TODO: This causes a segmentation fault
-    // static const int n_events = 100u;
-    // static const int n_tracks = 5000u;
-    static const int n_events = 50u;
-    static const int n_tracks = 10000u;
+    static const int n_events = 100u;
+    static const int n_tracks = 5000u;
 
     std::vector<traccc::spacepoint_collection_types::host> spacepoints;
     std::vector<traccc::measurement_collection_types::host> measurements;
@@ -160,7 +157,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
     void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
-        cfg.navigation.search_window = {3, 3};
+        // cfg.navigation.search_window = {3, 3};
         cfg.navigation.overstep_tolerance = -300.f * traccc::unit<float>::um;
         cfg.navigation.min_mask_tolerance = 1e-5f * traccc::unit<float>::mm;
         cfg.navigation.max_mask_tolerance = 3.f * traccc::unit<float>::mm;
