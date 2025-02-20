@@ -24,12 +24,8 @@
 #include "benchmarks/toy_detector_benchmark.hpp"
 
 // Detray include(s).
-#include <detray/core/detector.hpp>
 #include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -37,7 +33,7 @@
 // Google benchmark include(s).
 #include <benchmark/benchmark.h>
 
-BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
+BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
 
     // Type declarations
     using host_detector_type = traccc::default_detector::host;
@@ -88,3 +84,5 @@ BENCHMARK_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     state.counters["event_throughput_Hz"] = benchmark::Counter(
         static_cast<double>(n_events), benchmark::Counter::kIsRate);
 }
+
+BENCHMARK_REGISTER_F(ToyDetectorBenchmark, CPU)->UseRealTime();
