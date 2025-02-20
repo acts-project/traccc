@@ -94,6 +94,8 @@ struct kalman_actor : detray::actor {
 
         // Run back filtering for smoothing, if true
         bool backward_mode = false;
+        traccc::scalar min_path_length =
+            -100.f * traccc::unit<traccc::scalar>::mm;
     };
 
     /// Actor operation to perform the Kalman filtering
@@ -180,8 +182,7 @@ struct kalman_actor : detray::actor {
         // propagation
         // TODO: Use configuration instead of hardcoded value
         if (actor_state.backward_mode &&
-            propagation._stepping.path_length() <
-                -100.f * traccc::unit<traccc::scalar>::mm) {
+            propagation._stepping.path_length() < actor_state.min_path_length) {
             propagation._heartbeat &= navigation.abort();
             return;
         }
