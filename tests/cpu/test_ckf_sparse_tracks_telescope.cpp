@@ -159,7 +159,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).header);
+            seeds.push_back(
+                truth_track_candidates.at(i_trk).header.seed_params);
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
@@ -174,6 +175,16 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
             vecmem::get_data(seeds));
 
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+
+        for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
+            const auto& track_candidates_per_track =
+                track_candidates[i_trk].items;
+            const auto& find_res = track_candidates[i_trk].header;
+
+            consistency_tests(track_candidates_per_track);
+
+            ndf_tests(find_res, track_candidates_per_track);
+        }
 
         // Run fitting
         auto track_states =

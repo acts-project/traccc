@@ -11,7 +11,6 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/status_codes.hpp"
 
 namespace traccc {
 
@@ -33,7 +32,7 @@ struct two_filters_smoother {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status operator()(
+    TRACCC_HOST_DEVICE inline bool operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
@@ -48,13 +47,13 @@ struct two_filters_smoother {
             return smoothe<2u, shape_type>(trk_state, bound_params);
         }
 
-        return kalman_fitter_status::ERROR_OTHER;
+        return false;
     }
 
     // Reference: The Optimun Linear Smoother as a Combination of Two Optimum
     // Linear Filters
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status smoothe(
+    TRACCC_HOST_DEVICE inline bool smoothe(
         track_state<algebra_t>& trk_state,
         bound_track_parameters& bound_params) const {
 
@@ -151,12 +150,9 @@ struct two_filters_smoother {
 
         // Return false if track is parallel to z-axis or phi is not finite
         const scalar theta = bound_params.theta();
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
-        }
-
-        if (!std::isfinite(bound_params.phi())) {
-            return kalman_fitter_status::ERROR_INVERSION;
+        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi ||
+            !std::isfinite(bound_params.phi())) {
+            return false;
         }
 
         // Update the bound track parameters
@@ -169,7 +165,7 @@ struct two_filters_smoother {
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(bound_params);
 
-        return kalman_fitter_status::SUCCESS;
+        return true;
     }
 };
 

@@ -70,6 +70,14 @@ class KalmanFittingTelescopeTests
         0.05f / traccc::unit<scalar>::GeV,
         1.f * traccc::unit<scalar>::ns};
 
+    void consistency_tests(const track_candidate_collection_types::host&
+                               track_candidates_per_track) const {
+
+        // The nubmer of track candidates is supposed be equal to the number
+        // of planes
+        ASSERT_EQ(track_candidates_per_track.size(), std::get<11>(GetParam()));
+    }
+
     void consistency_tests(const track_state_collection_types::host&
                                track_states_per_track) const {
 

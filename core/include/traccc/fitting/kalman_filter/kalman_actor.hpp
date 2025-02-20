@@ -12,7 +12,6 @@
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
-#include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -135,7 +134,7 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            kalman_fitter_status res = kalman_fitter_status::SUCCESS;
+            bool res = false;
 
             if (!actor_state.backward_mode) {
                 // Forward filter
@@ -154,7 +153,7 @@ struct kalman_actor : detray::actor {
             }
 
             // Abort if the Kalman update fails
-            if (res != kalman_fitter_status::SUCCESS) {
+            if (!res) {
                 propagation._heartbeat &= navigation.abort();
                 return;
             }
