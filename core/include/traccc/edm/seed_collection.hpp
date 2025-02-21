@@ -26,15 +26,13 @@ template <typename BASE>
 class seed : public BASE {
 
     public:
-    /// @name Constructors
+    /// @name Functions inherited from the base class
     /// @{
 
     /// Inherit the base class's constructor(s)
     using BASE::BASE;
-    /// Use a default copy constructor
-    seed(const seed& other) = default;
-    /// Use a default move constructor
-    seed(seed&& other) = default;
+    /// Inherit the base class's assignment operator(s).
+    using BASE::operator=;
 
     /// @}
 
@@ -84,22 +82,6 @@ class seed : public BASE {
 
     /// @name Utility functions
     /// @{
-
-    /// Assignment operator
-    ///
-    /// @param[in] other The object to assign from
-    /// @return A reference to this object
-    ///
-    TRACCC_HOST_DEVICE seed& operator=(const seed& other);
-
-    /// Assignment operator
-    ///
-    /// @param[in] other The object to assign from
-    /// @return A reference to this object
-    ///
-    template <typename T,
-              std::enable_if_t<!std::is_same_v<BASE, T>, bool> = false>
-    TRACCC_HOST_DEVICE seed& operator=(const seed<T>& other);
 
     /// Equality operator
     ///

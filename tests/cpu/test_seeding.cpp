@@ -29,21 +29,6 @@ vecmem::host_memory_resource host_mr;
 static constexpr vector3 B{0.f * unit<scalar>::T, 0.f * unit<scalar>::T,
                            2.f * unit<scalar>::T};
 
-/// Helper function for creating a spacepoint
-void add_spacepoint(measurement_collection_types::host& measurements,
-                    edm::spacepoint_collection::host& spacepoints,
-                    const point3& pos) {
-
-    const auto i = spacepoints.size();
-    spacepoints.resize(i + 1);
-    auto sp = spacepoints.at(i);
-    sp.x() = pos[0];
-    sp.y() = pos[1];
-    sp.z() = pos[2];
-    sp.measurement_index() = static_cast<unsigned int>(measurements.size());
-    measurements.push_back({});
-}
-
 }  // namespace
 
 // Seeding with two muons
@@ -64,11 +49,13 @@ TEST(seeding, case1) {
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 16.62 GeV muon
-    add_spacepoint(measurements, spacepoints, {36.6706f, 10.6472f, 104.131f});
-    add_spacepoint(measurements, spacepoints, {94.2191f, 29.6699f, 113.628f});
-    add_spacepoint(measurements, spacepoints, {149.805f, 47.9518f, 122.979f});
-    add_spacepoint(measurements, spacepoints, {218.514f, 70.3049f, 134.029f});
-    add_spacepoint(measurements, spacepoints, {275.359f, 88.668f, 143.378f});
+    measurements.resize(5);
+    spacepoints.reserve(5);
+    spacepoints.push_back({0, {36.6706f, 10.6472f, 104.131f}, 0.f, 0.f});
+    spacepoints.push_back({1, {94.2191f, 29.6699f, 113.628f}, 0.f, 0.f});
+    spacepoints.push_back({2, {149.805f, 47.9518f, 122.979f}, 0.f, 0.f});
+    spacepoints.push_back({3, {218.514f, 70.3049f, 134.029f}, 0.f, 0.f});
+    spacepoints.push_back({4, {275.359f, 88.668f, 143.378f}, 0.f, 0.f});
 
     // Run seeding
     auto seeds = sa(vecmem::get_data(spacepoints));
@@ -109,11 +96,13 @@ TEST(seeding, case2) {
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 1.85 GeV muon
-    add_spacepoint(measurements, spacepoints, {36.301f, 13.1197f, 106.83f});
-    add_spacepoint(measurements, spacepoints, {93.9366f, 33.7101f, 120.978f});
-    add_spacepoint(measurements, spacepoints, {149.192f, 52.0562f, 134.678f});
-    add_spacepoint(measurements, spacepoints, {218.398f, 73.1025f, 151.979f});
-    add_spacepoint(measurements, spacepoints, {275.322f, 89.0663f, 166.229f});
+    measurements.resize(5);
+    spacepoints.reserve(5);
+    spacepoints.push_back({0, {36.301f, 13.1197f, 106.83f}, 0.f, 0.f});
+    spacepoints.push_back({1, {93.9366f, 33.7101f, 120.978f}, 0.f, 0.f});
+    spacepoints.push_back({2, {149.192f, 52.0562f, 134.678f}, 0.f, 0.f});
+    spacepoints.push_back({3, {218.398f, 73.1025f, 151.979f}, 0.f, 0.f});
+    spacepoints.push_back({4, {275.322f, 89.0663f, 166.229f}, 0.f, 0.f});
 
     // Run seeding
     auto seeds = sa(vecmem::get_data(spacepoints));

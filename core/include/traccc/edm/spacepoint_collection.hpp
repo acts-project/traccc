@@ -26,15 +26,13 @@ template <typename BASE>
 class spacepoint : public BASE {
 
     public:
-    /// @name Constructors
+    /// @name Functions inherited from the base class
     /// @{
 
     /// Inherit the base class's constructor(s)
     using BASE::BASE;
-    /// Use a default copy constructor
-    spacepoint(const spacepoint& other) = default;
-    /// Use a default move constructor
-    spacepoint(spacepoint&& other) = default;
+    /// Inherit the base class's assignment operator(s).
+    using BASE::operator=;
 
     /// @}
 
@@ -54,55 +52,84 @@ class spacepoint : public BASE {
     TRACCC_HOST_DEVICE
     const auto& measurement_index() const { return BASE::template get<0>(); }
 
+    /// Global / 3D position of the spacepoint
+    ///
+    /// @return A (non-const) vector of @c traccc::point3 values
+    ///
+    TRACCC_HOST_DEVICE auto& global() { return BASE::template get<1>(); }
+    /// Global / 3D position of the spacepoint
+    ///
+    /// @return A (const) vector of @c traccc::point3 values
+    ///
+    TRACCC_HOST_DEVICE const auto& global() const {
+        return BASE::template get<1>();
+    }
+
     /// The X position of the spacepoint (non-const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @note This function must only be used on proxy objects, not on
+    ///       containers!
+    ///
+    /// @return A (non-const) reference to a @c traccc::scalar value
     ///
     TRACCC_HOST_DEVICE
-    auto& x() { return BASE::template get<1>(); }
+    auto& x();
     /// The X position of the spacepoint (const)
     ///
-    /// @return A (const) vector of @c traccc::scalar values
+    /// @note This function must only be used on proxy objects, not on
+    ///       containers!
+    ///
+    /// @return A (const) reference to a @c traccc::scalar value
     ///
     TRACCC_HOST_DEVICE
-    const auto& x() const { return BASE::template get<1>(); }
+    const auto& x() const;
 
     /// The Y position of the spacepoint (non-const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @note This function must only be used on proxy objects, not on
+    ///       containers!
+    ///
+    /// @return A (non-const) reference to a @c traccc::scalar value
     ///
     TRACCC_HOST_DEVICE
-    auto& y() { return BASE::template get<2>(); }
+    auto& y();
     /// The Y position of the spacepoint (const)
     ///
-    /// @return A (const) vector of @c traccc::scalar values
+    /// @return A (const) reference to a @c traccc::scalar value
     ///
     TRACCC_HOST_DEVICE
-    const auto& y() const { return BASE::template get<2>(); }
+    const auto& y() const;
 
     /// The Z position of the spacepoint (non-const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @note This function must only be used on proxy objects, not on
+    ///       containers!
+    ///
+    /// @return A (non-const) reference to a @c traccc::scalar value
     ///
     TRACCC_HOST_DEVICE
-    auto& z() { return BASE::template get<3>(); }
+    auto& z();
     /// The Z position of the spacepoint (const)
     ///
-    /// @return A (const) vector of @c traccc::scalar values
+    /// @note This function must only be used on proxy objects, not on
+    ///       containers!
+    ///
+    /// @return A (const) reference to a @c traccc::scalar value
     ///
     TRACCC_HOST_DEVICE
-    const auto& z() const { return BASE::template get<3>(); }
+    const auto& z() const;
+
     /// The variation on the spacepoint's Z coordinate (non-const)
     ///
     /// @return A (non-const) vector of @c traccc::scalar values
     ///
-    TRACCC_HOST_DEVICE auto& z_variance() { return BASE::template get<4>(); }
+    TRACCC_HOST_DEVICE auto& z_variance() { return BASE::template get<2>(); }
     /// The variation on the spacepoint's Z coordinate (const)
     ///
     /// @return A (const) vector of @c traccc::scalar values
     ///
     TRACCC_HOST_DEVICE const auto& z_variance() const {
-        return BASE::template get<4>();
+        return BASE::template get<2>();
     }
 
     /// The radius of the spacepoint in the XY plane (non-const)
@@ -119,14 +146,14 @@ class spacepoint : public BASE {
     /// @return A (non-const) vector of @c traccc::scalar values
     ///
     TRACCC_HOST_DEVICE auto& radius_variance() {
-        return BASE::template get<5>();
+        return BASE::template get<3>();
     }
     /// The variation on the spacepoint radious (const)
     ///
     /// @return A (non-const) vector of @c traccc::scalar values
     ///
     TRACCC_HOST_DEVICE const auto& radius_variance() const {
-        return BASE::template get<5>();
+        return BASE::template get<3>();
     }
 
     /// The azimuthal angle of the spacepoint in the XY plane (non-const)
@@ -138,35 +165,10 @@ class spacepoint : public BASE {
     ///
     TRACCC_HOST_DEVICE auto phi() const;
 
-    /// Global / 3D position of the spacepoint
-    ///
-    /// @note This function must only be used on proxy objects, not on
-    ///       containers!
-    ///
-    /// @return A @c traccc::point3 value
-    ///
-    TRACCC_HOST_DEVICE auto global() const;
-
     /// @}
 
     /// @name Utility functions
     /// @{
-
-    /// Assignment operator
-    ///
-    /// @param[in] other The object to assign from
-    /// @return A reference to this object
-    ///
-    TRACCC_HOST_DEVICE spacepoint& operator=(const spacepoint& other);
-
-    /// Assignment operator
-    ///
-    /// @param[in] other The object to assign from
-    /// @return A reference to this object
-    ///
-    template <typename T,
-              std::enable_if_t<!std::is_same_v<BASE, T>, bool> = false>
-    TRACCC_HOST_DEVICE spacepoint& operator=(const spacepoint<T>& other);
 
     /// Equality operator
     ///
@@ -197,11 +199,11 @@ class spacepoint : public BASE {
 };  // class spacepoint
 
 /// SoA container describing reconstructed spacepoints
-using spacepoint_collection = vecmem::edm::container<
-    spacepoint, vecmem::edm::type::vector<unsigned int>,
-    vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<scalar> >;
+using spacepoint_collection =
+    vecmem::edm::container<spacepoint, vecmem::edm::type::vector<unsigned int>,
+                           vecmem::edm::type::vector<point3>,
+                           vecmem::edm::type::vector<scalar>,
+                           vecmem::edm::type::vector<scalar> >;
 
 }  // namespace traccc::edm
 

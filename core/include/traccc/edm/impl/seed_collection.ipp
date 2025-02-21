@@ -10,25 +10,6 @@
 namespace traccc::edm {
 
 template <typename BASE>
-TRACCC_HOST_DEVICE seed<BASE>& seed<BASE>::operator=(const seed& other) {
-
-    top_index() = other.top_index();
-    middle_index() = other.middle_index();
-    bottom_index() = other.bottom_index();
-    return *this;
-}
-
-template <typename BASE>
-template <typename T, std::enable_if_t<!std::is_same_v<BASE, T>, bool> >
-TRACCC_HOST_DEVICE seed<BASE>& seed<BASE>::operator=(const seed<T>& other) {
-
-    top_index() = other.top_index();
-    middle_index() = other.middle_index();
-    bottom_index() = other.bottom_index();
-    return *this;
-}
-
-template <typename BASE>
 template <typename T>
 TRACCC_HOST_DEVICE bool seed<BASE>::operator==(const seed<T>& other) const {
 
