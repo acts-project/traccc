@@ -158,9 +158,8 @@ class kalman_fitter {
 
             if (kalman_fitter_status res =
                     filter(seed_params_cpy, fitter_state);
-                res != kalman_fitter_status::SUCCESS) {
-                return res;
-            }
+                res != kalman_fitter_status::SUCCESS)
+                [[unlikely]] { return res; }
         }
 
         return kalman_fitter_status::SUCCESS;
@@ -206,9 +205,11 @@ class kalman_fitter {
 
         // Run smoothing
         if (kalman_fitter_status res = smooth(fitter_state);
-            res != kalman_fitter_status::SUCCESS) {
-            return res;
-        }
+            res != kalman_fitter_status::SUCCESS)
+            [[unlikely]] { return res; }
+
+        if (fitter_state.m_fit_res.fit_params.theta() == 0.f)
+            [[unlikely]] { return kalman_fitter_status::ERROR_THETA_ZERO; }
 
         // Update track fitting qualities
         update_statistics(fitter_state);
@@ -265,11 +266,12 @@ class kalman_fitter {
             fitter_state.m_fit_actor_state.backward_mode = true;
 
             const auto& dir = propagation._stepping().dir();
-            if (dir[0] == 0.f && dir[1] == 0.f) {
-                // Particle is exactly parallel to the beampipe, which we
-                // cannot represent.
-                return kalman_fitter_status::ERROR_THETA_ZERO;
-            }
+            if (dir[0] == 0.f && dir[1] == 0.f)
+                [[unlikely]] {
+                    // Particle is exactly parallel to the beampipe, which we
+                    // cannot represent.
+                    return kalman_fitter_status::ERROR_THETA_ZERO;
+                }
 
             propagator.propagate(propagation,
                                  fitter_state.backward_actor_state());
@@ -289,9 +291,8 @@ class kalman_fitter {
                 if (kalman_fitter_status res =
                         sf.template visit_mask<
                             gain_matrix_smoother<algebra_type>>(*it, *(it - 1));
-                    res != kalman_fitter_status::SUCCESS) {
-                    return res;
-                }
+                    res != kalman_fitter_status::SUCCESS)
+                    [[unlikely]] { return res; }
             }
         }
 
