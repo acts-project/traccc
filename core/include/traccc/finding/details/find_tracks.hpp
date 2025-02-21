@@ -155,8 +155,11 @@ track_candidate_container_types::host find_tracks(
         out_params.reserve(n_in_params);
 
         // Previous step ID
-        const unsigned int previous_step =
-            (step == 0u) ? std::numeric_limits<int>::max() : step - 1u;
+        const candidate_link::link_index_type::first_type previous_step =
+            (step == 0u)
+                ? std::numeric_limits<
+                      candidate_link::link_index_type::first_type>::max()
+                : step - 1u;
 
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0u);
 
@@ -283,7 +286,7 @@ track_candidate_container_types::host find_tracks(
         const std::size_t n_links = links[step].size();
         for (unsigned int link_id = 0; link_id < n_links; link_id++) {
 
-            const unsigned int seed_idx = links[step][link_id].seed_idx;
+            const unsigned int seed_idx = links.at(step).at(link_id).seed_idx;
             n_trks_per_seed[seed_idx]++;
 
             if (n_trks_per_seed[seed_idx] > config.max_num_branches_per_seed) {
@@ -292,7 +295,7 @@ track_candidate_container_types::host find_tracks(
 
             // If number of skips is larger than the maximum value, consider the
             // link to be a tip
-            if (links[step][link_id].n_skipped >
+            if (links.at(step).at(link_id).n_skipped >
                 config.max_num_skipping_per_cand) {
                 tips.push_back({step, link_id});
                 continue;
@@ -359,7 +362,7 @@ track_candidate_container_types::host find_tracks(
 
     for (const auto& tip : tips) {
         // Get the link corresponding to tip
-        auto L = links[tip.first][tip.second];
+        auto L = links.at(tip.first).at(tip.second);
 
         // Count the number of skipped steps
         unsigned int n_skipped{0u};
@@ -374,8 +377,8 @@ track_candidate_container_types::host find_tracks(
             }
 
             const unsigned long link_pos =
-                param_to_link[L.previous.first][L.previous.second];
-            L = links[L.previous.first][link_pos];
+                param_to_link.at(L.previous.first).at(L.previous.second);
+            L = links.at(L.previous.first).at(link_pos);
         }
 
         const unsigned int n_cands = tip.first + 1 - n_skipped;
@@ -387,7 +390,7 @@ track_candidate_container_types::host find_tracks(
         }
 
         // Retrieve tip
-        L = links[tip.first][tip.second];
+        L = links.at(tip.first).at(tip.second);
 
         vecmem::vector<track_candidate> cands_per_track;
         cands_per_track.resize(n_cands);
@@ -400,11 +403,15 @@ track_candidate_container_types::host find_tracks(
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
              it++) {
 
-            while (L.meas_idx >= n_meas) {
+            while (
+                L.meas_idx >= n_meas &&
+                L.previous.first !=
+                    std::numeric_limits<
+                        candidate_link::link_index_type::first_type>::max()) {
                 const auto link_pos =
-                    param_to_link[L.previous.first][L.previous.second];
+                    param_to_link.at(L.previous.first).at(L.previous.second);
 
-                L = links[L.previous.first][link_pos];
+                L = links.at(L.previous.first).at(link_pos);
             }
 
             // Break if the measurement is still invalid
@@ -435,9 +442,9 @@ track_candidate_container_types::host find_tracks(
                     cands_per_track);
             } else {
                 const auto l_pos =
-                    param_to_link[L.previous.first][L.previous.second];
+                    param_to_link.at(L.previous.first).at(L.previous.second);
 
-                L = links[L.previous.first][l_pos];
+                L = links.at(L.previous.first).at(l_pos);
             }
         }
     }
