@@ -59,15 +59,8 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                 : static_cast<unsigned int>(-1);
 
         // Create a new spacepoint for the SoA container.
-        const std::size_t i = spacepoints.size();
-        spacepoints.resize(i + 1);
-        auto spacepoint = spacepoints[i];
-        spacepoint.measurement_index() = measurement_index;
-        spacepoint.x() = iohit.tx;
-        spacepoint.y() = iohit.ty;
-        spacepoint.z() = iohit.tz;
-        spacepoint.radius_variance() = 0.f;
-        spacepoint.z_variance() = 0.f;
+        spacepoints.push_back(
+            {measurement_index, {iohit.tx, iohit.ty, iohit.tz}, 0.f, 0.f});
     }
 }
 

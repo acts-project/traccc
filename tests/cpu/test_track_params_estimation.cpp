@@ -28,21 +28,6 @@ namespace {
 // Memory resource used by the EDM.
 vecmem::host_memory_resource host_mr;
 
-/// Helper function for creating a spacepoint
-void add_spacepoint(measurement_collection_types::host& measurements,
-                    edm::spacepoint_collection::host& spacepoints,
-                    const point3& pos) {
-
-    const auto i = spacepoints.size();
-    spacepoints.resize(i + 1);
-    auto sp = spacepoints.at(i);
-    sp.x() = pos[0];
-    sp.y() = pos[1];
-    sp.z() = pos[2];
-    sp.measurement_index() = static_cast<unsigned int>(measurements.size());
-    measurements.push_back({});
-}
-
 }  // namespace
 
 TEST(track_params_estimation, helix_negative_charge) {
@@ -64,17 +49,15 @@ TEST(track_params_estimation, helix_negative_charge) {
     // Make three spacepoints with the helix
     measurement_collection_types::host measurements(&host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
-    add_spacepoint(measurements, spacepoints, hlx(50 * unit<scalar>::mm));
-    add_spacepoint(measurements, spacepoints, hlx(100 * unit<scalar>::mm));
-    add_spacepoint(measurements, spacepoints, hlx(150 * unit<scalar>::mm));
+    measurements.resize(3);
+    spacepoints.reserve(3);
+    spacepoints.push_back({0, hlx(50 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({1, hlx(100 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({2, hlx(150 * unit<scalar>::mm), 0.f, 0.f});
 
     // Make a seed from the three spacepoints
     edm::seed_collection::host seeds{host_mr};
-    seeds.resize(1);
-    auto seed = seeds.at(0);
-    seed.bottom_index() = 0u;
-    seed.middle_index() = 1u;
-    seed.top_index() = 2u;
+    seeds.push_back({0, 1, 2});
 
     // Run track parameter estimation
     traccc::host::track_params_estimation tp(host_mr);
@@ -108,17 +91,15 @@ TEST(track_params_estimation, helix_positive_charge) {
     // Make three spacepoints with the helix
     measurement_collection_types::host measurements(&host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
-    add_spacepoint(measurements, spacepoints, hlx(50 * unit<scalar>::mm));
-    add_spacepoint(measurements, spacepoints, hlx(100 * unit<scalar>::mm));
-    add_spacepoint(measurements, spacepoints, hlx(150 * unit<scalar>::mm));
+    measurements.resize(3);
+    spacepoints.reserve(3);
+    spacepoints.push_back({0, hlx(50 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({1, hlx(100 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({2, hlx(150 * unit<scalar>::mm), 0.f, 0.f});
 
     // Make a seed from the three spacepoints
     edm::seed_collection::host seeds{host_mr};
-    seeds.resize(1);
-    auto seed = seeds.at(0);
-    seed.bottom_index() = 0u;
-    seed.middle_index() = 1u;
-    seed.top_index() = 2u;
+    seeds.push_back({0, 1, 2});
 
     // Run track parameter estimation
     traccc::host::track_params_estimation tp(host_mr);

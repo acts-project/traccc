@@ -13,48 +13,53 @@
 namespace traccc::edm {
 
 template <typename BASE>
+TRACCC_HOST_DEVICE auto& spacepoint<BASE>::x() {
+
+    return global()[0];
+}
+
+template <typename BASE>
+TRACCC_HOST_DEVICE const auto& spacepoint<BASE>::x() const {
+
+    return global()[0];
+}
+
+template <typename BASE>
+TRACCC_HOST_DEVICE auto& spacepoint<BASE>::y() {
+
+    return global()[1];
+}
+
+template <typename BASE>
+TRACCC_HOST_DEVICE const auto& spacepoint<BASE>::y() const {
+
+    return global()[1];
+}
+
+template <typename BASE>
+TRACCC_HOST_DEVICE auto& spacepoint<BASE>::z() {
+
+    return global()[2];
+}
+
+template <typename BASE>
+TRACCC_HOST_DEVICE const auto& spacepoint<BASE>::z() const {
+
+    return global()[2];
+}
+
+template <typename BASE>
 TRACCC_HOST_DEVICE auto spacepoint<BASE>::radius() const {
 
-    return math::sqrt(x() * x() + y() * y());
+    const scalar xx = x();
+    const scalar yy = y();
+    return math::sqrt(xx * xx + yy * yy);
 }
 
 template <typename BASE>
 TRACCC_HOST_DEVICE auto spacepoint<BASE>::phi() const {
 
     return math::atan2(y(), x());
-}
-
-template <typename BASE>
-TRACCC_HOST_DEVICE auto spacepoint<BASE>::global() const {
-
-    return point3{x(), y(), z()};
-}
-
-template <typename BASE>
-TRACCC_HOST_DEVICE spacepoint<BASE>& spacepoint<BASE>::operator=(
-    const spacepoint& other) {
-
-    measurement_index() = other.measurement_index();
-    x() = other.x();
-    y() = other.y();
-    z() = other.z();
-    z_variance() = other.z_variance();
-    radius_variance() = other.radius_variance();
-    return *this;
-}
-
-template <typename BASE>
-template <typename T, std::enable_if_t<!std::is_same_v<BASE, T>, bool> >
-TRACCC_HOST_DEVICE spacepoint<BASE>& spacepoint<BASE>::operator=(
-    const spacepoint<T>& other) {
-
-    measurement_index() = other.measurement_index();
-    x() = other.x();
-    y() = other.y();
-    z() = other.z();
-    z_variance() = other.z_variance();
-    radius_variance() = other.radius_variance();
-    return *this;
 }
 
 template <typename BASE>
