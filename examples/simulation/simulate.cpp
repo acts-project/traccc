@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
         detray::detail::random_numbers<scalar,
                                        std::uniform_real_distribution<scalar>>;
     using generator_type =
-        detray::random_track_generator<traccc::free_track_parameters,
+        detray::random_track_generator<traccc::free_track_parameters<>,
                                        uniform_gen_t>;
 
     // B field value and its type

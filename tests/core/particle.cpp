@@ -37,8 +37,8 @@ TEST(particle, charge_conjugation) {
 
 TEST(particle, correct_particle_hypothesis) {
 
-    traccc::free_track_parameters free_trk({1.f, 1.f, 1.f}, 0.f,
-                                           {2.f, 3.f, 4.f}, 1.f);
+    traccc::free_track_parameters<> free_trk({1.f, 1.f, 1.f}, 0.f,
+                                             {2.f, 3.f, 4.f}, 1.f);
 
     const auto positron = traccc::detail::correct_particle_hypothesis(
         detray::electron<float>(), free_trk);

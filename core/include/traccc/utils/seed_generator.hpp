@@ -42,9 +42,9 @@ struct seed_generator {
     ///
     /// @param vertex vertex of particle
     /// @param stddevs standard deviations for track parameter smearing
-    bound_track_parameters operator()(
+    bound_track_parameters<algebra_type> operator()(
         const detray::geometry::barcode surface_link,
-        const free_track_parameters& free_param,
+        const free_track_parameters<algebra_type>& free_param,
         const detray::pdg_particle<scalar>& ptc_type) {
 
         // Get bound parameter
@@ -52,9 +52,10 @@ struct seed_generator {
 
         const cxt_t ctx{};
         auto bound_vec = sf.free_to_bound_vector(ctx, free_param);
-        auto bound_cov = matrix::zero<detray::bound_matrix<algebra_type>>();
+        auto bound_cov = matrix::zero<traccc::bound_matrix<algebra_type>>();
 
-        bound_track_parameters bound_param{surface_link, bound_vec, bound_cov};
+        bound_track_parameters<algebra_type> bound_param{surface_link,
+                                                         bound_vec, bound_cov};
 
         // Type definitions
         using interactor_type =

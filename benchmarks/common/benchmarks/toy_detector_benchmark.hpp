@@ -61,14 +61,14 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
     // Detector type
     using detector_type = traccc::toy_detector::host;
+    using algebra_type = typename detector_type::algebra_type;
     using scalar_type = detector_type::scalar_type;
 
     // B field value and its type
     // @TODO: Set B field as argument
     using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
 
-    static constexpr traccc::vector3 B{0, 0,
-                                       2 * traccc::unit<traccc::scalar>::T};
+    static constexpr traccc::vector3 B{0, 0, 2 * traccc::unit<scalar_type>::T};
 
     ToyDetectorBenchmark() {
 
@@ -82,20 +82,18 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         // Use deterministic random number generator for testing
         using uniform_gen_t = detray::detail::random_numbers<
-            traccc::scalar, std::uniform_real_distribution<traccc::scalar>>;
+            scalar_type, std::uniform_real_distribution<scalar_type>>;
 
         // Build the detector
         auto [det, name_map] =
-            detray::build_toy_detector<traccc::default_algebra>(
-                host_mr, get_toy_config());
+            detray::build_toy_detector<algebra_type>(host_mr, get_toy_config());
 
         // B field
         auto field = detray::bfield::create_const_field<scalar_type>(B);
 
         // Origin of particles
-        using generator_type =
-            detray::random_track_generator<traccc::free_track_parameters,
-                                           uniform_gen_t>;
+        using generator_type = detray::random_track_generator<
+            traccc::free_track_parameters<algebra_type>, uniform_gen_t>;
         generator_type::configuration gen_cfg{};
         gen_cfg.n_tracks(n_tracks);
         gen_cfg.phi_range(phi_range);
@@ -105,12 +103,12 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         // Smearing value for measurements
         traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
-            50 * traccc::unit<traccc::scalar>::um,
-            50 * traccc::unit<traccc::scalar>::um);
+            50 * traccc::unit<scalar_type>::um,
+            50 * traccc::unit<scalar_type>::um);
 
         // Type declarations
-        using writer_type = traccc::smearing_writer<
-            traccc::measurement_smearer<traccc::default_algebra>>;
+        using writer_type =
+            traccc::smearing_writer<traccc::measurement_smearer<algebra_type>>;
 
         // Writer config
         typename writer_type::config smearer_writer_cfg{meas_smearer};
@@ -122,7 +120,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         auto sim = traccc::simulator<detector_type, b_field_t, generator_type,
                                      writer_type>(
-            detray::muon<traccc::scalar>(), n_events, det, field,
+            detray::muon<scalar_type>(), n_events, det, field,
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
         // Same propagation configuration for sim and reco
@@ -143,14 +141,14 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         detray::io::write_detector(det, name_map, writer_cfg);
     }
 
-    detray::toy_det_config<traccc::scalar> get_toy_config() const {
+    detray::toy_det_config<scalar_type> get_toy_config() const {
 
         // Create the toy geometry
-        detray::toy_det_config<traccc::scalar> toy_cfg{};
+        detray::toy_det_config<scalar_type> toy_cfg{};
         toy_cfg.n_brl_layers(4u).n_edc_layers(7u).do_check(false);
 
         // @TODO: Increase the material budget again
-        toy_cfg.module_mat_thickness(0.11f * traccc::unit<traccc::scalar>::mm);
+        toy_cfg.module_mat_thickness(0.11f * traccc::unit<scalar_type>::mm);
 
         return toy_cfg;
     }

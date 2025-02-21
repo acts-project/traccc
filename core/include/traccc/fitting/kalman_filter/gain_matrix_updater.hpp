@@ -26,8 +26,8 @@ struct gain_matrix_updater {
     using size_type = detray::dsize_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
-    using bound_vector_type = detray::bound_vector<algebra_t>;
-    using bound_matrix_type = detray::bound_matrix<algebra_t>;
+    using bound_vector_type = traccc::bound_vector<algebra_t>;
+    using bound_matrix_type = traccc::bound_matrix<algebra_t>;
 
     /// Gain matrix updater operation
     ///
@@ -44,7 +44,7 @@ struct gain_matrix_updater {
     TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        const bound_track_parameters<algebra_t>& bound_params) const {
 
         using shape_type = typename mask_group_t::value_type::shape;
 
@@ -67,7 +67,7 @@ struct gain_matrix_updater {
     template <size_type D, typename shape_t>
     TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status update(
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters& bound_params) const {
+        const bound_track_parameters<algebra_t>& bound_params) const {
 
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
