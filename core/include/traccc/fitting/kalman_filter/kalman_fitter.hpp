@@ -253,6 +253,12 @@ class kalman_fitter {
 
             typename backward_propagator_type::state propagation(
                 last.smoothed(), m_field, m_detector);
+            propagation.set_particle(detail::correct_particle_hypothesis(
+                m_cfg.ptc_hypothesis, last.smoothed()));
+
+            assert(std::signbit(
+                       propagation._stepping.particle_hypothesis().charge()) ==
+                   std::signbit(propagation._stepping.bound_params().qop()));
 
             inflate_covariance(propagation._stepping.bound_params(),
                                m_cfg.covariance_inflation_factor);
