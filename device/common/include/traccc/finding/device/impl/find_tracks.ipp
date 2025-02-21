@@ -20,6 +20,7 @@
 
 // Project include(s).
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/fitting/status_codes.hpp"
 
 // Detray include(s)
 #include <detray/geometry/tracking_surface.hpp>
@@ -206,14 +207,15 @@ TRACCC_DEVICE inline void find_tracks(
             const detray::tracking_surface sf{det, in_par.surface_link()};
 
             // Run the Kalman update
-            const bool res = sf.template visit_mask<
+            const kalman_fitter_status res = sf.template visit_mask<
                 gain_matrix_updater<typename detector_t::algebra_type>>(
                 trk_state, in_par);
 
             const traccc::scalar chi2 = trk_state.filtered_chi2();
 
             // The chi2 from Kalman update should be less than chi2_max
-            if (res && trk_state.filtered_chi2() < cfg.chi2_max) {
+            if (res == kalman_fitter_status::SUCCESS &&
+                trk_state.filtered_chi2() < cfg.chi2_max) {
                 // Add measurement candidates to link
                 const unsigned int l_pos = num_total_candidates.fetch_add(1);
 
