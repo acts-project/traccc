@@ -239,6 +239,16 @@ class kalman_fitter {
             // return false;
         }
         auto& last = *fitter_state.m_fit_actor_state.m_it_rev;
+
+        const scalar theta = last.smoothed().theta();
+        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
+            return kalman_fitter_status::ERROR_THETA_ZERO;
+        }
+
+        if (!std::isfinite(last.smoothed().phi())) {
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
         last.smoothed().set_parameter_vector(last.filtered());
         last.smoothed().set_covariance(last.filtered().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
@@ -263,13 +273,6 @@ class kalman_fitter {
             propagation._navigation.set_direction(
                 detray::navigation::direction::e_backward);
             fitter_state.m_fit_actor_state.backward_mode = true;
-
-            const auto& dir = propagation._stepping().dir();
-            if (dir[0] == 0.f && dir[1] == 0.f) {
-                // Particle is exactly parallel to the beampipe, which we
-                // cannot represent.
-                return kalman_fitter_status::ERROR_THETA_ZERO;
-            }
 
             propagator.propagate(propagation,
                                  fitter_state.backward_actor_state());
