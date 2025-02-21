@@ -18,7 +18,7 @@ namespace traccc {
 struct finding_result {
 
     /// Seed track parameter
-    traccc::bound_track_parameters seed_params;
+    traccc::bound_track_parameters<> seed_params;
 
     /// Track summary
     traccc::track_quality trk_quality;

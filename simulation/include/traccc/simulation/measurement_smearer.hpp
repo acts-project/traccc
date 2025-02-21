@@ -56,7 +56,7 @@ struct measurement_smearer {
     template <typename mask_t>
     void operator()(
         const mask_t& /*mask*/, const std::array<scalar_type, 2>& offset,
-        const detray::bound_track_parameters<algebra_t>& bound_params,
+        const traccc::bound_track_parameters<algebra_t>& bound_params,
         io::csv::measurement& iomeas) {
 
         // Line detector

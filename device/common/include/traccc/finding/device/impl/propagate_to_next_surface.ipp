@@ -74,7 +74,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     }
 
     // Input bound track parameter
-    const bound_track_parameters in_par = params.at(param_id);
+    const bound_track_parameters<> in_par = params.at(param_id);
 
     // Create propagator
     propagator_t propagator(cfg.propagation);

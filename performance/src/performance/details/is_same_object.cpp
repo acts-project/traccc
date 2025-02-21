@@ -86,13 +86,12 @@ bool is_same_object<spacepoint>::operator()(const spacepoint& obj,
 /// @name Implementation for
 ///       @c traccc::details::is_same_object<bound_track_parameters>
 /// @{
-
-is_same_object<bound_track_parameters>::is_same_object(
-    const bound_track_parameters& ref, scalar unc)
+is_same_object<bound_track_parameters<>>::is_same_object(
+    const bound_track_parameters<>& ref, scalar unc)
     : m_ref(ref), m_unc(unc) {}
 
-bool is_same_object<bound_track_parameters>::operator()(
-    const bound_track_parameters& obj) const {
+bool is_same_object<bound_track_parameters<>>::operator()(
+    const bound_track_parameters<>& obj) const {
 
     return ((obj.surface_link() == m_ref.get().surface_link()) &&
             is_same_scalar(obj.bound_local()[0], m_ref.get().bound_local()[0],
@@ -147,8 +146,8 @@ is_same_object<fitting_result<traccc::default_algebra>>::is_same_object(
 bool is_same_object<fitting_result<traccc::default_algebra>>::operator()(
     const fitting_result<traccc::default_algebra>& obj) const {
 
-    return (is_same_object<bound_track_parameters>(m_ref.get().fit_params,
-                                                   m_unc)(obj.fit_params) &&
+    return (is_same_object<bound_track_parameters<>>(m_ref.get().fit_params,
+                                                     m_unc)(obj.fit_params) &&
             is_same_scalar(obj.trk_quality.ndf, m_ref.get().trk_quality.ndf,
                            m_unc));
 }
@@ -166,8 +165,8 @@ is_same_object<finding_result>::is_same_object(const finding_result& ref,
 bool is_same_object<finding_result>::operator()(
     const finding_result& obj) const {
 
-    return (is_same_object<bound_track_parameters>(m_ref.get().seed_params,
-                                                   m_unc)(obj.seed_params) &&
+    return (is_same_object<bound_track_parameters<>>(m_ref.get().seed_params,
+                                                     m_unc)(obj.seed_params) &&
             is_same_scalar(obj.trk_quality.ndf, m_ref.get().trk_quality.ndf,
                            m_unc));
 }
