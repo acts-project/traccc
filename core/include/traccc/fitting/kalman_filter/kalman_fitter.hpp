@@ -240,12 +240,12 @@ class kalman_fitter {
         }
         auto& last = *fitter_state.m_fit_actor_state.m_it_rev;
 
-        const scalar theta = last.smoothed().theta();
+        const scalar theta = last.filtered().theta();
         if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
             return kalman_fitter_status::ERROR_THETA_ZERO;
         }
 
-        if (!std::isfinite(last.smoothed().phi())) {
+        if (!std::isfinite(last.filtered().phi())) {
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
