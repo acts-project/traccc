@@ -19,11 +19,7 @@
 
 // Detray include(s).
 #include <detray/detectors/bfield.hpp>
-#include <detray/io/frontend/detector_reader.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 #include <detray/tracks/ray.hpp>
@@ -161,7 +157,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
     void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
-        cfg.navigation.search_window = {3, 3};
+        // cfg.navigation.search_window = {3, 3};
         cfg.navigation.overstep_tolerance = -300.f * traccc::unit<float>::um;
         cfg.navigation.min_mask_tolerance = 1e-5f * traccc::unit<float>::mm;
         cfg.navigation.max_mask_tolerance = 3.f * traccc::unit<float>::mm;
