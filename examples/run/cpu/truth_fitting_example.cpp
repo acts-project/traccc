@@ -130,8 +130,9 @@ int main(int argc, char* argv[]) {
         auto track_states = host_fitting(
             host_det, field, traccc::get_data(truth_track_candidates));
 
-        std::cout << "Number of fitted tracks: " << track_states.size()
-                  << std::endl;
+        std::cout << "Number of fitted tracks: ( "
+                  << count_fitted_tracks(track_states) << " / "
+                  << track_states.size() << " ) " << std::endl;
 
         const decltype(track_states)::size_type n_fitted_tracks =
             track_states.size();

@@ -148,6 +148,7 @@ struct gain_matrix_smoother {
             matrix::transpose(residual) * matrix::inverse(R) * residual;
 
         cur_state.smoothed_chi2() = getter::element(chi2, 0, 0);
+        cur_state.is_smoothed = true;
 
         return kalman_fitter_status::SUCCESS;
     }

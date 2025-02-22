@@ -151,8 +151,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         auto track_states =
             host_fitting(detector, field, traccc::get_data(track_candidates));
 
-        std::cout << "Number of fitted tracks: " << track_states.size()
-                  << std::endl;
+        std::cout << "Number of fitted tracks: ( "
+                  << count_fitted_tracks(track_states) << " / "
+                  << track_states.size() << " ) " << std::endl;
 
         const std::size_t n_fitted_tracks = track_states.size();
 
