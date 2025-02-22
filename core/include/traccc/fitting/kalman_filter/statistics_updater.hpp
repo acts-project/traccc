@@ -41,13 +41,15 @@ struct statistics_updater {
             // Track quality
             auto& trk_quality = fit_res.trk_quality;
 
-            // NDoF = NDoF + number of coordinates per measurement
-            trk_quality.ndf += static_cast<scalar_type>(D);
-
-            // total_chi2 = total_chi2 + chi2
             if (use_backward_filter) {
-                trk_quality.chi2 += trk_state.backward_chi2();
+                if (trk_state.is_smoothed) {
+                    // NDoF = NDoF + number of coordinates per measurement
+                    trk_quality.ndf += static_cast<scalar_type>(D);
+                    trk_quality.chi2 += trk_state.backward_chi2();
+                }
             } else {
+                // NDoF = NDoF + number of coordinates per measurement
+                trk_quality.ndf += static_cast<scalar_type>(D);
                 trk_quality.chi2 += trk_state.filtered_chi2();
             }
         }
