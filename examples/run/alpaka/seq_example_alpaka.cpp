@@ -279,7 +279,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                           vecmem::get_data(seeds_alpaka));
 
             // Compare the track parameters made on the host and on the device.
-            traccc::collection_comparator<traccc::bound_track_parameters>
+            traccc::collection_comparator<traccc::bound_track_parameters<>>
                 compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_alpaka));

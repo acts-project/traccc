@@ -134,11 +134,11 @@ track_candidate_container_types::host find_tracks(
     bound_track_parameters_collection_types::const_device seeds{seeds_view};
 
     // Copy seed to input parameters
-    std::vector<bound_track_parameters> in_params(seeds.size());
+    std::vector<bound_track_parameters<algebra_type>> in_params(seeds.size());
     std::copy(seeds.begin(), seeds.end(), in_params.begin());
     std::vector<unsigned int> n_trks_per_seed(seeds.size());
 
-    std::vector<bound_track_parameters> out_params;
+    std::vector<bound_track_parameters<algebra_type>> out_params;
 
     for (unsigned int step = 0u; step < config.max_track_candidates_per_track;
          step++) {
@@ -164,12 +164,13 @@ track_candidate_container_types::host find_tracks(
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0u);
 
         // Parameters updated by Kalman fitter
-        std::vector<bound_track_parameters> updated_params;
+        std::vector<bound_track_parameters<algebra_type>> updated_params;
 
         for (unsigned int in_param_id = 0; in_param_id < n_in_params;
              in_param_id++) {
 
-            bound_track_parameters& in_param = in_params[in_param_id];
+            bound_track_parameters<algebra_type>& in_param =
+                in_params[in_param_id];
             const unsigned int orig_param_id =
                 (step == 0
                      ? in_param_id

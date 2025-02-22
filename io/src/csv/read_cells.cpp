@@ -152,20 +152,10 @@ void read_cells(edm::silicon_cell_collection::host& cells,
             ddIndex = it->second;
         }
 
-        // Helper lambda for setting up SoA cells.
-        auto assign = [ddIndex](auto soa_cell, const cell& iocell) {
-            soa_cell.channel0() = iocell.channel0;
-            soa_cell.channel1() = iocell.channel1;
-            soa_cell.activation() = iocell.value;
-            soa_cell.time() = iocell.timestamp;
-            soa_cell.module_index() = ddIndex;
-        };
-
         // Add the cells to the output.
         for (auto& cell : cellz) {
-            const std::size_t cellIndex = cells.size();
-            cells.resize(cellIndex + 1);
-            assign(cells.at(cellIndex), cell);
+            cells.push_back({cell.channel0, cell.channel1, cell.value,
+                             cell.timestamp, ddIndex});
         }
     }
 }
