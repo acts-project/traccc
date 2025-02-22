@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,12 +29,15 @@ TEST(algorithms, seq_single_module) {
 
     /// Following [DOI: 10.1109/DASIP48288.2019.9049184]
     traccc::edm::silicon_cell_collection::host cells{resource};
-    cells.resize(9);
-    cells.channel0() = {1, 8, 10, 9, 10, 12, 3, 11, 4};
-    cells.channel1() = {0, 4, 4, 5, 5, 12, 13, 13, 14};
-    cells.activation() = {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f};
-    cells.time() = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-    cells.module_index() = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    cells.push_back({1, 0, 1.f, 0.f, 0});
+    cells.push_back({8, 4, 2.f, 0.f, 0});
+    cells.push_back({10, 4, 3.f, 0.f, 0});
+    cells.push_back({9, 5, 4.f, 0.f, 0});
+    cells.push_back({10, 5, 5.f, 0.f, 0});
+    cells.push_back({12, 12, 6.f, 0.f, 0});
+    cells.push_back({3, 13, 7.f, 0.f, 0});
+    cells.push_back({11, 13, 8.f, 0.f, 0});
+    cells.push_back({4, 14, 9.f, 0.f, 0});
     traccc::silicon_detector_description::host dd{resource};
     dd.resize(1);
 

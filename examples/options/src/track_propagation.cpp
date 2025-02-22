@@ -28,40 +28,41 @@ track_propagation::track_propagation()
     m_desc.add_options()("constraint-step-size-mm",
                          po::value(&(m_config.stepping.step_constraint))
                              ->default_value(m_config.stepping.step_constraint /
-                                             detray::unit<float>::mm),
+                                             traccc::unit<float>::mm),
                          "The constrained step size [mm]");
     m_desc.add_options()(
         "overstep-tolerance-um",
         po::value(&(m_config.navigation.overstep_tolerance))
             ->default_value(m_config.navigation.overstep_tolerance /
-                            detray::unit<float>::um),
+                            traccc::unit<float>::um),
         "The overstep tolerance [um]");
     m_desc.add_options()(
         "min-mask-tolerance-mm",
         po::value(&(m_config.navigation.min_mask_tolerance))
             ->default_value(m_config.navigation.min_mask_tolerance /
-                            detray::unit<float>::mm),
+                            traccc::unit<float>::mm),
         "The minimum mask tolerance [mm]");
     m_desc.add_options()(
         "max-mask-tolerance-mm",
         po::value(&(m_config.navigation.max_mask_tolerance))
             ->default_value(m_config.navigation.max_mask_tolerance /
-                            detray::unit<float>::mm),
+                            traccc::unit<float>::mm),
         "The maximum mask tolerance [mm]");
     m_desc.add_options()(
         "search-window",
         po::value(&m_search_window)->default_value(m_search_window),
         "Size of the grid surface search window");
-    // TODO: Use the unit of [mm] for rk tolerance
-    m_desc.add_options()("rk-tolerance",
+    m_desc.add_options()("rk-tolerance-mm [mm]",
                          po::value(&(m_config.stepping.rk_error_tol))
-                             ->default_value(m_config.stepping.rk_error_tol),
+                             ->default_value(m_config.stepping.rk_error_tol /
+                                             traccc::unit<float>::mm),
                          "The Runge-Kutta stepper tolerance");
 }
 
 void track_propagation::read(const po::variables_map &) {
 
     m_config.stepping.step_constraint *= traccc::unit<float>::mm;
+    m_config.stepping.rk_error_tol *= traccc::unit<float>::mm;
     m_config.navigation.overstep_tolerance *= traccc::unit<float>::um;
     m_config.navigation.min_mask_tolerance *= traccc::unit<float>::mm;
     m_config.navigation.max_mask_tolerance *= traccc::unit<float>::mm;

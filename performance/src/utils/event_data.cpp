@@ -314,8 +314,8 @@ track_candidate_container_types::host event_data::generate_truth_candidates(
     for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
 
         const auto& param = m_meas_to_param_map.at(measurements[0]);
-        const free_track_parameters free_param(param.first, 0.f, param.second,
-                                               ptc.charge);
+        const free_track_parameters<> free_param(param.first, 0.f, param.second,
+                                                 ptc.charge);
 
         auto seed_params =
             sg(measurements[0].surface_link, free_param,
