@@ -12,6 +12,7 @@
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/debug.hpp"
 
 // Detray inlcude(s)
 #include <detray/geometry/shapes/line.hpp>
@@ -130,17 +131,25 @@ struct gain_matrix_updater {
         // Return false if track is parallel to z-axis or phi is not finite
         const scalar theta = bound_params.theta();
 
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
-        }
+        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi)
+            [[unlikely]] { return kalman_fitter_status::ERROR_THETA_ZERO; }
 
-        if (!std::isfinite(bound_params.phi())) {
-            return kalman_fitter_status::ERROR_INVERSION;
-        }
+        if (!std::isfinite(bound_params.phi()))
+            [[unlikely]] { return kalman_fitter_status::ERROR_INVERSION; }
 
-        if (std::abs(bound_params.qop()) == 0.f) {
-            return kalman_fitter_status::ERROR_QOP_ZERO;
-        }
+        if (std::abs(bound_params.qop()) == 0.f)
+            [[unlikely]] { return kalman_fitter_status::ERROR_QOP_ZERO; }
+
+        if (!std::isfinite(getter::element(filtered_vec, e_bound_phi, 0)))
+            [[unlikely]] { return kalman_fitter_status::ERROR_INVERSION; }
+        else
+            [[likely]] {
+                // Assert that the entire matrix is finite, i.e. that checking
+                // only the phi value didn't let any other non-finite values
+                // through.
+                assert(matrix_is_finite(filtered_vec));
+                assert(matrix_is_finite(filtered_cov));
+            }
 
         // Set the track state parameters
         trk_state.filtered().set_vector(filtered_vec);
