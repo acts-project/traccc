@@ -195,6 +195,25 @@ and toolchains that are currently known to work (last updated 2022/01/24):
 - [CMake](https://cmake.org/)
 - (Optional) [ROOT](https://root.cern/): RIO, Hist, Tree
 
+### Dependency management with Spack
+
+The [Spack](https://spack.io/) project provides a particularly easy way to
+install the dependencies that you need to use traccc. In order to use Spack to
+manage your dependencies, simply create a new Spack environment using the
+provided environment file:
+
+```sh
+spack env create traccc spack.yaml
+spack -e traccc concretize -f
+spack -e traccc install
+spack env activate traccc
+```
+
+This way, Spack will automatically download and install all dependencies
+necessary to use traccc with the CUDA, SYCL, Kokkos, and Alpaka programming
+models. When using Spack to manage your dependencies, make sure to compile
+traccc with the `-DTRACCC_USE_SPACK_LIBS=ON` flag.
+
 ## Getting started
 
 ### Clone the repository

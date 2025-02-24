@@ -65,6 +65,7 @@ option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
 # Flags controlling what traccc should use.
 option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
+option( TRACCC_USE_SPACK_LIBS "Use pack libraries by default" FALSE )
 option( TRACCC_USE_ROOT "Use ROOT in the build (if needed)" TRUE )
 
 # Check CUDA and SYCL C++ standards
@@ -144,7 +145,7 @@ option( TRACCC_SETUP_EIGEN3
    "Set up the Eigen3 target(s) explicitly" TRUE )
 option( TRACCC_USE_SYSTEM_EIGEN3
    "Pick up an existing installation of Eigen3 from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_EIGEN3 )
    if( TRACCC_USE_SYSTEM_EIGEN3 )
       find_package( Eigen3 REQUIRED )
@@ -158,7 +159,7 @@ option( TRACCC_SETUP_TBB
    "Set up the TBB target(s) explicitly" TRUE )
 option( TRACCC_USE_SYSTEM_TBB
    "Pick up an existing installation of TBB from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_TBB )
    if( TRACCC_USE_SYSTEM_TBB )
       find_package( TBB REQUIRED )
@@ -172,7 +173,7 @@ option( TRACCC_SETUP_THRUST
    "Set up the Thrust target(s) explicitly" TRUE )
 option( TRACCC_USE_SYSTEM_THRUST
    "Pick up an existing installation of Thrust from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_THRUST )
    if( TRACCC_USE_SYSTEM_THRUST )
       find_package( Thrust REQUIRED )
@@ -206,7 +207,7 @@ option( TRACCC_SETUP_DPL
    "Set up the DPL target(s) explicitly" ${TRACCC_BUILD_SYCL} )
 option( TRACCC_USE_SYSTEM_DPL
    "Pick up an existing installation of DPL from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_DPL )
    if( TRACCC_USE_SYSTEM_DPL )
       # OneDPL determines whether SYCL is supported by asking the C++ compiler
@@ -235,7 +236,7 @@ option( TRACCC_SETUP_KOKKOS
    "Set up the Kokkos library" ${TRACCC_BUILD_KOKKOS} )
 option( TRACCC_USE_SYSTEM_KOKKOS
    "Pick up an existing installation of Kokkos from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_KOKKOS )
    if( TRACCC_USE_SYSTEM_KOKKOS )
       find_package( Kokkos REQUIRED )
@@ -255,7 +256,7 @@ option( TRACCC_SETUP_ALPAKA
    "Set up the Alpaka library" ${TRACCC_BUILD_ALPAKA})
 option( TRACCC_USE_SYSTEM_ALPAKA
    "Pick up an existing installation of Alpaka from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_ALPAKA )
    # Default options for the Alpaka build.
    set( alpaka_ACC_CPU_B_SEQ_T_THREADS_ENABLE TRUE CACHE BOOL
@@ -328,7 +329,7 @@ option( TRACCC_SETUP_ACTS
    "Set up the Acts target(s) explicitly" TRUE )
 option( TRACCC_USE_SYSTEM_ACTS
    "Pick up an existing installation of Acts from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_ACTS )
    if( TRACCC_USE_SYSTEM_ACTS )
       find_package( Acts REQUIRED COMPONENTS PluginJson )
@@ -346,7 +347,7 @@ option( TRACCC_SETUP_GOOGLETEST
    "Set up the GoogleTest target(s) explicitly" ${TRACCC_DEFAULT_SETUP_GOOGLETEST} )
 option( TRACCC_USE_SYSTEM_GOOGLETEST
    "Pick up an existing installation of GoogleTest from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_GOOGLETEST )
    if( TRACCC_USE_SYSTEM_GOOGLETEST )
       find_package( GTest REQUIRED )
@@ -360,7 +361,7 @@ option( TRACCC_SETUP_BENCHMARKS
    "Set up the Google Benchmark target(s) explicitly" TRUE )
 option( TRACCC_USE_SYSTEM_BENCHMARKS
    "Pick up an existing installation of Google Benchmark from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_BENCHMARKS )
    if( TRACCC_USE_SYSTEM_BENCHMARKS )
       find_package( benchmark REQUIRED )
@@ -379,7 +380,7 @@ option( TRACCC_SETUP_INDICATORS
 unset( _indicatorsDefault )
 option( TRACCC_USE_SYSTEM_INDICATORS
    "Pick up an existing installation of indicators from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
+   $<OR:$<BOOL:${TRACCC_USE_SYSTEM_LIBS}>,$<BOOL:${TRACCC_USE_SPACK_LIBS}>> )
 if( TRACCC_SETUP_INDICATORS )
    if( TRACCC_USE_SYSTEM_INDICATORS )
       find_package( indicators REQUIRED )
