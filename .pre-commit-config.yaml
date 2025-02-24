@@ -12,3 +12,10 @@ repos:
         name: Check includes with quotes
         language: system
         entry: .github/check_quote_includes.sh
+
+  - repo: local
+    hooks:
+      - id: check_taboos
+        name: Check taboo code patterns
+        language: system
+        entry: .github/check_taboos.sh
