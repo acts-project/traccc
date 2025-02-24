@@ -7,6 +7,11 @@
 # Project include(s).
 include( traccc-compiler-options-cpp )
 
+# Inform the code that it is being built in Release mode.
+if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+   add_definitions(-DTRACCC_BUILD_TYPE_IS_RELEASE)
+endif()
+
 # Add all the subdirectories that can be built.
 add_subdirectory(cpu)
 
