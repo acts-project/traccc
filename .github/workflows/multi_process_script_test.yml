@@ -1,0 +1,35 @@
+name: MPS Test
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+  
+  workflow_dispatch:
+
+jobs:
+  builds:
+    runs-on: ubuntu-latest
+    container: 
+      image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+    steps:
+      - uses: actions/checkout@v2
+        with:
+            submodules: true
+            lfs: true
+      - name: Configure
+        run:
+          cmake -S ${GITHUB_WORKSPACE} -B build -DCMAKE_BUILD_TYPE=Release -DTRACCC_BUILD_CUDA=ON
+      - name: Build
+        run:
+          cmake --build build
+      - name: Auto Benchmark Cuda
+        run: |
+          cd multi_process
+          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"${GITHUB_WORKSPACE}/data"
+      - name: Auto Benchmark CPU
+        run: |
+          cd multi_process
+          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r1 -d"${GITHUB_WORKSPACE}/data"
+      
