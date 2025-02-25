@@ -149,6 +149,10 @@ struct two_filters_smoother {
         const matrix_type<1, 1> chi2 =
             matrix::transpose(residual) * matrix::inverse(R) * residual;
 
+        // Update the bound track parameters
+        bound_params.set_vector(filtered_vec);
+        bound_params.set_covariance(filtered_cov);
+
         // Return false if track is parallel to z-axis or phi is not finite
         const scalar theta = bound_params.theta();
         if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
@@ -158,10 +162,6 @@ struct two_filters_smoother {
         if (!std::isfinite(bound_params.phi())) {
             return kalman_fitter_status::ERROR_INVERSION;
         }
-
-        // Update the bound track parameters
-        bound_params.set_vector(filtered_vec);
-        bound_params.set_covariance(filtered_cov);
 
         // Set backward chi2
         trk_state.backward_chi2() = getter::element(chi2, 0, 0);
