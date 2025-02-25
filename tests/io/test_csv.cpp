@@ -37,7 +37,8 @@ TEST_F(io, csv_read_single_module) {
     vecmem::host_memory_resource resource;
 
     traccc::edm::silicon_cell_collection::host cells{resource};
-    traccc::io::read_cells(cells, get_datafile("single_module/cells.csv"));
+    traccc::io::read_cells(cells, get_datafile("single_module/cells.csv"),
+                           traccc::getDummyLogger().clone());
 
     ASSERT_EQ(cells.size(), 6u);
 
@@ -58,7 +59,8 @@ TEST_F(io, csv_read_two_modules) {
     vecmem::host_memory_resource resource;
 
     traccc::edm::silicon_cell_collection::host cells{resource};
-    traccc::io::read_cells(cells, get_datafile("two_modules/cells.csv"));
+    traccc::io::read_cells(cells, get_datafile("two_modules/cells.csv"),
+                           traccc::getDummyLogger().clone());
 
     ASSERT_EQ(cells.size(), 14u);
 
@@ -92,7 +94,8 @@ TEST_F(io, csv_read_tml_pixelbarrel) {
     traccc::edm::silicon_cell_collection::host cells{resource};
     traccc::io::read_cells(
         cells, get_datafile("tml_pixel_barrel/event000000000-cells.csv"),
-        nullptr, traccc::data_format::csv, false);
+        traccc::getDummyLogger().clone(), nullptr, traccc::data_format::csv,
+        false);
 
     EXPECT_EQ(cells.size(), 179961u);
 }
@@ -190,7 +193,8 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
         for (std::size_t event = 0; event < 10; ++event) {
 
             // Read the cells for the current event.
-            traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/", &dd);
+            traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/",
+                                   traccc::getDummyLogger().clone(), &dd);
 
             // Write the cells into a temporary file.
             traccc::io::write(event,
@@ -201,7 +205,8 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
             // Read the cells back in.
             traccc::io::read_cells(
                 copy, event, std::filesystem::temp_directory_path().native(),
-                &dd, traccc::data_format::csv, false, use_acts_geometry_id);
+                traccc::getDummyLogger().clone(), &dd, traccc::data_format::csv,
+                false, use_acts_geometry_id);
 
             // Compare the two cell collections.
             compare_cells(orig, copy);

@@ -9,6 +9,7 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 
 #include "traccc/seeding/detail/seeding_config.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // System include(s).
 #include <cmath>
@@ -19,9 +20,13 @@ namespace traccc {
 seeding_algorithm::seeding_algorithm(const seedfinder_config& finder_config,
                                      const spacepoint_grid_config& grid_config,
                                      const seedfilter_config& filter_config,
-                                     vecmem::memory_resource& mr)
-    : m_spacepoint_binning(finder_config, grid_config, mr),
-      m_seed_finding(finder_config, filter_config) {}
+                                     vecmem::memory_resource& mr,
+                                     std::unique_ptr<const Logger> logger)
+    : messaging(logger->clone()),
+      m_spacepoint_binning(finder_config, grid_config, mr,
+                           logger->cloneWithSuffix("BinningAlg")),
+      m_seed_finding(finder_config, filter_config,
+                     logger->cloneWithSuffix("SeedFindingAlg")) {}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_collection_types::host& spacepoints) const {

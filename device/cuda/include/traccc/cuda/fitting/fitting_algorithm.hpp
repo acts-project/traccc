@@ -14,6 +14,7 @@
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -30,7 +31,8 @@ class fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
           const typename fitter_t::detector_type::view_type&,
           const typename fitter_t::bfield_type&,
-          const typename track_candidate_container_types::const_view&)> {
+          const typename track_candidate_container_types::const_view&)>,
+      public messaging {
 
     public:
     using algebra_type = typename fitter_t::algebra_type;
@@ -43,8 +45,10 @@ class fitting_algorithm
     /// @param mr   The memory resource to use
     /// @param copy Copy object
     /// @param str  Cuda stream object
-    fitting_algorithm(const config_type& cfg, const traccc::memory_resource& mr,
-                      vecmem::copy& copy, stream& str);
+    fitting_algorithm(
+        const config_type& cfg, const traccc::memory_resource& mr,
+        vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
     track_state_container_types::buffer operator()(

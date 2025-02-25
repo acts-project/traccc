@@ -47,7 +47,7 @@ class algorithm<R(A...)> {
         "All arguments must be either affine types (rvalue references), or "
         "immutable constant types (const lvalue references).");
 
-    virtual ~algorithm() {}
+    virtual ~algorithm() = default;
 
     virtual output_type operator()(A... args) const = 0;
 };

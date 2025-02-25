@@ -12,6 +12,7 @@
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -32,7 +33,8 @@ class silicon_pixel_spacepoint_formation_algorithm
           const measurement_collection_types::const_view&)>,
       public algorithm<spacepoint_collection_types::host(
           const telescope_detector::host&,
-          const measurement_collection_types::const_view&)> {
+          const measurement_collection_types::const_view&)>,
+      public messaging {
 
     public:
     /// Output type
@@ -42,7 +44,9 @@ class silicon_pixel_spacepoint_formation_algorithm
     ///
     /// @param mr is the memory resource
     ///
-    silicon_pixel_spacepoint_formation_algorithm(vecmem::memory_resource& mr);
+    silicon_pixel_spacepoint_formation_algorithm(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Construct spacepoints from 2D silicon pixel measurements
     ///
@@ -69,7 +73,6 @@ class silicon_pixel_spacepoint_formation_algorithm
     private:
     /// Memory resource to use for the output container
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
 };  // class silicon_pixel_spacepoint_formation_algorithm
 
 }  // namespace traccc::host

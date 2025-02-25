@@ -16,6 +16,7 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -28,16 +29,18 @@
 namespace traccc::sycl {
 
 /// Spacepoing binning executed on a SYCL device
-class spacepoint_binning
-    : public algorithm<sp_grid_buffer(
-          const spacepoint_collection_types::const_view&)> {
+class spacepoint_binning : public algorithm<sp_grid_buffer(
+                               const spacepoint_collection_types::const_view&)>,
+                           public messaging {
 
     public:
     /// Constructor for the algorithm
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       const traccc::memory_resource& mr, vecmem::copy& copy,
-                       queue_wrapper queue);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a a view of spacepoints
     sp_grid_buffer operator()(const spacepoint_collection_types::const_view&
@@ -50,7 +53,6 @@ class spacepoint_binning
     traccc::memory_resource m_mr;
     mutable queue_wrapper m_queue;
     vecmem::copy& m_copy;
-
 };  // class spacepoint_binning
 
 }  // namespace traccc::sycl

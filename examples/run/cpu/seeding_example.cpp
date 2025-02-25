@@ -65,7 +65,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_resolution& resolution_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
-            const traccc::opts::performance& performance_opts) {
+            const traccc::opts::performance& performance_opts,
+            std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -108,10 +110,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Seeding algorithm
-    traccc::seeding_algorithm sa(seeding_opts.seedfinder,
-                                 {seeding_opts.seedfinder},
-                                 seeding_opts.seedfilter, host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    traccc::seeding_algorithm sa(
+        seeding_opts.seedfinder, {seeding_opts.seedfinder},
+        seeding_opts.seedfilter, host_mr, logger().clone("SeedingAlg"));
+    traccc::track_params_estimation tp(host_mr,
+                                       logger().clone("TrackParEstAlg"));
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);
@@ -120,15 +123,20 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::finding_config cfg(finding_opts);
     cfg.propagation = propagation_config;
 
-    traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding(
+        cfg, logger().clone("FindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm host_fitting(
+        fit_cfg, host_mr, logger().clone("FittingAlg"));
 
-    traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution{};
+    traccc::greedy_ambiguity_resolution_algorithm::config_t
+        host_ambiguity_config{};
+    traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution(
+        host_ambiguity_config, logger().clone("AmbiguityResolution"));
 
     // Loop over events
     for (std::size_t event = input_opts.skip;
@@ -245,20 +253,18 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         }
     }
 
-    std::cout << "==> Statistics ... " << std::endl;
-    std::cout << "- read    " << n_spacepoints << " spacepoints" << std::endl;
-    std::cout << "- read    " << n_measurements << " measurements" << std::endl;
-    std::cout << "- created (cpu)  " << n_seeds << " seeds" << std::endl;
-    std::cout << "- created (cpu)  " << n_found_tracks << " found tracks"
-              << std::endl;
-    std::cout << "- created (cpu)  " << n_fitted_tracks << " fitted tracks"
-              << std::endl;
+    TRACCC_INFO("==> Statistics ... ");
+    TRACCC_INFO("- read    " << n_spacepoints << " spacepoints");
+    TRACCC_INFO("- read    " << n_measurements << " measurements");
+    TRACCC_INFO("- created (cpu)  " << n_seeds << " seeds");
+    TRACCC_INFO("- created (cpu)  " << n_found_tracks << " found tracks");
+    TRACCC_INFO("- created (cpu)  " << n_fitted_tracks << " fitted tracks");
 
     if (resolution_opts.run) {
-        std::cout << "- created (cpu)  " << n_ambiguity_free_tracks
-                  << " ambiguity free tracks" << std::endl;
+        TRACCC_INFO("- created (cpu)  " << n_ambiguity_free_tracks
+                                        << " ambiguity free tracks");
     } else {
-        std::cout << "- ambiguity resolution: deactivated" << std::endl;
+        TRACCC_INFO("- ambiguity resolution: deactivated");
     }
 
     return EXIT_SUCCESS;
@@ -267,6 +273,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleSeeding", traccc::Logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -282,10 +290,11 @@ int main(int argc, char* argv[]) {
         {detector_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, fitting_opts, resolution_opts, performance_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
-                   resolution_opts, input_opts, detector_opts,
-                   performance_opts);
+                   resolution_opts, input_opts, detector_opts, performance_opts,
+                   logger->clone());
 }

@@ -41,7 +41,9 @@ namespace po = boost::program_options;
 
 int par_run(const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
-            const traccc::opts::clusterization& /*clusterization_opts*/) {
+            const traccc::opts::clusterization& /*clusterization_opts*/,
+            std::unique_ptr<const traccc::Logger> ilogger) {
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource resource;
@@ -68,8 +70,10 @@ int par_run(const traccc::opts::input_data& input_opts,
         traccc::host::silicon_pixel_spacepoint_formation_algorithm;
 
     // Algorithms
-    traccc::host::clusterization_algorithm ca(resource);
-    spacepoint_formation_algorithm sf(resource);
+    traccc::host::clusterization_algorithm ca(resource,
+                                              logger().clone("ClusteringAlg"));
+    spacepoint_formation_algorithm sf(resource,
+                                      logger().clone("SpFormationAlg"));
 
     // Output stats
     uint64_t n_cells = 0;
@@ -85,8 +89,8 @@ int par_run(const traccc::opts::input_data& input_opts,
         traccc::edm::silicon_cell_collection::host cells_per_event{resource};
         static constexpr bool DEDUPLICATE = true;
         traccc::io::read_cells(cells_per_event, event, input_opts.directory,
-                               &det_descr, input_opts.format, DEDUPLICATE,
-                               input_opts.use_acts_geom_source);
+                               logger().clone(), &det_descr, input_opts.format,
+                               DEDUPLICATE, input_opts.use_acts_geom_source);
 
         /*-------------------
             Clusterization
@@ -125,6 +129,8 @@ int par_run(const traccc::opts::input_data& input_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleOpenmp", traccc::Logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -134,10 +140,12 @@ int main(int argc, char* argv[]) {
         "Clusterization + Spacepoint Formation with OpenMP",
         {detector_opts, input_opts, clusterization_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     auto start = std::chrono::system_clock::now();
-    const int result = par_run(input_opts, detector_opts, clusterization_opts);
+    const int result = par_run(input_opts, detector_opts, clusterization_opts,
+                               logger->clone());
     auto end = std::chrono::system_clock::now();
 
     std::chrono::duration<double> diff = end - start;

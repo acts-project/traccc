@@ -14,8 +14,8 @@
 namespace traccc::host {
 
 combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
-    const config_type& config)
-    : m_config{config} {
+    const config_type& config, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_config{config} {
 
     // Check the configuration.
     if (m_config.min_track_candidates_per_track == 0) {

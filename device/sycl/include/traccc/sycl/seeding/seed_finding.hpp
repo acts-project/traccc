@@ -17,6 +17,7 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
@@ -30,7 +31,8 @@ namespace traccc::sycl {
 // Sycl seeding function object
 class seed_finding : public algorithm<seed_collection_types::buffer(
                          const spacepoint_collection_types::const_view&,
-                         const sp_grid_const_view&)> {
+                         const sp_grid_const_view&)>,
+                     public messaging {
 
     public:
     /// Constructor for the sycl seed finding
@@ -43,10 +45,11 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     ///             and host memory blocks
     /// @param queue    is a wrapper for the sycl queue for kernel
     /// invocation
-    seed_finding(const seedfinder_config& config,
-                 const seedfilter_config& filter_config,
-                 const traccc::memory_resource& mr, vecmem::copy& copy,
-                 queue_wrapper queue);
+    seed_finding(
+        const seedfinder_config& config, const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
     ///

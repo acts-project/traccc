@@ -47,7 +47,8 @@ struct full_chain_algorithm_data;
 ///
 class full_chain_algorithm
     : public algorithm<finding_result_collection_types::host(
-          const edm::silicon_cell_collection::host&)> {
+          const edm::silicon_cell_collection::host&)>,
+      public messaging {
 
     public:
     /// @name (For now dummy...) Type declaration(s)
@@ -92,7 +93,8 @@ class full_chain_algorithm
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         host_detector_type* detector = nullptr);
+                         host_detector_type* detector,
+                         std::unique_ptr<const traccc::Logger> logger);
 
     /// Copy constructor
     ///
@@ -180,7 +182,6 @@ class full_chain_algorithm
     finding_algorithm::config_type m_finding_config;
 
     /// @}
-
 };  // class full_chain_algorithm
 
 }  // namespace traccc::sycl

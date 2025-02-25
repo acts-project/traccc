@@ -16,6 +16,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -31,7 +32,8 @@ struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const spacepoint_collection_types::const_view&,
           const seed_collection_types::const_view&, const vector3&,
-          const std::array<traccc::scalar, traccc::e_bound_size>&)> {
+          const std::array<traccc::scalar, traccc::e_bound_size>&)>,
+      public messaging {
 
     public:
     /// Constructor for track_params_estimation
@@ -42,8 +44,10 @@ struct track_params_estimation
     ///             and host memory blocks
     /// @param queue    is a wrapper for the sycl queue for kernel
     /// invocation
-    track_params_estimation(const traccc::memory_resource& mr,
-                            vecmem::copy& copy, queue_wrapper queue);
+    track_params_estimation(
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for track_params_esitmation
     ///

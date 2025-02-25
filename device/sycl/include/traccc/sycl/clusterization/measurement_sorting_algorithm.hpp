@@ -13,6 +13,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -32,7 +33,8 @@ namespace traccc::sycl {
 ///
 class measurement_sorting_algorithm
     : public algorithm<measurement_collection_types::view(
-          const measurement_collection_types::view&)> {
+          const measurement_collection_types::view&)>,
+      public messaging {
 
     public:
     /// Constructor for the algorithm
@@ -40,7 +42,9 @@ class measurement_sorting_algorithm
     /// @param copy The copy object to use in the algorithm
     /// @param queue Wrapper for the for the SYCL queue for kernel invocation
     ///
-    measurement_sorting_algorithm(vecmem::copy& copy, queue_wrapper& queue);
+    measurement_sorting_algorithm(
+        vecmem::copy& copy, queue_wrapper& queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator performing the sorting on a container
     ///
@@ -54,7 +58,6 @@ class measurement_sorting_algorithm
     std::reference_wrapper<vecmem::copy> m_copy;
     /// The SYCL queue to use
     std::reference_wrapper<queue_wrapper> m_queue;
-
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::sycl

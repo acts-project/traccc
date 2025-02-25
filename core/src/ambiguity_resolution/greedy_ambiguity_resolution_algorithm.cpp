@@ -33,54 +33,6 @@
 
 namespace traccc {
 
-namespace {
-
-#define LOG_ERROR(msg)                       \
-    if (_config.verbose_error) {             \
-        logger::error() << msg << std::endl; \
-    }
-
-#define LOG_WARN(msg)                       \
-    if (_config.verbose_warning) {          \
-        logger::warn() << msg << std::endl; \
-    }
-
-#define LOG_INFO(msg)                       \
-    if (_config.verbose_info) {             \
-        logger::info() << msg << std::endl; \
-    }
-
-#define LOG_DEBUG(msg)                       \
-    if (_config.verbose_debug) {             \
-        logger::debug() << msg << std::endl; \
-    }
-
-// This logger is specific to the greedy_ambiguity_resolution_algorithm, and to
-// this translation unit.
-struct logger {
-    static std::ostream& error() {
-        std::cout << "ERROR: @greedy_ambiguity_resolution_algorithm: ";
-        return std::cout;
-    }
-
-    static std::ostream& warn() {
-        std::cout << "WARNING: @greedy_ambiguity_resolution_algorithm: ";
-        return std::cout;
-    }
-
-    static std::ostream& info() {
-        std::cout << "INFO: @greedy_ambiguity_resolution_algorithm: ";
-        return std::cout;
-    }
-
-    static std::ostream& debug() {
-        std::cout << "DEBUG: @greedy_ambiguity_resolution_algorithm: ";
-        return std::cout;
-    }
-};
-
-}  // namespace
-
 /// Run the algorithm
 ///
 /// @param track_states the container of the fitted track parameters
@@ -94,7 +46,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     resolve(state);
 
     if (_config.check_obvious_errs) {
-        LOG_DEBUG("Checking result validity...");
+        TRACCC_DEBUG("Checking result validity...");
         check_obvious_errors(track_states, state);
     }
 
@@ -103,7 +55,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     track_state_container_types::host res;
     res.reserve(state.selected_tracks.size());
 
-    LOG_DEBUG(
+    TRACCC_DEBUG(
         "state.selected_tracks.size() = " << state.selected_tracks.size());
 
     for (std::size_t index : state.selected_tracks) {
@@ -174,9 +126,9 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
                 // Increment the count for this measurement_id
                 ++(dm.first->second);
                 duplicated_measurements = true;
-                LOG_DEBUG("(1/3) Track " << track_index
-                                         << " has duplicated measurement "
-                                         << mid << ".");
+                TRACCC_DEBUG("(1/3) Track " << track_index
+                                            << " has duplicated measurement "
+                                            << mid << ".");
             } else {
                 measurements.push_back(mid);
             }
@@ -199,7 +151,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
                 ss << " " << st.get_measurement().measurement_id;
             }
 
-            LOG_WARN(ss.str());
+            TRACCC_WARNING(ss.str());
         }
 
         // Add this track chi2 value
@@ -234,10 +186,10 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     }
 
     if (mcount_all == 0) {
-        LOG_ERROR("No measurements.");
+        TRACCC_ERROR("No measurements.");
     } else {
         if (mcount_idzero == mcount_all) {
-            LOG_ERROR(
+            TRACCC_ERROR(
                 "Measurements must have unique IDs. But here, each measurement "
                 "has 0 as ID (measurement.measurement_id == 0). This may be "
                 "solved by loading measurement_id from the appropriate file, "
@@ -252,7 +204,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
                        << "% of input measurements have an ID equal to 0 "
                           "(measurement.measurement_id == 0). This may be "
                           "suspicious.";
-                LOG_WARN(stream.str());
+                TRACCC_WARNING(stream.str());
             }
         }
     }
@@ -291,9 +243,9 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.
             if (already_added_mes.find(meas_id) != already_added_mes.end()) {
-                LOG_DEBUG("(2/3) Track " << track_index
-                                         << " has duplicated measurement "
-                                         << meas_id << ".");
+                TRACCC_DEBUG("(2/3) Track " << track_index
+                                            << " has duplicated measurement "
+                                            << meas_id << ".");
                 continue;
             }
             already_added_mes.insert(meas_id);
@@ -339,7 +291,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
 
             if (meas_it == initial_measurement_count.end()) {
                 // Should never happen
-                LOG_ERROR(
+                TRACCC_ERROR(
                     "track_index("
                     << track_index
                     << ") which is a removed track, has a measurement not "
@@ -352,18 +304,19 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
         }
 
         if (shared_hits < _config.maximum_shared_hits) {
-            LOG_ERROR("track_index("
-                      << track_index
-                      << ") which is a removed track, should at least share "
-                      << _config.maximum_shared_hits
-                      << " measurement(s) with other tracks, but only shares "
-                      << shared_hits);
+            TRACCC_ERROR(
+                "track_index("
+                << track_index
+                << ") which is a removed track, should at least share "
+                << _config.maximum_shared_hits
+                << " measurement(s) with other tracks, but only shares "
+                << shared_hits);
             all_removed_tracks_alright = false;
         }
     }
 
     if (all_removed_tracks_alright) {
-        LOG_INFO(
+        TRACCC_INFO(
             "OK 1/2: every removed track had at least one common measurement "
             "with another track.");
     }
@@ -397,9 +350,9 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.
             if (already_added_mes.find(meas_id) != already_added_mes.end()) {
-                LOG_DEBUG("(3/3) Track " << track_index
-                                         << " has duplicated measurement "
-                                         << meas_id << ".");
+                TRACCC_DEBUG("(3/3) Track " << track_index
+                                            << " has duplicated measurement "
+                                            << meas_id << ".");
             } else {
                 already_added_mes.insert(meas_id);
                 tracks_per_measurements[meas_id].push_back(track_index);
@@ -422,7 +375,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
                 ss << " " << track_index;
             }
 
-            LOG_ERROR(ss.str());
+            TRACCC_ERROR(ss.str());
 
             // Displays each track's measurements:
             for (std::size_t track_index : tracks_per_mes) {
@@ -435,7 +388,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
                     auto meas_id = st.get_measurement().measurement_id;
                     ssm << " " << meas_id;
                 }
-                LOG_ERROR(ssm.str());
+                TRACCC_ERROR(ssm.str());
             }
 
             independent_tracks = false;
@@ -443,7 +396,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
     }
 
     if (independent_tracks) {
-        LOG_INFO(
+        TRACCC_INFO(
             "OK 2/2: each selected_track shares at most "
             "(_config.maximum_shared_hits - 1)(="
             << _config.maximum_shared_hits - 1 << ") measurement(s)");
@@ -501,7 +454,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
     for (std::size_t i = 0; i < _config.maximum_iterations; ++i) {
         // Lazy out if there is nothing to filter on.
         if (state.selected_tracks.empty()) {
-            LOG_DEBUG("No tracks left - exit loop");
+            TRACCC_DEBUG("No tracks left - exit loop");
             break;
         }
 
@@ -511,7 +464,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             state.selected_tracks.begin(), state.selected_tracks.end(),
             shared_measurements_comperator);
 
-        LOG_DEBUG(
+        TRACCC_DEBUG(
             "Current maximum shared measurements "
             << state
                    .shared_measurements_per_track[maximum_shared_measurements]);
@@ -526,18 +479,18 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             *std::max_element(state.selected_tracks.begin(),
                               state.selected_tracks.end(), track_comperator);
 
-        LOG_DEBUG("Remove track "
-                  << bad_track << " n_meas "
-                  << state.measurements_per_track[bad_track].size()
-                  << " nShared "
-                  << state.shared_measurements_per_track[bad_track] << " chi2 "
-                  << state.track_chi2[bad_track]);
+        TRACCC_DEBUG("Remove track "
+                     << bad_track << " n_meas "
+                     << state.measurements_per_track[bad_track].size()
+                     << " nShared "
+                     << state.shared_measurements_per_track[bad_track]
+                     << " chi2 " << state.track_chi2[bad_track]);
 
         remove_track(state, bad_track);
         ++iteration_count;
     }
 
-    LOG_DEBUG("Iteration_count: " << iteration_count);
+    TRACCC_DEBUG("Iteration_count: " << iteration_count);
 }
 
 }  // namespace traccc

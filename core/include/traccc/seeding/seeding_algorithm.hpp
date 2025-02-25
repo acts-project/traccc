@@ -13,6 +13,7 @@
 #include "traccc/seeding/seed_finding.hpp"
 #include "traccc/seeding/spacepoint_binning.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -21,17 +22,19 @@ namespace traccc {
 
 /// Main algorithm for performing the track seeding on the CPU
 class seeding_algorithm : public algorithm<seed_collection_types::host(
-                              const spacepoint_collection_types::host&)> {
+                              const spacepoint_collection_types::host&)>,
+                          public messaging {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
     /// @param mr The memory resource to use
     ///
-    seeding_algorithm(const seedfinder_config& finder_config,
-                      const spacepoint_grid_config& grid_config,
-                      const seedfilter_config& filter_config,
-                      vecmem::memory_resource& mr);
+    seeding_algorithm(
+        const seedfinder_config& finder_config,
+        const spacepoint_grid_config& grid_config,
+        const seedfilter_config& filter_config, vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Operator executing the algorithm.
     ///
@@ -46,7 +49,6 @@ class seeding_algorithm : public algorithm<seed_collection_types::host(
     spacepoint_binning m_spacepoint_binning;
     /// Sub-algorithm performing the seed finding
     seed_finding m_seed_finding;
-
 };  // class seeding_algorithm
 
 }  // namespace traccc

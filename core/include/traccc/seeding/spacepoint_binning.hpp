@@ -12,6 +12,7 @@
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // System include(s).
 #include <functional>
@@ -20,7 +21,8 @@ namespace traccc {
 
 /// spacepoint binning
 class spacepoint_binning
-    : public algorithm<sp_grid(const spacepoint_collection_types::host&)> {
+    : public algorithm<sp_grid(const spacepoint_collection_types::host&)>,
+      public messaging {
 
     public:
     /// Constructor for the spacepoint binning
@@ -29,9 +31,10 @@ class spacepoint_binning
     /// @param grid_config is for spacepoint grid parameter
     /// @param mr is the vecmem memory resource
     ///
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       vecmem::memory_resource& mr);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config, vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Operator executing the algorithm
     ///

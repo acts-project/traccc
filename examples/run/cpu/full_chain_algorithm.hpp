@@ -19,6 +19,7 @@
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
 #include <detray/core/detector.hpp>
@@ -40,7 +41,8 @@ namespace traccc {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm : public algorithm<track_state_container_types::host(
-                                 const edm::silicon_cell_collection::host&)> {
+                                 const edm::silicon_cell_collection::host&)>,
+                             public messaging {
 
     public:
     /// @name Type declaration(s)
@@ -77,7 +79,8 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         detector_type* detector = nullptr);
+                         detector_type* detector,
+                         std::unique_ptr<const traccc::Logger> logger);
 
     /// Reconstruct track parameters in the entire detector
     ///
@@ -134,7 +137,6 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     fitting_algorithm::config_type m_fitting_config;
 
     /// @}
-
 };  // class full_chain_algorithm
 
 }  // namespace traccc
