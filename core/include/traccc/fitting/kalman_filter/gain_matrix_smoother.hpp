@@ -44,7 +44,7 @@ struct gain_matrix_smoother {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status operator()(
+    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& cur_state,
         const track_state<algebra_t>& next_state) {

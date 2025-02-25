@@ -14,7 +14,7 @@
 
 namespace traccc {
 struct [[maybe_unused]] channel0_major_cell_order_relation{
-    template <typename T1, typename T2> TRACCC_HOST_DEVICE [[maybe_unused]] bool
+    template <typename T1, typename T2>[[maybe_unused]] TRACCC_HOST_DEVICE bool
     operator()(const edm::silicon_cell<T1>& a, const edm::silicon_cell<T2>& b)
         const {if (a.module_index() ==
                    b.module_index()){if (a.channel1() == b.channel1()){
