@@ -84,7 +84,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/obj/write_track_candidates.cpp"
   )
 target_link_libraries( traccc_io
-  PUBLIC vecmem::core traccc::core ActsCore dfelibs::dfelibs
+  PUBLIC vecmem::core traccc::core ActsCore
   PRIVATE detray::core detray::io ActsPluginJson )
 target_compile_definitions( traccc_io
   PRIVATE TRACCC_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data" )

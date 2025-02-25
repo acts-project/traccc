@@ -257,7 +257,6 @@ cmake --build build/
 | TRACCC_USE_SYSTEM_VECMEM | Pick up an existing installation of VecMem from the build environment |
 | TRACCC_USE_SYSTEM_EIGEN3 | Pick up an existing installation of Eigen3 from the build environment |
 | TRACCC_USE_SYSTEM_ALGEBRA_PLUGINS | Pick up an existing installation of Algebra Plugins from the build environment |
-| TRACCC_USE_SYSTEM_DFELIBS | Pick up an existing installation of dfelibs from the build environment |
 | TRACCC_USE_SYSTEM_DETRAY | Pick up an existing installation of Detray from the build environment |
 | TRACCC_USE_SYSTEM_ACTS | Pick up an existing installation of Acts from the build environment |
 | TRACCC_USE_SYSTEM_GOOGLETEST | Pick up an existing installation of GoogleTest from the build environment |
