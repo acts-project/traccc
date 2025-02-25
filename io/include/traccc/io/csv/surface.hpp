@@ -7,8 +7,7 @@
 
 #pragma once
 
-// DFE include(s).
-#include <dfe/dfe_namedtuple.hpp>
+#include "traccc/io/csv/dfe.hpp"
 
 // System include(s).
 #include <cstdint>
