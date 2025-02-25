@@ -142,6 +142,10 @@ struct gain_matrix_updater {
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
+        if (getter::element(chi2, 0, 0) < 0.f) {
+            return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
+        }
+
         // Set the track state parameters
         trk_state.filtered().set_vector(filtered_vec);
         trk_state.filtered().set_covariance(filtered_cov);

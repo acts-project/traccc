@@ -14,6 +14,8 @@ enum class kalman_fitter_status : uint32_t {
     ERROR_QOP_ZERO,
     ERROR_THETA_ZERO,
     ERROR_INVERSION,
+    ERROR_SMOOTHER_CHI2_NEGATIVE,
+    ERROR_UPDATER_CHI2_NEGATIVE,
     ERROR_OTHER,
     MAX_STATUS
 };
