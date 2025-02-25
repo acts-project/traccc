@@ -139,8 +139,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] kalman_fitter_status fit(
-        const seed_parameters_t& seed_params, state& fitter_state) {
+    [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
+    fit(const seed_parameters_t& seed_params, state& fitter_state) {
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -180,8 +180,8 @@ class kalman_fitter {
     /// @param seed_params seed track parameter
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] kalman_fitter_status filter(
-        const seed_parameters_t& seed_params, state& fitter_state) {
+    [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
+    filter(const seed_parameters_t& seed_params, state& fitter_state) {
 
         // Create propagator
         propagator_type propagator(m_cfg.propagation);
@@ -229,8 +229,8 @@ class kalman_fitter {
     /// track and vertex fitting", R.Frühwirth, NIM A.
     ///
     /// @param fitter_state the state of kalman fitter
-    TRACCC_HOST_DEVICE [[nodiscard]] kalman_fitter_status smooth(
-        state& fitter_state) {
+    [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
+    smooth(state& fitter_state) {
 
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 

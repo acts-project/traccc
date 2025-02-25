@@ -41,7 +41,7 @@ struct gain_matrix_updater {
     ///
     /// @return true if the update succeeds
     template <typename mask_group_t, typename index_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status operator()(
+    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
         const bound_track_parameters<algebra_t>& bound_params) const {
@@ -65,7 +65,7 @@ struct gain_matrix_updater {
     }
 
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status update(
+    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status update(
         track_state<algebra_t>& trk_state,
         const bound_track_parameters<algebra_t>& bound_params) const {
 
