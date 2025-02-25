@@ -189,8 +189,10 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         // Run fitting
         auto track_states =
             host_fitting(host_det, field, traccc::get_data(track_candidates));
+        const std::size_t n_fitted_tracks = count_fitted_tracks(track_states);
 
         ASSERT_EQ(track_states.size(), n_truth_tracks);
+        ASSERT_EQ(track_states.size(), n_fitted_tracks);
 
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
 

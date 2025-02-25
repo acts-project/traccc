@@ -158,7 +158,7 @@ void KalmanFittingTests::ndf_tests(
 
     for (const auto& state : track_states_per_track) {
 
-        if (!state.is_hole) {
+        if (!state.is_hole && state.is_smoothed) {
 
             dim_sum += static_cast<scalar>(state.get_measurement().meas_dim);
             n_effective_states++;

@@ -149,6 +149,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         const std::size_t n_tracks = track_states.size();
         ASSERT_GE(static_cast<float>(n_tracks),
                   static_cast<float>(n_truth_tracks) * 0.95);
+        const std::size_t n_fitted_tracks = count_fitted_tracks(track_states);
+        ASSERT_EQ(n_tracks, n_fitted_tracks);
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
