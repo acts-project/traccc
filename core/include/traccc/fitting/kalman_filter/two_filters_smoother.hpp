@@ -163,6 +163,10 @@ struct two_filters_smoother {
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
+        if (std::abs(bound_params.qop()) == 0.f) {
+            return kalman_fitter_status::ERROR_QOP_ZERO;
+        }
+
         // Set backward chi2
         trk_state.backward_chi2() = getter::element(chi2, 0, 0);
 
