@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,9 +8,9 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/seed.hpp"
+#include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -45,10 +45,12 @@ void write(std::size_t event, std::string_view directory,
 /// @param directory is the directory for the output spacepoint file
 /// @param format is the data format (e.g. csv or binary) of output file
 /// @param spacepoints is the spacepoint collection to write
+/// @param measurements is the measurement collection to write
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           spacepoint_collection_types::const_view spacepoints);
+           edm::spacepoint_collection::const_view spacepoints,
+           measurement_collection_types::const_view measurements);
 
 /// Function for measurement file writing
 ///
@@ -70,8 +72,8 @@ void write(std::size_t event, std::string_view directory,
 /// @param spacepoints is the spacepoint collection the seeds are made of
 ///
 void write(std::size_t event, std::string_view directory,
-           traccc::data_format format, seed_collection_types::const_view seeds,
-           spacepoint_collection_types::const_view spacepoints);
+           traccc::data_format format, edm::seed_collection::const_view seeds,
+           edm::spacepoint_collection::const_view spacepoints);
 
 /// Function for track candidate writing
 ///

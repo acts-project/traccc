@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,15 +23,13 @@ struct FormSpacepointsKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, typename detector_t::view_type det_view,
         measurement_collection_types::const_view measurements_view,
-        const unsigned int measurement_count,
-        spacepoint_collection_types::view spacepoints_view) const {
+        edm::spacepoint_collection::view spacepoints_view) const {
 
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
         device::form_spacepoints<detector_t>(
-            globalThreadIdx, det_view, measurements_view, measurement_count,
-            spacepoints_view);
+            globalThreadIdx, det_view, measurements_view, spacepoints_view);
     }
 };
 
@@ -42,7 +40,7 @@ spacepoint_formation_algorithm<detector_t>::spacepoint_formation_algorithm(
     : messaging(std::move(logger)), m_mr(mr), m_copy(copy) {}
 
 template <typename detector_t>
-spacepoint_collection_types::buffer
+edm::spacepoint_collection::buffer
 spacepoint_formation_algorithm<detector_t>::operator()(
     const typename detector_t::view_type& det_view,
     const measurement_collection_types::const_view& measurements_view) const {
@@ -56,9 +54,10 @@ spacepoint_formation_algorithm<detector_t>::operator()(
         m_copy.get().get_size(measurements_view);
 
     // Create the result buffer.
-    spacepoint_collection_types::buffer spacepoints(
+    edm::spacepoint_collection::buffer spacepoints(
         num_measurements, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(spacepoints)->ignore();
+    edm::spacepoint_collection::view spacepoints_view{spacepoints};
 
     // If there are no measurements, we can conclude here.
     if (num_measurements == 0) {
@@ -72,8 +71,7 @@ spacepoint_formation_algorithm<detector_t>::operator()(
 
     // Launch the spacepoint formation kernel.
     ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel<detector_t>{},
-                        det_view, measurements_view, num_measurements,
-                        vecmem::get_data(spacepoints));
+                        det_view, measurements_view, spacepoints_view);
     ::alpaka::wait(queue);
 
     // Return the reconstructed spacepoints.

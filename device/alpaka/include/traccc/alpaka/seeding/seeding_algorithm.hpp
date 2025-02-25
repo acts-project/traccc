@@ -1,33 +1,32 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Library include(s).
-#include "traccc/alpaka/seeding/seed_finding.hpp"
-#include "traccc/alpaka/seeding/spacepoint_binning.hpp"
+// Local include(s).
+#include "traccc/alpaka/seeding/details/seed_finding.hpp"
+#include "traccc/alpaka/seeding/details/spacepoint_binning.hpp"
 
 // Project include(s).
-#include "traccc/edm/seed.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/seed_collection.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
+#include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
-
-// traccc library include(s).
-#include "traccc/utils/memory_resource.hpp"
+#include <vecmem/utils/copy.hpp>
 
 namespace traccc::alpaka {
 
-/// Main algorithm for performing the track seeding on in alpaka
-class seeding_algorithm : public algorithm<seed_collection_types::buffer(
-                              const spacepoint_collection_types::const_view&)>,
+/// Main algorithm for performing the track seeding using Alpaka
+class seeding_algorithm : public algorithm<edm::seed_collection::buffer(
+                              const edm::spacepoint_collection::const_view&)>,
                           public messaging {
 
     public:
@@ -47,17 +46,18 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
 
     /// Operator executing the algorithm.
     ///
-    /// @param spacepoints_view is a view of all spacepoints in the event
+    /// @param spacepoints is a view of all spacepoints in the event
     /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
-    output_type operator()(const spacepoint_collection_types::const_view&
-                               spacepoints_view) const override;
+    output_type operator()(const edm::spacepoint_collection::const_view&
+                               spacepoints) const override;
 
     private:
-    /// Sub-algorithm performing the spacepoint binning
-    spacepoint_binning m_spacepoint_binning;
-    /// Sub-algorithm performing the seed finding
-    seed_finding m_seed_finding;
+    /// Tool performing the spacepoint binning
+    details::spacepoint_binning m_binning;
+    /// Tool performing the seed finding
+    details::seed_finding m_finding;
+
 };  // class seeding_algorithm
 
 }  // namespace traccc::alpaka

@@ -9,7 +9,7 @@
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/global_index.hpp"
-#include "traccc/sycl/seeding/spacepoint_binning.hpp"
+#include "traccc/sycl/seeding/details/spacepoint_binning.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/count_grid_capacities.hpp"
@@ -30,6 +30,8 @@ class populate_grid;
 
 }  // namespace kernels
 
+namespace details {
+
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
@@ -41,8 +43,8 @@ spacepoint_binning::spacepoint_binning(
       m_queue(queue),
       m_copy(copy) {}
 
-sp_grid_buffer spacepoint_binning::operator()(
-    const spacepoint_collection_types::const_view& spacepoints_view) const {
+traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
+    const edm::spacepoint_collection::const_view& spacepoints_view) const {
 
     // Get the spacepoint sizes from the view
     const auto sp_size = m_copy.get_size(spacepoints_view);
@@ -86,13 +88,13 @@ sp_grid_buffer spacepoint_binning::operator()(
     m_copy(grid_capacities_buff, grid_capacities_host)->wait();
 
     // Create the grid buffer and its view
-    sp_grid_buffer grid_buffer(
+    traccc::details::spacepoint_grid_types::buffer grid_buffer(
         m_axes.first, m_axes.second,
         std::vector<std::size_t>(grid_capacities_host.begin(),
                                  grid_capacities_host.end()),
         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable);
     m_copy.setup(grid_buffer._buffer)->wait();
-    sp_grid_view grid_view = grid_buffer;
+    traccc::details::spacepoint_grid_types::view grid_view = grid_buffer;
 
     // Populate the grid.
     details::get_queue(m_queue)
@@ -110,4 +112,5 @@ sp_grid_buffer spacepoint_binning::operator()(
     return grid_buffer;
 }
 
+}  // namespace details
 }  // namespace traccc::sycl

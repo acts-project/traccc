@@ -18,7 +18,9 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void find_triplets(
     const global_index_t globalIndex, const seedfinder_config& config,
-    const seedfilter_config& filter_config, const sp_grid_const_view& sp_view,
+    const seedfilter_config& filter_config,
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const doublet_counter_collection_types::const_view& dc_view,
     const device_doublet_collection_types::const_view& mid_top_doublet_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
@@ -33,11 +35,13 @@ inline void find_triplets(
     }
 
     // Get device copy of input parameters
+    const edm::spacepoint_collection::const_device spacepoints{
+        spacepoints_view};
     const doublet_counter_collection_types::const_device doublet_counts(
         dc_view);
     const device_doublet_collection_types::const_device mid_top_doublet_device(
         mid_top_doublet_view);
-    const const_sp_grid_device sp_grid(sp_view);
+    const traccc::details::spacepoint_grid_types::const_device sp_grid(sp_view);
     const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
         spM_tc_view);
 
@@ -52,12 +56,12 @@ inline void find_triplets(
     const sp_location spB_loc = mid_bot_counter.spB;
 
     // middle spacepoint
-    const traccc::internal_spacepoint<traccc::spacepoint> spM =
-        sp_grid.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
+    const auto spM =
+        spacepoints.at(sp_grid.bin(spM_loc.bin_idx)[spM_loc.sp_idx]);
 
     // bottom spacepoint
-    const traccc::internal_spacepoint<traccc::spacepoint> spB =
-        sp_grid.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
+    const auto spB =
+        spacepoints.at(sp_grid.bin(spB_loc.bin_idx)[spB_loc.sp_idx]);
 
     // Set up the device result collection
     device_triplet_collection_types::device triplets(triplet_view);
@@ -91,8 +95,8 @@ inline void find_triplets(
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
         const sp_location spT_loc = mid_top_doublet_device[i].sp2;
 
-        const traccc::internal_spacepoint<traccc::spacepoint> spT =
-            sp_grid.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
+        const auto spT =
+            spacepoints.at(sp_grid.bin(spT_loc.bin_idx)[spT_loc.sp_idx]);
 
         // Apply the conformal transformation to middle-top doublet
         const traccc::lin_circle lt =

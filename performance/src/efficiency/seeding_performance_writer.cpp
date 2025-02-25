@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -61,33 +61,49 @@ seeding_performance_writer::seeding_performance_writer(const config& cfg)
 seeding_performance_writer::~seeding_performance_writer() {}
 
 void seeding_performance_writer::write(
-    const seed_collection_types::const_view& seeds_view,
-    const spacepoint_collection_types::const_view& spacepoints_view,
+    const edm::seed_collection::const_view& seeds_view,
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    const measurement_collection_types::const_view& measurements_view,
     const event_data& evt_data) {
 
     std::map<particle_id, std::size_t> match_counter;
 
+    // Create the device collections.
+    const edm::seed_collection::const_device seeds(seeds_view);
+    const edm::spacepoint_collection::const_device spacepoints(
+        spacepoints_view);
+    const measurement_collection_types::const_device measurements(
+        measurements_view);
+
     // Iterate over the seeds.
-    seed_collection_types::const_device seeds(seeds_view);
-    for (const seed& sd : seeds) {
+    for (edm::seed_collection::const_device::size_type i = 0u; i < seeds.size();
+         ++i) {
+        const auto sd = seeds.at(i);
 
         std::vector<particle_hit_count> particle_hit_counts;
 
-        const auto measurements = sd.get_measurements(spacepoints_view);
+        // Get the measurements for this seed.
+        std::array<measurement, 3> seed_measurements{
+            measurements.at(
+                spacepoints.at(sd.bottom_index()).measurement_index()),
+            measurements.at(
+                spacepoints.at(sd.middle_index()).measurement_index()),
+            measurements.at(
+                spacepoints.at(sd.top_index()).measurement_index())};
 
         if (!evt_data.m_found_meas_to_ptc_map.empty()) {
             particle_hit_counts = identify_contributing_particles(
-                measurements, evt_data.m_found_meas_to_ptc_map);
+                seed_measurements, evt_data.m_found_meas_to_ptc_map);
         } else {
             particle_hit_counts = identify_contributing_particles(
-                measurements, evt_data.m_meas_to_ptc_map);
+                seed_measurements, evt_data.m_meas_to_ptc_map);
         }
 
         // Consider it being matched if hit counts is larger than the half
         // of the number of measurements
-        assert(measurements.size() > 0u);
+        assert(seed_measurements.size() > 0u);
         if (static_cast<double>(particle_hit_counts.at(0).hit_counts) /
-                static_cast<double>(measurements.size()) >
+                static_cast<double>(seed_measurements.size()) >
             m_cfg.matching_ratio) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;

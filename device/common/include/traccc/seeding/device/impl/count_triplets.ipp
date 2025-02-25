@@ -18,7 +18,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void count_triplets(
     const global_index_t globalIndex, const seedfinder_config& config,
-    const sp_grid_const_view& sp_view,
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const doublet_counter_collection_types::const_view& dc_view,
     const device_doublet_collection_types::const_view& mid_bot_doublet_view,
     const device_doublet_collection_types::const_view& mid_top_doublet_view,
@@ -37,6 +38,8 @@ inline void count_triplets(
     const device_doublet mid_bot = mid_bot_doublet_device.at(globalIndex);
 
     // Create device copy of input parameters
+    const edm::spacepoint_collection::const_device spacepoints{
+        spacepoints_view};
     const device_doublet_collection_types::const_device mid_top_doublet_device(
         mid_top_doublet_view);
     const doublet_counter_collection_types::const_device dc_device(dc_view);
@@ -47,19 +50,20 @@ inline void count_triplets(
         spM_tc_view);
 
     // Get all spacepoints
-    const const_sp_grid_device internal_sp_device(sp_view);
+    const traccc::details::spacepoint_grid_types::const_device sp_device{
+        sp_view};
 
     const unsigned int counter_link = mid_bot.counter_link;
     const doublet_counter doublet_counts = dc_device.at(counter_link);
 
     // middle spacepoint
     const sp_location spM_loc = doublet_counts.m_spM;
-    const traccc::internal_spacepoint<traccc::spacepoint> spM =
-        internal_sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
+    const auto spM =
+        spacepoints.at(sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx]);
     const sp_location spB_loc = mid_bot.sp2;
     // bottom spacepoint
-    const traccc::internal_spacepoint<traccc::spacepoint> spB =
-        internal_sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
+    const auto spB =
+        spacepoints.at(sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx]);
 
     // Apply the conformal transformation to middle-bot doublet
     traccc::lin_circle lb = doublet_finding_helper::transform_coordinates<
@@ -87,8 +91,8 @@ inline void count_triplets(
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
         const traccc::sp_location spT_loc = mid_top_doublet_device[i].sp2;
 
-        const traccc::internal_spacepoint<traccc::spacepoint> spT =
-            internal_sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
+        const auto spT =
+            spacepoints.at(sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx]);
 
         // Apply the conformal transformation to middle-top doublet
         traccc::lin_circle lt = doublet_finding_helper::transform_coordinates<

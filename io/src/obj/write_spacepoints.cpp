@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,7 +15,7 @@ namespace traccc::io::obj {
 
 void write_spacepoints(
     std::string_view filename,
-    traccc::spacepoint_collection_types::const_view spacepoints_view) {
+    edm::spacepoint_collection::const_view spacepoints_view) {
 
     // Open the output file.
     std::ofstream file(filename.data());
@@ -25,11 +25,13 @@ void write_spacepoints(
     }
 
     // Create a device collection around the spacepoint view.
-    traccc::spacepoint_collection_types::const_device spacepoints(
+    const edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
 
     // Write the spacepoints.
-    for (const traccc::spacepoint& sp : spacepoints) {
+    for (edm::spacepoint_collection::const_device::size_type i = 0u;
+         i < spacepoints.size(); ++i) {
+        const auto sp = spacepoints.at(i);
         file << "v " << sp.x() << " " << sp.y() << " " << sp.z() << "\n";
     }
 }

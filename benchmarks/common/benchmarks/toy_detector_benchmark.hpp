@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -41,7 +41,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     static const int n_events = 100u;
     static const int n_tracks = 5000u;
 
-    std::vector<traccc::spacepoint_collection_types::host> spacepoints;
+    std::vector<traccc::edm::spacepoint_collection::host> spacepoints;
     std::vector<traccc::measurement_collection_types::host> measurements;
 
     // Configs
@@ -168,13 +168,10 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
             // Read the hits from the relevant event file
-            traccc::spacepoint_collection_types::host sp{&host_mr};
-            traccc::io::read_spacepoints(sp, i_evt, sim_dir);
-            spacepoints.push_back(sp);
-
-            // Read measurements
+            traccc::edm::spacepoint_collection::host sp{host_mr};
             traccc::measurement_collection_types::host meas{&host_mr};
-            traccc::io::read_measurements(meas, i_evt, sim_dir);
+            traccc::io::read_spacepoints(sp, meas, i_evt, sim_dir);
+            spacepoints.push_back(sp);
             measurements.push_back(meas);
         }
     }

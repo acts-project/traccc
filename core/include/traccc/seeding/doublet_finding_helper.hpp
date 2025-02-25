@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,7 +9,7 @@
 
 // Local include(s).
 #include "traccc/definitions/math.hpp"
-#include "traccc/edm/internal_spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/doublet.hpp"
 #include "traccc/seeding/detail/lin_circle.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
@@ -28,10 +28,10 @@ struct doublet_finding_helper {
     /// doublet
     ///
     /// @return boolean value for compatibility
-    template <details::spacepoint_type otherSpType>
+    ///
+    template <details::spacepoint_type otherSpType, typename T1, typename T2>
     static inline TRACCC_HOST_DEVICE bool isCompatible(
-        const internal_spacepoint<spacepoint>& sp1,
-        const internal_spacepoint<spacepoint>& sp2,
+        const edm::spacepoint<T1>& sp1, const edm::spacepoint<T2>& sp2,
         const seedfinder_config& config);
 
     /// Do the conformal transformation on doublet's coordinate
@@ -41,56 +41,46 @@ struct doublet_finding_helper {
     /// @tparam otherSpType is whether it is for middle-bottom or middle-top
     /// doublet
     ///
-    /// @reutrn lin_circle which contains the transformed coordinate information
-    template <details::spacepoint_type otherSpType>
-    static inline TRACCC_HOST_DEVICE lin_circle
-    transform_coordinates(const internal_spacepoint<spacepoint>& sp1,
-                          const internal_spacepoint<spacepoint>& sp2);
+    /// @return lin_circle which contains the transformed coordinate information
+    ///
+    template <details::spacepoint_type otherSpType, typename T1, typename T2>
+    static inline TRACCC_HOST_DEVICE lin_circle transform_coordinates(
+        const edm::spacepoint<T1>& sp1, const edm::spacepoint<T2>& sp2);
 };
 
-template <details::spacepoint_type otherSpType>
-bool TRACCC_HOST_DEVICE
-doublet_finding_helper::isCompatible(const internal_spacepoint<spacepoint>& sp1,
-                                     const internal_spacepoint<spacepoint>& sp2,
-                                     const seedfinder_config& config) {
+template <details::spacepoint_type otherSpType, typename T1, typename T2>
+bool TRACCC_HOST_DEVICE doublet_finding_helper::isCompatible(
+    const edm::spacepoint<T1>& sp1, const edm::spacepoint<T2>& sp2,
+    const seedfinder_config& config) {
 
     static_assert(otherSpType == details::spacepoint_type::bottom ||
                   otherSpType == details::spacepoint_type::top);
 
+    scalar deltaR, cotTheta, zOrigin;
     if constexpr (otherSpType == details::spacepoint_type::bottom) {
         // check if R distance is too small, because bins are not R-sorted
-        scalar deltaR = sp1.radius() - sp2.radius();
+        deltaR = sp1.radius() - sp2.radius();
         // actually cotTheta * deltaR to avoid division by 0 statements
-        scalar cotTheta = sp1.z() - sp2.z();
+        cotTheta = sp1.z() - sp2.z();
         // actually zOrigin * deltaR to avoid division by 0 statements
-        scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
-        if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
-            math::fabs(cotTheta) > config.cotThetaMax * deltaR ||
-            zOrigin < config.collisionRegionMin * deltaR ||
-            zOrigin > config.collisionRegionMax * deltaR) {
-            return false;
-        }
+        zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
     } else {
         // check if R distance is too small, because bins are not R-sorted
-        scalar deltaR = sp2.radius() - sp1.radius();
+        deltaR = sp2.radius() - sp1.radius();
         // actually cotTheta * deltaR to avoid division by 0 statements
-        scalar cotTheta = (sp2.z() - sp1.z());
+        cotTheta = (sp2.z() - sp1.z());
         // actually zOrigin * deltaR to avoid division by 0 statements
-        scalar zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
-        if (deltaR > config.deltaRMax || deltaR < config.deltaRMin ||
-            math::fabs(cotTheta) > config.cotThetaMax * deltaR ||
-            zOrigin < config.collisionRegionMin * deltaR ||
-            zOrigin > config.collisionRegionMax * deltaR) {
-            return false;
-        }
+        zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
     }
-    return true;
+    return ((deltaR < config.deltaRMax) && (deltaR > config.deltaRMin) &&
+            (math::fabs(cotTheta) < config.cotThetaMax * deltaR) &&
+            (zOrigin > config.collisionRegionMin * deltaR) &&
+            (zOrigin < config.collisionRegionMax * deltaR));
 }
 
-template <details::spacepoint_type otherSpType>
+template <details::spacepoint_type otherSpType, typename T1, typename T2>
 lin_circle TRACCC_HOST_DEVICE doublet_finding_helper::transform_coordinates(
-    const internal_spacepoint<spacepoint>& sp1,
-    const internal_spacepoint<spacepoint>& sp2) {
+    const edm::spacepoint<T1>& sp1, const edm::spacepoint<T2>& sp2) {
 
     static_assert(otherSpType == details::spacepoint_type::bottom ||
                   otherSpType == details::spacepoint_type::top);
@@ -99,8 +89,8 @@ lin_circle TRACCC_HOST_DEVICE doublet_finding_helper::transform_coordinates(
     const scalar& yM = sp1.y();
     const scalar& zM = sp1.z();
     const scalar& rM = sp1.radius();
-    const scalar& varianceZM = sp1.varianceZ();
-    const scalar& varianceRM = sp1.varianceR();
+    const scalar& varianceZM = sp1.z_variance();
+    const scalar& varianceRM = sp1.radius_variance();
     scalar cosPhiM = xM / rM;
     scalar sinPhiM = yM / rM;
 
@@ -137,8 +127,8 @@ lin_circle TRACCC_HOST_DEVICE doublet_finding_helper::transform_coordinates(
     l.m_U = x * iDeltaR2;
     l.m_V = y * iDeltaR2;
     // error term for sp-pair without correlation of middle space point
-    l.m_Er = ((varianceZM + sp2.varianceZ()) +
-              (cot_theta * cot_theta) * (varianceRM + sp2.varianceR())) *
+    l.m_Er = ((varianceZM + sp2.z_variance()) +
+              (cot_theta * cot_theta) * (varianceRM + sp2.radius_variance())) *
              iDeltaR2;
 
     return l;

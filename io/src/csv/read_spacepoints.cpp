@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,18 +14,18 @@
 
 // System include(s).
 #include <algorithm>
-#include <map>
+#include <stdexcept>
 
 namespace traccc::io::csv {
 
-void read_spacepoints(spacepoint_collection_types::host& spacepoints,
+void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
+                      measurement_collection_types::host& measurements,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
                       const traccc::default_detector::host* detector) {
 
     // Read all measurements.
-    measurement_collection_types::host measurements;
     static constexpr bool sort_measurements = false;
     read_measurements(measurements, meas_filename, detector, sort_measurements);
 
@@ -45,20 +45,22 @@ void read_spacepoints(spacepoint_collection_types::host& spacepoints,
     hit iohit;
     while (hit_reader.read(iohit)) {
 
-        // Construct the global 3D position of the spacepoint.
-        const point3 pos{iohit.tx, iohit.ty, iohit.tz};
+        // Find the index of the measurement that this hit/spacepoint belongs
+        // to. Which may not be valid, as some simulated hits are not associated
+        // with a measurement.
+        auto const measurement_id_it =
+            std::find_if(measurement_hit_ids.begin(), measurement_hit_ids.end(),
+                         [&](const measurement_hit_id& mh_id) {
+                             return mh_id.hit_id == spacepoints.size();
+                         });
+        const unsigned int measurement_index =
+            (measurement_id_it != measurement_hit_ids.end())
+                ? static_cast<unsigned int>(measurement_id_it->measurement_id)
+                : static_cast<unsigned int>(-1);
 
-        // Construct the local 3D(2D) position of the measurement.
-        measurement meas;
-        for (auto const [meas_id, hit_id] : measurement_hit_ids) {
-            if (hit_id == spacepoints.size()) {
-                meas = measurements[meas_id];
-            }
-        }
-
-        // Create the spacepoint object (with its member measurement) from all
-        // this information.
-        spacepoints.push_back({pos, meas});
+        // Create a new spacepoint for the SoA container.
+        spacepoints.push_back(
+            {measurement_index, {iohit.tx, iohit.ty, iohit.tz}, 0.f, 0.f});
     }
 }
 

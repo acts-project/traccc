@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,11 +9,10 @@
 
 // Project include(s).
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/edm/seed.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/seed_collection.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -23,17 +22,14 @@
 // System include(s).
 #include <functional>
 
-namespace traccc::cuda {
+namespace traccc::cuda::details {
 
 /// Seed finding for cuda
 ///
 /// This algorithm returns a buffer which is not necessarily filled yet. A
 /// synchronisation statement is required before destroying this buffer.
 ///
-class seed_finding : public algorithm<seed_collection_types::buffer(
-                         const spacepoint_collection_types::const_view&,
-                         const sp_grid_const_view&)>,
-                     public messaging {
+class seed_finding : public messaging {
 
     public:
     /// Constructor for the cuda seed finding
@@ -56,9 +52,10 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
     /// @param g2_view              is a view of the spacepoint grid
     /// @return                     a vector buffer of seeds
     ///
-    output_type operator()(
-        const spacepoint_collection_types::const_view& spacepoints_view,
-        const sp_grid_const_view& g2_view) const override;
+    edm::seed_collection::buffer operator()(
+        const edm::spacepoint_collection::const_view& spacepoints_view,
+        const traccc::details::spacepoint_grid_types::const_view& g2_view)
+        const;
 
     private:
     seedfinder_config m_seedfinder_config;
@@ -72,6 +69,7 @@ class seed_finding : public algorithm<seed_collection_types::buffer(
 
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
-};
 
-}  // namespace traccc::cuda
+};  // class seed_finding
+
+}  // namespace traccc::cuda::details

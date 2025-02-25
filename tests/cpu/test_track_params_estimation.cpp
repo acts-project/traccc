@@ -1,13 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
 #include "traccc/definitions/common.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
@@ -46,18 +47,23 @@ TEST(track_params_estimation, helix_negative_charge) {
         pos, time, vector::normalize(mom), q / vector::norm(mom), &B);
 
     // Make three spacepoints with the helix
-    spacepoint_collection_types::host spacepoints;
-    spacepoints.push_back({hlx(50 * unit<scalar>::mm), {}});
-    spacepoints.push_back({hlx(100 * unit<scalar>::mm), {}});
-    spacepoints.push_back({hlx(150 * unit<scalar>::mm), {}});
+    measurement_collection_types::host measurements(&host_mr);
+    edm::spacepoint_collection::host spacepoints{host_mr};
+    measurements.resize(3);
+    spacepoints.reserve(3);
+    spacepoints.push_back({0, hlx(50 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({1, hlx(100 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({2, hlx(150 * unit<scalar>::mm), 0.f, 0.f});
 
     // Make a seed from the three spacepoints
-    seed_collection_types::host seeds;
-    seeds.push_back({0u, 1u, 2u, 0.f, 0.f});
+    edm::seed_collection::host seeds{host_mr};
+    seeds.push_back({0, 1, 2});
 
     // Run track parameter estimation
-    traccc::track_params_estimation tp(host_mr);
-    auto bound_params = tp(spacepoints, seeds, B);
+    traccc::host::track_params_estimation tp(host_mr);
+    auto bound_params =
+        tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),
+           vecmem::get_data(seeds), B);
 
     // Make sure that the reconstructed momentum is equal to the original
     // momentum
@@ -83,18 +89,23 @@ TEST(track_params_estimation, helix_positive_charge) {
         pos, time, vector::normalize(mom), q / vector::norm(mom), &B);
 
     // Make three spacepoints with the helix
-    spacepoint_collection_types::host spacepoints;
-    spacepoints.push_back({hlx(50 * unit<scalar>::mm), {}});
-    spacepoints.push_back({hlx(100 * unit<scalar>::mm), {}});
-    spacepoints.push_back({hlx(150 * unit<scalar>::mm), {}});
+    measurement_collection_types::host measurements(&host_mr);
+    edm::spacepoint_collection::host spacepoints{host_mr};
+    measurements.resize(3);
+    spacepoints.reserve(3);
+    spacepoints.push_back({0, hlx(50 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({1, hlx(100 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back({2, hlx(150 * unit<scalar>::mm), 0.f, 0.f});
 
     // Make a seed from the three spacepoints
-    seed_collection_types::host seeds;
-    seeds.push_back({0u, 1u, 2u, 0.f, 0.f});
+    edm::seed_collection::host seeds{host_mr};
+    seeds.push_back({0, 1, 2});
 
     // Run track parameter estimation
-    traccc::track_params_estimation tp(host_mr);
-    auto bound_params = tp(spacepoints, seeds, B);
+    traccc::host::track_params_estimation tp(host_mr);
+    auto bound_params =
+        tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),
+           vecmem::get_data(seeds), B);
 
     // Make sure that the reconstructed momentum is equal to the original
     // momentum

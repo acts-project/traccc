@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -36,12 +36,12 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"
-  "include/traccc/cuda/seeding/seed_finding.hpp"
+  "include/traccc/cuda/seeding/details/spacepoint_binning.hpp"
+  "src/seeding/spacepoint_binning.cu"
+  "include/traccc/cuda/seeding/details/seed_finding.hpp"
   "src/seeding/seed_finding.cu"
   "include/traccc/cuda/seeding/seeding_algorithm.hpp"
   "src/seeding/seeding_algorithm.cpp"
-  "include/traccc/cuda/seeding/spacepoint_binning.hpp"
-  "src/seeding/spacepoint_binning.cu"
   "include/traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
   "src/seeding/spacepoint_formation_algorithm.cu"
   # Clusterization

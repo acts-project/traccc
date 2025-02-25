@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,7 +12,6 @@
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/edm/spacepoint.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
