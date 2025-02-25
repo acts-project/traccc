@@ -20,12 +20,6 @@ traccc_add_executable( truth_fitting_example "truth_fitting_example.cpp"
    LINK_LIBRARIES vecmem::core detray::io detray::detectors traccc::core
    traccc::io traccc::performance traccc::options)
 
-traccc_add_executable( ccl_example "ccl_example.cpp"
-   LINK_LIBRARIES vecmem::core traccc::core traccc::io)
-
-traccc_add_executable( tbb_task_example "tbb_task_example.cpp"
-   LINK_LIBRARIES TBB::tbb )
-
 #
 # Set up the "throughput applications".
 #
