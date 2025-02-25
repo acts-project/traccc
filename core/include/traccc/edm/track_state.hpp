@@ -200,6 +200,14 @@ struct track_state {
         return m_smoothed;
     }
 
+    /// @return the non-const path length
+    TRACCC_HOST_DEVICE
+    inline scalar_type& path_length() { return m_path_length; }
+
+    /// @return the const path length
+    TRACCC_HOST_DEVICE
+    inline const scalar_type& path_length() const { return m_path_length; }
+
     public:
     bool is_hole{true};
     bool is_smoothed{false};
@@ -214,6 +222,7 @@ struct track_state {
     scalar_type m_smoothed_chi2 = 0.f;
     bound_track_parameters_type m_smoothed;
     scalar_type m_backward_chi2 = 0.f;
+    scalar_type m_path_length = detray::detail::invalid_value<scalar_type>();
 };
 
 /// Declare all track_state collection types
