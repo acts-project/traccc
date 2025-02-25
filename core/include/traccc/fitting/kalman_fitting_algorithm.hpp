@@ -13,6 +13,7 @@
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
 #include <detray/detectors/bfield.hpp>
@@ -36,7 +37,8 @@ class kalman_fitting_algorithm
           const telescope_detector::host&,
           const detray::bfield::const_field_t<
               telescope_detector::host::scalar_type>::view_t&,
-          const track_candidate_container_types::const_view&)> {
+          const track_candidate_container_types::const_view&)>,
+      public messaging {
 
     public:
     /// Configuration type
@@ -48,8 +50,9 @@ class kalman_fitting_algorithm
     ///
     /// @param config The configuration object
     ///
-    explicit kalman_fitting_algorithm(const config_type& config,
-                                      vecmem::memory_resource& mr);
+    explicit kalman_fitting_algorithm(
+        const config_type& config, vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
     ///
@@ -86,7 +89,6 @@ class kalman_fitting_algorithm
     config_type m_config;
     /// Memory resource to use in the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
 };  // class kalman_fitting_algorithm
 
 }  // namespace traccc::host

@@ -18,6 +18,7 @@
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/unique_ptr.hpp>
@@ -39,7 +40,8 @@ namespace traccc::cuda {
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::buffer(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)> {
+          const silicon_detector_description::const_view&)>,
+      public messaging {
 
     public:
     /// Configuration type
@@ -54,9 +56,10 @@ class clusterization_algorithm
     /// @param config The clustering configuration
     /// partition
     ///
-    clusterization_algorithm(const traccc::memory_resource& mr,
-                             vecmem::copy& copy, stream& str,
-                             const config_type& config);
+    clusterization_algorithm(
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        const config_type& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for clusterization algorithm
     ///

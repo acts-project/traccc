@@ -10,8 +10,12 @@
 
 namespace traccc::host {
 
-clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr)
-    : m_cc(mr), m_mc(mr), m_mr(mr) {}
+clusterization_algorithm::clusterization_algorithm(
+    vecmem::memory_resource& mr, std::unique_ptr<const Logger> logger)
+    : messaging(logger->clone()),
+      m_cc(mr, logger->cloneWithSuffix("CclAlg")),
+      m_mc(mr, logger->cloneWithSuffix("MeasurementCreationAlg")),
+      m_mr(mr) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells_view,

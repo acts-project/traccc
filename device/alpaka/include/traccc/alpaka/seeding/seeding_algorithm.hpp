@@ -15,6 +15,7 @@
 #include "traccc/edm/seed.hpp"
 #include "traccc/edm/spacepoint.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -26,7 +27,8 @@ namespace traccc::alpaka {
 
 /// Main algorithm for performing the track seeding on in alpaka
 class seeding_algorithm : public algorithm<seed_collection_types::buffer(
-                              const spacepoint_collection_types::const_view&)> {
+                              const spacepoint_collection_types::const_view&)>,
+                          public messaging {
 
     public:
     /// Constructor for the seed finding algorithm
@@ -36,10 +38,12 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
     ///
-    seeding_algorithm(const seedfinder_config& finder_config,
-                      const spacepoint_grid_config& grid_config,
-                      const seedfilter_config& filter_config,
-                      const traccc::memory_resource& mr, vecmem::copy& copy);
+    seeding_algorithm(
+        const seedfinder_config& finder_config,
+        const spacepoint_grid_config& grid_config,
+        const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Operator executing the algorithm.
     ///
@@ -54,7 +58,6 @@ class seeding_algorithm : public algorithm<seed_collection_types::buffer(
     spacepoint_binning m_spacepoint_binning;
     /// Sub-algorithm performing the seed finding
     seed_finding m_seed_finding;
-
 };  // class seeding_algorithm
 
 }  // namespace traccc::alpaka

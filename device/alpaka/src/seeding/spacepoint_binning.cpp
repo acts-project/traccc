@@ -19,8 +19,10 @@ namespace traccc::alpaka {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    const traccc::memory_resource& mr, vecmem::copy& copy)
-    : m_config(config),
+    const traccc::memory_resource& mr, vecmem::copy& copy,
+    std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_config(config),
       m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
       m_copy(copy) {}

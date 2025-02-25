@@ -54,7 +54,8 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Read the cells from the relevant event file
     traccc::edm::silicon_cell_collection::host cells_truth{host_mr};
-    traccc::io::read_cells(cells_truth, event, data_dir, &dd);
+    traccc::io::read_cells(cells_truth, event, data_dir,
+                           traccc::getDummyLogger().clone(), &dd);
 
     // Get Reconstructed Spacepoints
     auto measurements_recon = ca(vecmem::get_data(cells_truth), dd_data);

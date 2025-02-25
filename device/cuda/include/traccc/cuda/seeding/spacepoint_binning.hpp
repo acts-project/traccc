@@ -14,6 +14,7 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -29,16 +30,17 @@ namespace traccc::cuda {
 /// This algorithm returns a buffer which is not necessarily filled yet. A
 /// synchronisation statement is required before destroying this buffer.
 ///
-class spacepoint_binning
-    : public algorithm<sp_grid_buffer(
-          const spacepoint_collection_types::const_view&)> {
+class spacepoint_binning : public algorithm<sp_grid_buffer(
+                               const spacepoint_collection_types::const_view&)>,
+                           public messaging {
 
     public:
     /// Constructor for the algorithm
-    spacepoint_binning(const seedfinder_config& config,
-                       const spacepoint_grid_config& grid_config,
-                       const traccc::memory_resource& mr, vecmem::copy& copy,
-                       stream& str);
+    spacepoint_binning(
+        const seedfinder_config& config,
+        const spacepoint_grid_config& grid_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a a view of spacepoints
     sp_grid_buffer operator()(const spacepoint_collection_types::const_view&
@@ -57,7 +59,6 @@ class spacepoint_binning
 
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
-
 };  // class spacepoint_binning
 
 }  // namespace traccc::cuda

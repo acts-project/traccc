@@ -26,8 +26,9 @@ class estimate_track_params;
 }  // namespace kernels
 
 track_params_estimation::track_params_estimation(
-    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue)
-    : m_mr(mr), m_queue(queue), m_copy(copy) {}
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
+    std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_mr(mr), m_queue(queue), m_copy(copy) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const spacepoint_collection_types::const_view& spacepoints_view,

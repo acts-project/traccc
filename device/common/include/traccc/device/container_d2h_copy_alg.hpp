@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -30,7 +31,8 @@ namespace traccc::device {
 template <typename CONTAINER_TYPES>
 class container_d2h_copy_alg
     : public algorithm<typename CONTAINER_TYPES::host(
-          const typename CONTAINER_TYPES::const_view&)> {
+          const typename CONTAINER_TYPES::const_view&)>,
+      public messaging {
 
     public:
     /// Helper type declaration for the input type
@@ -40,7 +42,9 @@ class container_d2h_copy_alg
         const typename CONTAINER_TYPES::const_view&)>::output_type;
 
     /// Constructor with the needed resources
-    container_d2h_copy_alg(const memory_resource& mr, vecmem::copy& deviceCopy);
+    container_d2h_copy_alg(
+        const memory_resource& mr, vecmem::copy& deviceCopy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the copy to the host
     virtual output_type operator()(input_type input) const override;
@@ -52,7 +56,6 @@ class container_d2h_copy_alg
     vecmem::copy& m_deviceCopy;
     /// The H->H copy object to use
     vecmem::copy m_hostCopy;
-
 };  // class container_d2h_copy_alg
 
 }  // namespace traccc::device

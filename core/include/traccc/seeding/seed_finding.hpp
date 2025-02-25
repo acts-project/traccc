@@ -16,13 +16,15 @@
 #include "traccc/seeding/seed_filtering.hpp"
 #include "traccc/seeding/triplet_finding.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 namespace traccc {
 
 /// Seed finding
 class seed_finding
     : public algorithm<seed_collection_types::host(
-          const spacepoint_collection_types::host&, const sp_grid&)> {
+          const spacepoint_collection_types::host&, const sp_grid&)>,
+      public messaging {
 
     public:
     /// Constructor for the seed finding
@@ -30,8 +32,10 @@ class seed_finding
     /// @param find_config is seed finder configuration parameters
     /// @param filter_config is the seed filter configuration
     ///
-    seed_finding(const seedfinder_config& find_config,
-                 const seedfilter_config& filter_config);
+    seed_finding(
+        const seedfinder_config& find_config,
+        const seedfilter_config& filter_config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
     ///
@@ -52,7 +56,6 @@ class seed_finding
     triplet_finding m_triplet_finding;
     /// Algorithm performing the seed selection
     seed_filtering m_seed_filtering;
-
 };  // class seed_finding
 
 }  // namespace traccc

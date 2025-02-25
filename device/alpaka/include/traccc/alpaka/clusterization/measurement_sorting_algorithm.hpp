@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -29,14 +30,17 @@ namespace traccc::alpaka {
 ///
 class measurement_sorting_algorithm
     : public algorithm<measurement_collection_types::view(
-          const measurement_collection_types::view&)> {
+          const measurement_collection_types::view&)>,
+      public messaging {
 
     public:
     /// Constructor for the algorithm
     ///
     /// @param copy The copy object to use in the algorithm
     ///
-    measurement_sorting_algorithm(vecmem::copy& copy);
+    measurement_sorting_algorithm(
+        vecmem::copy& copy,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator performing the sorting on a container
     ///
@@ -48,7 +52,6 @@ class measurement_sorting_algorithm
     private:
     /// Copy object to use in the algorithm
     std::reference_wrapper<vecmem::copy> m_copy;
-
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::alpaka

@@ -49,6 +49,8 @@ namespace traccc {
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_st(std::string_view description, int argc, char* argv[],
                   bool use_host_caching) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "ThroughputExample", traccc::Logging::Level::INFO);
 
     // Program options.
     opts::detector detector_opts;
@@ -64,7 +66,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         {detector_opts, input_opts, clusterization_opts, seeding_opts,
          finding_opts, propagation_opts, fitting_opts, throughput_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Set up the timing info holder.
     performance::timing_info times;
@@ -104,9 +107,9 @@ int throughput_st(std::string_view description, int argc, char* argv[],
              i < input_opts.skip + input_opts.events; ++i) {
             input.push_back({uncached_host_mr});
             static constexpr bool DEDUPLICATE = true;
-            io::read_cells(input.back(), i, input_opts.directory, &det_descr,
-                           input_opts.format, DEDUPLICATE,
-                           input_opts.use_acts_geom_source);
+            io::read_cells(input.back(), i, input_opts.directory,
+                           logger->clone(), &det_descr, input_opts.format,
+                           DEDUPLICATE, input_opts.use_acts_geom_source);
         }
     }
 
@@ -129,7 +132,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
         spacepoint_grid_config{seeding_opts.seedfinder},
         seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr,
-        (detector_opts.use_detray_detector ? &detector : nullptr));
+        (detector_opts.use_detray_detector ? &detector : nullptr),
+        logger->clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {

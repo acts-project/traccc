@@ -18,13 +18,13 @@
 namespace traccc::cuda {
 
 measurement_sorting_algorithm::measurement_sorting_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str)
-    : m_mr{mr}, m_copy{copy}, m_stream{str} {}
+    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+    std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_mr{mr}, m_copy{copy}, m_stream{str} {}
 
 measurement_sorting_algorithm::output_type
 measurement_sorting_algorithm::operator()(
     const measurement_collection_types::view& measurements_view) const {
-
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 

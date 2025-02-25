@@ -11,6 +11,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -27,14 +28,17 @@ namespace traccc::host {
 ///
 class sparse_ccl_algorithm
     : public algorithm<edm::silicon_cluster_collection::host(
-          const edm::silicon_cell_collection::const_view&)> {
+          const edm::silicon_cell_collection::const_view&)>,
+      public messaging {
 
     public:
     /// Constructor for component_connection
     ///
     /// @param mr is the memory resource
     ///
-    sparse_ccl_algorithm(vecmem::memory_resource& mr);
+    sparse_ccl_algorithm(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// @name Operator(s) to use in host code
     /// @{
@@ -53,7 +57,6 @@ class sparse_ccl_algorithm
     private:
     /// The memory resource used by the algorithm
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
 };  // class sparse_ccl_algorithm
 
 }  // namespace traccc::host

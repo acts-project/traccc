@@ -20,8 +20,9 @@
 
 namespace traccc::host {
 
-sparse_ccl_algorithm::sparse_ccl_algorithm(vecmem::memory_resource& mr)
-    : m_mr(mr) {}
+sparse_ccl_algorithm::sparse_ccl_algorithm(vecmem::memory_resource& mr,
+                                           std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_mr(mr) {}
 
 sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells_view) const {

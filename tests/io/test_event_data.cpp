@@ -146,8 +146,8 @@ TEST(event_data, mock_data) {
 
     // Read cells
     traccc::edm::silicon_cell_collection::host cells{resource};
-    traccc::io::read_cells(cells, 0u, path, &det_descr,
-                           traccc::data_format::csv);
+    traccc::io::read_cells(cells, 0u, path, traccc::getDummyLogger().clone(),
+                           &det_descr, traccc::data_format::csv);
     const auto cells_view = vecmem::get_data(cells);
 
     auto clusters = cc(cells_view);

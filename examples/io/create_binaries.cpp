@@ -24,7 +24,8 @@
 
 int create_binaries(const traccc::opts::detector& detector_opts,
                     const traccc::opts::input_data& input_opts,
-                    const traccc::opts::output_data& output_opts) {
+                    const traccc::opts::output_data& output_opts,
+                    std::unique_ptr<const traccc::Logger> logger) {
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -42,8 +43,8 @@ int create_binaries(const traccc::opts::detector& detector_opts,
 
         // Read the cells from the relevant event file
         traccc::edm::silicon_cell_collection::host cells{host_mr};
-        traccc::io::read_cells(cells, event, input_opts.directory, &det_descr,
-                               input_opts.format);
+        traccc::io::read_cells(cells, event, input_opts.directory,
+                               logger->clone(), &det_descr, input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,
@@ -76,6 +77,8 @@ int create_binaries(const traccc::opts::detector& detector_opts,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+        "TracccExampleCreateBinaries", traccc::Logging::Level::INFO);
 
     // Program options.
     traccc::opts::detector detector_opts;
@@ -85,8 +88,10 @@ int main(int argc, char* argv[]) {
         "Binary File Creation",
         {detector_opts, input_opts, output_opts},
         argc,
-        argv};
+        argv,
+        logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    return create_binaries(detector_opts, input_opts, output_opts);
+    return create_binaries(detector_opts, input_opts, output_opts,
+                           logger->clone());
 }

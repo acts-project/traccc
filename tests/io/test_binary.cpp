@@ -43,7 +43,8 @@ TEST(io_binary, cell) {
 
     // Read csv file
     traccc::edm::silicon_cell_collection::host cells_csv(host_mr);
-    traccc::io::read_cells(cells_csv, event, cells_directory, &dd,
+    traccc::io::read_cells(cells_csv, event, cells_directory,
+                           traccc::getDummyLogger().clone(), &dd,
                            traccc::data_format::csv);
 
     // Write binary file
@@ -52,7 +53,8 @@ TEST(io_binary, cell) {
 
     // Read binary file
     traccc::edm::silicon_cell_collection::host cells_binary(host_mr);
-    traccc::io::read_cells(cells_binary, event, cells_directory, &dd,
+    traccc::io::read_cells(cells_binary, event, cells_directory,
+                           traccc::getDummyLogger().clone(), &dd,
                            traccc::data_format::binary);
 
     // Delete binary file

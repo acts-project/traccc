@@ -14,6 +14,7 @@
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
 #include <detray/detectors/bfield.hpp>
@@ -37,7 +38,8 @@ class combinatorial_kalman_filter_algorithm
           const detray::bfield::const_field_t<
               telescope_detector::host::scalar_type>::view_t&,
           const measurement_collection_types::const_view&,
-          const bound_track_parameters_collection_types::const_view&)> {
+          const bound_track_parameters_collection_types::const_view&)>,
+      public messaging {
 
     public:
     /// Configuration type
@@ -46,7 +48,9 @@ class combinatorial_kalman_filter_algorithm
     using output_type = track_candidate_container_types::host;
 
     /// Constructor with the algorithm's configuration
-    explicit combinatorial_kalman_filter_algorithm(const config_type& config);
+    explicit combinatorial_kalman_filter_algorithm(
+        const config_type& config,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
     ///
@@ -87,7 +91,6 @@ class combinatorial_kalman_filter_algorithm
     private:
     /// Algorithm configuration
     config_type m_config;
-
 };  // class combinatorial_kalman_filter_algorithm
 
 }  // namespace traccc::host

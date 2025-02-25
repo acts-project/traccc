@@ -11,7 +11,8 @@
 namespace traccc::host {
 
 silicon_pixel_spacepoint_formation_algorithm::
-    silicon_pixel_spacepoint_formation_algorithm(vecmem::memory_resource& mr)
-    : m_mr(mr) {}
+    silicon_pixel_spacepoint_formation_algorithm(
+        vecmem::memory_resource& mr, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_mr(mr) {}
 
 }  // namespace traccc::host

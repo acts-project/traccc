@@ -14,6 +14,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -32,7 +33,8 @@ namespace traccc::host {
 class clusterization_algorithm
     : public algorithm<measurement_collection_types::host(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)> {
+          const silicon_detector_description::const_view&)>,
+      public messaging {
 
     public:
     using config_type = std::monostate;
@@ -41,7 +43,9 @@ class clusterization_algorithm
     ///
     /// @param mr The memory resource to use for the result objects
     ///
-    clusterization_algorithm(vecmem::memory_resource& mr);
+    clusterization_algorithm(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Construct measurements for each detector module
     ///
@@ -67,7 +71,6 @@ class clusterization_algorithm
 
     /// Reference to the host-accessible memory resource
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
 };  // class clusterization_algorithm
 
 }  // namespace traccc::host
