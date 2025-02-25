@@ -219,6 +219,8 @@ TRACCC_DEVICE inline void find_tracks(
                 // Add measurement candidates to link
                 const unsigned int l_pos = num_total_candidates.fetch_add(1);
 
+                assert(trk_state.filtered_chi2() >= 0.f);
+
                 if (l_pos >= payload.n_max_candidates) {
                     *payload.n_total_candidates = payload.n_max_candidates;
                 } else {
