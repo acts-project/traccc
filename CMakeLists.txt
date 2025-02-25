@@ -68,6 +68,25 @@ option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
 option( TRACCC_USE_SPACK_LIBS "Use pack libraries by default" FALSE )
 option( TRACCC_USE_ROOT "Use ROOT in the build (if needed)" TRUE )
 
+# Check for some compiler features
+if(TRACCC_BUILD_EXAMPLES)
+   message(STATUS "Checking for `std::format` support")
+   file( WRITE
+   "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/compile_test_format.cpp"
+   "#include <format>\n"
+   "int main() {\n"
+   "std::format(\"Hello {}\\n\", \"world\");\n"
+   "return 0; }\n" )
+   try_compile( TRACCCC_INTERNAL_STD_FORMAT_WORKS SOURCES
+   "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/compile_test_format.cpp")
+
+   if (NOT TRACCCC_INTERNAL_STD_FORMAT_WORKS)
+      message(FATAL_ERROR "Examples are enabled, but `std::format` is not supported by the C++ compiler; upgrade to gcc 13 or clang 14 or higher.")
+   endif()
+
+   unset(TRACCCC_INTERNAL_STD_FORMAT_WORKS)
+endif()
+
 # Check CUDA and SYCL C++ standards
 if(${TRACCC_BUILD_CUDA} AND ${CMAKE_CUDA_STANDARD} LESS 20)
    message(SEND_ERROR "CMAKE_CUDA_STANDARD=${CMAKE_CUDA_STANDARD}, but traccc requires C++>=20")
