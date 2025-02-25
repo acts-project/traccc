@@ -149,9 +149,11 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();
+        const std::size_t n_fitted_tracks = count_fitted_tracks(track_states);
 
         // n_trakcs = 100
         ASSERT_EQ(n_tracks, n_truth_tracks);
+        ASSERT_EQ(n_tracks, n_fitted_tracks);
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 

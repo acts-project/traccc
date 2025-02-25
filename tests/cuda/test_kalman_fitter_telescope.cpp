@@ -185,8 +185,11 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);
+        const std::size_t n_fitted_tracks =
+            count_fitted_tracks(track_states_cuda);
 
         ASSERT_EQ(track_states_cuda.size(), n_truth_tracks);
+        ASSERT_EQ(track_states_cuda.size(), n_fitted_tracks);
 
         for (std::size_t i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
 
