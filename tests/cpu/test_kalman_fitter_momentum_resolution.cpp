@@ -127,6 +127,8 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
         std::move(smearer_writer_cfg), full_path);
     sim.get_config().propagation.stepping.rk_error_tol =
         1e-8f * unit<float>::mm;
+    sim.get_config().propagation.navigation.overstep_tolerance =
+        -1.f * unit<float>::mm;
     sim.run();
 
     /***************
@@ -140,6 +142,7 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
     fit_cfg.propagation.stepping.rk_error_tol = 1e-8f * unit<float>::mm;
+    fit_cfg.propagation.navigation.overstep_tolerance = -1.f * unit<float>::mm;
     fit_cfg.use_backward_filter = true;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
