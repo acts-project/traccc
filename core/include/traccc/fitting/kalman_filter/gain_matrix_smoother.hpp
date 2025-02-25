@@ -63,7 +63,7 @@ struct gain_matrix_smoother {
     }
 
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status smoothe(
+    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status smoothe(
         track_state<algebra_t>& cur_state,
         const track_state<algebra_t>& next_state) const {
         const auto meas = cur_state.get_measurement();

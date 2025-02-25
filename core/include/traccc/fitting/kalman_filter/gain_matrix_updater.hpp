@@ -65,7 +65,7 @@ struct gain_matrix_updater {
     }
 
     template <size_type D, typename shape_t>
-    TRACCC_HOST_DEVICE [[nodiscard]] inline kalman_fitter_status update(
+    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status update(
         track_state<algebra_t>& trk_state,
         const bound_track_parameters<algebra_t>& bound_params) const {
 
