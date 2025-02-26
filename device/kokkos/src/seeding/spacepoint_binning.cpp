@@ -29,7 +29,7 @@ spacepoint_binning::spacepoint_binning(
     m_copy = std::make_unique<vecmem::copy>();
 }
 
-spacepoint_binning::output_type spacepoint_binning::operator()(
+traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
     const edm::spacepoint_collection::const_view& spacepoints_view) const {
 
     // Get the spacepoint sizes from the view

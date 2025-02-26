@@ -11,7 +11,6 @@
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -25,10 +24,7 @@
 namespace traccc::kokkos::details {
 
 /// Spacepoing binning executed on a Kokkos device
-class spacepoint_binning
-    : public algorithm<traccc::details::spacepoint_grid_types::buffer(
-          const edm::spacepoint_collection::const_view&)>,
-      public messaging {
+class spacepoint_binning : public messaging {
 
     public:
     /// Constructor for the algorithm
@@ -39,8 +35,8 @@ class spacepoint_binning
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a a view of spacepoints
-    output_type operator()(const edm::spacepoint_collection::const_view&
-                               spacepoints) const override;
+    traccc::details::spacepoint_grid_types::buffer operator()(
+        const edm::spacepoint_collection::const_view& spacepoints) const;
 
     private:
     /// Member variables
