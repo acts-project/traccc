@@ -36,19 +36,22 @@ void seed_filtering::operator()(
         const sp_location& spB_location = triplet.sp1;
         const unsigned int spB_idx =
             sp_grid.bin(spB_location.bin_idx)[spB_location.sp_idx];
-        const auto spB = spacepoints.at(spB_idx);
+        const edm::spacepoint_collection::const_device::const_proxy_type spB =
+            spacepoints.at(spB_idx);
 
         // middle
         const sp_location& spM_location = triplet.sp2;
         const unsigned int spM_idx =
             sp_grid.bin(spM_location.bin_idx)[spM_location.sp_idx];
-        const auto spM = spacepoints.at(spM_idx);
+        const edm::spacepoint_collection::const_device::const_proxy_type spM =
+            spacepoints.at(spM_idx);
 
         // top
         const sp_location& spT_location = triplet.sp3;
         const unsigned int spT_idx =
             sp_grid.bin(spT_location.bin_idx)[spT_location.sp_idx];
-        const auto spT = spacepoints.at(spT_idx);
+        const edm::spacepoint_collection::const_device::const_proxy_type spT =
+            spacepoints.at(spT_idx);
 
         // Updat the triplet weight in-situ.
         seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
@@ -103,14 +106,9 @@ void seed_filtering::operator()(
         if (i++ >= m_filter_config.maxSeedsPerSpM) {
             break;
         }
-        const auto iseed = seeds.size();
-        seeds.resize(iseed + 1);
-        auto seed = seeds[iseed];
-        seed.bottom_index() =
-            sp_grid.bin(triplet.sp1.bin_idx)[triplet.sp1.sp_idx];
-        seed.middle_index() =
-            sp_grid.bin(triplet.sp2.bin_idx)[triplet.sp2.sp_idx];
-        seed.top_index() = sp_grid.bin(triplet.sp3.bin_idx)[triplet.sp3.sp_idx];
+        seeds.push_back({sp_grid.bin(triplet.sp1.bin_idx)[triplet.sp1.sp_idx],
+                         sp_grid.bin(triplet.sp2.bin_idx)[triplet.sp2.sp_idx],
+                         sp_grid.bin(triplet.sp3.bin_idx)[triplet.sp3.sp_idx]});
     }
 }
 

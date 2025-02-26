@@ -48,7 +48,8 @@ track_params_estimation::output_type track_params_estimation::operator()(
         }
 
         // Get geometry ID for bottom spacepoint
-        const auto spB = spacepoints.at(seeds[i].bottom_index());
+        const edm::spacepoint_collection::const_device::const_proxy_type spB =
+            spacepoints.at(seeds[i].bottom_index());
         track_params.set_surface_link(
             measurements.at(spB.measurement_index()).surface_link);
     }

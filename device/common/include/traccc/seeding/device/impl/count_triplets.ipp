@@ -58,11 +58,11 @@ inline void count_triplets(
 
     // middle spacepoint
     const sp_location spM_loc = doublet_counts.m_spM;
-    const auto spM =
+    const edm::spacepoint_collection::const_device::const_proxy_type spM =
         spacepoints.at(sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx]);
     const sp_location spB_loc = mid_bot.sp2;
     // bottom spacepoint
-    const auto spB =
+    const edm::spacepoint_collection::const_device::const_proxy_type spB =
         spacepoints.at(sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx]);
 
     // Apply the conformal transformation to middle-bot doublet
@@ -91,7 +91,7 @@ inline void count_triplets(
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
         const traccc::sp_location spT_loc = mid_top_doublet_device[i].sp2;
 
-        const auto spT =
+        const edm::spacepoint_collection::const_device::const_proxy_type spT =
             spacepoints.at(sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx]);
 
         // Apply the conformal transformation to middle-top doublet

@@ -59,8 +59,9 @@ struct doublet_finding : public messaging {
                            lin_circle_collection_types::host{&(m_mr.get())});
 
         // Access the middle spacepoint.
-        const auto middle_sp = spacepoints.at(
-            sp_grid.bin(middle_location.bin_idx)[middle_location.sp_idx]);
+        const edm::spacepoint_collection::const_device::const_proxy_type
+            middle_sp = spacepoints.at(
+                sp_grid.bin(middle_location.bin_idx)[middle_location.sp_idx]);
 
         // Get the Phi/Z bins in which to look for the other spacepoint of the
         // doublet.
@@ -84,7 +85,8 @@ struct doublet_finding : public messaging {
                 for (unsigned int i = 0; unsigned int sp_index : sp_indices) {
 
                     // Access the other spacepoint.
-                    const auto other_sp = spacepoints.at(sp_index);
+                    const edm::spacepoint_collection::const_device::
+                        const_proxy_type other_sp = spacepoints.at(sp_index);
 
                     // Check if the spacepoints are compatible.
                     if (doublet_finding_helper::isCompatible<otherSpType>(

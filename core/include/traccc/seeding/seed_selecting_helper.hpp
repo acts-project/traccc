@@ -76,7 +76,7 @@ struct seed_selecting_helper {
         const details::spacepoint_grid_types::const_device& grid,
         const triplet& seed) {
 
-        const auto spB =
+        const edm::spacepoint_collection::const_device::const_proxy_type spB =
             spacepoints.at(grid.bin(seed.sp1.bin_idx)[seed.sp1.sp_idx]);
 
         return (seed.weight > filter_config.seed_min_weight ||

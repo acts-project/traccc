@@ -89,7 +89,7 @@ inline void select_seeds(
     // Current work item = middle spacepoint
     const triplet_counter_spM spM_counter = triplet_counts_spM.at(globalIndex);
     const sp_location spM_loc = spM_counter.spM;
-    const auto spM =
+    const edm::spacepoint_collection::const_device::const_proxy_type spM =
         spacepoints.at(sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx]);
 
     // Number of triplets added for this spM
@@ -106,9 +106,9 @@ inline void select_seeds(
             triplet_counts.at(static_cast<unsigned int>(aTriplet.counter_link))
                 .spB;
         const sp_location spT_loc = aTriplet.spT;
-        const auto spB =
+        const edm::spacepoint_collection::const_device::const_proxy_type spB =
             spacepoints.at(sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx]);
-        const auto spT =
+        const edm::spacepoint_collection::const_device::const_proxy_type spT =
             spacepoints.at(sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx]);
 
         // update weight of triplet
@@ -176,9 +176,10 @@ inline void select_seeds(
 
             n_seeds_per_spM++;
 
-            const edm::seed_collection::const_device::size_type iseed =
+            const edm::seed_collection::device::size_type iseed =
                 seeds_device.push_back_default();
-            auto seed = seeds_device.at(iseed);
+            edm::seed_collection::device::proxy_type seed =
+                seeds_device.at(iseed);
             seed.bottom_index() =
                 sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
             seed.middle_index() =

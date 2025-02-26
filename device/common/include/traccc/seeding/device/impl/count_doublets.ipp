@@ -44,8 +44,9 @@ inline void count_doublets(
 
     // Get the spacepoint that we're evaluating in this thread, and treat that
     // as the "middle" spacepoint.
-    const auto middle_sp = spacepoints.at(
-        sp_grid.bin(middle_sp_idx.first).at(middle_sp_idx.second));
+    const edm::spacepoint_collection::const_device::const_proxy_type middle_sp =
+        spacepoints.at(
+            sp_grid.bin(middle_sp_idx.first).at(middle_sp_idx.second));
 
     // The the IDs of the neighbouring bins along the phi and Z axes of the
     // grid.
@@ -94,7 +95,8 @@ inline void count_doublets(
             for (unsigned int other_sp_idx : spacepoint_indices) {
 
                 // Get the other spacepoint.
-                const auto other_sp = spacepoints.at(other_sp_idx);
+                const edm::spacepoint_collection::const_device::const_proxy_type
+                    other_sp = spacepoints.at(other_sp_idx);
 
                 // Check if this spacepoint is a compatible "bottom" spacepoint
                 // to the thread's "middle" spacepoint.

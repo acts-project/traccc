@@ -45,14 +45,18 @@ class triplet_sorter {
         // the y and z coordinates of the spacepoints.
         else {
             // Access the spacepoints.
-            const auto spB1 = m_spacepoints->at(
-                m_sp_grid->bin(seed1.sp1.bin_idx)[seed1.sp1.sp_idx]);
-            const auto spT1 = m_spacepoints->at(
-                m_sp_grid->bin(seed1.sp3.bin_idx)[seed1.sp3.sp_idx]);
-            const auto spB2 = m_spacepoints->at(
-                m_sp_grid->bin(seed2.sp1.bin_idx)[seed2.sp1.sp_idx]);
-            const auto spT2 = m_spacepoints->at(
-                m_sp_grid->bin(seed2.sp3.bin_idx)[seed2.sp3.sp_idx]);
+            const edm::spacepoint_collection::const_device::const_proxy_type
+                spB1 = m_spacepoints->at(
+                    m_sp_grid->bin(seed1.sp1.bin_idx)[seed1.sp1.sp_idx]);
+            const edm::spacepoint_collection::const_device::const_proxy_type
+                spT1 = m_spacepoints->at(
+                    m_sp_grid->bin(seed1.sp3.bin_idx)[seed1.sp3.sp_idx]);
+            const edm::spacepoint_collection::const_device::const_proxy_type
+                spB2 = m_spacepoints->at(
+                    m_sp_grid->bin(seed2.sp1.bin_idx)[seed2.sp1.sp_idx]);
+            const edm::spacepoint_collection::const_device::const_proxy_type
+                spT2 = m_spacepoints->at(
+                    m_sp_grid->bin(seed2.sp3.bin_idx)[seed2.sp3.sp_idx]);
 
             // Calculate these custom weights.
             const scalar seed1_sum = spB1.y() * spB1.y() + spB1.z() * spB1.z() +

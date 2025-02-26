@@ -36,13 +36,13 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     // Set up the output container(s).
     edm::spacepoint_collection::device spacepoints(spacepoints_view);
 
-    const auto& meas = measurements.at(globalIndex);
+    const measurement& meas = measurements.at(globalIndex);
 
     // Fill the spacepoint using the common function.
     if (details::is_valid_measurement(meas)) {
         const edm::spacepoint_collection::device::size_type i =
             spacepoints.push_back_default();
-        auto sp = spacepoints.at(i);
+        edm::spacepoint_collection::device::proxy_type sp = spacepoints.at(i);
         traccc::details::fill_pixel_spacepoint(sp, det, meas);
         sp.measurement_index() = globalIndex;
     }

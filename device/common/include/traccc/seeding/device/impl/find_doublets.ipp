@@ -46,7 +46,7 @@ inline void find_doublets(
 
     // Get the spacepoint that we're evaluating in this thread, and treat that
     // as the "middle" spacepoint.
-    const auto middle_sp =
+    const edm::spacepoint_collection::const_device::const_proxy_type middle_sp =
         spacepoints.at(sp_grid.bin(middle_sp_counter.m_spM.bin_idx)
                            .at(middle_sp_counter.m_spM.sp_idx));
 
@@ -105,8 +105,9 @@ inline void find_doublets(
                  ++other_sp_idx) {
 
                 // Access the "other spacepoint".
-                const auto other_sp =
-                    spacepoints.at(spacepoint_indices.at(other_sp_idx));
+                const edm::spacepoint_collection::const_device::const_proxy_type
+                    other_sp =
+                        spacepoints.at(spacepoint_indices.at(other_sp_idx));
 
                 // Check if this spacepoint is a compatible "bottom" spacepoint
                 // to the thread's "middle" spacepoint.

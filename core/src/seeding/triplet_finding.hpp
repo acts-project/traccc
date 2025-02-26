@@ -68,8 +68,9 @@ struct triplet_finding : public messaging {
         triplet_collection_types::host result{&(m_mr.get())};
 
         // Access the middle spacepoint that all the doublets share.
-        const auto spM = spacepoints.at(sp_grid.bin(
-            mid_bot_doublet.sp1.bin_idx)[mid_bot_doublet.sp1.sp_idx]);
+        const edm::spacepoint_collection::const_device::const_proxy_type spM =
+            spacepoints.at(sp_grid.bin(
+                mid_bot_doublet.sp1.bin_idx)[mid_bot_doublet.sp1.sp_idx]);
 
         // Calculate quantities that help deciding if two doublets are
         // compatible.
@@ -109,8 +110,9 @@ struct triplet_finding : public messaging {
 
             triplet& current_triplet = result[i];
             const sp_location& current_spT_idx = current_triplet.sp3;
-            const auto& current_spT = spacepoints.at(
-                sp_grid.bin(current_spT_idx.bin_idx)[current_spT_idx.sp_idx]);
+            const edm::spacepoint_collection::const_device::const_proxy_type
+                current_spT = spacepoints.at(sp_grid.bin(
+                    current_spT_idx.bin_idx)[current_spT_idx.sp_idx]);
             const scalar currentTop_r = current_spT.radius();
 
             // if two compatible seeds with high distance in r are found,
@@ -130,8 +132,9 @@ struct triplet_finding : public messaging {
 
                 const triplet& other_triplet = result[j];
                 const sp_location& other_spT_idx = other_triplet.sp3;
-                const auto& other_spT = spacepoints.at(
-                    sp_grid.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx]);
+                const edm::spacepoint_collection::const_device::const_proxy_type
+                    other_spT = spacepoints.at(sp_grid.bin(
+                        other_spT_idx.bin_idx)[other_spT_idx.sp_idx]);
 
                 // compared top SP should have at least deltaRMin distance
                 const scalar otherTop_r = other_spT.radius();

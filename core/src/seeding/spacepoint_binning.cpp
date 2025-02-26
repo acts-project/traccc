@@ -40,7 +40,8 @@ traccc::details::spacepoint_grid_types::host spacepoint_binning::operator()(
     for (unsigned int i = 0; i < spacepoints.size(); ++i) {
 
         // Get a proxy for this spacepoint.
-        const auto sp = spacepoints.at(i);
+        const edm::spacepoint_collection::const_device::const_proxy_type sp =
+            spacepoints.at(i);
 
         if (is_valid_sp(m_config, sp)) {
             const detray::dindex bin_index =

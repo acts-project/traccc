@@ -44,8 +44,9 @@ inline void update_triplet_weights(
 
     const sp_location& spT_idx = this_triplet.spT;
 
-    const auto current_spT =
-        spacepoints.at(sp_grid.bin(spT_idx.bin_idx)[spT_idx.sp_idx]);
+    const edm::spacepoint_collection::const_device::const_proxy_type
+        current_spT =
+            spacepoints.at(sp_grid.bin(spT_idx.bin_idx)[spT_idx.sp_idx]);
 
     const scalar currentTop_r = current_spT.radius();
 
@@ -82,8 +83,9 @@ inline void update_triplet_weights(
 
         const device_triplet other_triplet = triplets[i];
         const sp_location other_spT_idx = other_triplet.spT;
-        const auto other_spT = spacepoints.at(
-            sp_grid.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx]);
+        const edm::spacepoint_collection::const_device::const_proxy_type
+            other_spT = spacepoints.at(
+                sp_grid.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx]);
 
         // compared top SP should have at least deltaRMin distance
         const scalar otherTop_r = other_spT.radius();

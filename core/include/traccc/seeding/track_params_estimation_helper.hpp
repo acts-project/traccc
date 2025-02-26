@@ -48,9 +48,12 @@ inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
 
     bound_vector<> params = matrix::zero<bound_vector<>>();
 
-    const auto spB = spacepoints.at(seed.bottom_index());
-    const auto spM = spacepoints.at(seed.middle_index());
-    const auto spT = spacepoints.at(seed.top_index());
+    const edm::spacepoint_collection::const_device::const_proxy_type spB =
+        spacepoints.at(seed.bottom_index());
+    const edm::spacepoint_collection::const_device::const_proxy_type spM =
+        spacepoints.at(seed.middle_index());
+    const edm::spacepoint_collection::const_device::const_proxy_type spT =
+        spacepoints.at(seed.top_index());
 
     darray<vector3, 3> sp_global_positions{spB.global(), spM.global(),
                                            spT.global()};
@@ -71,8 +74,8 @@ inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
     transform3 trans(translation, newZAxis, newXAxis);
 
     // The coordinate of the middle and top space point in the new frame
-    auto local1 = trans.point_to_local(sp_global_positions[1]);
-    auto local2 = trans.point_to_local(sp_global_positions[2]);
+    const point3 local1 = trans.point_to_local(sp_global_positions[1]);
+    const point3 local2 = trans.point_to_local(sp_global_positions[2]);
 
     // The uv1.y() should be zero
     vector2 uv1 = uv_transform(local1[0], local1[1]);
@@ -102,7 +105,7 @@ inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
     getter::element(params, e_bound_theta, 0) = vector::theta(direction);
 
     // The measured loc0 and loc1
-    const auto& meas_for_spB = measurements.at(spB.measurement_index());
+    const measurement& meas_for_spB = measurements.at(spB.measurement_index());
     getter::element(params, e_bound_loc0, 0) = meas_for_spB.local[0];
     getter::element(params, e_bound_loc1, 0) = meas_for_spB.local[1];
 

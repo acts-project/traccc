@@ -29,7 +29,8 @@ inline void count_grid_capacities(
     if (globalIndex >= spacepoints.size()) {
         return;
     }
-    const auto sp = spacepoints.at(globalIndex);
+    const edm::spacepoint_collection::const_device::const_proxy_type sp =
+        spacepoints.at(globalIndex);
 
     /// Check out if the spacepoint can be used for seeding.
     if (is_valid_sp(config, sp)) {

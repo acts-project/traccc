@@ -35,7 +35,8 @@ inline void estimate_track_params(
 
     bound_track_parameters_collection_types::device params_device(params_view);
 
-    const auto this_seed = seeds_device.at(globalIndex);
+    const edm::seed_collection::const_device::const_proxy_type this_seed =
+        seeds_device.at(globalIndex);
 
     // Get bound track parameter
     bound_track_parameters<> track_params;
@@ -49,7 +50,8 @@ inline void estimate_track_params(
     }
 
     // Get geometry ID for bottom spacepoint
-    const auto spB = spacepoints_device.at(this_seed.bottom_index());
+    const edm::spacepoint_collection::const_device::const_proxy_type spB =
+        spacepoints_device.at(this_seed.bottom_index());
     track_params.set_surface_link(
         measurements_device.at(spB.measurement_index()).surface_link);
 
