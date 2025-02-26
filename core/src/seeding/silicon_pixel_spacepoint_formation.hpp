@@ -42,15 +42,16 @@ edm::spacepoint_collection::host silicon_pixel_spacepoint_formation(
     result.reserve(measurements.size());
 
     // Set up each spacepoint in the result container.
-    for (unsigned int meas_index = 0u; const auto& meas : measurements) {
+    for (measurement_collection_types::const_device::size_type i = 0;
+         i < measurements.size(); ++i) {
+        const measurement& meas = measurements.at(i);
         if (traccc::details::is_valid_measurement(meas)) {
             const std::size_t sp_index = result.size();
             result.resize(sp_index + 1u);
             auto sp = result.at(sp_index);
             traccc::details::fill_pixel_spacepoint(sp, det, meas);
-            sp.measurement_index() = meas_index;
+            sp.measurement_index() = i;
         }
-        ++meas_index;
     }
 
     // Return the created container.
