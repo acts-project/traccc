@@ -12,8 +12,11 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
+
+// VecMem include(s).
+#include <vecmem/containers/data/jagged_vector_view.hpp>
+#include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
 
@@ -50,4 +53,5 @@ struct fit_payload {
      */
     vecmem::data::jagged_vector_view<detray::geometry::barcode> barcodes_view;
 };
+
 }  // namespace traccc::device

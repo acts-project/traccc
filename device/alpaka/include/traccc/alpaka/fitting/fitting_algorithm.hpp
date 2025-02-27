@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -29,7 +29,8 @@ class fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
           const typename fitter_t::detector_type::view_type&,
           const typename fitter_t::bfield_type&,
-          const typename track_candidate_container_types::const_view&)>,
+          const edm::track_candidate_collection<default_algebra>::const_view&,
+          const measurement_collection_types::const_view&)>,
       public messaging {
 
     public:
@@ -51,8 +52,10 @@ class fitting_algorithm
     track_state_container_types::buffer operator()(
         const typename fitter_t::detector_type::view_type& det_view,
         const typename fitter_t::bfield_type& field_view,
-        const typename track_candidate_container_types::const_view&
-            track_candidates_view) const override;
+        const edm::track_candidate_collection<default_algebra>::const_view&
+            track_candidates_view,
+        const measurement_collection_types::const_view& measurements_view)
+        const override;
 
     private:
     /// Config object
