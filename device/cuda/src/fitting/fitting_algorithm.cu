@@ -28,7 +28,8 @@ namespace traccc::cuda {
 namespace kernels {
 
 __global__ void fill_sort_keys(
-    track_candidate_container_types::const_view track_candidates_view,
+    edm::track_candidate_collection<default_algebra>::const_view
+        track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view) {
 
@@ -60,31 +61,33 @@ template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const typename track_candidate_container_types::const_view&
-        track_candidates_view) const {
+    const edm::track_candidate_collection<default_algebra>::const_view&
+        track_candidates_view,
+    const measurement_collection_types::const_view& measurements_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Number of tracks
-    const track_candidate_container_types::const_device::header_vector::
-        size_type n_tracks = m_copy.get_size(track_candidates_view.headers);
+    const edm::track_candidate_collection<
+        default_algebra>::const_device::size_type n_tracks =
+        m_copy.get_size(track_candidates_view);
 
-    // Get the sizes of the track candidates in each track
-    using jagged_buffer_size_type = track_candidate_container_types::
-        const_device::item_vector::value_type::size_type;
-    const std::vector<jagged_buffer_size_type> candidate_sizes =
-        m_copy.get_sizes(track_candidates_view.items);
+    // Get the sizes of the track candidates in each track. In a super
+    // sketchy way. Since index "5" is just harcoded to be the
+    // "measurement_indices" variable. As the current version of VecMem
+    // doesn't provide a better / more redable way for doing this.
+    const std::vector<unsigned int> candidate_sizes =
+        m_copy.get_sizes(track_candidates_view.get<5>());
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 
-    std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
+    std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
-                   seqs_sizes.begin(),
-                   [this](const jagged_buffer_size_type sz) {
+                   seqs_sizes.begin(), [this](const unsigned int sz) {
                        return std::max(sz * m_cfg.barcode_sequence_size_factor,
                                        m_cfg.min_barcode_sequence_capacity);
                    });
@@ -105,6 +108,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                                                                   m_mr.main);
         vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
                                                                    m_mr.main);
+        m_copy.setup(keys_buffer)->ignore();
+        m_copy.setup(param_ids_buffer)->ignore();
 
         // Get key and value for sorting
         kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
@@ -127,6 +132,7 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                        .det_data = det_view,
                        .field_data = field_view,
                        .track_candidates_view = track_candidates_view,
+                       .measurements_view = measurements_view,
                        .param_ids_view = param_ids_buffer,
                        .track_states_view = track_states_buffer,
                        .barcodes_view = seqs_buffer});

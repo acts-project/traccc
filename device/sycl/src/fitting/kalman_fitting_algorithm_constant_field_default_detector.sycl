@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -26,7 +26,9 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const default_detector::view& det,
     const covfie::field<traccc::const_bfield_backend_t<
         default_detector::device::scalar_type>>::view_t& field,
-    const track_candidate_container_types::const_view& track_candidates) const {
+    const edm::track_candidate_collection<default_algebra>::const_view&
+        track_candidates,
+    const measurement_collection_types::const_view& measurements) const {
 
     using scalar_type = default_detector::device::scalar_type;
 
@@ -44,8 +46,8 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     // Run the track fitting.
     return details::fit_tracks<
         fitter_type, kernels::fit_tracks_constant_field_default_detector>(
-        det, field, track_candidates, m_config, m_mr, m_copy.get(),
-        details::get_queue(m_queue));
+        det, field, track_candidates, measurements, m_config, m_mr,
+        m_copy.get(), details::get_queue(m_queue));
 }
 
 }  // namespace traccc::sycl

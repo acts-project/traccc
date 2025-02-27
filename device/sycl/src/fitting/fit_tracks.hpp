@@ -13,7 +13,7 @@
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
@@ -53,20 +53,23 @@ template <typename fitter_t, typename fit_kernel_t>
 track_state_container_types::buffer fit_tracks(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const typename track_candidate_container_types::const_view&
+    const edm::track_candidate_collection<default_algebra>::const_view&
         track_candidates_view,
+    const measurement_collection_types::const_view& measurements_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
     // Get the number of tracks.
-    const track_candidate_container_types::const_device::header_vector::
-        size_type n_tracks = copy.get_size(track_candidates_view.headers);
+    const edm::track_candidate_collection<
+        default_algebra>::const_device::size_type n_tracks =
+        copy.get_size(track_candidates_view);
 
-    // Get the number of the track candidates (measurements) in each track.
-    using jagged_buffer_size_type = track_candidate_container_types::
-        const_device::item_vector::value_type::size_type;
-    const std::vector<jagged_buffer_size_type> candidate_sizes =
-        copy.get_sizes(track_candidates_view.items);
+    // Get the sizes of the track candidates in each track. In a super
+    // sketchy way. Since index "5" is just harcoded to be the
+    // "measurement_indices" variable. As the current version of VecMem
+    // doesn't provide a better / more redable way for doing this.
+    const std::vector<unsigned int> candidate_sizes =
+        copy.get_sizes(track_candidates_view.get<5>());
 
     // Create the result buffer.
     track_state_container_types::buffer track_states_buffer{
@@ -85,10 +88,9 @@ track_state_container_types::buffer fit_tracks(
         return track_states_buffer;
     }
 
-    std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
+    std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
-                   seqs_sizes.begin(),
-                   [&config](const jagged_buffer_size_type sz) {
+                   seqs_sizes.begin(), [&config](const unsigned int sz) {
                        return std::max(sz * config.barcode_sequence_size_factor,
                                        config.min_barcode_sequence_capacity);
                    });
@@ -145,10 +147,10 @@ track_state_container_types::buffer fit_tracks(
                      .det_data = det_view,
                      .field_data = field_view,
                      .track_candidates_view = track_candidates_view,
-                     .param_ids_view = vecmem::get_data(param_ids_buffer),
+                     .measurements_view = measurements_view,
+                     .param_ids_view = param_ids_buffer,
                      .track_states_view = track_states_view,
-                     .barcodes_view = vecmem::get_data(
-                         seqs_buffer)}](::sycl::nd_item<1> item) {
+                     .barcodes_view = seqs_buffer}](::sycl::nd_item<1> item) {
                     device::fit<fitter_t>(details::global_index(item), config,
                                           payload);
                 });

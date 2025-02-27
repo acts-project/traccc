@@ -16,7 +16,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
@@ -87,7 +87,7 @@ struct build_tracks {};
 /// @return A buffer of the found track candidates
 ///
 template <typename stepper_t, typename navigator_t, typename kernel_t>
-track_candidate_container_types::buffer find_tracks(
+edm::track_candidate_collection<default_algebra>::buffer find_tracks(
     const typename navigator_t::detector_type::view_type& det,
     const typename stepper_t::magnetic_field_type& field,
     const measurement_collection_types::const_view& measurements,
@@ -454,12 +454,9 @@ track_candidate_container_types::buffer find_tracks(
     }
 
     // Create track candidate buffer
-    track_candidate_container_types::buffer track_candidates_buffer{
-        {n_tips_total, mr.main}, {tips_length_host, mr.main, mr.host}};
-    copy.setup(track_candidates_buffer.headers)->wait();
-    copy.setup(track_candidates_buffer.items)->wait();
-    track_candidate_container_types::view track_candidates =
-        track_candidates_buffer;
+    edm::track_candidate_collection<default_algebra>::buffer
+        track_candidates_buffer{tips_length_host, mr.main, mr.host};
+    copy.setup(track_candidates_buffer)->wait();
 
     if (n_tips_total > 0) {
         queue
@@ -469,7 +466,8 @@ track_candidate_container_types::buffer find_tracks(
                     [measurements, seeds,
                      links = vecmem::get_data(links_buffer),
                      tips = vecmem::get_data(tips_buffer),
-                     track_candidates](::sycl::nd_item<1> item) {
+                     track_candidates = vecmem::get_data(
+                         track_candidates_buffer)](::sycl::nd_item<1> item) {
                         device::build_tracks(details::global_index(item),
                                              {measurements, seeds, links, tips,
                                               track_candidates});
