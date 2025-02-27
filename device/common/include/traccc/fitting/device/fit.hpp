@@ -12,8 +12,13 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_state.hpp"
+
+// VecMem include(s).
+#include <vecmem/containers/data/jagged_vector_view.hpp>
+#include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
 
@@ -33,7 +38,13 @@ struct fit_payload {
     /**
      * @brief View object to the input track candidates
      */
-    track_candidate_container_types::const_view track_candidates_view;
+    edm::track_candidate_collection<default_algebra>::const_view
+        track_candidates_view;
+
+    /**
+     * @brief View of all measurements in the event
+     */
+    measurement_collection_types::const_view measurements_view;
 
     /**
      * @brief View object to the input track parameters
@@ -56,6 +67,8 @@ struct fit_payload {
 /// @param[in] globalIndex   The index of the current thread
 /// @param[in] det_data      Detector view object
 /// @param[in] track_candidates_view The input track candidates
+/// @param[in] measurements_view All measurements in the event
+/// @param[in] param_ids_view The input parameter ids
 /// @param[out] track_states_view The output of fitted track states
 /// @param[out] barcodes_view The barcode sequence for backward filter
 ///

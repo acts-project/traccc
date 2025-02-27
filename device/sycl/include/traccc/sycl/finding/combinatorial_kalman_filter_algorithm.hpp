@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -32,13 +32,13 @@ namespace traccc::sycl {
 
 /// CKF track finding algorithm
 class combinatorial_kalman_filter_algorithm
-    : public algorithm<track_candidate_container_types::buffer(
+    : public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
           const default_detector::view&,
           const covfie::field<traccc::const_bfield_backend_t<
               default_detector::device::scalar_type>>::view_t&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
-      public algorithm<track_candidate_container_types::buffer(
+      public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
           const telescope_detector::view&,
           const covfie::field<traccc::const_bfield_backend_t<
               default_detector::device::scalar_type>>::view_t&,
@@ -50,7 +50,8 @@ class combinatorial_kalman_filter_algorithm
     /// Configuration type
     using config_type = finding_config;
     /// Output type
-    using output_type = track_candidate_container_types::buffer;
+    using output_type =
+        edm::track_candidate_collection<default_algebra>::buffer;
 
     /// Constructor with the algorithm's configuration
     explicit combinatorial_kalman_filter_algorithm(
