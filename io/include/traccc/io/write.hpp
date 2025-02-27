@@ -8,10 +8,11 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/data_format.hpp"
@@ -85,7 +86,8 @@ void write(std::size_t event, std::string_view directory,
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           track_candidate_container_types::const_view tracks,
+           edm::track_candidate_collection<default_algebra>::const_view tracks,
+           measurement_collection_types::const_view measurements,
            const traccc::default_detector::host& detector);
 
 /// Write a digitization configuration to a file
