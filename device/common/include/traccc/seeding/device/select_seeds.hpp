@@ -13,7 +13,8 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/seed.hpp"
+#include "traccc/edm/seed_collection.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
@@ -26,7 +27,7 @@ namespace traccc::device {
 /// @param[in] globalIndex      The index of the current thread
 /// @param[in] filter_config    Seed filter config
 /// @param[in] spacepoints_view Collection of spacepoints
-/// @param[in] internal_sp_view The spacepoint grid
+/// @param[in] sp_grid_view     The spacepoint grid
 /// @param[in] spM_tc_view      Collection with the number of triplets per spM
 /// @param[in] triplet_view     Collection of triplets
 /// @param[in] data     Array for temporary storage of triplets for comparison
@@ -35,12 +36,12 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void select_seeds(
     global_index_t globalIndex, const seedfilter_config& filter_config,
-    const spacepoint_collection_types::const_view& spacepoints_view,
-    const sp_grid_const_view& internal_sp_view,
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    const traccc::details::spacepoint_grid_types::const_view& sp_grid_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
-    triplet* data, seed_collection_types::view seed_view);
+    triplet* data, edm::seed_collection::view seed_view);
 
 }  // namespace traccc::device
 

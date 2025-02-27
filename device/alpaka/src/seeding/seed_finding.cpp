@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
-#include "traccc/alpaka/seeding/seed_finding.hpp"
+#include "traccc/alpaka/seeding/details/seed_finding.hpp"
 
 #include "../utils/utils.hpp"
 
@@ -32,45 +32,51 @@
 #include <vector>
 
 namespace traccc::alpaka {
+namespace kernels {
 
 /// Kernel for running @c traccc::device::count_doublets
-struct CountDoubletsKernel {
+struct CountDoublets {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, seedfinder_config config,
-        const sp_grid_const_view sp_grid,
+        const edm::spacepoint_collection::const_view spacepoints,
+        const traccc::details::spacepoint_grid_types::const_view sp_grid,
         const vecmem::data::vector_view<const device::prefix_sum_element_t>
             sp_prefix_sum,
         device::doublet_counter_collection_types::view doublet_counter,
         device::seeding_global_counter* counter) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::count_doublets(globalThreadIdx, config, sp_grid, sp_prefix_sum,
-                               doublet_counter, counter->m_nMidBot,
-                               counter->m_nMidTop);
+        device::count_doublets(globalThreadIdx, config, spacepoints, sp_grid,
+                               sp_prefix_sum, doublet_counter,
+                               counter->m_nMidBot, counter->m_nMidTop);
     }
 };
 
 // Kernel for running @c traccc::device::find_doublets
-struct FindDoubletsKernel {
+struct FindDoublets {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, seedfinder_config config, sp_grid_const_view sp_grid,
+        TAcc const& acc, seedfinder_config config,
+        edm::spacepoint_collection::const_view spacepoints,
+        traccc::details::spacepoint_grid_types::const_view sp_grid,
         device::doublet_counter_collection_types::const_view doublet_counter,
         device::device_doublet_collection_types::view mb_doublets,
         device::device_doublet_collection_types::view mt_doublets) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::find_doublets(globalThreadIdx, config, sp_grid, doublet_counter,
-                              mb_doublets, mt_doublets);
+        device::find_doublets(globalThreadIdx, config, spacepoints, sp_grid,
+                              doublet_counter, mb_doublets, mt_doublets);
     }
 };
 
 // Kernel for running @c traccc::device::count_triplets
-struct CountTripletsKernel {
+struct CountTriplets {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, seedfinder_config config, sp_grid_const_view sp_grid,
+        TAcc const& acc, seedfinder_config config,
+        edm::spacepoint_collection::const_view spacepoints,
+        traccc::details::spacepoint_grid_types::const_view sp_grid,
         device::doublet_counter_collection_types::const_view doublet_counter,
         device::device_doublet_collection_types::const_view mb_doublets,
         device::device_doublet_collection_types::const_view mt_doublets,
@@ -78,7 +84,7 @@ struct CountTripletsKernel {
         device::triplet_counter_collection_types::view midBot_counter) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::count_triplets(globalThreadIdx, config, sp_grid,
+        device::count_triplets(globalThreadIdx, config, spacepoints, sp_grid,
                                doublet_counter, mb_doublets, mt_doublets,
                                spM_counter, midBot_counter);
     }
@@ -100,11 +106,13 @@ struct ReduceTripletCounts {
 };
 
 // Kernel for running @c traccc::device::find_triplets
-struct FindTripletsKernel {
+struct FindTriplets {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, seedfinder_config config,
-        seedfilter_config filter_config, sp_grid_const_view sp_grid,
+        seedfilter_config filter_config,
+        edm::spacepoint_collection::const_view spacepoints,
+        traccc::details::spacepoint_grid_types::const_view sp_grid,
         device::doublet_counter_collection_types::const_view doublet_counter,
         device::device_doublet_collection_types::const_view mt_doublets,
         device::triplet_counter_spM_collection_types::const_view spM_tc,
@@ -113,18 +121,19 @@ struct FindTripletsKernel {
 
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
-        device::find_triplets(globalThreadIdx, config, filter_config, sp_grid,
-                              doublet_counter, mt_doublets, spM_tc, midBot_tc,
-                              triplet_view);
+        device::find_triplets(globalThreadIdx, config, filter_config,
+                              spacepoints, sp_grid, doublet_counter,
+                              mt_doublets, spM_tc, midBot_tc, triplet_view);
     }
 };
 
 // Kernel for running @c traccc::device::update_triplet_weights
-struct UpdateTripletWeightsKernel {
+struct UpdateTripletWeights {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, seedfilter_config filter_config,
-        sp_grid_const_view sp_grid,
+        edm::spacepoint_collection::const_view spacepoints,
+        traccc::details::spacepoint_grid_types::const_view sp_grid,
         device::triplet_counter_spM_collection_types::const_view spM_tc,
         device::triplet_counter_collection_types::const_view midBot_tc,
         device::device_triplet_collection_types::view triplet_view) const {
@@ -140,23 +149,23 @@ struct UpdateTripletWeightsKernel {
         // Each thread uses compatSeedLimit elements of the array
         scalar* dataPos = &data[localThreadIdx * filter_config.compatSeedLimit];
 
-        device::update_triplet_weights(globalThreadIdx, filter_config, sp_grid,
-                                       spM_tc, midBot_tc, dataPos,
-                                       triplet_view);
+        device::update_triplet_weights(globalThreadIdx, filter_config,
+                                       spacepoints, sp_grid, spM_tc, midBot_tc,
+                                       dataPos, triplet_view);
     }
 };
 
 // Kernel for running @c traccc::device::select_seeds
-struct SelectSeedsKernel {
+struct SelectSeeds {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, seedfilter_config filter_config,
-        spacepoint_collection_types::const_view spacepoints_view,
-        sp_grid_const_view internal_sp_view,
+        edm::spacepoint_collection::const_view spacepoints,
+        traccc::details::spacepoint_grid_types::const_view sp_view,
         device::triplet_counter_spM_collection_types::const_view spM_tc,
         device::triplet_counter_collection_types::const_view midBot_tc,
         device::device_triplet_collection_types::view triplet_view,
-        seed_collection_types::view seed_view) const {
+        edm::seed_collection::view seed_view) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
         auto const localThreadIdx =
@@ -170,11 +179,15 @@ struct SelectSeedsKernel {
         triplet* dataPos =
             &data[localThreadIdx * filter_config.max_triplets_per_spM];
 
-        device::select_seeds(globalThreadIdx, filter_config, spacepoints_view,
-                             internal_sp_view, spM_tc, midBot_tc, triplet_view,
-                             dataPos, seed_view);
+        device::select_seeds(globalThreadIdx, filter_config, spacepoints,
+                             sp_view, spM_tc, midBot_tc, triplet_view, dataPos,
+                             seed_view);
     }
 };
+
+}  // namespace kernels
+
+namespace details {
 
 seed_finding::seed_finding(const seedfinder_config& config,
                            const seedfilter_config& filter_config,
@@ -187,9 +200,9 @@ seed_finding::seed_finding(const seedfinder_config& config,
       m_mr(mr),
       m_copy(copy) {}
 
-seed_finding::output_type seed_finding::operator()(
-    const spacepoint_collection_types::const_view& spacepoints_view,
-    const sp_grid_const_view& g2_view) const {
+edm::seed_collection::buffer seed_finding::operator()(
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    const traccc::details::spacepoint_grid_types::const_view& g2_view) const {
 
     // Setup alpaka
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
@@ -237,8 +250,8 @@ seed_finding::output_type seed_finding::operator()(
     ::alpaka::memcpy(queue, bufAcc_counter, bufHost_counter);
 
     // Count the number of doublets that we need to produce.
-    ::alpaka::exec<Acc>(queue, workDiv, CountDoubletsKernel{},
-                        m_seedfinder_config, g2_view,
+    ::alpaka::exec<Acc>(queue, workDiv, kernels::CountDoublets{},
+                        m_seedfinder_config, spacepoints_view, g2_view,
                         vecmem::get_data(sp_grid_prefix_sum_buff),
                         vecmem::get_data(doublet_counter_buffer),
                         ::alpaka::getPtrNative(bufAcc_counter));
@@ -268,8 +281,8 @@ seed_finding::output_type seed_finding::operator()(
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Find all of the spacepoint doublets.
-    ::alpaka::exec<Acc>(queue, workDiv, FindDoubletsKernel{},
-                        m_seedfinder_config, g2_view,
+    ::alpaka::exec<Acc>(queue, workDiv, kernels::FindDoublets{},
+                        m_seedfinder_config, spacepoints_view, g2_view,
                         vecmem::get_data(doublet_counter_buffer),
                         vecmem::get_data(doublet_buffer_mb),
                         vecmem::get_data(doublet_buffer_mt));
@@ -292,8 +305,8 @@ seed_finding::output_type seed_finding::operator()(
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Count the number of triplets that we need to produce.
-    ::alpaka::exec<Acc>(queue, workDiv, CountTripletsKernel{},
-                        m_seedfinder_config, g2_view,
+    ::alpaka::exec<Acc>(queue, workDiv, kernels::CountTriplets{},
+                        m_seedfinder_config, spacepoints_view, g2_view,
                         vecmem::get_data(doublet_counter_buffer),
                         vecmem::get_data(doublet_buffer_mb),
                         vecmem::get_data(doublet_buffer_mt),
@@ -308,7 +321,7 @@ seed_finding::output_type seed_finding::operator()(
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Reduce the triplet counts per spM.
-    ::alpaka::exec<Acc>(queue, workDiv, ReduceTripletCounts{},
+    ::alpaka::exec<Acc>(queue, workDiv, kernels::ReduceTripletCounts{},
                         vecmem::get_data(doublet_counter_buffer),
                         vecmem::get_data(triplet_counter_spM_buffer),
                         ::alpaka::getPtrNative(bufAcc_counter));
@@ -334,8 +347,9 @@ seed_finding::output_type seed_finding::operator()(
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Find all of the spacepoint triplets.
-    ::alpaka::exec<Acc>(queue, workDiv, FindTripletsKernel{},
-                        m_seedfinder_config, m_seedfilter_config, g2_view,
+    ::alpaka::exec<Acc>(queue, workDiv, kernels::FindTriplets{},
+                        m_seedfinder_config, m_seedfilter_config,
+                        spacepoints_view, g2_view,
                         vecmem::get_data(doublet_counter_buffer),
                         vecmem::get_data(doublet_buffer_mt),
                         vecmem::get_data(triplet_counter_spM_buffer),
@@ -353,15 +367,15 @@ seed_finding::output_type seed_finding::operator()(
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Update the weights of all spacepoint triplets.
-    ::alpaka::exec<Acc>(queue, workDiv, UpdateTripletWeightsKernel{},
-                        m_seedfilter_config, g2_view,
+    ::alpaka::exec<Acc>(queue, workDiv, kernels::UpdateTripletWeights{},
+                        m_seedfilter_config, spacepoints_view, g2_view,
                         vecmem::get_data(triplet_counter_spM_buffer),
                         vecmem::get_data(triplet_counter_midBot_buffer),
                         vecmem::get_data(triplet_buffer));
     ::alpaka::wait(queue);
 
     // Create result object: collection of seeds
-    seed_collection_types::buffer seed_buffer(
+    edm::seed_collection::buffer seed_buffer(
         pBufHost_counter->m_nTriplets, m_mr.main,
         vecmem::data::buffer_type::resizable);
     m_copy.setup(seed_buffer)->ignore();
@@ -374,7 +388,7 @@ seed_finding::output_type seed_finding::operator()(
 
     // Create seeds out of selected triplets
     ::alpaka::exec<Acc>(
-        queue, workDiv, SelectSeedsKernel{}, m_seedfilter_config,
+        queue, workDiv, kernels::SelectSeeds{}, m_seedfilter_config,
         spacepoints_view, g2_view, vecmem::get_data(triplet_counter_spM_buffer),
         vecmem::get_data(triplet_counter_midBot_buffer),
         vecmem::get_data(triplet_buffer), vecmem::get_data(seed_buffer));
@@ -383,17 +397,18 @@ seed_finding::output_type seed_finding::operator()(
     return seed_buffer;
 }
 
+}  // namespace details
 }  // namespace traccc::alpaka
 
 // Define the required trait needed for Dynamic shared memory allocation.
 namespace alpaka::trait {
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel,
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::kernels::UpdateTripletWeights,
                                   TAcc> {
     template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
-        traccc::alpaka::UpdateTripletWeightsKernel const& /* kernel */,
+        traccc::alpaka::kernels::UpdateTripletWeights const& /* kernel */,
         TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
         traccc::seedfilter_config filter_config, TArgs const&... /* args */
         ) -> std::size_t {
@@ -404,10 +419,10 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::UpdateTripletWeightsKernel,
 };
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::SelectSeedsKernel, TAcc> {
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::kernels::SelectSeeds, TAcc> {
     template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
-        traccc::alpaka::SelectSeedsKernel const& /* kernel */,
+        traccc::alpaka::kernels::SelectSeeds const& /* kernel */,
         TVec const& blockThreadExtent, TVec const& /* threadElemExtent */,
         traccc::seedfilter_config filter_config, TArgs const&... /* args */
         ) -> std::size_t {

@@ -52,16 +52,24 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           spacepoint_collection_types::const_view spacepoints) {
+           edm::spacepoint_collection::const_view spacepoints,
+           measurement_collection_types::const_view measurements) {
 
     switch (format) {
         case data_format::binary:
-            details::write_binary_collection(
+            details::write_binary_soa(
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(
                                        get_event_filename(event, "-hits.dat")))
                                       .native()),
-                traccc::spacepoint_collection_types::const_device{spacepoints});
+                edm::spacepoint_collection::const_device{spacepoints});
+            details::write_binary_collection(
+                get_absolute_path((std::filesystem::path(directory) /
+                                   std::filesystem::path(get_event_filename(
+                                       event, "-measurements.dat")))
+                                      .native()),
+                traccc::measurement_collection_types::const_device{
+                    measurements});
             break;
         case data_format::obj:
             obj::write_spacepoints(
@@ -96,8 +104,8 @@ void write(std::size_t event, std::string_view directory,
 }
 
 void write(std::size_t event, std::string_view directory,
-           traccc::data_format format, seed_collection_types::const_view seeds,
-           spacepoint_collection_types::const_view spacepoints) {
+           traccc::data_format format, edm::seed_collection::const_view seeds,
+           edm::spacepoint_collection::const_view spacepoints) {
 
     switch (format) {
         case data_format::obj:

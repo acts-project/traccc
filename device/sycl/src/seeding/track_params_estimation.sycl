@@ -31,8 +31,9 @@ track_params_estimation::track_params_estimation(
     : messaging(std::move(logger)), m_mr(mr), m_queue(queue), m_copy(copy) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const spacepoint_collection_types::const_view& spacepoints_view,
-    const seed_collection_types::const_view& seeds_view, const vector3& bfield,
+    const measurement_collection_types::const_view& measurements_view,
+    const edm::spacepoint_collection::const_view& spacepoints_view,
+    const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
 
     // Get the size of the seeds view
@@ -63,9 +64,10 @@ track_params_estimation::output_type track_params_estimation::operator()(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::estimate_track_params>(
                 trackParamsNdRange,
-                [spacepoints_view, seeds_view, bfield, stddev,
-                 params_view](::sycl::nd_item<1> item) {
+                [measurements_view, spacepoints_view, seeds_view, bfield,
+                 stddev, params_view](::sycl::nd_item<1> item) {
                     device::estimate_track_params(details::global_index(item),
+                                                  measurements_view,
                                                   spacepoints_view, seeds_view,
                                                   bfield, stddev, params_view);
                 });

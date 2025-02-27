@@ -110,9 +110,9 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// Spacepoint formation algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
-    seeding_algorithm m_seeding;
+    host::seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm
-    track_params_estimation m_track_parameter_estimation;
+    host::track_params_estimation m_track_parameter_estimation;
 
     /// Track finding algorithm
     finding_algorithm m_finding;

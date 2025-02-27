@@ -1,20 +1,16 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// SYCL library include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-
 // Project include(s).
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
-#include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -22,37 +18,34 @@
 #include <vecmem/utils/copy.hpp>
 
 // System include(s).
-#include <functional>
 #include <memory>
 #include <utility>
 
-namespace traccc::sycl {
+namespace traccc::kokkos::details {
 
-/// Spacepoing binning executed on a SYCL device
-class spacepoint_binning : public algorithm<sp_grid_buffer(
-                               const spacepoint_collection_types::const_view&)>,
-                           public messaging {
+/// Spacepoing binning executed on a Kokkos device
+class spacepoint_binning : public messaging {
 
     public:
     /// Constructor for the algorithm
     spacepoint_binning(
         const seedfinder_config& config,
         const spacepoint_grid_config& grid_config,
-        const traccc::memory_resource& mr, vecmem::copy& copy,
-        queue_wrapper queue,
+        const traccc::memory_resource& mr,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a a view of spacepoints
-    sp_grid_buffer operator()(const spacepoint_collection_types::const_view&
-                                  spacepoints_view) const override;
+    traccc::details::spacepoint_grid_types::buffer operator()(
+        const edm::spacepoint_collection::const_view& spacepoints) const;
 
     private:
     /// Member variables
     seedfinder_config m_config;
-    std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;
+    std::pair<traccc::details::spacepoint_grid_types::host::axis_p0_type,
+              traccc::details::spacepoint_grid_types::host::axis_p1_type>
+        m_axes;
     traccc::memory_resource m_mr;
-    mutable queue_wrapper m_queue;
-    vecmem::copy& m_copy;
+    std::unique_ptr<vecmem::copy> m_copy;
 };  // class spacepoint_binning
 
-}  // namespace traccc::sycl
+}  // namespace traccc::kokkos::details

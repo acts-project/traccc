@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -98,17 +98,22 @@ TEST(io_binary, spacepoint) {
         traccc::data_format::csv);
 
     // Read csv file
-    traccc::spacepoint_collection_types::host spacepoints_csv(&host_mr);
-    traccc::io::read_spacepoints(spacepoints_csv, event, hits_directory);
+    traccc::measurement_collection_types::host measurements_csv(&host_mr);
+    traccc::edm::spacepoint_collection::host spacepoints_csv(host_mr);
+    traccc::io::read_spacepoints(spacepoints_csv, measurements_csv, event,
+                                 hits_directory);
 
-    // // Write binary file
+    // Write binary file
     traccc::io::write(event, hits_directory, traccc::data_format::binary,
-                      vecmem::get_data(spacepoints_csv));
+                      vecmem::get_data(spacepoints_csv),
+                      vecmem::get_data(measurements_csv));
 
     // Read binary file
-    traccc::spacepoint_collection_types::host spacepoints_binary(&host_mr);
-    traccc::io::read_spacepoints(spacepoints_binary, event, hits_directory,
-                                 nullptr, traccc::data_format::binary);
+    traccc::measurement_collection_types::host measurements_binary(&host_mr);
+    traccc::edm::spacepoint_collection::host spacepoints_binary(host_mr);
+    traccc::io::read_spacepoints(spacepoints_binary, measurements_binary, event,
+                                 hits_directory, nullptr,
+                                 traccc::data_format::binary);
 
     // Delete binary file
     std::string io_spacepoints_file =

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -25,60 +25,6 @@ bool is_same_object<measurement>::operator()(const measurement& obj) const {
             is_same_scalar(obj.local[1], m_ref.get().local[1], m_unc) &&
             is_same_scalar(obj.variance[0], m_ref.get().variance[0], m_unc) &&
             is_same_scalar(obj.variance[1], m_ref.get().variance[1], m_unc));
-}
-
-/// @}
-
-/// @name Implementation for @c traccc::details::is_same_object<seed>
-/// @{
-
-is_same_object<seed>::is_same_object(
-    const spacepoint_collection_types::const_view& ref_spacepoints,
-    const spacepoint_collection_types::const_view& test_spacepoints,
-    const seed& ref, scalar unc)
-    : m_ref_spacepoints(ref.get_spacepoints(ref_spacepoints)),
-      m_spacepoints(test_spacepoints),
-      m_ref(ref),
-      m_unc(unc) {}
-
-bool is_same_object<seed>::operator()(const seed& obj) const {
-
-    // Extract the spacepoints belonging to the tested seed.
-    std::array<spacepoint, 3> test_spacepoints =
-        obj.get_spacepoints(m_spacepoints);
-
-    // Compare the two seeds.
-    return (is_same_scalar(obj.weight, m_ref.get().weight, m_unc) &&
-            is_same_scalar(obj.z_vertex, m_ref.get().z_vertex, m_unc) &&
-            is_same_object<spacepoint>(m_ref_spacepoints[0],
-                                       m_unc)(test_spacepoints[0]) &&
-            is_same_object<spacepoint>(m_ref_spacepoints[1],
-                                       m_unc)(test_spacepoints[1]) &&
-            is_same_object<spacepoint>(m_ref_spacepoints[2],
-                                       m_unc)(test_spacepoints[2]));
-}
-
-/// @}
-
-/// @name Implementation for @c traccc::details::is_same_object<spacepoint>
-/// @{
-
-is_same_object<spacepoint>::is_same_object(const spacepoint& ref, scalar unc)
-    : m_ref(ref), m_unc(unc) {}
-
-bool is_same_object<spacepoint>::operator()(const spacepoint& obj,
-                                            const bool include_meas) const {
-
-    if (include_meas) {
-        return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
-                is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
-                is_same_scalar(obj.z(), m_ref.get().z(), m_unc) &&
-                is_same_object<measurement>(m_ref.get().meas, m_unc)(obj.meas));
-    } else {
-        return (is_same_scalar(obj.x(), m_ref.get().x(), m_unc) &&
-                is_same_scalar(obj.y(), m_ref.get().y(), m_unc) &&
-                is_same_scalar(obj.z(), m_ref.get().z(), m_unc));
-    }
 }
 
 /// @}

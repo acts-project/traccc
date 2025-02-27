@@ -15,6 +15,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 
@@ -24,6 +25,7 @@ namespace traccc::device {
 ///
 /// @param[in] globalIndex   The index of the current thread
 /// @param[in] filter_config Seedfilter configuration
+/// @param[in] spacepoints   All spacepoints in the event
 /// @param[in] sp_view       The spacepoint grid
 /// @param[in] spM_tc_view   Collection of triplet counts per spM
 /// @param[in] tc_view       Collection of triplet counts per midBot doublet
@@ -34,7 +36,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void update_triplet_weights(
     global_index_t globalIndex, const seedfilter_config& filter_config,
-    const sp_grid_const_view& sp_view,
+    const edm::spacepoint_collection::const_view& spacepoints,
+    const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view, scalar* data,
     device_triplet_collection_types::view triplet_view);

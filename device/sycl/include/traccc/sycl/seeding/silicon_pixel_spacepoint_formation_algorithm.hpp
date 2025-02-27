@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,7 +9,7 @@
 
 // Library include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint.hpp"
+#include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -30,17 +30,17 @@ namespace traccc::sycl {
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
 class silicon_pixel_spacepoint_formation_algorithm
-    : public algorithm<spacepoint_collection_types::buffer(
+    : public algorithm<edm::spacepoint_collection::buffer(
           const default_detector::view&,
           const measurement_collection_types::const_view&)>,
-      public algorithm<spacepoint_collection_types::buffer(
+      public algorithm<edm::spacepoint_collection::buffer(
           const telescope_detector::view&,
           const measurement_collection_types::const_view&)>,
       public messaging {
 
     public:
     /// Output type
-    using output_type = spacepoint_collection_types::buffer;
+    using output_type = edm::spacepoint_collection::buffer;
 
     /// Constructor for spacepoint_formation
     ///

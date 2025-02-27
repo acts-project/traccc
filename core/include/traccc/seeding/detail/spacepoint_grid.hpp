@@ -1,15 +1,11 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
-
-// Project include(s).
-#include "traccc/edm/internal_spacepoint.hpp"
-#include "traccc/edm/spacepoint.hpp"
 
 // detray core
 #include <detray/definitions/indexing.hpp>
@@ -18,31 +14,55 @@
 #include <detray/grids/populator.hpp>
 #include <detray/grids/serializer2.hpp>
 
-namespace traccc {
+// VecMem include(s).
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/jagged_device_vector.hpp>
+#include <vecmem/containers/jagged_vector.hpp>
+#include <vecmem/containers/vector.hpp>
 
-using sp_grid =
-    detray::grid2<detray::attach_populator, detray::axis2::circular,
-                  detray::axis2::regular, detray::serializer2, detray::dvector,
-                  detray::djagged_vector, detray::darray, detray::dtuple,
-                  internal_spacepoint<spacepoint>, false>;
+namespace traccc::details {
 
-using sp_grid_device = detray::grid2<
-    detray::attach_populator, detray::axis2::circular, detray::axis2::regular,
-    detray::serializer2, vecmem::device_vector, vecmem::jagged_device_vector,
-    detray::darray, detray::dtuple, internal_spacepoint<spacepoint>, false>;
-using const_sp_grid_device =
-    detray::grid2<detray::attach_populator, detray::axis2::circular,
-                  detray::axis2::regular, detray::serializer2,
-                  vecmem::device_vector, vecmem::jagged_device_vector,
-                  detray::darray, detray::dtuple,
-                  const internal_spacepoint<spacepoint>, false>;
+/// @brief Type definitions for the spacepoint grid.
+///
+/// This struct contains all the type definitions that are needed to work with
+/// the spacepoint grid.
+///
+struct spacepoint_grid_types {
 
-using sp_grid_data = detray::grid2_data<sp_grid>;
-using sp_grid_const_data = detray::const_grid2_data<sp_grid>;
+    /// Spacepoint grid host type
+    using host =
+        detray::grid2<detray::attach_populator, detray::axis2::circular,
+                      detray::axis2::regular, detray::serializer2,
+                      vecmem::vector, vecmem::jagged_vector, detray::darray,
+                      detray::dtuple, unsigned int, false>;
 
-using sp_grid_view = detray::grid2_view<sp_grid>;
-using sp_grid_const_view = detray::const_grid2_view<sp_grid>;
+    /// Spacepoint grid (non-const) device type
+    using device =
+        detray::grid2<detray::attach_populator, detray::axis2::circular,
+                      detray::axis2::regular, detray::serializer2,
+                      vecmem::device_vector, vecmem::jagged_device_vector,
+                      detray::darray, detray::dtuple, unsigned int, false>;
+    /// Spacepoint grid (const) device type
+    using const_device =
+        detray::grid2<detray::attach_populator, detray::axis2::circular,
+                      detray::axis2::regular, detray::serializer2,
+                      vecmem::device_vector, vecmem::jagged_device_vector,
+                      detray::darray, detray::dtuple, const unsigned int,
+                      false>;
 
-using sp_grid_buffer = detray::grid2_buffer<sp_grid>;
+    /// Spacepoint grid (non-const) data type
+    using data = detray::grid2_data<host>;
+    /// Spacepoint grid (const) data type
+    using const_data = detray::const_grid2_data<host>;
 
-}  // namespace traccc
+    /// Spacepoint grid (non-const) view type
+    using view = detray::grid2_view<host>;
+    /// Spacepoint grid (const) view type
+    using const_view = detray::const_grid2_view<host>;
+
+    /// Spacepoint grid buffer type
+    using buffer = detray::grid2_buffer<host>;
+
+};  // struct spacepoint_grid_types
+
+}  // namespace traccc::details

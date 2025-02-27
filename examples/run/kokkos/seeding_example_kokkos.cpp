@@ -10,7 +10,7 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_spacepoints.hpp"
-#include "traccc/kokkos/seeding/spacepoint_binning.hpp"
+#include "traccc/kokkos/seeding/details/spacepoint_binning.hpp"
 #include "traccc/options/accelerator.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
@@ -59,11 +59,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.material_file,
                               detector_opts.grid_file);
 
-    traccc::seeding_algorithm sa(
+    traccc::host::seeding_algorithm sa(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
-    traccc::track_params_estimation tp(host_mr,
-                                       logger().clone("HostTrackParEstAlg"));
+    traccc::host::track_params_estimation tp(
+        host_mr, logger().clone("HostTrackParEstAlg"));
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -71,7 +71,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     uint64_t n_seeds_kokkos = 0;
 
     // KOKKOS Spacepoint Binning
-    traccc::kokkos::spacepoint_binning m_spacepoint_binning(
+    traccc::kokkos::details::spacepoint_binning m_spacepoint_binning(
         seeding_opts.seedfinder, {seeding_opts.seedfinder}, mr,
         logger().clone("KokkosBinningAlg"));
 
@@ -85,10 +85,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
-        traccc::spacepoint_collection_types::host spacepoints_per_event{
+        traccc::measurement_collection_types::host measurements_per_event{
             &host_mr};
-        traccc::seeding_algorithm::output_type seeds;
-        traccc::track_params_estimation::output_type params;
+        traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
+        traccc::host::seeding_algorithm::output_type seeds{host_mr};
+        traccc::host::track_params_estimation::output_type params{&host_mr};
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -101,7 +102,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 // Read the hits from the relevant event file
                 traccc::io::read_spacepoints(
-                    spacepoints_per_event, event, input_opts.directory,
+                    spacepoints_per_event, measurements_per_event, event,
+                    input_opts.directory,
                     (input_opts.use_acts_geom_source ? &host_det : nullptr),
                     input_opts.format);
             }  // stop measuring hit reading timer
@@ -120,7 +122,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
-                seeds = sa(spacepoints_per_event);
+                seeds = sa(vecmem::get_data(spacepoints_per_event));
             }  // stop measuring seeding cpu timer
 
             /*----------------------------
@@ -132,7 +134,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track params  (cpu)",
                                              elapsedTimes);
-                params = tp(std::move(spacepoints_per_event), seeds,
+                params = tp(vecmem::get_data(measurements_per_event),
+                            vecmem::get_data(spacepoints_per_event),
+                            vecmem::get_data(seeds),
                             {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
             }  // stop measuring track params cpu timer
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,7 +14,7 @@
 #include <set>
 #include <traccc/edm/measurement.hpp>
 #include <traccc/edm/nseed.hpp>
-#include <traccc/edm/spacepoint.hpp>
+#include <traccc/edm/spacepoint_collection.hpp>
 #include <traccc/efficiency/track_filter.hpp>
 #include <traccc/efficiency/track_matcher.hpp>
 #include <traccc/utils/event_data.hpp>
@@ -35,20 +35,30 @@ class nseed_performance_writer {
     void finalize();
 
     template <typename SeedIt, typename SpIt>
-    void register_event(std::size_t ev, const SeedIt sb, const SeedIt se,
-                        const SpIt pb, const event_data& em) {
+    void register_event(
+        std::size_t ev, const SeedIt sb, const SeedIt se,
+        const edm::spacepoint_collection::const_view& spacepoints_view,
+        const measurement_collection_types::const_view& measurements_view,
+        const event_data& em) {
+
         std::size_t seed_id = 0;
 
         std::multiset<std::size_t> matched_tracks;
+
+        const edm::spacepoint_collection::const_device spacepoints{
+            spacepoints_view};
+        const measurement_collection_types::const_device measurements{
+            measurements_view};
 
         for (SeedIt s = sb; s != se; ++s) {
             std::vector<std::vector<uint64_t>> particle_ids;
 
             std::transform(
                 s->cbegin(), s->cend(), std::back_inserter(particle_ids),
-                [pb,
-                 &em](const spacepoint_collection_types::host::size_type& l) {
-                    traccc::measurement meas = (pb + l)->meas;
+                [&em, &measurements, &spacepoints](
+                    const edm::spacepoint_collection::host::size_type& l) {
+                    traccc::measurement meas =
+                        measurements.at(spacepoints.at(l).measurement_index());
 
                     const auto& ptcs = em.m_meas_to_ptc_map.find(meas)->second;
 

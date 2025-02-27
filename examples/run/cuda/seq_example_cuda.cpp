@@ -37,6 +37,7 @@
 #include "traccc/options/track_seeding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/container_comparator.hpp"
+#include "traccc/performance/soa_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
@@ -167,11 +168,11 @@ int seq_run(const traccc::opts::detector& detector_opts,
         host_mr, logger().clone("HostClusteringAlg"));
     host_spacepoint_formation_algorithm sf(
         host_mr, logger().clone("HostSpFormationAlg"));
-    traccc::seeding_algorithm sa(
+    traccc::host::seeding_algorithm sa(
         seeding_opts.seedfinder, {seeding_opts.seedfinder},
         seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
-    traccc::track_params_estimation tp(host_mr,
-                                       logger().clone("HostTrackParEstAlg"));
+    traccc::host::track_params_estimation tp(
+        host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg,
                                        logger().clone("HostFindingAlg"));
     host_fitting_algorithm fitting_alg(fitting_cfg, host_mr,
@@ -215,18 +216,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
         // Instantiate host containers/collections
         traccc::host::clusterization_algorithm::output_type
             measurements_per_event;
-        host_spacepoint_formation_algorithm::output_type spacepoints_per_event;
-        traccc::seeding_algorithm::output_type seeds;
-        traccc::track_params_estimation::output_type params;
+        host_spacepoint_formation_algorithm::output_type spacepoints_per_event{
+            host_mr};
+        traccc::host::seeding_algorithm::output_type seeds{host_mr};
+        traccc::host::track_params_estimation::output_type params;
         host_finding_algorithm::output_type track_candidates;
         host_fitting_algorithm::output_type track_states;
 
         // Instantiate cuda containers/collections
         traccc::measurement_collection_types::buffer measurements_cuda_buffer(
             0, *mr.host);
-        traccc::spacepoint_collection_types::buffer spacepoints_cuda_buffer(
-            0, *mr.host);
-        traccc::seed_collection_types::buffer seeds_cuda_buffer(0, *mr.host);
+        traccc::edm::spacepoint_collection::buffer spacepoints_cuda_buffer;
+        traccc::edm::seed_collection::buffer seeds_cuda_buffer;
         traccc::bound_track_parameters_collection_types::buffer
             params_cuda_buffer(0, *mr.host);
         traccc::track_candidate_container_types::buffer track_candidates_buffer;
@@ -309,14 +310,15 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer t("Seeding  (cpu)",
                                                  elapsedTimes);
-                    seeds = sa(spacepoints_per_event);
+                    seeds = sa(vecmem::get_data(spacepoints_per_event));
                 }  // stop measuring seeding cpu timer
 
                 // CUDA
                 {
                     traccc::performance::timer t("Track params (cuda)",
                                                  elapsedTimes);
-                    params_cuda_buffer = tp_cuda(spacepoints_cuda_buffer,
+                    params_cuda_buffer = tp_cuda(measurements_cuda_buffer,
+                                                 spacepoints_cuda_buffer,
                                                  seeds_cuda_buffer, field_vec);
                     stream.synchronize();
                 }  // stop measuring track params timer
@@ -325,7 +327,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer t("Track params  (cpu)",
                                                  elapsedTimes);
-                    params = tp(spacepoints_per_event, seeds, field_vec);
+                    params = tp(vecmem::get_data(measurements_per_event),
+                                vecmem::get_data(spacepoints_per_event),
+                                vecmem::get_data(seeds), field_vec);
                 }  // stop measuring track params cpu timer
 
                 // CUDA
@@ -372,8 +376,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
           ----------------------------------*/
 
         traccc::measurement_collection_types::host measurements_per_event_cuda;
-        traccc::spacepoint_collection_types::host spacepoints_per_event_cuda;
-        traccc::seed_collection_types::host seeds_cuda;
+        traccc::edm::spacepoint_collection::host spacepoints_per_event_cuda{
+            host_mr};
+        traccc::edm::seed_collection::host seeds_cuda{host_mr};
         traccc::bound_track_parameters_collection_types::host params_cuda;
 
         copy(measurements_cuda_buffer, measurements_per_event_cuda)->wait();
@@ -397,14 +402,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                  vecmem::get_data(measurements_per_event_cuda));
 
             // Compare the spacepoints made on the host and on the device.
-            traccc::collection_comparator<traccc::spacepoint>
+            traccc::soa_comparator<traccc::edm::spacepoint_collection>
                 compare_spacepoints{"spacepoints"};
             compare_spacepoints(vecmem::get_data(spacepoints_per_event),
                                 vecmem::get_data(spacepoints_per_event_cuda));
 
             // Compare the seeds made on the host and on the device
-            traccc::collection_comparator<traccc::seed> compare_seeds{
-                "seeds", traccc::details::comparator_factory<traccc::seed>{
+            traccc::soa_comparator<traccc::edm::seed_collection> compare_seeds{
+                "seeds", traccc::details::comparator_factory<
+                             traccc::edm::seed_collection::const_device::
+                                 const_proxy_type>{
                              vecmem::get_data(spacepoints_per_event),
                              vecmem::get_data(spacepoints_per_event_cuda)}};
             compare_seeds(vecmem::get_data(seeds),

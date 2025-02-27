@@ -1,112 +1,115 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Library include(s).
-#include "traccc/seeding/seed_filtering.hpp"
+#include "seed_filtering.hpp"
 
+#include "traccc/seeding/detail/triplet_sorter.hpp"
 #include "traccc/seeding/seed_selecting_helper.hpp"
 
-namespace traccc {
+// System include(s).
+#include <algorithm>
+
+namespace traccc::host::details {
 
 seed_filtering::seed_filtering(const seedfilter_config& config,
+                               vecmem::memory_resource& mr,
                                std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)), m_filter_config(config) {}
+    : messaging(std::move(logger)), m_filter_config(config), m_mr{mr} {}
 
 void seed_filtering::operator()(
-    const spacepoint_collection_types::host& sp_collection, const sp_grid& g2,
+    const edm::spacepoint_collection::const_device& spacepoints,
+    const traccc::details::spacepoint_grid_types::host& sp_grid,
     triplet_collection_types::host& triplets,
-    seed_collection_types::host& seeds) const {
+    edm::seed_collection::host& seeds) const {
 
-    seed_collection_types::host seeds_per_spM;
-
+    // Select the triplets passing the "single seed cuts".
+    std::vector<std::reference_wrapper<const triplet>>
+        triplets_passing_single_seed_cuts;
+    triplets_passing_single_seed_cuts.reserve(triplets.size());
     for (triplet& triplet : triplets) {
         // bottom
-        const auto& spB_idx = triplet.sp1;
-        const auto& spB = g2.bin(spB_idx.bin_idx)[spB_idx.sp_idx];
+        const sp_location& spB_location = triplet.sp1;
+        const unsigned int spB_idx =
+            sp_grid.bin(spB_location.bin_idx)[spB_location.sp_idx];
+        const edm::spacepoint_collection::const_device::const_proxy_type spB =
+            spacepoints.at(spB_idx);
 
         // middle
-        const auto& spM_idx = triplet.sp2;
-        const auto& spM = g2.bin(spM_idx.bin_idx)[spM_idx.sp_idx];
+        const sp_location& spM_location = triplet.sp2;
+        const unsigned int spM_idx =
+            sp_grid.bin(spM_location.bin_idx)[spM_location.sp_idx];
+        const edm::spacepoint_collection::const_device::const_proxy_type spM =
+            spacepoints.at(spM_idx);
 
         // top
-        const auto& spT_idx = triplet.sp3;
-        const auto& spT = g2.bin(spT_idx.bin_idx)[spT_idx.sp_idx];
+        const sp_location& spT_location = triplet.sp3;
+        const unsigned int spT_idx =
+            sp_grid.bin(spT_location.bin_idx)[spT_location.sp_idx];
+        const edm::spacepoint_collection::const_device::const_proxy_type spT =
+            spacepoints.at(spT_idx);
 
+        // Updat the triplet weight in-situ.
         seed_selecting_helper::seed_weight(m_filter_config, spM, spB, spT,
                                            triplet.weight);
 
+        // Check if the triplet passes the single seed cuts.
         if (!seed_selecting_helper::single_seed_cut(m_filter_config, spM, spB,
                                                     spT, triplet.weight)) {
             continue;
         }
 
-        seeds_per_spM.push_back({spB.m_link, spM.m_link, spT.m_link,
-                                 triplet.weight, triplet.z_vertex});
+        // If so, keep a pointer to it.
+        triplets_passing_single_seed_cuts.push_back(triplet);
     }
 
     // sort seeds based on their weights
-    std::sort(
-        seeds_per_spM.begin(), seeds_per_spM.end(),
-        [&](seed& seed1, seed& seed2) {
-            if (seed1.weight != seed2.weight) {
-                return seed1.weight > seed2.weight;
-            } else {
-                scalar seed1_sum = 0;
-                scalar seed2_sum = 0;
-                auto& spB1 = sp_collection.at(seed1.spB_link);
-                auto& spT1 = sp_collection.at(seed1.spT_link);
-                auto& spB2 = sp_collection.at(seed2.spB_link);
-                auto& spT2 = sp_collection.at(seed2.spT_link);
+    const traccc::details::spacepoint_grid_types::const_data sp_grid_data =
+        detray::get_data(sp_grid, m_mr.get());
+    std::sort(triplets_passing_single_seed_cuts.begin(),
+              triplets_passing_single_seed_cuts.end(),
+              traccc::details::triplet_sorter{spacepoints, sp_grid_data});
 
-                seed1_sum +=
-                    static_cast<scalar>(pow(spB1.y(), 2) + pow(spB1.z(), 2));
-                seed1_sum +=
-                    static_cast<scalar>(pow(spT1.y(), 2) + pow(spT1.z(), 2));
-                seed2_sum +=
-                    static_cast<scalar>(pow(spB2.y(), 2) + pow(spB2.z(), 2));
-                seed2_sum +=
-                    static_cast<scalar>(pow(spT2.y(), 2) + pow(spT2.z(), 2));
+    // Select the best ones.
+    std::vector<std::reference_wrapper<const triplet>>
+        triplets_passing_final_cuts;
+    triplets_passing_final_cuts.reserve(
+        triplets_passing_single_seed_cuts.size());
 
-                return seed1_sum > seed2_sum;
-            }
-        });
+    if (triplets_passing_single_seed_cuts.size() > 0u) {
 
-    seed_collection_types::host new_seeds;
-    if (seeds_per_spM.size() > 1) {
-        new_seeds.push_back(seeds_per_spM[0]);
+        // Always accept the first element.
+        triplets_passing_final_cuts.push_back(
+            triplets_passing_single_seed_cuts[0]);
 
-        size_t itLength = std::min(seeds_per_spM.size(),
-                                   m_filter_config.max_triplets_per_spM);
-        // don't cut first element
-        for (size_t i = 1; i < itLength; i++) {
+        // Consider only a maximum number of triplets for the final quality cut.
+        const std::size_t itLength =
+            std::min(triplets_passing_single_seed_cuts.size(),
+                     m_filter_config.max_triplets_per_spM);
+        for (std::size_t i = 1; i < itLength; ++i) {
             if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config, sp_collection, seeds_per_spM[i],
-                    seeds_per_spM[i].weight)) {
-                new_seeds.push_back(std::move(seeds_per_spM[i]));
+                    m_filter_config, spacepoints, sp_grid_data,
+                    triplets_passing_single_seed_cuts[i])) {
+                triplets_passing_final_cuts.push_back(
+                    triplets_passing_single_seed_cuts[i]);
             }
         }
-        seeds_per_spM = std::move(new_seeds);
     }
 
-    decltype(seeds_per_spM)::size_type maxSeeds = seeds_per_spM.size();
-
-    if (maxSeeds > m_filter_config.maxSeedsPerSpM) {
-        maxSeeds = m_filter_config.maxSeedsPerSpM + 1;
-    }
-
-    auto itBegin = seeds_per_spM.begin();
-    auto it = seeds_per_spM.begin();
-    // default filter removes the last seeds if maximum amount exceeded
-    // ordering by weight by filterSeeds_2SpFixed means these are the lowest
-    // weight seeds
-
-    for (; it < itBegin + static_cast<long>(maxSeeds); ++it) {
-        seeds.push_back(*it);
+    // Add the best remaining seeds to the output collection.
+    for (std::size_t i = 0;
+         const triplet& triplet : triplets_passing_final_cuts) {
+        if (i++ >= m_filter_config.maxSeedsPerSpM) {
+            break;
+        }
+        seeds.push_back({sp_grid.bin(triplet.sp1.bin_idx)[triplet.sp1.sp_idx],
+                         sp_grid.bin(triplet.sp2.bin_idx)[triplet.sp2.sp_idx],
+                         sp_grid.bin(triplet.sp3.bin_idx)[triplet.sp3.sp_idx]});
     }
 }
 
-}  // namespace traccc
+}  // namespace traccc::host::details

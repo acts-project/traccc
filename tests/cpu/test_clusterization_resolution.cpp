@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -62,23 +62,31 @@ TEST_P(SurfaceBinningTests, Run) {
     auto spacepoints_recon = sf(detector, vecmem::get_data(measurements_recon));
 
     // Read the hits from the relevant event file
-    traccc::spacepoint_collection_types::host spacepoints_truth{&host_mr};
-    traccc::io::read_spacepoints(spacepoints_truth, event, data_dir, &detector);
+    traccc::edm::spacepoint_collection::host spacepoints_truth{host_mr};
+    traccc::measurement_collection_types::host measurements_truth{&host_mr};
+    traccc::io::read_spacepoints(spacepoints_truth, measurements_truth, event,
+                                 data_dir, &detector);
 
     // Check the size of spacepoints
     EXPECT_TRUE(spacepoints_recon.size() > 0);
 
-    for (const auto& sp_recon : spacepoints_recon) {
+    for (traccc::edm::spacepoint_collection::host::size_type i = 0u;
+         i < spacepoints_recon.size(); ++i) {
+
+        const auto sp_recon = spacepoints_recon.at(i);
 
         bool found_match = false;
 
         // 20% resolution (Should be improved)
         auto iso = traccc::details::is_same_object(sp_recon, 0.2f);
 
-        for (const auto& sp_truth : spacepoints_truth) {
+        for (traccc::edm::spacepoint_collection::host::size_type j = 0u;
+             j < spacepoints_truth.size(); ++j) {
+
+            const auto sp_truth = spacepoints_truth.at(j);
 
             // Do not include the comparison of the measurement of spacepoint
-            found_match = iso(sp_truth, false);
+            found_match = iso(sp_truth);
 
             if (found_match) {
                 break;
