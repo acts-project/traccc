@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -57,7 +57,7 @@ program_options::program_options(
     }
 
     // Tell the user what's happening.
-    TRACCC_INFO("Running " << description);
+    TRACCC_INFO("\nRunning " << description);
 
     configuration_list cl;
 
@@ -65,9 +65,7 @@ program_options::program_options(
         cl.add_child(opt.get().as_printable());
     }
 
-    cl.print();
-
-    std::cout << std::endl;
+    TRACCC_INFO("\n" << cl.print() << "\n");
 }
 
 }  // namespace traccc::opts
