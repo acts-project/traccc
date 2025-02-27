@@ -58,19 +58,7 @@ class triplet_fitting_algorithm
                            const track_candidate_container_types::const_view&
                                track_candidates) const override;
 
-    /// Execute the algorithm
-    ///
-    /// @param det             The (telescope) detector object
-    /// @param field           The (constant) magnetic field object
-    /// @param track_candidates All track candidates to fit
-    ///
-    /// @return A container of the fitted track states
-    ///
-    output_type operator()(const telescope_detector::host& det,
-                           const detray::bfield::const_field_t::view_t& field,
-                           const track_candidate_container_types::const_view&
-                               track_candidates) const override;
-
+    
     private:
     /// Algorithm configuration
     config_type m_config;

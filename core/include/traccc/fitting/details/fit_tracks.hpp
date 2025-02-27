@@ -96,16 +96,20 @@ track_state_container_types::host fit_tracks(
     return result;
 }
 
-/// Partial specialization for triplet fitter
-/// -> not allowed for a function teplate !!
+/// Specialization for triplet fitter
 ///
-/// can modify the triplet fitting code to make it work
+/// (can modify the triplet fitting code to make it work
 /// with the original function but that would require re-work
-/// for the triplet fitter code. avoiding that for now.
+/// for the triplet fitter code. avoiding that for now.)
 ///
+/// Inlining to avoid linker error pertaining to
+/// multiple definitions of the full specialization.
+/// Another way out is to have the full specialization
+/// in the .cpp file. Effects on performance have to be
+/// studied.
 
 template<> 
-track_state_container_types::host fit_tracks(
+inline track_state_container_types::host fit_tracks(
         traccc::template triplet_fitter< typename traccc::default_detector::host,
             typename detray::bfield::const_field_t::view_t >& fitter,
         const track_candidate_container_types::const_view& track_candidates_view,
