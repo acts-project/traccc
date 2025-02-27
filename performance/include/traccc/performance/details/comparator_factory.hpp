@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -41,3 +41,4 @@ class comparator_factory {
 
 // Include the specialised implementation(s).
 #include "traccc/performance/impl/seed_comparator_factory.ipp"
+#include "traccc/performance/impl/track_candidate_comparator_factory.ipp"

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -45,23 +45,6 @@ void stat_plot_tool::book(stat_plot_cache& cache) const {
             Form("pval_%dD_smoothed", D),
             Form("p value of %dD smoothed parameters", D), b_pval);
     }
-#endif  // TRACCC_HAVE_ROOT
-}
-
-void stat_plot_tool::fill(stat_plot_cache& cache,
-                          const finding_result& find_res) const {
-
-    // Avoid unused variable warnings when building the code without ROOT.
-    (void)cache;
-    (void)find_res;
-
-#ifdef TRACCC_HAVE_ROOT
-    const auto& ndf = find_res.trk_quality.ndf;
-    const auto& chi2 = find_res.trk_quality.chi2;
-    cache.ndf_hist->Fill(ndf);
-    cache.chi2_hist->Fill(chi2);
-    cache.reduced_chi2_hist->Fill(chi2 / ndf);
-    cache.pval_hist->Fill(find_res.trk_quality.pval);
 #endif  // TRACCC_HAVE_ROOT
 }
 
