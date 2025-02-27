@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -44,6 +44,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/utils/memory_resource.hpp"
   "include/traccc/utils/seed_generator.hpp"
   "include/traccc/utils/subspace.hpp"
+  "include/traccc/utils/logging.hpp"
+  "src/utils/logging.cpp"
   # Clusterization algorithmic code.
   "include/traccc/clusterization/details/sparse_ccl.hpp"
   "include/traccc/clusterization/impl/sparse_ccl.ipp"
