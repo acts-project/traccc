@@ -53,35 +53,6 @@ bool is_same_object<bound_track_parameters<>>::operator()(
 /// @}
 
 /// @name Implementation for
-///       @c
-///       traccc::details::is_same_object<track_candidate_collection_types::host>
-/// @{
-
-is_same_object<track_candidate_collection_types::host>::is_same_object(
-    const track_candidate_collection_types::host& ref, scalar)
-    : m_ref(ref) {}
-
-bool is_same_object<track_candidate_collection_types::host>::operator()(
-    const track_candidate_collection_types::host& obj) const {
-
-    const track_candidate_collection_types::host::size_type n_cands =
-        m_ref.get().size();
-    for (track_candidate_collection_types::host::size_type i = 0; i < n_cands;
-         i++) {
-
-        const bool is_same = m_ref.get()[i] == obj[i];
-
-        if (!is_same) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/// @}
-
-/// @name Implementation for
 ///       @c traccc::details::is_same_object<fitting_result>
 /// @{
 
@@ -94,25 +65,6 @@ bool is_same_object<fitting_result<traccc::default_algebra>>::operator()(
 
     return (is_same_object<bound_track_parameters<>>(m_ref.get().fit_params,
                                                      m_unc)(obj.fit_params) &&
-            is_same_scalar(obj.trk_quality.ndf, m_ref.get().trk_quality.ndf,
-                           m_unc));
-}
-
-/// @}
-
-/// @name Implementation for
-///       @c traccc::details::is_same_object<finding_result>
-/// @{
-
-is_same_object<finding_result>::is_same_object(const finding_result& ref,
-                                               scalar unc)
-    : m_ref(ref), m_unc(unc) {}
-
-bool is_same_object<finding_result>::operator()(
-    const finding_result& obj) const {
-
-    return (is_same_object<bound_track_parameters<>>(m_ref.get().seed_params,
-                                                     m_unc)(obj.seed_params) &&
             is_same_scalar(obj.trk_quality.ndf, m_ref.get().trk_quality.ndf,
                            m_unc));
 }

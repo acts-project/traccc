@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,7 @@
 #include "traccc/resolution/stat_plot_tool_config.hpp"
 
 // Project include(s).
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 
 namespace traccc {
@@ -55,7 +56,9 @@ class stat_plot_tool {
     ///
     /// @param cache the cache for statistics plots
     /// @param find_res track finding result
-    void fill(stat_plot_cache& cache, const finding_result& find_res) const;
+    template <typename T>
+    void fill(stat_plot_cache& cache,
+              const edm::track_candidate<T>& find_res) const;
 
     /// @brief fill the cache
     ///
@@ -81,3 +84,6 @@ class stat_plot_tool {
 };
 
 }  // namespace traccc
+
+// Include the implementation.
+#include "stat_plot_tool.ipp"
