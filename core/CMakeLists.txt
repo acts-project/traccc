@@ -97,7 +97,13 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/fitting/details/kalman_fitting_types.hpp"
   "include/traccc/fitting/details/kalman_fitting.hpp"
   "include/traccc/fitting/kalman_fitting_algorithm.hpp"
+  "include/traccc/fitting/triplet_fit/triplet_fitter.hpp"
+  "include/traccc/fitting/triplet_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
+  "src/fitting/kalman_fitting_algorithm_constant_field_default_detector.cpp"
+  "src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.cpp"
+  "src/fitting/triplet_fitting_algorithm.cpp"
+  "src/fitting/triplet_fitting_algorithm_constant_field_default_detector.cpp"
   # Seed finding algorithmic code.
   "include/traccc/seeding/detail/lin_circle.hpp"
   "include/traccc/seeding/detail/doublet.hpp"
