@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,7 +19,8 @@ namespace traccc::io::obj {
 
 void write_track_candidates(
     std::string_view filename,
-    track_candidate_container_types::const_view tracks_view,
+    edm::track_candidate_collection<default_algebra>::const_view tracks_view,
+    measurement_collection_types::const_view measurements_view,
     const traccc::default_detector::host& detector) {
 
     // Open the output file.
@@ -30,10 +31,14 @@ void write_track_candidates(
     }
 
     // Create a device collection around the track container view.
-    const track_candidate_container_types::const_device tracks{tracks_view};
+    const edm::track_candidate_collection<default_algebra>::const_device tracks{
+        tracks_view};
+    const measurement_collection_types::const_device measurements{
+        measurements_view};
 
     // Convenience type.
-    using size_type = track_candidate_container_types::const_device::size_type;
+    using size_type = edm::track_candidate_collection<
+        default_algebra>::const_device::size_type;
 
     // First write out the measurements / spacepoints that the tracks are
     // made from. Don't try to resolve the overlaps, just write out duplicate
@@ -42,11 +47,15 @@ void write_track_candidates(
     for (size_type i = 0; i < tracks.size(); ++i) {
 
         // The track candidate in question.
-        const track_candidate_container_types::const_device::const_element_view
-            track = tracks.at(i);
+        const edm::track_candidate_collection<
+            default_algebra>::const_device::const_proxy_type track =
+            tracks.at(i);
 
         // Loop over the measurements that the track candidate is made out of.
-        for (const measurement& m : track.items) {
+        for (unsigned int midx : track.measurement_indices()) {
+
+            // The measurement in question.
+            const measurement& m = measurements.at(midx);
 
             // Find the detector surface that this measurement sits on.
             const detray::tracking_surface surface{detector, m.surface_link};
@@ -68,12 +77,13 @@ void write_track_candidates(
     for (size_type i = 0; i < tracks.size(); ++i) {
 
         // The track candidate in question.
-        const track_candidate_container_types::const_device::const_element_view
-            track = tracks.at(i);
+        const edm::track_candidate_collection<
+            default_algebra>::const_device::const_proxy_type track =
+            tracks.at(i);
 
         // Construct the lines.
         file << "l";
-        for (size_type j = 0; j < track.items.size(); ++j) {
+        for (size_type j = 0; j < track.measurement_indices().size(); ++j) {
             file << " " << vertex_counter++;
         }
         file << "\n";
