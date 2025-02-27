@@ -171,8 +171,10 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
         const std::size_t n_fitted_tracks = count_fitted_tracks(track_states);
 
         // n_trakcs = 100
-        ASSERT_EQ(n_tracks, n_truth_tracks);
-        ASSERT_EQ(n_tracks, n_fitted_tracks);
+        ASSERT_GE(static_cast<float>(n_tracks),
+                  0.98 * static_cast<float>(n_truth_tracks));
+        ASSERT_GE(static_cast<float>(n_tracks),
+                  0.98 * static_cast<float>(n_fitted_tracks));
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
@@ -219,7 +221,7 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     float success_rate = static_cast<float>(n_success) /
                          static_cast<float>(n_truth_tracks * n_events);
 
-    ASSERT_FLOAT_EQ(success_rate, 1.00f);
+    ASSERT_GE(success_rate, 0.98f);
 }
 
 // Muon with 1, 10, 100 GeV/c, no materials

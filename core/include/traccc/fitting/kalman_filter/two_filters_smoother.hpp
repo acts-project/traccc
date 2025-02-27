@@ -119,6 +119,10 @@ struct two_filters_smoother {
                                            matrix::inverse(R_smt) *
                                            residual_smt;
 
+        if (getter::element(chi2_smt, 0, 0) < 0.f) {
+            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
+        }
+
         trk_state.smoothed_chi2() = getter::element(chi2_smt, 0, 0);
 
         /*************************************
@@ -165,6 +169,10 @@ struct two_filters_smoother {
 
         if (std::abs(bound_params.qop()) == 0.f) {
             return kalman_fitter_status::ERROR_QOP_ZERO;
+        }
+
+        if (getter::element(chi2, 0, 0) < 0.f) {
+            return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
         }
 
         // Set backward chi2
