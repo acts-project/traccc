@@ -72,6 +72,8 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     scalar ndf_sum = 0.f;
     scalar chi2_sum = 0.f;
 
+    [[maybe_unused]] std::size_t num_inserted = 0;
+
     // Reversely iterate to fill the track candidates
     for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
          it++) {
@@ -91,6 +93,7 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
         }
 
         *it = {measurements.at(L.meas_idx)};
+        num_inserted++;
 
         // Sanity check on chi2
         assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
@@ -110,6 +113,24 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
             L = links[L.previous.first][L.previous.second];
         }
     }
+
+#ifndef NDEBUG
+    if (success) {
+        // Assert that we inserted exactly as many elements as we reserved
+        // space for.
+        assert(num_inserted == cands_per_track.size());
+
+        // Assert that we did not make any duplicate track states.
+        for (unsigned int i = 0; i < cands_per_track.size(); ++i) {
+            for (unsigned int j = 0; j < cands_per_track.size(); ++j) {
+                if (i != j) {
+                    assert(cands_per_track.at(i).measurement_id !=
+                           cands_per_track.at(j).measurement_id);
+                }
+            }
+        }
+    }
+#endif
 
     // NOTE: We may at some point want to assert that `success` is true
 
