@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -25,7 +25,6 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/utils/algorithm.hpp"
 
@@ -37,44 +36,32 @@ namespace traccc::legacy {
 ///
 /// @param track_states the container of the fitted track parameters
 /// @return the container without ambiguous tracks
-track_candidate_container_types::host
-greedy_ambiguity_resolution_algorithm::operator()(
-    const typename track_candidate_container_types::host& track_states) const {
+auto greedy_ambiguity_resolution_algorithm::operator()(
+    const edm::track_candidate_collection<default_algebra>::host& track_states,
+    const measurement_collection_types::host& measurements) const
+    -> output_type {
 
     state_t state;
-    compute_initial_state(track_states, state);
+    compute_initial_state(track_states, measurements, state);
     resolve(state);
 
     // Copy the tracks to be retained in the return value
 
-    track_candidate_container_types::host res;
+    edm::track_candidate_collection<default_algebra>::host res{m_mr.get()};
     res.reserve(state.selected_tracks.size());
 
     TRACCC_DEBUG(
         "state.selected_tracks.size() = " << state.selected_tracks.size());
 
     for (auto index : state.selected_tracks) {
-        // track_states is a host_container<fitting_result<default_algebra>,
-        // track_state<default_algebra>>
-        auto const [sm_headers, sm_items] = track_states.at(index.first);
-
-        // Copy header
-        finding_result header = sm_headers;
-
-        // Copy states
-        vecmem::vector<track_candidate> states;
-        states.reserve(sm_items.size());
-        for (auto const& item : sm_items) {
-            states.push_back(item);
-        }
-
-        res.push_back(header, states);
+        res.push_back(track_states.at(index.first));
     }
     return res;
 }
 
 void greedy_ambiguity_resolution_algorithm::compute_initial_state(
-    const typename track_candidate_container_types::host& track_states,
+    const edm::track_candidate_collection<default_algebra>::host& track_states,
+    const measurement_collection_types::host& measurements,
     state_t& state) const {
 
     // For each track of the input container
@@ -82,21 +69,19 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     for (std::size_t track_index = 0; track_index < n_track_states;
          ++track_index) {
 
-        // fit_res is a fitting_result<default_algebra>
-        // states  is a vecmem_vector<track_state<default_algebra>>
-        auto const& [fit_res, states] = track_states.at(track_index);
+        auto const& track = track_states.at(track_index);
 
         // Kick out tracks that do not fulfill our initial requirements
-        if (states.size() < _config.n_measurements_min) {
+        if (track.measurement_indices().size() < _config.n_measurements_min) {
             continue;
         }
 
         // Create the list of measurement_id of the current track
-        std::vector<std::size_t> measurements;
+        std::vector<std::size_t> measurement_ids;
         std::unordered_map<std::size_t, std::size_t> already_added_mes;
 
-        for (auto const& st : states) {
-            std::size_t mid = st.measurement_id;
+        for (unsigned int meas_idx : track.measurement_indices()) {
+            std::size_t mid = measurements.at(meas_idx).measurement_id;
 
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.
@@ -111,14 +96,14 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
                                             << " has duplicated measurement "
                                             << mid << ".");
             } else {
-                measurements.push_back(mid);
+                measurement_ids.push_back(mid);
             }
         }
 
         // Add this track pval value
-        state.track_pval.push_back(fit_res.trk_quality.pval);
+        state.track_pval.push_back(track.pval());
         // Add all the (measurement_id)s of this track
-        state.measurements_per_track.push_back(std::move(measurements));
+        state.measurements_per_track.push_back(std::move(measurement_ids));
         // Initially, every track is in the selected_track list. They will later
         // be removed according to the algorithm.
         state.selected_tracks.insert({track_index, state.number_of_tracks});

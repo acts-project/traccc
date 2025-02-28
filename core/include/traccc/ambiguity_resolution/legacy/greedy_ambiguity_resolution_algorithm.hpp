@@ -9,6 +9,7 @@
 
 // System include
 #include <algorithm>
+#include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <limits>
@@ -18,12 +19,12 @@
 #include <vector>
 
 // VecMem include(s).
-#include <vecmem/containers/vector.hpp>
+#include <vecmem/memory/memory_resource.hpp>
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -45,8 +46,9 @@ namespace traccc::legacy {
 ///     shared hits / hits).
 ///  4) Back to square 1.
 class greedy_ambiguity_resolution_algorithm
-    : public algorithm<track_candidate_container_types::host(
-          const typename track_candidate_container_types::host&)>,
+    : public algorithm<edm::track_candidate_collection<default_algebra>::host(
+          const edm::track_candidate_collection<default_algebra>::host&,
+          const measurement_collection_types::host&)>,
       public messaging {
 
     public:
@@ -99,17 +101,18 @@ class greedy_ambiguity_resolution_algorithm
     // greedy_ambiguity_resolution_algorithm(const config_type& cfg) :
     // _config(cfg) {}
     greedy_ambiguity_resolution_algorithm(
-        const config_t cfg,
+        const config_t cfg, vecmem::memory_resource& mr,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone())
-        : messaging(std::move(logger)), _config{cfg} {}
+        : messaging(std::move(logger)), _config{cfg}, m_mr{mr} {}
 
     /// Run the algorithm
     ///
     /// @param track_states the container of the fitted track parameters
     /// @return the container without ambiguous tracks
-    track_candidate_container_types::host operator()(
-        const typename track_candidate_container_types::host& track_states)
-        const override;
+    output_type operator()(
+        const edm::track_candidate_collection<default_algebra>::host&
+            track_states,
+        const measurement_collection_types::host& measurements) const override;
 
     /// Get configuration
     config_t& get_config() { return _config; }
@@ -124,7 +127,9 @@ class greedy_ambiguity_resolution_algorithm
     /// @param state An empty state object which is expected to be default
     /// constructed.
     void compute_initial_state(
-        const typename track_candidate_container_types::host& track_states,
+        const edm::track_candidate_collection<default_algebra>::host&
+            track_states,
+        const measurement_collection_types::host& measurements,
         state_t& state) const;
 
     /// Updates the state iteratively by evicting one track after the other
@@ -135,6 +140,7 @@ class greedy_ambiguity_resolution_algorithm
     void resolve(state_t& state) const;
 
     config_t _config;
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 };
 
 }  // namespace traccc::legacy
