@@ -69,7 +69,6 @@ void read_csv_dd(traccc::silicon_detector_description::host& dd,
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.
         dd.geometry_id().back() = detray::geometry::barcode{geom_id};
-        dd.placement().back() = transform;
         dd.acts_geometry_id().back() = geom_id;
 
         // Find the module's digitization configuration.
@@ -96,7 +95,6 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
     // configuration file.
     vecmem::host_memory_resource mr;
     traccc::default_detector::host detector{mr};
-    const traccc::default_detector::host::geometry_context ctx{};
     traccc::io::read_detector(detector, mr, geometry_file);
 
     // Iterate over the surfaces of the detector.
@@ -125,7 +123,6 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.
         dd.geometry_id().back() = surface_desc.barcode();
-        dd.placement().back() = surface.transform(ctx);
         dd.acts_geometry_id().back() = geom_id;
 
         // Find the module's digitization configuration.
