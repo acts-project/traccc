@@ -127,7 +127,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.propagation = propagation_config;
 
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
-        cfg, logger().clone("FindingAlg"));
+        cfg, host_mr, logger().clone("FindingAlg"));
 
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         host_ambiguity_config(resolution_opts);
@@ -174,8 +174,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
 
         // Run CKF and KF if we are using a detray geometry
-        traccc::track_candidate_container_types::host track_candidates;
-        traccc::track_candidate_container_types::host track_candidates_ar;
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates{host_mr};
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates_ar{host_mr};
         traccc::track_state_container_types::host track_states;
 
         /*------------------------
@@ -200,7 +202,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------------------*/
 
         track_states = host_fitting(detector, field,
-                                    traccc::get_data(track_candidates_ar));
+                                    vecmem::get_data(measurements_per_event),
+                                    vecmem::get_data(track_candidates_ar));
         n_fitted_tracks += track_states.size();
 
         /*------------
@@ -225,8 +228,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(spacepoints_per_event),
                 vecmem::get_data(measurements_per_event), evt_data);
 
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_data);
+            find_performance_writer.write(
+                vecmem::get_data(track_candidates),
+                vecmem::get_data(measurements_per_event), evt_data);
 
             ar_performance_writer.write(traccc::get_data(track_candidates_ar),
                                         evt_data);

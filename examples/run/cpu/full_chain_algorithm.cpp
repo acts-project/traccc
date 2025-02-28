@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,7 +32,7 @@ full_chain_algorithm::full_chain_algorithm(
                 logger->cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(mr,
                                    logger->cloneWithSuffix("TrackParamEstAlg")),
-      m_finding(finding_config, logger->cloneWithSuffix("TrackFindingAlg")),
+      m_finding(finding_config, mr, logger->cloneWithSuffix("TrackFindingAlg")),
       m_fitting(fitting_config, mr, m_copy,
                 logger->cloneWithSuffix("TrackFittingAlg")),
       m_finder_config(finder_config),
@@ -78,8 +78,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             *m_detector, m_field, measurements_view, track_params_view);
 
         // Run the track fitting, and return its results.
-        const auto track_candidates_data = get_data(track_candidates);
-        return m_fitting(*m_detector, m_field, track_candidates_data);
+        return m_fitting(*m_detector, m_field, measurements_view,
+                         vecmem::get_data(track_candidates));
     }
     // If not, just return an empty object.
     else {

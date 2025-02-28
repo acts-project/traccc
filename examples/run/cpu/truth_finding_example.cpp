@@ -103,7 +103,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
-        cfg, logger().clone("FindingAlg"));
+        cfg, host_mr, logger().clone("FindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
@@ -125,16 +125,18 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     input_opts.use_acts_geom_source, &detector,
                                     input_opts.format, false);
 
-        traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr,
-                                               truth_finding_opts.m_min_pt);
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            truth_track_candidates{host_mr};
+        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_measurements, sg, host_mr,
+                                           truth_finding_opts.m_min_pt);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         const std::size_t n_tracks = truth_track_candidates.size();
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
-            seeds.push_back(
-                truth_track_candidates.at(i_trk).header.seed_params);
+            seeds.push_back(truth_track_candidates.at(i_trk).params());
         }
 
         // Read measurements
@@ -154,16 +156,18 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                   << std::endl;
 
         // Run fitting
-        auto track_states =
-            host_fitting(detector, field, traccc::get_data(track_candidates));
+        auto track_states = host_fitting(
+            detector, field, vecmem::get_data(measurements_per_event),
+            vecmem::get_data(track_candidates));
 
         print_fitted_tracks_statistics(track_states);
 
         const std::size_t n_fitted_tracks = track_states.size();
 
         if (performance_opts.run) {
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_data);
+            find_performance_writer.write(
+                vecmem::get_data(track_candidates),
+                vecmem::get_data(measurements_per_event), evt_data);
 
             for (std::size_t i = 0; i < n_fitted_tracks; i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
