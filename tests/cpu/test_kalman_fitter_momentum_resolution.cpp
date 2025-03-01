@@ -125,8 +125,6 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
-    sim.get_config().propagation.stepping.rk_error_tol =
-        1e-8f * unit<float>::mm;
     sim.run();
 
     /***************
@@ -139,8 +137,6 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    fit_cfg.propagation.stepping.rk_error_tol = 1e-8f * unit<float>::mm;
-    fit_cfg.use_backward_filter = true;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
     // Iterate over events

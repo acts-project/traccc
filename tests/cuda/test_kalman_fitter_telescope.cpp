@@ -121,10 +121,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
-    sim.get_config().propagation.navigation.overstep_tolerance =
-        -100.f * unit<float>::um;
-    sim.get_config().propagation.navigation.max_mask_tolerance =
-        1.f * unit<float>::mm;
     sim.run();
 
     /***************
@@ -151,10 +147,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     typename traccc::cuda::fitting_algorithm<device_fitter_type>::config_type
         fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    fit_cfg.propagation.navigation.overstep_tolerance =
-        -100.f * unit<float>::um;
-    fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
-    fit_cfg.use_backward_filter = true;
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, copy, stream);
 
