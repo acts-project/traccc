@@ -56,7 +56,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
                                        host_mr);
     traccc::host::track_params_estimation tp(host_mr);
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
-        finding_cfg);
+        finding_cfg, host_mr);
     traccc::host::kalman_fitting_algorithm host_fitting(fitting_cfg, host_mr,
                                                         copy);
 
@@ -83,8 +83,9 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
                 vecmem::get_data(params));
 
             // Track fitting with KF
-            auto track_states =
-                host_fitting(det, field, traccc::get_data(track_candidates));
+            auto track_states = host_fitting(
+                det, field, vecmem::get_data(measurements_per_event),
+                vecmem::get_data(track_candidates));
         }
     }
 

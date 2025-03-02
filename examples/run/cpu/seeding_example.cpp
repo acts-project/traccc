@@ -66,7 +66,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
-    traccc::memory_resource mr{host_mr, &host_mr};
 
     // Copy obejct
     vecmem::copy copy;
@@ -128,7 +127,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         host_ambiguity_config(resolution_opts);
     traccc::host::greedy_ambiguity_resolution_algorithm
-        host_ambiguity_resolution(host_ambiguity_config, mr,
+        host_ambiguity_resolution(host_ambiguity_config, host_mr,
                                   logger().clone("AmbiguityResolution"));
 
     // Fitting algorithm object
@@ -190,7 +189,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           -----------------------------------------*/
 
         track_candidates_ar =
-            host_ambiguity_resolution(traccc::get_data(track_candidates));
+            host_ambiguity_resolution(vecmem::get_data(track_candidates),
+                                      vecmem::get_data(measurements_per_event));
         n_ambiguity_free_tracks += track_candidates_ar.size();
 
         /*------------------------
@@ -228,8 +228,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(track_candidates),
                 vecmem::get_data(measurements_per_event), evt_data);
 
-            ar_performance_writer.write(traccc::get_data(track_candidates_ar),
-                                        evt_data);
+            ar_performance_writer.write(
+                vecmem::get_data(track_candidates_ar),
+                vecmem::get_data(measurements_per_event), evt_data);
 
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;

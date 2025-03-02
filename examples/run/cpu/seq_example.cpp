@@ -73,7 +73,6 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
     // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
-    traccc::memory_resource mr{host_mr, &host_mr};
 
     // Copy obejct
     vecmem::copy copy;
@@ -145,7 +144,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     finding_algorithm finding_alg(finding_cfg, host_mr,
                                   logger().clone("FindingAlg"));
     traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg(
-        resolution_config, mr, logger().clone("AmbiguityResolutionAlg"));
+        resolution_config, host_mr, logger().clone("AmbiguityResolutionAlg"));
     fitting_algorithm fitting_alg(fitting_cfg, host_mr, copy,
                                   logger().clone("FittingAlg"));
 
@@ -179,7 +178,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
         traccc::host::track_params_estimation::output_type params{&host_mr};
         finding_algorithm::output_type track_candidates{host_mr};
         traccc::host::greedy_ambiguity_resolution_algorithm::output_type
-            resolved_track_candidates{&host_mr};
+            resolved_track_candidates{host_mr};
         fitting_algorithm::output_type track_states{&host_mr};
 
         {  // Start measuring wall time.
@@ -276,8 +275,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
                     // Perform ambiguity resolution only if asked for.
                     traccc::performance::timer timer{
                         "Track ambiguity resolution", elapsedTimes};
-                    resolved_track_candidates =
-                        resolution_alg(traccc::get_data(track_candidates));
+                    resolved_track_candidates = resolution_alg(
+                        vecmem::get_data(track_candidates),
+                        vecmem::get_data(measurements_per_event));
                 }
 
                 {
