@@ -414,19 +414,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
             host_mr};
         traccc::edm::seed_collection::host seeds_cuda{host_mr};
         traccc::bound_track_parameters_collection_types::host params_cuda;
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates_cuda{host_mr};
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            res_track_candidates_cuda{host_mr};
 
         copy(measurements_cuda_buffer, measurements_per_event_cuda)->wait();
         copy(spacepoints_cuda_buffer, spacepoints_per_event_cuda)->wait();
         copy(seeds_cuda_buffer, seeds_cuda)->wait();
         copy(params_cuda_buffer, params_cuda)->wait();
-
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
-            track_candidates_cuda{host_mr};
         copy(track_candidates_buffer, track_candidates_cuda,
              vecmem::copy::type::device_to_host)
             ->wait();
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
-            res_track_candidates_cuda{host_mr};
         copy(res_track_candidates_buffer, res_track_candidates_cuda,
              vecmem::copy::type::device_to_host)
             ->wait();

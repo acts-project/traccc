@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -67,12 +67,14 @@ class KalmanFittingTelescopeTests
         0.05f / traccc::unit<scalar>::GeV,
         1.f * traccc::unit<scalar>::ns};
 
-    void consistency_tests(const track_candidate_collection_types::host&
-                               track_candidates_per_track) const {
+    void consistency_tests(const edm::track_candidate_collection<
+                           traccc::default_algebra>::host::const_proxy_type&
+                               track_candidate) const {
 
-        // The nubmer of track candidates is supposed be equal to the number
+        // The nubmer of measurements is supposed be equal to the number
         // of planes
-        ASSERT_EQ(track_candidates_per_track.size(), std::get<11>(GetParam()));
+        ASSERT_EQ(track_candidate.measurement_indices().size(),
+                  std::get<11>(GetParam()));
     }
 
     void consistency_tests(const track_state_collection_types::host&

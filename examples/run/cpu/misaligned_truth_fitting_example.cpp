@@ -155,13 +155,17 @@ int main(int argc, char* argv[]) {
 
         // For the first half of events run Alg0
         if ((event - input_opts.skip) / (input_opts.events / 2) == 0) {
-            traccc::track_candidate_container_types::host
-                truth_track_candidates =
-                    evt_data.generate_truth_candidates(sg0, host_mr);
+            traccc::edm::track_candidate_collection<default_algebra>::host
+                truth_track_candidates{host_mr};
+            traccc::measurement_collection_types::host truth_measurements{
+                &host_mr};
+            evt_data.generate_truth_candidates(
+                truth_track_candidates, truth_measurements, sg0, host_mr);
 
             // Run fitting
             auto track_states = host_fitting0(
-                host_det, field, traccc::get_data(truth_track_candidates));
+                host_det, field, vecmem::get_data(truth_measurements),
+                vecmem::get_data(truth_track_candidates));
 
             print_fitted_tracks_statistics(track_states);
 
@@ -181,13 +185,17 @@ int main(int argc, char* argv[]) {
                 }
             }
         } else {
-            traccc::track_candidate_container_types::host
-                truth_track_candidates =
-                    evt_data.generate_truth_candidates(sg1, host_mr);
+            traccc::edm::track_candidate_collection<default_algebra>::host
+                truth_track_candidates{host_mr};
+            traccc::measurement_collection_types::host truth_measurements{
+                &host_mr};
+            evt_data.generate_truth_candidates(
+                truth_track_candidates, truth_measurements, sg1, host_mr);
 
             // Run fitting
             auto track_states = host_fitting1(
-                host_det, field, traccc::get_data(truth_track_candidates));
+                host_det, field, vecmem::get_data(truth_measurements),
+                vecmem::get_data(truth_track_candidates));
 
             print_fitted_tracks_statistics(track_states);
 

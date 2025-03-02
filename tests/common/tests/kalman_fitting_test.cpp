@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -134,18 +134,19 @@ void KalmanFittingTests::p_value_tests([
 }
 
 void KalmanFittingTests::ndf_tests(
-    const finding_result& find_res,
-    const track_candidate_collection_types::host& track_candidates_per_track) {
+    const edm::track_candidate_collection<
+        default_algebra>::host::const_proxy_type& track_candidate,
+    const measurement_collection_types::host& measurements) {
 
     scalar dim_sum = 0;
 
-    for (const auto& cand : track_candidates_per_track) {
-        dim_sum += static_cast<scalar>(cand.meas_dim);
+    for (unsigned int midx : track_candidate.measurement_indices()) {
+        dim_sum += static_cast<scalar>(measurements.at(midx).meas_dim);
     }
 
     // Check if the number of degree of freedoms is equal to (the sum of
     // measurement dimensions - 5)
-    ASSERT_FLOAT_EQ(static_cast<float>(find_res.trk_quality.ndf),
+    ASSERT_FLOAT_EQ(static_cast<float>(track_candidate.ndf()),
                     static_cast<float>(dim_sum) - 5.f);
 }
 
