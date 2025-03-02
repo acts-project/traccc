@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -128,10 +128,13 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     traccc::event_data evt_data(path, 0u, host_mr);
 
     // Truth Track Candidates
-    traccc::track_candidate_container_types::host track_candidates =
-        evt_data.generate_truth_candidates(sg, host_mr);
-    // Candidate vector
-    auto& cands = track_candidates.at(0u).items;
+    traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        track_candidates{host_mr};
+    traccc::measurement_collection_types::host measurements{&host_mr};
+    evt_data.generate_truth_candidates(track_candidates, measurements, sg,
+                                       host_mr);
+    // Measurement index vector
+    auto& cands = track_candidates.at(0u).measurement_indices();
 
     // Some sanity checks
     ASSERT_EQ(track_candidates.size(), n_truth_tracks);
@@ -154,8 +157,8 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     ASSERT_EQ(cands.size(), n_planes - 8u);
 
     // Run fitting
-    auto track_states =
-        fitting(host_det, field, traccc::get_data(track_candidates));
+    auto track_states = fitting(host_det, field, vecmem::get_data(measurements),
+                                vecmem::get_data(track_candidates));
 
     // A sanity check
     const std::size_t n_tracks = track_states.size();

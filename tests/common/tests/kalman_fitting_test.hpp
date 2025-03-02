@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,8 @@
 
 // Project include(s).
 #include "traccc/definitions/common.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/simulation/event_generators.hpp"
@@ -65,12 +67,12 @@ class KalmanFittingTests : public testing::Test {
 
     /// Validadte the NDF for track finding output
     ///
-    /// @param find_res Finding result of a track
-    /// @param track_candidates_per_track Track candidates of a track
+    /// @param track_candidate The track candidate to test
+    /// @param measurements All measurements in the event
     ///
-    void ndf_tests(const finding_result& find_res,
-                   const track_candidate_collection_types::host&
-                       track_candidates_per_track);
+    void ndf_tests(const edm::track_candidate_collection<default_algebra>::
+                       host::const_proxy_type& track_candidate,
+                   const measurement_collection_types::host& measurements);
 
     /// Validadte the NDF for track fitting output
     ///
