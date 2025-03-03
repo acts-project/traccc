@@ -14,13 +14,13 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/details/debug_output.hpp"
 #include "traccc/finding/finding_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
-
 /// (Event Data) Payload for the @c traccc::device::propagate_to_next_surface
 /// function
 template <typename propagator_t, typename bfield_t>
@@ -76,6 +76,11 @@ struct propagate_to_next_surface_payload {
      * input seed
      */
     vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view;
+
+    /**
+     * @brief Optional debug object
+     */
+    propagate_to_next_surface_debug* debug;
 };
 
 /// Function for propagating the kalman-updated tracks to the next surface

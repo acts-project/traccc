@@ -23,6 +23,8 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/details/debug_output.hpp"
+#include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/projections.hpp"
 
@@ -181,6 +183,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     unsigned int n_in_params = n_seeds;
 
+    vecmem::unique_alloc_ptr<propagate_to_next_surface_debug> prop_debug;
+
+    if (m_cfg.verbose) {
+        prop_debug = vecmem::make_unique_alloc<propagate_to_next_surface_debug>(
+            m_mr.main);
+    }
+
     for (unsigned int step = 0;
          step < m_cfg.max_track_candidates_per_track && n_in_params > 0;
          step++) {
@@ -305,6 +314,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 // Reset the number of tracks per seed
                 m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
 
+                if (prop_debug) {
+                    propagate_to_next_surface_debug host_debug;
+                    host_debug.reset();
+                    cudaMemcpyAsync(prop_debug.get(), &host_debug,
+                                    sizeof(propagate_to_next_surface_debug),
+                                    cudaMemcpyHostToDevice, stream);
+                }
+
                 const unsigned int nThreads = m_warp_size * 2;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
@@ -314,8 +331,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         m_cfg, {det_view, field_view, in_params_buffer,
                                 param_liveness_buffer, param_ids_buffer,
                                 link_map[step], step, n_candidates, tips_buffer,
-                                n_tracks_per_seed_buffer});
+                                n_tracks_per_seed_buffer, prop_debug.get()});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+                if (prop_debug) {
+                    propagate_to_next_surface_debug host_debug;
+                    cudaMemcpyAsync(&host_debug, prop_debug.get(),
+                                    sizeof(propagate_to_next_surface_debug),
+                                    cudaMemcpyDeviceToHost, stream);
+                    m_stream.synchronize();
+                    log_propagate_to_next_surface_debug(host_debug, logger());
+                } else {
+                    TRACCC_VERBOSE(
+                        "Additional debug output is not enabled for the "
+                        "finding algorithm.");
+                }
 
                 m_stream.synchronize();
             }
