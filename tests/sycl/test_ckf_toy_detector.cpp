@@ -118,7 +118,6 @@ TEST_P(CkfToyDetectorTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), path.native());
-    sim.get_config().propagation.stepping.step_constraint = step_constraint;
     sim.get_config().propagation.navigation.search_window = search_window;
     sim.run();
 
@@ -143,7 +142,6 @@ TEST_P(CkfToyDetectorTests, Run) {
     traccc::sycl::combinatorial_kalman_filter_algorithm::config_type cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
-    cfg.chi2_max = 30.f;
     cfg.propagation.navigation.search_window = search_window;
 
     // Finding algorithm object

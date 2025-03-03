@@ -102,10 +102,6 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
                                  writer_type>(
         std::get<6>(GetParam()), n_events, host_det, field,
         std::move(generator), std::move(smearer_writer_cfg), full_path);
-    sim.get_config().propagation.navigation.overstep_tolerance =
-        -100.f * unit<float>::um;
-    sim.get_config().propagation.navigation.max_mask_tolerance =
-        1.f * unit<float>::mm;
     sim.run();
 
     /*****************************
@@ -120,17 +116,10 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     cfg_no_limit.max_num_branches_per_seed =
         std::numeric_limits<unsigned int>::max();
     cfg_no_limit.chi2_max = 30.f;
-    cfg_no_limit.propagation.navigation.overstep_tolerance =
-        -100.f * unit<float>::um;
-    cfg_no_limit.propagation.navigation.max_mask_tolerance =
-        1.f * unit<float>::mm;
 
     traccc::finding_config cfg_limit;
     cfg_limit.max_num_branches_per_seed = 500;
     cfg_limit.chi2_max = 30.f;
-    cfg_limit.propagation.navigation.overstep_tolerance =
-        -100.f * unit<float>::um;
-    cfg_limit.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(

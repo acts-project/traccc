@@ -107,10 +107,6 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
                                  writer_type>(
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
-    sim.get_config().propagation.navigation.overstep_tolerance =
-        -100.f * unit<float>::um;
-    sim.get_config().propagation.navigation.max_mask_tolerance =
-        1.f * unit<float>::mm;
     sim.run();
 
     /***************
@@ -123,9 +119,6 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    fit_cfg.propagation.navigation.overstep_tolerance =
-        -100.f * unit<float>::um;
-    fit_cfg.propagation.navigation.max_mask_tolerance = 1.f * unit<float>::mm;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
 
     // Event map

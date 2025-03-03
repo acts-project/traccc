@@ -51,9 +51,6 @@ class KalmanFittingWireChamberTests
     /// B field value and its type
     static constexpr vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
 
-    /// Step constraint
-    static const inline float step_constraint = 1.f * traccc::unit<float>::mm;
-
     // Set mask tolerance to a large value not to miss the surface during KF
     static const inline scalar mask_tolerance = 75.f * traccc::unit<scalar>::um;
 
