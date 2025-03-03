@@ -50,6 +50,15 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     if (s_pos >= cfg.max_num_branches_per_seed) {
         params_liveness[param_id] = 0u;
+
+        if (payload.debug) {
+            vecmem::device_atomic_ref<unsigned int>(
+                payload.debug->m_failure_count[static_cast<std::size_t>(
+                    propagate_to_next_surface_failure_mode::
+                        BRANCH_LIMIT_REACHED)])
+                .fetch_add(1u);
+        }
+
         return;
     }
 
@@ -60,6 +69,15 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
         params_liveness[param_id] = 0u;
         tips.push_back({payload.step, param_id});
+
+        if (payload.debug) {
+            vecmem::device_atomic_ref<unsigned int>(
+                payload.debug->m_failure_count[static_cast<std::size_t>(
+                    propagate_to_next_surface_failure_mode::
+                        HOLE_LIMIT_REACHED)])
+                .fetch_add(1u);
+        }
+
         return;
     }
 
@@ -123,6 +141,13 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         }
     } else {
         params_liveness[param_id] = 0u;
+
+        if (payload.debug) {
+            vecmem::device_atomic_ref<unsigned int>(
+                payload.debug->m_failure_count[static_cast<std::size_t>(
+                    propagate_to_next_surface_failure_mode::DETRAY_FAILURE)])
+                .fetch_add(1u);
+        }
 
         if (payload.step >= cfg.min_track_candidates_per_track - 1) {
             tips.push_back({payload.step, param_id});
