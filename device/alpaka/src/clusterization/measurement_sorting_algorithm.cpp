@@ -8,6 +8,7 @@
 // Library include(s).
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 
+#include <thrust/execution_policy.h>
 #include <thrust/sort.h>
 
 namespace traccc::alpaka {
