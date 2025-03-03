@@ -9,7 +9,7 @@
 
 namespace traccc::device {
 
-TRACCC_DEVICE inline void make_barcode_sequence(
+TRACCC_HOST_DEVICE inline void make_barcode_sequence(
     const global_index_t globalIndex,
     const make_barcode_sequence_payload& payload) {
 
