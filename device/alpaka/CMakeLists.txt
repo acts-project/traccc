@@ -44,6 +44,16 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/seeding/seeding_algorithm.cpp"
   "include/traccc/alpaka/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cpp"
+  # Finding
+  "include/traccc/alpaka/finding/finding_algorithm.hpp"
+  "src/finding/finding_algorithm.cpp"
+  "src/finding/kernels/make_barcode_sequence.hpp"
+  "src/finding/kernels/apply_interaction.hpp"
+  "src/finding/kernels/fill_sort_keys.hpp"
+  "src/finding/kernels/prune_tracks.hpp"
+  "src/finding/kernels/build_tracks.hpp"
+  "src/finding/kernels/find_tracks.hpp"
+  "src/finding/kernels/propagate_to_next_surface.hpp"
 )
 # Set up Thrust specifically for the traccc::alpaka library.
 if(alpaka_ACC_GPU_CUDA_ENABLE)
