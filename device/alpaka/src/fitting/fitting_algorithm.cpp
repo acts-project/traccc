@@ -19,6 +19,7 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 // Thrust include(s).
+#include <thrust/execution_policy.h>
 #include <thrust/sort.h>
 
 // System include(s).

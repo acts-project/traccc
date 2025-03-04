@@ -63,15 +63,17 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
 
 # Set up Thrust specifically for the traccc::alpaka library.
 if(alpaka_ACC_GPU_CUDA_ENABLE)
-thrust_create_target( traccc::cuda_thrust
-  HOST CPP
-  DEVICE CUDA )
+  thrust_create_target( traccc::cuda_thrust
+    HOST CPP
+    DEVICE CUDA )
   target_link_libraries(traccc::cuda_thrust INTERFACE CUDA::cudart)
   list(APPEND PRIVATE_LIBRARIES traccc::cuda_thrust)
+elseif(alpaka_ACC_GPU_HIP_ENABLE)
+  list(APPEND PRIVATE_LIBRARIES rocthrust)
 else()
-thrust_create_target (traccc::alpaka_thrust
-  HOST CPP
-  DEVICE CPP )
+  thrust_create_target (traccc::alpaka_thrust
+    HOST CPP
+    DEVICE CPP )
   list(APPEND PRIVATE_LIBRARIES traccc::alpaka_thrust)
 endif()
 
