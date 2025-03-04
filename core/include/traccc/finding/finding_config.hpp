@@ -48,6 +48,9 @@ struct finding_config {
     /// Particle hypothesis
     detray::pdg_particle<traccc::scalar> ptc_hypothesis =
         detray::muon<traccc::scalar>();
+
+    /// Provide more verbose output for debugging; may reduce performance
+    bool verbose = false;
 };
 
 }  // namespace traccc
