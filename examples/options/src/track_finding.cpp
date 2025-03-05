@@ -56,12 +56,6 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.chi2_max)->default_value(m_config.chi2_max),
         "Maximum Chi suqare that measurements can be included in the track");
     m_desc.add_options()(
-        "nmax-per-seed",
-        po::value(&m_config.max_num_branches_per_seed)
-            ->default_value(m_config.max_num_branches_per_seed),
-        "Maximum number of branches which each initial seed can have at a "
-        "step.");
-    m_desc.add_options()(
         "max-num-skipping-per-cand",
         po::value(&m_config.max_num_skipping_per_cand)
             ->default_value(m_config.max_num_skipping_per_cand),
@@ -103,9 +97,6 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
         std::to_string(m_config.max_step_counts_for_next_surface)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Max Chi2", std::to_string(m_config.chi2_max)));
-    cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Max branches per step",
-        std::to_string(m_config.max_num_branches_per_seed)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Max holes per candidate",
         std::to_string(m_config.max_num_skipping_per_cand)));
