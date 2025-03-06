@@ -37,8 +37,8 @@ set( DETRAY_EIGEN_PLUGIN TRUE CACHE BOOL
 
 set( DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL
    "Turn on the build of the Detray tests utilities, needed in this project" )
-set( DETRAY_BUILD_VALIDATION_TOOLS FALSE CACHE BOOL
-   "Turn off the build of the Detray validation tools" )
+set( DETRAY_BUILD_VALIDATION_TOOLS (${BUILD_TESTING} AND &{TRACCC_BUILD_TESTING}) CACHE BOOL
+   "Turn on the build of the Detray validation tools for traccc tests" )
 
 set( DETRAY_SETUP_VECMEM FALSE CACHE BOOL
    "Do not set up VecMem as part of Detray" )

@@ -23,7 +23,6 @@
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 #include <detray/test/utils/statistics.hpp>
-#include <detray/tracks/bound_track_parameters.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>

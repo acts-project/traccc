@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/csv/hit.hpp"
 #include "traccc/io/csv/measurement.hpp"
 #include "traccc/io/csv/measurement_hit_id.hpp"
@@ -19,8 +20,6 @@
 #include <detray/definitions/pdg_particle.hpp>
 #include <detray/geometry/tracking_surface.hpp>
 #include <detray/propagator/base_actor.hpp>
-#include <detray/tracks/bound_track_parameters.hpp>
-#include <detray/tracks/free_track_parameters.hpp>
 
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
