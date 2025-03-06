@@ -18,6 +18,7 @@ traccc_add_test(cpu
     "test_kalman_fitter_momentum_resolution.cpp"
     "test_kalman_fitter_telescope.cpp"
     "test_kalman_fitter_wire_chamber.cpp"
+    "test_navigation.cpp"
     "test_ranges.cpp"
     "test_seeding.cpp"
     "test_simulation.cpp"
@@ -27,4 +28,5 @@ traccc_add_test(cpu
     "test_sanity_contiguous_on.cpp"
     LINK_LIBRARIES GTest::gtest_main vecmem::core
     traccc_tests_common traccc::core traccc::io traccc::performance
-    traccc::simulation detray::core detray::io detray::test_common  covfie::core )
+    traccc::simulation detray::core detray::io detray::test_common  
+    detray::validation_utils covfie::core )
