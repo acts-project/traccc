@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/fitting/triplet_fitting_algorithm.hpp"
+#include "traccc/io/detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -18,9 +19,6 @@
 
 // Test include(s).
 #include "tests/triplet_fitting_telescope_test.hpp"
-
-// detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -123,8 +121,7 @@ TEST_P(TripletFittingTelescopeTests, Run) {
      ***************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
-                                          stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>());
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;

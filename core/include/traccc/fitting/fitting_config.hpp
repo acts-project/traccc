@@ -40,6 +40,7 @@ struct fitting_config {
     traccc::scalar covariance_inflation_factor = 1e3f;
     std::size_t surface_sequence_size_factor = 5;
     std::size_t min_surface_sequence_capacity = 100;
+    bool do_precise_hole_count = false;
 };
 
 }  // namespace traccc
