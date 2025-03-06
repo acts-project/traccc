@@ -34,7 +34,8 @@ struct statistics_updater {
             algebra_t>::const_device::const_proxy_type& trk_state,
         const edm::measurement_collection::const_device& measurements) {
 
-        if (!trk_state.is_hole()) {
+        // Neither missing measurement nor failed track state
+        if (!trk_state.is_hole() && !trk_state.filtered_params().is_invalid()) {
 
             // Measurement dimension
             const unsigned int D =

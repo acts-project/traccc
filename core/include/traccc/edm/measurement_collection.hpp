@@ -212,17 +212,17 @@ class measurement : public BASE {
     /// @returns a string stream that prints the measurement details
     TRACCC_HOST
     friend std::ostream& operator<<(std::ostream& os, const measurement& m) {
-        os << "ID = " << m.identifier() << ", dim = " << m.dimension()
+        os << "ID = " << m.identifier() << ", dim = " << m.dimensions()
            << ", surface: " << m.surface_link() << std::endl;
 
         os << " -> cluster idx = " << m.cluster_index() << std::endl;
 
         os << " -> loc pos     = [" << m.local_position()[0];
-        for (unsigned int i = 1u; i < m.dimension(); ++i) {
+        for (unsigned int i = 1u; i < m.dimensions(); ++i) {
             os << ", " << m.local_position()[i];
         }
         os << "]\n -> loc var     = [" << m.local_variance()[0];
-        for (unsigned int i = 1u; i < m.dimension(); ++i) {
+        for (unsigned int i = 1u; i < m.dimensions(); ++i) {
             os << ", " << m.local_variance()[i];
         }
         os << "]" << std::endl;

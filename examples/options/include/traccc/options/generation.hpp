@@ -43,6 +43,10 @@ class generation : public interface {
     opts::value_array<float, 2> eta_range{-2.f, 2.f};
     /// Range of theta [rad] (corresponding to eta range of [-2,2])
     opts::value_array<float, 2> theta_range{eta_to_theta_range(eta_range)};
+    /// Whether to include multiple scattering
+    bool do_multiple_scattering{true};
+    /// Whether to include energy loss
+    bool do_energy_loss{true};
 
     /// PDG number for particle type (Default: muon)
     int pdg_number = 13;
