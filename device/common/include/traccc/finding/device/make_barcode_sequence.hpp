@@ -41,7 +41,7 @@ struct make_barcode_sequence_payload {
 /// @param[in] globalIndex   The index of the current thread
 /// @param[inout] payload      The function call payload
 ///
-TRACCC_DEVICE inline void make_barcode_sequence(
+TRACCC_HOST_DEVICE inline void make_barcode_sequence(
     global_index_t globalIndex, const make_barcode_sequence_payload& payload);
 
 }  // namespace traccc::device
